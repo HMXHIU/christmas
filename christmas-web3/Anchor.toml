@@ -1,0 +1,15 @@
+[features]
+seeds = false
+skip-lint = false
+[programs.localnet]
+christmas_web3 = "F94qr5y8iCG8NNvcQpvJQVZvjcLhcHvQqwARytBjqe9T"
+
+[registry]
+url = "http://localhost:8899"
+
+[provider]
+cluster = "Localnet"
+wallet = "/Users/benjaminhon/Developer/christmas/id_local.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
