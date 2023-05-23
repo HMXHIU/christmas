@@ -6,11 +6,7 @@ declare_id!("F94qr5y8iCG8NNvcQpvJQVZvjcLhcHvQqwARytBjqe9T");
 pub mod christmas_web3 {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        Ok(())
-    }
-
-    pub fn hello(ctx: Context<SayHello>) -> Result<()> {
+    pub fn say_hello(ctx: Context<SayHello>) -> Result<()> {
         msg!("Merry Christmas!");
         Ok(())
     }
@@ -27,20 +23,17 @@ pub mod christmas_web3 {
 }
 
 #[derive(Accounts)]
-pub struct Initialize {}
-
-#[derive(Accounts)]
 pub struct SayHello {}
 
 #[derive(Accounts)]
 pub struct AddToPool<'info> {
     #[account(
-        init_if_needed,  // create accounts if needed
-        payer = signer,  // signer = the person calling the API
+        init_if_needed,
+        payer = signer,
         seeds = [b"user_account", signer.key().as_ref()],
         bump,
-        space = 8 + 8)] // first 8 bytes is reserved by anchor
-    pub user_account: Account<'info, UserAccount>,
+        space = 8 + 8)]
+    pub user_account: Account<'info, UserAccount>, // create user's account with us if not already
     #[account(mut)]
     pub signer: Signer<'info>,
     pub system_program: Program<'info, System>,

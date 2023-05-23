@@ -48,3 +48,10 @@ _Find Program on explorer_
 
 1. Go to [Solana Explorer](https://explorer.solana.com/)
 2. Find the program id
+
+# Testing
+
+```bash
+solana-test-validator --quiet
+anchor test --skip-local-validator
+```
