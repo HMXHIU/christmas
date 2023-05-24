@@ -25,13 +25,18 @@ pub mod christmas_web3 {
             ctx.accounts.user_account.key(),
             ctx.accounts.user_account.total_amount_contributed
         );
+
+        // MX - todo
+        // supposed to transfer his money out into our PDA account
+        // need to create a PDA account (belongs to us)
+
         Ok(())
     }
 
     pub fn mint_token(ctx: Context<MintToken>, num_tokens: u64) -> Result<()> {
         let cpi_accounts = MintTo {
             mint: ctx.accounts.mint_account.to_account_info(),
-            to: ctx.accounts.token_account.to_account_info(),
+            to: ctx.accounts.token_account.to_account_info(), // ata
             authority: ctx.accounts.signer.to_account_info(),
         };
 
