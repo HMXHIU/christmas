@@ -145,6 +145,8 @@ describe("christmas-web3", () => {
       userAccount2.publicKey
     );
 
+    console.log(`userAccount2: ${userAccount2.publicKey}`);
+
     const tx2 = await program.methods
       .claimTokenFromMarket(new anchor.BN(50))
       .accounts({
@@ -157,7 +159,6 @@ describe("christmas-web3", () => {
         systemProgram: web3.SystemProgram.programId,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
-      .signers([userAccount2])
       .rpc();
 
     // // check balance

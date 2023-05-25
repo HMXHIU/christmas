@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program;
 use anchor_spl::associated_token;
 use anchor_spl::associated_token::{get_associated_token_address, AssociatedToken};
 use anchor_spl::token;
@@ -94,26 +95,19 @@ pub mod christmas_web3 {
         ctx: Context<ClaimTokenFromMarket>,
         num_tokens: u64,
     ) -> Result<()> {
-        let bump = &[ctx.accounts.marketplace_token_pda.bump];
-        let seeds = &[&[
-            b"mpt_pda",
-            ctx.accounts.marketplace_token_pda.owner.as_ref(),
-            ctx.accounts.marketplace_token_pda.mint.as_ref(),
-            bump,
-        ][..]];
-
-        // `new_with_signer` lets pda sign on behalf of program
-        let ctx = CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            Transfer {
-                from: ctx.accounts.marketplace_token_pda_ata.to_account_info(),
-                to: ctx.accounts.to_token_account.to_account_info(),
-                authority: ctx.accounts.marketplace_token_pda.to_account_info(),
-            },
-            seeds,
-        );
-
-        token::transfer(ctx, num_tokens)?;
+        token::transfer(
+            // `new_with_signer` lets pda sign on behalf of program
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.marketplace_token_pda_ata.to_account_info(),
+                    to: ctx.accounts.to_token_account.to_account_info(),
+                    authority: ctx.accounts.marketplace_token_pda.to_account_info(),
+                },
+                &[&[b"mpt_pda", &[ctx.accounts.marketplace_token_pda.bump]]],
+            ),
+            num_tokens,
+        )?;
 
         Ok(())
     }
@@ -169,7 +163,7 @@ pub struct MintTokenToMarket<'info> {
         seeds = [b"mpt_pda", signer.key().as_ref(), mint_account.key().as_ref()],
         bump,
         payer = signer,
-        space = MarketPlaceTokenPDA::len()
+        space = MarketPlaceTokenPDA::len(),
     )]
     pub marketplace_token_pda: Account<'info, MarketPlaceTokenPDA>,
     #[account(mut)]
