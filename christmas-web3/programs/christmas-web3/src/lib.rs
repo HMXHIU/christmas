@@ -6,6 +6,9 @@ use anchor_spl::token::{Mint, MintTo, Token, TokenAccount, Transfer};
 
 declare_id!("5ZohsZtvVnjLy7TZDuujXneojE8dq27Y4mrsq3e8eKTZ");
 
+const DISCRIMINATOR_SIZE: usize = 8;
+const PUBKEY_SIZE: usize = 32;
+
 #[program]
 pub mod christmas_web3 {
     use core::num;
@@ -80,6 +83,23 @@ pub mod christmas_web3 {
         Ok(())
     }
 
+    pub fn claim_token_from_market(
+        ctx: Context<ClaimTokenFromMarket>,
+        num_tokens: u64,
+    ) -> Result<()> {
+        let ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            Transfer {
+                from: ctx.accounts.from_token_account.to_account_info(),
+                to: ctx.accounts.to_token_account.to_account_info(),
+                authority: ctx.accounts.signer.to_account_info(),
+            },
+        );
+        token::transfer(ctx, num_tokens)?;
+
+        Ok(())
+    }
+
     pub fn transfer_token(ctx: Context<TransferToken>, num_tokens: u64) -> Result<()> {
         let tx = Transfer {
             from: ctx.accounts.from_account.to_account_info(),
@@ -138,11 +158,35 @@ pub struct MintTokenToMarket<'info> {
         init_if_needed,
         payer = signer,
         associated_token::mint = mint_account,
-        associated_token::authority = token_account_authority,
+        associated_token::authority = marketplace_token_pda,  // give pda signer rights (owned by the `marketplace_token_pda`)
     )]
     pub token_account: Account<'info, TokenAccount>,
-    /// CHECK: mint for another user/program
-    pub token_account_authority: UncheckedAccount<'info>,
+    #[account(
+        init_if_needed,
+        seeds = [b"mpt_pda", signer.key().as_ref(), mint_account.key().as_ref()],
+        bump,
+        payer = signer,
+        space = MarketPlaceTokenPDA::len()
+    )]
+    pub marketplace_token_pda: Account<'info, MarketPlaceTokenPDA>,
+    #[account(mut)]
+    pub signer: Signer<'info>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+}
+
+#[derive(Accounts)]
+pub struct ClaimTokenFromMarket<'info> {
+    #[account(
+        init_if_needed,
+        payer = signer,
+        associated_token::mint = mint_account,
+        associated_token::authority = signer,
+    )]
+    pub to_token_account: Account<'info, TokenAccount>,
+    pub from_token_account: Account<'info, TokenAccount>,
+    pub mint_account: Account<'info, Mint>,
     #[account(mut)]
     pub signer: Signer<'info>,
     pub token_program: Program<'info, Token>,
@@ -164,4 +208,19 @@ pub struct TransferToken<'info> {
 #[account]
 pub struct UserAccount {
     total_amount_contributed: u64,
+}
+
+#[account]
+pub struct MarketPlaceTokenPDA {
+    /*
+       PDA used to sign on behalf of the program
+    */
+    owner: Pubkey,
+    mint: Pubkey,
+}
+
+impl MarketPlaceTokenPDA {
+    fn len() -> usize {
+        DISCRIMINATOR_SIZE + PUBKEY_SIZE + PUBKEY_SIZE
+    }
 }
