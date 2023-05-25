@@ -1,4 +1,6 @@
 use anchor_lang::prelude::*;
+use anchor_spl::associated_token;
+use anchor_spl::associated_token::{get_associated_token_address, AssociatedToken};
 use anchor_spl::token;
 use anchor_spl::token::{Mint, MintTo, Token, TokenAccount, Transfer};
 
@@ -55,6 +57,29 @@ pub mod christmas_web3 {
         Ok(())
     }
 
+    pub fn mint_token_to_marketplace(
+        ctx: Context<MintTokenToMarket>,
+        num_tokens: u64,
+    ) -> Result<()> {
+        /*
+           1. Create a unique mint and set signer as authority
+           2. Singer pays for the mint
+           3. Create an ATA (signer pays) for the new mint but set the owner to christmas program
+           4. Mint `num_tokens` to the ATA belonging to the christmas program
+        */
+
+        let cpi_accounts = MintTo {
+            mint: ctx.accounts.mint_account.to_account_info(),
+            to: ctx.accounts.token_account.to_account_info(),
+            authority: ctx.accounts.signer.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+
+        mint_to(cpi_ctx, num_tokens)?;
+        Ok(())
+    }
+
     pub fn transfer_token(ctx: Context<TransferToken>, num_tokens: u64) -> Result<()> {
         let tx = Transfer {
             from: ctx.accounts.from_account.to_account_info(),
@@ -97,6 +122,32 @@ pub struct MintToken<'info> {
     #[account(mut)]
     pub token_account: Account<'info, TokenAccount>, // User's Associated Token Account to hold the minted nft token
     pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct MintTokenToMarket<'info> {
+    #[account(
+        init_if_needed,
+        payer = signer,
+        mint::decimals = 0,
+        mint::authority = signer,
+        mint::freeze_authority = signer,
+    )]
+    pub mint_account: Account<'info, Mint>,
+    #[account(
+        init_if_needed,
+        payer = signer,
+        associated_token::mint = mint_account,
+        associated_token::authority = token_account_authority,
+    )]
+    pub token_account: Account<'info, TokenAccount>,
+    /// CHECK: mint for another user/program
+    pub token_account_authority: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub signer: Signer<'info>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
 #[derive(Accounts)]

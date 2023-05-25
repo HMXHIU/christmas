@@ -5,6 +5,7 @@ import { ChristmasWeb3 } from "../target/types/christmas_web3";
 import { assert } from "chai";
 import {
   TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   MINT_SIZE,
   createAssociatedTokenAccountInstruction,
   getAssociatedTokenAddress,
@@ -18,6 +19,7 @@ describe("christmas-web3", () => {
   const provider = anchor.getProvider();
   const program = anchor.workspace.ChristmasWeb3 as Program<ChristmasWeb3>;
   const userAccount = anchor.web3.Keypair.generate();
+  const userAccount2 = anchor.web3.Keypair.generate();
 
   it("Airdrop to user", async () => {
     const airdropSellerSig = await provider.connection.requestAirdrop(
@@ -71,6 +73,31 @@ describe("christmas-web3", () => {
     assert.ok(Number(pdaInfo2.totalAmountContributed) === 100);
   });
 
+  it("Mint token to marketplace", async () => {
+    // generate the mint keypair - because a mint is unique (it can only create 1 type of tokens)
+    const mintAccount = anchor.web3.Keypair.generate();
+
+    // generate programs's ATA to hold the tokens (not the user!)
+    const associated_token_account = await getAssociatedTokenAddress(
+      mintAccount.publicKey,
+      program.programId
+    );
+
+    const tx = await program.methods
+      .mintTokenToMarketplace(new anchor.BN(100))
+      .accounts({
+        mintAccount: mintAccount.publicKey,
+        tokenAccount: associated_token_account,
+        tokenAccountAuthority: program.programId,
+        signer: userAccount.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      })
+      .signers([mintAccount, userAccount])
+      .rpc();
+  });
+
   /*
     mintToken
   */
@@ -106,6 +133,7 @@ describe("christmas-web3", () => {
         userAccount.publicKey, // mintAuthority
         userAccount.publicKey // freezeAuthority
       ),
+      // create ata
       createAssociatedTokenAccountInstruction(
         userAccount.publicKey, // payer
         associated_token_account, // ata
