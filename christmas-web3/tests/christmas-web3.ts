@@ -116,11 +116,17 @@ describe("christmas-web3", () => {
 
     const res = await provider.sendAndConfirm(
       mint_tx,
-      [mintKey] // signers
+      [mintKey, userAccount] // signers
     );
 
     console.log(
+      "Mint account: ",
       await provider.connection.getParsedAccountInfo(mintKey.publicKey)
+    );
+
+    console.log(
+      "Associated token account (Before): ",
+      await provider.connection.getParsedAccountInfo(associated_token_account)
     );
 
     const tx = await program.methods
@@ -134,10 +140,15 @@ describe("christmas-web3", () => {
       .signers([userAccount])
       .rpc();
 
-    const minted = (
+    console.log(
+      "Associated token account (After): ",
       await provider.connection.getParsedAccountInfo(associated_token_account)
-    ).value;
+    );
 
-    assert.ok(Number(minted) === 100);
+    const value = (
+      await provider.connection.getParsedAccountInfo(associated_token_account)
+    ).value["data"]["parsed"]["info"]["tokenAmount"]["amount"];
+
+    assert.ok(Number(value) === 100);
   });
 });
