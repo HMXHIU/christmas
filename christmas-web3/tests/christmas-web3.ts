@@ -19,69 +19,67 @@ describe("christmas-web3", () => {
   const provider = anchor.getProvider();
   const program = anchor.workspace.ChristmasWeb3 as Program<ChristmasWeb3>;
   const userAccount = anchor.web3.Keypair.generate();
-  const userAccount2 = anchor.web3.Keypair.generate();
+  const userAccount2 = anchor.web3.Keypair.generate(); // has no lamports
 
   it("Airdrop to user", async () => {
     // userAccount
-    await provider.connection.requestAirdrop(userAccount.publicKey, 100e9);
-    // userAccount2
-    const airdropSellerSig = await provider.connection.requestAirdrop(
-      userAccount2.publicKey,
+    const sig = await provider.connection.requestAirdrop(
+      userAccount.publicKey,
       100e9
     );
-
     const blockHash = await provider.connection.getLatestBlockhash();
-
     await provider.connection.confirmTransaction({
       blockhash: blockHash.blockhash,
       lastValidBlockHeight: blockHash.lastValidBlockHeight,
-      signature: airdropSellerSig,
+      signature: sig,
     });
   });
 
-  /*
-   *  sayHello
-   */
-  it("Hello", async () => {
-    const tx = await program.methods.sayHello().rpc();
-  });
+  // /*
+  //  *  sayHello
+  //  */
+  // it("Hello", async () => {
+  //   const tx = await program.methods.sayHello().rpc();
+  // });
 
-  /*
-   *  addToPool
-   */
-  it("Add to pool", async () => {
-    // calculate the PDA of the user account
-    const [pda, bump] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("user_account"), userAccount.publicKey.toBuffer()],
-      program.programId
-    );
+  // /*
+  //  *  addToPool
+  //  */
+  // it("Add to pool", async () => {
+  //   // calculate the PDA of the user account
+  //   const [pda, bump] = web3.PublicKey.findProgramAddressSync(
+  //     [Buffer.from("user_account"), userAccount.publicKey.toBuffer()],
+  //     program.programId
+  //   );
 
-    const tx = await program.methods
-      .addToPool(new anchor.BN(100))
-      .accounts({
-        userAccount: pda, // this is the PDA we will make for the user to associate him to our program
-        signer: userAccount.publicKey,
-        systemProgram: web3.SystemProgram.programId,
-      })
-      .signers([userAccount])
-      .rpc();
-    console.log("Your transaction signature", tx);
+  //   const tx = await program.methods
+  //     .addToPool(new anchor.BN(100))
+  //     .accounts({
+  //       userAccount: pda, // this is the PDA we will make for the user to associate him to our program
+  //       signer: userAccount.publicKey,
+  //       systemProgram: web3.SystemProgram.programId,
+  //     })
+  //     .signers([userAccount])
+  //     .rpc();
+  //   console.log("Your transaction signature", tx);
 
-    // check owner is program
-    const pdaInfo = await program.provider.connection.getAccountInfo(pda);
-    console.log(pdaInfo.owner, program.programId);
-    assert.ok(pdaInfo.owner.equals(program.programId));
+  //   // check owner is program
+  //   const pdaInfo = await program.provider.connection.getAccountInfo(pda);
+  //   console.log(pdaInfo.owner, program.programId);
+  //   assert.ok(pdaInfo.owner.equals(program.programId));
 
-    // check totalAmountContributed
-    const pdaInfo2 = await program.account.userAccount.fetch(pda);
-    assert.ok(Number(pdaInfo2.totalAmountContributed) === 100);
-  });
+  //   // check totalAmountContributed
+  //   const pdaInfo2 = await program.account.userAccount.fetch(pda);
+  //   assert.ok(Number(pdaInfo2.totalAmountContributed) === 100);
+  // });
 
   it("Mint/Claim token to marketplace", async () => {
     // generate the mint keypair - because a mint is unique (it can only create 1 type of tokens)
     const mintAccount = anchor.web3.Keypair.generate();
 
-    console.log("findProgramAddressSync");
+    console.log(`userAccount: ${userAccount.publicKey}`);
+    console.log(`mintAccount: ${mintAccount.publicKey}`);
+
     // generate marketplaceTokenPda
     const [marketplaceTokenPda, bump] = web3.PublicKey.findProgramAddressSync(
       [
@@ -93,6 +91,7 @@ describe("christmas-web3", () => {
     );
 
     console.log("marketplaceTokenPda: ", marketplaceTokenPda);
+    console.log("bump: ", bump);
 
     // generate marketplaceTokenPda's ATA to hold the tokens
     const marketplaceTokenPdaAta = await getAssociatedTokenAddress(
@@ -105,7 +104,7 @@ describe("christmas-web3", () => {
 
     // mint to marketplaceTokenPdaAta
     const tx = await program.methods
-      .mintTokenToMarketplace(new anchor.BN(100))
+      .mintTokenToMarketplace(new anchor.BN(100), bump)
       .accounts({
         mintAccount: mintAccount.publicKey,
         tokenAccount: marketplaceTokenPdaAta,
@@ -118,26 +117,48 @@ describe("christmas-web3", () => {
       .signers([mintAccount, userAccount])
       .rpc();
 
+    const pda = await program.account.marketPlaceTokenPda.fetch(
+      marketplaceTokenPda
+    );
+    console.log(
+      `marketPlaceTokenPda[owner=${pda.owner}, bump=${pda.bump}], mint=${pda.mint}`
+    );
+
+    // check `marketplaceTokenPda` data set correctly
+    assert.ok(pda.owner.equals(userAccount.publicKey));
+    assert.ok(pda.bump === bump);
+    assert.ok(pda.mint.equals(mintAccount.publicKey));
+
     // check value
     const value = (
       await provider.connection.getParsedAccountInfo(marketplaceTokenPdaAta)
     ).value["data"]["parsed"]["info"]["tokenAmount"]["amount"];
     assert.ok(Number(value) === 100);
 
-    // // userAcccount2 claim from marketplace
-    // const tx2 = await program.methods
-    //   .claimTokenFromMarket(new anchor.BN(50))
-    //   .accounts({
-    //     mintAccount: mintAccount.publicKey,
-    //     fromTokenAccount: marketplaceTokenPdaAta,
-    //     toTokenAccount: userAccount2.publicKey,
-    //     signer: userAccount2.publicKey, // TODO: how to not make userAcccount2 pay?
-    //     tokenProgram: TOKEN_PROGRAM_ID,
-    //     systemProgram: web3.SystemProgram.programId,
-    //     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-    //   })
-    //   .signers([userAccount2])
-    //   .rpc();
+    /*
+      userAcccount2 claim from marketplace
+    */
+
+    // generate marketplaceTokenPda's ATA to hold the tokens
+    const userAccount2TokenAccount = await getAssociatedTokenAddress(
+      mintAccount.publicKey,
+      userAccount2.publicKey
+    );
+
+    const tx2 = await program.methods
+      .claimTokenFromMarket(new anchor.BN(50))
+      .accounts({
+        mintAccount: mintAccount.publicKey,
+        toTokenAccount: userAccount2TokenAccount,
+        marketplaceTokenPdaAta: marketplaceTokenPdaAta,
+        marketplaceTokenPda: marketplaceTokenPda,
+
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      })
+      .signers([userAccount2])
+      .rpc();
 
     // // check balance
     // const balance = (
