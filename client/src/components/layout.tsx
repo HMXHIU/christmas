@@ -10,6 +10,7 @@ import {
   PoolOutlined,
   StoreMallDirectoryOutlined,
   StarOutline,
+  StorefrontOutlined,
 } from "@mui/icons-material";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -35,6 +36,9 @@ export const Layout = () => {
           break;
         case "/my-nfts":
           setActiveIndex("My NFTs");
+          break;
+        case "/marketplace":
+          setActiveIndex("Market place");
           break;
       }
     }
@@ -114,6 +118,14 @@ export const Layout = () => {
             icon={<StarOutline />}
             onClick={() => {
               navigate("/my-nfts");
+            }}
+          />
+          <BottomNavigationAction
+            value="Market place"
+            label="Market place"
+            icon={<StorefrontOutlined />}
+            onClick={() => {
+              navigate("/marketplace");
             }}
           />
         </BottomNavigation>
