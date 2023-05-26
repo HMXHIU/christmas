@@ -14,9 +14,6 @@ import { Transaction, PublicKey, SystemProgram, LAMPORTS_PER_SOL } from '@solana
 import { signAndSendTx } from '../utils/utils';
 
 
-// need this if not it will complain missing buffer 
-window.Buffer = window.Buffer || require("buffer").Buffer;
-
 // TODO remove, this demo shouldn't need to reset the theme.
 const defaultTheme = createTheme();
 

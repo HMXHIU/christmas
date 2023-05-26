@@ -3,8 +3,8 @@ import { ChristmasWeb3 } from "./christmas_web3";
 import * as web3 from "@solana/web3.js"
 import * as anchor from "@coral-xyz/anchor";
 import { AnchorWallet } from "@solana/wallet-adapter-react";
-
-import { Buffer } from 'buffer';
+import { Transaction } from "@solana/web3.js";
+import { signAndSendTx } from "../utils/utils";
 
 import {
     TOKEN_PROGRAM_ID,
@@ -38,7 +38,7 @@ export const ListAccounts = (wallet: AnchorWallet) => {
     })
 }
 
-export const MintTokenToMarketplace = (wallet: AnchorWallet, num_tokens: number, description: string) => {
+export const MintTokenToMarketplace = async (wallet: AnchorWallet, num_tokens: number, description: string) => {
     // const cluster = web3.clusterApiUrl('devnet');
     const cluster = "http://localhost:8899";
     const connection = new web3.Connection(cluster, 'confirmed')
@@ -60,17 +60,15 @@ export const MintTokenToMarketplace = (wallet: AnchorWallet, num_tokens: number,
         ],
         program.programId
     );
-  
-    // generate marketplaceTokenPda's ATA to hold the tokens
-    return getAssociatedTokenAddress(
+
+    const marketplaceTokenPdaAta = await getAssociatedTokenAddress(
         mintAccount.publicKey,
         marketplaceTokenPda,
         true // allowOwnerOffCurve - Allow the owner account to be a PDA (Program Derived Address)
-    ).then((marketplaceTokenPdaAta) => {
-        console.log("marketplaceTokenPdaAta: ", marketplaceTokenPdaAta);
+    )
 
-        program.methods
-        .mintTokenToMarketplace("A free coke", new anchor.BN(num_tokens), bump)
+    const mintTokenToMarketplaceIx = await program.methods
+        .mintTokenToMarketplace(description, new anchor.BN(num_tokens), bump)
         .accounts({
             mintAccount: mintAccount.publicKey,
             tokenAccount: marketplaceTokenPdaAta,
@@ -81,8 +79,15 @@ export const MintTokenToMarketplace = (wallet: AnchorWallet, num_tokens: number,
             associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
         .signers([mintAccount])
-        .rpc();
-    })
+        .instruction()
+    
+    const tx = new Transaction();
+    tx.add(mintTokenToMarketplaceIx);
 
+    signAndSendTx(
+        connection,
+        tx,
+        wallet
+    )
 
 }

@@ -11,6 +11,9 @@ import { Store } from "./view/store";
 import { PersonalNFTs } from "./view/personalnfts";
 
 
+// need this if not it will complain missing buffer 
+window.Buffer = window.Buffer || require("buffer").Buffer;
+
 declare module "@mui/material/styles" {
   interface Theme {
     status: {
