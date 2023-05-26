@@ -141,9 +141,31 @@ describe("christmas-web3", () => {
   });
 
   it("List marketplace tokens", async () => {
-    const allMarketTokenPdas = program.account.marketPlaceTokenPda.all();
+    const accounts = await provider.connection.getParsedProgramAccounts(
+      program.programId,
+      {
+        filters: [
+          {
+            dataSize: 73, // number of bytes for MarketPlaceTokenPDA
+          },
+        ],
+      }
+    );
 
-    console.log("allMarketTokenPdas: ", allMarketTokenPdas);
+    console.log(`Found ${accounts.length}} MarketPlaceTokenPDA accounts:`);
+
+    accounts.forEach((account, i) => {
+      console.log(
+        `-- Token Account Address ${i + 1}: ${account.pubkey.toString()} --`
+      );
+      console.log(account.account.data);
+    });
+
+    // const allMarketTokenPdas = (
+    //   await program.account.marketPlaceTokenPda.all()
+    // ).forEach((pda) => {
+    //   console.log("    ", pda);
+    // });
   });
 
   // it("Claim token from marketplace", async () => {
