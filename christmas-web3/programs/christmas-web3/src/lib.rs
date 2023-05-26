@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_lang::system_program;
 use anchor_lang::solana_program;
 use anchor_spl::associated_token;
 use anchor_spl::associated_token::{get_associated_token_address, AssociatedToken};
@@ -26,16 +27,40 @@ pub mod christmas_web3 {
     }
 
     pub fn add_to_pool(ctx: Context<AddToPool>, amount: u64) -> Result<()> {
-        ctx.accounts.user_account.total_amount_contributed += amount;
+        // Check if user account has been initialized
+        if !ctx.accounts.user_account.is_initialized {
+            ctx.accounts.user_account.is_initialized = true;
+            ctx.accounts.user_account.total_amount_contributed = 0;
+        }
+
+        // Check if christmas account has been initialized
+        if !ctx.accounts.christmas_account.is_initialized {
+            ctx.accounts.christmas_account.is_initialized = true;
+            ctx.accounts.christmas_account.total_amount_contributed = 0;
+        }
+
+        // Proceed to transfer
+        let cpi_program: AccountInfo = ctx.accounts.token_program.to_account_info(); // The program that we are calling
+        let cpi_accounts: Transfer = Transfer {
+            from: ctx.accounts.user_usdc_account.to_account_info(),
+            to: ctx.accounts.christmas_usdc_account.to_account_info(),
+            authority: ctx.accounts.signer.to_account_info(),
+        };
+
+        // ::new since the signer has already sign the transaction
+        let token_transfer_context: CpiContext<Transfer> = CpiContext::new(cpi_program, cpi_accounts);
+        token::transfer(token_transfer_context, amount)?;
+
+        // record his contribution
+        ctx.accounts.user_account.total_amount_contributed = amount;
+        ctx.accounts.christmas_account.total_amount_contributed += amount;
+        ctx.accounts.christmas_account.mint = ctx.accounts.mint.key();
+
         msg!(
             "Total amount contributed by {} = {}!",
             ctx.accounts.user_account.key(),
             ctx.accounts.user_account.total_amount_contributed
         );
-
-        // MX - todo
-        // supposed to transfer his money out into our PDA account
-        // need to create a PDA account (belongs to us)
 
         Ok(())
     }
@@ -101,15 +126,48 @@ pub struct SayHello {}
 
 #[derive(Accounts)]
 pub struct AddToPool<'info> {
+    // create user's account with us if not already
     #[account(
         init_if_needed,
         payer = signer,
         seeds = [b"user_account", signer.key().as_ref()],
         bump,
-        space = 8 + 8)]
-    pub user_account: Account<'info, UserAccount>, // create user's account with us if not already
+        space = UserAccount::len())]
+    pub user_account: Account<'info, UserAccount>,
+
+    #[account(
+        init_if_needed,
+        payer = signer, // If init required, payer will be initializer
+        seeds = [b"pool_account"],
+        bump, 
+        space = ChristmasAccount::len()
+    )]
+    pub christmas_account: Account<'info, ChristmasAccount>,
+
+    #[account(
+        mut,
+        constraint = user_usdc_account.owner.key() == signer.key(),
+        constraint = user_usdc_account.mint == mint.key(),
+        constraint = user_usdc_account.amount > 0, // User must have some USDC
+    )]
+    pub user_usdc_account: Account<'info, TokenAccount>,
+
+    // Check if accounts has correct owner, mint and has amount of 1
+    #[account(
+        mut,
+        constraint = christmas_usdc_account.owner == christmas_account.key(),
+        constraint = christmas_usdc_account.mint == mint.key(),
+        constraint = christmas_usdc_account.amount > 0, // check for USDC amount
+    )]
+    pub christmas_usdc_account: Account<'info, TokenAccount>,
+
+    #[account(constraint = christmas_account.mint == mint.key())]
+    pub mint: Account<'info, Mint>,
+
     #[account(mut)]
     pub signer: Signer<'info>,
+
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
 
@@ -176,6 +234,14 @@ pub struct MintTokenToMarket<'info> {
 
 #[account]
 pub struct UserAccount {
+    is_initialized: bool,
+    total_amount_contributed: u64,
+}
+
+#[account]
+pub struct ChristmasAccount {
+    is_initialized: bool,
+    mint: Pubkey,
     total_amount_contributed: u64,
 }
 
@@ -192,5 +258,22 @@ pub struct MarketPlaceTokenPDA {
 impl MarketPlaceTokenPDA {
     fn len() -> usize {
         DISCRIMINATOR_SIZE + PUBKEY_SIZE + PUBKEY_SIZE + U8_SIZE
+    }
+}
+
+const DISCRIMINATOR: usize = 8;
+const PUBKEY: usize = 32;
+const BOOL: usize = 1;
+const U64: usize = 8;
+
+impl UserAccount {
+    fn len() -> usize {
+        DISCRIMINATOR + BOOL + U64
+    }
+}
+
+impl ChristmasAccount {
+    fn len() -> usize {
+        DISCRIMINATOR + BOOL + PUBKEY + U64
     }
 }

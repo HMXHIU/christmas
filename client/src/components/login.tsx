@@ -28,18 +28,25 @@ const Login = () => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (wallet && wallet.publicKey && currentState.fromWallet && currentState.toWallet) {
+    if (wallet && wallet.publicKey && currentState.fromWallet && currentState.toWallet && currentState.amount) {
       const toPublicKey = new PublicKey(currentState.toWallet)
       const tx = new Transaction();
+      console.log(">>>>>>>>", {
+        fromPubkey: wallet.publicKey.toString(),
+        toPubkey: toPublicKey.toString(),
+        lamports: currentState.amount * LAMPORTS_PER_SOL,
+      })
 
       tx.add(SystemProgram.transfer({
         fromPubkey: wallet.publicKey,
         toPubkey: toPublicKey,
-        lamports: LAMPORTS_PER_SOL / 10000,
+        lamports: currentState.amount * LAMPORTS_PER_SOL,
       }))
 
-      const txSig = await signAndSendTx(connection, tx, wallet);
-      console.log(`https://solscan.io/tx/${txSig}?cluster=localnet`);
+      const txSig = await signAndSendTx(connection, tx, wallet)
+        .catch((error) => console.log(error));
+      console.log(`https://solscan.io/tx/${txSig}?cluster=devnet`);
+      setCurrentState({})
     }
   };
 
@@ -115,6 +122,17 @@ const Login = () => {
                   name="toWallet"
                   autoFocus
                   onChange={(e) => setCurrentState({ ...currentState, 'toWallet': e.target.value })}
+                />
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  type="number"
+                  id="amount"
+                  label="Amount"
+                  name="amount"
+                  autoFocus
+                  onChange={(e) => setCurrentState({ ...currentState, 'amount': e.target.value })}
                 />
                 <Button
                   type="submit"
