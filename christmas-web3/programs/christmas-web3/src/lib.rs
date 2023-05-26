@@ -11,6 +11,8 @@ declare_id!("5ZohsZtvVnjLy7TZDuujXneojE8dq27Y4mrsq3e8eKTZ");
 const DISCRIMINATOR_SIZE: usize = 8;
 const PUBKEY_SIZE: usize = 32;
 const U8_SIZE: usize = 1;
+const U64_SIZE: usize = 8;
+const BOOL: usize = 1;
 const TOKEN_DESCRIPTION_SIZE: usize = 4 + 50;
 
 #[program]
@@ -31,15 +33,15 @@ pub mod christmas_web3 {
         // Check if user account has been initialized
         if !ctx.accounts.user_account.is_initialized {
             ctx.accounts.user_account.is_initialized = true;
-            ctx.accounts.user_account.total_amount_contributed = 0;
+            ctx.accounts.user_account.total_amount_contributed = 0_u64;
         }
 
         // Check if christmas account has been initialized
         if !ctx.accounts.christmas_account.is_initialized {
             ctx.accounts.christmas_account.is_initialized = true;
-            ctx.accounts.christmas_account.total_amount_contributed = 0;
+            ctx.accounts.christmas_account.total_amount_contributed = 0_u64;
         }
-
+        
         // Proceed to transfer
         let cpi_program: AccountInfo = ctx.accounts.token_program.to_account_info(); // The program that we are calling
         let cpi_accounts: Transfer = Transfer {
@@ -55,7 +57,6 @@ pub mod christmas_web3 {
         // record his contribution
         ctx.accounts.user_account.total_amount_contributed = amount;
         ctx.accounts.christmas_account.total_amount_contributed += amount;
-        ctx.accounts.christmas_account.mint = ctx.accounts.mint.key();
 
         msg!(
             "Total amount contributed by {} = {}!",
@@ -155,21 +156,21 @@ pub struct AddToPool<'info> {
     )]
     pub user_usdc_account: Account<'info, TokenAccount>,
 
-    // Check if accounts has correct owner, mint and has amount of 1
+    // Init if needed
     #[account(
-        mut,
-        constraint = christmas_usdc_account.owner == christmas_account.key(),
-        constraint = christmas_usdc_account.mint == mint.key(),
-        constraint = christmas_usdc_account.amount > 0, // check for USDC amount
+        init_if_needed,
+        payer = signer, // If init required, signer will be initializer
+        associated_token::mint = mint, // If init required, mint will be set to Mint
+        associated_token::authority = christmas_account // If init required, authority set to PDA
     )]
     pub christmas_usdc_account: Account<'info, TokenAccount>,
-
-    #[account(constraint = christmas_account.mint == mint.key())]
     pub mint: Account<'info, Mint>,
 
     #[account(mut)]
     pub signer: Signer<'info>,
 
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
@@ -244,7 +245,6 @@ pub struct UserAccount {
 #[account]
 pub struct ChristmasAccount {
     is_initialized: bool,
-    mint: Pubkey,
     total_amount_contributed: u64,
 }
 
@@ -265,19 +265,14 @@ impl MarketPlaceTokenPDA {
     }
 }
 
-const DISCRIMINATOR: usize = 8;
-const PUBKEY: usize = 32;
-const BOOL: usize = 1;
-const U64: usize = 8;
-
 impl UserAccount {
     fn len() -> usize {
-        DISCRIMINATOR + BOOL + U64
+        DISCRIMINATOR_SIZE + BOOL + U64_SIZE
     }
 }
 
 impl ChristmasAccount {
     fn len() -> usize {
-        DISCRIMINATOR + BOOL + PUBKEY + U64
+        DISCRIMINATOR_SIZE + BOOL + U64_SIZE
     }
 }

@@ -6,11 +6,13 @@ import { assert } from "chai";
 import {
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
-  MINT_SIZE,
-  createAssociatedTokenAccountInstruction,
+  mintTo,
+  createMint,
+  createAssociatedTokenAccount,
   getAssociatedTokenAddress,
-  createInitializeMintInstruction,
 } from "@solana/spl-token";
+
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 describe("christmas-web3", () => {
   // Configure the client to use the local cluster.
@@ -24,7 +26,13 @@ describe("christmas-web3", () => {
   // generate the mint keypair - because a mint is unique (it can only create 1 type of tokens)
   const mintAccount = anchor.web3.Keypair.generate();
 
+  // generate the usdc keypair - This replicates the USDC 
+  const usdcAccount = anchor.web3.Keypair.generate();
+
   it("Airdrop to user", async () => {
+    // usdc
+    await provider.connection.requestAirdrop(usdcAccount.publicKey, 100e9);
+
     // userAccount
     await provider.connection.requestAirdrop(userAccount.publicKey, 100e9);
 
@@ -53,14 +61,16 @@ describe("christmas-web3", () => {
    *  addToPool
    */
   it("Add to pool", async () => {
-    // min rent for creating a mint
-    const mint_rent_lamports =
-      await program.provider.connection.getMinimumBalanceForRentExemption(
-        MINT_SIZE
-      );
 
-    // generate the mint keypair - This replicates the USDC mint
-    const mintKey = anchor.web3.Keypair.generate();
+    let signer = new Keypair();
+    let usdc_token = await createMint(
+      program.provider.connection,
+      usdcAccount,
+      usdcAccount.publicKey,
+      null,
+      6
+    );
+    console.log("USDC Token", usdc_token)
 
     // calculate the PDA of the user account
     const [user_pda, user_bump] = web3.PublicKey.findProgramAddressSync(
@@ -69,10 +79,23 @@ describe("christmas-web3", () => {
     );
 
     // generate user's ATA key to hold the USDC's tokens
-    const user_usdc_account = await getAssociatedTokenAddress(
-      mintKey.publicKey,
+    const user_usdc_account = await createAssociatedTokenAccount(
+      program.provider.connection,
+      userAccount,
+      usdc_token,
       userAccount.publicKey
     );
+
+    // mint some USDC to user ata
+    await mintTo(
+      program.provider.connection,
+      userAccount,
+      usdc_token,
+      user_usdc_account,
+      usdcAccount,
+      LAMPORTS_PER_SOL / 100  // 10 token
+    );
+    console.log("User's USDC account", user_usdc_account)
 
     // PDA account belongs to program
     const [christmas_pda, christmas_pda_bump] =
@@ -83,21 +106,25 @@ describe("christmas-web3", () => {
 
     // generate program's ATA key to hold the USDC's tokens
     const christmas_usdc_account = await getAssociatedTokenAddress(
-      mintKey.publicKey,
+      usdc_token,
       christmas_pda,
       true
     );
 
+    // need to keep this as reference for comparision after transfer
+    const christmas_pda_info = await program.account.christmasAccount.fetch(christmas_pda);
+
     const tx = await program.methods
-      .addToPool(new anchor.BN(100))
+      .addToPool(new anchor.BN(1000000)) // 1 token
       .accounts({
         userAccount: user_pda, // this is the PDA we will make for the user to associate him to our program
         userUsdcAccount: user_usdc_account,
         christmasAccount: christmas_pda,
         christmasUsdcAccount: christmas_usdc_account,
-        mint: mintKey.publicKey,
+        mint: usdc_token,
         signer: userAccount.publicKey,
         tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
       })
       .signers([userAccount])
@@ -107,26 +134,24 @@ describe("christmas-web3", () => {
     // check owner is program
     const pdaInfo = await program.provider.connection.getAccountInfo(user_pda);
     assert.ok(pdaInfo.owner.equals(program.programId));
-    console.log("User Account:", user_pda);
-    console.log("Owner :", pdaInfo.owner, program.programId);
-    console.log("=========================================================");
 
-    // check totalAmountContributed
+    // // check totalAmountContributed
     const pdaInfo2 = await program.account.userAccount.fetch(user_pda);
-    assert.ok(Number(pdaInfo2.totalAmountContributed) === 100);
+    assert.ok(Number(pdaInfo2.totalAmountContributed) === 1000000);
 
     const pdaPoolInfo = await program.provider.connection.getAccountInfo(
       christmas_pda
     );
     assert.ok(pdaPoolInfo.owner.equals(program.programId));
-    console.log("Pool Account:", christmas_pda);
-    console.log("Owner :", pdaPoolInfo.owner, program.programId);
 
     // // check totalAmountContributed
-    const pdaPoolInfo2 = await program.account.christmasAccount.fetch(
+    const christmas_pda_info_2 = await program.account.christmasAccount.fetch(
       christmas_pda
     );
-    assert.ok(Number(pdaPoolInfo2.totalAmountContributed) === 100);
+
+    const contributionBefore = Number(christmas_pda_info.totalAmountContributed)
+    const contributionAfter = Number(christmas_pda_info_2.totalAmountContributed)
+    assert.ok(contributionAfter - contributionBefore === 1000000);
   });
 
   it("Mint token to marketplace", async () => {

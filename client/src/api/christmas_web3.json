@@ -41,6 +41,11 @@
           "isSigner": true
         },
         {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "tokenProgram",
           "isMut": false,
           "isSigner": false
@@ -143,10 +148,6 @@
           {
             "name": "isInitialized",
             "type": "bool"
-          },
-          {
-            "name": "mint",
-            "type": "publicKey"
           },
           {
             "name": "totalAmountContributed",
