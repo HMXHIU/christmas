@@ -156,8 +156,10 @@ describe("christmas-web3", () => {
     console.log("marketplaceTokenPdaAta: ", marketplaceTokenPdaAta);
 
     // mint to marketplaceTokenPdaAta
+    const description = "A free coke";
+    const num_tokens = 100;
     const tx = await program.methods
-      .mintTokenToMarketplace(new anchor.BN(100), bump)
+      .mintTokenToMarketplace("A free coke", new anchor.BN(num_tokens), bump)
       .accounts({
         mintAccount: mintAccount.publicKey,
         tokenAccount: marketplaceTokenPdaAta,
@@ -181,12 +183,13 @@ describe("christmas-web3", () => {
     assert.ok(pda.owner.equals(userAccount.publicKey));
     assert.ok(pda.bump === bump);
     assert.ok(pda.mint.equals(mintAccount.publicKey));
+    assert.ok(pda.description === description);
 
-    // check value
+    // check token value of `marketplaceTokenPdaAta`
     const value = (
       await provider.connection.getParsedAccountInfo(marketplaceTokenPdaAta)
     ).value["data"]["parsed"]["info"]["tokenAmount"]["amount"];
-    assert.ok(Number(value) === 100);
+    assert.ok(Number(value) === num_tokens);
   });
 
   it("List marketplace tokens", async () => {

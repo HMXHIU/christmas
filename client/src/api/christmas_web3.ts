@@ -104,6 +104,10 @@ export type ChristmasWeb3 = {
       ];
       args: [
         {
+          name: "description";
+          type: "string";
+        },
+        {
           name: "numTokens";
           type: "u64";
         },
@@ -283,6 +287,10 @@ export const IDL: ChristmasWeb3 = {
         },
       ],
       args: [
+        {
+          name: "description",
+          type: "string",
+        },
         {
           name: "numTokens",
           type: "u64",

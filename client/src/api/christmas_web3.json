@@ -104,6 +104,10 @@
       ],
       "args": [
         {
+          "name": "description",
+          "type": "string"
+        },
+        {
           "name": "numTokens",
           "type": "u64"
         },

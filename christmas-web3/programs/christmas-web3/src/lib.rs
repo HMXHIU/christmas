@@ -68,6 +68,7 @@ pub mod christmas_web3 {
 
     pub fn mint_token_to_marketplace(
         ctx: Context<MintTokenToMarket>,
+        description: String,
         num_tokens: u64,
         bump: u8,
     ) -> Result<()> {
@@ -90,6 +91,7 @@ pub mod christmas_web3 {
         ctx.accounts.marketplace_token_pda.owner = ctx.accounts.signer.key();
         ctx.accounts.marketplace_token_pda.mint = ctx.accounts.mint_account.key();
         ctx.accounts.marketplace_token_pda.bump = bump;
+        ctx.accounts.marketplace_token_pda.description = description; // TODO: check length of string < TOKEN_DESCRIPTION_SIZE
 
         mint_to(cpi_ctx, num_tokens)?;
         Ok(())

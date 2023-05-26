@@ -3,7 +3,7 @@ import { AddToPoolModal } from "./AddToPoolModal";
 import { Grid } from "@mui/material";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 
-import { ListAccounts } from "../../api/api";
+import { ListAccounts, MintTokenToMarketplace } from "../../api/api";
       
   
   
@@ -11,16 +11,20 @@ import { ListAccounts } from "../../api/api";
 export const Pool = () => {
 
   const wallet = useAnchorWallet();
-
   
   /*
 
-  TEST RETRIEVE NFTS
+  TEST RETRIEVE NFTS MintTokenToMarketplace
   */
   if (wallet) {
     ListAccounts(wallet).then((acc) => {
       console.log(acc)
     })
+
+    MintTokenToMarketplace(wallet, 1, "A Free HOLIDAY").then((tx) => {
+      console.log(tx)
+    })
+
   }
   
   return (
