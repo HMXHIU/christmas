@@ -13,6 +13,7 @@ import { useConnection, useAnchorWallet } from "@solana/wallet-adapter-react";
 import { Transaction, PublicKey, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { signAndSendTx } from '../utils/utils';
 
+
 // need this if not it will complain missing buffer 
 window.Buffer = window.Buffer || require("buffer").Buffer;
 
@@ -55,6 +56,7 @@ const Login = () => {
       setCurrentState({ ...currentState, 'fromWallet': wallet.publicKey })
     }
   }, [wallet, currentState])
+
 
   return (
     <ThemeProvider theme={defaultTheme}>

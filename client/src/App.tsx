@@ -10,6 +10,7 @@ import { Pool } from "./view/pool";
 import { Store } from "./view/store";
 import { PersonalNFTs } from "./view/personalnfts";
 
+
 declare module "@mui/material/styles" {
   interface Theme {
     status: {
@@ -118,7 +119,9 @@ const router = createBrowserRouter([
   },
 ]);
 
+
 const App: FC = () => {
+
   return (
     <ThemeProvider theme={theme}>
       <WalletProvider>

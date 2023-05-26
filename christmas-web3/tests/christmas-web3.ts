@@ -75,10 +75,11 @@ describe("christmas-web3", () => {
     );
 
     // PDA account belongs to program
-    const [christmas_pda, christmas_pda_bump] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("christmas_account")],
-      program.programId
-    );
+    const [christmas_pda, christmas_pda_bump] =
+      web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("christmas_account")],
+        program.programId
+      );
 
     // generate program's ATA key to hold the USDC's tokens
     const christmas_usdc_account = await getAssociatedTokenAddress(
@@ -107,20 +108,24 @@ describe("christmas-web3", () => {
     const pdaInfo = await program.provider.connection.getAccountInfo(user_pda);
     assert.ok(pdaInfo.owner.equals(program.programId));
     console.log("User Account:", user_pda);
-    console.log("Owner :", pdaInfo.owner, program.programId)
-    console.log("=========================================================")
+    console.log("Owner :", pdaInfo.owner, program.programId);
+    console.log("=========================================================");
 
     // check totalAmountContributed
     const pdaInfo2 = await program.account.userAccount.fetch(user_pda);
     assert.ok(Number(pdaInfo2.totalAmountContributed) === 100);
 
-    const pdaPoolInfo = await program.provider.connection.getAccountInfo(christmas_pda);
+    const pdaPoolInfo = await program.provider.connection.getAccountInfo(
+      christmas_pda
+    );
     assert.ok(pdaPoolInfo.owner.equals(program.programId));
     console.log("Pool Account:", christmas_pda);
-    console.log("Owner :", pdaPoolInfo.owner, program.programId)
+    console.log("Owner :", pdaPoolInfo.owner, program.programId);
 
     // // check totalAmountContributed
-    const pdaPoolInfo2 = await program.account.christmasAccount.fetch(christmas_pda);
+    const pdaPoolInfo2 = await program.account.christmasAccount.fetch(
+      christmas_pda
+    );
     assert.ok(Number(pdaPoolInfo2.totalAmountContributed) === 100);
   });
 
@@ -190,7 +195,7 @@ describe("christmas-web3", () => {
       {
         filters: [
           {
-            dataSize: 73, // number of bytes for MarketPlaceTokenPDA
+            dataSize: 127, // number of bytes for MarketPlaceTokenPDA
           },
         ],
       }

@@ -11,6 +11,7 @@ declare_id!("5ZohsZtvVnjLy7TZDuujXneojE8dq27Y4mrsq3e8eKTZ");
 const DISCRIMINATOR_SIZE: usize = 8;
 const PUBKEY_SIZE: usize = 32;
 const U8_SIZE: usize = 1;
+const TOKEN_DESCRIPTION_SIZE: usize = 4 + 50;
 
 #[program]
 pub mod christmas_web3 {
@@ -253,11 +254,12 @@ pub struct MarketPlaceTokenPDA {
     owner: Pubkey,
     mint: Pubkey,
     bump: u8,
+    description: String
 }
 
 impl MarketPlaceTokenPDA {
     fn len() -> usize {
-        DISCRIMINATOR_SIZE + PUBKEY_SIZE + PUBKEY_SIZE + U8_SIZE
+        DISCRIMINATOR_SIZE + PUBKEY_SIZE + PUBKEY_SIZE + U8_SIZE + TOKEN_DESCRIPTION_SIZE
     }
 }
 
