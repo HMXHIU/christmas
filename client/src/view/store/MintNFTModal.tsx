@@ -5,10 +5,18 @@ import Typography from "@mui/material/Typography";
 import Modal from "@mui/material/Modal";
 import { Grid, TextField } from "@mui/material";
 import { modalStyle } from "../../App";
+import { useAnchorWallet } from "@solana/wallet-adapter-react";
+import { MintTokenToMarketplace } from "../../api/api";
 
 export const MintNFTModal = () => {
+  
+  const wallet = useAnchorWallet();
+
   const [open, setOpen] = React.useState(false);
-  const handleOpen = () => setOpen(true);
+  const handleOpen = () => {
+    setOpen(true)
+
+  };
   const handleClose = () => setOpen(false);
   const cost = 0.03;
   return (
@@ -83,7 +91,17 @@ export const MintNFTModal = () => {
                 <Typography>Estimated costs: {cost}</Typography>
               </Grid>
               <Grid item xs={12}>
-                <Button variant="contained" type="submit">
+                <Button variant="contained" type="submit" onClick={() =>{
+
+
+                  if (wallet) {
+                    MintTokenToMarketplace(wallet, 1, "A Free HOLIDAY").then((x) => {
+                      console.log(x)
+                    })
+                  }
+
+
+                }}>
                   Mint
                 </Button>
               </Grid>

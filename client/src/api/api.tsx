@@ -78,16 +78,16 @@ export const MintTokenToMarketplace = async (wallet: AnchorWallet, num_tokens: n
             systemProgram: web3.SystemProgram.programId,
             associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
-        .signers([mintAccount])
         .instruction()
     
     const tx = new Transaction();
     tx.add(mintTokenToMarketplaceIx);
 
-    signAndSendTx(
+    return await signAndSendTx(
         connection,
         tx,
-        wallet
+        wallet,
+        [mintAccount]
     )
 
 }

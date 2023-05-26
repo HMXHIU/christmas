@@ -21,9 +21,9 @@ export const Pool = () => {
       console.log(acc)
     })
 
-    MintTokenToMarketplace(wallet, 1, "A Free HOLIDAY").then((x) => {
-      console.log(x)
-    })
+    // MintTokenToMarketplace(wallet, 1, "A Free HOLIDAY").then((x) => {
+    //   console.log(x)
+    // })
 
   }
   
