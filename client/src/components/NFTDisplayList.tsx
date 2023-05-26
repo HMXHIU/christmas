@@ -23,38 +23,36 @@ type NFT = {
   type: "personal" | "store";
 };
 
-const useNFTList = () => {
-  return [
-    {
-      name: "NFT 1",
-      pubkey: "123",
-      description: "This is a description",
-      storeLocation: "my house",
-      supplied: 1,
-      maxSupply: 1,
-    },
-    {
-      name: "NFT 2",
-      pubkey: "1234",
-      description: "This is a 2 description",
-      storeLocation: "my hous 2 e",
-      supplied: 100,
-      maxSupply: 1000,
-    },
-    {
-      name: "NFT 3",
-      pubkey: "12345",
-      description: "This is a 3 description",
-      storeLocation: "my hous 3 e",
-      supplied: 100,
-      maxSupply: 1000,
-    },
-  ];
-};
+// const useNFTList = () => {
+//   return [
+//     {
+//       name: "NFT 1",
+//       pubkey: "123",
+//       description: "This is a description",
+//       storeLocation: "my house",
+//       supplied: 1,
+//       maxSupply: 1,
+//     },
+//     {
+//       name: "NFT 2",
+//       pubkey: "1234",
+//       description: "This is a 2 description",
+//       storeLocation: "my hous 2 e",
+//       supplied: 100,
+//       maxSupply: 1000,
+//     },
+//     {
+//       name: "NFT 3",
+//       pubkey: "12345",
+//       description: "This is a 3 description",
+//       storeLocation: "my hous 3 e",
+//       supplied: 100,
+//       maxSupply: 1000,
+//     },
+//   ];
+// };
 
-export const NFTDisplayList = ({ type }: { type: "personal" | "store" }) => {
-  const nftList = useNFTList();
-
+export const NFTDisplayList = ({ type, nftList }: { type: "personal" | "store", nftList: [NFT] }) => {
   return (
     <Grid container columnSpacing={2} rowSpacing={2}>
       {nftList.map((nft) => (
@@ -67,12 +65,12 @@ export const NFTDisplayList = ({ type }: { type: "personal" | "store" }) => {
 };
 
 const NFTDisplayCard = (nft: NFT) => {
-  const { name, description, supplied, maxSupply, type } = nft;
+  const { name, pubkey, type } = nft;
   const NFTCard = (
     <Card title={name} variant="outlined">
       <CardMedia
         sx={{ height: 200 }}
-        image="https://picsum.photos/200"
+        image={`https://picsum.photos/200?random=${pubkey}`}
         title={nft.pubkey}
       />
       <CardContent>
@@ -80,11 +78,11 @@ const NFTDisplayCard = (nft: NFT) => {
           {name}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {description}
+          {pubkey}
         </Typography>
-        <Typography variant="body2" color="text.">
+        {/*<Typography variant="body2" color="text.">
           {supplied} / {maxSupply}
-        </Typography>
+        </Typography>*/}
       </CardContent>
     </Card>
   );

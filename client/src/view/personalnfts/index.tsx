@@ -1,9 +1,15 @@
 import { NFTDisplayList } from "../../components/NFTDisplayList";
 
+import Main from "../main"
+
+const PersonalNFTComponent = ({ nftList }) => (
+  <NFTDisplayList type="personal" nftList={nftList} />
+);
+
 export const PersonalNFTs = () => {
   return (
-    <div>
-      <NFTDisplayList type="personal" />
-    </div>
+    <Main>
+      <PersonalNFTComponent />
+    </Main>
   );
 };

@@ -9,7 +9,6 @@ import { signAndSendTx } from "../utils/utils";
 import {
     TOKEN_PROGRAM_ID,
     ASSOCIATED_TOKEN_PROGRAM_ID,
-    MINT_SIZE,
     getAssociatedTokenAddress
 } from "@solana/spl-token";
 

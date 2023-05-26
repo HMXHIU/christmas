@@ -141,7 +141,7 @@ pub struct AddToPool<'info> {
     #[account(
         init_if_needed,
         payer = signer, // If init required, payer will be initializer
-        seeds = [b"pool_account"],
+        seeds = [b"christmas_account"],
         bump, 
         space = ChristmasAccount::len()
     )]
