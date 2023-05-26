@@ -21,12 +21,19 @@ describe("christmas-web3", () => {
   const userAccount = anchor.web3.Keypair.generate();
   const userAccount2 = anchor.web3.Keypair.generate(); // has no lamports
 
+  // generate the mint keypair - because a mint is unique (it can only create 1 type of tokens)
+  const mintAccount = anchor.web3.Keypair.generate();
+
   it("Airdrop to user", async () => {
     // userAccount
+    await provider.connection.requestAirdrop(userAccount.publicKey, 100e9);
+
+    // userAccount2
     const sig = await provider.connection.requestAirdrop(
-      userAccount.publicKey,
+      userAccount2.publicKey,
       100e9
     );
+
     const blockHash = await provider.connection.getLatestBlockhash();
     await provider.connection.confirmTransaction({
       blockhash: blockHash.blockhash,
@@ -73,10 +80,7 @@ describe("christmas-web3", () => {
   //   assert.ok(Number(pdaInfo2.totalAmountContributed) === 100);
   // });
 
-  it("Mint/Claim token to marketplace", async () => {
-    // generate the mint keypair - because a mint is unique (it can only create 1 type of tokens)
-    const mintAccount = anchor.web3.Keypair.generate();
-
+  it("Mint token to marketplace", async () => {
     console.log(`userAccount: ${userAccount.publicKey}`);
     console.log(`mintAccount: ${mintAccount.publicKey}`);
 
@@ -134,119 +138,47 @@ describe("christmas-web3", () => {
       await provider.connection.getParsedAccountInfo(marketplaceTokenPdaAta)
     ).value["data"]["parsed"]["info"]["tokenAmount"]["amount"];
     assert.ok(Number(value) === 100);
-
-    /*
-      userAcccount2 claim from marketplace
-    */
-
-    // generate marketplaceTokenPda's ATA to hold the tokens
-    const userAccount2TokenAccount = await getAssociatedTokenAddress(
-      mintAccount.publicKey,
-      userAccount2.publicKey
-    );
-
-    console.log(`userAccount2: ${userAccount2.publicKey}`);
-
-    const tx2 = await program.methods
-      .claimTokenFromMarket(new anchor.BN(50))
-      .accounts({
-        mintAccount: mintAccount.publicKey,
-        toTokenAccount: userAccount2TokenAccount,
-        marketplaceTokenPdaAta: marketplaceTokenPdaAta,
-        marketplaceTokenPda: marketplaceTokenPda,
-
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: web3.SystemProgram.programId,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      })
-      .rpc();
-
-    // // check balance
-    // const balance = (
-    //   await provider.connection.getParsedAccountInfo(marketplaceTokenPdaAta)
-    // ).value["data"]["parsed"]["info"]["tokenAmount"]["amount"];
-    // assert.ok(Number(balance) === 50);
   });
 
+  it("List marketplace tokens", async () => {
+    const allMarketTokenPdas = program.account.marketPlaceTokenPda.all();
+
+    console.log("allMarketTokenPdas: ", allMarketTokenPdas);
+  });
+
+  // it("Claim token from marketplace", async () => {
   //   /*
-  //     mintToken
+  //     userAcccount2 claim from marketplace
   //   */
-  //   it("Mint token", async () => {
-  //     // min rent for creating a mint
-  //     const mint_rent_lamports =
-  //       await program.provider.connection.getMinimumBalanceForRentExemption(
-  //         MINT_SIZE
-  //       );
 
-  //     // generate the mint keypair - because a mint is unique (it can only create 1 type of tokens)
-  //     const mintKey = anchor.web3.Keypair.generate();
+  //   // generate marketplaceTokenPda's ATA to hold the tokens
+  //   const userAccount2TokenAccount = await getAssociatedTokenAddress(
+  //     mintAccount.publicKey,
+  //     userAccount2.publicKey
+  //   );
 
-  //     // generate user's ATA key to hold the mint's tokens
-  //     const associated_token_account = await getAssociatedTokenAddress(
-  //       mintKey.publicKey,
-  //       userAccount.publicKey
-  //     );
+  //   console.log(`userAccount2: ${userAccount2.publicKey}`);
 
-  //     const mint_tx = new anchor.web3.Transaction().add(
-  //       // create the mint account
-  //       anchor.web3.SystemProgram.createAccount({
-  //         fromPubkey: userAccount.publicKey,
-  //         newAccountPubkey: mintKey.publicKey,
-  //         space: MINT_SIZE,
-  //         programId: TOKEN_PROGRAM_ID,
-  //         lamports: mint_rent_lamports,
-  //       }),
-  //       // initialize mint account properties
-  //       createInitializeMintInstruction(
-  //         mintKey.publicKey, // mint
-  //         0, // decimals
-  //         userAccount.publicKey, // mintAuthority
-  //         userAccount.publicKey // freezeAuthority
-  //       ),
-  //       // create ata
-  //       createAssociatedTokenAccountInstruction(
-  //         userAccount.publicKey, // payer
-  //         associated_token_account, // ata
-  //         userAccount.publicKey, // owner
-  //         mintKey.publicKey // mint
-  //       )
-  //     );
+  //   const tx2 = await program.methods
+  //     .claimTokenFromMarket(new anchor.BN(50))
+  //     .accounts({
+  //       mintAccount: mintAccount.publicKey,
+  //       toTokenAccount: userAccount2TokenAccount,
+  //       marketplaceTokenPdaAta: marketplaceTokenPdaAta,
+  //       marketplaceTokenPda: marketplaceTokenPda,
+  //       signer: userAccount2.publicKey,
 
-  //     const res = await provider.sendAndConfirm(
-  //       mint_tx,
-  //       [mintKey, userAccount] // signers
-  //     );
+  //       tokenProgram: TOKEN_PROGRAM_ID,
+  //       systemProgram: web3.SystemProgram.programId,
+  //       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+  //     })
+  //     .signers([userAccount2])
+  //     .rpc();
 
-  //     console.log(
-  //       "Mint account: ",
-  //       await provider.connection.getParsedAccountInfo(mintKey.publicKey)
-  //     );
-
-  //     console.log(
-  //       "Associated token account (Before): ",
-  //       await provider.connection.getParsedAccountInfo(associated_token_account)
-  //     );
-
-  //     const tx = await program.methods
-  //       .mintToken(new anchor.BN(100))
-  //       .accounts({
-  //         signer: userAccount.publicKey,
-  //         mintAccount: mintKey.publicKey,
-  //         tokenAccount: associated_token_account,
-  //         tokenProgram: TOKEN_PROGRAM_ID,
-  //       })
-  //       .signers([userAccount])
-  //       .rpc();
-
-  //     console.log(
-  //       "Associated token account (After): ",
-  //       await provider.connection.getParsedAccountInfo(associated_token_account)
-  //     );
-
-  //     const value = (
-  //       await provider.connection.getParsedAccountInfo(associated_token_account)
-  //     ).value["data"]["parsed"]["info"]["tokenAmount"]["amount"];
-
-  //     assert.ok(Number(value) === 100);
-  //   });
+  //   // check balance
+  //   const balance = (
+  //     await provider.connection.getParsedAccountInfo(marketplaceTokenPdaAta)
+  //   ).value["data"]["parsed"]["info"]["tokenAmount"]["amount"];
+  //   assert.ok(Number(balance) === 50);
+  // });
 });

@@ -40,28 +40,6 @@ pub mod christmas_web3 {
         Ok(())
     }
 
-    pub fn mint_token(ctx: Context<MintToken>, num_tokens: u64) -> Result<()> {
-        let cpi_accounts = MintTo {
-            mint: ctx.accounts.mint_account.to_account_info(),
-            to: ctx.accounts.token_account.to_account_info(), // ata
-            authority: ctx.accounts.signer.to_account_info(),
-        };
-
-        let cpi_program = ctx.accounts.token_program.to_account_info();
-        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-
-        token::mint_to(cpi_ctx, num_tokens)?;
-
-        msg!(
-            "{} minted {} tokens using mint={}!",
-            ctx.accounts.signer.key(),
-            num_tokens,
-            ctx.accounts.mint_account.key()
-        );
-
-        Ok(())
-    }
-
     pub fn mint_token_to_marketplace(
         ctx: Context<MintTokenToMarket>,
         num_tokens: u64,
@@ -91,26 +69,31 @@ pub mod christmas_web3 {
         Ok(())
     }
 
-    pub fn claim_token_from_market(
-        ctx: Context<ClaimTokenFromMarket>,
-        num_tokens: u64,
-    ) -> Result<()> {
-        token::transfer(
-            // `new_with_signer` lets pda sign on behalf of program
-            CpiContext::new_with_signer(
-                ctx.accounts.token_program.to_account_info(),
-                Transfer {
-                    from: ctx.accounts.marketplace_token_pda_ata.to_account_info(),
-                    to: ctx.accounts.to_token_account.to_account_info(),
-                    authority: ctx.accounts.marketplace_token_pda.to_account_info(),
-                },
-                &[&[b"mpt_pda", &[ctx.accounts.marketplace_token_pda.bump]]],
-            ),
-            num_tokens,
-        )?;
+    // pub fn claim_token_from_market(
+    //     ctx: Context<ClaimTokenFromMarket>,
+    //     num_tokens: u64,
+    // ) -> Result<()> {
+    //     token::transfer(
+    //         // `new_with_signer` lets pda sign on behalf of program
+    //         CpiContext::new_with_signer(
+    //             ctx.accounts.token_program.to_account_info(),
+    //             Transfer {
+    //                 from: ctx.accounts.marketplace_token_pda_ata.to_account_info(),
+    //                 to: ctx.accounts.to_token_account.to_account_info(),
+    //                 authority: ctx.accounts.marketplace_token_pda.to_account_info(),
+    //             },
+    //             &[&[
+    //                 b"mpt_pda".as_ref(),
+    //                 &ctx.accounts.marketplace_token_pda.owner.to_bytes(),
+    //                 &ctx.accounts.marketplace_token_pda.mint.to_bytes(),
+    //                 &[ctx.accounts.marketplace_token_pda.bump],
+    //             ]],
+    //         ),
+    //         num_tokens,
+    //     )?;
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 }
 
 #[derive(Accounts)]
@@ -128,17 +111,6 @@ pub struct AddToPool<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
     pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
-pub struct MintToken<'info> {
-    #[account(mut)]
-    pub signer: Signer<'info>,
-    #[account(mut)]
-    pub mint_account: Account<'info, Mint>,
-    #[account(mut)]
-    pub token_account: Account<'info, TokenAccount>, // User's Associated Token Account to hold the minted nft token
-    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
@@ -171,26 +143,36 @@ pub struct MintTokenToMarket<'info> {
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub associated_token_program: Program<'info, AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
-#[derive(Accounts)]
-pub struct ClaimTokenFromMarket<'info> {
-    #[account(
-        init_if_needed,
-        payer = marketplace_token_pda,  // TODO: anyone can keep calling to make `marketplace_token_pda` pay?
-        associated_token::mint = mint_account,
-        associated_token::authority = to_token_account,
-    )]
-    pub to_token_account: Account<'info, TokenAccount>,
-    #[account(mut)]
-    pub marketplace_token_pda_ata: Account<'info, TokenAccount>,
-    #[account(mut)]
-    pub marketplace_token_pda: Account<'info, MarketPlaceTokenPDA>,
-    pub mint_account: Account<'info, Mint>,
-    pub token_program: Program<'info, Token>,
-    pub system_program: Program<'info, System>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
-}
+// #[derive(Accounts)]
+// pub struct ClaimTokenFromMarket<'info> {
+//     #[account(
+//         init_if_needed,
+//         payer = signer,
+//         associated_token::mint = mint_account,
+//         associated_token::authority = to_token_account,
+//     )]
+//     pub to_token_account: Account<'info, TokenAccount>,
+//     #[account(mut)]
+//     pub marketplace_token_pda_ata: Account<'info, TokenAccount>,
+
+//     #[account(mut)]
+//     pub signer: Signer<'info>,
+
+//     #[account(
+//         mut,
+//         seeds = [b"mpt_pda", marketplace_token_pda.owner.as_ref(), mint_account.key().as_ref()],
+//         bump
+//     )]
+//     pub marketplace_token_pda: Account<'info, MarketPlaceTokenPDA>,
+//     pub mint_account: Account<'info, Mint>,
+//     pub token_program: Program<'info, Token>,
+//     pub system_program: Program<'info, System>,
+//     pub associated_token_program: Program<'info, AssociatedToken>,
+//     pub rent: Sysvar<'info, Rent>,
+// }
 
 #[account]
 pub struct UserAccount {
