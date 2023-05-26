@@ -201,7 +201,7 @@ describe("christmas-web3", () => {
       }
     );
 
-    console.log(`Found ${accounts.length}} MarketPlaceTokenPDA accounts:`);
+    console.log(`Found ${accounts.length} MarketPlaceTokenPDA accounts:`);
 
     accounts.forEach((account, i) => {
       console.log(

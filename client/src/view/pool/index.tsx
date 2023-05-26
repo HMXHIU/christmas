@@ -12,14 +12,15 @@ export const Pool = () => {
 
   const wallet = useAnchorWallet();
 
+  
   /*
-    TEST IDL
+
+  TEST RETRIEVE NFTS
   */
-
-
-
   if (wallet) {
-    ListAccounts(wallet);
+    ListAccounts(wallet).then((acc) => {
+      console.log(acc)
+    })
   }
   
   return (
