@@ -49,36 +49,80 @@ describe("christmas-web3", () => {
   //   const tx = await program.methods.sayHello().rpc();
   // });
 
-  // /*
-  //  *  addToPool
-  //  */
-  // it("Add to pool", async () => {
-  //   // calculate the PDA of the user account
-  //   const [pda, bump] = web3.PublicKey.findProgramAddressSync(
-  //     [Buffer.from("user_account"), userAccount.publicKey.toBuffer()],
-  //     program.programId
-  //   );
+  /*
+   *  addToPool
+   */
+  it("Add to pool", async () => {
+    // min rent for creating a mint
+    const mint_rent_lamports =
+      await program.provider.connection.getMinimumBalanceForRentExemption(
+        MINT_SIZE
+      );
 
-  //   const tx = await program.methods
-  //     .addToPool(new anchor.BN(100))
-  //     .accounts({
-  //       userAccount: pda, // this is the PDA we will make for the user to associate him to our program
-  //       signer: userAccount.publicKey,
-  //       systemProgram: web3.SystemProgram.programId,
-  //     })
-  //     .signers([userAccount])
-  //     .rpc();
-  //   console.log("Your transaction signature", tx);
+    // generate the mint keypair - This replicates the USDC mint
+    const mintKey = anchor.web3.Keypair.generate();
 
-  //   // check owner is program
-  //   const pdaInfo = await program.provider.connection.getAccountInfo(pda);
-  //   console.log(pdaInfo.owner, program.programId);
-  //   assert.ok(pdaInfo.owner.equals(program.programId));
+    // calculate the PDA of the user account
+    const [user_pda, user_bump] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("user_account"), userAccount.publicKey.toBuffer()],
+      program.programId
+    );
 
-  //   // check totalAmountContributed
-  //   const pdaInfo2 = await program.account.userAccount.fetch(pda);
-  //   assert.ok(Number(pdaInfo2.totalAmountContributed) === 100);
-  // });
+    // generate user's ATA key to hold the USDC's tokens
+    const user_usdc_account = await getAssociatedTokenAddress(
+      mintKey.publicKey,
+      userAccount.publicKey
+    );
+
+    // PDA account belongs to program
+    const [christmas_pda, christmas_pda_bump] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("christmas_account")],
+      program.programId
+    );
+
+    // generate program's ATA key to hold the USDC's tokens
+    const christmas_usdc_account = await getAssociatedTokenAddress(
+      mintKey.publicKey,
+      christmas_pda,
+      true
+    );
+
+    const tx = await program.methods
+      .addToPool(new anchor.BN(100))
+      .accounts({
+        userAccount: user_pda, // this is the PDA we will make for the user to associate him to our program
+        userUsdcAccount: user_usdc_account,
+        christmasAccount: christmas_pda,
+        christmasUsdcAccount: christmas_usdc_account,
+        mint: mintKey.publicKey,
+        signer: userAccount.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+      })
+      .signers([userAccount])
+      .rpc();
+    console.log("Your transaction signature", tx);
+
+    // check owner is program
+    const pdaInfo = await program.provider.connection.getAccountInfo(user_pda);
+    assert.ok(pdaInfo.owner.equals(program.programId));
+    console.log("User Account:", user_pda);
+    console.log("Owner :", pdaInfo.owner, program.programId)
+    console.log("=========================================================")
+
+    // check totalAmountContributed
+    const pdaInfo2 = await program.account.userAccount.fetch(user_pda);
+    assert.ok(Number(pdaInfo2.totalAmountContributed) === 100);
+
+    const pdaPoolInfo = await program.provider.connection.getAccountInfo(christmas_pda);
+    assert.ok(pdaPoolInfo.owner.equals(program.programId));
+    console.log("Pool Account:", christmas_pda);
+    console.log("Owner :", pdaPoolInfo.owner, program.programId)
+
+    // // check totalAmountContributed
+    const pdaPoolInfo2 = await program.account.christmasAccount.fetch(christmas_pda);
+    assert.ok(Number(pdaPoolInfo2.totalAmountContributed) === 100);
+  });
 
   it("Mint token to marketplace", async () => {
     console.log(`userAccount: ${userAccount.publicKey}`);
