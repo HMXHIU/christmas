@@ -1,8 +1,43 @@
 # Christmas Protocol
 
 Christmas Protocol on Solana
+### How it works
 
-## Development Environment
+#### Overview
+![Intro](resources/intro.jpg)
+
+### Technical Info
+
+#### Components
+Our Program: christmas
+
+#### Functions
+
+1. mint_nft
+
+caller: seller
+account: Hash(christmas, seller_pubkey)
+
+```
+transaction(
+    pay advertising fee,
+    upload image + metadata stored in arweave (metaplex),
+    program create a temporary account which owns this NFT (needs to store some lamports),
+)
+```
+
+2. consume_nft
+
+burn the nft
+
+caller: buyer
+
+```
+transaction(
+    buyer with the nft check with seller QR code that it matched,
+    burn the nft
+)
+```
 
 ### Setup Solana Localnet
 
@@ -42,37 +77,3 @@ solana airdrop 1000
 1. Go to [Solana Explorer](https://explorer.solana.com/)
 2. Select Custom RPC URL (http://localhost:8899)
 3. After Airdropping some solana, search for your pubkey in the explorer
-
-### How it works
-
-#### Components
-
-Our Program: christmas
-
-#### Functions
-
-1. mint_nft
-
-caller: seller
-account: Hash(christmas, seller_pubkey)
-
-```
-transaction(
-    pay advertising fee,
-    upload image + metadata stored in arweave (metaplex),
-    program create a temporary account which owns this NFT (needs to store some lamports),
-)
-```
-
-2. consume_nft
-
-burn the nft
-
-caller: buyer
-
-```
-transaction(
-    buyer with the nft check with seller QR code that it matched,
-    burn the nft
-)
-```
