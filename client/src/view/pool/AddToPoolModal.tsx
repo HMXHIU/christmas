@@ -54,7 +54,10 @@ export const AddToPoolModal = ({ wallet, tokenAccount, updateTokenAccounts }: { 
         aria-describedby="modal-modal-description"
       >
         <Box sx={{ ...modalStyle, width: "80%" }}>
-          <Typography color="white">Contribute to the pool</Typography>
+          <Typography color="white" variant="h1">Contribute to the pool</Typography>
+          <Typography color="white" style={{ marginBottom: "5px", marginTop: "30px" }}>
+            Balance: ${tokenAccount.tokenAmount} USDC
+          </Typography>
           <Grid container rowSpacing={2} columnSpacing={2} paddingY={2}>
             <Grid item xs={12}>
               <TextField
@@ -71,42 +74,54 @@ export const AddToPoolModal = ({ wallet, tokenAccount, updateTokenAccounts }: { 
 
             {isEmpty(txsig) && (
               <Grid item xs={12}>
-                <Button
-                  variant="contained"
-                  disabled={isEqual(contribute, 0)}
-                  color="info"
-                  onClick={hendleContribute}
-                >
-                  Confirm
-                </Button>
-                {!isEqual(contribute, 0) ? (
-                  <Button
-                    variant="contained"
-                    color="error"
-                    onClick={() => setContribute(0)}
-                    style={{ marginLeft: 4 }}
-                  >
-                    Cancel
-                  </Button>
-                ) : null}
+                <Grid container justifyContent="right">
+                  <Grid item>
+                    <Button
+                      variant="contained"
+                      disabled={isEqual(contribute, 0) || contribute > Number(tokenAccount.tokenAmount)}
+                      color="info"
+                      onClick={hendleContribute}
+                    >
+                      Confirm
+                    </Button>
+                  </Grid>
+                  {!isEqual(contribute, 0) && contribute <= Number(tokenAccount.tokenAmount) ? (
+                    <Grid item style={{ marginLeft: "5px" }}>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        onClick={() => setContribute(0)}
+                        style={{ marginLeft: 4 }}
+                      >
+                        Cancel
+                      </Button>
+                    </Grid>
+                  ) : null}
+                </Grid>
               </Grid>
             )}
             {!isEmpty(txsig) && (
               <Grid item xs={12}>
-                <Button
-                  variant="contained"
-                  color="info"
-                  onClick={handleViewTransaction}
-                >
-                  View Transaction
-                </Button>
-                <Button
-                  variant="contained"
-                  color="success"
-                  onClick={handleClose}
-                >
-                  Done
-                </Button>
+                <Grid container justifyContent="right">
+                  <Grid item>
+                    <Button
+                      variant="contained"
+                      color="info"
+                      onClick={handleViewTransaction}
+                    >
+                      View Transaction
+                    </Button>
+                  </Grid>
+                  <Grid item style={{ marginLeft: "10px" }}>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      onClick={handleClose}
+                    >
+                      Done
+                    </Button>
+                  </Grid>
+                </Grid>
               </Grid>
             )}
           </Grid>

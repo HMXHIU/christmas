@@ -60,20 +60,16 @@ export const Layout = () => {
         style={{ overflow: "auto", flex: 1 }} // Add "flex: 1" to expand Grid
       >
         <Grid item xs={12}>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignContent: "center",
-            }}
-          >
-            <Typography variant="h5" color="white">
-              {activeIndex}
-            </Typography>
-            <div style={{ flex: 1 }}>
+          <Grid container alignItems="center" justifyContent="space-between">
+            <Grid item>
+              <Typography variant="h5" color="white">
+                {activeIndex}
+              </Typography>
+            </Grid>
+            <Grid item>
               <WalletMultiButton style={{ float: "right" }} />
-            </div>
-          </div>
+            </Grid>
+          </Grid>
         </Grid>
 
         <Grid item xs={12}>

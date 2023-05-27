@@ -47,8 +47,8 @@ const Main: React.FC<{ children: Element }> = ({ children }) => {
     <>
       {!wallet && (
         <Grid container rowSpacing={6} justifyContent="center">
-          <Typography gutterBottom variant="h1" component="h1" color="white">
-            Please connect to your wallet to continue.
+          <Typography gutterBottom variant="h1" component="h1" color="white" textAlign="center">
+            Please connect your wallet to continue.
           </Typography>
         </Grid>
       )}
