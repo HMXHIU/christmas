@@ -19,6 +19,7 @@ const StoreComponent = ({ nftList, updateNFTList }) => (
 export const Store = () => {
   return (
     <Main>
+      {/* @ts-ignore */}
       <StoreComponent />
     </Main>
   );
