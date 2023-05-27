@@ -13,7 +13,7 @@ import QRCode from "react-qr-code";
 import { useLocation, useNavigate } from "react-router-dom";
 import { modalStyle } from "../App";
 
-type NFT = {
+export type NFT = {
   name: string;
   pubkey: string;
   description: string;

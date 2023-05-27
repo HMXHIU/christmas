@@ -11,11 +11,80 @@ import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     getAssociatedTokenAddress
 } from "@solana/spl-token";
+import { TokenAccount } from "../view/pool";
+
+// const cluster = web3.clusterApiUrl('devnet');
+const cluster = "http://localhost:8899";
+const connection = new web3.Connection(cluster, 'confirmed')
+
+export const GetTokenAccounts = (wallet: AnchorWallet) =>
+    connection.getParsedProgramAccounts(
+        TOKEN_PROGRAM_ID,
+        {
+            filters: [
+                {
+                    dataSize: 165, //  For token accounts, this is a known quantity, 165.
+                }, {
+                    memcmp: {
+                        offset: 32,     //location of our query in the account (bytes)
+                        bytes: wallet.publicKey.toString(),  //our search criteria, a base58 encoded string
+                    }
+                }
+            ],
+        }
+    );
+
+export const AddToPool = async (wallet: AnchorWallet, tokenAccount: TokenAccount, contribute: number) => {
+    const provider = new anchor.AnchorProvider(connection, wallet, anchor.AnchorProvider.defaultOptions())
+    const program = new anchor.Program<ChristmasWeb3>(idl as any, idl.metadata.address, provider)
+
+    const mint: web3.PublicKey = new web3.PublicKey(tokenAccount.mint);
+    const token_account: web3.PublicKey = tokenAccount.pubKey;
+
+    // calculate the PDA of the user account
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars 
+    const [user_pda, user_bump] = web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("user_account"), wallet.publicKey.toBuffer()],
+        program.programId
+    );
+
+    // PDA account belongs to program
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars 
+    const [christmas_pda, christmas_pda_bump] =
+        web3.PublicKey.findProgramAddressSync(
+            [Buffer.from("christmas_account")],
+            program.programId
+        );
+
+    // generate program's ATA key to hold the USDC's tokens
+    const christmas_token_account = await getAssociatedTokenAddress(mint, christmas_pda, true);
+
+    const AddToPoolIx = await program.methods
+        .addToPool(new anchor.BN(1000000 * contribute)) // 1000000 == 1 token
+        .accounts({
+            userAccount: user_pda, // this is the PDA we will make for the user to associate him to our program
+            userUsdcAccount: token_account,
+            christmasAccount: christmas_pda,
+            christmasUsdcAccount: christmas_token_account,
+            mint: mint,
+            signer: wallet.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            systemProgram: web3.SystemProgram.programId,
+        })
+        .instruction();
+
+    const tx = new Transaction();
+    tx.add(AddToPoolIx);
+
+    return await signAndSendTx(
+        connection,
+        tx,
+        wallet,
+    )
+}
 
 export const ListAccounts = (wallet: AnchorWallet) => {
-    // const cluster = web3.clusterApiUrl('devnet');
-    const cluster = "http://localhost:8899";
-    const connection = new web3.Connection(cluster, 'confirmed')
     const provider = new anchor.AnchorProvider(connection, wallet, anchor.AnchorProvider.defaultOptions())
     const program = new anchor.Program<ChristmasWeb3>(idl as any, idl.metadata.address, provider)
 
@@ -26,21 +95,18 @@ export const ListAccounts = (wallet: AnchorWallet) => {
         program.programId,
         {
             filters: [
-            {
-                dataSize: 127, // number of bytes for MarketPlaceTokenPDA
-            },
+                {
+                    dataSize: 127, // number of bytes for MarketPlaceTokenPDA
+                },
             ],
         }
     )
-    .then((accounts) => {
-        return Promise.all(accounts.map((acc) => program.account.marketPlaceTokenPda.fetch(acc.pubkey)))
-    })
+        .then((accounts) => {
+            return Promise.all(accounts.map((acc) => program.account.marketPlaceTokenPda.fetch(acc.pubkey)))
+        })
 }
 
 export const MintTokenToMarketplace = async (wallet: AnchorWallet, num_tokens: number, description: string) => {
-    // const cluster = web3.clusterApiUrl('devnet');
-    const cluster = "http://localhost:8899";
-    const connection = new web3.Connection(cluster, 'confirmed')
     const provider = new anchor.AnchorProvider(connection, wallet, anchor.AnchorProvider.defaultOptions())
     const program = new anchor.Program<ChristmasWeb3>(idl as any, idl.metadata.address, provider)
 
@@ -78,7 +144,7 @@ export const MintTokenToMarketplace = async (wallet: AnchorWallet, num_tokens: n
             associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
         .instruction()
-    
+
     const tx = new Transaction();
     tx.add(mintTokenToMarketplaceIx);
 

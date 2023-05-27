@@ -129,7 +129,11 @@ describe("christmas-web3", () => {
       })
       .signers([userAccount])
       .rpc();
+    console.log("================================================")
+    console.log("User Account (pubKey):", userAccount.publicKey.toString());
+    console.log("User Account (secret):", userAccount.secretKey.toString());
     console.log("Your transaction signature", tx);
+    console.log("================================================")
 
     // check owner is program
     const pdaInfo = await program.provider.connection.getAccountInfo(user_pda);
