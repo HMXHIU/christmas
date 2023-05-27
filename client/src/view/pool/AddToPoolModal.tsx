@@ -1,25 +1,36 @@
 import * as React from "react";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
-import { Box, Card, Grid, Modal } from "@mui/material";
+import { Box, Grid, Modal, TextField } from "@mui/material";
+import { toNumber, isEqual, isEmpty } from "lodash";
+
 import { modalStyle } from "../../App";
+import { TokenAccount } from "./index";
+import { AddToPool } from "../../api/api"
+import { AnchorWallet } from "@solana/wallet-adapter-react";
 
-enum ContributionAmount {
-  FIVE = "$5",
-  TEN = "$10",
-  TWENTY = "$20",
-  FIFTY = "$50",
-  CUSTOM = "CUSTOM",
-  NONE = "NONE",
-}
-
-export const AddToPoolModal = () => {
+export const AddToPoolModal = ({ wallet, tokenAccount, updateTokenAccounts }: { wallet: AnchorWallet, tokenAccount: TokenAccount, updateTokenAccounts: () => Promise<void> }) => {
   const [open, setOpen] = React.useState(false);
+  const [contribute, setContribute] = React.useState(0);
+  const [txsig, setTxsig] = React.useState('');
+
   const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
-  const [selected, setSelected] = React.useState<ContributionAmount>(
-    ContributionAmount.NONE
-  );
+  const handleClose = () => {
+    setOpen(false);
+    setContribute(0);
+  }
+
+  const hendleContribute = async () => {
+    if (!isEqual(contribute, 0)) {
+      const transactionRecord = await AddToPool(wallet, tokenAccount, contribute)
+      await updateTokenAccounts()
+      setTxsig(transactionRecord)
+    }
+  }
+
+  const handleViewTransaction = () => {
+    window.open(`https://explorer.solana.com/tx/${txsig}?cluster=custom`, "_blank", "noreferrer");
+  }
 
   return (
     <div
@@ -45,56 +56,59 @@ export const AddToPoolModal = () => {
         <Box sx={{ ...modalStyle, width: "80%" }}>
           <Typography color="white">Contribute to the pool</Typography>
           <Grid container rowSpacing={2} columnSpacing={2} paddingY={2}>
-            {Object.values(ContributionAmount)
-              .filter(
-                (val) =>
-                  val !== ContributionAmount.CUSTOM &&
-                  val !== ContributionAmount.NONE
-              )
-              .map((val) => {
-                const isSelected = val === selected; // Check if the current value is selected
-                return (
-                  <Grid item xs={6}>
-                    <Card
-                      variant="outlined"
-                      onClick={() => {
-                        if (isSelected) {
-                          setSelected(ContributionAmount.NONE);
-                        } else {
-                          setSelected(val);
-                        }
-                      }} // Use onClick instead of onSelect
-                      sx={{
-                        backgroundColor: isSelected ? "success.main" : "",
-                      }}
-                    >
-                      <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-                        {val}
-                      </Typography>
-                    </Card>
-                  </Grid>
-                );
-              })}
-
             <Grid item xs={12}>
-              <Button
-                variant="contained"
-                disabled={selected === ContributionAmount.NONE}
-                color="info"
-              >
-                Confirm
-              </Button>
-              {selected !== ContributionAmount.NONE ? (
+              <TextField
+                name="contribute"
+                id="contribute"
+                label="Contribute"
+                variant="outlined"
+                fullWidth
+                type="number"
+                onChange={(e) => setContribute(toNumber(e.target.value))}
+                defaultValue={contribute}
+              />
+            </Grid>
+
+            {isEmpty(txsig) && (
+              <Grid item xs={12}>
                 <Button
                   variant="contained"
-                  color="error"
-                  onClick={() => setSelected(ContributionAmount.NONE)}
-                  style={{ marginLeft: 4 }}
+                  disabled={isEqual(contribute, 0)}
+                  color="info"
+                  onClick={hendleContribute}
                 >
-                  Cancel
+                  Confirm
                 </Button>
-              ) : null}
-            </Grid>
+                {!isEqual(contribute, 0) ? (
+                  <Button
+                    variant="contained"
+                    color="error"
+                    onClick={() => setContribute(0)}
+                    style={{ marginLeft: 4 }}
+                  >
+                    Cancel
+                  </Button>
+                ) : null}
+              </Grid>
+            )}
+            {!isEmpty(txsig) && (
+              <Grid item xs={12}>
+                <Button
+                  variant="contained"
+                  color="info"
+                  onClick={handleViewTransaction}
+                >
+                  View Transaction
+                </Button>
+                <Button
+                  variant="contained"
+                  color="success"
+                  onClick={handleClose}
+                >
+                  Done
+                </Button>
+              </Grid>
+            )}
           </Grid>
         </Box>
       </Modal>

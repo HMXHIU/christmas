@@ -1,39 +1,54 @@
 import {
   Box,
-  Button,
   Card,
   CardActions,
   CardContent,
   LinearProgress,
   Typography,
+  Grid,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import { map, isEmpty } from 'lodash';
 
-export const PoolDisplayCard = () => {
-  // TODO: query the pool
-  const poolValue = 100000;
+import { TokenAccount } from "./index";
+import { AddToPoolModal } from "./AddToPoolModal";
+import { AnchorWallet } from "@solana/wallet-adapter-react";
+
+export const PoolDisplayCard = ({ wallet, tokenAccounts, updateTokenAccounts }: { wallet: AnchorWallet, tokenAccounts: [TokenAccount] | [], updateTokenAccounts: () => Promise<void> }) => {
   return (
-    <Box sx={{ minWidth: 275 }}>
-      <Card title="Pool" variant="outlined">
-        <>
-          <CardContent>
-            <Typography
-              sx={{ fontSize: 14 }}
-              color="text.secondary"
-              gutterBottom
-            >
-              Pool
-            </Typography>
-            <Typography variant="h5" component="div">
-              {poolValue}
-            </Typography>
-          </CardContent>
-          <CardActions>
-            <Button size="small">Learn More</Button>
-          </CardActions>
-        </>
-      </Card>
-    </Box>
+    <>
+      {isEmpty(tokenAccounts) && (
+        <Grid container justifyContent="center">
+          <Typography gutterBottom variant="h1" component="h1" color="white">
+            No token found for contribution. Please top-up your account with supported token.
+          </Typography>
+        </Grid>
+      )}
+      {!isEmpty(tokenAccounts) && (
+        <Box sx={{ minWidth: 275 }}>
+          {map(tokenAccounts, (tokenAccount, index) => (
+            <Card title="Pool" variant="outlined" key={index}>
+              <CardContent>
+                <Typography
+                  sx={{ fontSize: 16 }}
+                  color="text.secondary"
+                  gutterBottom
+                >
+                  Token: {tokenAccount.mint}
+                </Typography>
+                <Typography variant="h5" component="div">
+                  {tokenAccount.tokenAmount}
+                </Typography>
+              </CardContent>
+              <CardActions>
+                <AddToPoolModal wallet={wallet} tokenAccount={tokenAccount} updateTokenAccounts={updateTokenAccounts} />
+              </CardActions>
+            </Card>
+          ))}
+        </Box>
+      )}
+    </>
+
   );
 };
 
