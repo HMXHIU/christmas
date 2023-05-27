@@ -9,9 +9,9 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Pool } from "./view/pool";
 import { Store } from "./view/store";
 import { PersonalNFTs } from "./view/personalnfts";
+import { Marketplace } from "./view/marketplace";
 
-
-// need this if not it will complain missing buffer 
+// need this if not it will complain missing buffer
 window.Buffer = window.Buffer || require("buffer").Buffer;
 
 declare module "@mui/material/styles" {
@@ -118,13 +118,15 @@ const router = createBrowserRouter([
         path: "my-nfts/*",
         element: <PersonalNFTs />,
       },
+      {
+        path: "marketplace",
+        element: <Marketplace />,
+      },
     ],
   },
 ]);
 
-
 const App: FC = () => {
-
   return (
     <ThemeProvider theme={theme}>
       <WalletProvider>

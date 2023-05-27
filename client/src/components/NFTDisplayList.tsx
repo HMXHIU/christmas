@@ -20,7 +20,7 @@ export type NFT = {
   storeLocation: string;
   supplied: number;
   maxSupply: number;
-  type: "personal" | "store";
+  type: "personal" | "store" | "market";
 };
 
 // const useNFTList = () => {
@@ -52,7 +52,7 @@ export type NFT = {
 //   ];
 // };
 
-export const NFTDisplayList = ({ type, nftList }: { type: "personal" | "store", nftList: [NFT] }) => {
+export const NFTDisplayList = ({ type, nftList }: { type: "personal" | "store" | "market", nftList: [NFT] }) => {
   return (
     <Grid container columnSpacing={2} rowSpacing={2}>
       {nftList.map((nft) => (
@@ -89,12 +89,14 @@ const NFTDisplayCard = (nft: NFT) => {
   // TODO: calculated cost
   if (type === "personal") {
     return <NFTClaimModalWrapper nft={nft}>{NFTCard}</NFTClaimModalWrapper>;
-  } else {
+  } else if (type === "store") {
     return (
       <NFTQRCodeDisplayModalWrapper nft={nft}>
         {NFTCard}
       </NFTQRCodeDisplayModalWrapper>
     );
+  } else {
+    return <>{NFTCard}</>;
   }
 };
 
