@@ -53,7 +53,7 @@ export const PoolDisplayCard = ({ wallet, tokenAccounts, updateTokenAccounts }: 
 };
 
 // Component that renders a timer to Christmas day UTC.
-export const DistributionTicker = () => {
+export const DistributionTicker = ({ wallet, userContribute, totalPoolCount }: { wallet: AnchorWallet, userContribute: Number, totalPoolCount: Number }) => {
   const [countdown, setCountdown] = useState("");
 
   useEffect(() => {
@@ -90,27 +90,39 @@ export const DistributionTicker = () => {
   return (
     <Box sx={{ minWidth: 275 }}>
       <Card title="Pool" variant="outlined">
-        <>
-          <CardContent>
-            <Typography
-              sx={{ fontSize: 14 }}
-              color="text.secondary"
-              gutterBottom
-            >
-              Time till distribution
+        <CardContent>
+          <Typography
+            sx={{ fontSize: 14 }}
+            color="text.secondary"
+            gutterBottom
+          >
+            Total Contribution in Pool: {totalPoolCount.toString()}
+          </Typography>
+          <Typography
+            sx={{ fontSize: 14 }}
+            color="text.secondary"
+            gutterBottom
+          >
+            User Contribution: {userContribute.toString()}
+          </Typography>
+          <Typography
+            sx={{ fontSize: 14 }}
+            color="text.secondary"
+            gutterBottom
+          >
+            Time till distribution
+          </Typography>
+          {countdown === "" ? (
+            <LinearProgress
+              color="secondary"
+              style={{ justifyContent: "center" }}
+            />
+          ) : (
+            <Typography variant="h5" component="div">
+              {countdown}
             </Typography>
-            {countdown === "" ? (
-              <LinearProgress
-                color="secondary"
-                style={{ justifyContent: "center" }}
-              />
-            ) : (
-              <Typography variant="h5" component="div">
-                {countdown}
-              </Typography>
-            )}
-          </CardContent>
-        </>
+          )}
+        </CardContent>
       </Card>
     </Box>
   );

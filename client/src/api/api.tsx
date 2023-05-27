@@ -34,6 +34,35 @@ export const GetTokenAccounts = (wallet: AnchorWallet) =>
         }
     );
 
+export const GetPoolPDAInfo = (wallet: AnchorWallet) => {
+    const provider = new anchor.AnchorProvider(connection, wallet, anchor.AnchorProvider.defaultOptions())
+    const program = new anchor.Program<ChristmasWeb3>(idl as any, idl.metadata.address, provider)
+
+    // PDA account belongs to program
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars 
+    const [christmas_pda, christmas_pda_bump] =
+        web3.PublicKey.findProgramAddressSync(
+            [Buffer.from("christmas_account")],
+            program.programId
+        );
+
+    return program.account.christmasAccount.fetch(christmas_pda);
+}
+
+export const GetPDAInfo = (wallet: AnchorWallet) => {
+    const provider = new anchor.AnchorProvider(connection, wallet, anchor.AnchorProvider.defaultOptions())
+    const program = new anchor.Program<ChristmasWeb3>(idl as any, idl.metadata.address, provider)
+
+    // calculate the PDA of the user account
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars 
+    const [user_pda, user_bump] = web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("user_account"), wallet.publicKey.toBuffer()],
+        program.programId
+    );
+
+    return program.account.userAccount.fetch(user_pda);
+}
+
 export const AddToPool = async (wallet: AnchorWallet, tokenAccount: TokenAccount, contribute: number) => {
     const provider = new anchor.AnchorProvider(connection, wallet, anchor.AnchorProvider.defaultOptions())
     const program = new anchor.Program<ChristmasWeb3>(idl as any, idl.metadata.address, provider)

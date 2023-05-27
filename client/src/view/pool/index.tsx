@@ -5,7 +5,7 @@ import { isEmpty, map } from 'lodash';
 
 import Main from "../main"
 
-import { GetTokenAccounts } from "../../api/api"
+import { GetTokenAccounts, GetPDAInfo, GetPoolPDAInfo } from "../../api/api"
 import { AccountInfo, ParsedAccountData, PublicKey } from '@solana/web3.js';
 import { AnchorWallet } from '@solana/wallet-adapter-react';
 
@@ -20,6 +20,8 @@ export type TokenAccount = {
 
 const PoolComponent = ({ wallet }: { wallet: AnchorWallet }) => {
   const [tokenAccounts, setTokenAccounts] = useState<[TokenAccount] | []>([])
+  const [userContribute, setUserContribute] = useState<Number>(0)
+  const [totalPoolCount, setTotalPoolCount] = useState<Number>(0)
 
   const updateTokenAccounts = useCallback(async () => {
     await GetTokenAccounts(wallet)
@@ -37,22 +39,25 @@ const PoolComponent = ({ wallet }: { wallet: AnchorWallet }) => {
         // @ts-ignore
         setTokenAccounts(token_accounts)
       })
+
+    await GetPDAInfo(wallet).then((result) => setUserContribute(Number(result.totalAmountContributed) / 1000000));  // 1000000 == 1 token )
+    await GetPoolPDAInfo(wallet).then((result) => setTotalPoolCount(Number(result.totalAmountContributed) / 1000000));  // 1000000 == 1 token )
   }, [wallet]
   )
 
   useEffect(() => {
-    const get_token_accounts = async () => {
-      if (wallet && isEmpty(tokenAccounts)) {
+    const fetchData = async () => {
+      if (wallet && (isEmpty(tokenAccounts || isEmpty(userContribute) || isEmpty(totalPoolCount)))) {
         await updateTokenAccounts()
       }
     }
-    get_token_accounts()
-  }, [wallet, tokenAccounts, updateTokenAccounts])
+    fetchData()
+  }, [wallet, tokenAccounts, totalPoolCount, userContribute, updateTokenAccounts])
 
   return (
     <Grid container rowSpacing={24} justifyContent="flex-start">
       <Grid item xs={12}>
-        <DistributionTicker />
+        <DistributionTicker wallet={wallet} userContribute={userContribute} totalPoolCount={totalPoolCount} />
       </Grid>
       <Grid item xs={12}>
         <PoolDisplayCard wallet={wallet} tokenAccounts={tokenAccounts} updateTokenAccounts={updateTokenAccounts} />
