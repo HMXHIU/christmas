@@ -103,6 +103,7 @@ describe("christmas-web3", () => {
         [Buffer.from("christmas_account")],
         program.programId
       );
+    console.log("Christmas's PDA account", christmas_pda)
 
     // generate program's ATA key to hold the USDC's tokens
     const christmas_usdc_account = await getAssociatedTokenAddress(
@@ -111,8 +112,20 @@ describe("christmas-web3", () => {
       true
     );
 
-    // need to keep this as reference for comparision after transfer
-    const christmas_pda_info = await program.account.christmasAccount.fetch(christmas_pda);
+    console.log("Christmas's USDC account", christmas_usdc_account)
+
+    // check if account exist, need to keep this as reference for comparision after transfer
+    const user_pda_acc = await program.provider.connection.getAccountInfo(user_pda);
+    let user_pda_info = null;
+    if (user_pda_acc) {
+      user_pda_info = await program.account.userAccount.fetch(user_pda);
+    }
+
+    const christmas_pda_acc = await program.provider.connection.getAccountInfo(christmas_pda);
+    let christmas_pda_info = null;
+    if (christmas_pda_acc) {
+      christmas_pda_info = await program.account.christmasAccount.fetch(christmas_pda);
+    }
 
     const tx = await program.methods
       .addToPool(new anchor.BN(1000000)) // 1 token
@@ -139,23 +152,35 @@ describe("christmas-web3", () => {
     const pdaInfo = await program.provider.connection.getAccountInfo(user_pda);
     assert.ok(pdaInfo.owner.equals(program.programId));
 
-    // // check totalAmountContributed
-    const pdaInfo2 = await program.account.userAccount.fetch(user_pda);
-    assert.ok(Number(pdaInfo2.totalAmountContributed) === 1000000);
+    // check totalAmountContributed
+    const user_pda_info_2 = await program.account.userAccount.fetch(user_pda);
+    if (user_pda_info) {
+      const userContributionBefore = Number(user_pda_info.totalAmountContributed)
+      const userContributionAfter = Number(user_pda_info_2.totalAmountContributed)
+      assert.ok(userContributionAfter - userContributionBefore === 1000000);
+    } else {
+      const userContribution = Number(user_pda_info_2.totalAmountContributed)
+      assert.ok(userContribution === 1000000);
+    }
 
     const pdaPoolInfo = await program.provider.connection.getAccountInfo(
       christmas_pda
     );
     assert.ok(pdaPoolInfo.owner.equals(program.programId));
 
-    // // check totalAmountContributed
+    // check totalAmountContributed
     const christmas_pda_info_2 = await program.account.christmasAccount.fetch(
       christmas_pda
     );
 
-    const contributionBefore = Number(christmas_pda_info.totalAmountContributed)
-    const contributionAfter = Number(christmas_pda_info_2.totalAmountContributed)
-    assert.ok(contributionAfter - contributionBefore === 1000000);
+    if (christmas_pda_info) {
+      const contributionBefore = Number(christmas_pda_info.totalAmountContributed)
+      const contributionAfter = Number(christmas_pda_info_2.totalAmountContributed)
+      assert.ok(contributionAfter - contributionBefore === 1000000);
+    } else {
+      const contribution = Number(christmas_pda_info_2.totalAmountContributed)
+      assert.ok(contribution === 1000000);
+    }
   });
 
   it("Mint token to marketplace", async () => {

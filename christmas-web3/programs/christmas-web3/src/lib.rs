@@ -55,7 +55,7 @@ pub mod christmas_web3 {
         token::transfer(token_transfer_context, amount)?;
 
         // record his contribution
-        ctx.accounts.user_account.total_amount_contributed = amount;
+        ctx.accounts.user_account.total_amount_contributed += amount;
         ctx.accounts.christmas_account.total_amount_contributed += amount;
 
         msg!(
