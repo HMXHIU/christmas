@@ -6,7 +6,7 @@ use anchor_spl::associated_token::{get_associated_token_address, AssociatedToken
 use anchor_spl::token;
 use anchor_spl::token::{Mint, MintTo, Token, TokenAccount, Transfer};
 
-declare_id!("5ZohsZtvVnjLy7TZDuujXneojE8dq27Y4mrsq3e8eKTZ");
+declare_id!("EbwUUaq9U1oVuHF9XS1s13NN7kfFzQzSr1H2X8nZjYTc");
 
 const DISCRIMINATOR_SIZE: usize = 8;
 const PUBKEY_SIZE: usize = 32;

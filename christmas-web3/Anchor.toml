@@ -2,7 +2,7 @@
 seeds = false
 skip-lint = false
 [programs.localnet]
-christmas_web3 = "5ZohsZtvVnjLy7TZDuujXneojE8dq27Y4mrsq3e8eKTZ"
+christmas_web3 = "EbwUUaq9U1oVuHF9XS1s13NN7kfFzQzSr1H2X8nZjYTc"
 
 [registry]
 url = "http://localhost:8899"
