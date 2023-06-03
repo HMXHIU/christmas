@@ -17,5 +17,4 @@ Cargo.lock
 id_*.json
 
 # solana validator
-
 test-ledger/
