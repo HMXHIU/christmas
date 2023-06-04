@@ -18,3 +18,7 @@ id_*.json
 
 # solana validator
 test-ledger/
+
+# draw.io
+*.bkp
+*.dtmp
