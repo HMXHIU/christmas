@@ -26,7 +26,7 @@ describe("christmas-web3", () => {
   // generate the mint keypair - because a mint is unique (it can only create 1 type of tokens)
   const mintAccount = anchor.web3.Keypair.generate();
 
-  // generate the usdc keypair - This replicates the USDC 
+  // generate the usdc keypair - This replicates the USDC
   const usdcAccount = anchor.web3.Keypair.generate();
 
   it("Airdrop to user", async () => {
@@ -61,7 +61,6 @@ describe("christmas-web3", () => {
    *  addToPool
    */
   it("Add to pool", async () => {
-
     let signer = new Keypair();
     let usdc_token = await createMint(
       program.provider.connection,
@@ -70,7 +69,7 @@ describe("christmas-web3", () => {
       null,
       6
     );
-    console.log("USDC Token", usdc_token)
+    console.log("USDC Token", usdc_token);
 
     // calculate the PDA of the user account
     const [user_pda, user_bump] = web3.PublicKey.findProgramAddressSync(
@@ -93,9 +92,9 @@ describe("christmas-web3", () => {
       usdc_token,
       user_usdc_account,
       usdcAccount,
-      LAMPORTS_PER_SOL / 100  // 10 token
+      LAMPORTS_PER_SOL / 100 // 10 token
     );
-    console.log("User's USDC account", user_usdc_account)
+    console.log("User's USDC account", user_usdc_account);
 
     // PDA account belongs to program
     const [christmas_pda, christmas_pda_bump] =
@@ -103,7 +102,7 @@ describe("christmas-web3", () => {
         [Buffer.from("christmas_account")],
         program.programId
       );
-    console.log("Christmas's PDA account", christmas_pda)
+    console.log("Christmas's PDA account", christmas_pda);
 
     // generate program's ATA key to hold the USDC's tokens
     const christmas_usdc_account = await getAssociatedTokenAddress(
@@ -112,19 +111,25 @@ describe("christmas-web3", () => {
       true
     );
 
-    console.log("Christmas's USDC account", christmas_usdc_account)
+    console.log("Christmas's USDC account", christmas_usdc_account);
 
     // check if account exist, need to keep this as reference for comparision after transfer
-    const user_pda_acc = await program.provider.connection.getAccountInfo(user_pda);
+    const user_pda_acc = await program.provider.connection.getAccountInfo(
+      user_pda
+    );
     let user_pda_info = null;
     if (user_pda_acc) {
       user_pda_info = await program.account.userAccount.fetch(user_pda);
     }
 
-    const christmas_pda_acc = await program.provider.connection.getAccountInfo(christmas_pda);
+    const christmas_pda_acc = await program.provider.connection.getAccountInfo(
+      christmas_pda
+    );
     let christmas_pda_info = null;
     if (christmas_pda_acc) {
-      christmas_pda_info = await program.account.christmasAccount.fetch(christmas_pda);
+      christmas_pda_info = await program.account.christmasAccount.fetch(
+        christmas_pda
+      );
     }
 
     const tx = await program.methods
@@ -142,11 +147,11 @@ describe("christmas-web3", () => {
       })
       .signers([userAccount])
       .rpc();
-    console.log("================================================")
+    console.log("================================================");
     console.log("User Account (pubKey):", userAccount.publicKey.toString());
     console.log("User Account (secret):", userAccount.secretKey.toString());
     console.log("Your transaction signature", tx);
-    console.log("================================================")
+    console.log("================================================");
 
     // check owner is program
     const pdaInfo = await program.provider.connection.getAccountInfo(user_pda);
@@ -155,11 +160,15 @@ describe("christmas-web3", () => {
     // check totalAmountContributed
     const user_pda_info_2 = await program.account.userAccount.fetch(user_pda);
     if (user_pda_info) {
-      const userContributionBefore = Number(user_pda_info.totalAmountContributed)
-      const userContributionAfter = Number(user_pda_info_2.totalAmountContributed)
+      const userContributionBefore = Number(
+        user_pda_info.totalAmountContributed
+      );
+      const userContributionAfter = Number(
+        user_pda_info_2.totalAmountContributed
+      );
       assert.ok(userContributionAfter - userContributionBefore === 1000000);
     } else {
-      const userContribution = Number(user_pda_info_2.totalAmountContributed)
+      const userContribution = Number(user_pda_info_2.totalAmountContributed);
       assert.ok(userContribution === 1000000);
     }
 
@@ -174,11 +183,15 @@ describe("christmas-web3", () => {
     );
 
     if (christmas_pda_info) {
-      const contributionBefore = Number(christmas_pda_info.totalAmountContributed)
-      const contributionAfter = Number(christmas_pda_info_2.totalAmountContributed)
+      const contributionBefore = Number(
+        christmas_pda_info.totalAmountContributed
+      );
+      const contributionAfter = Number(
+        christmas_pda_info_2.totalAmountContributed
+      );
       assert.ok(contributionAfter - contributionBefore === 1000000);
     } else {
-      const contribution = Number(christmas_pda_info_2.totalAmountContributed)
+      const contribution = Number(christmas_pda_info_2.totalAmountContributed);
       assert.ok(contribution === 1000000);
     }
   });
