@@ -3,6 +3,8 @@ import { Program } from "@coral-xyz/anchor";
 import { Christmas } from "../target/types/christmas";
 import { web3 } from "@coral-xyz/anchor";
 import { assert } from "chai";
+import { stringToUint8Array } from "./utils";
+import { sha256 } from "js-sha256";
 
 describe("christmas", () => {
   // Configure the client to use the local cluster.
@@ -11,6 +13,9 @@ describe("christmas", () => {
   const provider = anchor.getProvider();
   const program = anchor.workspace.Christmas as Program<Christmas>;
   const user = anchor.web3.Keypair.generate();
+
+  console.log(`program: ${web3.SystemProgram.programId}`);
+  console.log(`user: ${user.publicKey}`);
 
   it("Airdrop to user", async () => {
     const sig = await provider.connection.requestAirdrop(user.publicKey, 100e9);
@@ -28,7 +33,7 @@ describe("christmas", () => {
     let region = "SGP";
 
     // Calculate the PDA of the user
-    const [pda, bump] = web3.PublicKey.findProgramAddressSync(
+    const [pda, _] = web3.PublicKey.findProgramAddressSync(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode("user")),
         user.publicKey.toBuffer(),
@@ -50,9 +55,13 @@ describe("christmas", () => {
       .rpc();
 
     // Check account is created correctly
-    let fetched_user = await program.account.user.fetch(pda);
-
-    assert.ok(fetched_user.geo == geo);
-    assert.ok(fetched_user.region == region);
+    let _user = await program.account.user.fetch(pda);
+    assert.ok(_user.geo == geo);
+    assert.ok(_user.region == region);
+    let twoFactor = sha256.digest([
+      ...user.publicKey.toBytes(),
+      ...stringToUint8Array(email),
+    ]);
+    assert.ok(_user.twoFactor == twoFactor);
   });
 });

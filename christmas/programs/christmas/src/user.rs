@@ -1,20 +1,6 @@
 use anchor_lang::prelude::*;
-use solana_program::hash::hash;
 
 use crate::defs::*;
-
-pub fn create_user(
-    ctx: Context<CreateUser>,
-    email: String,
-    region: String,
-    geo: String,
-) -> Result<()> {
-    ctx.accounts.user.region = region;
-    ctx.accounts.user.geo = geo;
-    ctx.accounts.user.two_factor =
-        hash(&[ctx.accounts.signer.key.as_ref(), email.as_bytes()].concat()).to_bytes();
-    Ok(())
-}
 
 #[derive(Accounts)]
 pub struct CreateUser<'info> {
@@ -29,18 +15,18 @@ pub struct CreateUser<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
 #[account]
 pub struct User {
-    two_factor: [u8; 32],
-    region: String,
-    geo: String,
+    pub two_factor: [u8; 32],
+    pub region: String,
+    pub geo: String,
+    pub bump: u8,
 }
 
 impl User {
     fn len() -> usize {
-        DISCRIMINATOR_SIZE + TWO_FACTOR_SIZE + REGION_SIZE + GEO_SIZE
+        DISCRIMINATOR_SIZE + TWO_FACTOR_SIZE + REGION_SIZE + GEO_SIZE + BUMP_SIZE
     }
 }
