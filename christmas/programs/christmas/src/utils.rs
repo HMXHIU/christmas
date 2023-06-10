@@ -1,3 +1,76 @@
+use geohash::{decode, encode, neighbor, Coordinate, Direction};
+
+fn degrees_to_km(latitude: f64, longitude: f64) -> (f64, f64) {
+    // Mean radius of the Earth in kilometers
+    const EARTH_RADIUS_KM: f64 = 6371.0;
+
+    // Convert latitude and longitude to radians
+    let lat_rad = latitude.to_radians();
+    let lon_rad = longitude.to_radians();
+
+    // Calculate the distance in kilometers
+    let lat_km = EARTH_RADIUS_KM * lat_rad.cos();
+    let lon_km = EARTH_RADIUS_KM * lon_rad.cos();
+
+    (lat_km, lon_km)
+}
+
+fn km_to_degrees(latitude_km: f64, longitude_km: f64) -> (f64, f64) {
+    // Conversion factors for rough approximation
+    const LAT_DEG_TO_KM: f64 = 110.574;
+    const LON_DEG_TO_KM: f64 = 111.320;
+
+    // Convert distances to degrees
+    let lat_deg = latitude_km / LAT_DEG_TO_KM;
+    let lon_deg = longitude_km / LON_DEG_TO_KM;
+
+    (lat_deg, lon_deg)
+}
+
+pub fn get_geohashes_within_radius(geohash: &str, radius_km: u16) {
+    // get center lat lon
+    let (center, _, _) = decode(geohash).unwrap();
+
+    // get top left geohash
+    let (delta_lat, delta_lon) = km_to_degrees(radius_km as f64, radius_km as f64);
+
+    // get top left geohash
+    let tl = encode(
+        Coordinate {
+            x: center.x - delta_lat,
+            y: center.y + delta_lon,
+        },
+        6,
+    )
+    .unwrap();
+
+    /*
+        Calculate steps
+
+        Step size for 6 digits
+        x: 1.22 km
+        y: 0.61 km
+    */
+    let steps_y: u16 = (radius_km as f64 * 2.0 / 0.61).ceil() as u16;
+    let steps_x: u16 = (radius_km as f64 * 2.0 / 1.22).ceil() as u16;
+
+    let mut geohashes = vec![tl.clone()];
+
+    let mut y_cur = tl.clone();
+    let mut x_cur = tl.clone();
+
+    for _ in 0..steps_y {
+        x_cur = y_cur.clone();
+
+        for _ in 0..steps_x {
+            let next = neighbor(&x_cur, Direction::E).unwrap();
+            x_cur = next.clone();
+            geohashes.push(next);
+        }
+        y_cur = neighbor(&y_cur, Direction::S).unwrap();
+    }
+}
+
 pub fn code_to_country(code: &str) -> Option<&str> {
     match code {
         "AFG" => Some("Afghanistan"),
@@ -250,5 +323,22 @@ pub fn code_to_country(code: &str) -> Option<&str> {
         "ZWE" => Some("Zimbabwe"),
         "ALA" => Some("Åland Islands"),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_geohashes_within_radius() {
+        let center = "w21zdq";
+        let radius = 20;
+        let geohashes = get_geohashes_within_radius(&center, radius);
+
+        println!(
+            "geohashes {}km around {}): {:?}",
+            radius, &center, geohashes
+        );
     }
 }
