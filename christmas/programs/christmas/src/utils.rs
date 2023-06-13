@@ -1,4 +1,5 @@
 use geohash::{decode, encode, neighbor, Coordinate, Direction};
+use std::collections::HashSet;
 
 fn degrees_to_km(latitude: f64, longitude: f64) -> (f64, f64) {
     // Mean radius of the Earth in kilometers
@@ -27,7 +28,7 @@ fn km_to_degrees(latitude_km: f64, longitude_km: f64) -> (f64, f64) {
     (lat_deg, lon_deg)
 }
 
-pub fn get_geohashes_within_radius(geohash: &str, radius_km: u16) {
+pub fn get_geohashes_within_radius(geohash: &str, radius_km: u16) -> HashSet<String> {
     // get center lat lon
     let (center, _, _) = decode(geohash).unwrap();
 
@@ -54,7 +55,8 @@ pub fn get_geohashes_within_radius(geohash: &str, radius_km: u16) {
     let steps_y: u16 = (radius_km as f64 * 2.0 / 0.61).ceil() as u16;
     let steps_x: u16 = (radius_km as f64 * 2.0 / 1.22).ceil() as u16;
 
-    let mut geohashes = vec![tl.clone()];
+    let mut geohashes = HashSet::new();
+    geohashes.insert(tl.clone());
 
     let mut y_cur = tl.clone();
     let mut x_cur = tl.clone();
@@ -65,10 +67,12 @@ pub fn get_geohashes_within_radius(geohash: &str, radius_km: u16) {
         for _ in 0..steps_x {
             let next = neighbor(&x_cur, Direction::E).unwrap();
             x_cur = next.clone();
-            geohashes.push(next);
+            geohashes.insert(next);
         }
         y_cur = neighbor(&y_cur, Direction::S).unwrap();
     }
+
+    return geohashes;
 }
 
 pub fn code_to_country(code: &str) -> Option<&str> {
@@ -333,12 +337,40 @@ mod tests {
     #[test]
     fn test_get_geohashes_within_radius() {
         let center = "w21zdq";
-        let radius = 20;
+        let radius = 5;
         let geohashes = get_geohashes_within_radius(&center, radius);
 
         println!(
             "geohashes {}km around {}): {:?}",
             radius, &center, geohashes
         );
+
+        let around_singapore: HashSet<String> = vec![
+            "w21z3w", "w21ze8", "w21zgh", "w21zem", "w21zd5", "w21z9c", "w21zg8", "w21ze0",
+            "w21zcs", "w21zew", "w21zct", "w21zd4", "w21zek", "w21zcw", "w21zds", "w21zfs",
+            "w21z7r", "w21z9f", "w21zf4", "w21z9b", "w21z6x", "w21zdt", "w21ze7", "w21zgs",
+            "w21z6w", "w21z6z", "w21zd9", "w21z7q", "w21zdn", "w21zdy", "w21zcd", "w21z9s",
+            "w21zd0", "w21ze2", "w21zcc", "w21zcg", "w21zg1", "w21zfd", "w21zg4", "w21zex",
+            "w21zej", "w21zes", "w21zfm", "w21z3z", "w21z6y", "w21z9e", "w21zfj", "w21zf5",
+            "w21zf7", "w21zen", "w21zd6", "w21zfn", "w21zfk", "w21zc8", "w21zgn", "w21zd2",
+            "w21zet", "w21zfq", "w21z9z", "w21ze4", "w21zgw", "w21zed", "w21z98", "w21zfg",
+            "w21zee", "w21zde", "w21z6n", "w21zd8", "w21zf0", "w21zfh", "w21zge", "w21zft",
+            "w21zfw", "w21zg2", "w21zdh", "w21zcb", "w21ze9", "w21zf6", "w21z7n", "w21zeh",
+            "w21ze3", "w21zgj", "w21zeq", "w21zdv", "w21z6q", "w21z99", "w21z9u", "w21z7x",
+            "w21zdw", "w21zcy", "w21z9d", "w21zdc", "w21zf2", "w21zdu", "w21zdz", "w21zf9",
+            "w21zer", "w21zff", "w21zdr", "w21zcf", "w21z3x", "w21zd7", "w21zd1", "w21zdd",
+            "w21z3y", "w21zfb", "w21zep", "w21zd3", "w21z6p", "w21zg3", "w21zgd", "w21zfe",
+            "w21z9y", "w21zdk", "w21zdq", "w21zgk", "w21zg5", "w21zgq", "w21z9w", "w21ze6",
+            "w21zg7", "w21zcu", "w21z6r", "w21zce", "w21zdp", "w21ze5", "w21ze1", "w21zdb",
+            "w21zcq", "w21zfv", "w21zf8", "w21z9g", "w21z9t", "w21zfu", "w21z7p", "w21z7w",
+            "w21zf1", "w21zf3", "w21zg6", "w21zdf", "w21zcv", "w21zfc", "w21zg0", "w21zdx",
+            "w21zgm", "w21zc9", "w21zdj", "w21zdg", "w21zfy", "w21zdm", "w21zgt", "w21z9v",
+            "w21z9x", "w21zg9",
+        ]
+        .into_iter()
+        .map(|x| x.to_owned())
+        .collect();
+
+        assert!(around_singapore.eq(&geohashes));
     }
 }
