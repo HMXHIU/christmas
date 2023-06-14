@@ -1,0 +1,118 @@
+import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { Christmas } from "../target/types/christmas";
+import { web3 } from "@coral-xyz/anchor";
+import { assert, expect } from "chai";
+import { stringToUint8Array } from "./utils";
+import { sha256 } from "js-sha256";
+import {
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  mintTo,
+  createMint,
+  createAssociatedTokenAccount,
+  getAssociatedTokenAddress,
+} from "@solana/spl-token";
+import { min } from "bn.js";
+import { publicKey } from "@coral-xyz/anchor/dist/cjs/utils";
+
+async function createUser(
+  wallet: web3.Keypair,
+  email: string,
+  region: string,
+  geo: string
+): Promise<[web3.PublicKey, number]> {
+  const program = anchor.workspace.Christmas as Program<Christmas>;
+
+  // Calculate the PDA of the user
+  const [pda, bump] = web3.PublicKey.findProgramAddressSync(
+    [
+      Buffer.from(anchor.utils.bytes.utf8.encode("user")),
+      wallet.publicKey.toBuffer(),
+    ],
+    program.programId
+  );
+
+  // Create user
+  const tx = await program.methods
+    .createUser(email, region, geo)
+    .accounts({
+      user: pda,
+      signer: wallet.publicKey,
+      systemProgram: web3.SystemProgram.programId,
+    })
+    .signers([wallet])
+    .rpc();
+
+  return [pda, bump];
+}
+
+async function requestAirdrop(publicKeys: web3.PublicKey[], amount: number) {
+  const provider = anchor.getProvider();
+
+  // Airdrop in parallel
+  await Promise.all(
+    publicKeys.map((publicKey) => {
+      return new Promise<void>(async (resolve) => {
+        const sig = await provider.connection.requestAirdrop(publicKey, amount);
+        const blockHash = await provider.connection.getLatestBlockhash();
+        await provider.connection.confirmTransaction({
+          blockhash: blockHash.blockhash,
+          lastValidBlockHeight: blockHash.lastValidBlockHeight,
+          signature: sig,
+        });
+        console.log(`Airdrop ${amount} to ${publicKey}`);
+        resolve();
+      });
+    })
+  );
+}
+
+describe("christmas", () => {
+  // Configure the client to use the local cluster.
+  anchor.setProvider(anchor.AnchorProvider.env());
+
+  it("Get users within radius", async () => {
+    // Create some users around singapore
+    // prettier-ignore
+    let hashesAroundSingapore = [
+      "w21z3w", "w21ze8", "w21zgh", "w21zem", "w21zd5", "w21z9c", "w21zg8", "w21ze0",
+      "w21z7r", "w21z9f", "w21zf4", "w21z9b", "w21z6x", "w21zdt", "w21ze7", "w21zgs",
+      "w21zd0", "w21ze2", "w21zcc", "w21zcg", "w21zg1", "w21zfd", "w21zg4", "w21zex",
+      "w21zf7", "w21zen", "w21zd6", "w21zfn", "w21zfk", "w21zc8", "w21zgn", "w21zd2",
+      "w21zet", "w21zfq", "w21z9z", "w21ze4", "w21zgw", "w21zed", "w21z98", "w21zfg",
+      "w21zfw", "w21zg2", "w21zdh", "w21zcb", "w21ze9", "w21zf6", "w21z7n", "w21zeh",
+      "w21zdw", "w21zcy", "w21z9d", "w21zdc", "w21zf2", "w21zdu", "w21zdz", "w21zf9",
+      "w21z9y", "w21zdk", "w21zdq", "w21zgk", "w21zg5", "w21zgq", "w21z9w", "w21ze6",
+      "w21zcq", "w21zfv", "w21zf8", "w21z9g", "w21z9t", "w21zfu", "w21z7p", "w21z7w",
+      "w21zgm", "w21zc9", "w21zdj", "w21zdg", "w21zfy", "w21zdm", "w21zgt", "w21z9v",
+    ]
+
+    const userLocations = hashesAroundSingapore.map(
+      (geo: string): [web3.Keypair, string] => {
+        return [anchor.web3.Keypair.generate(), geo];
+      }
+    );
+
+    // Airdrop users
+    await requestAirdrop(
+      userLocations.map(([user, _]) => user.publicKey),
+      10e9
+    );
+
+    // Create users
+    const pdas = await Promise.all(
+      userLocations.map(([user, geo]) => {
+        return new Promise<[web3.PublicKey, number]>(async (resolve) => {
+          const email = `${geo}@gmail.com`;
+          const region = "SGP";
+          const [pda, bump] = await createUser(user, email, region, geo);
+          console.log(`Created user ${pda}`);
+          resolve([pda, bump]);
+        });
+      })
+    );
+
+    // TODO: create rpc to get all user pdas within radius and compare with pdas
+  });
+});
