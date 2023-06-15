@@ -1,18 +1,20 @@
 use anchor_lang::prelude::*;
 use solana_program::hash::hash;
-
 mod coupon;
 mod defs;
+mod query;
 mod user;
 mod utils;
 use coupon::*;
-use defs::*;
+use query::*;
 use user::*;
 
 declare_id!("B2ejsK7m3eYPerru92hS73Gx7sQ7J83DKoLHGwn6pg5v");
 
 #[program]
 pub mod christmas {
+    use anchor_lang::accounts::program;
+
     use super::*;
 
     pub fn create_user(
@@ -45,8 +47,12 @@ pub mod christmas {
         ctx.accounts.metadata.geo = geo;
         ctx.accounts.metadata.bump = *ctx.bumps.get("metadata").unwrap();
 
-        // TODO: check region
+        // TODO: check region, or set default to global
 
+        Ok(())
+    }
+
+    pub fn query_users(ctx: Context<Query>, geo: String, radius: u16) -> Result<()> {
         Ok(())
     }
 }

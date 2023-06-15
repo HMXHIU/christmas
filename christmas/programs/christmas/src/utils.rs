@@ -1,4 +1,4 @@
-use geohash::{decode, encode, neighbor, Coordinate, Direction};
+use geohash::{decode, encode, neighbor, Coord, Direction};
 use std::collections::HashSet;
 
 fn degrees_to_km(latitude: f64, longitude: f64) -> (f64, f64) {
@@ -37,7 +37,7 @@ pub fn get_geohashes_within_radius(geohash: &str, radius_km: u16) -> HashSet<Str
 
     // get top left geohash
     let tl = encode(
-        Coordinate {
+        Coord {
             x: center.x - delta_lat,
             y: center.y + delta_lon,
         },

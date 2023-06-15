@@ -16,17 +16,15 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = { version = "0.27.0", features =["init-if-needed"] }
-anchor-spl = "0.27.0"
+anchor-lang = { version = "0.28.0", features =["init-if-needed"] }
+anchor-spl = "0.28.0"
 # anchor-lang = { git = "https://github.com/coral-xyz/anchor", features =["init-if-needed"] }
 # anchor-spl = { git = "https://github.com/coral-xyz/anchor" }
 
 # patch
-getrandom = { version = "0.2.9", features = ["custom"] }
-solana-program = "=1.14.17"
+solana-program = "=1.16.0"
 winnow = "=0.4.1"
-toml_datetime = "=0.6.1"
 
 # our dependencies
-geohash = "0.12.0"
-geo-types = "0.6"
+geohash = "0.13.0"
+solana-client = "1.16.0"
