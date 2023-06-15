@@ -13,8 +13,6 @@ declare_id!("B2ejsK7m3eYPerru92hS73Gx7sQ7J83DKoLHGwn6pg5v");
 
 #[program]
 pub mod christmas {
-    use anchor_lang::accounts::program;
-
     use super::*;
 
     pub fn create_user(
@@ -53,6 +51,8 @@ pub mod christmas {
     }
 
     pub fn query_users(ctx: Context<Query>, geo: String, radius: u16) -> Result<()> {
+        // TODO: M1 mac can't compile solana-client (https://github.com/metaspan/solana-docker-mac-m1) use docker or run this in JS instead
+
         Ok(())
     }
 }

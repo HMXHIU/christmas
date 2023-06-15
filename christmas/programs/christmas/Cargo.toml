@@ -27,4 +27,3 @@ winnow = "=0.4.1"
 
 # our dependencies
 geohash = "0.13.0"
-solana-client = "1.16.0"

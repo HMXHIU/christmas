@@ -5,6 +5,7 @@ import { web3 } from "@coral-xyz/anchor";
 import { assert, expect } from "chai";
 import { stringToUint8Array } from "./utils";
 import { sha256 } from "js-sha256";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import {
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -16,61 +17,21 @@ import {
 import { min } from "bn.js";
 import { publicKey } from "@coral-xyz/anchor/dist/cjs/utils";
 
-async function createUser(
-  wallet: web3.Keypair,
-  email: string,
-  region: string,
-  geo: string
-): Promise<[web3.PublicKey, number]> {
-  const program = anchor.workspace.Christmas as Program<Christmas>;
-
-  // Calculate the PDA of the user
-  const [pda, bump] = web3.PublicKey.findProgramAddressSync(
-    [
-      Buffer.from(anchor.utils.bytes.utf8.encode("user")),
-      wallet.publicKey.toBuffer(),
-    ],
-    program.programId
-  );
-
-  // Create user
-  const tx = await program.methods
-    .createUser(email, region, geo)
-    .accounts({
-      user: pda,
-      signer: wallet.publicKey,
-      systemProgram: web3.SystemProgram.programId,
-    })
-    .signers([wallet])
-    .rpc();
-
-  return [pda, bump];
-}
-
-async function requestAirdrop(publicKeys: web3.PublicKey[], amount: number) {
-  const provider = anchor.getProvider();
-
-  // Airdrop in parallel
-  await Promise.all(
-    publicKeys.map((publicKey) => {
-      return new Promise<void>(async (resolve) => {
-        const sig = await provider.connection.requestAirdrop(publicKey, amount);
-        const blockHash = await provider.connection.getLatestBlockhash();
-        await provider.connection.confirmTransaction({
-          blockhash: blockHash.blockhash,
-          lastValidBlockHeight: blockHash.lastValidBlockHeight,
-          signature: sig,
-        });
-        console.log(`Airdrop ${amount} to ${publicKey}`);
-        resolve();
-      });
-    })
-  );
-}
+import {
+  createUser,
+  requestAirdrop,
+  USER_ACCOUNT_SIZE,
+  TWO_FACTOR_SIZE,
+  REGION_SIZE,
+  DISCRIMINATOR_SIZE,
+  STRING_PREFIX_SIZE,
+} from "./utils";
 
 describe("christmas", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.getProvider();
+  const program = anchor.workspace.Christmas as Program<Christmas>;
 
   it("Get users within radius", async () => {
     // Create some users around singapore
@@ -113,6 +74,50 @@ describe("christmas", () => {
       })
     );
 
-    // TODO: create rpc to get all user pdas within radius and compare with pdas
+    /*
+    TODO:
+      1. Write geohash function in JS utils
+      2. Get geohashes in radius
+      3. Filter accounts for geohashs
+    */
+
+    // const user_accounts = await provider.connection.getProgramAccounts(
+    //   program.programId,
+    //   {
+    //     filters: [
+    //       {
+    //         dataSize: USER_ACCOUNT_SIZE,
+    //       },
+    //       {
+    //         memcmp: {
+    //           offset:
+    //             DISCRIMINATOR_SIZE +
+    //             TWO_FACTOR_SIZE +
+    //             REGION_SIZE +
+    //             STRING_PREFIX_SIZE,
+    //           bytes: bs58.encode(Buffer.from("w21zc9", "utf-8")),
+    //         },
+    //       },
+    //     ],
+    //   }
+    // );
+
+    const user_accounts = await program.account.user.all([
+      {
+        dataSize: USER_ACCOUNT_SIZE,
+      },
+      {
+        memcmp: {
+          offset:
+            DISCRIMINATOR_SIZE +
+            TWO_FACTOR_SIZE +
+            REGION_SIZE +
+            STRING_PREFIX_SIZE,
+          bytes: bs58.encode(Buffer.from("w21zc9", "utf-8")),
+        },
+      },
+    ]);
+
+    console.log("user_accounts: ", user_accounts);
   });
 });
