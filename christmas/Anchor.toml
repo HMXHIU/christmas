@@ -1,6 +1,7 @@
 [features]
 seeds = false
 skip-lint = false
+
 [programs.localnet]
 christmas = "B2ejsK7m3eYPerru92hS73Gx7sQ7J83DKoLHGwn6pg5v"
 

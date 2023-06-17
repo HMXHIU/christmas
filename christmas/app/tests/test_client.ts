@@ -1,0 +1,23 @@
+import { assert, expect } from "chai";
+import idl from "../../target/idl/christmas.json";
+import * as web3 from "@solana/web3.js";
+import * as anchor from "@coral-xyz/anchor";
+import AnchorClient from "../src/lib/anchorClient";
+
+describe("Test AnchorClient", () => {
+    it("Initialize default", async () => {
+        const client = new AnchorClient();
+        expect(client.cluster).to.equal("http://localhost:8899");
+        const programId = new web3.PublicKey(idl.metadata.address);
+        assert(client.programId.equals(programId));
+    });
+
+    it("Initialize with keypair", async () => {
+        const keypair = web3.Keypair.generate();
+        const client = new AnchorClient({ keypair: keypair });
+        expect(client.cluster).to.equal("http://localhost:8899");
+        const programId = new web3.PublicKey(idl.metadata.address);
+        assert(client.programId.equals(programId));
+        assert(client.provider.publicKey.equals(keypair.publicKey));
+    });
+});

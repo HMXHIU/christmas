@@ -78,7 +78,18 @@ describe("christmas", () => {
     TODO:
       1. Write geohash function in JS utils
       2. Get geohashes in radius
-      3. Filter accounts for geohashs
+      3. Filter accounts for geohashes
+
+
+    - given geo hash center and radius
+    - given the radius, choose an appropriate precision (number of digits) to reduce the search space
+    - get all geohashes in scope (up to precision)
+    - calculate largest common prefixes (might have more than 1)
+    - query memcmp based on largest common prefixes (bits) (get a bunch of users)
+    - filter finely the results if they are in the original set
+    - this is because we can only retrieve the accounts using memcmp with a bit prefix
+
+
     */
 
     // const user_accounts = await provider.connection.getProgramAccounts(

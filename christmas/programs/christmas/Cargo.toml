@@ -23,7 +23,6 @@ anchor-spl = "0.28.0"
 
 # patch
 solana-program = "=1.16.0"
-winnow = "=0.4.1"
 
 # our dependencies
 geohash = "0.13.0"
