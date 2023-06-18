@@ -23,7 +23,7 @@ export default class AnchorClient {
         keypair?: web3.Keypair;
     } = {}) {
         this.programId = programId || new web3.PublicKey(idl.metadata.address);
-        this.cluster = cluster || "http://localhost:8899";
+        this.cluster = cluster || "http://127.0.0.1:8899";
         this.connection = new anchor.web3.Connection(this.cluster, "confirmed");
 
         console.log(`Connected to ${cluster}`);
@@ -49,14 +49,16 @@ export default class AnchorClient {
         );
     }
 
-    getUserPDA(): [web3.PublicKey, number] {
-        return web3.PublicKey.findProgramAddressSync(
-            [
-                anchor.utils.bytes.utf8.encode("user"),
-                this.wallet.publicKey.toBuffer(),
-            ],
-            this.program.programId
-        );
+    async confirmTransaction(signature: string): Promise<string> {
+        const bh = await this.connection.getLatestBlockhash();
+        await this.connection.confirmTransaction({
+            blockhash: bh.blockhash,
+            lastValidBlockHeight: bh.lastValidBlockHeight,
+            signature: signature,
+        });
+
+        // TODO: Error handling, return web3.SignatureResult instead
+        return signature;
     }
 
     async executeTransaction(
@@ -82,14 +84,25 @@ export default class AnchorClient {
         );
 
         // confirm transaction
-        const bh = await this.connection.getLatestBlockhash();
-        await this.connection.confirmTransaction({
-            blockhash: bh.blockhash,
-            lastValidBlockHeight: bh.lastValidBlockHeight,
-            signature: sig,
-        });
+        return await this.confirmTransaction(sig);
+    }
 
-        return sig;
+    async requestAirdrop(amount: number): Promise<string> {
+        const sig = await this.connection.requestAirdrop(
+            this.wallet.publicKey,
+            amount
+        );
+        return await this.confirmTransaction(sig);
+    }
+
+    getUserPDA(): [web3.PublicKey, number] {
+        return web3.PublicKey.findProgramAddressSync(
+            [
+                anchor.utils.bytes.utf8.encode("user"),
+                this.wallet.publicKey.toBuffer(),
+            ],
+            this.program.programId
+        );
     }
 
     async createUser({
@@ -100,7 +113,7 @@ export default class AnchorClient {
         email: string;
         geo: string;
         region: string;
-    }) {
+    }): Promise<string> {
         const [pda, _] = this.getUserPDA();
 
         const ix = await this.program.methods
@@ -115,8 +128,6 @@ export default class AnchorClient {
         const tx = new Transaction();
         tx.add(ix);
 
-        const sig = await this.executeTransaction(tx);
-
-        console.log(`Executed createUser with signature ${sig}`);
+        return await this.executeTransaction(tx);
     }
 }
