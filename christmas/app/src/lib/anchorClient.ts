@@ -1,8 +1,7 @@
 import * as web3 from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
-const { SystemProgram } = anchor.web3;
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
-
+import { Transaction, Signer } from "@solana/web3.js";
 import idl from "../../../target/idl/christmas.json";
 import { Christmas } from "../../../target/types/christmas";
 
@@ -12,6 +11,7 @@ export default class AnchorClient {
     connection: anchor.web3.Connection;
     provider: anchor.Provider;
     program: anchor.Program<Christmas>;
+    wallet: anchor.Wallet | PhantomWalletAdapter;
 
     constructor({
         programId,
@@ -28,7 +28,7 @@ export default class AnchorClient {
 
         console.log(`Connected to ${cluster}`);
 
-        const wallet =
+        this.wallet =
             typeof window !== "undefined" &&
             window.solana?.isConnected &&
             window.solana?.isPhantom
@@ -39,7 +39,7 @@ export default class AnchorClient {
 
         this.provider = new anchor.AnchorProvider(
             this.connection,
-            wallet,
+            this.wallet,
             anchor.AnchorProvider.defaultOptions()
         );
         this.program = new anchor.Program<Christmas>(
@@ -47,5 +47,76 @@ export default class AnchorClient {
             this.programId,
             this.provider
         );
+    }
+
+    getUserPDA(): [web3.PublicKey, number] {
+        return web3.PublicKey.findProgramAddressSync(
+            [
+                anchor.utils.bytes.utf8.encode("user"),
+                this.wallet.publicKey.toBuffer(),
+            ],
+            this.program.programId
+        );
+    }
+
+    async executeTransaction(
+        tx: Transaction,
+        signers?: Array<Signer>
+    ): Promise<string> {
+        // set latest blockhash
+        tx.recentBlockhash = (
+            await this.connection.getLatestBlockhash("singleGossip")
+        ).blockhash;
+
+        // set payer
+        tx.feePayer = this.wallet.publicKey;
+
+        // additional signers if required
+        if (signers) {
+            tx.partialSign(...signers);
+        }
+
+        // sign and send
+        const sig = await this.connection.sendRawTransaction(
+            (await this.wallet.signTransaction(tx)).serialize()
+        );
+
+        // confirm transaction
+        const bh = await this.connection.getLatestBlockhash();
+        await this.connection.confirmTransaction({
+            blockhash: bh.blockhash,
+            lastValidBlockHeight: bh.lastValidBlockHeight,
+            signature: sig,
+        });
+
+        return sig;
+    }
+
+    async createUser({
+        email,
+        geo,
+        region,
+    }: {
+        email: string;
+        geo: string;
+        region: string;
+    }) {
+        const [pda, _] = this.getUserPDA();
+
+        const ix = await this.program.methods
+            .createUser(email, region, geo)
+            .accounts({
+                user: pda,
+                signer: this.wallet.publicKey,
+                systemProgram: web3.SystemProgram.programId,
+            })
+            .instruction();
+
+        const tx = new Transaction();
+        tx.add(ix);
+
+        const sig = await this.executeTransaction(tx);
+
+        console.log(`Executed createUser with signature ${sig}`);
     }
 }
