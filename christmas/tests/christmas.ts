@@ -5,15 +5,7 @@ import { web3 } from "@coral-xyz/anchor";
 import { assert, expect } from "chai";
 import { stringToUint8Array } from "./utils";
 import { sha256 } from "js-sha256";
-import {
-    TOKEN_PROGRAM_ID,
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    mintTo,
-    createMint,
-    createAssociatedTokenAccount,
-    getAssociatedTokenAddress,
-} from "@solana/spl-token";
-import { min } from "bn.js";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 describe("christmas", () => {
     // Configure the client to use the local cluster.
@@ -88,7 +80,7 @@ describe("christmas", () => {
         const mint = anchor.web3.Keypair.generate();
 
         // Calculate Metadata PDA
-        const [metadataPda, _] = web3.PublicKey.findProgramAddressSync(
+        const [couponMetadataPda, _] = web3.PublicKey.findProgramAddressSync(
             [
                 Buffer.from(anchor.utils.bytes.utf8.encode("metadata")),
                 mint.publicKey.toBuffer(),
@@ -100,7 +92,7 @@ describe("christmas", () => {
             .createCouponMint(name, symbol, region, geo, uri)
             .accounts({
                 mint: mint.publicKey,
-                metadata: metadataPda,
+                metadata: couponMetadataPda,
                 signer: user.publicKey,
                 systemProgram: web3.SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
@@ -109,7 +101,10 @@ describe("christmas", () => {
             .rpc();
 
         // Check account is created correctly
-        let _metadata = await program.account.couponMetadata.fetch(metadataPda);
+        let _metadata = await program.account.couponMetadata.fetch(
+            couponMetadataPda
+        );
+        assert.ok(_metadata.updateAuthority.equals(user.publicKey));
         assert.ok(_metadata.geo == geo);
         assert.ok(_metadata.region == region);
         assert.ok(_metadata.name == name);

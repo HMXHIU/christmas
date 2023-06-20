@@ -33,6 +33,7 @@ pub struct CouponMetadata {
     Follow Metaplex standards as much as possible
     https://docs.metaplex.com/programs/token-metadata/accounts
     */
+    pub update_authority: Pubkey,
     pub mint: Pubkey,
     pub name: String,
     pub symbol: String,
@@ -45,6 +46,7 @@ pub struct CouponMetadata {
 impl CouponMetadata {
     fn len() -> usize {
         DISCRIMINATOR_SIZE
+            + PUBKEY_SIZE
             + PUBKEY_SIZE
             + COUPON_NAME_SIZE
             + COUPON_SYMBOL_SIZE

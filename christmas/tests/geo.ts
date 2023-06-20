@@ -2,41 +2,26 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Christmas } from "../target/types/christmas";
 import { web3 } from "@coral-xyz/anchor";
-import { assert, expect } from "chai";
-import { stringToUint8Array } from "./utils";
-import { sha256 } from "js-sha256";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+import { createUser, requestAirdrop } from "./utils";
 import {
-  TOKEN_PROGRAM_ID,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  mintTo,
-  createMint,
-  createAssociatedTokenAccount,
-  getAssociatedTokenAddress,
-} from "@solana/spl-token";
-import { min } from "bn.js";
-import { publicKey } from "@coral-xyz/anchor/dist/cjs/utils";
-
-import {
-  createUser,
-  requestAirdrop,
-  USER_ACCOUNT_SIZE,
-  TWO_FACTOR_SIZE,
-  REGION_SIZE,
-  DISCRIMINATOR_SIZE,
-  STRING_PREFIX_SIZE,
-} from "./utils";
+    USER_ACCOUNT_SIZE,
+    TWO_FACTOR_SIZE,
+    REGION_SIZE,
+    DISCRIMINATOR_SIZE,
+    STRING_PREFIX_SIZE,
+} from "../app/src/lib/constants";
 
 describe("christmas", () => {
-  // Configure the client to use the local cluster.
-  anchor.setProvider(anchor.AnchorProvider.env());
-  const provider = anchor.getProvider();
-  const program = anchor.workspace.Christmas as Program<Christmas>;
+    // Configure the client to use the local cluster.
+    anchor.setProvider(anchor.AnchorProvider.env());
+    const provider = anchor.getProvider();
+    const program = anchor.workspace.Christmas as Program<Christmas>;
 
-  it("Get users within radius", async () => {
-    // Create some users around singapore
-    // prettier-ignore
-    let hashesAroundSingapore = [
+    it("Get users within radius", async () => {
+        // Create some users around singapore
+        // prettier-ignore
+        let hashesAroundSingapore = [
       "w21z3w", "w21ze8", "w21zgh", "w21zem", "w21zd5", "w21z9c", "w21zg8", "w21ze0",
       "w21z7r", "w21z9f", "w21zf4", "w21z9b", "w21z6x", "w21zdt", "w21ze7", "w21zgs",
       "w21zd0", "w21ze2", "w21zcc", "w21zcg", "w21zg1", "w21zfd", "w21zg4", "w21zex",
@@ -49,32 +34,39 @@ describe("christmas", () => {
       "w21zgm", "w21zc9", "w21zdj", "w21zdg", "w21zfy", "w21zdm", "w21zgt", "w21z9v",
     ]
 
-    const userLocations = hashesAroundSingapore.map(
-      (geo: string): [web3.Keypair, string] => {
-        return [anchor.web3.Keypair.generate(), geo];
-      }
-    );
+        const userLocations = hashesAroundSingapore.map(
+            (geo: string): [web3.Keypair, string] => {
+                return [anchor.web3.Keypair.generate(), geo];
+            }
+        );
 
-    // Airdrop users
-    await requestAirdrop(
-      userLocations.map(([user, _]) => user.publicKey),
-      10e9
-    );
+        // Airdrop users
+        await requestAirdrop(
+            userLocations.map(([user, _]) => user.publicKey),
+            10e9
+        );
 
-    // Create users
-    const pdas = await Promise.all(
-      userLocations.map(([user, geo]) => {
-        return new Promise<[web3.PublicKey, number]>(async (resolve) => {
-          const email = `${geo}@gmail.com`;
-          const region = "SGP";
-          const [pda, bump] = await createUser(user, email, region, geo);
-          console.log(`Created user ${pda}`);
-          resolve([pda, bump]);
-        });
-      })
-    );
+        // Create users
+        const pdas = await Promise.all(
+            userLocations.map(([user, geo]) => {
+                return new Promise<[web3.PublicKey, number]>(
+                    async (resolve) => {
+                        const email = `${geo}@gmail.com`;
+                        const region = "SGP";
+                        const [pda, bump] = await createUser(
+                            user,
+                            email,
+                            region,
+                            geo
+                        );
+                        console.log(`Created user ${pda}`);
+                        resolve([pda, bump]);
+                    }
+                );
+            })
+        );
 
-    /*
+        /*
     TODO:
       1. Write geohash function in JS utils
       2. Get geohashes in radius
@@ -92,43 +84,43 @@ describe("christmas", () => {
 
     */
 
-    // const user_accounts = await provider.connection.getProgramAccounts(
-    //   program.programId,
-    //   {
-    //     filters: [
-    //       {
-    //         dataSize: USER_ACCOUNT_SIZE,
-    //       },
-    //       {
-    //         memcmp: {
-    //           offset:
-    //             DISCRIMINATOR_SIZE +
-    //             TWO_FACTOR_SIZE +
-    //             REGION_SIZE +
-    //             STRING_PREFIX_SIZE,
-    //           bytes: bs58.encode(Buffer.from("w21zc9", "utf-8")),
-    //         },
-    //       },
-    //     ],
-    //   }
-    // );
+        // const user_accounts = await provider.connection.getProgramAccounts(
+        //   program.programId,
+        //   {
+        //     filters: [
+        //       {
+        //         dataSize: USER_ACCOUNT_SIZE,
+        //       },
+        //       {
+        //         memcmp: {
+        //           offset:
+        //             DISCRIMINATOR_SIZE +
+        //             TWO_FACTOR_SIZE +
+        //             REGION_SIZE +
+        //             STRING_PREFIX_SIZE,
+        //           bytes: bs58.encode(Buffer.from("w21zc9", "utf-8")),
+        //         },
+        //       },
+        //     ],
+        //   }
+        // );
 
-    const user_accounts = await program.account.user.all([
-      {
-        dataSize: USER_ACCOUNT_SIZE,
-      },
-      {
-        memcmp: {
-          offset:
-            DISCRIMINATOR_SIZE +
-            TWO_FACTOR_SIZE +
-            REGION_SIZE +
-            STRING_PREFIX_SIZE,
-          bytes: bs58.encode(Buffer.from("w21zc9", "utf-8")),
-        },
-      },
-    ]);
+        const user_accounts = await program.account.user.all([
+            {
+                dataSize: USER_ACCOUNT_SIZE,
+            },
+            {
+                memcmp: {
+                    offset:
+                        DISCRIMINATOR_SIZE +
+                        TWO_FACTOR_SIZE +
+                        REGION_SIZE +
+                        STRING_PREFIX_SIZE,
+                    bytes: bs58.encode(Buffer.from("w21zc9", "utf-8")),
+                },
+            },
+        ]);
 
-    console.log("user_accounts: ", user_accounts);
-  });
+        console.log("user_accounts: ", user_accounts);
+    });
 });

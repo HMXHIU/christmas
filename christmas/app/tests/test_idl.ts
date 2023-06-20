@@ -32,4 +32,25 @@ describe("Test client functions", () => {
         assert.ok(user.geo == geo);
         assert.ok(user.region == region);
     });
+
+    it("Create coupon", async () => {
+        const geo = "gbsuv7";
+        const region = "SGP";
+        const uri = "http://someuri.com";
+        const name = "Drinks on us";
+        const symbol = "DNKS #1";
+
+        // create coupon
+        await client.createCoupon({ geo, region, name, uri, symbol });
+
+        // check if coupon is created
+        const coupons = await client.getMintedCoupons();
+        assert.ok(coupons.length === 1);
+        assert.equal(coupons[0].geo, geo);
+        assert.equal(coupons[0].region, region);
+        assert.equal(coupons[0].uri, uri);
+        assert.equal(coupons[0].name, name);
+        assert.equal(coupons[0].symbol, symbol);
+        assert.ok(coupons[0].updateAuthority.equals(client.wallet.publicKey));
+    });
 });

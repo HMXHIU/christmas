@@ -4,6 +4,8 @@ import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { Transaction, Signer } from "@solana/web3.js";
 import idl from "../../../target/idl/christmas.json";
 import { Christmas } from "../../../target/types/christmas";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { DISCRIMINATOR_SIZE } from "./constants";
 
 export default class AnchorClient {
     programId: web3.PublicKey;
@@ -129,5 +131,58 @@ export default class AnchorClient {
         tx.add(ix);
 
         return await this.executeTransaction(tx);
+    }
+
+    async createCoupon({
+        geo,
+        region,
+        name,
+        uri,
+        symbol,
+    }: {
+        geo: string;
+        region: string;
+        name: string;
+        uri: string;
+        symbol: string;
+    }): Promise<string> {
+        // generate new mint keys
+        const mint = web3.Keypair.generate();
+
+        // calculate PDA for coupon metadata
+        const [couponMetadataPda, _] = web3.PublicKey.findProgramAddressSync(
+            [
+                anchor.utils.bytes.utf8.encode("metadata"),
+                mint.publicKey.toBuffer(),
+            ],
+            this.program.programId
+        );
+
+        // create coupon (mint + metadata)
+        const ix = await this.program.methods
+            .createCouponMint(name, symbol, region, geo, uri)
+            .accounts({
+                mint: mint.publicKey,
+                metadata: couponMetadataPda,
+                signer: this.wallet.publicKey,
+                systemProgram: web3.SystemProgram.programId,
+                tokenProgram: TOKEN_PROGRAM_ID,
+            })
+            .instruction();
+        const tx = new Transaction();
+        tx.add(ix);
+        return await this.executeTransaction(tx, [mint]);
+    }
+
+    async getMintedCoupons() {
+        const coupons = await this.program.account.couponMetadata.all([
+            {
+                memcmp: {
+                    offset: DISCRIMINATOR_SIZE,
+                    bytes: this.wallet.publicKey.toBase58(),
+                },
+            },
+        ]);
+        return coupons.map((x) => x.account);
     }
 }

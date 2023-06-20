@@ -37,6 +37,7 @@ pub mod christmas {
         geo: String,
         uri: String,
     ) -> Result<()> {
+        ctx.accounts.metadata.update_authority = ctx.accounts.signer.key();
         ctx.accounts.metadata.mint = ctx.accounts.mint.key();
         ctx.accounts.metadata.name = name;
         ctx.accounts.metadata.symbol = symbol;
