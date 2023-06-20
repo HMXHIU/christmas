@@ -2,11 +2,9 @@ use anchor_lang::prelude::*;
 use solana_program::hash::hash;
 mod coupon;
 mod defs;
-mod query;
 mod user;
 mod utils;
 use coupon::*;
-use query::*;
 use user::*;
 
 declare_id!("B2ejsK7m3eYPerru92hS73Gx7sQ7J83DKoLHGwn6pg5v");
@@ -47,12 +45,6 @@ pub mod christmas {
         ctx.accounts.metadata.bump = *ctx.bumps.get("metadata").unwrap();
 
         // TODO: check region, or set default to global
-
-        Ok(())
-    }
-
-    pub fn query_users(ctx: Context<Query>, geo: String, radius: u16) -> Result<()> {
-        // TODO: M1 mac can't compile solana-client (https://github.com/metaspan/solana-docker-mac-m1) use docker or run this in JS instead
 
         Ok(())
     }
