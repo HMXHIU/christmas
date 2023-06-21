@@ -56,14 +56,3 @@ impl CouponMetadata {
             + BUMP_SIZE
     }
 }
-
-#[account]
-pub struct CouponRegion {
-    pub region: String,
-}
-
-impl CouponRegion {
-    fn len() -> usize {
-        DISCRIMINATOR_SIZE + REGION_SIZE
-    }
-}

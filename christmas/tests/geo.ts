@@ -59,7 +59,6 @@ describe("christmas", () => {
                             region,
                             geo
                         );
-                        console.log(`Created user ${pda}`);
                         resolve([pda, bump]);
                     }
                 );
@@ -97,7 +96,5 @@ describe("christmas", () => {
                 },
             },
         ]);
-
-        console.log("user_accounts: ", user_accounts);
     });
 });

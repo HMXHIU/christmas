@@ -60,7 +60,6 @@ export async function requestAirdrop(
                     lastValidBlockHeight: blockHash.lastValidBlockHeight,
                     signature: sig,
                 });
-                console.log(`Airdrop ${amount} to ${publicKey}`);
                 resolve();
             });
         })
