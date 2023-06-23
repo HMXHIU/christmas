@@ -9,7 +9,10 @@ import {
     TOKEN_PROGRAM_ID,
     getAssociatedTokenAddress,
     ASSOCIATED_TOKEN_PROGRAM_ID,
+    getMint,
 } from "@solana/spl-token";
+
+import { requestAirdrop } from "./utils";
 
 describe("christmas", () => {
     // Configure the client to use the local cluster.
@@ -22,20 +25,11 @@ describe("christmas", () => {
     console.log(`program: ${web3.SystemProgram.programId}`);
     console.log(`user: ${user.publicKey}`);
 
-    it("Airdrop to user", async () => {
-        const sig = await provider.connection.requestAirdrop(
-            user.publicKey,
-            100e9
-        );
-        const blockHash = await provider.connection.getLatestBlockhash();
-        await provider.connection.confirmTransaction({
-            blockhash: blockHash.blockhash,
-            lastValidBlockHeight: blockHash.lastValidBlockHeight,
-            signature: sig,
-        });
+    it("Airdrop some sol for transactions", async () => {
+        await requestAirdrop([user.publicKey], 100e9);
     });
 
-    it("Create User", async () => {
+    it("Create user", async () => {
         let email = "user@gmail.com";
         let geo = "gbsuv7";
         let region = "SGP";
@@ -92,7 +86,7 @@ describe("christmas", () => {
             program.programId
         );
 
-        it("Create Coupon Mint", async () => {
+        it("Create coupon mint", async () => {
             const tx = await program.methods
                 .createCouponMint(name, symbol, region, geo, uri)
                 .accounts({
@@ -117,7 +111,7 @@ describe("christmas", () => {
             assert.ok(_metadata.uri == uri);
         });
 
-        it("Mint To Market", async () => {
+        it("Mint to region market", async () => {
             // Calculate regionMarketPDA
             const [regionMarketPDA, _] = web3.PublicKey.findProgramAddressSync(
                 [
@@ -139,10 +133,15 @@ describe("christmas", () => {
             );
 
             // Check mint supply before
+            const mintSupplyBefore = (
+                await getMint(provider.connection, mint.publicKey)
+            ).supply;
+
+            const numToMint = 1;
 
             // Mint to region market
             const tx = await program.methods
-                .mintToMarket(region, new anchor.BN(1))
+                .mintToMarket(region, new anchor.BN(numToMint))
                 .accounts({
                     regionMarket: regionMarketPDA,
                     regionMarketTokenAccount: regionMarketTokenAccountPDA,
@@ -162,27 +161,26 @@ describe("christmas", () => {
             assert.equal(regionMarket.region, region);
 
             // Check regionMarketATA has minted tokens
-            const regionMarketATA =
-                await provider.connection.getParsedProgramAccounts(
-                    ASSOCIATED_TOKEN_PROGRAM_ID,
+            const regionMarketATA = (
+                await provider.connection.getParsedTokenAccountsByOwner(
+                    regionMarketPDA, // region market is the owner of the ATA
                     {
-                        filters: [
-                            {
-                                dataSize: 165, // for token accounts
-                            },
-                            {
-                                memcmp: {
-                                    offset: 32,
-                                    bytes: regionMarketTokenAccountPDA.toBase58(),
-                                },
-                            },
-                        ],
+                        programId: TOKEN_PROGRAM_ID,
+                        mint: mint.publicKey, // the mint of the ATA
                     }
-                );
+                )
+            ).value[0].account.data.parsed;
+            console.log(
+                `regionMarketATA: ${JSON.stringify(regionMarketATA, null, 4)}`
+            );
+            assert.equal(regionMarketATA["info"]["tokenAmount"]["amount"], "1");
 
-            console.log(`regionMarketATA: ${regionMarketATA}`);
+            // Check mint supply after
+            const mintSupplyAfter = (
+                await getMint(provider.connection, mint.publicKey)
+            ).supply;
 
-            // TODO: Check for supply in accounts
+            assert.equal(Number(mintSupplyAfter - mintSupplyBefore), numToMint);
         });
     });
 });
