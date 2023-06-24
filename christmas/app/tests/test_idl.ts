@@ -3,6 +3,7 @@ import idl from "../../target/idl/christmas.json";
 import * as web3 from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 import AnchorClient from "../src/lib/anchorClient";
+import { getMint, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 describe("Test client functions", () => {
     const client = new AnchorClient();
@@ -14,7 +15,7 @@ describe("Test client functions", () => {
     });
 
     it("Get user PDA", async () => {
-        const [pda, bump] = client.getUserPDA();
+        const [pda, bump] = client.getUserPda();
         assert(pda);
         console.log(`pda: ${pda}, bump: ${bump}`);
     });
@@ -26,31 +27,82 @@ describe("Test client functions", () => {
 
         await client.createUser({ email, geo, region });
 
-        const [pda, _] = client.getUserPDA();
+        const [pda, _] = client.getUserPda();
         const user = await client.program.account.user.fetch(pda);
 
         assert.ok(user.geo == geo);
         assert.ok(user.region == region);
     });
 
-    it("Create coupon", async () => {
+    describe("Coupon", () => {
         const geo = "gbsuv7";
         const region = "SGP";
         const uri = "http://someuri.com";
         const name = "Drinks on us";
         const symbol = "DNKS #1";
 
-        // create coupon
-        await client.createCoupon({ geo, region, name, uri, symbol });
+        it("Create coupon", async () => {
+            // create coupon
+            await client.createCoupon({ geo, region, name, uri, symbol });
 
-        // check if coupon is created
-        const coupons = await client.getMintedCoupons();
-        assert.ok(coupons.length === 1);
-        assert.equal(coupons[0].geo, geo);
-        assert.equal(coupons[0].region, region);
-        assert.equal(coupons[0].uri, uri);
-        assert.equal(coupons[0].name, name);
-        assert.equal(coupons[0].symbol, symbol);
-        assert.ok(coupons[0].updateAuthority.equals(client.wallet.publicKey));
+            // check if coupon is created
+            const coupons = await client.getMintedCoupons();
+            assert.ok(coupons.length === 1);
+
+            const coupon = coupons[0];
+
+            assert.equal(coupon.geo, geo);
+            assert.equal(coupon.region, region);
+            assert.equal(coupon.uri, uri);
+            assert.equal(coupon.name, name);
+            assert.equal(coupon.symbol, symbol);
+            assert.ok(coupon.updateAuthority.equals(client.wallet.publicKey));
+        });
+
+        it("Mint to region market", async () => {
+            const coupons = await client.getMintedCoupons();
+            assert.ok(coupons.length === 1);
+            const coupon = coupons[0];
+
+            // check mint supply before
+            assert.equal(
+                (await getMint(client.connection, coupon.mint)).supply,
+                BigInt(0)
+            );
+
+            const numTokens = 1;
+
+            // mint coupon to region market
+            await client.mintToMarket(coupon.mint, coupon.region, numTokens);
+
+            // Check regionMarket created
+            const [regionMarketPda, regionMarketTokenAccountPda] =
+                await client.getRegionMarketPdasFromMint(coupon.mint);
+            let regionMarket = await client.program.account.regionMarket.fetch(
+                regionMarketPda
+            );
+            assert.equal(regionMarket.region, coupon.region);
+
+            // Check regionMarketTokenAccountPda balance
+            const regionMarketAta = (
+                await client.connection.getParsedTokenAccountsByOwner(
+                    regionMarketPda, // region market is the owner of the ATA
+                    {
+                        programId: TOKEN_PROGRAM_ID,
+                        mint: coupon.mint,
+                    }
+                )
+            ).value[0].account.data.parsed;
+            assert.equal(
+                regionMarketAta["info"]["tokenAmount"]["amount"],
+                `${numTokens}`
+            );
+
+            // check mint supply after
+            assert.equal(
+                (await getMint(client.connection, coupon.mint)).supply,
+                BigInt(numTokens)
+            );
+        });
     });
 });

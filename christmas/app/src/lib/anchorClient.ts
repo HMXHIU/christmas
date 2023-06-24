@@ -4,8 +4,13 @@ import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { Transaction, Signer } from "@solana/web3.js";
 import idl from "../../../target/idl/christmas.json";
 import { Christmas } from "../../../target/types/christmas";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import {
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+    getAssociatedTokenAddress,
+} from "@solana/spl-token";
 import { DISCRIMINATOR_SIZE } from "./constants";
+import { BN } from "bn.js";
 
 export default class AnchorClient {
     programId: web3.PublicKey;
@@ -97,7 +102,7 @@ export default class AnchorClient {
         return await this.confirmTransaction(sig);
     }
 
-    getUserPDA(): [web3.PublicKey, number] {
+    getUserPda(): [web3.PublicKey, number] {
         return web3.PublicKey.findProgramAddressSync(
             [
                 anchor.utils.bytes.utf8.encode("user"),
@@ -116,7 +121,7 @@ export default class AnchorClient {
         geo: string;
         region: string;
     }): Promise<string> {
-        const [pda, _] = this.getUserPDA();
+        const [pda, _] = this.getUserPda();
 
         const ix = await this.program.methods
             .createUser(email, region, geo)
@@ -131,6 +136,23 @@ export default class AnchorClient {
         tx.add(ix);
 
         return await this.executeTransaction(tx);
+    }
+
+    getCouponMetadataPda(mint: web3.PublicKey): [web3.PublicKey, number] {
+        return web3.PublicKey.findProgramAddressSync(
+            [anchor.utils.bytes.utf8.encode("metadata"), mint.toBuffer()],
+            this.program.programId
+        );
+    }
+
+    getRegionMarketPda(region: string): [web3.PublicKey, number] {
+        return web3.PublicKey.findProgramAddressSync(
+            [
+                anchor.utils.bytes.utf8.encode("market"),
+                anchor.utils.bytes.utf8.encode(region),
+            ],
+            this.program.programId
+        );
     }
 
     async createCoupon({
@@ -149,13 +171,9 @@ export default class AnchorClient {
         // generate new mint keys
         const mint = web3.Keypair.generate();
 
-        // calculate PDA for coupon metadata
-        const [couponMetadataPda, _] = web3.PublicKey.findProgramAddressSync(
-            [
-                anchor.utils.bytes.utf8.encode("metadata"),
-                mint.publicKey.toBuffer(),
-            ],
-            this.program.programId
+        // calculate couponMetadataPda
+        const [couponMetadataPda, _] = this.getCouponMetadataPda(
+            mint.publicKey
         );
 
         // create coupon (mint + metadata)
@@ -184,5 +202,53 @@ export default class AnchorClient {
             },
         ]);
         return coupons.map((x) => x.account);
+    }
+
+    async getRegionMarketPdasFromMint(
+        mint: web3.PublicKey
+    ): Promise<[web3.PublicKey, web3.PublicKey]> {
+        const couponMetadataPda = this.getCouponMetadataPda(mint)[0];
+
+        const couponMetadata = await this.program.account.couponMetadata.fetch(
+            couponMetadataPda
+        );
+
+        const couponRegion = couponMetadata.region;
+        const regionMarketPda = this.getRegionMarketPda(couponRegion)[0];
+
+        const regionMarketTokenAccountPda = await getAssociatedTokenAddress(
+            mint,
+            regionMarketPda,
+            true // allowOwnerOffCurve - Allow the owner account to be a PDA (Program Derived Address)
+        );
+
+        return [regionMarketPda, regionMarketTokenAccountPda];
+    }
+
+    async mintToMarket(
+        mint: web3.PublicKey,
+        region: string,
+        numTokens: number
+    ): Promise<string> {
+        const [regionMarketPda, regionMarketTokenAccountPda] =
+            await this.getRegionMarketPdasFromMint(mint);
+
+        // mint numTokens to region market
+        const ix = await this.program.methods
+            .mintToMarket(region, new anchor.BN(numTokens))
+            .accounts({
+                regionMarket: regionMarketPda,
+                regionMarketTokenAccount: regionMarketTokenAccountPda,
+                mint: mint,
+                signer: this.wallet.publicKey,
+                systemProgram: web3.SystemProgram.programId,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            })
+            .instruction();
+
+        const tx = new Transaction();
+        tx.add(ix);
+        return await this.executeTransaction(tx);
     }
 }
