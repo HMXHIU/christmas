@@ -43,12 +43,14 @@ describe("Test client functions", () => {
 
         it("Create coupon", async () => {
             // create coupon
-            await client.createCoupon({ geo, region, name, uri, symbol });
+            assert.isNull(
+                (await client.createCoupon({ geo, region, name, uri, symbol }))
+                    .err
+            );
 
             // check if coupon is created
             const coupons = await client.getMintedCoupons();
             assert.ok(coupons.length === 1);
-
             const coupon = coupons[0];
 
             assert.equal(coupon.geo, geo);
@@ -73,7 +75,15 @@ describe("Test client functions", () => {
             const numTokens = 1;
 
             // mint coupon to region market
-            await client.mintToMarket(coupon.mint, coupon.region, numTokens);
+            assert.isNull(
+                (
+                    await client.mintToMarket(
+                        coupon.mint,
+                        coupon.region,
+                        numTokens
+                    )
+                ).err
+            );
 
             // Check regionMarket created
             const [regionMarketPda, regionMarketTokenAccountPda] =
@@ -84,19 +94,10 @@ describe("Test client functions", () => {
             assert.equal(regionMarket.region, coupon.region);
 
             // Check regionMarketTokenAccountPda balance
-            const regionMarketAta = (
-                await client.connection.getParsedTokenAccountsByOwner(
-                    regionMarketPda, // region market is the owner of the ATA
-                    {
-                        programId: TOKEN_PROGRAM_ID,
-                        mint: coupon.mint,
-                    }
-                )
-            ).value[0].account.data.parsed;
-            assert.equal(
-                regionMarketAta["info"]["tokenAmount"]["amount"],
-                `${numTokens}`
+            const balance = await client.connection.getTokenAccountBalance(
+                regionMarketTokenAccountPda
             );
+            assert.equal(balance.value.amount, `${numTokens}`);
 
             // check mint supply after
             assert.equal(

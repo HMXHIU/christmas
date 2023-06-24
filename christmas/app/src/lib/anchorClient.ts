@@ -56,22 +56,27 @@ export default class AnchorClient {
         );
     }
 
-    async confirmTransaction(signature: string): Promise<string> {
+    async confirmTransaction(
+        signature: string,
+        commitment?: web3.Commitment
+    ): Promise<web3.SignatureResult> {
         const bh = await this.connection.getLatestBlockhash();
-        await this.connection.confirmTransaction({
-            blockhash: bh.blockhash,
-            lastValidBlockHeight: bh.lastValidBlockHeight,
-            signature: signature,
-        });
-
-        // TODO: Error handling, return web3.SignatureResult instead
-        return signature;
+        return (
+            await this.connection.confirmTransaction(
+                {
+                    blockhash: bh.blockhash,
+                    lastValidBlockHeight: bh.lastValidBlockHeight,
+                    signature: signature,
+                },
+                commitment
+            )
+        ).value;
     }
 
     async executeTransaction(
         tx: Transaction,
         signers?: Array<Signer>
-    ): Promise<string> {
+    ): Promise<web3.SignatureResult> {
         // set latest blockhash
         tx.recentBlockhash = (
             await this.connection.getLatestBlockhash("singleGossip")
@@ -94,7 +99,7 @@ export default class AnchorClient {
         return await this.confirmTransaction(sig);
     }
 
-    async requestAirdrop(amount: number): Promise<string> {
+    async requestAirdrop(amount: number): Promise<web3.SignatureResult> {
         const sig = await this.connection.requestAirdrop(
             this.wallet.publicKey,
             amount
@@ -120,7 +125,7 @@ export default class AnchorClient {
         email: string;
         geo: string;
         region: string;
-    }): Promise<string> {
+    }): Promise<web3.SignatureResult> {
         const [pda, _] = this.getUserPda();
 
         const ix = await this.program.methods
@@ -167,7 +172,7 @@ export default class AnchorClient {
         name: string;
         uri: string;
         symbol: string;
-    }): Promise<string> {
+    }): Promise<web3.SignatureResult> {
         // generate new mint keys
         const mint = web3.Keypair.generate();
 
@@ -229,7 +234,7 @@ export default class AnchorClient {
         mint: web3.PublicKey,
         region: string,
         numTokens: number
-    ): Promise<string> {
+    ): Promise<web3.SignatureResult> {
         const [regionMarketPda, regionMarketTokenAccountPda] =
             await this.getRegionMarketPdasFromMint(mint);
 
