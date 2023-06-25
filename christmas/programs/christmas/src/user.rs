@@ -26,7 +26,7 @@ pub struct User {
 }
 
 impl User {
-    fn len() -> usize {
+    pub fn len() -> usize {
         DISCRIMINATOR_SIZE + TWO_FACTOR_SIZE + REGION_SIZE + GEO_SIZE + BUMP_SIZE
     }
 }

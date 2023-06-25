@@ -5,7 +5,7 @@ mod defs;
 mod market;
 mod user;
 mod utils;
-use anchor_spl::token::{mint_to, MintTo};
+use anchor_spl::token::{mint_to, transfer, MintTo, Transfer};
 use coupon::*;
 use market::*;
 use user::*;
@@ -69,6 +69,24 @@ pub mod christmas {
         ctx.accounts.region_market.region = region;
 
         mint_to(cpi_ctx, num_tokens)?;
+
+        Ok(())
+    }
+
+    pub fn claim_from_market(ctx: Context<ClaimFromMarket>, num_tokens: u64) -> Result<()> {
+        let destination = &ctx.accounts.user_token_account;
+        let source = &ctx.accounts.region_market_token_account;
+        let token_program = &ctx.accounts.token_program;
+        let authority = &ctx.accounts.region_market;
+
+        let cpi_accounts = Transfer {
+            from: source.to_account_info().clone(),
+            to: destination.to_account_info().clone(),
+            authority: authority.to_account_info().clone(),
+        };
+        let cpi_program = token_program.to_account_info();
+
+        transfer(CpiContext::new(cpi_program, cpi_accounts), num_tokens)?;
 
         Ok(())
     }

@@ -1,7 +1,45 @@
+use crate::coupon::CouponMetadata;
 use crate::defs::*;
+use crate::user::User;
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{Mint, Token, TokenAccount};
+
+#[derive(Accounts)]
+pub struct ClaimFromMarket<'info> {
+    #[account(
+        seeds = [b"user", signer.key().as_ref()],
+        bump,
+        constraint = user.region == region_market.region,
+        constraint = user.region == coupon_metadata.region,
+    )]
+    pub user: Account<'info, User>,
+    #[account(
+        init_if_needed,
+        payer = signer,
+        associated_token::mint = mint,
+        associated_token::authority = signer,
+    )]
+    pub user_token_account: Account<'info, TokenAccount>,
+    #[account(
+        token::mint = mint,
+        token::authority = region_market
+    )]
+    pub region_market_token_account: Account<'info, TokenAccount>,
+    #[account(
+        constraint = region_market.region == coupon_metadata.region
+    )]
+    pub region_market: Account<'info, RegionMarket>,
+    #[account(mut)]
+    pub mint: Account<'info, Mint>,
+    #[account(constraint = coupon_metadata.mint == mint.key())]
+    pub coupon_metadata: Account<'info, CouponMetadata>,
+    #[account(mut)]
+    pub signer: Signer<'info>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+}
 
 #[derive(Accounts)]
 #[instruction(region: String)]
