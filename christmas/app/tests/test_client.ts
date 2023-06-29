@@ -1,7 +1,6 @@
 import { assert, expect } from "chai";
 import idl from "../../target/idl/christmas.json";
 import * as web3 from "@solana/web3.js";
-import * as anchor from "@coral-xyz/anchor";
 import AnchorClient from "../src/lib/anchorClient";
 
 describe("Test client", () => {

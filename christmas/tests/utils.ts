@@ -15,12 +15,12 @@ export function getUserPda(user: web3.PublicKey, programId: web3.PublicKey) {
     );
 }
 
-export function getCouponMetadataPda(
+export function getCouponPda(
     mint: web3.PublicKey,
     programId: web3.PublicKey
 ): [web3.PublicKey, number] {
     return web3.PublicKey.findProgramAddressSync(
-        [anchor.utils.bytes.utf8.encode("metadata"), mint.toBuffer()],
+        [anchor.utils.bytes.utf8.encode("coupon"), mint.toBuffer()],
         programId
     );
 }

@@ -30,22 +30,22 @@ pub mod christmas {
         Ok(())
     }
 
-    pub fn create_coupon_mint(
-        ctx: Context<CreateCouponMint>,
+    pub fn create_coupon(
+        ctx: Context<CreateCoupon>,
         name: String,
         symbol: String,
         region: String,
         geo: String,
         uri: String,
     ) -> Result<()> {
-        ctx.accounts.metadata.update_authority = ctx.accounts.signer.key();
-        ctx.accounts.metadata.mint = ctx.accounts.mint.key();
-        ctx.accounts.metadata.name = name;
-        ctx.accounts.metadata.symbol = symbol;
-        ctx.accounts.metadata.uri = uri;
-        ctx.accounts.metadata.region = region;
-        ctx.accounts.metadata.geo = geo;
-        ctx.accounts.metadata.bump = *ctx.bumps.get("metadata").unwrap();
+        ctx.accounts.coupon.update_authority = ctx.accounts.signer.key();
+        ctx.accounts.coupon.mint = ctx.accounts.mint.key();
+        ctx.accounts.coupon.name = name;
+        ctx.accounts.coupon.symbol = symbol;
+        ctx.accounts.coupon.uri = uri;
+        ctx.accounts.coupon.region = region;
+        ctx.accounts.coupon.geo = geo;
+        ctx.accounts.coupon.bump = *ctx.bumps.get("coupon").unwrap();
 
         // TODO: check region, or set default to global
 

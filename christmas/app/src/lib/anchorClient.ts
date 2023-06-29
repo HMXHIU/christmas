@@ -143,9 +143,9 @@ export default class AnchorClient {
         return await this.executeTransaction(tx);
     }
 
-    getCouponMetadataPda(mint: web3.PublicKey): [web3.PublicKey, number] {
+    getCouponPda(mint: web3.PublicKey): [web3.PublicKey, number] {
         return web3.PublicKey.findProgramAddressSync(
-            [anchor.utils.bytes.utf8.encode("metadata"), mint.toBuffer()],
+            [anchor.utils.bytes.utf8.encode("coupon"), mint.toBuffer()],
             this.program.programId
         );
     }
@@ -176,17 +176,15 @@ export default class AnchorClient {
         // generate new mint keys
         const mint = web3.Keypair.generate();
 
-        // calculate couponMetadataPda
-        const [couponMetadataPda, _] = this.getCouponMetadataPda(
-            mint.publicKey
-        );
+        // calculate couponPda
+        const [couponPda, _] = this.getCouponPda(mint.publicKey);
 
-        // create coupon (mint + metadata)
+        // create coupon
         const ix = await this.program.methods
-            .createCouponMint(name, symbol, region, geo, uri)
+            .createCoupon(name, symbol, region, geo, uri)
             .accounts({
                 mint: mint.publicKey,
-                metadata: couponMetadataPda,
+                coupon: couponPda,
                 signer: this.wallet.publicKey,
                 systemProgram: web3.SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
@@ -198,7 +196,7 @@ export default class AnchorClient {
     }
 
     async getMintedCoupons() {
-        const coupons = await this.program.account.couponMetadata.all([
+        const coupons = await this.program.account.coupon.all([
             {
                 memcmp: {
                     offset: DISCRIMINATOR_SIZE,
@@ -212,13 +210,11 @@ export default class AnchorClient {
     async getRegionMarketPdasFromMint(
         mint: web3.PublicKey
     ): Promise<[web3.PublicKey, web3.PublicKey]> {
-        const couponMetadataPda = this.getCouponMetadataPda(mint)[0];
+        const couponPda = this.getCouponPda(mint)[0];
 
-        const couponMetadata = await this.program.account.couponMetadata.fetch(
-            couponMetadataPda
-        );
+        const coupon = await this.program.account.coupon.fetch(couponPda);
 
-        const couponRegion = couponMetadata.region;
+        const couponRegion = coupon.region;
         const regionMarketPda = this.getRegionMarketPda(couponRegion)[0];
 
         const regionMarketTokenAccountPda = await getAssociatedTokenAddress(

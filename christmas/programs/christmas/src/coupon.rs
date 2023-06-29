@@ -1,10 +1,10 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Mint, MintTo, Token, TokenAccount, Transfer};
+use anchor_spl::token::{Mint, Token};
 
 use crate::defs::*;
 
 #[derive(Accounts)]
-pub struct CreateCouponMint<'info> {
+pub struct CreateCoupon<'info> {
     #[account(
         init_if_needed,
         payer = signer,
@@ -16,11 +16,11 @@ pub struct CreateCouponMint<'info> {
     #[account(
         init_if_needed,
         payer = signer,
-        seeds = [b"metadata", mint.key().as_ref()],
+        seeds = [b"coupon", mint.key().as_ref()],
         bump,
-        space = CouponMetadata::len(),
+        space = Coupon::len(),
     )]
-    pub metadata: Account<'info, CouponMetadata>,
+    pub coupon: Account<'info, Coupon>,
     #[account(mut)]
     pub signer: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -28,7 +28,7 @@ pub struct CreateCouponMint<'info> {
 }
 
 #[account]
-pub struct CouponMetadata {
+pub struct Coupon {
     /*
     Follow Metaplex standards as much as possible
     https://docs.metaplex.com/programs/token-metadata/accounts
@@ -43,7 +43,7 @@ pub struct CouponMetadata {
     pub bump: u8,
 }
 
-impl CouponMetadata {
+impl Coupon {
     fn len() -> usize {
         DISCRIMINATOR_SIZE
             + PUBKEY_SIZE

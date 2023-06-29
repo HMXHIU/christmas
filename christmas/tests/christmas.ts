@@ -5,7 +5,7 @@ import { web3 } from "@coral-xyz/anchor";
 import { assert, expect } from "chai";
 import {
     stringToUint8Array,
-    getCouponMetadataPda,
+    getCouponPda,
     getRegionMarketPda,
     getUserPda,
 } from "./utils";
@@ -74,11 +74,8 @@ describe("christmas", () => {
         // Generate mint keypair
         const mint = anchor.web3.Keypair.generate();
 
-        // Calculate couponMetadataPda
-        const couponMetadataPda = getCouponMetadataPda(
-            mint.publicKey,
-            program.programId
-        )[0];
+        // Calculate couponPda
+        const couponPda = getCouponPda(mint.publicKey, program.programId)[0];
 
         // Calculate regionMarketPda
         const regionMarketPda = getRegionMarketPda(
@@ -88,10 +85,10 @@ describe("christmas", () => {
 
         it("Create coupon mint", async () => {
             const tx = await program.methods
-                .createCouponMint(name, symbol, region, geo, uri)
+                .createCoupon(name, symbol, region, geo, uri)
                 .accounts({
                     mint: mint.publicKey,
-                    metadata: couponMetadataPda,
+                    coupon: couponPda,
                     signer: user.publicKey,
                     systemProgram: web3.SystemProgram.programId,
                     tokenProgram: TOKEN_PROGRAM_ID,
@@ -100,15 +97,13 @@ describe("christmas", () => {
                 .rpc();
 
             // Check account is created correctly
-            let _metadata = await program.account.couponMetadata.fetch(
-                couponMetadataPda
-            );
-            assert.ok(_metadata.updateAuthority.equals(user.publicKey));
-            assert.ok(_metadata.geo == geo);
-            assert.ok(_metadata.region == region);
-            assert.ok(_metadata.name == name);
-            assert.ok(_metadata.symbol == symbol);
-            assert.ok(_metadata.uri == uri);
+            let _coupon = await program.account.coupon.fetch(couponPda);
+            assert.ok(_coupon.updateAuthority.equals(user.publicKey));
+            assert.ok(_coupon.geo == geo);
+            assert.ok(_coupon.region == region);
+            assert.ok(_coupon.name == name);
+            assert.ok(_coupon.symbol == symbol);
+            assert.ok(_coupon.uri == uri);
         });
 
         it("Mint to region market", async () => {
@@ -185,11 +180,8 @@ describe("christmas", () => {
                 true // allowOwnerOffCurve - Allow the owner account to be a PDA (Program Derived Address)
             );
 
-            // Calculate couponMetadataPda
-            let couponMetadataPda = getCouponMetadataPda(
-                mint.publicKey,
-                program.programId
-            )[0];
+            // Calculate couponPda
+            let couponPda = getCouponPda(mint.publicKey, program.programId)[0];
 
             const numToClaim = 1;
 
@@ -202,7 +194,7 @@ describe("christmas", () => {
                     userTokenAccount: userTokenAccount,
                     regionMarket: regionMarketPda,
                     regionMarketTokenAccount: regionMarketTokenAccount,
-                    couponMetadata: couponMetadataPda,
+                    coupon: couponPda,
                     mint: mint.publicKey,
                     signer: user.publicKey,
                     systemProgram: web3.SystemProgram.programId,

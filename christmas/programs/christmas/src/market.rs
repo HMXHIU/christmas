@@ -1,4 +1,4 @@
-use crate::coupon::CouponMetadata;
+use crate::coupon::Coupon;
 use crate::defs::*;
 use crate::user::User;
 use anchor_lang::prelude::*;
@@ -10,8 +10,8 @@ pub struct ClaimFromMarket<'info> {
     #[account(
         seeds = [b"user", signer.key().as_ref()],
         bump = user.bump,
-        constraint = user.region == region_market.region,
-        constraint = user.region == coupon_metadata.region,
+        constraint = user.region == region_market.region, // user can only claim from his own region
+        constraint = user.region == coupon.region, // user can only claim from his own region
     )]
     pub user: Account<'info, User>,
     #[account(
@@ -30,17 +30,18 @@ pub struct ClaimFromMarket<'info> {
     #[account(
         seeds = [b"market", region_market.region.as_ref()],
         bump = region_market.bump,
-        constraint = region_market.region == coupon_metadata.region
+        constraint = region_market.region == coupon.region  // coupon is for this region
     )]
     pub region_market: Account<'info, RegionMarket>,
     #[account(mut)]
     pub mint: Account<'info, Mint>,
     #[account(
-        seeds = [b"metadata", mint.key().as_ref()],
-        bump = coupon_metadata.bump,
-        constraint = coupon_metadata.mint == mint.key()
+        seeds = [b"coupon", mint.key().as_ref()],
+        bump = coupon.bump,
+        constraint = coupon.mint == mint.key(), // coupon is for this mint
+        constraint = coupon.region == region_market.region  // coupon is for this region
     )]
-    pub coupon_metadata: Account<'info, CouponMetadata>,
+    pub coupon: Account<'info, Coupon>,
     #[account(mut)]
     pub signer: Signer<'info>,
     pub associated_token_program: Program<'info, AssociatedToken>,
