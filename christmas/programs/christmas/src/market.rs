@@ -18,15 +18,18 @@ pub struct ClaimFromMarket<'info> {
         init_if_needed,
         payer = signer,
         associated_token::mint = mint,
-        associated_token::authority = signer,
+        associated_token::authority = user,  // note: user not signer
     )]
     pub user_token_account: Account<'info, TokenAccount>,
     #[account(
+        mut,
         token::mint = mint,
         token::authority = region_market
     )]
     pub region_market_token_account: Account<'info, TokenAccount>,
     #[account(
+        seeds = [b"market", region_market.region.as_ref()],
+        bump,
         constraint = region_market.region == coupon_metadata.region
     )]
     pub region_market: Account<'info, RegionMarket>,

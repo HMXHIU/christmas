@@ -74,19 +74,26 @@ pub mod christmas {
     }
 
     pub fn claim_from_market(ctx: Context<ClaimFromMarket>, num_tokens: u64) -> Result<()> {
-        let destination = &ctx.accounts.user_token_account;
-        let source = &ctx.accounts.region_market_token_account;
-        let token_program = &ctx.accounts.token_program;
-        let authority = &ctx.accounts.region_market;
-
-        let cpi_accounts = Transfer {
-            from: source.to_account_info().clone(),
-            to: destination.to_account_info().clone(),
-            authority: authority.to_account_info().clone(),
-        };
-        let cpi_program = token_program.to_account_info();
-
-        transfer(CpiContext::new(cpi_program, cpi_accounts), num_tokens)?;
+        transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx
+                        .accounts
+                        .region_market_token_account
+                        .to_account_info()
+                        .clone(),
+                    to: ctx.accounts.user_token_account.to_account_info().clone(),
+                    authority: ctx.accounts.region_market.to_account_info().clone(),
+                },
+                &[&[
+                    b"market".as_ref(),
+                    ctx.accounts.region_market.region.as_bytes(),
+                    &[ctx.accounts.region_market.bump],
+                ]],
+            ),
+            num_tokens,
+        )?;
 
         Ok(())
     }

@@ -3,7 +3,12 @@ import { Program } from "@coral-xyz/anchor";
 import { Christmas } from "../target/types/christmas";
 import { web3 } from "@coral-xyz/anchor";
 import { assert, expect } from "chai";
-import { stringToUint8Array } from "./utils";
+import {
+    stringToUint8Array,
+    getCouponMetadataPda,
+    getRegionMarketPda,
+    getUserPda,
+} from "./utils";
 import { sha256 } from "js-sha256";
 import {
     TOKEN_PROGRAM_ID,
@@ -34,22 +39,14 @@ describe("christmas", () => {
         let geo = "gbsuv7";
         let region = "SGP";
 
-        // Calculate the PDA of the user
-        const [pda, _] = web3.PublicKey.findProgramAddressSync(
-            [
-                Buffer.from(anchor.utils.bytes.utf8.encode("user")),
-                user.publicKey.toBuffer(),
-            ],
-            program.programId
-        );
-
-        console.log(`user pda: ${pda}`);
+        // Calculate userPda
+        const userPda = getUserPda(user.publicKey, program.programId)[0];
 
         // Create user
         const tx = await program.methods
             .createUser(email, region, geo)
             .accounts({
-                user: pda,
+                user: userPda,
                 signer: user.publicKey,
                 systemProgram: web3.SystemProgram.programId,
             })
@@ -57,7 +54,7 @@ describe("christmas", () => {
             .rpc();
 
         // Check account is created correctly
-        let _user = await program.account.user.fetch(pda);
+        let _user = await program.account.user.fetch(userPda);
         assert.ok(_user.geo == geo);
         assert.ok(_user.region == region);
         let twoFactor = sha256.digest([
@@ -74,17 +71,20 @@ describe("christmas", () => {
         let symbol = "CNDY #1";
         let uri = "https://path/to/json";
 
-        // Generate mint keys
+        // Generate mint keypair
         const mint = anchor.web3.Keypair.generate();
 
-        // Calculate metadata PDA
-        const [couponMetadataPda, _] = web3.PublicKey.findProgramAddressSync(
-            [
-                Buffer.from(anchor.utils.bytes.utf8.encode("metadata")),
-                mint.publicKey.toBuffer(),
-            ],
+        // Calculate couponMetadataPda
+        const couponMetadataPda = getCouponMetadataPda(
+            mint.publicKey,
             program.programId
-        );
+        )[0];
+
+        // Calculate regionMarketPda
+        const regionMarketPda = getRegionMarketPda(
+            region,
+            program.programId
+        )[0];
 
         it("Create coupon mint", async () => {
             const tx = await program.methods
@@ -112,24 +112,11 @@ describe("christmas", () => {
         });
 
         it("Mint to region market", async () => {
-            // Calculate regionMarketPDA
-            const [regionMarketPDA, _] = web3.PublicKey.findProgramAddressSync(
-                [
-                    anchor.utils.bytes.utf8.encode("market"),
-                    anchor.utils.bytes.utf8.encode(region),
-                ],
-                program.programId
-            );
-            console.log(`regionMarketPDA: ${regionMarketPDA}`);
-
-            // Calculate regionMarketTokenAccountPDA
-            const regionMarketTokenAccountPDA = await getAssociatedTokenAddress(
+            // Calculate regionMarketTokenAccount
+            const regionMarketTokenAccount = await getAssociatedTokenAddress(
                 mint.publicKey,
-                regionMarketPDA,
+                regionMarketPda,
                 true // allowOwnerOffCurve - Allow the owner account to be a PDA (Program Derived Address)
-            );
-            console.log(
-                `regionMarketTokenAccountPDA: ${regionMarketTokenAccountPDA}`
             );
 
             // Check mint supply before
@@ -143,8 +130,8 @@ describe("christmas", () => {
             const tx = await program.methods
                 .mintToMarket(region, new anchor.BN(numToMint))
                 .accounts({
-                    regionMarket: regionMarketPDA,
-                    regionMarketTokenAccount: regionMarketTokenAccountPDA,
+                    regionMarket: regionMarketPda,
+                    regionMarketTokenAccount: regionMarketTokenAccount,
                     mint: mint.publicKey,
                     signer: user.publicKey,
                     systemProgram: web3.SystemProgram.programId,
@@ -156,23 +143,20 @@ describe("christmas", () => {
 
             // Check regionMarket created
             let regionMarket = await program.account.regionMarket.fetch(
-                regionMarketPDA
+                regionMarketPda
             );
             assert.equal(regionMarket.region, region);
 
             // Check regionMarketATA has minted tokens
             const regionMarketATA = (
                 await provider.connection.getParsedTokenAccountsByOwner(
-                    regionMarketPDA, // region market is the owner of the ATA
+                    regionMarketPda, // region market is the owner of the ATA
                     {
                         programId: TOKEN_PROGRAM_ID,
                         mint: mint.publicKey, // the mint of the ATA
                     }
                 )
             ).value[0].account.data.parsed;
-            console.log(
-                `regionMarketATA: ${JSON.stringify(regionMarketATA, null, 4)}`
-            );
             assert.equal(regionMarketATA["info"]["tokenAmount"]["amount"], "1");
 
             // Check mint supply after
@@ -181,6 +165,59 @@ describe("christmas", () => {
             ).supply;
 
             assert.equal(Number(mintSupplyAfter - mintSupplyBefore), numToMint);
+        });
+
+        it("Claim from market", async () => {
+            // Calculate regionMarketTokenAccount
+            const regionMarketTokenAccount = await getAssociatedTokenAddress(
+                mint.publicKey,
+                regionMarketPda,
+                true // allowOwnerOffCurve - Allow the owner account to be a PDA (Program Derived Address)
+            );
+
+            // Calculate userPda
+            const userPda = getUserPda(user.publicKey, program.programId)[0];
+
+            // Calculate userTokenAccount (this is owned by the userPda not the user)
+            const userTokenAccount = await getAssociatedTokenAddress(
+                mint.publicKey,
+                userPda, // userPda not user
+                true // allowOwnerOffCurve - Allow the owner account to be a PDA (Program Derived Address)
+            );
+
+            // Calculate couponMetadataPda
+            let couponMetadataPda = getCouponMetadataPda(
+                mint.publicKey,
+                program.programId
+            )[0];
+
+            const numToClaim = 1;
+
+            // userTokenAccount does not exist at this point
+
+            const tx = await program.methods
+                .claimFromMarket(new anchor.BN(numToClaim))
+                .accounts({
+                    user: userPda,
+                    userTokenAccount: userTokenAccount,
+                    regionMarket: regionMarketPda,
+                    regionMarketTokenAccount: regionMarketTokenAccount,
+                    couponMetadata: couponMetadataPda,
+                    mint: mint.publicKey,
+                    signer: user.publicKey,
+                    systemProgram: web3.SystemProgram.programId,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                })
+                .signers([user])
+                .rpc();
+
+            // Check userTokenAccount balance after
+            const balanceAfter =
+                await provider.connection.getTokenAccountBalance(
+                    userTokenAccount
+                );
+            assert.equal(balanceAfter.value.amount, `${numToClaim}`);
         });
     });
 });

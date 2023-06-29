@@ -8,6 +8,36 @@ export function stringToUint8Array(input: string): Uint8Array {
     return encoder.encode(input);
 }
 
+export function getUserPda(user: web3.PublicKey, programId: web3.PublicKey) {
+    return web3.PublicKey.findProgramAddressSync(
+        [anchor.utils.bytes.utf8.encode("user"), user.toBuffer()],
+        programId
+    );
+}
+
+export function getCouponMetadataPda(
+    mint: web3.PublicKey,
+    programId: web3.PublicKey
+): [web3.PublicKey, number] {
+    return web3.PublicKey.findProgramAddressSync(
+        [anchor.utils.bytes.utf8.encode("metadata"), mint.toBuffer()],
+        programId
+    );
+}
+
+export function getRegionMarketPda(
+    region: string,
+    programId: web3.PublicKey
+): [web3.PublicKey, number] {
+    return web3.PublicKey.findProgramAddressSync(
+        [
+            anchor.utils.bytes.utf8.encode("market"),
+            anchor.utils.bytes.utf8.encode(region),
+        ],
+        programId
+    );
+}
+
 export async function createUser(
     wallet: web3.Keypair,
     email: string,
