@@ -85,7 +85,7 @@ describe("Test client functions", () => {
                 ).err
             );
 
-            // Check regionMarket created
+            // check regionMarket created
             const [regionMarketPda, regionMarketTokenAccountPda] =
                 await client.getRegionMarketPdasFromMint(coupon.mint);
             let regionMarket = await client.program.account.regionMarket.fetch(
@@ -93,7 +93,7 @@ describe("Test client functions", () => {
             );
             assert.equal(regionMarket.region, coupon.region);
 
-            // Check regionMarketTokenAccountPda balance
+            // check regionMarketTokenAccountPda balance
             const balance = await client.connection.getTokenAccountBalance(
                 regionMarketTokenAccountPda
             );
@@ -104,6 +104,27 @@ describe("Test client functions", () => {
                 (await getMint(client.connection, coupon.mint)).supply,
                 BigInt(numTokens)
             );
+        });
+
+        it("Claim from market", async () => {
+            // get coupon
+            const coupons = await client.getMintedCoupons();
+            assert.ok(coupons.length === 1);
+            const coupon = coupons[0];
+
+            // userTokenAccount not created at this point
+            const userTokenAccount = await client.getUserTokenAccount(
+                coupon.mint
+            );
+
+            // claim 1 token
+            await client.claimFromMarket(coupon.mint, 1);
+
+            // check balance after
+            const balanceAfter = await client.connection.getTokenAccountBalance(
+                userTokenAccount
+            );
+            assert.equal(balanceAfter.value.amount, `1`);
         });
     });
 });

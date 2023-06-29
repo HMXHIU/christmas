@@ -117,6 +117,16 @@ export default class AnchorClient {
         );
     }
 
+    async getUserTokenAccount(mint: web3.PublicKey): Promise<web3.PublicKey> {
+        const userPda = this.getUserPda()[0];
+
+        return await getAssociatedTokenAddress(
+            mint,
+            userPda, // userPda not user
+            true // allowOwnerOffCurve - Allow the owner account to be a PDA (Program Derived Address)
+        );
+    }
+
     async createUser({
         email,
         geo,
@@ -211,12 +221,9 @@ export default class AnchorClient {
         mint: web3.PublicKey
     ): Promise<[web3.PublicKey, web3.PublicKey]> {
         const couponPda = this.getCouponPda(mint)[0];
-
         const coupon = await this.program.account.coupon.fetch(couponPda);
-
         const couponRegion = coupon.region;
         const regionMarketPda = this.getRegionMarketPda(couponRegion)[0];
-
         const regionMarketTokenAccountPda = await getAssociatedTokenAddress(
             mint,
             regionMarketPda,
@@ -238,6 +245,47 @@ export default class AnchorClient {
         const ix = await this.program.methods
             .mintToMarket(region, new anchor.BN(numTokens))
             .accounts({
+                regionMarket: regionMarketPda,
+                regionMarketTokenAccount: regionMarketTokenAccountPda,
+                mint: mint,
+                signer: this.wallet.publicKey,
+                systemProgram: web3.SystemProgram.programId,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            })
+            .instruction();
+
+        const tx = new Transaction();
+        tx.add(ix);
+        return await this.executeTransaction(tx);
+    }
+
+    async claimFromMarket(
+        mint: web3.PublicKey,
+        numTokens: number
+    ): Promise<web3.SignatureResult> {
+        const [regionMarketPda, regionMarketTokenAccountPda] =
+            await this.getRegionMarketPdasFromMint(mint);
+
+        // calculate userPda
+        const userPda = this.getUserPda()[0];
+
+        // calculate userTokenAccount (this is owned by the userPda not the user)
+        const userTokenAccount = await getAssociatedTokenAddress(
+            mint,
+            userPda, // userPda not user
+            true // allowOwnerOffCurve - Allow the owner account to be a PDA (Program Derived Address)
+        );
+
+        // calculate couponPda
+        let couponPda = this.getCouponPda(mint)[0];
+
+        const ix = await this.program.methods
+            .claimFromMarket(new anchor.BN(numTokens))
+            .accounts({
+                user: userPda,
+                userTokenAccount: userTokenAccount,
+                coupon: couponPda,
                 regionMarket: regionMarketPda,
                 regionMarketTokenAccount: regionMarketTokenAccountPda,
                 mint: mint,
