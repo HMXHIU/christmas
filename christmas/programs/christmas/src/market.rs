@@ -9,7 +9,7 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 pub struct ClaimFromMarket<'info> {
     #[account(
         seeds = [b"user", signer.key().as_ref()],
-        bump,
+        bump = user.bump,
         constraint = user.region == region_market.region,
         constraint = user.region == coupon_metadata.region,
     )]
@@ -29,13 +29,17 @@ pub struct ClaimFromMarket<'info> {
     pub region_market_token_account: Account<'info, TokenAccount>,
     #[account(
         seeds = [b"market", region_market.region.as_ref()],
-        bump,
+        bump = region_market.bump,
         constraint = region_market.region == coupon_metadata.region
     )]
     pub region_market: Account<'info, RegionMarket>,
     #[account(mut)]
     pub mint: Account<'info, Mint>,
-    #[account(constraint = coupon_metadata.mint == mint.key())]
+    #[account(
+        seeds = [b"metadata", mint.key().as_ref()],
+        bump = coupon_metadata.bump,
+        constraint = coupon_metadata.mint == mint.key()
+    )]
     pub coupon_metadata: Account<'info, CouponMetadata>,
     #[account(mut)]
     pub signer: Signer<'info>,
