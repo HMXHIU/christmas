@@ -3,11 +3,6 @@ import { Christmas } from "../target/types/christmas";
 import { web3 } from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 
-export function stringToUint8Array(input: string): Uint8Array {
-    const encoder = new TextEncoder();
-    return encoder.encode(input);
-}
-
 export function getUserPda(user: web3.PublicKey, programId: web3.PublicKey) {
     return web3.PublicKey.findProgramAddressSync(
         [anchor.utils.bytes.utf8.encode("user"), user.toBuffer()],

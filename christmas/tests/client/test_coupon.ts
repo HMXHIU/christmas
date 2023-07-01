@@ -1,11 +1,8 @@
-import { assert, expect } from "chai";
-import idl from "../../target/idl/christmas.json";
-import * as web3 from "@solana/web3.js";
-import * as anchor from "@coral-xyz/anchor";
-import AnchorClient from "../src/lib/anchorClient";
-import { getMint, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { assert } from "chai";
+import AnchorClient from "../../app/src/lib/anchorClient";
+import { getMint } from "@solana/spl-token";
 
-describe("Test client functions", () => {
+describe("Test coupon", () => {
     const client = new AnchorClient();
 
     it("Airdrop", async () => {
@@ -14,13 +11,8 @@ describe("Test client functions", () => {
         console.log(`Airdrop: ${sig}`);
     });
 
-    it("Get user PDA", async () => {
-        const [pda, bump] = client.getUserPda();
-        assert(pda);
-        console.log(`pda: ${pda}, bump: ${bump}`);
-    });
-
     it("Create user", async () => {
+        // user needs to exist before claim from market
         const email = "christmas@gmail.com";
         const geo = "gbsuv7";
         const region = "SGP";

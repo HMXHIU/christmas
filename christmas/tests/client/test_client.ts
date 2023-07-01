@@ -1,11 +1,8 @@
+import { web3 } from "@coral-xyz/anchor";
 import { assert, expect } from "chai";
+import AnchorClient from "../../app/src/lib/anchorClient";
 import idl from "../../target/idl/christmas.json";
-import * as web3 from "@solana/web3.js";
-import AnchorClient from "../src/lib/anchorClient";
 
-/*
-    See `test/client` in root folder for client tests to avoid test replication
-*/
 describe("Test client", () => {
     it("Initialize default", async () => {
         const client = new AnchorClient();

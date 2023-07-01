@@ -7,7 +7,7 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 
 #[derive(Accounts)]
 pub struct ClaimFromMarket<'info> {
-    #[account(
+    #[account(  // user needs to exist
         seeds = [b"user", signer.key().as_ref()],
         bump = user.bump,
         constraint = user.region == region_market.region, // user can only claim from his own region

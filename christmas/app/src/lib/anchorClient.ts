@@ -10,7 +10,6 @@ import {
     getAssociatedTokenAddress,
 } from "@solana/spl-token";
 import { DISCRIMINATOR_SIZE } from "./constants";
-import { BN } from "bn.js";
 
 export default class AnchorClient {
     programId: web3.PublicKey;
@@ -33,7 +32,7 @@ export default class AnchorClient {
         this.cluster = cluster || "http://127.0.0.1:8899";
         this.connection = new anchor.web3.Connection(this.cluster, "confirmed");
 
-        console.log(`Connected to ${cluster}`);
+        console.log(`Connected to ${this.cluster}`);
 
         this.wallet =
             typeof window !== "undefined" &&
