@@ -10,6 +10,7 @@ import {
     getAssociatedTokenAddress,
 } from "@solana/spl-token";
 import { DISCRIMINATOR_SIZE } from "./constants";
+import { getUserPda } from "./utils";
 
 export default class AnchorClient {
     programId: web3.PublicKey;
@@ -202,6 +203,42 @@ export default class AnchorClient {
         const tx = new Transaction();
         tx.add(ix);
         return await this.executeTransaction(tx, [mint]);
+    }
+
+    async redeemCoupon({
+        coupon,
+        mint,
+        wallet,
+        numTokens,
+    }: {
+        coupon: web3.PublicKey;
+        mint: web3.PublicKey;
+        wallet: web3.PublicKey;
+        numTokens: number;
+    }): Promise<web3.SignatureResult> {
+        const userPda = getUserPda(wallet, this.programId)[0];
+        const userTokenAccount = await getAssociatedTokenAddress(
+            mint,
+            userPda,
+            true
+        );
+
+        const ix = await this.program.methods
+            .redeemCoupon(new anchor.BN(numTokens))
+            .accounts({
+                coupon: coupon,
+                mint: mint,
+                wallet: wallet,
+                user: userPda,
+                userTokenAccount: userTokenAccount,
+                signer: this.wallet.publicKey,
+                tokenProgram: TOKEN_PROGRAM_ID,
+            })
+            .instruction();
+
+        const tx = new Transaction();
+        tx.add(ix);
+        return await this.executeTransaction(tx);
     }
 
     async getMintedCoupons() {

@@ -118,5 +118,38 @@ describe("Test coupon", () => {
             );
             assert.equal(balanceAfter.value.amount, `1`);
         });
+
+        it("Redeem coupon", async () => {
+            // get coupon
+            const coupons = await client.getMintedCoupons();
+            assert.ok(coupons.length === 1);
+            const coupon = coupons[0];
+
+            const userTokenAccount = await client.getUserTokenAccount(
+                coupon.mint
+            );
+
+            // check balance before
+            const balanceBefore =
+                await client.connection.getTokenAccountBalance(
+                    userTokenAccount
+                );
+            assert.equal(balanceBefore.value.amount, `1`);
+
+            // redeem token
+            const couponPda = client.getCouponPda(coupon.mint)[0];
+            await client.redeemCoupon({
+                coupon: couponPda,
+                mint: coupon.mint,
+                wallet: client.wallet.publicKey,
+                numTokens: 1,
+            });
+
+            // check balance after
+            const balanceAfter = await client.connection.getTokenAccountBalance(
+                userTokenAccount
+            );
+            assert.equal(balanceAfter.value.amount, `0`);
+        });
     });
 });

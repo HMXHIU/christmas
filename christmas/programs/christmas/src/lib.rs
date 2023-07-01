@@ -5,7 +5,7 @@ mod defs;
 mod market;
 mod user;
 mod utils;
-use anchor_spl::token::{mint_to, transfer, MintTo, Transfer};
+use anchor_spl::token::{burn, mint_to, transfer, Burn, MintTo, Transfer};
 use coupon::*;
 use market::*;
 use user::*;
@@ -48,6 +48,27 @@ pub mod christmas {
         ctx.accounts.coupon.bump = *ctx.bumps.get("coupon").unwrap();
 
         // TODO: check region, or set default to global
+
+        Ok(())
+    }
+
+    pub fn redeem_coupon(ctx: Context<RedeemCoupon>, num_tokens: u64) -> Result<()> {
+        burn(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Burn {
+                    mint: ctx.accounts.mint.to_account_info(),
+                    authority: ctx.accounts.user.to_account_info(),
+                    from: ctx.accounts.user_token_account.to_account_info(),
+                },
+                &[&[
+                    b"user".as_ref(),
+                    ctx.accounts.wallet.key().as_ref(),
+                    &[ctx.accounts.user.bump],
+                ]],
+            ),
+            num_tokens,
+        )?;
 
         Ok(())
     }
