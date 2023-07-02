@@ -3,11 +3,13 @@ use solana_program::hash::hash;
 mod coupon;
 mod defs;
 mod market;
+mod state;
 mod user;
 mod utils;
 use anchor_spl::token::{burn, mint_to, transfer, Burn, MintTo, Transfer};
 use coupon::*;
 use market::*;
+use state::*;
 use user::*;
 
 declare_id!("B2ejsK7m3eYPerru92hS73Gx7sQ7J83DKoLHGwn6pg5v");
@@ -15,6 +17,15 @@ declare_id!("B2ejsK7m3eYPerru92hS73Gx7sQ7J83DKoLHGwn6pg5v");
 #[program]
 pub mod christmas {
     use super::*;
+
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+        if !ctx.accounts.program_state.is_initialized {
+            // create all region market accounts
+            ctx.accounts.program_state.is_initialized = true;
+            ctx.accounts.program_state.bump = *ctx.bumps.get("program_state").unwrap();
+        }
+        Ok(())
+    }
 
     pub fn create_user(
         ctx: Context<CreateUser>,

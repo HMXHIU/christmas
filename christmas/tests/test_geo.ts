@@ -12,7 +12,7 @@ import {
     STRING_PREFIX_SIZE,
 } from "../app/src/lib/constants";
 
-describe("christmas", () => {
+describe("Test Geo", () => {
     // Configure the client to use the local cluster.
     anchor.setProvider(anchor.AnchorProvider.env());
     const provider = anchor.getProvider();
