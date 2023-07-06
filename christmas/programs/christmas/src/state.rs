@@ -18,6 +18,7 @@ pub struct Initialize<'info> {
 
 #[account]
 pub struct ProgramState {
+    // Used to store global/shared state
     pub is_initialized: bool,
     pub bump: u8,
 }

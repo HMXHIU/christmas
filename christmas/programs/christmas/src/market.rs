@@ -87,7 +87,7 @@ pub struct RegionMarket {
 }
 
 impl RegionMarket {
-    fn len() -> usize {
+    pub fn len() -> usize {
         DISCRIMINATOR_SIZE + REGION_SIZE + BUMP_SIZE
     }
 }

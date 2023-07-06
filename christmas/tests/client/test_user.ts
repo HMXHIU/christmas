@@ -16,7 +16,6 @@ describe("Test user", () => {
     it("Get user PDA", async () => {
         const [pda, bump] = client.getUserPda();
         assert(pda);
-        console.log(`pda: ${pda}, bump: ${bump}`);
     });
 
     it("Create user", async () => {

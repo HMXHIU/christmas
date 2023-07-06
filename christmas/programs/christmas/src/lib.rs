@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use solana_program::hash::hash;
+use solana_program::system_instruction;
 mod coupon;
 mod defs;
 mod market;
@@ -8,7 +9,9 @@ mod user;
 mod utils;
 use anchor_spl::token::{burn, mint_to, transfer, Burn, MintTo, Transfer};
 use coupon::*;
+use defs::REGION_CODES;
 use market::*;
+use solana_program::rent::Rent;
 use state::*;
 use user::*;
 
@@ -16,11 +19,16 @@ declare_id!("B2ejsK7m3eYPerru92hS73Gx7sQ7J83DKoLHGwn6pg5v");
 
 #[program]
 pub mod christmas {
+
+    use crate::utils::geo::code_to_country;
+
     use super::*;
 
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         if !ctx.accounts.program_state.is_initialized {
-            // create all region market accounts
+            // initialize global/share state
+
+            // set initialized
             ctx.accounts.program_state.is_initialized = true;
             ctx.accounts.program_state.bump = *ctx.bumps.get("program_state").unwrap();
         }
@@ -33,6 +41,9 @@ pub mod christmas {
         region: String,
         geo: String,
     ) -> Result<()> {
+        // check valid region
+        code_to_country(&region).unwrap();
+
         ctx.accounts.user.region = region;
         ctx.accounts.user.geo = geo;
         ctx.accounts.user.two_factor =
@@ -49,6 +60,9 @@ pub mod christmas {
         geo: String,
         uri: String,
     ) -> Result<()> {
+        // check valid region
+        code_to_country(&region).unwrap();
+
         ctx.accounts.coupon.update_authority = ctx.accounts.signer.key();
         ctx.accounts.coupon.mint = ctx.accounts.mint.key();
         ctx.accounts.coupon.name = name;
@@ -57,8 +71,6 @@ pub mod christmas {
         ctx.accounts.coupon.region = region;
         ctx.accounts.coupon.geo = geo;
         ctx.accounts.coupon.bump = *ctx.bumps.get("coupon").unwrap();
-
-        // TODO: check region, or set default to global
 
         Ok(())
     }
@@ -89,6 +101,9 @@ pub mod christmas {
         region: String,
         num_tokens: u64,
     ) -> Result<()> {
+        // check valid region
+        code_to_country(&region).unwrap();
+
         let cpi_accounts = MintTo {
             mint: ctx.accounts.mint.to_account_info(),
             to: ctx.accounts.region_market_token_account.to_account_info(),

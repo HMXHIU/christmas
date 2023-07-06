@@ -8,7 +8,6 @@ describe("Test coupon", () => {
     it("Airdrop", async () => {
         // get some sol to perform tx
         const sig = await client.requestAirdrop(100e9);
-        console.log(`Airdrop: ${sig}`);
     });
 
     it("Create user", async () => {
