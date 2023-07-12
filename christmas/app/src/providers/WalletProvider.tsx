@@ -17,7 +17,6 @@ import {
 } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
 import React, { FC, ReactNode, useMemo } from "react";
-import styled from "styled-components";
 
 // Default styles that can be overridden by your app
 require("@solana/wallet-adapter-react-ui/styles.css");
@@ -34,8 +33,6 @@ const Provider: FC<{ children: ReactNode }> = ({ children }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [network]
     );
-
-    console.log(network, endpoint, wallets);
 
     return (
         <ConnectionProvider endpoint={endpoint}>

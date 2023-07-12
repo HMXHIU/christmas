@@ -5,11 +5,10 @@ import WalletProvider from "../providers/WalletProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
-// requires SSR
-// export const metadata: Metadata = {
-//     title: "Christmas Protocol",
-//     description: "Christmas Protocol",
-// };
+export const metadata: Metadata = {
+    title: "Christmas Protocol",
+    description: "Christmas Protocol",
+};
 
 export default function RootLayout({
     children,
