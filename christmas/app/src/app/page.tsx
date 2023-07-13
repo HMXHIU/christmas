@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import styles from "./page.module.css";
 import { useWallet } from "@solana/wallet-adapter-react";
 import dynamic from "next/dynamic";
 
@@ -22,24 +21,23 @@ const WalletDisconnectButton = dynamic(
 );
 
 export default function Home() {
-    const { connected, publicKey } = useWallet();
+    const { connected } = useWallet();
 
     return (
-        <div className={styles.container}>
-            <nav className={styles.navbar}>
-                <div className={styles.login}>
+        <div className="flex flex-col min-h-screen">
+            <nav className="bg-gray-900 text-white py-4 px-6 flex justify-end">
+                <div>
                     {connected ? (
-                        <WalletDisconnectButton />
+                        <WalletDisconnectButton className="text-white hover:text-gray-300" />
                     ) : (
-                        <WalletMultiButton />
+                        <WalletMultiButton className="text-white hover:text-gray-300" />
                     )}
                 </div>
             </nav>
 
-            <main className={styles.main}>
-                <div className={styles.center}>
+            <main className="flex flex-grow items-center justify-center">
+                <div className="text-center">
                     <Image
-                        className={styles.logo}
                         src="/next.svg"
                         alt="Next.js Logo"
                         width={180}
@@ -49,33 +47,33 @@ export default function Home() {
                 </div>
             </main>
 
-            <nav className={styles.bottomNavbar}>
+            <nav className="bg-gray-900 text-white py-4 px-6 flex justify-between">
                 <Link href="/marketplace" legacyBehavior>
-                    <a className={styles.navLink}>
+                    <a className="flex flex-col items-center">
                         <img
                             src="/marketplace-icon.svg"
                             alt="Marketplace"
-                            className={styles.navIcon}
+                            className="w-6 h-6 mb-1"
                         />
                         <span>Marketplace</span>
                     </a>
                 </Link>
                 <Link href="/my-coupons" legacyBehavior>
-                    <a className={styles.navLink}>
+                    <a className="flex flex-col items-center">
                         <img
                             src="/my-coupons-icon.svg"
                             alt="My Coupons"
-                            className={styles.navIcon}
+                            className="w-6 h-6 mb-1"
                         />
                         <span>My Coupons</span>
                     </a>
                 </Link>
                 <Link href="/mint-coupons" legacyBehavior>
-                    <a className={styles.navLink}>
+                    <a className="flex flex-col items-center">
                         <img
                             src="/mint-coupons-icon.svg"
                             alt="Mint Coupons"
-                            className={styles.navIcon}
+                            className="w-6 h-6 mb-1"
                         />
                         <span>Mint Coupons</span>
                     </a>
