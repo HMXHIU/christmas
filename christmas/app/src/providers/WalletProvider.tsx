@@ -5,12 +5,7 @@ import {
     ConnectionProvider,
     WalletProvider,
 } from "@solana/wallet-adapter-react";
-import dynamic from "next/dynamic";
-import {
-    WalletModalProvider,
-    WalletDisconnectButton,
-    WalletMultiButton,
-} from "@solana/wallet-adapter-react-ui";
+import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
     GlowWalletAdapter,
     PhantomWalletAdapter,
@@ -37,11 +32,7 @@ const Provider: FC<{ children: ReactNode }> = ({ children }) => {
     return (
         <ConnectionProvider endpoint={endpoint}>
             <WalletProvider wallets={wallets} autoConnect>
-                <WalletModalProvider>
-                    <WalletMultiButton />
-                    <WalletDisconnectButton />
-                    {children}
-                </WalletModalProvider>
+                <WalletModalProvider>{children}</WalletModalProvider>
             </WalletProvider>
         </ConnectionProvider>
     );

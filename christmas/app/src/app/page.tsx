@@ -4,18 +4,34 @@ import Image from "next/image";
 import Link from "next/link";
 import styles from "./page.module.css";
 import { useWallet } from "@solana/wallet-adapter-react";
+import dynamic from "next/dynamic";
+
+// import dynamically to avoid SSR hydration issues
+const WalletMultiButton = dynamic(
+    async () =>
+        (await import("@solana/wallet-adapter-react-ui")).WalletMultiButton,
+    { ssr: false }
+);
+
+// import dynamically to avoid SSR hydration issues
+const WalletDisconnectButton = dynamic(
+    async () =>
+        (await import("@solana/wallet-adapter-react-ui"))
+            .WalletDisconnectButton,
+    { ssr: false }
+);
 
 export default function Home() {
-    const { connected } = useWallet();
+    const { connected, publicKey } = useWallet();
 
     return (
         <div className={styles.container}>
             <nav className={styles.navbar}>
                 <div className={styles.login}>
                     {connected ? (
-                        <button className={styles.button}>Logout</button>
+                        <WalletDisconnectButton />
                     ) : (
-                        <button className={styles.button}>Login</button>
+                        <WalletMultiButton />
                     )}
                 </div>
             </nav>
