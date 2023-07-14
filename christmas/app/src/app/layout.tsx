@@ -1,8 +1,8 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import WalletProvider from "../providers/WalletProvider";
-
+import WalletProvider from "../providers/walletProvider";
+import QueryProvider from "../providers/queryProvider";
 import NavBottom from "./components/navBottom";
 import NavTop from "./components/navTop";
 
@@ -24,7 +24,7 @@ export default function RootLayout({
                 <WalletProvider>
                     <div className="flex flex-col min-h-screen">
                         <NavTop />
-                        {children}
+                        <QueryProvider>{children}</QueryProvider>
                         <NavBottom />
                     </div>
                 </WalletProvider>

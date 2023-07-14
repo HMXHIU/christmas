@@ -3,7 +3,7 @@ import Link from "next/link";
 export default () => {
     return (
         <nav className="bg-gray-900 text-white py-4 px-6 flex justify-between">
-            <Link href="/marketplace" legacyBehavior>
+            <Link href="/market" legacyBehavior>
                 <a className="flex flex-col items-center">
                     <img
                         src="/marketplace-icon.svg"
