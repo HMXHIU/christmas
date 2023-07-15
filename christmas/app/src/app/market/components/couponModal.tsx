@@ -1,16 +1,10 @@
 import React from "react";
+import { Coupon } from "@/types";
 
 interface CouponModalProps {
     coupon: Coupon;
     onClose: () => void;
     onRedeem: () => void;
-}
-
-interface Coupon {
-    id: string;
-    image: string;
-    description: string;
-    detailedDescription: string;
 }
 
 const CouponModal: React.FC<CouponModalProps> = ({

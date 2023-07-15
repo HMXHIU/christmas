@@ -5,7 +5,7 @@ import WalletProvider from "../providers/walletProvider";
 import QueryProvider from "../providers/queryProvider";
 import NavBottom from "./components/navBottom";
 import NavTop from "./components/navTop";
-
+import { AnchorClientProvider } from "@/providers/anchorClientProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -22,11 +22,13 @@ export default function RootLayout({
         <html lang="en">
             <body className={inter.className}>
                 <WalletProvider>
-                    <div className="flex flex-col min-h-screen">
-                        <NavTop />
-                        <QueryProvider>{children}</QueryProvider>
-                        <NavBottom />
-                    </div>
+                    <AnchorClientProvider>
+                        <div className="flex flex-col min-h-screen">
+                            <NavTop />
+                            <QueryProvider>{children}</QueryProvider>
+                            <NavBottom />
+                        </div>
+                    </AnchorClientProvider>
                 </WalletProvider>
             </body>
         </html>

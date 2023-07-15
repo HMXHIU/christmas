@@ -1,6 +1,6 @@
 import * as web3 from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
-import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
+import { AnchorWallet } from "@solana/wallet-adapter-react";
 import { Transaction, Signer } from "@solana/web3.js";
 import idl from "../../../target/idl/christmas.json";
 import { Christmas } from "../../../target/types/christmas";
@@ -18,16 +18,16 @@ export default class AnchorClient {
     connection: anchor.web3.Connection;
     provider: anchor.Provider;
     program: anchor.Program<Christmas>;
-    wallet: anchor.Wallet | PhantomWalletAdapter;
+    wallet: AnchorWallet;
 
     constructor({
         programId,
         cluster,
-        keypair,
+        wallet,
     }: {
         programId?: web3.PublicKey;
         cluster?: string;
-        keypair?: web3.Keypair;
+        wallet?: AnchorWallet;
     } = {}) {
         this.programId = programId || new web3.PublicKey(idl.metadata.address);
         this.cluster = cluster || "http://127.0.0.1:8899";
@@ -36,13 +36,7 @@ export default class AnchorClient {
         console.log(`Connected to ${this.cluster}`);
 
         this.wallet =
-            typeof window !== "undefined" &&
-            window.solana?.isConnected &&
-            window.solana?.isPhantom
-                ? new PhantomWalletAdapter()
-                : keypair
-                ? new anchor.Wallet(keypair)
-                : new anchor.Wallet(anchor.web3.Keypair.generate());
+            wallet || new anchor.Wallet(anchor.web3.Keypair.generate());
 
         this.provider = new anchor.AnchorProvider(
             this.connection,

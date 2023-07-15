@@ -1,14 +1,9 @@
 import React from "react";
+import { Coupon } from "@/types";
 
 interface CouponCardProps {
     coupon: Coupon;
     onClick: () => void;
-}
-
-interface Coupon {
-    id: string;
-    image: string;
-    description: string;
 }
 
 const CouponCard: React.FC<CouponCardProps> = ({ coupon, onClick }) => {
