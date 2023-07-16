@@ -71,7 +71,6 @@ describe("Test Geo", () => {
             2. Get geohashes in radius
             3. Filter accounts for geohashes
 
-
             - given geo hash center and radius
             - given the radius, choose an appropriate precision (number of digits) to reduce the search space
             - get all geohashes in scope (up to precision)

@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
 use solana_program::hash::hash;
-use solana_program::system_instruction;
 mod coupon;
 mod defs;
 mod market;
@@ -9,18 +8,24 @@ mod user;
 mod utils;
 use anchor_spl::token::{burn, mint_to, transfer, Burn, MintTo, Transfer};
 use coupon::*;
-use defs::REGION_CODES;
 use market::*;
 use solana_program::rent::Rent;
 use state::*;
 use user::*;
+use utils::utils::pad_string;
 
 declare_id!("B2ejsK7m3eYPerru92hS73Gx7sQ7J83DKoLHGwn6pg5v");
 
 #[program]
 pub mod christmas {
 
-    use crate::utils::geo::code_to_country;
+    use crate::{
+        defs::{
+            COUPON_NAME_SIZE, COUPON_SYMBOL_SIZE, COUPON_URI_SIZE, GEO_SIZE, REGION_SIZE,
+            STRING_PREFIX_SIZE,
+        },
+        utils::geo::code_to_country,
+    };
 
     use super::*;
 
@@ -42,10 +47,10 @@ pub mod christmas {
         geo: String,
     ) -> Result<()> {
         // check valid region
-        code_to_country(&region).unwrap();
+        // code_to_country(&region).unwrap();
 
-        ctx.accounts.user.region = region;
-        ctx.accounts.user.geo = geo;
+        ctx.accounts.user.region = pad_string(&region, REGION_SIZE - STRING_PREFIX_SIZE);
+        ctx.accounts.user.geo = pad_string(&geo, GEO_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.user.two_factor =
             hash(&[ctx.accounts.signer.key.as_ref(), email.as_bytes()].concat()).to_bytes();
         ctx.accounts.user.bump = *ctx.bumps.get("user").unwrap();
@@ -61,15 +66,15 @@ pub mod christmas {
         uri: String,
     ) -> Result<()> {
         // check valid region
-        code_to_country(&region).unwrap();
+        // code_to_country(&region).unwrap();
 
         ctx.accounts.coupon.update_authority = ctx.accounts.signer.key();
         ctx.accounts.coupon.mint = ctx.accounts.mint.key();
-        ctx.accounts.coupon.name = name;
-        ctx.accounts.coupon.symbol = symbol;
-        ctx.accounts.coupon.uri = uri;
-        ctx.accounts.coupon.region = region;
-        ctx.accounts.coupon.geo = geo;
+        ctx.accounts.coupon.name = pad_string(&name, COUPON_NAME_SIZE - STRING_PREFIX_SIZE);
+        ctx.accounts.coupon.symbol = pad_string(&symbol, COUPON_SYMBOL_SIZE - STRING_PREFIX_SIZE);
+        ctx.accounts.coupon.uri = pad_string(&uri, COUPON_URI_SIZE - STRING_PREFIX_SIZE);
+        ctx.accounts.coupon.region = pad_string(&region, REGION_SIZE - STRING_PREFIX_SIZE);
+        ctx.accounts.coupon.geo = pad_string(&geo, GEO_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.coupon.bump = *ctx.bumps.get("coupon").unwrap();
 
         Ok(())
@@ -102,7 +107,7 @@ pub mod christmas {
         num_tokens: u64,
     ) -> Result<()> {
         // check valid region
-        code_to_country(&region).unwrap();
+        // code_to_country(&region).unwrap();
 
         let cpi_accounts = MintTo {
             mint: ctx.accounts.mint.to_account_info(),
@@ -113,7 +118,7 @@ pub mod christmas {
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
 
         ctx.accounts.region_market.bump = *ctx.bumps.get("region_market").unwrap();
-        ctx.accounts.region_market.region = region;
+        ctx.accounts.region_market.region = pad_string(&region, REGION_SIZE - STRING_PREFIX_SIZE);
 
         mint_to(cpi_ctx, num_tokens)?;
 

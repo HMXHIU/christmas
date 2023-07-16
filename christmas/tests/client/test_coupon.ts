@@ -44,11 +44,11 @@ describe("Test coupon", () => {
             assert.ok(coupons.length === 1);
             const coupon = coupons[0];
 
-            assert.equal(coupon.geo, geo);
-            assert.equal(coupon.region, region);
-            assert.equal(coupon.uri, uri);
-            assert.equal(coupon.name, name);
-            assert.equal(coupon.symbol, symbol);
+            assert.equal(coupon.geo.replace(/\u0000+$/, ""), geo);
+            assert.equal(coupon.region.replace(/\u0000+$/, ""), region);
+            assert.equal(coupon.uri.replace(/\u0000+$/, ""), uri);
+            assert.equal(coupon.name.replace(/\u0000+$/, ""), name);
+            assert.equal(coupon.symbol.replace(/\u0000+$/, ""), symbol);
             assert.ok(coupon.updateAuthority.equals(client.wallet.publicKey));
         });
 
