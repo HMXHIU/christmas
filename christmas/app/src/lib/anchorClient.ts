@@ -9,8 +9,15 @@ import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     getAssociatedTokenAddress,
 } from "@solana/spl-token";
-import { DISCRIMINATOR_SIZE } from "./constants";
-import { getUserPda } from "./utils";
+import {
+    COUPON_NAME_SIZE,
+    COUPON_SYMBOL_SIZE,
+    COUPON_URI_SIZE,
+    DISCRIMINATOR_SIZE,
+    PUBKEY_SIZE,
+    STRING_PREFIX_SIZE,
+} from "./constants";
+import { getUserPda, stringToBase58 } from "./utils";
 
 export default class AnchorClient {
     programId: web3.PublicKey;
@@ -241,6 +248,25 @@ export default class AnchorClient {
                 memcmp: {
                     offset: DISCRIMINATOR_SIZE,
                     bytes: this.wallet.publicKey.toBase58(),
+                },
+            },
+        ]);
+        return coupons.map((x) => x.account);
+    }
+
+    async getCoupons(region: string) {
+        const coupons = await this.program.account.coupon.all([
+            {
+                memcmp: {
+                    offset:
+                        DISCRIMINATOR_SIZE +
+                        PUBKEY_SIZE +
+                        PUBKEY_SIZE +
+                        COUPON_NAME_SIZE +
+                        COUPON_SYMBOL_SIZE +
+                        COUPON_URI_SIZE +
+                        STRING_PREFIX_SIZE,
+                    bytes: stringToBase58(region),
                 },
             },
         ]);

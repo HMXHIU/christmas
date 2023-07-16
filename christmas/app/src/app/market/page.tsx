@@ -5,6 +5,7 @@ import { useQuery } from "react-query";
 import CouponCard from "./components/couponCard";
 import CouponModal from "./components/couponModal";
 import { fetchCoupons } from "./queries/couponQueries";
+import { useAnchorClient } from "@/providers/anchorClientProvider";
 
 interface Coupon {
     id: string;
@@ -14,8 +15,12 @@ interface Coupon {
 }
 
 export default function Page() {
+    const anchorClient = useAnchorClient();
+
     const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
-    const { data: coupons, isLoading } = useQuery("coupons", fetchCoupons);
+    const { data: coupons, isLoading } = useQuery(["coupons"], fetchCoupons);
+
+    console.log(anchorClient?.programId.toString());
 
     const handleCouponClick = (coupon: Coupon) => {
         setSelectedCoupon(coupon);

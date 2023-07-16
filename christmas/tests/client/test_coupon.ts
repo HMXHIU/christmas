@@ -97,6 +97,11 @@ describe("Test coupon", () => {
             );
         });
 
+        it("Get coupons from region", async () => {
+            const coupons = await client.getMintedCoupons();
+            // TODO: ADD TEST
+        });
+
         it("Claim from market", async () => {
             // get coupon
             const coupons = await client.getMintedCoupons();

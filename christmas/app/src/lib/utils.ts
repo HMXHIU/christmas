@@ -1,5 +1,11 @@
 import * as web3 from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+
+export function stringToBase58(str: string) {
+    const buffer = Buffer.from(str);
+    return bs58.encode(buffer);
+}
 
 export function stringToUint8Array(input: string): Uint8Array {
     const encoder = new TextEncoder();
