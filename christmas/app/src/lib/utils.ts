@@ -18,3 +18,7 @@ export function getUserPda(user: web3.PublicKey, programId: web3.PublicKey) {
         programId
     );
 }
+
+export function cleanString(s: string) {
+    return s.replace(/\u0000+$/, "");
+}

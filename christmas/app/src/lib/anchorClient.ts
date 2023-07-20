@@ -17,7 +17,7 @@ import {
     PUBKEY_SIZE,
     STRING_PREFIX_SIZE,
 } from "./constants";
-import { getUserPda, stringToBase58 } from "./utils";
+import { getUserPda, stringToBase58, cleanString } from "./utils";
 
 export default class AnchorClient {
     programId: web3.PublicKey;

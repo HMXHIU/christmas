@@ -1,5 +1,6 @@
 import { assert } from "chai";
 import AnchorClient from "../../app/src/lib/anchorClient";
+import { cleanString } from "../../app/src/lib/utils";
 import { getMint } from "@solana/spl-token";
 
 describe("Test coupon", () => {
@@ -44,11 +45,11 @@ describe("Test coupon", () => {
             assert.ok(coupons.length === 1);
             const coupon = coupons[0];
 
-            assert.equal(coupon.geo.replace(/\u0000+$/, ""), geo);
-            assert.equal(coupon.region.replace(/\u0000+$/, ""), region);
-            assert.equal(coupon.uri.replace(/\u0000+$/, ""), uri);
-            assert.equal(coupon.name.replace(/\u0000+$/, ""), name);
-            assert.equal(coupon.symbol.replace(/\u0000+$/, ""), symbol);
+            assert.equal(cleanString(coupon.geo), geo);
+            assert.equal(cleanString(coupon.region), region);
+            assert.equal(cleanString(coupon.uri), uri);
+            assert.equal(cleanString(coupon.name), name);
+            assert.equal(cleanString(coupon.symbol), symbol);
             assert.ok(coupon.updateAuthority.equals(client.wallet.publicKey));
         });
 
@@ -98,8 +99,11 @@ describe("Test coupon", () => {
         });
 
         it("Get coupons from region", async () => {
-            const coupons = await client.getMintedCoupons();
-            // TODO: ADD TEST
+            const coupons = await client.getCoupons(region);
+            assert.ok(coupons.length > 0);
+            for (const coupon of coupons) {
+                assert.ok(cleanString(coupon.region) === region);
+            }
         });
 
         it("Claim from market", async () => {
