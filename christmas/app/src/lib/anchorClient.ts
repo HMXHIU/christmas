@@ -18,6 +18,7 @@ import {
     STRING_PREFIX_SIZE,
 } from "./constants";
 import { getUserPda, stringToBase58, cleanString } from "./utils";
+import { Coupon } from "@/types";
 
 export default class AnchorClient {
     programId: web3.PublicKey;
@@ -242,8 +243,8 @@ export default class AnchorClient {
         return await this.executeTransaction(tx);
     }
 
-    async getMintedCoupons() {
-        const coupons = await this.program.account.coupon.all([
+    async getMintedCoupons(): Promise<Coupon[]> {
+        return await this.program.account.coupon.all([
             {
                 memcmp: {
                     offset: DISCRIMINATOR_SIZE,
@@ -251,11 +252,10 @@ export default class AnchorClient {
                 },
             },
         ]);
-        return coupons.map((x) => x.account);
     }
 
-    async getCoupons(region: string) {
-        const coupons = await this.program.account.coupon.all([
+    async getCoupons(region: string): Promise<Coupon[]> {
+        return await this.program.account.coupon.all([
             {
                 memcmp: {
                     offset:
@@ -270,7 +270,6 @@ export default class AnchorClient {
                 },
             },
         ]);
-        return coupons.map((x) => x.account);
     }
 
     async getRegionMarketPdasFromMint(

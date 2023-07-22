@@ -1,6 +1,9 @@
-export const fetchCoupons = async () => {
-    // Fetch coupons from the API or any other data source
-    const response = await fetch("/api/coupons");
-    const data = await response.json();
-    return data;
+import AnchorClient from "../../../lib/anchorClient";
+import { Coupon } from "@/types";
+
+export const fetchCoupons = async (
+    anchorClient: AnchorClient | null,
+    region: string
+): Promise<Coupon[]> => {
+    return anchorClient !== null ? anchorClient.getCoupons(region) : [];
 };

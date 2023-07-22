@@ -10,11 +10,11 @@ const CouponCard: React.FC<CouponCardProps> = ({ coupon, onClick }) => {
     return (
         <div className="border p-4 my-2 cursor-pointer" onClick={onClick}>
             <img
-                src={coupon.image}
+                src=""
                 alt="Coupon"
                 className="w-24 h-24 object-cover rounded-md"
             />
-            <p className="mt-2">{coupon.description}</p>
+            <p className="mt-2">{coupon.account.name}</p>
         </div>
     );
 };

@@ -45,12 +45,14 @@ describe("Test coupon", () => {
             assert.ok(coupons.length === 1);
             const coupon = coupons[0];
 
-            assert.equal(cleanString(coupon.geo), geo);
-            assert.equal(cleanString(coupon.region), region);
-            assert.equal(cleanString(coupon.uri), uri);
-            assert.equal(cleanString(coupon.name), name);
-            assert.equal(cleanString(coupon.symbol), symbol);
-            assert.ok(coupon.updateAuthority.equals(client.wallet.publicKey));
+            assert.equal(cleanString(coupon.account.geo), geo);
+            assert.equal(cleanString(coupon.account.region), region);
+            assert.equal(cleanString(coupon.account.uri), uri);
+            assert.equal(cleanString(coupon.account.name), name);
+            assert.equal(cleanString(coupon.account.symbol), symbol);
+            assert.ok(
+                coupon.account.updateAuthority.equals(client.wallet.publicKey)
+            );
         });
 
         it("Mint to region market", async () => {
@@ -60,7 +62,7 @@ describe("Test coupon", () => {
 
             // check mint supply before
             assert.equal(
-                (await getMint(client.connection, coupon.mint)).supply,
+                (await getMint(client.connection, coupon.account.mint)).supply,
                 BigInt(0)
             );
 
@@ -70,8 +72,8 @@ describe("Test coupon", () => {
             assert.isNull(
                 (
                     await client.mintToMarket(
-                        coupon.mint,
-                        coupon.region,
+                        coupon.account.mint,
+                        coupon.account.region,
                         numTokens
                     )
                 ).err
@@ -79,11 +81,11 @@ describe("Test coupon", () => {
 
             // check regionMarket created
             const [regionMarketPda, regionMarketTokenAccountPda] =
-                await client.getRegionMarketPdasFromMint(coupon.mint);
+                await client.getRegionMarketPdasFromMint(coupon.account.mint);
             let regionMarket = await client.program.account.regionMarket.fetch(
                 regionMarketPda
             );
-            assert.equal(regionMarket.region, coupon.region);
+            assert.equal(regionMarket.region, coupon.account.region);
 
             // check regionMarketTokenAccountPda balance
             const balance = await client.connection.getTokenAccountBalance(
@@ -93,7 +95,7 @@ describe("Test coupon", () => {
 
             // check mint supply after
             assert.equal(
-                (await getMint(client.connection, coupon.mint)).supply,
+                (await getMint(client.connection, coupon.account.mint)).supply,
                 BigInt(numTokens)
             );
         });
@@ -102,7 +104,7 @@ describe("Test coupon", () => {
             const coupons = await client.getCoupons(region);
             assert.ok(coupons.length > 0);
             for (const coupon of coupons) {
-                assert.ok(cleanString(coupon.region) === region);
+                assert.ok(cleanString(coupon.account.region) === region);
             }
         });
 
@@ -114,11 +116,11 @@ describe("Test coupon", () => {
 
             // userTokenAccount not created at this point
             const userTokenAccount = await client.getUserTokenAccount(
-                coupon.mint
+                coupon.account.mint
             );
 
             // claim 1 token
-            await client.claimFromMarket(coupon.mint, 1);
+            await client.claimFromMarket(coupon.account.mint, 1);
 
             // check balance after
             const balanceAfter = await client.connection.getTokenAccountBalance(
@@ -134,7 +136,7 @@ describe("Test coupon", () => {
             const coupon = coupons[0];
 
             const userTokenAccount = await client.getUserTokenAccount(
-                coupon.mint
+                coupon.account.mint
             );
 
             // check balance before
@@ -145,10 +147,10 @@ describe("Test coupon", () => {
             assert.equal(balanceBefore.value.amount, `1`);
 
             // redeem token
-            const couponPda = client.getCouponPda(coupon.mint)[0];
+            const couponPda = client.getCouponPda(coupon.account.mint)[0];
             await client.redeemCoupon({
                 coupon: couponPda,
-                mint: coupon.mint,
+                mint: coupon.account.mint,
                 wallet: client.wallet.publicKey,
                 numTokens: 1,
             });

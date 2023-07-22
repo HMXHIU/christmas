@@ -1,3 +1,5 @@
+import { PublicKey } from "@solana/web3.js";
+
 declare global {
     interface Window {
         solana: any; // 👈️ turn off type checking
@@ -5,10 +7,17 @@ declare global {
 }
 
 interface Coupon {
-    id: string;
-    image: string;
-    description: string;
-    detailedDescription: string;
+    publicKey: PublicKey;
+    account: {
+        updateAuthority: PublicKey;
+        mint: PublicKey;
+        name: string;
+        symbol: string;
+        uri: string;
+        region: string;
+        geo: string;
+        bump: number;
+    };
 }
 
 export { Coupon };

@@ -6,21 +6,15 @@ import CouponCard from "./components/couponCard";
 import CouponModal from "./components/couponModal";
 import { fetchCoupons } from "./queries/couponQueries";
 import { useAnchorClient } from "@/providers/anchorClientProvider";
-
-interface Coupon {
-    id: string;
-    image: string;
-    description: string;
-    detailedDescription: string;
-}
+import { Coupon } from "@/types";
 
 export default function Page() {
     const anchorClient = useAnchorClient();
 
     const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
-    const { data: coupons, isLoading } = useQuery(["coupons"], fetchCoupons);
-
-    console.log(anchorClient?.programId.toString());
+    const { data: coupons, isLoading } = useQuery(["coupons"], () =>
+        fetchCoupons(anchorClient, "SGP")
+    );
 
     const handleCouponClick = (coupon: Coupon) => {
         setSelectedCoupon(coupon);
@@ -42,9 +36,9 @@ export default function Page() {
                 <p>Loading coupons...</p>
             ) : (
                 <>
-                    {coupons.map((coupon: Coupon) => (
+                    {coupons?.map((coupon: Coupon) => (
                         <CouponCard
-                            key={coupon.id}
+                            key={coupon.publicKey.toString()}
                             coupon={coupon}
                             onClick={() => handleCouponClick(coupon)}
                         />
