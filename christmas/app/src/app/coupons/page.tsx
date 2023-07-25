@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import { useQuery } from "react-query";
-import CouponCard from "./components/couponCard";
-import CouponModal from "./components/couponModal";
+import CouponCard from "../market/components/couponCard";
+import CouponModal from "../market/components/couponModal";
 import { fetchCoupons } from "../queries/queries";
 import { useAnchorClient } from "@/providers/anchorClientProvider";
 import { Coupon } from "@/types";
@@ -11,11 +11,9 @@ import { Coupon } from "@/types";
 export default function Page() {
     const anchorClient = useAnchorClient();
 
-    const region = "SGP"; // TODO: Use user's location
-
     const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
-    const { data: coupons, isLoading } = useQuery(["coupons", region], () =>
-        fetchCoupons(anchorClient, region)
+    const { data: coupons, isLoading } = useQuery(["coupons", "user"], () =>
+        fetchCoupons(anchorClient, "SGP")
     );
 
     const handleCouponClick = (coupon: Coupon) => {

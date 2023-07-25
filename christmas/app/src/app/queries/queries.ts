@@ -1,4 +1,4 @@
-import AnchorClient from "../../../lib/anchorClient";
+import AnchorClient from "../../lib/anchorClient";
 import { Coupon } from "@/types";
 
 export const fetchCoupons = async (

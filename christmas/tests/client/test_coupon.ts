@@ -2,6 +2,7 @@ import { assert } from "chai";
 import AnchorClient from "../../app/src/lib/anchorClient";
 import { cleanString } from "../../app/src/lib/utils";
 import { getMint } from "@solana/spl-token";
+import { web3 } from "@coral-xyz/anchor";
 
 describe("Test coupon", () => {
     const client = new AnchorClient();
@@ -127,6 +128,21 @@ describe("Test coupon", () => {
                 userTokenAccount
             );
             assert.equal(balanceAfter.value.amount, `1`);
+        });
+
+        it("Get claimed coupons", async () => {
+            const couponsBalance = await client.getClaimedCoupons();
+
+            assert.equal(couponsBalance.length, 1);
+
+            const [coupon, balance] = couponsBalance[0];
+
+            assert.equal(balance, 1);
+            assert.equal(cleanString(coupon.account.geo), geo);
+            assert.equal(cleanString(coupon.account.region), region);
+            assert.equal(cleanString(coupon.account.uri), uri);
+            assert.equal(cleanString(coupon.account.name), name);
+            assert.equal(cleanString(coupon.account.symbol), symbol);
         });
 
         it("Redeem coupon", async () => {

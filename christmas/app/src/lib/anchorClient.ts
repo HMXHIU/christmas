@@ -19,6 +19,7 @@ import {
 } from "./constants";
 import { getUserPda, stringToBase58, cleanString } from "./utils";
 import { Coupon } from "@/types";
+import { filter } from "lodash";
 
 export default class AnchorClient {
     programId: web3.PublicKey;
@@ -248,7 +249,7 @@ export default class AnchorClient {
             {
                 memcmp: {
                     offset: DISCRIMINATOR_SIZE,
-                    bytes: this.wallet.publicKey.toBase58(),
+                    bytes: this.wallet.publicKey.toBase58(), // update_authority
                 },
             },
         ]);
@@ -266,10 +267,60 @@ export default class AnchorClient {
                         COUPON_SYMBOL_SIZE +
                         COUPON_URI_SIZE +
                         STRING_PREFIX_SIZE,
-                    bytes: stringToBase58(region),
+                    bytes: stringToBase58(region), // region
                 },
             },
         ]);
+    }
+
+    async getClaimedCoupons(): Promise<[Coupon, number][]> {
+        const userPda = this.getUserPda()[0];
+
+        // get token accounts of userPda
+        const tokenAccounts = await this.connection.getParsedProgramAccounts(
+            TOKEN_PROGRAM_ID,
+            {
+                filters: [
+                    {
+                        dataSize: 165,
+                    },
+                    {
+                        memcmp: {
+                            offset: 32,
+                            bytes: userPda.toBase58(),
+                        },
+                    },
+                ],
+            }
+        );
+
+        // get (mints, balance)'s with at least 1 token
+        const mintsBalance = tokenAccounts
+            .filter(
+                (x) =>
+                    (x.account.data as web3.ParsedAccountData).parsed.info
+                        .tokenAmount.uiAmount > 0
+            )
+            .map((x) => [
+                (x.account.data as web3.ParsedAccountData).parsed.info.mint,
+                (x.account.data as web3.ParsedAccountData).parsed.info
+                    .tokenAmount.uiAmount,
+            ]);
+
+        // get (coupon, balance)
+        return await Promise.all(
+            mintsBalance.map(async ([mint, balance]) => {
+                const coupons = await this.program.account.coupon.all([
+                    {
+                        memcmp: {
+                            offset: DISCRIMINATOR_SIZE + PUBKEY_SIZE, // mint
+                            bytes: mint,
+                        },
+                    },
+                ]);
+                return [coupons[0], balance];
+            })
+        );
     }
 
     async getRegionMarketPdasFromMint(
