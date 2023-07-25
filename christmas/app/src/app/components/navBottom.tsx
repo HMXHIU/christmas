@@ -13,7 +13,7 @@ export default () => {
                     <span>Marketplace</span>
                 </a>
             </Link>
-            <Link href="/my-coupons" legacyBehavior>
+            <Link href="/coupons" legacyBehavior>
                 <a className="flex flex-col items-center">
                     <img
                         src="/my-coupons-icon.svg"

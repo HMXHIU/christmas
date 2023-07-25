@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useQuery } from "react-query";
 import CouponCard from "../market/components/couponCard";
 import CouponModal from "../market/components/couponModal";
-import { fetchCoupons } from "../queries/queries";
+import { fetchClaimedCoupons } from "../queries/queries";
 import { useAnchorClient } from "@/providers/anchorClientProvider";
 import { Coupon } from "@/types";
 
@@ -12,8 +12,9 @@ export default function Page() {
     const anchorClient = useAnchorClient();
 
     const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
-    const { data: coupons, isLoading } = useQuery(["coupons", "user"], () =>
-        fetchCoupons(anchorClient, "SGP")
+    const { data: couponsBalance, isLoading } = useQuery(
+        ["claimed_coupons"],
+        () => fetchClaimedCoupons(anchorClient)
     );
 
     const handleCouponClick = (coupon: Coupon) => {
@@ -36,7 +37,7 @@ export default function Page() {
                 <p>Loading coupons...</p>
             ) : (
                 <>
-                    {coupons?.map((coupon: Coupon) => (
+                    {couponsBalance?.map(([coupon, number]) => (
                         <CouponCard
                             key={coupon.publicKey.toString()}
                             coupon={coupon}
