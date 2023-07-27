@@ -13,12 +13,10 @@ describe("Test coupon", () => {
     });
 
     it("Create user", async () => {
-        // user needs to exist before claim from market
-        const email = "christmas@gmail.com";
         const geo = "gbsuv7";
         const region = "SGP";
 
-        await client.createUser({ email, geo, region });
+        await client.createUser({ geo, region });
 
         const [pda, _] = client.getUserPda();
         const user = await client.program.account.user.fetch(pda);
@@ -27,7 +25,7 @@ describe("Test coupon", () => {
         assert.ok(user.region == region);
     });
 
-    describe("Coupon", () => {
+    describe("Coupon (Create, Mint, Claim, Redeem)", () => {
         const geo = "gbsuv7";
         const region = "SGP";
         const uri = "http://someuri.com";

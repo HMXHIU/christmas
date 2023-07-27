@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useQuery } from "react-query";
+import { useQuery, useQueryClient } from "react-query";
 import CouponCard from "./components/couponCard";
 import CouponModal from "./components/couponModal";
 import { fetchCoupons } from "../queries/queries";
@@ -10,6 +10,7 @@ import { Coupon } from "@/types";
 
 export default function Page() {
     const anchorClient = useAnchorClient();
+    const queryClient = useQueryClient();
 
     const region = "SGP"; // TODO: Use user's location
 
@@ -26,10 +27,19 @@ export default function Page() {
         setSelectedCoupon(null);
     };
 
-    const handleRedeemCoupon = () => {
+    async function handleRedeemCoupon() {
         // Handle coupon redemption logic here
         console.log("Coupon redeemed:", selectedCoupon);
-    };
+
+        if (anchorClient && selectedCoupon) {
+            const res = await anchorClient.claimFromMarket(
+                selectedCoupon.account.mint,
+                1
+            );
+            console.log(res);
+            queryClient.invalidateQueries(["coupons", region]);
+        }
+    }
 
     return (
         <div className="container mx-auto p-4">

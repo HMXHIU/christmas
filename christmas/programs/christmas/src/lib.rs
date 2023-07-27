@@ -40,19 +40,12 @@ pub mod christmas {
         Ok(())
     }
 
-    pub fn create_user(
-        ctx: Context<CreateUser>,
-        email: String,
-        region: String,
-        geo: String,
-    ) -> Result<()> {
+    pub fn create_user(ctx: Context<CreateUser>, region: String, geo: String) -> Result<()> {
         // check valid region
         // code_to_country(&region).unwrap();
 
         ctx.accounts.user.region = pad_string(&region, REGION_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.user.geo = pad_string(&geo, GEO_SIZE - STRING_PREFIX_SIZE);
-        ctx.accounts.user.two_factor =
-            hash(&[ctx.accounts.signer.key.as_ref(), email.as_bytes()].concat()).to_bytes();
         ctx.accounts.user.bump = *ctx.bumps.get("user").unwrap();
         Ok(())
     }

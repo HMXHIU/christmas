@@ -6,7 +6,7 @@ declare global {
     }
 }
 
-interface Coupon {
+export interface Coupon {
     publicKey: PublicKey;
     account: {
         updateAuthority: PublicKey;
@@ -20,4 +20,8 @@ interface Coupon {
     };
 }
 
-export { Coupon };
+export interface User {
+    region: string;
+    geo: string;
+    bump: number;
+}

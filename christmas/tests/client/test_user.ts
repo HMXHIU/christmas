@@ -1,8 +1,6 @@
 import { assert, expect } from "chai";
 import AnchorClient from "../../app/src/lib/anchorClient";
-import { sha256 } from "js-sha256";
-
-import { stringToUint8Array } from "../../app/src/lib/utils";
+import { cleanString } from "../../app/src/lib/utils";
 
 describe("Test user", () => {
     const client = new AnchorClient();
@@ -19,21 +17,24 @@ describe("Test user", () => {
     });
 
     it("Create user", async () => {
-        const email = "christmas@gmail.com";
+        // test getUser() before creating
+        const nonExistentUser = await client.getUser();
+        assert.equal(nonExistentUser, null);
+
         const geo = "gbsuv7";
         const region = "SGP";
 
-        await client.createUser({ email, geo, region });
+        await client.createUser({ geo, region });
+
+        // test getUser() after creating
+        const validUser = await client.getUser();
+        assert.equal(cleanString(validUser.geo), geo);
+        assert.equal(cleanString(validUser.region), region);
 
         const [pda, _] = client.getUserPda();
         const user = await client.program.account.user.fetch(pda);
 
         assert.ok(user.geo == geo);
         assert.ok(user.region == region);
-        const twoFactor = sha256.digest([
-            ...client.wallet.publicKey.toBytes(),
-            ...stringToUint8Array(email),
-        ]);
-        expect(twoFactor).to.deep.equal(user.twoFactor);
     });
 });

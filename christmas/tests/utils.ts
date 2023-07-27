@@ -35,7 +35,6 @@ export function getRegionMarketPda(
 
 export async function createUser(
     wallet: web3.Keypair,
-    email: string,
     region: string,
     geo: string
 ): Promise<[web3.PublicKey, number]> {
@@ -52,7 +51,7 @@ export async function createUser(
 
     // Create user
     const tx = await program.methods
-        .createUser(email, region, geo)
+        .createUser(region, geo)
         .accounts({
             user: pda,
             signer: wallet.publicKey,

@@ -53,12 +53,7 @@ describe("Test Geo", () => {
                     async (resolve) => {
                         const email = `${geo}@gmail.com`;
                         const region = "SGP";
-                        const [pda, bump] = await createUser(
-                            user,
-                            email,
-                            region,
-                            geo
-                        );
+                        const [pda, bump] = await createUser(user, region, geo);
                         resolve([pda, bump]);
                     }
                 );
@@ -87,10 +82,7 @@ describe("Test Geo", () => {
             {
                 memcmp: {
                     offset:
-                        DISCRIMINATOR_SIZE +
-                        TWO_FACTOR_SIZE +
-                        REGION_SIZE +
-                        STRING_PREFIX_SIZE,
+                        DISCRIMINATOR_SIZE + REGION_SIZE + STRING_PREFIX_SIZE,
                     bytes: bs58.encode(Buffer.from("w21zc9", "utf-8")),
                 },
             },

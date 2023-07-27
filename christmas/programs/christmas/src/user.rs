@@ -19,7 +19,6 @@ pub struct CreateUser<'info> {
 
 #[account]
 pub struct User {
-    pub two_factor: [u8; 32],
     pub region: String,
     pub geo: String,
     pub bump: u8,
@@ -27,6 +26,6 @@ pub struct User {
 
 impl User {
     pub fn len() -> usize {
-        DISCRIMINATOR_SIZE + TWO_FACTOR_SIZE + REGION_SIZE + GEO_SIZE + BUMP_SIZE
+        DISCRIMINATOR_SIZE + REGION_SIZE + GEO_SIZE + BUMP_SIZE
     }
 }

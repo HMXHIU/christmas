@@ -1,5 +1,8 @@
 import * as web3 from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
+
+import { Wallet } from "@coral-xyz/anchor";
+
 import { AnchorWallet } from "@solana/wallet-adapter-react";
 import { Transaction, Signer } from "@solana/web3.js";
 import idl from "../../../target/idl/christmas.json";
@@ -17,9 +20,8 @@ import {
     PUBKEY_SIZE,
     STRING_PREFIX_SIZE,
 } from "./constants";
-import { getUserPda, stringToBase58, cleanString } from "./utils";
-import { Coupon } from "@/types";
-import { filter } from "lodash";
+import { getUserPda, stringToBase58 } from "./utils";
+import { Coupon, User } from "@/types";
 
 export default class AnchorClient {
     programId: web3.PublicKey;
@@ -27,7 +29,7 @@ export default class AnchorClient {
     connection: anchor.web3.Connection;
     provider: anchor.Provider;
     program: anchor.Program<Christmas>;
-    wallet: AnchorWallet;
+    wallet: AnchorWallet | Wallet;
 
     constructor({
         programId,
@@ -36,7 +38,7 @@ export default class AnchorClient {
     }: {
         programId?: web3.PublicKey;
         cluster?: string;
-        wallet?: AnchorWallet;
+        wallet?: AnchorWallet | Wallet;
     } = {}) {
         this.programId = programId || new web3.PublicKey(idl.metadata.address);
         this.cluster = cluster || "http://127.0.0.1:8899";
@@ -44,8 +46,7 @@ export default class AnchorClient {
 
         console.log(`Connected to ${this.cluster}`);
 
-        this.wallet =
-            wallet || new anchor.Wallet(anchor.web3.Keypair.generate());
+        this.wallet = wallet || new Wallet(anchor.web3.Keypair.generate());
 
         this.provider = new anchor.AnchorProvider(
             this.connection,
@@ -130,19 +131,26 @@ export default class AnchorClient {
         );
     }
 
+    async getUser(): Promise<User | null> {
+        const [pda, _] = this.getUserPda();
+        try {
+            return await this.program.account.user.fetch(pda);
+        } catch (error) {
+            return null;
+        }
+    }
+
     async createUser({
-        email,
         geo,
         region,
     }: {
-        email: string;
         geo: string;
         region: string;
     }): Promise<web3.SignatureResult> {
         const [pda, _] = this.getUserPda();
 
         const ix = await this.program.methods
-            .createUser(email, region, geo)
+            .createUser(region, geo)
             .accounts({
                 user: pda,
                 signer: this.wallet.publicKey,
@@ -373,7 +381,15 @@ export default class AnchorClient {
         const [regionMarketPda, regionMarketTokenAccountPda] =
             await this.getRegionMarketPdasFromMint(mint);
 
-        // calculate userPda
+        // create user if needed (TODO: make 1 single transaction)
+        const user = await this.getUser();
+        if (user === null) {
+            const region = "SGP"; // TODO: get dynamically
+            const geo = "w21zc9"; // TODO: get dynamically
+            await this.createUser({ region, geo });
+        }
+
+        // calculate userPda (Note: A user needs to be created already by this point)
         const userPda = this.getUserPda()[0];
 
         // calculate userTokenAccount (this is owned by the userPda not the user)
@@ -385,6 +401,8 @@ export default class AnchorClient {
 
         // calculate couponPda
         let couponPda = this.getCouponPda(mint)[0];
+
+        console.log(`signer: ${this.wallet.publicKey} couponPda: ${couponPda}`);
 
         const ix = await this.program.methods
             .claimFromMarket(new anchor.BN(numTokens))
