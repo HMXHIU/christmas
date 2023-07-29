@@ -44,7 +44,9 @@ export default class AnchorClient {
         this.cluster = cluster || "http://127.0.0.1:8899";
         this.connection = new anchor.web3.Connection(this.cluster, "confirmed");
 
-        console.log(`Connected to ${this.cluster}`);
+        console.log(
+            `Connected to cluster: ${this.cluster} program: ${this.programId}`
+        );
 
         this.wallet = wallet || new Wallet(anchor.web3.Keypair.generate());
 
@@ -83,7 +85,7 @@ export default class AnchorClient {
     ): Promise<web3.SignatureResult> {
         // set latest blockhash
         tx.recentBlockhash = (
-            await this.connection.getLatestBlockhash("singleGossip")
+            await this.connection.getLatestBlockhash("confirmed")
         ).blockhash;
 
         // set payer
@@ -402,7 +404,9 @@ export default class AnchorClient {
         // calculate couponPda
         let couponPda = this.getCouponPda(mint)[0];
 
-        console.log(`signer: ${this.wallet.publicKey} couponPda: ${couponPda}`);
+        console.log(
+            `signer: ${this.wallet.publicKey} couponPda: ${couponPda} regionMarket: ${regionMarketPda} regionMarketTokenAccountPda: ${regionMarketTokenAccountPda}`
+        );
 
         const ix = await this.program.methods
             .claimFromMarket(new anchor.BN(numTokens))

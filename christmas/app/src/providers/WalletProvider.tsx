@@ -21,7 +21,8 @@ const Provider: FC<{ children: ReactNode }> = ({ children }) => {
     const network = WalletAdapterNetwork.Devnet;
 
     // You can also provide a custom RPC endpoint.
-    const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+    // const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+    const endpoint = "http://127.0.0.1:8899"; // TODO: make configurable
 
     const wallets = useMemo(
         () => [new PhantomWalletAdapter(), new GlowWalletAdapter()],

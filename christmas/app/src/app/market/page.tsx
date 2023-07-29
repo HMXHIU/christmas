@@ -32,11 +32,7 @@ export default function Page() {
         console.log("Coupon redeemed:", selectedCoupon);
 
         if (anchorClient && selectedCoupon) {
-            const res = await anchorClient.claimFromMarket(
-                selectedCoupon.account.mint,
-                1
-            );
-            console.log(res);
+            await anchorClient.claimFromMarket(selectedCoupon.account.mint, 1);
             queryClient.invalidateQueries(["coupons", region]);
         }
     }

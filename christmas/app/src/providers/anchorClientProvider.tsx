@@ -8,9 +8,11 @@ import React, {
     FC,
     ReactNode,
 } from "react";
-import { useAnchorWallet } from "@solana/wallet-adapter-react";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useConnection } from "@solana/wallet-adapter-react";
+import {
+    useAnchorWallet,
+    useWallet,
+    useConnection,
+} from "@solana/wallet-adapter-react";
 
 import AnchorClient from "../lib/anchorClient";
 
