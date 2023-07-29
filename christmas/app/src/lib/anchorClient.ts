@@ -266,21 +266,48 @@ export default class AnchorClient {
     }
 
     async getCoupons(region: string): Promise<Coupon[]> {
-        return await this.program.account.coupon.all([
+        // get token accounts owned by
+        const regionMarketPda = this.getRegionMarketPda(region)[0];
+        const tokenAccounts = await this.connection.getParsedProgramAccounts(
+            TOKEN_PROGRAM_ID,
             {
-                memcmp: {
-                    offset:
-                        DISCRIMINATOR_SIZE +
-                        PUBKEY_SIZE +
-                        PUBKEY_SIZE +
-                        COUPON_NAME_SIZE +
-                        COUPON_SYMBOL_SIZE +
-                        COUPON_URI_SIZE +
-                        STRING_PREFIX_SIZE,
-                    bytes: stringToBase58(region), // region
-                },
-            },
-        ]);
+                filters: [
+                    {
+                        dataSize: 165,
+                    },
+                    {
+                        memcmp: {
+                            offset: 32,
+                            bytes: regionMarketPda.toBase58(),
+                        },
+                    },
+                ],
+            }
+        );
+        const accountsWithBalance = tokenAccounts.filter(
+            (x) =>
+                (x.account.data as web3.ParsedAccountData).parsed.info
+                    .tokenAmount.uiAmount > 0
+        );
+
+        // get coupons for mints in accountsWithBalance
+        return await Promise.all(
+            accountsWithBalance.map(async (x) => {
+                const mint = (x.account.data as web3.ParsedAccountData).parsed
+                    .info.mint;
+
+                const xs = await this.program.account.coupon.all([
+                    {
+                        memcmp: {
+                            offset: DISCRIMINATOR_SIZE + PUBKEY_SIZE,
+                            bytes: mint,
+                        },
+                    },
+                ]);
+
+                return xs[0];
+            })
+        );
     }
 
     async getClaimedCoupons(): Promise<[Coupon, number][]> {

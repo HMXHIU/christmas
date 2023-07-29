@@ -65,7 +65,7 @@ describe("Test coupon", () => {
                 BigInt(0)
             );
 
-            const numTokens = 1;
+            const numTokens = 10;
 
             // mint coupon to region market
             assert.isNull(
