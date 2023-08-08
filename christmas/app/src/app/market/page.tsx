@@ -15,9 +15,11 @@ export default function Page() {
     const region = "SGP"; // TODO: Use user's location
 
     const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
-    const { data: coupons, isLoading } = useQuery(["coupons", region], () =>
-        fetchCoupons(anchorClient, region)
-    );
+    const { data: coupons, isLoading } = useQuery(["coupons", region], () => {
+        if (anchorClient !== null) {
+            return fetchCoupons(anchorClient, region);
+        }
+    });
 
     const handleCouponClick = (coupon: Coupon) => {
         setSelectedCoupon(coupon);

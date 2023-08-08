@@ -1,10 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "react-query";
 import Image from "next/image";
 import MintCouponModal from "./components/mintCouponModal";
+import { createCoupon, CreateCoupon } from "./queries/queries";
+import { useAnchorClient } from "@/providers/anchorClientProvider";
 
 export default function Home() {
+    const anchorClient = useAnchorClient();
+    const queryClient = useQueryClient();
     const [isMintCouponModalOpen, setIsMintCouponModalOpen] = useState(false);
 
     const handleOpenMintCouponModal = () => {
@@ -15,11 +20,26 @@ export default function Home() {
         setIsMintCouponModalOpen(false);
     };
 
-    const handleMintCoupon = (formData: any) => {
-        // Here, you can send the formData to the backend or perform any other action.
+    async function handleMintCoupon(formData: CreateCoupon) {
         console.log("Minting coupon with data:", formData);
+
+        try {
+            const [mint, couponPda] = await queryClient.fetchQuery({
+                queryKey: ["create_coupon"],
+                queryFn: () => {
+                    if (anchorClient === null)
+                        throw new Error("anchorClient is null");
+                    if (formData === null) throw new Error("formData is null");
+                    return createCoupon(anchorClient, formData);
+                },
+            });
+            console.log(`couponPda: ${couponPda} mint: ${mint}`);
+        } catch (error) {
+            console.log(error);
+        }
+
         handleCloseMintCouponModal();
-    };
+    }
 
     return (
         <main className="flex flex-grow items-center justify-center">

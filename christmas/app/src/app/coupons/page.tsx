@@ -14,7 +14,11 @@ export default function Page() {
     const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
     const { data: couponsBalance, isLoading } = useQuery(
         ["claimed_coupons"],
-        () => fetchClaimedCoupons(anchorClient)
+        () => {
+            if (anchorClient !== null) {
+                return fetchClaimedCoupons(anchorClient);
+            }
+        }
     );
 
     const handleCouponClick = (coupon: Coupon) => {

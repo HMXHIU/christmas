@@ -1,8 +1,9 @@
 import React, { useState, ChangeEvent, FormEvent } from "react";
+import { CreateCoupon } from "../queries/queries";
 
 interface MintCouponModalProps {
     onClose: () => void;
-    onMintCoupon: (formData: any) => void;
+    onMintCoupon: (formData: CreateCoupon) => void;
 }
 
 const MintCouponModal: React.FC<MintCouponModalProps> = ({
@@ -13,11 +14,10 @@ const MintCouponModal: React.FC<MintCouponModalProps> = ({
         name: "",
         symbol: "",
         description: "",
-        numberOfCoupons: 1,
+        numTokens: 1,
         region: "SGP",
-        location: "",
+        geo: "",
         image: "",
-        imagePreview: "",
     });
 
     const handleChange = (
@@ -38,7 +38,6 @@ const MintCouponModal: React.FC<MintCouponModalProps> = ({
                 setFormData((prevData) => ({
                     ...prevData,
                     image: reader.result as string,
-                    imagePreview: reader.result as string,
                 }));
             };
             reader.readAsDataURL(file);
@@ -52,7 +51,7 @@ const MintCouponModal: React.FC<MintCouponModalProps> = ({
 
     return (
         <div className="modal fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center">
-            <div className="modal-content bg-white p-4 rounded-lg w-full max-w-md">
+            <div className="modal-content bg-white p-4 rounded-lg w-full max-w-lg">
                 <button
                     className="close-button absolute top-4 right-4"
                     onClick={onClose}
@@ -115,17 +114,17 @@ const MintCouponModal: React.FC<MintCouponModalProps> = ({
                     </div>
                     <div className="mb-4 flex">
                         <label
-                            htmlFor="numberOfCoupons"
+                            htmlFor="numTokens"
                             className="w-20 pr-2 flex-shrink-0"
                         >
                             Number of Coupons:
                         </label>
                         <input
                             type="number"
-                            id="numberOfCoupons"
-                            name="numberOfCoupons"
+                            id="numTokens"
+                            name="numTokens"
                             min={1}
-                            value={formData.numberOfCoupons}
+                            value={formData.numTokens}
                             onChange={handleChange}
                             className="border rounded p-1 flex-1"
                         />
@@ -151,16 +150,16 @@ const MintCouponModal: React.FC<MintCouponModalProps> = ({
                     </div>
                     <div className="mb-4 flex">
                         <label
-                            htmlFor="location"
+                            htmlFor="geo"
                             className="w-20 pr-2 flex-shrink-0"
                         >
                             Location:
                         </label>
                         <input
                             type="text"
-                            id="location"
-                            name="location"
-                            value={formData.location}
+                            id="geo"
+                            name="geo"
+                            value={formData.geo}
                             onChange={handleChange}
                             className="border rounded p-1 flex-1"
                         />
@@ -179,9 +178,9 @@ const MintCouponModal: React.FC<MintCouponModalProps> = ({
                             onChange={handleImageUpload}
                             className="border rounded p-1 flex-1"
                         />
-                        {formData.imagePreview && (
+                        {formData.image && (
                             <img
-                                src={formData.imagePreview}
+                                src={formData.image}
                                 alt="Preview"
                                 className="mt-2 w-24 h-24"
                             />

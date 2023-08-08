@@ -22,6 +22,7 @@ import {
 } from "./constants";
 import { getUserPda, stringToBase58 } from "./utils";
 import { Coupon, User } from "@/types";
+import { min } from "bn.js";
 
 export default class AnchorClient {
     programId: web3.PublicKey;
@@ -195,7 +196,7 @@ export default class AnchorClient {
         name: string;
         uri: string;
         symbol: string;
-    }): Promise<web3.SignatureResult> {
+    }): Promise<[web3.PublicKey, web3.PublicKey]> {
         // generate new mint keys
         const mint = web3.Keypair.generate();
 
@@ -215,7 +216,8 @@ export default class AnchorClient {
             .instruction();
         const tx = new Transaction();
         tx.add(ix);
-        return await this.executeTransaction(tx, [mint]);
+        await this.executeTransaction(tx, [mint]);
+        return [mint.publicKey, couponPda];
     }
 
     async redeemCoupon({
