@@ -25,26 +25,32 @@ export interface CreateCoupon {
     region: string;
     name: string;
     symbol: string;
-    numTokens: number | undefined; // mint number of tokens to region market if provided
 }
 
-export const createCoupon = async (
+export async function createCoupon(
     anchorClient: AnchorClient,
-    { geo, region, name, symbol, numTokens, description, image }: CreateCoupon
-): Promise<[web3.PublicKey, web3.PublicKey]> => {
+    { geo, region, name, symbol, description, image }: CreateCoupon
+) {
     // TODO: store metadata json at uri
     const uri = "";
-    const [mint, couponPda] = await anchorClient.createCoupon({
+
+    // create coupon
+    await anchorClient.createCoupon({
         geo,
         region,
         name,
         uri,
         symbol,
     });
+}
 
-    if (numTokens !== undefined) {
-        await anchorClient.mintToMarket(mint, region, numTokens);
-    }
-
-    return [mint, couponPda];
-};
+export async function mintCoupon(
+    anchorClient: AnchorClient,
+    {
+        mint,
+        numTokens,
+        region,
+    }: { mint: web3.PublicKey; numTokens: number; region: string }
+) {
+    await anchorClient.mintToMarket(mint, region, numTokens);
+}

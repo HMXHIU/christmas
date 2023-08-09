@@ -23,7 +23,7 @@ export default () => {
                     <span>My Coupons</span>
                 </a>
             </Link>
-            <Link href="/mint-coupons" legacyBehavior>
+            <Link href="/mint" legacyBehavior>
                 <a className="flex flex-col items-center">
                     <img
                         src="/mint-coupons-icon.svg"

@@ -190,15 +190,19 @@ export default class AnchorClient {
         name,
         uri,
         symbol,
+        mint,
     }: {
         geo: string;
         region: string;
         name: string;
         uri: string;
         symbol: string;
-    }): Promise<[web3.PublicKey, web3.PublicKey]> {
-        // generate new mint keys
-        const mint = web3.Keypair.generate();
+        mint?: web3.Keypair;
+    }): Promise<web3.SignatureResult> {
+        // generate new mint keys if not provided
+        if (mint === undefined) {
+            mint = web3.Keypair.generate();
+        }
 
         // calculate couponPda
         const [couponPda, _] = this.getCouponPda(mint.publicKey);
@@ -216,8 +220,7 @@ export default class AnchorClient {
             .instruction();
         const tx = new Transaction();
         tx.add(ix);
-        await this.executeTransaction(tx, [mint]);
-        return [mint.publicKey, couponPda];
+        return await this.executeTransaction(tx, [mint]);
     }
 
     async redeemCoupon({

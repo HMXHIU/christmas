@@ -1,14 +1,14 @@
 import React, { useState, ChangeEvent, FormEvent } from "react";
 import { CreateCoupon } from "../queries/queries";
 
-interface MintCouponModalProps {
+interface CreateCouponModalProps {
     onClose: () => void;
-    onMintCoupon: (formData: CreateCoupon) => void;
+    onCreateCoupon: (formData: CreateCoupon) => void;
 }
 
-const MintCouponModal: React.FC<MintCouponModalProps> = ({
+const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
     onClose,
-    onMintCoupon,
+    onCreateCoupon,
 }) => {
     const [formData, setFormData] = useState({
         name: "",
@@ -46,7 +46,7 @@ const MintCouponModal: React.FC<MintCouponModalProps> = ({
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        onMintCoupon(formData);
+        onCreateCoupon(formData);
     };
 
     return (
@@ -200,4 +200,4 @@ const MintCouponModal: React.FC<MintCouponModalProps> = ({
     );
 };
 
-export default MintCouponModal;
+export default CreateCouponModal;
