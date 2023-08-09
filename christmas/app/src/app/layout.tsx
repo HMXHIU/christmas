@@ -25,7 +25,9 @@ export default function RootLayout({
                     <AnchorClientProvider>
                         <div className="flex flex-col min-h-screen">
                             <NavTop />
-                            <QueryProvider>{children}</QueryProvider>
+                            <div className="flex-grow px-4 py-16 pt-16">
+                                <QueryProvider>{children}</QueryProvider>
+                            </div>
                             <NavBottom />
                         </div>
                     </AnchorClientProvider>

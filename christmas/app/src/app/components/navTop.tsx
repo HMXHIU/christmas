@@ -23,7 +23,7 @@ export default () => {
     const { connected } = useWallet();
 
     return (
-        <nav className="bg-gray-900 text-white py-4 px-6 flex justify-end">
+        <nav className="bg-gray-900 text-white py-4 px-6 flex justify-end items-center fixed top-0 left-0 right-0">
             <div>
                 {connected ? (
                     <WalletDisconnectButton className="text-white hover:text-gray-300" />
