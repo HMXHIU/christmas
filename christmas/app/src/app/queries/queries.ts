@@ -3,18 +3,24 @@ import AnchorClient from "../../lib/anchorClient";
 import { Coupon } from "@/types";
 
 // TODO: Include ability to get coupons near geohash
-export const fetchCoupons = async (
+export async function fetchCoupons(
     anchorClient: AnchorClient,
     region: string
-): Promise<Coupon[]> => {
+): Promise<Coupon[]> {
     return anchorClient.getCoupons(region);
-};
+}
 
-export const fetchClaimedCoupons = async (
+export async function fetchClaimedCoupons(
     anchorClient: AnchorClient
-): Promise<[Coupon, number][]> => {
+): Promise<[Coupon, number][]> {
     return anchorClient.getClaimedCoupons();
-};
+}
+
+export async function fetchMintedCoupons(
+    anchorClient: AnchorClient
+): Promise<Coupon[]> {
+    return anchorClient.getMintedCoupons();
+}
 
 export interface CreateCoupon {
     // params for the metadata json (stored at uri)

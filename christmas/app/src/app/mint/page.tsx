@@ -5,7 +5,7 @@ import { useQuery } from "react-query";
 import CouponCard from "../market/components/couponCard";
 import CouponModal from "../market/components/couponModal";
 import {
-    fetchClaimedCoupons,
+    fetchMintedCoupons,
     createCoupon,
     CreateCoupon,
 } from "../queries/queries";
@@ -30,7 +30,7 @@ export default function Page() {
     };
 
     async function handleCreateCoupon(formData: CreateCoupon) {
-        console.log("Minting coupon with data:", formData);
+        console.log("Creating coupon with data:", formData);
 
         try {
             await queryClient.fetchQuery({
@@ -50,11 +50,11 @@ export default function Page() {
     }
 
     const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
-    const { data: couponsBalance, isLoading } = useQuery(
-        ["claimed_coupons"],
+    const { data: mintedCoupons, isLoading } = useQuery(
+        ["minted_coupons"],
         () => {
             if (anchorClient !== null) {
-                return fetchClaimedCoupons(anchorClient);
+                return fetchMintedCoupons(anchorClient);
             }
         }
     );
@@ -74,12 +74,9 @@ export default function Page() {
 
     return (
         <div className="container mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">Available Coupons</h1>
+            <h1 className="text-2xl font-bold mb-4">Minted Coupons</h1>
 
             <div className="container mx-auto mt-8 text-center">
-                <h1 className="text-4xl font-bold mb-8">
-                    Welcome to the Christmas Protocol Marketplace
-                </h1>
                 <button
                     className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
                     onClick={handleOpenCreateCouponModal}
@@ -98,7 +95,7 @@ export default function Page() {
                 <p>Loading coupons...</p>
             ) : (
                 <>
-                    {couponsBalance?.map(([coupon, number]) => (
+                    {mintedCoupons?.map((coupon) => (
                         <CouponCard
                             key={coupon.publicKey.toString()}
                             coupon={coupon}
