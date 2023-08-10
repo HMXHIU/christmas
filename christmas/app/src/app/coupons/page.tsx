@@ -41,10 +41,11 @@ export default function Page() {
                 <p>Loading coupons...</p>
             ) : (
                 <>
-                    {couponsBalance?.map(([coupon, number]) => (
+                    {couponsBalance?.map(([coupon, balance]) => (
                         <CouponCard
                             key={coupon.publicKey.toString()}
                             coupon={coupon}
+                            balance={balance}
                             onClick={() => handleCouponClick(coupon)}
                         />
                     ))}

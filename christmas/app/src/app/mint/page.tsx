@@ -49,7 +49,6 @@ export default function Page() {
         handleCloseCreateCouponModal();
     }
 
-    const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
     const { data: mintedCoupons, isLoading } = useQuery(
         ["minted_coupons"],
         () => {
@@ -58,6 +57,8 @@ export default function Page() {
             }
         }
     );
+
+    const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
 
     const handleCouponClick = (coupon: Coupon) => {
         setSelectedCoupon(coupon);
@@ -95,10 +96,12 @@ export default function Page() {
                 <p>Loading coupons...</p>
             ) : (
                 <>
-                    {mintedCoupons?.map((coupon) => (
+                    {mintedCoupons?.map(([coupon, supply, balance]) => (
                         <CouponCard
                             key={coupon.publicKey.toString()}
                             coupon={coupon}
+                            supply={supply}
+                            balance={balance}
                             onClick={() => handleCouponClick(coupon)}
                         />
                     ))}

@@ -18,7 +18,7 @@ export async function fetchClaimedCoupons(
 
 export async function fetchMintedCoupons(
     anchorClient: AnchorClient
-): Promise<Coupon[]> {
+): Promise<[Coupon, number, number][]> {
     return anchorClient.getMintedCoupons();
 }
 
@@ -58,5 +58,6 @@ export async function mintCoupon(
         region,
     }: { mint: web3.PublicKey; numTokens: number; region: string }
 ) {
+    // note that coupons can only be minted to their respective regions
     await anchorClient.mintToMarket(mint, region, numTokens);
 }

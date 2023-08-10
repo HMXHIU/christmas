@@ -259,8 +259,8 @@ export default class AnchorClient {
         return await this.executeTransaction(tx);
     }
 
-    async getMintedCoupons(): Promise<Coupon[]> {
-        return await this.program.account.coupon.all([
+    async getMintedCoupons(): Promise<[Coupon, number, number][]> {
+        const mintedCoupons = await this.program.account.coupon.all([
             {
                 memcmp: {
                     offset: DISCRIMINATOR_SIZE,
@@ -268,6 +268,49 @@ export default class AnchorClient {
                 },
             },
         ]);
+
+        const couponSupplyBalance = await Promise.allSettled(
+            mintedCoupons.map(async (coupon) => {
+                try {
+                    const supply = (
+                        await this.connection.getTokenSupply(
+                            coupon.account.mint
+                        )
+                    ).value.uiAmount;
+
+                    const [_, regionMarketTokenAccountPda] =
+                        await this.getRegionMarketPdasFromMint(
+                            coupon.account.mint
+                        );
+
+                    const balance = (
+                        await this.connection.getTokenAccountBalance(
+                            regionMarketTokenAccountPda
+                        )
+                    ).value.uiAmount;
+
+                    return [
+                        coupon,
+                        supply === null ? 0 : supply,
+                        balance === null ? 0 : balance,
+                    ];
+                } catch (error) {
+                    // log and reraise error
+                    console.error(
+                        `Failed to get supply and balance for ${coupon.publicKey.toString()} due to error: ${error}`
+                    );
+                    throw error;
+                }
+            })
+        );
+
+        return couponSupplyBalance
+            .filter((result) => result.status === "fulfilled")
+            .map(
+                (x) =>
+                    (x as PromiseFulfilledResult<[Coupon, number, number]>)
+                        .value
+            );
     }
 
     async getCoupons(region: string): Promise<Coupon[]> {
@@ -386,6 +429,7 @@ export default class AnchorClient {
         region: string,
         numTokens: number
     ): Promise<web3.SignatureResult> {
+        // the region is the coupon.region of the respective mint
         const [regionMarketPda, regionMarketTokenAccountPda] =
             await this.getRegionMarketPdasFromMint(mint);
 
