@@ -1,5 +1,5 @@
 import React, { useState, ChangeEvent, FormEvent } from "react";
-import { CreateCoupon } from "../queries/queries";
+import { CreateCoupon } from "../../queries/queries";
 
 interface CreateCouponModalProps {
     onClose: () => void;

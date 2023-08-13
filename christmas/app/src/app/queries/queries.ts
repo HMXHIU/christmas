@@ -50,13 +50,15 @@ export async function createCoupon(
     });
 }
 
+export interface MintCoupon {
+    mint: web3.PublicKey;
+    numTokens: number;
+    region: string;
+}
+
 export async function mintCoupon(
     anchorClient: AnchorClient,
-    {
-        mint,
-        numTokens,
-        region,
-    }: { mint: web3.PublicKey; numTokens: number; region: string }
+    { mint, numTokens, region }: MintCoupon
 ) {
     // note that coupons can only be minted to their respective regions
     await anchorClient.mintToMarket(mint, region, numTokens);

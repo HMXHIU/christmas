@@ -3,13 +3,16 @@
 import React, { useState } from "react";
 import { useQuery } from "react-query";
 import CouponCard from "../market/components/couponCard";
-import CouponModal from "../market/components/couponModal";
+
 import {
     fetchMintedCoupons,
     createCoupon,
     CreateCoupon,
+    mintCoupon,
+    MintCoupon,
 } from "../queries/queries";
 import CreateCouponModal from "./components/createCouponModal";
+import MintCouponModal from "./components/mintCouponModal";
 import { useAnchorClient } from "@/providers/anchorClientProvider";
 import { Coupon } from "@/types";
 import { useQueryClient } from "react-query";
@@ -20,14 +23,8 @@ export default function Page() {
     const queryClient = useQueryClient();
     const [isCreateCouponModalOpen, setIsCreateCouponModalOpen] =
         useState(false);
-
-    const handleOpenCreateCouponModal = () => {
-        setIsCreateCouponModalOpen(true);
-    };
-
-    const handleCloseCreateCouponModal = () => {
-        setIsCreateCouponModalOpen(false);
-    };
+    const [isMintCouponModalOpen, setIsMintCouponModalOpen] = useState(false);
+    const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
 
     async function handleCreateCoupon(formData: CreateCoupon) {
         console.log("Creating coupon with data:", formData);
@@ -46,7 +43,7 @@ export default function Page() {
             console.log(error);
         }
 
-        handleCloseCreateCouponModal();
+        setIsCreateCouponModalOpen(false);
     }
 
     const { data: mintedCoupons, isLoading } = useQuery(
@@ -58,20 +55,25 @@ export default function Page() {
         }
     );
 
-    const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
+    async function handleMintCoupon(formData: MintCoupon) {
+        console.log("Coupon minted:", selectedCoupon, formData);
 
-    const handleCouponClick = (coupon: Coupon) => {
-        setSelectedCoupon(coupon);
-    };
+        try {
+            await queryClient.fetchQuery({
+                queryKey: ["mint_coupon"],
+                queryFn: () => {
+                    if (anchorClient === null)
+                        throw new Error("anchorClient is null");
+                    if (formData === null) throw new Error("formData is null");
+                    return mintCoupon(anchorClient, formData);
+                },
+            });
+        } catch (error) {
+            console.log(error);
+        }
 
-    const handleModalClose = () => {
-        setSelectedCoupon(null);
-    };
-
-    const handleRedeemCoupon = () => {
-        // Handle coupon redemption logic here
-        console.log("Coupon redeemed:", selectedCoupon);
-    };
+        setIsMintCouponModalOpen(false);
+    }
 
     return (
         <div className="container mx-auto p-4">
@@ -80,13 +82,13 @@ export default function Page() {
             <div className="container mx-auto mt-8 text-center">
                 <button
                     className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-                    onClick={handleOpenCreateCouponModal}
+                    onClick={() => setIsCreateCouponModalOpen(true)}
                 >
                     Mint Coupon
                 </button>
                 {isCreateCouponModalOpen && (
                     <CreateCouponModal
-                        onClose={handleCloseCreateCouponModal}
+                        onClose={() => setIsCreateCouponModalOpen(false)}
                         onCreateCoupon={handleCreateCoupon}
                     />
                 )}
@@ -102,16 +104,16 @@ export default function Page() {
                             coupon={coupon}
                             supply={supply}
                             balance={balance}
-                            onClick={() => handleCouponClick(coupon)}
+                            onClick={() => setSelectedCoupon(coupon)}
                         />
                     ))}
                 </>
             )}
             {selectedCoupon && (
-                <CouponModal
+                <MintCouponModal
                     coupon={selectedCoupon}
-                    onClose={handleModalClose}
-                    onRedeem={handleRedeemCoupon}
+                    onClose={() => setSelectedCoupon(null)}
+                    onMint={handleMintCoupon}
                 />
             )}
         </div>
