@@ -1,7 +1,9 @@
 use anchor_lang::prelude::*;
+use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use crate::defs::*;
+use crate::market::RegionMarket;
 use crate::user::User;
 
 #[derive(Accounts)]
@@ -38,6 +40,13 @@ pub struct RedeemCoupon<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(
+    name: String,
+    symbol: String,
+    region: String,
+    geo: String,
+    uri: String
+)]
 pub struct CreateCoupon<'info> {
     #[account(
         init_if_needed,
@@ -55,10 +64,26 @@ pub struct CreateCoupon<'info> {
         space = Coupon::len(),
     )]
     pub coupon: Account<'info, Coupon>,
+    #[account(
+        init_if_needed,
+        seeds = [b"market", region.as_bytes()],
+        bump,
+        payer = signer,
+        space = RegionMarket::len()
+    )]
+    pub region_market: Account<'info, RegionMarket>,
+    #[account(
+        init_if_needed,
+        payer = signer,
+        associated_token::mint = mint,
+        associated_token::authority = region_market,
+    )]
+    pub region_market_token_account: Account<'info, TokenAccount>,
     #[account(mut)]
     pub signer: Signer<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
 #[account]

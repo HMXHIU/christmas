@@ -39,10 +39,15 @@ describe("Test coupon", () => {
                     .err
             );
 
+            console.log("OKOKOKOK");
+
             // check if coupon is created
             const coupons = await client.getMintedCoupons();
+
+            console.log(`coupons: ${coupons}`);
+
             assert.ok(coupons.length === 1);
-            const coupon = coupons[0];
+            const [coupon, supply, balance] = coupons[0];
 
             assert.equal(cleanString(coupon.account.geo), geo);
             assert.equal(cleanString(coupon.account.region), region);
@@ -57,7 +62,7 @@ describe("Test coupon", () => {
         it("Mint to region market", async () => {
             const coupons = await client.getMintedCoupons();
             assert.ok(coupons.length === 1);
-            const coupon = coupons[0];
+            const [coupon, supply, _balance] = coupons[0];
 
             // check mint supply before
             assert.equal(
@@ -111,7 +116,7 @@ describe("Test coupon", () => {
             // get coupon
             const coupons = await client.getMintedCoupons();
             assert.ok(coupons.length === 1);
-            const coupon = coupons[0];
+            const [coupon, supply, balance] = coupons[0];
 
             // userTokenAccount not created at this point
             const userTokenAccount = await client.getUserTokenAccount(
@@ -147,7 +152,7 @@ describe("Test coupon", () => {
             // get coupon
             const coupons = await client.getMintedCoupons();
             assert.ok(coupons.length === 1);
-            const coupon = coupons[0];
+            const [coupon, supply, balance] = coupons[0];
 
             const userTokenAccount = await client.getUserTokenAccount(
                 coupon.account.mint

@@ -204,6 +204,10 @@ export default class AnchorClient {
             mint = web3.Keypair.generate();
         }
 
+        // calculate region market accounts
+        const [regionMarketPda, regionMarketTokenAccountPda] =
+            await this.getRegionMarketPdasFromMint(mint.publicKey, region);
+
         // calculate couponPda
         const [couponPda, _] = this.getCouponPda(mint.publicKey);
 
@@ -216,6 +220,8 @@ export default class AnchorClient {
                 signer: this.wallet.publicKey,
                 systemProgram: web3.SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
+                regionMarket: regionMarketPda,
+                regionMarketTokenAccount: regionMarketTokenAccountPda,
             })
             .instruction();
         const tx = new Transaction();
@@ -409,12 +415,18 @@ export default class AnchorClient {
     }
 
     async getRegionMarketPdasFromMint(
-        mint: web3.PublicKey
+        mint: web3.PublicKey,
+        region?: string
     ): Promise<[web3.PublicKey, web3.PublicKey]> {
-        const couponPda = this.getCouponPda(mint)[0];
-        const coupon = await this.program.account.coupon.fetch(couponPda);
-        const couponRegion = coupon.region;
-        const regionMarketPda = this.getRegionMarketPda(couponRegion)[0];
+        // this region is not provided, try to get it from the coupon (this requires the coupon to exist)
+        if (region === undefined) {
+            const couponPda = this.getCouponPda(mint)[0];
+            const coupon = await this.program.account.coupon.fetch(couponPda);
+            region = coupon.region;
+        }
+        const regionMarketPda = this.getRegionMarketPda(region)[0];
+
+        // this does not mean the token account has been created
         const regionMarketTokenAccountPda = await getAssociatedTokenAddress(
             mint,
             regionMarketPda,
