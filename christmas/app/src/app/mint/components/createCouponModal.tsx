@@ -1,5 +1,8 @@
 import React, { useState, ChangeEvent, FormEvent } from "react";
 import { CreateCoupon } from "../../queries/queries";
+import { getUserCountry, getUserGeolocation } from "../../../lib/utils";
+import { COUNTRY_DETAILS } from "../../../lib/constants";
+import geohash from "ngeohash";
 
 interface CreateCouponModalProps {
     onClose: () => void;
@@ -10,12 +13,16 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
     onClose,
     onCreateCoupon,
 }) => {
+    const detectedRegion = getUserCountry().code;
+    // const detectedLocation = getUserGeolocation();
+    // const detectedGeoHash = geohash.encode(detectedLocation, longitude, precision=9)
+
     const [formData, setFormData] = useState({
         name: "",
         symbol: "",
         description: "",
         numTokens: 1,
-        region: "SGP",
+        region: detectedRegion,
         geo: "",
         image: "",
     });
@@ -144,8 +151,13 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
                             required
                             className="border rounded p-1 flex-1"
                         >
-                            <option value="SGP">SGP</option>
-                            {/* Add more options for other regions if needed */}
+                            {Object.values(COUNTRY_DETAILS).map(
+                                ([code, name]) => (
+                                    <option value={code} id={code}>
+                                        {name}
+                                    </option>
+                                )
+                            )}
                         </select>
                     </div>
                     <div className="mb-4 flex">
