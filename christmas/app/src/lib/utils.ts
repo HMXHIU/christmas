@@ -3,6 +3,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import { getCountriesForTimezone } from "countries-and-timezones";
 import { COUNTRY_DETAILS } from "./constants";
+import geohash from "ngeohash";
 
 export function stringToBase58(str: string) {
     const buffer = Buffer.from(str);
@@ -25,16 +26,13 @@ export function cleanString(s: string) {
     return s.replace(/\u0000+$/, "");
 }
 
-export function getUserGeolocation(): Promise<{
-    latitude: number;
-    longitude: number;
-}> {
+export function getUserGeohash(): Promise<string> {
     return new Promise((resolve, reject) => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const { latitude, longitude } = position.coords;
-                    resolve({ latitude, longitude });
+                    resolve(geohash.encode(latitude, longitude, 6));
                 },
                 (error) => {
                     reject(new Error("Failed to retrieve geolocation."));

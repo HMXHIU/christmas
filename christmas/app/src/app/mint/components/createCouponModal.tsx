@@ -1,8 +1,8 @@
 import React, { useState, ChangeEvent, FormEvent } from "react";
 import { CreateCoupon } from "../../queries/queries";
-import { getUserCountry, getUserGeolocation } from "../../../lib/utils";
+import { getUserCountry, getUserGeohash } from "../../../lib/utils";
 import { COUNTRY_DETAILS } from "../../../lib/constants";
-import geohash from "ngeohash";
+import { useQuery } from "react-query";
 
 interface CreateCouponModalProps {
     onClose: () => void;
@@ -14,8 +14,6 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
     onCreateCoupon,
 }) => {
     const detectedRegion = getUserCountry().code;
-    // const detectedLocation = getUserGeolocation();
-    // const detectedGeoHash = geohash.encode(detectedLocation, longitude, precision=9)
 
     const [formData, setFormData] = useState({
         name: "",
@@ -25,6 +23,13 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
         region: detectedRegion,
         geo: "",
         image: "",
+    });
+
+    const geohashQuery = useQuery(["detected_geohash"], getUserGeohash, {
+        onSuccess: (geohash) => {
+            console.log(`Detected user geohash: ${geohash}`);
+            setFormData((prevData) => ({ ...prevData, geo: geohash }));
+        },
     });
 
     const handleChange = (
