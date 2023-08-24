@@ -34,18 +34,13 @@ export default function Page() {
         setSelectedCoupon(coupon);
     };
 
-    const handleModalClose = () => {
-        setSelectedCoupon(null);
-    };
-
     async function handleRedeemCoupon() {
-        // Handle coupon redemption logic here
         console.log("Coupon redeemed:", selectedCoupon);
-
         if (anchorClient && selectedCoupon) {
             await anchorClient.claimFromMarket(selectedCoupon.account.mint, 1);
             queryClient.invalidateQueries(["coupons", region]);
         }
+        setSelectedCoupon(null);
     }
 
     return (
@@ -67,7 +62,9 @@ export default function Page() {
             {selectedCoupon && (
                 <CouponModal
                     coupon={selectedCoupon}
-                    onClose={handleModalClose}
+                    onClose={() => {
+                        setSelectedCoupon(null);
+                    }}
                     onRedeem={handleRedeemCoupon}
                 />
             )}
