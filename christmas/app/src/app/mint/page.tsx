@@ -75,9 +75,10 @@ export default function Page() {
             });
         } catch (error) {
             console.log(error);
+        } finally {
+            setSelectedCoupon(null);
+            setIsMintCouponModalOpen(false);
         }
-
-        setIsMintCouponModalOpen(false);
     }
 
     return (
@@ -109,15 +110,21 @@ export default function Page() {
                             coupon={coupon}
                             supply={supply}
                             balance={balance}
-                            onClick={() => setSelectedCoupon(coupon)}
+                            onClick={() => {
+                                setSelectedCoupon(coupon);
+                                setIsMintCouponModalOpen(true);
+                            }}
                         />
                     ))}
                 </>
             )}
-            {selectedCoupon && (
+            {selectedCoupon && isMintCouponModalOpen && (
                 <MintCouponModal
                     coupon={selectedCoupon}
-                    onClose={() => setSelectedCoupon(null)}
+                    onClose={() => {
+                        setSelectedCoupon(null);
+                        setIsMintCouponModalOpen(false);
+                    }}
                     onMint={handleMintCoupon}
                 />
             )}
