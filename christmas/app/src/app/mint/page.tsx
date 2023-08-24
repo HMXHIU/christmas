@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery } from "react-query";
 import CouponCard from "../market/components/couponCard";
 
@@ -28,7 +28,6 @@ export default function Page() {
 
     async function handleCreateCoupon(formData: CreateCoupon) {
         console.log("Creating coupon with data:", formData);
-
         try {
             await queryClient.fetchQuery({
                 queryKey: ["create_coupon"],
@@ -42,18 +41,24 @@ export default function Page() {
         } catch (error) {
             console.log(error);
         }
-
         setIsCreateCouponModalOpen(false);
     }
 
-    const { data: mintedCoupons, isLoading } = useQuery(
-        ["minted_coupons"],
-        () => {
-            if (anchorClient !== null) {
-                return fetchMintedCoupons(anchorClient);
-            }
+    // fetch coupons created by user
+    const {
+        data: mintedCoupons,
+        isLoading,
+        refetch,
+    } = useQuery(["minted_coupons"], () => {
+        if (anchorClient !== null) {
+            return fetchMintedCoupons(anchorClient);
         }
-    );
+    });
+
+    // refetch minted coupons as anchorClient might be null initially
+    useEffect(() => {
+        refetch();
+    }, [anchorClient]);
 
     async function handleMintCoupon(formData: MintCoupon) {
         console.log("Coupon minted:", selectedCoupon, formData);

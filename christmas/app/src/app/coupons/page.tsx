@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "react-query";
 import CouponCard from "../market/components/couponCard";
 import CouponModal from "../market/components/couponModal";
@@ -12,14 +12,22 @@ export default function Page() {
     const anchorClient = useAnchorClient();
 
     const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
-    const { data: couponsBalance, isLoading } = useQuery(
-        ["claimed_coupons"],
-        () => {
-            if (anchorClient !== null) {
-                return fetchClaimedCoupons(anchorClient);
-            }
+
+    // fetch claimed coupons
+    const {
+        data: couponsBalance,
+        isLoading,
+        refetch,
+    } = useQuery(["claimed_coupons"], () => {
+        if (anchorClient !== null) {
+            return fetchClaimedCoupons(anchorClient);
         }
-    );
+    });
+
+    // refetch claimed coupons as anchorClient might be null initially
+    useEffect(() => {
+        refetch();
+    }, [anchorClient]);
 
     const handleCouponClick = (coupon: Coupon) => {
         setSelectedCoupon(coupon);
@@ -30,7 +38,6 @@ export default function Page() {
     };
 
     const handleRedeemCoupon = () => {
-        // Handle coupon redemption logic here
         console.log("Coupon redeemed:", selectedCoupon);
     };
 

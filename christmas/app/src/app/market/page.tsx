@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "react-query";
 import CouponCard from "./components/couponCard";
 import CouponModal from "./components/couponModal";
@@ -15,11 +15,20 @@ export default function Page() {
     const region = "SGP"; // TODO: Use user's location
 
     const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
-    const { data: coupons, isLoading } = useQuery(["coupons", region], () => {
+    const {
+        data: coupons,
+        isLoading,
+        refetch,
+    } = useQuery(["coupons", region], () => {
         if (anchorClient !== null) {
             return fetchCoupons(anchorClient, region);
         }
     });
+
+    // refetch market coupons as anchorClient might be null initially
+    useEffect(() => {
+        refetch();
+    }, [anchorClient]);
 
     const handleCouponClick = (coupon: Coupon) => {
         setSelectedCoupon(coupon);
