@@ -38,7 +38,7 @@ const MintCouponModal: React.FC<MintCouponModalProps> = ({
 
     return (
         <div className="modal fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center">
-            <div className="modal-content bg-white p-4 rounded-lg w-full max-w-lg">
+            <div className="modal-content bg-white p-4 rounded-lg w-full max-w-lg relative">
                 <button
                     className="close-button absolute top-4 right-4"
                     onClick={onClose}
