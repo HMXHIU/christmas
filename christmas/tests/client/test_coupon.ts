@@ -39,8 +39,6 @@ describe("Test coupon", () => {
                     .err
             );
 
-            console.log("OKOKOKOK");
-
             // check if coupon is created
             const coupons = await client.getMintedCoupons();
 
@@ -164,6 +162,17 @@ describe("Test coupon", () => {
                     userTokenAccount
                 );
             assert.equal(balanceBefore.value.amount, `1`);
+
+            // test redemption url
+            const origin = "https://${origin}"; // test doesnt run in browser
+            const redemptionURL = client.generateRedeemCouponURL({
+                coupon: coupon.publicKey,
+                mint: coupon.account.mint,
+            });
+            assert.equal(
+                redemptionURL,
+                `${origin}?wallet=${client.wallet.publicKey}&mint=${coupon.account.mint}&coupon=${coupon.publicKey}&numTokens=1`
+            );
 
             // redeem token
             const couponPda = client.getCouponPda(coupon.account.mint)[0];

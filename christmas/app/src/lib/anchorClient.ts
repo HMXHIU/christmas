@@ -23,6 +23,7 @@ import {
 import { getUserPda, stringToBase58 } from "./utils";
 import { Coupon, User } from "@/types";
 import { min } from "bn.js";
+import { assert } from "console";
 
 export default class AnchorClient {
     programId: web3.PublicKey;
@@ -229,24 +230,37 @@ export default class AnchorClient {
         return await this.executeTransaction(tx, [mint]);
     }
 
+    /**
+     * Issuer redeems a coupon for a specified mint from a user, essentially burning the user's token.
+     * @param params - Parameters for the coupon redemption.
+     * @param params.coupon - The coupon's public key.
+     * @param params.mint - The mint associated with the coupon and tokens.
+     * @param params.wallet - The public key of the wallet to redeem from.
+     * @param params.numTokens - The number of tokens to redeem (defaults to 1).
+     * @returns A promise resolving to a SignatureResult indicating the redemption's outcome.
+     */
     async redeemCoupon({
         coupon,
         mint,
         wallet,
-        numTokens,
+        numTokens = 1,
     }: {
         coupon: web3.PublicKey;
         mint: web3.PublicKey;
         wallet: web3.PublicKey;
         numTokens: number;
     }): Promise<web3.SignatureResult> {
+        // Calculate the Program Derived Address (PDA) for the user.
         const userPda = getUserPda(wallet, this.programId)[0];
+
+        // Get the associated token account owned by the userPda.
         const userTokenAccount = await getAssociatedTokenAddress(
             mint,
             userPda,
-            true
+            true // Allow the owner account to be a PDA (Program Derived Address).
         );
 
+        // Construct the instruction for the redeemCoupon transaction.
         const ix = await this.program.methods
             .redeemCoupon(new anchor.BN(numTokens))
             .accounts({
@@ -260,9 +274,26 @@ export default class AnchorClient {
             })
             .instruction();
 
+        // Build and execute the transaction.
         const tx = new Transaction();
         tx.add(ix);
         return await this.executeTransaction(tx);
+    }
+
+    generateRedeemCouponURL({
+        coupon,
+        mint,
+        numTokens = 1,
+    }: {
+        coupon: web3.PublicKey;
+        mint: web3.PublicKey;
+        numTokens?: number;
+    }): string {
+        const origin =
+            (typeof window !== "undefined"
+                ? window.location.origin
+                : undefined) || "https://${origin}";
+        return `${origin}?wallet=${this.wallet.publicKey}&mint=${mint}&coupon=${coupon}&numTokens=${numTokens}`;
     }
 
     async getMintedCoupons(): Promise<[Coupon, number, number][]> {
@@ -464,14 +495,21 @@ export default class AnchorClient {
         return await this.executeTransaction(tx);
     }
 
+    /**
+     * Claims a certain number of tokens from the market for a specific mint.
+     * @param mint - The public key of the mint for which tokens are being claimed.
+     * @param numTokens - The number of tokens to be claimed from the market.
+     * @returns A promise that resolves to a SignatureResult indicating the outcome of the claim transaction.
+     */
     async claimFromMarket(
         mint: web3.PublicKey,
         numTokens: number
     ): Promise<web3.SignatureResult> {
+        // Get the Program Derived Addresses (PDAs) for the region market and the associated token account.
         const [regionMarketPda, regionMarketTokenAccountPda] =
             await this.getRegionMarketPdasFromMint(mint);
 
-        // create user if needed (TODO: make 1 single transaction)
+        // Check if a user exists, and create one if not.
         const user = await this.getUser();
         if (user === null) {
             const region = "SGP"; // TODO: get dynamically
@@ -479,23 +517,25 @@ export default class AnchorClient {
             await this.createUser({ region, geo });
         }
 
-        // calculate userPda (Note: A user needs to be created already by this point)
+        // Calculate the Program Derived Address (PDA) for the user (User needs to be created already by this point).
         const userPda = this.getUserPda()[0];
 
-        // calculate userTokenAccount (this is owned by the userPda not the user)
+        // Calculate the associated token account owned by the userPda (Owned by the userPda not the user).
         const userTokenAccount = await getAssociatedTokenAddress(
             mint,
-            userPda, // userPda not user
+            userPda, // Use userPda instead of user for the associated token account.
             true // allowOwnerOffCurve - Allow the owner account to be a PDA (Program Derived Address)
         );
 
-        // calculate couponPda
+        // Calculate the Program Derived Address (PDA) for the coupon.
         let couponPda = this.getCouponPda(mint)[0];
 
+        // Output information about the transaction.
         console.log(
             `signer: ${this.wallet.publicKey} couponPda: ${couponPda} regionMarket: ${regionMarketPda} regionMarketTokenAccountPda: ${regionMarketTokenAccountPda}`
         );
 
+        // Build the instruction for the claimFromMarket transaction.
         const ix = await this.program.methods
             .claimFromMarket(new anchor.BN(numTokens))
             .accounts({
@@ -512,6 +552,7 @@ export default class AnchorClient {
             })
             .instruction();
 
+        // Create a new transaction, add the instruction, and execute the transaction.
         const tx = new Transaction();
         tx.add(ix);
         return await this.executeTransaction(tx);
