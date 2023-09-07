@@ -4,7 +4,7 @@ import { Coupon } from "@/types";
 interface CouponModalProps {
     coupon: Coupon;
     onClose: () => void;
-    onRedeem: () => void;
+    onRedeem: (coupon: Coupon) => void;
 }
 
 const CouponModal: React.FC<CouponModalProps> = ({
@@ -30,7 +30,7 @@ const CouponModal: React.FC<CouponModalProps> = ({
                 <div className="flex justify-center mt-6">
                     <button
                         className="px-4 py-2 bg-green-500 text-white rounded-md mr-2"
-                        onClick={onRedeem}
+                        onClick={() => onRedeem(coupon)}
                     >
                         Redeem
                     </button>

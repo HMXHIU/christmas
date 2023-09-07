@@ -29,14 +29,14 @@ export default function Page() {
     async function handleCreateCoupon(formData: CreateCoupon) {
         console.log("Creating coupon with data:", formData);
         try {
+            if (anchorClient === null) throw new Error("anchorClient is null");
+            if (formData === null) throw new Error("formData is null");
             await queryClient.fetchQuery({
                 queryKey: ["create_coupon"],
                 queryFn: () => {
-                    if (anchorClient === null)
-                        throw new Error("anchorClient is null");
-                    if (formData === null) throw new Error("formData is null");
                     return createCoupon(anchorClient, formData);
                 },
+                cacheTime: 0, // don't cache coupon creation
             });
         } catch (error) {
             console.log(error);
