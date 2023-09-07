@@ -179,7 +179,6 @@ describe("Test coupon", () => {
             await client.redeemCoupon({
                 coupon: couponPda,
                 mint: coupon.account.mint,
-                wallet: client.wallet.publicKey,
                 numTokens: 1,
             });
 

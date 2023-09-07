@@ -14,17 +14,10 @@ pub struct RedeemCoupon<'info> {
         constraint = coupon.mint == mint.key()  // coupon belongs to mint
     )]
     pub coupon: Account<'info, Coupon>,
-    /// CHECK
-    pub wallet: AccountInfo<'info>,
-    #[account(
-        mut, // supply will change
-        mint::decimals = 0,
-        mint::authority = signer, // only the authority can redeem/burn the token
-        mint::freeze_authority = signer,
-    )]
+    #[account(mut)] // supply will change
     pub mint: Account<'info, Mint>,
     #[account(
-        seeds = [b"user", wallet.key().as_ref()],
+        seeds = [b"user", signer.key().as_ref()], // signer must be the user
         bump = user.bump,
     )]
     pub user: Account<'info, User>,

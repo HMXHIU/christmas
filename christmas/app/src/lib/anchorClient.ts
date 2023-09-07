@@ -242,16 +242,14 @@ export default class AnchorClient {
     async redeemCoupon({
         coupon,
         mint,
-        wallet,
         numTokens = 1,
     }: {
         coupon: web3.PublicKey;
         mint: web3.PublicKey;
-        wallet: web3.PublicKey;
         numTokens: number;
     }): Promise<web3.SignatureResult> {
         // Calculate the Program Derived Address (PDA) for the user.
-        const userPda = getUserPda(wallet, this.programId)[0];
+        const userPda = getUserPda(this.wallet.publicKey, this.programId)[0];
 
         // Get the associated token account owned by the userPda.
         const userTokenAccount = await getAssociatedTokenAddress(
@@ -266,7 +264,6 @@ export default class AnchorClient {
             .accounts({
                 coupon: coupon,
                 mint: mint,
-                wallet: wallet,
                 user: userPda,
                 userTokenAccount: userTokenAccount,
                 signer: this.wallet.publicKey,

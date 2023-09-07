@@ -14,7 +14,13 @@ const CouponModal: React.FC<CouponModalProps> = ({
 }) => {
     return (
         <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50">
-            <div className="bg-white p-8 rounded-lg max-w-md">
+            <div className="bg-white p-8 rounded-lg max-w-md relative">
+                <button
+                    className="close-button absolute top-4 right-4"
+                    onClick={onClose}
+                >
+                    Close
+                </button>
                 <img
                     src=""
                     alt="Coupon"
@@ -27,12 +33,6 @@ const CouponModal: React.FC<CouponModalProps> = ({
                         onClick={onRedeem}
                     >
                         Redeem
-                    </button>
-                    <button
-                        className="px-4 py-2 bg-gray-500 text-white rounded-md"
-                        onClick={onClose}
-                    >
-                        Close
                     </button>
                 </div>
             </div>

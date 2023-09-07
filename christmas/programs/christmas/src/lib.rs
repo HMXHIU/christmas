@@ -94,7 +94,7 @@ pub mod christmas {
                 },
                 &[&[
                     b"user".as_ref(),
-                    ctx.accounts.wallet.key().as_ref(),
+                    ctx.accounts.signer.key().as_ref(),
                     &[ctx.accounts.user.bump],
                 ]],
             ),
