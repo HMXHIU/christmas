@@ -34,7 +34,7 @@ export default function Page() {
     async function handleRedeemCoupon(coupon: Coupon) {
         try {
             if (anchorClient === null) throw new Error("anchorClient is null");
-            await queryClient.fetchQuery({
+            const result = await queryClient.fetchQuery({
                 queryKey: ["redeemCoupon"],
                 queryFn: () => {
                     return redeemCoupon(anchorClient, {
@@ -45,7 +45,7 @@ export default function Page() {
                 },
                 cacheTime: 0, // don't cache redeem coupon
             });
-            console.log("Coupon redeemed:", coupon);
+            console.log("Coupon redeemed:", coupon, result);
         } catch (error) {
             console.log(error);
         }

@@ -1,9 +1,18 @@
-import { PublicKey } from "@solana/web3.js";
+import {
+    PublicKey,
+    SignatureResult,
+    TransactionSignature,
+} from "@solana/web3.js";
 
 declare global {
     interface Window {
         solana: any; // 👈️ turn off type checking
     }
+}
+
+export interface TransactionResult {
+    result: SignatureResult;
+    signature: TransactionSignature;
 }
 
 export interface Coupon {

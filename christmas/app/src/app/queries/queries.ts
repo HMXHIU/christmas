@@ -73,6 +73,6 @@ export interface RedeemCoupon {
 export async function redeemCoupon(
     anchorClient: AnchorClient,
     { coupon, mint, numTokens }: RedeemCoupon
-) {
-    await anchorClient.redeemCoupon({ coupon, mint, numTokens });
+): Promise<web3.SignatureResult> {
+    return await anchorClient.redeemCoupon({ coupon, mint, numTokens });
 }

@@ -21,7 +21,7 @@ import {
     STRING_PREFIX_SIZE,
 } from "./constants";
 import { getUserPda, stringToBase58 } from "./utils";
-import { Coupon, User } from "@/types";
+import { Coupon, User, TransactionResult } from "@/types";
 import { min } from "bn.js";
 import { assert } from "console";
 
@@ -67,9 +67,9 @@ export default class AnchorClient {
     async confirmTransaction(
         signature: string,
         commitment?: web3.Commitment
-    ): Promise<web3.SignatureResult> {
+    ): Promise<TransactionResult> {
         const bh = await this.connection.getLatestBlockhash();
-        return (
+        const result = (
             await this.connection.confirmTransaction(
                 {
                     blockhash: bh.blockhash,
@@ -79,12 +79,16 @@ export default class AnchorClient {
                 commitment
             )
         ).value;
+
+        console.log(`Transaction: ${signature} Result: ${result}`);
+
+        return { result, signature };
     }
 
     async executeTransaction(
         tx: Transaction,
         signers?: Array<Signer>
-    ): Promise<web3.SignatureResult> {
+    ): Promise<TransactionResult> {
         // set latest blockhash
         tx.recentBlockhash = (
             await this.connection.getLatestBlockhash("confirmed")
@@ -99,20 +103,21 @@ export default class AnchorClient {
         }
 
         // sign and send
-        const sig = await this.connection.sendRawTransaction(
+        const signature = await this.connection.sendRawTransaction(
             (await this.wallet.signTransaction(tx)).serialize()
         );
 
         // confirm transaction
-        return await this.confirmTransaction(sig);
+        return await this.confirmTransaction(signature);
     }
 
-    async requestAirdrop(amount: number): Promise<web3.SignatureResult> {
-        const sig = await this.connection.requestAirdrop(
+    async requestAirdrop(amount: number): Promise<TransactionResult> {
+        const signature = await this.connection.requestAirdrop(
             this.wallet.publicKey,
             amount
         );
-        return await this.confirmTransaction(sig);
+        // confirm transaction
+        return await this.confirmTransaction(signature);
     }
 
     getUserPda(): [web3.PublicKey, number] {
@@ -150,7 +155,7 @@ export default class AnchorClient {
     }: {
         geo: string;
         region: string;
-    }): Promise<web3.SignatureResult> {
+    }): Promise<TransactionResult> {
         const [pda, _] = this.getUserPda();
 
         const ix = await this.program.methods
@@ -199,7 +204,7 @@ export default class AnchorClient {
         uri: string;
         symbol: string;
         mint?: web3.Keypair;
-    }): Promise<web3.SignatureResult> {
+    }): Promise<TransactionResult> {
         // generate new mint keys if not provided
         if (mint === undefined) {
             mint = web3.Keypair.generate();
@@ -247,7 +252,7 @@ export default class AnchorClient {
         coupon: web3.PublicKey;
         mint: web3.PublicKey;
         numTokens: number;
-    }): Promise<web3.SignatureResult> {
+    }): Promise<TransactionResult> {
         // Calculate the Program Derived Address (PDA) for the user.
         const userPda = getUserPda(this.wallet.publicKey, this.programId)[0];
 
@@ -468,7 +473,7 @@ export default class AnchorClient {
         mint: web3.PublicKey,
         region: string,
         numTokens: number
-    ): Promise<web3.SignatureResult> {
+    ): Promise<TransactionResult> {
         // the region is the coupon.region of the respective mint
         const [regionMarketPda, regionMarketTokenAccountPda] =
             await this.getRegionMarketPdasFromMint(mint);
@@ -501,7 +506,7 @@ export default class AnchorClient {
     async claimFromMarket(
         mint: web3.PublicKey,
         numTokens: number
-    ): Promise<web3.SignatureResult> {
+    ): Promise<TransactionResult> {
         // Get the Program Derived Addresses (PDAs) for the region market and the associated token account.
         const [regionMarketPda, regionMarketTokenAccountPda] =
             await this.getRegionMarketPdasFromMint(mint);

@@ -36,7 +36,7 @@ describe("Test coupon", () => {
             // create coupon
             assert.isNull(
                 (await client.createCoupon({ geo, region, name, uri, symbol }))
-                    .err
+                    .result.err
             );
 
             // check if coupon is created
@@ -78,7 +78,7 @@ describe("Test coupon", () => {
                         coupon.account.region,
                         numTokens
                     )
-                ).err
+                ).result.err
             );
 
             // check regionMarket created
