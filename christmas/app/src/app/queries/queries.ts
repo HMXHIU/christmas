@@ -1,6 +1,6 @@
 import { web3 } from "@coral-xyz/anchor";
 import AnchorClient from "../../lib/anchorClient";
-import { Coupon } from "@/types";
+import { Coupon, TransactionResult } from "@/types";
 
 // TODO: Include ability to get coupons near geohash
 export async function fetchCoupons(
@@ -36,12 +36,12 @@ export interface CreateCoupon {
 export async function createCoupon(
     anchorClient: AnchorClient,
     { geo, region, name, symbol, description, image }: CreateCoupon
-) {
+): Promise<TransactionResult> {
     // TODO: store metadata json at uri
     const uri = "";
 
     // create coupon
-    await anchorClient.createCoupon({
+    return await anchorClient.createCoupon({
         geo,
         region,
         name,
@@ -59,9 +59,9 @@ export interface MintCoupon {
 export async function mintCoupon(
     anchorClient: AnchorClient,
     { mint, numTokens, region }: MintCoupon
-) {
+): Promise<TransactionResult> {
     // note that coupons can only be minted to their respective regions
-    await anchorClient.mintToMarket(mint, region, numTokens);
+    return await anchorClient.mintToMarket(mint, region, numTokens);
 }
 
 export interface RedeemCoupon {
@@ -73,6 +73,6 @@ export interface RedeemCoupon {
 export async function redeemCoupon(
     anchorClient: AnchorClient,
     { coupon, mint, numTokens }: RedeemCoupon
-): Promise<web3.SignatureResult> {
+): Promise<TransactionResult> {
     return await anchorClient.redeemCoupon({ coupon, mint, numTokens });
 }

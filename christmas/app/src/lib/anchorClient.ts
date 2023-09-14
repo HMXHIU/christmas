@@ -120,18 +120,23 @@ export default class AnchorClient {
         return await this.confirmTransaction(signature);
     }
 
-    getUserPda(): [web3.PublicKey, number] {
+    getUserPda(wallet?: web3.PublicKey): [web3.PublicKey, number] {
         return web3.PublicKey.findProgramAddressSync(
             [
                 anchor.utils.bytes.utf8.encode("user"),
-                this.wallet.publicKey.toBuffer(),
+                wallet !== undefined
+                    ? wallet.toBuffer()
+                    : this.wallet.publicKey.toBuffer(),
             ],
             this.program.programId
         );
     }
 
-    async getUserTokenAccount(mint: web3.PublicKey): Promise<web3.PublicKey> {
-        const userPda = this.getUserPda()[0];
+    async getUserTokenAccount(
+        mint: web3.PublicKey,
+        wallet?: web3.PublicKey
+    ): Promise<web3.PublicKey> {
+        const userPda = this.getUserPda(wallet)[0];
 
         return await getAssociatedTokenAddress(
             mint,
@@ -280,6 +285,101 @@ export default class AnchorClient {
         const tx = new Transaction();
         tx.add(ix);
         return await this.executeTransaction(tx);
+    }
+
+    // TODO: write tests for each invalid case
+    async verifyRedemption({
+        signature,
+        wallet,
+        mint,
+        numTokens,
+    }: {
+        signature: web3.TransactionSignature;
+        mint: web3.PublicKey;
+        wallet: web3.PublicKey;
+        numTokens: number;
+    }): Promise<{ isVerified: boolean; err: string }> {
+        // retrieve transaction
+        const tx = await this.connection.getTransaction(signature, {
+            maxSupportedTransactionVersion: 0,
+            commitment: "confirmed",
+        });
+
+        // check if transaction was confirmed
+        if (!tx || !tx.blockTime) {
+            return {
+                isVerified: false,
+                err: "Redemption has not been confirmed",
+            };
+        }
+
+        const preTokenAccountBalance = tx?.meta?.preTokenBalances?.filter(
+            (x) => x.mint === mint.toString()
+        )[0];
+
+        const postTokenAccountBalance = tx?.meta?.postTokenBalances?.filter(
+            (x) => x.mint === mint.toString()
+        )[0];
+
+        // check token account exists
+        if (!preTokenAccountBalance || !postTokenAccountBalance) {
+            return {
+                isVerified: false,
+                err: "Invalid token accounts",
+            };
+        }
+
+        // check token account is from user
+        const userPda = this.getUserPda(wallet)[0];
+        if (
+            preTokenAccountBalance.owner !== userPda.toString() ||
+            preTokenAccountBalance.owner !== postTokenAccountBalance.owner
+        ) {
+            return {
+                isVerified: false,
+                err: "Redemption does not belong to user",
+            };
+        }
+
+        // check mint of transaction is correct
+        if (
+            !(
+                postTokenAccountBalance.mint === preTokenAccountBalance.mint &&
+                preTokenAccountBalance.mint === mint.toString()
+            )
+        ) {
+            return {
+                isVerified: false,
+                err: "Mint does not match transaction",
+            };
+        }
+
+        // check balance deduction
+        const balanceBefore = parseInt(
+            preTokenAccountBalance.uiTokenAmount?.amount
+        );
+        const balanceAfter = parseInt(
+            postTokenAccountBalance.uiTokenAmount?.amount
+        );
+        if (balanceBefore - balanceAfter !== numTokens) {
+            return {
+                isVerified: false,
+                err: "Mismatched deduction",
+            };
+        }
+
+        // check time of transaction is within 10 minutes
+        if (new Date().getTime() - tx.blockTime * 1000 > 600000) {
+            return {
+                isVerified: false,
+                err: "Transaction took place more than 10 minutes ago",
+            };
+        }
+
+        return {
+            isVerified: true,
+            err: "",
+        };
     }
 
     generateRedeemCouponURL({

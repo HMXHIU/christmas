@@ -176,7 +176,7 @@ describe("Test coupon", () => {
 
             // redeem token
             const couponPda = client.getCouponPda(coupon.account.mint)[0];
-            await client.redeemCoupon({
+            const transactionResult = await client.redeemCoupon({
                 coupon: couponPda,
                 mint: coupon.account.mint,
                 numTokens: 1,
@@ -187,6 +187,17 @@ describe("Test coupon", () => {
                 userTokenAccount
             );
             assert.equal(balanceAfter.value.amount, `0`);
+
+            // test verify redemption
+            const result = await client.verifyRedemption({
+                signature: transactionResult.signature,
+                wallet: client.wallet.publicKey,
+                mint: coupon.account.mint,
+                numTokens: 1,
+            });
+            assert.equal(result.isVerified, true);
+
+            // TODO: add tests for failed verification (possible make this a separate test)
         });
     });
 });
