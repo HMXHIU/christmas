@@ -55,3 +55,23 @@ export function getUserCountry(): { code: string; name: string } {
         name: first.name,
     };
 }
+
+export function generateQRCodeURL(kwargs: Record<string, string>): string {
+    const origin =
+        (typeof window !== "undefined" ? window.location.origin : undefined) ||
+        "https://${origin}";
+
+    const queryParams = [];
+
+    for (const key in kwargs) {
+        if (kwargs.hasOwnProperty(key)) {
+            queryParams.push(`${key}=${encodeURIComponent(kwargs[key])}`);
+        }
+    }
+
+    return `${origin}?${queryParams.sort().join("&")}`;
+}
+
+export function extractQueryParams(url: string): Record<string, string> {
+    return Object.fromEntries(new URL(url).searchParams.entries());
+}

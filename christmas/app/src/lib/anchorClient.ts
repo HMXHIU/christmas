@@ -382,22 +382,6 @@ export default class AnchorClient {
         };
     }
 
-    generateRedeemCouponURL({
-        coupon,
-        mint,
-        numTokens = 1,
-    }: {
-        coupon: web3.PublicKey;
-        mint: web3.PublicKey;
-        numTokens?: number;
-    }): string {
-        const origin =
-            (typeof window !== "undefined"
-                ? window.location.origin
-                : undefined) || "https://${origin}";
-        return `${origin}?wallet=${this.wallet.publicKey}&mint=${mint}&coupon=${coupon}&numTokens=${numTokens}`;
-    }
-
     async getMintedCoupons(): Promise<[Coupon, number, number][]> {
         const mintedCoupons = await this.program.account.coupon.all([
             {

@@ -1,8 +1,10 @@
-import { assert } from "chai";
+import { assert, expect } from "chai";
 import AnchorClient from "../../app/src/lib/anchorClient";
 import { cleanString } from "../../app/src/lib/utils";
 import { getMint } from "@solana/spl-token";
 import { web3 } from "@coral-xyz/anchor";
+import { generateQRCodeURL, extractQueryParams } from "../../app/src/lib/utils";
+import { PublicKey } from "@solana/web3.js";
 
 describe("Test coupon", () => {
     const client = new AnchorClient();
@@ -163,17 +165,6 @@ describe("Test coupon", () => {
                 );
             assert.equal(balanceBefore.value.amount, `1`);
 
-            // test redemption url
-            const origin = "https://${origin}"; // test doesnt run in browser
-            const redemptionURL = client.generateRedeemCouponURL({
-                coupon: coupon.publicKey,
-                mint: coupon.account.mint,
-            });
-            assert.equal(
-                redemptionURL,
-                `${origin}?wallet=${client.wallet.publicKey}&mint=${coupon.account.mint}&coupon=${coupon.publicKey}&numTokens=1`
-            );
-
             // redeem token
             const couponPda = client.getCouponPda(coupon.account.mint)[0];
             const transactionResult = await client.redeemCoupon({
@@ -188,12 +179,37 @@ describe("Test coupon", () => {
             );
             assert.equal(balanceAfter.value.amount, `0`);
 
+            // test redemption QR code
+            const redemptionQRCodeURL = generateQRCodeURL({
+                signature: transactionResult.signature,
+                wallet: client.wallet.publicKey.toString(),
+                mint: coupon.account.mint,
+                numTokens: String(1),
+            });
+            assert.equal(
+                redemptionQRCodeURL,
+                `https://\${origin}?mint=${
+                    coupon.account.mint
+                }&numTokens=${1}&signature=${
+                    transactionResult.signature
+                }&wallet=${client.wallet.publicKey.toString()}`
+            );
+
+            // test extract redemption parameters
+            const redemptionParams = extractQueryParams(redemptionQRCodeURL);
+            expect(redemptionParams).to.deep.equal({
+                signature: String(transactionResult.signature),
+                wallet: client.wallet.publicKey.toString(),
+                mint: String(coupon.account.mint),
+                numTokens: String(1),
+            });
+
             // test verify redemption
             const result = await client.verifyRedemption({
-                signature: transactionResult.signature,
-                wallet: client.wallet.publicKey,
-                mint: coupon.account.mint,
-                numTokens: 1,
+                signature: redemptionParams.signature,
+                wallet: new PublicKey(redemptionParams.wallet),
+                mint: new PublicKey(redemptionParams.mint),
+                numTokens: parseInt(redemptionParams.numTokens),
             });
             assert.equal(result.isVerified, true);
 
