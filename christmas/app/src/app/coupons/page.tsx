@@ -9,11 +9,13 @@ import { useAnchorClient } from "@/providers/anchorClientProvider";
 import { Coupon } from "@/types";
 import { redeemCoupon } from "../queries/queries";
 import { useQueryClient } from "react-query";
+import { generateQRCodeURL } from "../../lib/utils";
 
 export default function Page() {
     const anchorClient = useAnchorClient();
     const queryClient = useQueryClient();
     const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
+    const [qrCodeURL, setQrCodeURL] = useState<null | string>(null);
 
     // fetch claimed coupons
     const {
@@ -34,23 +36,38 @@ export default function Page() {
     async function handleRedeemCoupon(coupon: Coupon) {
         try {
             if (anchorClient === null) throw new Error("anchorClient is null");
-            const result = await queryClient.fetchQuery({
+
+            const numTokens = 1;
+
+            const transactionResult = await queryClient.fetchQuery({
                 queryKey: ["redeemCoupon"],
                 queryFn: () => {
                     return redeemCoupon(anchorClient, {
                         coupon: coupon.publicKey,
                         mint: coupon.account.mint,
-                        numTokens: 1,
+                        numTokens: numTokens,
                     });
                 },
                 cacheTime: 0, // don't cache redeem coupon
             });
-            console.log("Coupon redeemed:", coupon, result);
+            console.log("Coupon redeemed:", coupon, transactionResult);
+
+            // generate setQrCodeURL
+            const redemptionQRCodeURL = generateQRCodeURL({
+                signature: transactionResult.signature,
+                wallet: anchorClient.wallet.publicKey.toString(),
+                mint: coupon.account.mint.toString(),
+                numTokens: String(numTokens),
+            });
+            console.log(`redemptionQRCodeURL: ${redemptionQRCodeURL}`);
+            setQrCodeURL(redemptionQRCodeURL);
         } catch (error) {
             console.log(error);
         }
         refetch();
-        setSelectedCoupon(null); // close modal
+
+        // TODO: CANT SEE QR CODE IF CLOSE IMMEDIATELY
+        // setSelectedCoupon(null); // close modal
     }
 
     return (
@@ -75,6 +92,7 @@ export default function Page() {
                     coupon={selectedCoupon}
                     onClose={() => setSelectedCoupon(null)}
                     onRedeem={handleRedeemCoupon}
+                    qrCodeURL={qrCodeURL}
                 />
             )}
         </div>
