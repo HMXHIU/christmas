@@ -13,6 +13,7 @@ import {
 } from "../queries/queries";
 import CreateCouponModal from "./components/createCouponModal";
 import MintCouponModal from "./components/mintCouponModal";
+import VerifyRedemptionModal from "./components/verifyRedemptionModal";
 import { useAnchorClient } from "@/providers/anchorClientProvider";
 import { Coupon } from "@/types";
 import { useQueryClient } from "react-query";
@@ -24,6 +25,8 @@ export default function Page() {
     const [isCreateCouponModalOpen, setIsCreateCouponModalOpen] =
         useState(false);
     const [isMintCouponModalOpen, setIsMintCouponModalOpen] = useState(false);
+    const [isVerifyRedemptionModalOpen, setIsVerifyRedemptionModalOpen] =
+        useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
 
     async function handleCreateCoupon(formData: CreateCoupon) {
@@ -78,6 +81,7 @@ export default function Page() {
         } finally {
             setSelectedCoupon(null);
             setIsMintCouponModalOpen(false);
+            refetch();
         }
     }
 
@@ -98,6 +102,13 @@ export default function Page() {
                         onCreateCoupon={handleCreateCoupon}
                     />
                 )}
+
+                <button
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                    onClick={() => setIsVerifyRedemptionModalOpen(true)}
+                >
+                    Verify Redemption
+                </button>
             </div>
 
             {isLoading ? (
@@ -127,6 +138,17 @@ export default function Page() {
                     }}
                     onMint={handleMintCoupon}
                 />
+            )}
+
+            {isVerifyRedemptionModalOpen && (
+                <VerifyRedemptionModal
+                    onClose={() => {
+                        setIsVerifyRedemptionModalOpen(false);
+                    }}
+                    onQRCodeScan={(result) => {
+                        console.log(result);
+                    }}
+                ></VerifyRedemptionModal>
             )}
         </div>
     );
