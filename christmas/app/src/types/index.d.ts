@@ -2,6 +2,7 @@ import {
     PublicKey,
     SignatureResult,
     TransactionSignature,
+    ParsedAccountData,
 } from "@solana/web3.js";
 
 declare global {
@@ -27,6 +28,7 @@ export interface Coupon {
         geo: string;
         bump: number;
     };
+    tokenAccountData?: ParsedAccountData;
 }
 
 export interface User {

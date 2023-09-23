@@ -63,11 +63,9 @@ export default function Page() {
             setQrCodeURL(redemptionQRCodeURL);
         } catch (error) {
             console.log(error);
+        } finally {
+            refetch();
         }
-        refetch();
-
-        // TODO: CANT SEE QR CODE IF CLOSE IMMEDIATELY
-        // setSelectedCoupon(null); // close modal
     }
 
     return (

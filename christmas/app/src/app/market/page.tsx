@@ -34,7 +34,7 @@ export default function Page() {
         setSelectedCoupon(coupon);
     };
 
-    async function handleRedeemCoupon() {
+    async function handleClaimCoupon() {
         console.log("Coupon redeemed:", selectedCoupon);
         if (anchorClient && selectedCoupon) {
             await anchorClient.claimFromMarket(selectedCoupon.account.mint, 1);
@@ -53,6 +53,10 @@ export default function Page() {
                     {coupons?.map((coupon: Coupon) => (
                         <CouponCard
                             key={coupon.publicKey.toString()}
+                            balance={parseInt(
+                                coupon.tokenAccountData?.parsed?.info
+                                    ?.tokenAmount.amount
+                            )}
                             coupon={coupon}
                             onClick={() => handleCouponClick(coupon)}
                         />
@@ -65,7 +69,7 @@ export default function Page() {
                     onClose={() => {
                         setSelectedCoupon(null);
                     }}
-                    onRedeem={handleRedeemCoupon}
+                    onRedeem={handleClaimCoupon}
                 />
             )}
         </div>

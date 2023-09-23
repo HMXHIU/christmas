@@ -463,9 +463,10 @@ export default class AnchorClient {
 
         // get coupons for mints in accountsWithBalance
         return await Promise.all(
-            accountsWithBalance.map(async (x) => {
-                const mint = (x.account.data as web3.ParsedAccountData).parsed
-                    .info.mint;
+            accountsWithBalance.map(async (tokenAccount) => {
+                const mint = (
+                    tokenAccount.account.data as web3.ParsedAccountData
+                ).parsed.info.mint;
 
                 const xs = await this.program.account.coupon.all([
                     {
@@ -476,7 +477,11 @@ export default class AnchorClient {
                     },
                 ]);
 
-                return xs[0];
+                return {
+                    ...xs[0],
+                    tokenAccountData: tokenAccount.account
+                        .data as web3.ParsedAccountData,
+                };
             })
         );
     }

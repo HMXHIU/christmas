@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 
 interface CouponModalProps {
     coupon: Coupon;
-    qrCodeURL: string | null;
+    qrCodeURL?: string | null;
     onClose: () => void;
     onRedeem: (coupon: Coupon) => void;
 }
@@ -46,14 +46,17 @@ const CouponModal: React.FC<CouponModalProps> = ({
                 )}
 
                 <p className="text-center mt-4">{coupon.account.name}</p>
-                <div className="flex justify-center mt-6">
-                    <button
-                        className="px-4 py-2 bg-green-500 text-white rounded-md mr-2"
-                        onClick={() => onRedeem(coupon)}
-                    >
-                        Redeem
-                    </button>
-                </div>
+
+                {qrCodeURL ? null : (
+                    <div className="flex justify-center mt-6">
+                        <button
+                            className="px-4 py-2 bg-green-500 text-white rounded-md mr-2"
+                            onClick={() => onRedeem(coupon)}
+                        >
+                            Redeem
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
