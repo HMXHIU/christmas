@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useQuery } from "react-query";
 import CouponCard from "../market/components/couponCard";
-
+import { PublicKey } from "@solana/web3.js";
 import {
     fetchMintedCoupons,
     createCoupon,
@@ -17,10 +17,10 @@ import VerifyRedemptionModal from "./components/verifyRedemptionModal";
 import { useAnchorClient } from "@/providers/anchorClientProvider";
 import { Coupon } from "@/types";
 import { useQueryClient } from "react-query";
+import { extractQueryParams } from "../../lib/utils";
 
 export default function Page() {
     const anchorClient = useAnchorClient();
-
     const queryClient = useQueryClient();
     const [isCreateCouponModalOpen, setIsCreateCouponModalOpen] =
         useState(false);
@@ -28,6 +28,29 @@ export default function Page() {
     const [isVerifyRedemptionModalOpen, setIsVerifyRedemptionModalOpen] =
         useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
+    const [verifyRedemptionStatus, setVerifyRedemptionStatus] = useState<{
+        isVerified: boolean | null;
+        err: string | null;
+    }>({
+        isVerified: null,
+        err: null,
+    });
+
+    // fetch coupons created by user
+    const {
+        data: mintedCoupons,
+        isLoading,
+        refetch,
+    } = useQuery(["minted_coupons"], () => {
+        if (anchorClient !== null) {
+            return fetchMintedCoupons(anchorClient);
+        }
+    });
+
+    // refetch minted coupons as anchorClient might be null initially
+    useEffect(() => {
+        refetch();
+    }, [anchorClient]);
 
     async function handleCreateCoupon(formData: CreateCoupon) {
         console.log("Creating coupon with data:", formData);
@@ -46,22 +69,6 @@ export default function Page() {
         }
         setIsCreateCouponModalOpen(false);
     }
-
-    // fetch coupons created by user
-    const {
-        data: mintedCoupons,
-        isLoading,
-        refetch,
-    } = useQuery(["minted_coupons"], () => {
-        if (anchorClient !== null) {
-            return fetchMintedCoupons(anchorClient);
-        }
-    });
-
-    // refetch minted coupons as anchorClient might be null initially
-    useEffect(() => {
-        refetch();
-    }, [anchorClient]);
 
     async function handleMintCoupon(formData: MintCoupon) {
         console.log("Coupon minted:", selectedCoupon, formData);
@@ -85,6 +92,31 @@ export default function Page() {
         }
     }
 
+    async function handleVerifyRedemption(redemptionQRCodeURL: string) {
+        console.log(`redemptionQRCodeURL: ${redemptionQRCodeURL}`);
+        try {
+            if (anchorClient === null) throw new Error("anchorClient is null");
+
+            // test extract redemption parameters
+            const redemptionParams = extractQueryParams(redemptionQRCodeURL);
+
+            // test verify redemption
+            const redemptionStatus = await anchorClient.verifyRedemption({
+                signature: redemptionParams.signature,
+                wallet: new PublicKey(redemptionParams.wallet),
+                mint: new PublicKey(redemptionParams.mint),
+                numTokens: parseInt(redemptionParams.numTokens),
+            });
+
+            setVerifyRedemptionStatus(redemptionStatus);
+        } catch (error) {
+            setVerifyRedemptionStatus({
+                isVerified: false,
+                err: "Invalid Remdeption Code",
+            });
+        }
+    }
+
     return (
         <div className="container mx-auto p-4">
             <h1 className="text-2xl font-bold mb-4">Minted Coupons</h1>
@@ -94,14 +126,8 @@ export default function Page() {
                     className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
                     onClick={() => setIsCreateCouponModalOpen(true)}
                 >
-                    Mint Coupon
+                    Create Coupon
                 </button>
-                {isCreateCouponModalOpen && (
-                    <CreateCouponModal
-                        onClose={() => setIsCreateCouponModalOpen(false)}
-                        onCreateCoupon={handleCreateCoupon}
-                    />
-                )}
 
                 <button
                     className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
@@ -111,6 +137,7 @@ export default function Page() {
                 </button>
             </div>
 
+            {/* Minted Coupons */}
             {isLoading ? (
                 <p>Loading coupons...</p>
             ) : (
@@ -129,6 +156,16 @@ export default function Page() {
                     ))}
                 </>
             )}
+
+            {/* Create Coupon Modal */}
+            {isCreateCouponModalOpen && (
+                <CreateCouponModal
+                    onClose={() => setIsCreateCouponModalOpen(false)}
+                    onCreateCoupon={handleCreateCoupon}
+                />
+            )}
+
+            {/* Mint Coupon Modal */}
             {selectedCoupon && isMintCouponModalOpen && (
                 <MintCouponModal
                     coupon={selectedCoupon}
@@ -140,14 +177,18 @@ export default function Page() {
                 />
             )}
 
+            {/* Verify Redemption Modal */}
             {isVerifyRedemptionModalOpen && (
                 <VerifyRedemptionModal
                     onClose={() => {
                         setIsVerifyRedemptionModalOpen(false);
                     }}
-                    onQRCodeScan={(result) => {
-                        console.log(result);
-                    }}
+                    onQRCodeScan={handleVerifyRedemption}
+                    verificationStatus={
+                        verifyRedemptionStatus.isVerified
+                            ? "Verified"
+                            : verifyRedemptionStatus.err
+                    }
                 ></VerifyRedemptionModal>
             )}
         </div>

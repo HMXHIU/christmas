@@ -5,24 +5,22 @@ import { QrReader, OnResultFunction } from "react-qr-reader";
 interface VerifyRedemptionModalProps {
     onClose: () => void;
     onQRCodeScan: (qrCodeValue: string) => void;
+    verificationStatus?: string | null;
 }
 
 const VerifyRedemptionModal: React.FC<VerifyRedemptionModalProps> = ({
     onClose,
     onQRCodeScan,
+    verificationStatus,
 }) => {
     const [qrCodeValue, setQRCodeValue] = useState<string | null>(null);
 
     const handleScan = useCallback<OnResultFunction>(
-        (result, error) => {
+        (result, _) => {
             if (result) {
                 const text = result.getText();
                 setQRCodeValue(text);
                 onQRCodeScan(text);
-            }
-
-            if (!!error) {
-                console.log(error);
             }
         },
         [onQRCodeScan]
@@ -62,6 +60,14 @@ const VerifyRedemptionModal: React.FC<VerifyRedemptionModalProps> = ({
                     >
                         Paste
                     </button>
+                </div>
+                <div className="mt-4">
+                    <input
+                        type="text"
+                        value={verificationStatus || ""}
+                        readOnly
+                        className="border border-gray-300 rounded p-1 w-full"
+                    />
                 </div>
             </div>
         </div>
