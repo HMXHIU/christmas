@@ -66,6 +66,8 @@ export default function Page() {
             });
         } catch (error) {
             console.log(error);
+        } finally {
+            refetch();
         }
         setIsCreateCouponModalOpen(false);
     }

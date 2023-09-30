@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "react-query";
 import CouponCard from "../market/components/couponCard";
-import CouponModal from "../market/components/couponModal";
+import RedeemCouponModal from "./components/redeemCouponModal";
 import { fetchClaimedCoupons } from "../queries/queries";
 import { useAnchorClient } from "@/providers/anchorClientProvider";
 import { Coupon } from "@/types";
@@ -86,7 +86,7 @@ export default function Page() {
                 </>
             )}
             {selectedCoupon && (
-                <CouponModal
+                <RedeemCouponModal
                     coupon={selectedCoupon}
                     onClose={() => setSelectedCoupon(null)}
                     onRedeem={handleRedeemCoupon}

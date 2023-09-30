@@ -2,14 +2,14 @@ import React, { useRef, useEffect } from "react";
 import { Coupon } from "@/types";
 import QRCode from "qrcode";
 
-interface CouponModalProps {
+interface RedeemCouponModalProps {
     coupon: Coupon;
-    qrCodeURL?: string | null;
+    qrCodeURL: string | null;
     onClose: () => void;
     onRedeem: (coupon: Coupon) => void;
 }
 
-const CouponModal: React.FC<CouponModalProps> = ({
+const RedeemCouponModal: React.FC<RedeemCouponModalProps> = ({
     coupon,
     qrCodeURL,
     onClose,
@@ -53,7 +53,7 @@ const CouponModal: React.FC<CouponModalProps> = ({
                             className="px-4 py-2 bg-green-500 text-white rounded-md mr-2"
                             onClick={() => onRedeem(coupon)}
                         >
-                            Redeem
+                            Redeem Coupon
                         </button>
                     </div>
                 )}
@@ -62,4 +62,4 @@ const CouponModal: React.FC<CouponModalProps> = ({
     );
 };
 
-export default CouponModal;
+export default RedeemCouponModal;
