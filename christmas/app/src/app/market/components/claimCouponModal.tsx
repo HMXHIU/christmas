@@ -24,6 +24,12 @@ const ClaimCouponModal: React.FC<ClaimCouponModalProps> = ({
 
                 <p className="text-center mt-4">{coupon.account.name}</p>
 
+                <img
+                    src=""
+                    alt="Coupon"
+                    className="w-40 h-40 object-cover rounded-md mx-auto"
+                />
+
                 <div className="flex justify-center mt-6">
                     <button
                         className="px-4 py-2 bg-green-500 text-white rounded-md mr-2"
