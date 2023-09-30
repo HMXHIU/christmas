@@ -1,5 +1,5 @@
 // components/VerifyRedemptionModal.tsx
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, ChangeEvent } from "react";
 import { QrReader, OnResultFunction } from "react-qr-reader";
 
 interface VerifyRedemptionModalProps {
@@ -26,12 +26,6 @@ const VerifyRedemptionModal: React.FC<VerifyRedemptionModalProps> = ({
         [onQRCodeScan]
     );
 
-    const handlePasteFromClipboard = () => {
-        navigator.clipboard.readText().then((text) => {
-            setQRCodeValue(text);
-        });
-    };
-
     return (
         <div className="modal fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center">
             <div className="modal-content bg-white p-4 rounded-lg w-full max-w-lg relative">
@@ -51,11 +45,19 @@ const VerifyRedemptionModal: React.FC<VerifyRedemptionModalProps> = ({
                     <input
                         type="text"
                         value={qrCodeValue || ""}
-                        readOnly
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                            setQRCodeValue(e.target.value);
+                            onQRCodeScan(e.target.value);
+                        }}
                         className="border rounded p-1 flex-1"
                     />
                     <button
-                        onClick={handlePasteFromClipboard}
+                        onClick={() => {
+                            navigator.clipboard.readText().then((text) => {
+                                setQRCodeValue(text);
+                                onQRCodeScan(text);
+                            });
+                        }}
                         className="bg-blue-500 text-white px-4 py-2 rounded ml-2"
                     >
                         Paste
