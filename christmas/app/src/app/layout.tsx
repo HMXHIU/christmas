@@ -6,6 +6,9 @@ import QueryProvider from "../providers/queryProvider";
 import NavBottom from "./components/navBottom";
 import NavTop from "./components/navTop";
 import { AnchorClientProvider } from "@/providers/anchorClientProvider";
+import { NftStorageClientProvider } from "@/providers/nftStorageClientProvider";
+import { NFT_STORAGE_TOKEN } from "../lib/constants";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -23,13 +26,15 @@ export default function RootLayout({
             <body className={inter.className}>
                 <WalletProvider>
                     <AnchorClientProvider>
-                        <div className="flex flex-col min-h-screen">
-                            <NavTop />
-                            <div className="flex-grow px-4 py-16 pt-16">
-                                <QueryProvider>{children}</QueryProvider>
+                        <NftStorageClientProvider token={NFT_STORAGE_TOKEN}>
+                            <div className="flex flex-col min-h-screen">
+                                <NavTop />
+                                <div className="flex-grow px-4 py-16 pt-16">
+                                    <QueryProvider>{children}</QueryProvider>
+                                </div>
+                                <NavBottom />
                             </div>
-                            <NavBottom />
-                        </div>
+                        </NftStorageClientProvider>
                     </AnchorClientProvider>
                 </WalletProvider>
             </body>

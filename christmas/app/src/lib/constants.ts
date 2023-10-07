@@ -26,6 +26,9 @@ export const COUPON_METADATA_SIZE =
     GEO_SIZE +
     BUMP_SIZE;
 
+export const NFT_STORAGE_TOKEN =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweEI1MjdjM2I2ZjU2NzUwRTdmNDlBMUFlNmI3YjZEMjc4NTExNjg1OUEiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTY5NjY0NDgyMTA2NCwibmFtZSI6ImNocmlzdG1hcyJ9.eSSMQhL-xDrtkIDVzEcxOm2faE3HdzENXfZPGGR9KPo";
+
 export const COUNTRY_DETAILS = {
     AF: ["AFG", "Afghanistan"],
     AL: ["ALB", "Albania"],

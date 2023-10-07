@@ -22,8 +22,6 @@ import {
 } from "./constants";
 import { getUserPda, stringToBase58 } from "./utils";
 import { Coupon, User, TransactionResult } from "@/types";
-import { min } from "bn.js";
-import { assert } from "console";
 
 export default class AnchorClient {
     programId: web3.PublicKey;
