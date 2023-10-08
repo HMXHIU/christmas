@@ -25,12 +25,13 @@ export async function fetchMintedCoupons(
 export interface CreateCoupon {
     // params for the metadata json (stored at uri)
     description: string;
-    image: string;
+    image: File | null;
     // params for creating and minting the coupon on chain
     geo: string;
     region: string;
     name: string;
     symbol: string;
+    numTokens?: number;
 }
 
 export async function createCoupon(

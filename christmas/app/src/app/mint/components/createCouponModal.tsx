@@ -3,6 +3,7 @@ import { CreateCoupon } from "../../queries/queries";
 import { getUserCountry, getUserGeohash } from "../../../lib/utils";
 import { COUNTRY_DETAILS } from "../../../lib/constants";
 import { useQuery } from "react-query";
+import { read } from "fs";
 
 interface CreateCouponModalProps {
     onClose: () => void;
@@ -15,15 +16,17 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
 }) => {
     const detectedRegion = getUserCountry().code;
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<CreateCoupon>({
         name: "",
         symbol: "",
         description: "",
-        numTokens: 1,
+        numTokens: 1, // TODO: NOT USED? ONLY WHEN MINTING CAN REMOVE
         region: detectedRegion,
         geo: "",
-        image: "",
+        image: null,
     });
+
+    const [image, setImage] = useState<string | null>(null);
 
     const geohashQuery = useQuery(["detected_geohash"], getUserGeohash, {
         onSuccess: (geohash) => {
@@ -45,12 +48,15 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
     const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            setFormData((prevData) => ({
+                ...prevData,
+                image: file,
+            }));
+
+            // file preview
             const reader = new FileReader();
             reader.onloadend = () => {
-                setFormData((prevData) => ({
-                    ...prevData,
-                    image: reader.result as string,
-                }));
+                setImage(reader.result as string);
             };
             reader.readAsDataURL(file);
         }
@@ -70,7 +76,7 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
                 >
                     Close
                 </button>
-                <h2 className="text-xl font-bold mb-4">Mint Coupon</h2>
+                <h2 className="text-xl font-bold mb-4">Create Coupon</h2>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4 flex">
                         <label
@@ -158,7 +164,7 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
                         >
                             {Object.values(COUNTRY_DETAILS).map(
                                 ([code, name]) => (
-                                    <option value={code} id={code}>
+                                    <option value={code} id={code} key={code}>
                                         {name}
                                     </option>
                                 )
@@ -195,9 +201,9 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
                             onChange={handleImageUpload}
                             className="border rounded p-1 flex-1"
                         />
-                        {formData.image && (
+                        {image && (
                             <img
-                                src={formData.image}
+                                src={image}
                                 alt="Preview"
                                 className="mt-2 w-24 h-24"
                             />
@@ -208,7 +214,7 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
                             type="submit"
                             className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
                         >
-                            Mint Coupon
+                            Create Coupon
                         </button>
                     </div>
                 </form>

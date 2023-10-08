@@ -15,12 +15,15 @@ import CreateCouponModal from "./components/createCouponModal";
 import MintCouponModal from "./components/mintCouponModal";
 import VerifyRedemptionModal from "./components/verifyRedemptionModal";
 import { useAnchorClient } from "@/providers/anchorClientProvider";
+import { useNftStorageClient } from "@/providers/nftStorageClientProvider";
 import { Coupon } from "@/types";
 import { useQueryClient } from "react-query";
 import { extractQueryParams } from "../../lib/utils";
+import { read } from "fs";
 
 export default function Page() {
     const anchorClient = useAnchorClient();
+    const nftStorageClient = useNftStorageClient();
     const queryClient = useQueryClient();
     const [isCreateCouponModalOpen, setIsCreateCouponModalOpen] =
         useState(false);
@@ -56,7 +59,21 @@ export default function Page() {
         console.log("Creating coupon with data:", formData);
         try {
             if (anchorClient === null) throw new Error("anchorClient is null");
+            if (nftStorageClient === null)
+                throw new Error("nftStorageClient is null");
             if (formData === null) throw new Error("formData is null");
+
+            // upload the coupon metadata to nft storage
+            if (formData.image) {
+                const nftUrl = await nftStorageClient.store({
+                    name: formData.name,
+                    description: formData.description,
+                    imageFile: formData.image,
+                });
+                console.log(`NFT URL: ${nftUrl}`);
+            }
+
+            // create the coupon on the blockchain
             await queryClient.fetchQuery({
                 queryKey: ["create_coupon"],
                 queryFn: () => {
