@@ -2,7 +2,7 @@ import * as web3 from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import { getCountriesForTimezone } from "countries-and-timezones";
-import { COUNTRY_DETAILS } from "./constants";
+import { COUNTRY_DETAILS, IPFS_HTTP_GATEWAY } from "./constants";
 import geohash from "ngeohash";
 
 export function stringToBase58(str: string) {
@@ -74,4 +74,16 @@ export function generateQRCodeURL(kwargs: Record<string, string>): string {
 
 export function extractQueryParams(url: string): Record<string, string> {
     return Object.fromEntries(new URL(url).searchParams.entries());
+}
+
+export function nft_uri_to_url(uri: string): string {
+    // extract CID from uri
+    const regex = /ipfs:\/\/(.+)/;
+    const match = uri.match(regex);
+
+    if (!(match && match[1])) {
+        throw new Error("nft metadata uri must start with ipfs://");
+    }
+
+    return `https://${IPFS_HTTP_GATEWAY}/ipfs/${match[1]}`;
 }

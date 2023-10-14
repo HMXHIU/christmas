@@ -11,10 +11,10 @@ import { Coupon } from "@/types";
 export default function Page() {
     const anchorClient = useAnchorClient();
     const queryClient = useQueryClient();
-
     const region = "SGP"; // TODO: Use user's location
-
     const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
+
+    // fetch coupons
     const {
         data: coupons,
         isLoading,

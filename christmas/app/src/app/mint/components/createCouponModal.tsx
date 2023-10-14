@@ -20,10 +20,10 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
         name: "",
         symbol: "",
         description: "",
-        numTokens: 1, // TODO: NOT USED? ONLY WHEN MINTING CAN REMOVE
         region: detectedRegion,
         geo: "",
         image: null,
+        uri: "",
     });
 
     const [image, setImage] = useState<string | null>(null);
@@ -126,23 +126,6 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
                             name="description"
                             maxLength={2048}
                             value={formData.description}
-                            onChange={handleChange}
-                            className="border rounded p-1 flex-1"
-                        />
-                    </div>
-                    <div className="mb-4 flex">
-                        <label
-                            htmlFor="numTokens"
-                            className="w-20 pr-2 flex-shrink-0"
-                        >
-                            Number of Coupons:
-                        </label>
-                        <input
-                            type="number"
-                            id="numTokens"
-                            name="numTokens"
-                            min={1}
-                            value={formData.numTokens}
                             onChange={handleChange}
                             className="border rounded p-1 flex-1"
                         />

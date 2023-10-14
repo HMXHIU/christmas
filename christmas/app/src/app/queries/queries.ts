@@ -1,6 +1,8 @@
 import { web3 } from "@coral-xyz/anchor";
 import AnchorClient from "../../lib/anchorClient";
-import { Coupon, TransactionResult } from "@/types";
+import NFTStorageClient from "@/lib/nftStorageClient";
+import { Coupon, TransactionResult, CouponMetadata } from "@/types";
+import { nft_uri_to_url } from "@/lib/utils";
 
 // TODO: Include ability to get coupons near geohash
 export async function fetchCoupons(
@@ -14,6 +16,14 @@ export async function fetchClaimedCoupons(
     anchorClient: AnchorClient
 ): Promise<[Coupon, number][]> {
     return anchorClient.getClaimedCoupons();
+}
+
+export async function fetchCouponMetadata(
+    coupon: Coupon
+): Promise<CouponMetadata> {
+    const url = nft_uri_to_url(coupon.account.uri);
+    const response = await fetch(url);
+    return await response.json();
 }
 
 export async function fetchMintedCoupons(
@@ -31,23 +41,31 @@ export interface CreateCoupon {
     region: string;
     name: string;
     symbol: string;
-    numTokens?: number;
+    uri: string;
 }
 
 export async function createCoupon(
     anchorClient: AnchorClient,
+    nftStorageClient: NFTStorageClient,
     { geo, region, name, symbol, description, image }: CreateCoupon
 ): Promise<TransactionResult> {
-    // TODO: store metadata json at uri
-    const uri = "";
+    // upload the metadata to nft storage
+    let metadataUrl = "";
+    if (image) {
+        metadataUrl = await nftStorageClient.store({
+            name: name,
+            description: description,
+            imageFile: image,
+        });
+        console.log(`Uploaded metadata to ${metadataUrl}`);
+    }
 
-    // create coupon
     return await anchorClient.createCoupon({
         geo,
         region,
         name,
-        uri,
         symbol,
+        uri: metadataUrl,
     });
 }
 

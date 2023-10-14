@@ -31,6 +31,12 @@ export interface Coupon {
     tokenAccountData?: ParsedAccountData;
 }
 
+export interface CouponMetadata {
+    name: string;
+    description: string;
+    image: string;
+}
+
 export interface User {
     region: string;
     geo: string;

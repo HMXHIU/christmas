@@ -19,7 +19,6 @@ import { useNftStorageClient } from "@/providers/nftStorageClientProvider";
 import { Coupon } from "@/types";
 import { useQueryClient } from "react-query";
 import { extractQueryParams } from "../../lib/utils";
-import { read } from "fs";
 
 export default function Page() {
     const anchorClient = useAnchorClient();
@@ -63,21 +62,15 @@ export default function Page() {
                 throw new Error("nftStorageClient is null");
             if (formData === null) throw new Error("formData is null");
 
-            // upload the coupon metadata to nft storage
-            if (formData.image) {
-                const nftUrl = await nftStorageClient.store({
-                    name: formData.name,
-                    description: formData.description,
-                    imageFile: formData.image,
-                });
-                console.log(`NFT URL: ${nftUrl}`);
-            }
-
             // create the coupon on the blockchain
             await queryClient.fetchQuery({
                 queryKey: ["create_coupon"],
                 queryFn: () => {
-                    return createCoupon(anchorClient, formData);
+                    return createCoupon(
+                        anchorClient,
+                        nftStorageClient,
+                        formData
+                    );
                 },
                 cacheTime: 0, // don't cache coupon creation
             });
