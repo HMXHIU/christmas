@@ -1,8 +1,6 @@
 import * as web3 from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 
-import { Wallet } from "@coral-xyz/anchor";
-
 import { AnchorWallet } from "@solana/wallet-adapter-react";
 import { Transaction, Signer } from "@solana/web3.js";
 import idl from "../../../target/idl/christmas.json";
@@ -34,7 +32,7 @@ export default class AnchorClient {
     connection: anchor.web3.Connection;
     provider: anchor.Provider;
     program: anchor.Program<Christmas>;
-    wallet: AnchorWallet | Wallet;
+    wallet: AnchorWallet | anchor.Wallet;
 
     constructor({
         programId,
@@ -43,7 +41,7 @@ export default class AnchorClient {
     }: {
         programId?: web3.PublicKey;
         cluster?: string;
-        wallet?: AnchorWallet | Wallet;
+        wallet?: AnchorWallet | anchor.Wallet;
     } = {}) {
         this.programId = programId || new web3.PublicKey(idl.metadata.address);
         this.cluster = cluster || "http://127.0.0.1:8899";
@@ -53,7 +51,8 @@ export default class AnchorClient {
             `Connected to cluster: ${this.cluster} program: ${this.programId}`
         );
 
-        this.wallet = wallet || new Wallet(anchor.web3.Keypair.generate());
+        this.wallet =
+            wallet || new anchor.Wallet(anchor.web3.Keypair.generate());
 
         this.provider = new anchor.AnchorProvider(
             this.connection,

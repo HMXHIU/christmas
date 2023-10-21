@@ -17,7 +17,7 @@ import React, { FC, ReactNode, useMemo } from "react";
 require("@solana/wallet-adapter-react-ui/styles.css");
 
 const Provider: FC<{ children: ReactNode }> = ({ children }) => {
-    // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'.
+    // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'. (TODO: set this in config)
     const network = WalletAdapterNetwork.Devnet;
 
     // You can also provide a custom RPC endpoint.
