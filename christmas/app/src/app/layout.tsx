@@ -7,6 +7,8 @@ import NavBottom from "./components/navBottom";
 import NavTop from "./components/navTop";
 import { AnchorClientProvider } from "@/providers/anchorClientProvider";
 import { NftStorageClientProvider } from "@/providers/nftStorageClientProvider";
+import { ClientDeviceProvider } from "@/providers/ClientDeviceProvider";
+
 import { NFT_STORAGE_TOKEN } from "../lib/constants";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -27,13 +29,17 @@ export default function RootLayout({
                 <WalletProvider>
                     <AnchorClientProvider>
                         <NftStorageClientProvider token={NFT_STORAGE_TOKEN}>
-                            <div className="flex flex-col min-h-screen">
-                                <NavTop />
-                                <div className="flex-grow px-4 py-16 pt-16">
-                                    <QueryProvider>{children}</QueryProvider>
+                            <ClientDeviceProvider>
+                                <div className="flex flex-col min-h-screen">
+                                    <NavTop />
+                                    <div className="flex-grow px-4 py-16 pt-16">
+                                        <QueryProvider>
+                                            {children}
+                                        </QueryProvider>
+                                    </div>
+                                    <NavBottom />
                                 </div>
-                                <NavBottom />
-                            </div>
+                            </ClientDeviceProvider>
                         </NftStorageClientProvider>
                     </AnchorClientProvider>
                 </WalletProvider>

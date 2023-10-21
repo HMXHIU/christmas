@@ -1,9 +1,8 @@
-import React, { useState, ChangeEvent, FormEvent } from "react";
+import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { CreateCoupon } from "../../queries/queries";
-import { getUserCountry, getUserGeohash } from "../../../lib/utils";
 import { COUNTRY_DETAILS } from "../../../lib/constants";
-import { useQuery } from "react-query";
-import { read } from "fs";
+
+import { useClientDevice } from "@/providers/ClientDeviceProvider";
 
 interface CreateCouponModalProps {
     onClose: () => void;
@@ -14,13 +13,13 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
     onClose,
     onCreateCoupon,
 }) => {
-    const detectedRegion = getUserCountry().code;
+    const clientDevice = useClientDevice();
 
     const [formData, setFormData] = useState<CreateCoupon>({
         name: "",
         symbol: "",
         description: "",
-        region: detectedRegion,
+        region: clientDevice?.country?.code || "",
         geo: "",
         image: null,
         uri: "",
@@ -28,12 +27,14 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
 
     const [image, setImage] = useState<string | null>(null);
 
-    const geohashQuery = useQuery(["detected_geohash"], getUserGeohash, {
-        onSuccess: (geohash) => {
-            console.log(`Detected user geohash: ${geohash}`);
-            setFormData((prevData) => ({ ...prevData, geo: geohash }));
-        },
-    });
+    useEffect(() => {
+        if (clientDevice) {
+            setFormData((prevData) => ({
+                ...prevData,
+                geo: clientDevice.geohash || "",
+            }));
+        }
+    }, [clientDevice]);
 
     const handleChange = (
         e:

@@ -26,13 +26,17 @@ export function cleanString(s: string) {
     return s.replace(/\u0000+$/, "");
 }
 
-export function getUserGeohash(): Promise<string> {
+export async function getUserGeohash(): Promise<string> {
+    const { latitude, longitude } = await getDeviceLocation();
+    return geohash.encode(latitude, longitude, 6);
+}
+
+export function getDeviceLocation(): Promise<GeolocationCoordinates> {
     return new Promise((resolve, reject) => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    const { latitude, longitude } = position.coords;
-                    resolve(geohash.encode(latitude, longitude, 6));
+                    resolve(position.coords);
                 },
                 (error) => {
                     reject(new Error("Failed to retrieve geolocation."));

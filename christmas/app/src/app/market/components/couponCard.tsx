@@ -39,11 +39,13 @@ const CouponCard: React.FC<CouponCardProps> = ({
 
     return (
         <div className="border p-4 my-2 cursor-pointer" onClick={onClick}>
-            <img
-                src={imageUrl}
-                alt="Coupon"
-                className="w-24 h-24 object-cover rounded-md"
-            />
+            {imageUrl && (
+                <img
+                    src={imageUrl}
+                    alt="Coupon"
+                    className="w-24 h-24 object-cover rounded-md"
+                />
+            )}
             <p className="mt-2">name: {coupon.account.name}</p>
             <p className="mt-2">description: {metadata?.description}</p>
             <p className="mt-2">symbol: {coupon.account.symbol}</p>
