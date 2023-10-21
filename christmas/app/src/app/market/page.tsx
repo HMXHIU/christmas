@@ -7,12 +7,14 @@ import ClaimCouponModal from "./components/claimCouponModal";
 import { fetchCoupons } from "../queries/queries";
 import { useAnchorClient } from "@/providers/anchorClientProvider";
 import { Coupon } from "@/types";
+import { useClientDevice } from "@/providers/ClientDeviceProvider";
 
 export default function Page() {
     const anchorClient = useAnchorClient();
     const queryClient = useQueryClient();
-    const region = "SGP"; // TODO: Use user's location
+    const clientDevice = useClientDevice();
     const [selectedCoupon, setSelectedCoupon] = useState<null | Coupon>(null);
+    const region = clientDevice?.country?.code;
 
     // fetch coupons
     const {
@@ -20,15 +22,15 @@ export default function Page() {
         isLoading,
         refetch,
     } = useQuery(["coupons", region], () => {
-        if (anchorClient !== null) {
+        if (anchorClient && region) {
             return fetchCoupons(anchorClient, region);
         }
     });
 
-    // refetch market coupons as anchorClient might be null initially
+    // refetch market coupons as anchorClient & clientDevice might be null initially
     useEffect(() => {
         refetch();
-    }, [anchorClient]);
+    }, [anchorClient, region]);
 
     const handleCouponClick = (coupon: Coupon) => {
         setSelectedCoupon(coupon);
@@ -37,7 +39,12 @@ export default function Page() {
     async function handleClaimCoupon() {
         console.log("Coupon redeemed:", selectedCoupon);
         if (anchorClient && selectedCoupon) {
-            await anchorClient.claimFromMarket(selectedCoupon.account.mint, 1);
+            await anchorClient.claimFromMarket(
+                selectedCoupon.account.mint,
+                1,
+                clientDevice?.country?.code,
+                clientDevice?.geohash
+            );
             queryClient.invalidateQueries(["coupons", region]);
         }
         setSelectedCoupon(null);

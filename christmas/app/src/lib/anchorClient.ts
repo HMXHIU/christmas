@@ -20,7 +20,12 @@ import {
     PUBKEY_SIZE,
     STRING_PREFIX_SIZE,
 } from "./constants";
-import { getUserPda, stringToBase58 } from "./utils";
+import {
+    getUserPda,
+    stringToBase58,
+    getUserCountry,
+    getUserGeohash,
+} from "./utils";
 import { Coupon, User, TransactionResult } from "@/types";
 
 export default class AnchorClient {
@@ -600,7 +605,9 @@ export default class AnchorClient {
      */
     async claimFromMarket(
         mint: web3.PublicKey,
-        numTokens: number
+        numTokens: number,
+        region?: string | null,
+        geo?: string | null
     ): Promise<TransactionResult> {
         // Get the Program Derived Addresses (PDAs) for the region market and the associated token account.
         const [regionMarketPda, regionMarketTokenAccountPda] =
@@ -609,8 +616,12 @@ export default class AnchorClient {
         // Check if a user exists, and create one if not.
         const user = await this.getUser();
         if (user === null) {
-            const region = "SGP"; // TODO: get dynamically
-            const geo = "w21zc9"; // TODO: get dynamically
+            if (!region) {
+                region = getUserCountry().code;
+            }
+            if (!geo) {
+                geo = await getUserGeohash();
+            }
             await this.createUser({ region, geo });
         }
 
