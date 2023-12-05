@@ -12,7 +12,10 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/lodash": "^4.14.202",
+    "@types/ngeohash": "^0.6.8",
     "copy-webpack-plugin": "^11.0.0",
+    "css-loader": "^6.8.1",
     "mini-css-extract-plugin": "^2.7.6",
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.1",
@@ -22,6 +25,13 @@
     "webpack-dev-server": "^4.15.1"
   },
   "dependencies": {
-    "@shoelace-style/shoelace": "^2.12.0"
+    "@coral-xyz/anchor": "^0.29.0",
+    "@shoelace-style/shoelace": "^2.12.0",
+    "@solana/spl-token": "^0.3.9",
+    "@solana/web3.js": "^1.87.6",
+    "countries-and-timezones": "^3.5.2",
+    "lodash": "^4.17.21",
+    "nft.storage": "^7.1.1",
+    "ngeohash": "^0.6.3"
   }
 }
