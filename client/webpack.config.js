@@ -41,11 +41,20 @@ module.exports = {
   ],
   resolve: {
     extensions: [".tsx", ".ts", ".js"],
+    fallback: {
+      zlib: require.resolve("browserify-zlib"),
+      https: require.resolve("https-browserify"),
+      http: require.resolve("stream-http"),
+      stream: require.resolve("stream-browserify"),
+      crypto: require.resolve("crypto-browserify"),
+      url: require.resolve("url"),
+    },
   },
   output: {
     filename: "bundle.js",
     path: path.resolve(__dirname, "dist"),
   },
+  devtool: "source-map",
   devServer: {
     static: path.join(__dirname, "dist"),
     compress: true,
