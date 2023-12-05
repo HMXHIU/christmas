@@ -1,0 +1,43 @@
+<script>
+  class AppBody extends HTMLElement {
+    constructor() {
+      super();
+
+      // shadow dom
+      this.attachShadow({ mode: "open" });
+
+      // render
+      this.render();
+    }
+
+    render() {
+      this.shadowRoot.innerHTML = this.getTemplate();
+    }
+
+    getTemplate() {
+      return `
+          <div class="app-body">
+            <slot></slot>
+          </div>
+          ${this.getStyles()}
+        `;
+    }
+
+    getStyles() {
+      return `
+          <style>
+            .app-body {
+                margin-bottom: 50px;
+                margin-top: 50px;
+            }
+          </style>
+        `;
+    }
+
+    connectedCallback() {}
+
+    disconnectedCallback() {}
+  }
+
+  customElements.define("app-body", AppBody);
+</script>

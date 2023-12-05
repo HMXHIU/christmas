@@ -7,7 +7,7 @@ import ClaimCouponModal from "./components/claimCouponModal";
 import { fetchCoupons } from "../queries/queries";
 import { useAnchorClient } from "@/providers/anchorClientProvider";
 import { Coupon } from "@/types";
-import { useClientDevice } from "@/providers/ClientDeviceProvider";
+import { useClientDevice } from "@/providers/clientDeviceProvider";
 
 export default function Page() {
     const anchorClient = useAnchorClient();

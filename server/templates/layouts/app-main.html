@@ -1,0 +1,66 @@
+<!-- prettier-ignore -->
+{% include "components/wallet-provider.html" %}
+{% include "layouts/app-header.html" %}
+{% include "layouts/app-footer.html" %}
+{% include "layouts/app-body.html" %}
+{% include "pages/coupon-page.html" %}
+{% include "pages/mint-page.html" %}
+
+<script>
+  class AppMain extends HTMLElement {
+    constructor() {
+      super();
+
+      // shadow dom
+      this.attachShadow({ mode: "open" });
+    }
+
+    render() {
+      this.shadowRoot.innerHTML = this.getTemplate();
+    }
+
+    getTemplate() {
+      const title = this.getAttribute("title");
+      const page = window.location.hash.replace(/#/g, "") || "coupon-page";
+
+      // prettier-ignore
+      return `
+        <div>
+          <app-header>
+            <h1 slot="left">${title}</h1>
+            <wallet-provider slot="right"></wallet-provider>
+          </app-header>
+
+          <app-body>
+            <${page}></${page}>
+          </app-body>
+
+          <app-footer>
+            <a href="#coupon-page" slot="left">Coupons</a>
+            <a href="#mint-page" slot="right">Mint</a>
+          </app-footer>
+        </div>
+      `;
+    }
+
+    handleRoute() {
+      const page = window.location.hash.replace(/#/g, "") || "coupon-page";
+      this.shadowRoot.querySelector("app-body").innerHTML = `
+        <${page}></${[page]}>
+      `;
+    }
+
+    connectedCallback() {
+      // render
+      this.render();
+
+      window.addEventListener("hashchange", this.handleRoute.bind(this));
+    }
+
+    disconnectedCallback() {
+      window.removeEventListener("hashchange", this.handleRoute.bind(this));
+    }
+  }
+
+  customElements.define("app-main", AppMain);
+</script>

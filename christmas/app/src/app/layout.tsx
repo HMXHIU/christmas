@@ -7,7 +7,7 @@ import NavBottom from "./components/navBottom";
 import NavTop from "./components/navTop";
 import { AnchorClientProvider } from "@/providers/anchorClientProvider";
 import { NftStorageClientProvider } from "@/providers/nftStorageClientProvider";
-import { ClientDeviceProvider } from "@/providers/ClientDeviceProvider";
+import { ClientDeviceProvider } from "@/providers/clientDeviceProvider";
 
 import { NFT_STORAGE_TOKEN } from "../lib/constants";
 

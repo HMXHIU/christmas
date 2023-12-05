@@ -1,0 +1,98 @@
+<script>
+  class WalletProvider extends HTMLElement {
+    constructor() {
+      super();
+
+      // get wallet
+      this.wallet = this.getWalletProvider();
+
+      // shadow dom
+      this.attachShadow({ mode: "open" });
+    }
+
+    render() {
+      this.shadowRoot.innerHTML = this.getTemplate();
+
+      // get DOM elements
+      this.connectWalletButton = this.shadowRoot.querySelector(
+        "#connect-wallet-button"
+      );
+      this.downloadWalletButton = this.shadowRoot.querySelector(
+        "#download-wallet-button"
+      );
+
+      this.connectWalletButton.style.display = this.wallet ? "block" : "none";
+      this.downloadWalletButton.style.display = this.wallet ? "none" : "block";
+      this.connectWalletButton.textContent =
+        this.wallet && this.wallet.isConnected ? "Connected" : "Connect Wallet";
+    }
+
+    getTemplate() {
+      return `
+        <button id="connect-wallet-button">Connect Wallet</button>
+        <button id="download-wallet-button">Download Wallet</button>
+      `;
+    }
+
+    connectedCallback() {
+      // render
+      this.render();
+
+      // add event listeners
+      this.connectWalletButton.addEventListener(
+        "click",
+        this.connectWallet.bind(this)
+      );
+      this.downloadWalletButton.addEventListener(
+        "click",
+        this.downloadWallet.bind(this)
+      );
+      // reload if user have downloaded the wallet
+      document.addEventListener("visibilitychange", this.render.bind(this));
+    }
+
+    disconnectedCallback() {
+      // remove event listeners
+      this.connectWalletButton.removeEventListener(
+        "click",
+        this.connectWallet.bind(this)
+      );
+      this.downloadWalletButton.removeEventListener(
+        "click",
+        this.downloadWallet.bind(this)
+      );
+      document.removeEventListener("visibilitychange", this.render.bind(this));
+    }
+
+    async connectWallet() {
+      try {
+        const resp = await this.wallet.connect();
+        const publicKey = resp.publicKey.toString();
+        console.log(
+          `Connected phantom wallet, your public key is ${publicKey}`
+        );
+      } catch (err) {
+        console.error(err);
+      } finally {
+        this.render();
+      }
+    }
+
+    getWalletProvider() {
+      // https://docs.phantom.app/solana/establishing-a-connection
+      if ("phantom" in window) {
+        const provider = window.phantom?.solana;
+        if (provider?.isPhantom) {
+          return provider;
+        }
+      }
+      return null;
+    }
+
+    downloadWallet() {
+      window.open("https://phantom.app/");
+    }
+  }
+
+  customElements.define("wallet-provider", WalletProvider);
+</script>
