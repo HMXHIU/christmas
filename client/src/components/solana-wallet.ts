@@ -1,6 +1,6 @@
 import React, { FC, ReactNode, useMemo, useEffect } from "react";
 import ReactDOM from "react-dom/client";
-import { LitElement, html, css } from "lit";
+import { LitElement, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import retargetEvents from "react-shadow-dom-retarget-events";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
@@ -19,6 +19,10 @@ import {
 } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
+
+import { createContext } from "@lit/context";
+
+export const walletContext = createContext<Wallet | null>(Symbol("wallet"));
 
 // Need to import the styles for the modal (not in shadowroot)
 require("@solana/wallet-adapter-react-ui/styles.css");
