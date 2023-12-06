@@ -1,6 +1,5 @@
-import React, { FC, ReactNode, useMemo } from "react";
+import React, { FC, ReactNode, useMemo, useEffect } from "react";
 import ReactDOM from "react-dom/client";
-
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import retargetEvents from "react-shadow-dom-retarget-events";
@@ -9,6 +8,9 @@ import {
   ConnectionProvider,
   WalletProvider,
   useWallet,
+  useAnchorWallet,
+  useConnection,
+  Wallet,
 } from "@solana/wallet-adapter-react";
 import {
   WalletModalProvider,
@@ -18,7 +20,7 @@ import {
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
 
-// Default styles that can be overridden by your app (still need to import the styles for the modal)
+// Need to import the styles for the modal (not in shadowroot)
 require("@solana/wallet-adapter-react-ui/styles.css");
 
 const SolanaReactWalletProvider: FC<{ children: ReactNode }> = ({
@@ -27,15 +29,10 @@ const SolanaReactWalletProvider: FC<{ children: ReactNode }> = ({
   // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'. (TODO: set this in config)
   const network = WalletAdapterNetwork.Devnet;
 
-  // You can also provide a custom RPC endpoint.
   // const endpoint = useMemo(() => clusterApiUrl(network), [network]);
   const endpoint = "http://127.0.0.1:8899"; // TODO: make configurable
 
-  const wallets = useMemo(
-    () => [new PhantomWalletAdapter()],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [network]
-  );
+  const wallets = useMemo(() => [new PhantomWalletAdapter()], [network]);
 
   return React.createElement(ConnectionProvider, {
     endpoint: endpoint,
@@ -49,8 +46,23 @@ const SolanaReactWalletProvider: FC<{ children: ReactNode }> = ({
   });
 };
 
-const SolanaWalletButton: FC<{ children: ReactNode }> = ({ children }) => {
+const SolanaWalletButton: FC<{
+  children: ReactNode;
+  onConnectWallet: (wallet: Wallet) => void;
+  onDisconnectWallet: () => void;
+}> = ({ children, onConnectWallet, onDisconnectWallet }) => {
   const { connected } = useWallet();
+  const { wallet, publicKey } = useWallet();
+  const anchorWallet = useAnchorWallet();
+  const { connection } = useConnection();
+
+  useEffect(() => {
+    if (anchorWallet && publicKey && connection && connected && wallet) {
+      onConnectWallet(wallet);
+    } else if (!connected) {
+      onDisconnectWallet();
+    }
+  }, [wallet, publicKey, connection, anchorWallet, connected, wallet]);
 
   return connected
     ? React.createElement(WalletDisconnectButton)
@@ -60,6 +72,9 @@ const SolanaWalletButton: FC<{ children: ReactNode }> = ({ children }) => {
 @customElement("solana-wallet")
 export class SolanaWallet extends LitElement {
   mountPoint?: HTMLElement;
+
+  @property()
+  isConnected: boolean = false;
 
   // copy from @solana/wallet-adapter-react-ui/styles.css, https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap
   static styles = css`
@@ -435,6 +450,27 @@ export class SolanaWallet extends LitElement {
     }
   `;
 
+  onConnectWallet(wallet: Wallet) {
+    this.isConnected = true;
+    this.dispatchEvent(
+      new CustomEvent("on-connect-wallet", {
+        bubbles: true,
+        composed: true,
+        detail: { wallet },
+      })
+    );
+  }
+  onDisconnectWallet() {
+    this.isConnected = false;
+    this.dispatchEvent(
+      new CustomEvent("on-disconnect-wallet", {
+        bubbles: true,
+        composed: true,
+        detail: {},
+      })
+    );
+  }
+
   connectedCallback() {
     super.connectedCallback();
 
@@ -447,7 +483,11 @@ export class SolanaWallet extends LitElement {
 
     ReactDOM.createRoot(this.mountPoint).render(
       React.createElement(SolanaReactWalletProvider, {
-        children: React.createElement(SolanaWalletButton),
+        children: React.createElement(SolanaWalletButton, {
+          onConnectWallet: this.onConnectWallet.bind(this),
+          onDisconnectWallet: this.onDisconnectWallet.bind(this),
+          children: null,
+        }),
       })
     );
   }
