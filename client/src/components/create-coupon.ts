@@ -24,6 +24,18 @@ export class CreateCoupon extends LitElement {
     this.dialogOpen.addEventListener("click", () => this.dialog.show());
   }
 
+  static styles = css`
+    .date-container {
+      display: flex;
+      align-content: space-between;
+      gap: 10px;
+    }
+    .date-range {
+      flex: 1;
+      width: 40%;
+    }
+  `;
+
   render() {
     return html`
       <sl-button id="dialog-open">Create Coupon</sl-button>
@@ -55,6 +67,24 @@ export class CreateCoupon extends LitElement {
                 html`<sl-option value="${code}">${name}</sl-option>`
             )}
           </sl-select>
+          <br />
+
+          <sl-input name="address" label="Address/Location"></sl-input>
+          <br />
+
+          <label for="validity-period">Validity Period</label>
+          <div class="date-container" id="validity-period">
+            <sl-input
+              class="date-range"
+              type="date"
+              placeholder="Valid From"
+            ></sl-input>
+            <sl-input
+              class="date-range"
+              type="date"
+              placeholder="Valid To"
+            ></sl-input>
+          </div>
           <br />
 
           <image-input label="Upload Image"></image-input>
