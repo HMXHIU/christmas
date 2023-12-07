@@ -22,15 +22,15 @@ export class AppMain extends LitElement {
   // Providers
   @provide({ context: walletContext })
   @state()
-  wallet = null;
+  accessor wallet = null;
 
   @provide({ context: anchorClientContext })
   @state()
-  anchorClient: AnchorClient | null = null;
+  accessor anchorClient: AnchorClient | null = null;
 
   @provide({ context: clientDeviceContext })
   @state()
-  clientDevice: ClientDevice | null = null;
+  accessor clientDevice: ClientDevice | null = null;
 
   async connectedCallback() {
     super.connectedCallback();

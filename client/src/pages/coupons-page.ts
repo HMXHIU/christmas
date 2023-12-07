@@ -9,13 +9,15 @@ import { ClientDevice } from "../lib/utils";
 @customElement("app-coupons")
 export class AppCoupons extends LitElement {
   @consume({ context: anchorClientContext })
-  anchorClient: AnchorClient | null = null;
+  @state()
+  accessor anchorClient: AnchorClient | null = null;
 
   @consume({ context: clientDeviceContext })
-  clientDevice: ClientDevice | null = null;
+  @state()
+  accessor clientDevice: ClientDevice | null = null;
 
   @state()
-  coupons: Coupon[] = [];
+  accessor coupons: Coupon[] = [];
 
   async connectedCallback() {
     super.connectedCallback();

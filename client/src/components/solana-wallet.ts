@@ -73,8 +73,8 @@ const SolanaWalletButton: FC<{
 export class SolanaWallet extends LitElement {
   mountPoint?: HTMLElement;
 
-  @property({ type: Boolean })
-  isConnected = false;
+  @property({ attribute: false })
+  accessor isConnected: boolean = false;
 
   // copy from @solana/wallet-adapter-react-ui/styles.css, https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap
   static styles = css`
