@@ -1,7 +1,6 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { consume } from "@lit/context";
-import { Wallet } from "@solana/wallet-adapter-react";
 import { anchorClientContext, clientDeviceContext } from "../layouts/app-main";
 import { AnchorClient, Coupon } from "../lib/anchor/anchorClient";
 import { ClientDevice } from "../lib/utils";
@@ -24,7 +23,6 @@ export class AppCoupons extends LitElement {
     const region = this.clientDevice?.country?.code;
     if (this.anchorClient && region) {
       this.coupons = await this.anchorClient.getCoupons(region);
-      console.log(this.coupons);
     }
   }
 

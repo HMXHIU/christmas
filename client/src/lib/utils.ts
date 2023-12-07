@@ -66,7 +66,7 @@ export function generateQRCodeURL(kwargs: Record<string, string>): string {
     (typeof window !== "undefined" ? window.location.origin : undefined) ||
     "https://${origin}";
 
-  const queryParams = [];
+  const queryParams: string[] = [];
 
   for (const key in kwargs) {
     if (kwargs.hasOwnProperty(key)) {

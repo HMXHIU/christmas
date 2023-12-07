@@ -69,5 +69,9 @@ module.exports = {
     static: path.join(__dirname, "dist"),
     compress: true,
     port: 4000,
+    historyApiFallback: {
+      // Redirect all 404 errors to index.html
+      rewrites: [{ from: /^\/(.*)$/, to: "/index.html" }],
+    },
   },
 };
