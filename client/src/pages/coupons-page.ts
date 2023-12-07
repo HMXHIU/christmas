@@ -32,7 +32,10 @@ export class AppCoupons extends LitElement {
     return html`
       <ul class="app-grid">
         ${this.coupons.map((coupon) => {
-          return html`<li class="item">1</li>`;
+          return html`<coupon-card
+            class="item"
+            .coupon=${coupon}
+          ></coupon-card>`;
         })}
       </ul>
     `;

@@ -1,6 +1,7 @@
 import { getCountriesForTimezone } from "countries-and-timezones";
 import { COUNTRY_DETAILS, IPFS_HTTP_GATEWAY } from "./constants";
 import geohash from "ngeohash";
+import { Coupon, CouponMetadata } from "./anchor/anchorClient";
 
 export interface Country {
   code: string;
@@ -90,4 +91,12 @@ export function nft_uri_to_url(uri: string): string {
   }
 
   return `https://${IPFS_HTTP_GATEWAY}/ipfs/${match[1]}`;
+}
+
+export async function getCouponMetadata(
+  coupon: Coupon
+): Promise<CouponMetadata> {
+  const url = nft_uri_to_url(coupon.account.uri);
+  const response = await fetch(url);
+  return await response.json();
 }

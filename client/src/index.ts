@@ -14,6 +14,7 @@ import "@polymer/app-layout/app-layout.js";
 
 // custom
 import "./components/solana-wallet";
+import "./components/coupon-card";
 import "./layouts/app-main";
 import "./layouts/app-footer";
 import "./pages/coupons-page";

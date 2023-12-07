@@ -1,11 +1,19 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property } from "lit/decorators.js";
-import { Coupon } from "../lib/anchor/anchorClient";
+import { customElement, property, state } from "lit/decorators.js";
+import { Coupon, CouponMetadata } from "../lib/anchor/anchorClient";
+import { getCouponMetadata } from "../lib/utils";
 
 @customElement("coupon-card")
 export class CouponCard extends LitElement {
   @property({ attribute: false })
-  accessor coupon: Coupon;
+  accessor coupon!: Coupon;
+
+  @state()
+  accessor couponMetadata: CouponMetadata = {
+    name: "",
+    description: "",
+    image: "",
+  };
 
   static styles = css`
     .card-overview {
@@ -23,17 +31,18 @@ export class CouponCard extends LitElement {
     }
   `;
 
+  async connectedCallback() {
+    this.couponMetadata = await getCouponMetadata(this.coupon);
+  }
+
   render() {
     return html`
       <sl-card class="card-overview">
-        <img
-          slot="image"
-          src="https://images.unsplash.com/photo-1559209172-0ff8f6d49ff7?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=500&q=80"
-        />
+        <img slot="image" src="${this.couponMetadata.image}" />
 
-        <strong>Mittens</strong><br />
-        This kitten is as cute as he is playful. Bring him home today!<br />
-        <small>6 weeks old</small>
+        <strong>${this.coupon.account.name}</strong><br />
+        ${this.couponMetadata.description}<br />
+        <small>${this.coupon.account.geo}</small>
 
         <div slot="footer">
           <sl-button variant="primary" pill>More Info</sl-button>
