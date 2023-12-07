@@ -2,6 +2,30 @@ import { getCountriesForTimezone } from "countries-and-timezones";
 import { COUNTRY_DETAILS, IPFS_HTTP_GATEWAY } from "./constants";
 import geohash from "ngeohash";
 
+export interface Country {
+  code: string;
+  name: string;
+}
+
+export interface ClientDevice {
+  geolocationCoordinates: GeolocationCoordinates | null;
+  geohash: string | null;
+  country: Country | null;
+}
+
+export async function getClientDevice(): Promise<ClientDevice> {
+  const geolocationCoordinates = await getDeviceLocation();
+  return {
+    geolocationCoordinates,
+    geohash: geohash.encode(
+      geolocationCoordinates.latitude,
+      geolocationCoordinates.longitude,
+      6
+    ),
+    country: getUserCountry(),
+  };
+}
+
 export async function getUserGeohash(): Promise<string> {
   const { latitude, longitude } = await getDeviceLocation();
   return geohash.encode(latitude, longitude, 6);

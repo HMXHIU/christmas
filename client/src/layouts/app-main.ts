@@ -5,25 +5,39 @@ import { provide } from "@lit/context";
 import { Wallet } from "@solana/wallet-adapter-react";
 import { createContext } from "@lit/context";
 import { AnchorClient } from "../lib/anchor/anchorClient";
+import { ClientDevice, getClientDevice } from "../lib/utils";
 
 // Providers
 export const walletContext = createContext<Wallet | null>(Symbol("wallet"));
 export const anchorClientContext = createContext<AnchorClient | null>(
   Symbol("anchor-client")
 );
+export const clientDeviceContext = createContext<ClientDevice | null>(
+  Symbol("client-device")
+);
 
 // App Main
 @customElement("app-main")
 export class AppMain extends LitElement {
-  // Wallet provider
+  // Providers
   @provide({ context: walletContext })
   @state()
-  wallet: Wallet | null = null;
+  wallet = null;
 
-  // AnchorClient provider
   @provide({ context: anchorClientContext })
   @state()
   anchorClient: AnchorClient | null = null;
+
+  @provide({ context: clientDeviceContext })
+  @state()
+  clientDevice: ClientDevice | null = null;
+
+  async connectedCallback() {
+    super.connectedCallback();
+
+    // Get client device information
+    this.clientDevice = await getClientDevice();
+  }
 
   // Setup router
   firstUpdated() {

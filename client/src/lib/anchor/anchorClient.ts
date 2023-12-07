@@ -60,7 +60,7 @@ export interface User {
 export class AnchorClient {
   programId: web3.PublicKey;
   cluster: string;
-  connection: anchor.web3.Connection;
+  connection: web3.Connection;
   provider: anchor.Provider;
   program: anchor.Program<Christmas>;
   wallet: anchor.Wallet;
@@ -70,19 +70,18 @@ export class AnchorClient {
     cluster,
     wallet,
   }: {
+    wallet: anchor.Wallet;
     programId?: web3.PublicKey;
     cluster?: string;
-    wallet?: anchor.Wallet;
-  } = {}) {
+  }) {
+    this.wallet = wallet;
     this.programId = programId || new web3.PublicKey(idl.metadata.address);
     this.cluster = cluster || "http://127.0.0.1:8899";
-    this.connection = new anchor.web3.Connection(this.cluster, "confirmed");
+    this.connection = new web3.Connection(this.cluster, "confirmed");
 
     console.log(
       `Connected to cluster: ${this.cluster} program: ${this.programId}`
     );
-
-    this.wallet = wallet || new anchor.Wallet(anchor.web3.Keypair.generate());
 
     this.provider = new anchor.AnchorProvider(
       this.connection,
