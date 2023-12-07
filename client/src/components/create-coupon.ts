@@ -26,8 +26,8 @@ export class CreateCoupon extends LitElement {
 
   render() {
     return html`
-      <sl-button id="dialog-open">Open Dialog</sl-button>
-      <sl-dialog label="Create A Coupon" id="dialog">
+      <sl-button id="dialog-open">Create Coupon</sl-button>
+      <sl-dialog label="Create Coupon" id="dialog">
         <form class="input-validation-required">
           <sl-input name="name" label="Name" required></sl-input>
           <br />
@@ -56,20 +56,20 @@ export class CreateCoupon extends LitElement {
             )}
           </sl-select>
           <br />
+
+          <image-input label="Upload Image"></image-input>
+          <br />
+
           <sl-input
             name="geohash"
             label="Geohash"
             required
             value="${this.defaultGeohash}"
           ></sl-input>
-
           <br /><br />
           <sl-button type="submit" variant="primary">Submit</sl-button>
+          <sl-button variant="primary" id="dialog-close">Close</sl-button>
         </form>
-
-        <sl-button slot="footer" variant="primary" id="dialog-close"
-          >Close</sl-button
-        >
       </sl-dialog>
     `;
   }
