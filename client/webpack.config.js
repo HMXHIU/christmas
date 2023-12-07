@@ -1,6 +1,7 @@
 const path = require("path");
 const CopyPlugin = require("copy-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const webpack = require("webpack");
 
 module.exports = {
   entry: "./src/index.ts",
@@ -20,6 +21,14 @@ module.exports = {
     ],
   },
   plugins: [
+    new webpack.DefinePlugin({
+      "process.env.ANCHOR_BROWSER": JSON.stringify(true),
+      process: {
+        env: {
+          ANCHOR_BROWSER: JSON.stringify(true),
+        },
+      },
+    }),
     new MiniCssExtractPlugin(),
     new CopyPlugin({
       patterns: [
@@ -40,7 +49,7 @@ module.exports = {
     }),
   ],
   resolve: {
-    extensions: [".tsx", ".ts", ".js"],
+    extensions: [".tsx", ".ts", ".js", ".json"],
     fallback: {
       zlib: require.resolve("browserify-zlib"),
       https: require.resolve("https-browserify"),
@@ -53,6 +62,7 @@ module.exports = {
   output: {
     filename: "bundle.js",
     path: path.resolve(__dirname, "dist"),
+    clean: true,
   },
   devtool: "source-map",
   devServer: {

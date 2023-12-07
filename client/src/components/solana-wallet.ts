@@ -20,10 +20,6 @@ import {
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
 
-import { createContext } from "@lit/context";
-
-export const walletContext = createContext<Wallet | null>(Symbol("wallet"));
-
 // Need to import the styles for the modal (not in shadowroot)
 require("@solana/wallet-adapter-react-ui/styles.css");
 
@@ -66,7 +62,7 @@ const SolanaWalletButton: FC<{
     } else if (!connected) {
       onDisconnectWallet();
     }
-  }, [wallet, publicKey, connection, anchorWallet, connected, wallet]);
+  }, [wallet, publicKey, connection, anchorWallet, connected]);
 
   return connected
     ? React.createElement(WalletDisconnectButton)
@@ -77,8 +73,8 @@ const SolanaWalletButton: FC<{
 export class SolanaWallet extends LitElement {
   mountPoint?: HTMLElement;
 
-  @property()
-  isConnected: boolean = false;
+  @property({ type: Boolean })
+  isConnected = false;
 
   // copy from @solana/wallet-adapter-react-ui/styles.css, https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap
   static styles = css`

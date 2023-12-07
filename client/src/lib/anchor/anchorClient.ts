@@ -1,31 +1,63 @@
 import * as web3 from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
-
-import { Transaction, Signer } from "@solana/web3.js";
-import idl from "@anchorTarget/idl/christmas.json";
-import { Christmas } from "@anchorTarget/types/christmas";
+import {
+  Transaction,
+  Signer,
+  PublicKey,
+  SignatureResult,
+  TransactionSignature,
+  ParsedAccountData,
+} from "@solana/web3.js";
+import idl from "./solana/idl/christmas.json";
+import { Christmas } from "./solana/types/christmas";
 import {
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAssociatedTokenAddress,
 } from "@solana/spl-token";
-import {
-  COUPON_NAME_SIZE,
-  COUPON_SYMBOL_SIZE,
-  COUPON_URI_SIZE,
-  DISCRIMINATOR_SIZE,
-  PUBKEY_SIZE,
-  STRING_PREFIX_SIZE,
-} from "./constants";
-import {
-  getUserPda,
-  stringToBase58,
-  getUserCountry,
-  getUserGeohash,
-} from "./utils";
-import { Coupon, User, TransactionResult } from "@types";
+import { DISCRIMINATOR_SIZE, PUBKEY_SIZE } from "./constants";
+import { getUserPda } from "./utils";
+import { getUserCountry, getUserGeohash } from "../utils";
 
-export default class AnchorClient {
+declare global {
+  interface Window {
+    solana: any; // 👈️ turn off type checking
+  }
+}
+
+export interface TransactionResult {
+  result: SignatureResult;
+  signature: TransactionSignature;
+}
+
+export interface Coupon {
+  publicKey: PublicKey;
+  account: {
+    updateAuthority: PublicKey;
+    mint: PublicKey;
+    name: string;
+    symbol: string;
+    uri: string;
+    region: string;
+    geo: string;
+    bump: number;
+  };
+  tokenAccountData?: ParsedAccountData;
+}
+
+export interface CouponMetadata {
+  name: string;
+  description: string;
+  image: string;
+}
+
+export interface User {
+  region: string;
+  geo: string;
+  bump: number;
+}
+
+export class AnchorClient {
   programId: web3.PublicKey;
   cluster: string;
   connection: anchor.web3.Connection;
