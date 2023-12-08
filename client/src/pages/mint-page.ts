@@ -10,6 +10,7 @@ import {
 } from "../layouts/app-main";
 import { CreateCouponDetail } from "../components/create-coupon";
 import { NFTStorageClient } from "../lib/nftStorageClient";
+import { Coupon } from "../lib/anchor/anchorClient";
 
 @customElement("mint-page")
 export class AppMint extends LitElement {
@@ -31,16 +32,10 @@ export class AppMint extends LitElement {
   @state()
   accessor defaultGeohash: string = "";
 
-  async firstUpdated() {
-    this.defaultRegion = this.clientDevice?.country?.code || "";
-    this.defaultGeohash = this.clientDevice?.geohash || "";
-  }
+  @state()
+  accessor couponSupplyBalance: [Coupon, number, number][] = [];
 
   async onCreateCoupon(e: CustomEvent<CreateCouponDetail>) {
-    console.log("onCreateCoupon", e.detail);
-    console.log(this.anchorClient);
-    console.log(this.nftStorageClient);
-
     if (this.anchorClient && this.nftStorageClient) {
       let metadataUrl = "";
       if (e.detail.image) {
@@ -52,17 +47,36 @@ export class AppMint extends LitElement {
         console.log(`Uploaded coupon metadata to ${metadataUrl}`);
       }
 
-      await this.anchorClient.createCoupon({
+      const tx = await this.anchorClient.createCoupon({
         geo: e.detail.geo,
         region: e.detail.region,
         name: e.detail.name,
         symbol: "", // TODO: remove symbol or auto set to user's stall
         uri: metadataUrl,
       });
+
+      // TODO: handle failed transactions
     }
   }
 
+  async firstUpdated() {
+    // Set defaults
+    this.defaultRegion = this.clientDevice?.country?.code || "";
+    this.defaultGeohash = this.clientDevice?.geohash || "";
+
+    // Get created coupons
+    this.couponSupplyBalance =
+      (await this.anchorClient?.getMintedCoupons()) || [];
+  }
+
+  static styles = css`
+    sl-carousel {
+      height: 250px;
+    }
+  `;
+
   render() {
+    // TODO: Add validity period
     return html`
       <div>Mint Page</div>
       <create-coupon
@@ -70,6 +84,20 @@ export class AppMint extends LitElement {
         defaultGeohash="${this.defaultGeohash}"
         @on-create="${this.onCreateCoupon}"
       ></create-coupon>
+
+      <sl-carousel class="scroll-hint" navigation style="--scroll-hint: 10%;">
+        ${this.couponSupplyBalance.map(([coupon, supply, balance]) => {
+          return html`
+            <sl-carousel-item>
+              <mint-coupon-card
+                .coupon=${coupon}
+                supply=${supply}
+                balance=${balance}
+              ></mint-coupon-card>
+            </sl-carousel-item>
+          `;
+        })}
+      </sl-carousel>
     `;
   }
 }
