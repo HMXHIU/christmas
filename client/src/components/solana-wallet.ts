@@ -11,6 +11,7 @@ import {
   useAnchorWallet,
   useConnection,
   Wallet,
+  AnchorWallet,
 } from "@solana/wallet-adapter-react";
 import {
   WalletModalProvider,
@@ -22,6 +23,11 @@ import { clusterApiUrl } from "@solana/web3.js";
 
 // Need to import the styles for the modal (not in shadowroot)
 require("@solana/wallet-adapter-react-ui/styles.css");
+
+export interface WalletDetail {
+  wallet: Wallet;
+  anchorWallet: AnchorWallet;
+}
 
 const SolanaReactWalletProvider: FC<{ children: ReactNode }> = ({
   children,
@@ -48,17 +54,16 @@ const SolanaReactWalletProvider: FC<{ children: ReactNode }> = ({
 
 const SolanaWalletButton: FC<{
   children: ReactNode;
-  onConnectWallet: (wallet: Wallet) => void;
+  onConnectWallet: (walletDetail: WalletDetail) => void;
   onDisconnectWallet: () => void;
 }> = ({ children, onConnectWallet, onDisconnectWallet }) => {
-  const { connected } = useWallet();
-  const { wallet, publicKey } = useWallet();
+  const { wallet, publicKey, connected } = useWallet();
   const anchorWallet = useAnchorWallet();
   const { connection } = useConnection();
 
   useEffect(() => {
     if (anchorWallet && publicKey && connection && connected && wallet) {
-      onConnectWallet(wallet);
+      onConnectWallet({ wallet, anchorWallet });
     } else if (!connected) {
       onDisconnectWallet();
     }
@@ -450,13 +455,13 @@ export class SolanaWallet extends LitElement {
     }
   `;
 
-  onConnectWallet(wallet: Wallet) {
+  onConnectWallet(walletDetail: WalletDetail) {
     this.isConnected = true;
     this.dispatchEvent(
-      new CustomEvent("on-connect-wallet", {
+      new CustomEvent<WalletDetail>("on-connect-wallet", {
         bubbles: true,
         composed: true,
-        detail: { wallet },
+        detail: walletDetail,
       })
     );
   }

@@ -3,15 +3,19 @@ import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { Router } from "@vaadin/router";
 import { provide } from "@lit/context";
-import { Wallet } from "@solana/wallet-adapter-react";
+import { AnchorWallet, Wallet } from "@solana/wallet-adapter-react";
 import { createContext } from "@lit/context";
 import { AnchorClient } from "../lib/anchor/anchorClient";
 import { ClientDevice, getClientDevice } from "../lib/utils";
 import { NFTStorageClient } from "../lib/nftStorageClient";
 import { NFT_STORAGE_TOKEN } from "../lib/constants";
+import { WalletDetail } from "../components/solana-wallet";
 
 // Providers
 export const walletContext = createContext<Wallet | null>(Symbol("wallet"));
+export const anchorWalletContext = createContext<AnchorWallet | null>(
+  Symbol("anchor-wallet")
+);
 export const anchorClientContext = createContext<AnchorClient | null>(
   Symbol("anchor-client")
 );
@@ -28,7 +32,11 @@ export class AppMain extends LitElement {
   // Providers
   @provide({ context: walletContext })
   @state()
-  accessor wallet = null;
+  accessor wallet: Wallet | null = null;
+
+  @provide({ context: anchorWalletContext })
+  @state()
+  accessor anchorWallet: AnchorWallet | null = null;
 
   @provide({ context: anchorClientContext })
   @state()
@@ -61,10 +69,16 @@ export class AppMain extends LitElement {
     ]);
   }
 
-  onConnectWallet(e: CustomEvent) {
-    this.wallet = e.detail.wallet;
-    if (e.detail.wallet) {
-      this.anchorClient = new AnchorClient({ wallet: e.detail.wallet.adapter });
+  onConnectWallet(e: CustomEvent<WalletDetail>) {
+    const { wallet, anchorWallet } = e.detail;
+    this.wallet = wallet;
+    this.anchorWallet = anchorWallet;
+
+    if (wallet && anchorWallet) {
+      this.anchorClient = new AnchorClient({
+        wallet: wallet,
+        anchorWallet: anchorWallet,
+      });
       console.log(this.anchorClient);
     }
   }
@@ -75,6 +89,7 @@ export class AppMain extends LitElement {
 
   getContent() {
     // TODO: the wallet is connected, but anchorClient is null, when refreshing the page, need to create anchorclient if there is a wallet on page refresh
+    //        solana-wallet needs to call event on initial load if it is connected
 
     return html`
       <!-- Show page-route if there wallet is connected -->
@@ -85,6 +100,8 @@ export class AppMain extends LitElement {
       <!-- Show onboard-wallet-page if wallet is not connected -->
       <onboard-wallet-page
         class=${classMap({ hidden: Boolean(this.anchorClient) })}
+        @on-connect-wallet=${this.onConnectWallet}
+        @on-disconnect-wallet=${this.onDisconnectWallet}
       ></onboard-wallet-page>
     `;
   }

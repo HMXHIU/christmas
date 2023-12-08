@@ -18,6 +18,7 @@ import {
 import { DISCRIMINATOR_SIZE, PUBKEY_SIZE } from "./constants";
 import { getUserPda } from "./utils";
 import { getUserCountry, getUserGeohash } from "../utils";
+import { Wallet, AnchorWallet } from "@solana/wallet-adapter-react";
 
 declare global {
   interface Window {
@@ -63,17 +64,21 @@ export class AnchorClient {
   connection: web3.Connection;
   provider: anchor.Provider;
   program: anchor.Program<Christmas>;
-  wallet: anchor.Wallet;
+  anchorWallet: AnchorWallet; // AnchorWallet from useAnchorWallet() to set up Anchor in the frontend
+  wallet: Wallet; // The Wallet from useWallet has more functionality, but can't be used to set up the AnchorProvider
 
   constructor({
     programId,
     cluster,
+    anchorWallet,
     wallet,
   }: {
-    wallet: anchor.Wallet;
+    anchorWallet: AnchorWallet;
+    wallet: Wallet;
     programId?: web3.PublicKey;
     cluster?: string;
   }) {
+    this.anchorWallet = anchorWallet;
     this.wallet = wallet;
     this.programId = programId || new web3.PublicKey(idl.metadata.address);
     this.cluster = cluster || "http://127.0.0.1:8899";
@@ -85,7 +90,7 @@ export class AnchorClient {
 
     this.provider = new anchor.AnchorProvider(
       this.connection,
-      this.wallet,
+      this.anchorWallet,
       anchor.AnchorProvider.defaultOptions()
     );
     this.program = new anchor.Program<Christmas>(
@@ -126,7 +131,7 @@ export class AnchorClient {
     ).blockhash;
 
     // set payer
-    tx.feePayer = this.wallet.publicKey;
+    tx.feePayer = this.anchorWallet.publicKey;
 
     // additional signers if required
     if (signers) {
@@ -135,7 +140,7 @@ export class AnchorClient {
 
     // sign and send
     const signature = await this.connection.sendRawTransaction(
-      (await this.wallet.signTransaction(tx)).serialize()
+      (await this.anchorWallet.signTransaction(tx)).serialize()
     );
 
     // confirm transaction
@@ -144,7 +149,7 @@ export class AnchorClient {
 
   async requestAirdrop(amount: number): Promise<TransactionResult> {
     const signature = await this.connection.requestAirdrop(
-      this.wallet.publicKey,
+      this.anchorWallet.publicKey,
       amount
     );
     // confirm transaction
@@ -157,7 +162,7 @@ export class AnchorClient {
         anchor.utils.bytes.utf8.encode("user"),
         wallet !== undefined
           ? wallet.toBuffer()
-          : this.wallet.publicKey.toBuffer(),
+          : this.anchorWallet.publicKey.toBuffer(),
       ],
       this.program.programId
     );
@@ -198,7 +203,7 @@ export class AnchorClient {
       .createUser(region, geo)
       .accounts({
         user: pda,
-        signer: this.wallet.publicKey,
+        signer: this.anchorWallet.publicKey,
         systemProgram: web3.SystemProgram.programId,
       })
       .instruction();
@@ -259,7 +264,7 @@ export class AnchorClient {
       .accounts({
         mint: mint.publicKey,
         coupon: couponPda,
-        signer: this.wallet.publicKey,
+        signer: this.anchorWallet.publicKey,
         systemProgram: web3.SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
         regionMarket: regionMarketPda,
@@ -290,7 +295,7 @@ export class AnchorClient {
     numTokens: number;
   }): Promise<TransactionResult> {
     // Calculate the Program Derived Address (PDA) for the user.
-    const userPda = getUserPda(this.wallet.publicKey, this.programId)[0];
+    const userPda = getUserPda(this.anchorWallet.publicKey, this.programId)[0];
 
     // Get the associated token account owned by the userPda.
     const userTokenAccount = await getAssociatedTokenAddress(
@@ -307,7 +312,7 @@ export class AnchorClient {
         mint: mint,
         user: userPda,
         userTokenAccount: userTokenAccount,
-        signer: this.wallet.publicKey,
+        signer: this.anchorWallet.publicKey,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
       .instruction();
@@ -425,7 +430,7 @@ export class AnchorClient {
       {
         memcmp: {
           offset: DISCRIMINATOR_SIZE,
-          bytes: this.wallet.publicKey.toBase58(), // update_authority
+          bytes: this.anchorWallet.publicKey.toBase58(), // update_authority
         },
       },
     ]);
@@ -604,7 +609,7 @@ export class AnchorClient {
         regionMarket: regionMarketPda,
         regionMarketTokenAccount: regionMarketTokenAccountPda,
         mint: mint,
-        signer: this.wallet.publicKey,
+        signer: this.anchorWallet.publicKey,
         systemProgram: web3.SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -659,7 +664,7 @@ export class AnchorClient {
 
     // Output information about the transaction.
     console.log(
-      `signer: ${this.wallet.publicKey} couponPda: ${couponPda} regionMarket: ${regionMarketPda} regionMarketTokenAccountPda: ${regionMarketTokenAccountPda}`
+      `signer: ${this.anchorWallet.publicKey} couponPda: ${couponPda} regionMarket: ${regionMarketPda} regionMarketTokenAccountPda: ${regionMarketTokenAccountPda}`
     );
 
     // Build the instruction for the claimFromMarket transaction.
@@ -672,7 +677,7 @@ export class AnchorClient {
         regionMarket: regionMarketPda,
         regionMarketTokenAccount: regionMarketTokenAccountPda,
         mint: mint,
-        signer: this.wallet.publicKey,
+        signer: this.anchorWallet.publicKey,
         systemProgram: web3.SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
