@@ -2,6 +2,7 @@ import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Coupon, CouponMetadata } from "../lib/anchor/anchorClient";
 import { getCouponMetadata } from "../lib/utils";
+import { cleanString } from "../lib/anchor/utils";
 
 @customElement("coupon-card")
 export class CouponCard extends LitElement {
@@ -31,8 +32,16 @@ export class CouponCard extends LitElement {
     }
   `;
 
-  async connectedCallback() {
-    this.couponMetadata = await getCouponMetadata(this.coupon);
+  async firstUpdated() {
+    try {
+      this.couponMetadata = await getCouponMetadata(this.coupon);
+    } catch (error) {
+      this.couponMetadata = {
+        name: "",
+        description: "Not Available",
+        image: "",
+      };
+    }
   }
 
   render() {
@@ -40,9 +49,9 @@ export class CouponCard extends LitElement {
       <sl-card class="card-overview">
         <img slot="image" src="${this.couponMetadata.image}" />
 
-        <strong>${this.coupon.account.name}</strong><br />
+        <strong>${cleanString(this.coupon.account.name)}</strong><br />
         ${this.couponMetadata.description}<br />
-        <small>${this.coupon.account.geo}</small>
+        <small>${cleanString(this.coupon.account.geo)}</small>
 
         <div slot="footer">
           <sl-button variant="primary" pill>More Info</sl-button>

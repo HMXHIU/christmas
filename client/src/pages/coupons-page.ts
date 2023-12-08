@@ -18,8 +18,7 @@ export class AppCoupons extends LitElement {
   @state()
   accessor coupons: Coupon[] = [];
 
-  async connectedCallback() {
-    super.connectedCallback();
+  async firstUpdated() {
     const region = this.clientDevice?.country?.code;
     if (this.anchorClient && region) {
       this.coupons = await this.anchorClient.getCoupons(region);

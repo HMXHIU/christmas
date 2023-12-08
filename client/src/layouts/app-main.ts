@@ -71,9 +71,6 @@ export class AppMain extends LitElement {
   }
 
   getContent() {
-    // TODO: the wallet is connected, but anchorClient is null, when refreshing the page, need to create anchorclient if there is a wallet on page refresh
-    //        solana-wallet needs to call event on initial load if it is connected
-
     return html`
       <!-- Show page-route if there wallet is connected -->
       <div
