@@ -26,20 +26,37 @@ export class MintCouponCard extends LitElement {
     .card-overview {
       width: 250px;
     }
+    .card-overview [slot="footer"] {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-overview::part(footer) {
+      padding-top: 5px;
+      padding-bottom: 5px;
+    }
     .card-overview small {
       color: var(--sl-color-neutral-500);
     }
-    .card-overview [slot="footer"] {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0px;
+    img {
+      width: 200px;
+      height: 80px;
+    }
+    .empty-image {
+      flex-grow: 3;
+      width: 200px;
+      height: 80px;
     }
     .card-button {
-      padding: 0px;
+      flex: 1;
     }
-    .card-footer {
-      padding: 0px;
+    .card-info {
+      flex: 2;
+      text-align: left;
+    }
+    .description-tooltip {
+      vertical-align: middle;
     }
   `;
 
@@ -55,27 +72,40 @@ export class MintCouponCard extends LitElement {
     }
   }
 
+  getDescriptionTooltip() {
+    return html`
+      <span class="description-tooltip">
+        <sl-tooltip content="${this.couponMetadata.description}">
+          <sl-icon-button
+            name="info-circle-fill"
+            label="Description"
+          ></sl-icon-button>
+        </sl-tooltip>
+      </span>
+    `;
+  }
+
   render() {
     return html`
       <sl-card class="card-overview">
-        <!-- Header -->
-        <div slot="header">
-          <strong>${cleanString(this.coupon.account.name)}</strong>
-          <sl-tooltip content="${this.couponMetadata.description}">
-            <sl-icon-button
-              name="info-circle-fill"
-              label="Description"
-            ></sl-icon-button>
-          </sl-tooltip>
-        </div>
         <!-- Image -->
         ${this.couponMetadata.image
           ? html`<img slot="image" src="${this.couponMetadata.image}" />`
-          : html`<sl-icon name="image-fill"></sl-icon>`}
+          : html`<div class="empty-image">
+              <sl-icon name="image-fill"></sl-icon>
+            </div>`}
         <!-- Footer -->
         <div slot="footer" class="card-footer">
+          <div class="card-info">
+            <!-- Name -->
+            <strong>${cleanString(this.coupon.account.name)}</strong
+            >${this.getDescriptionTooltip()}
+            <br />
+            <!-- Balance -->
+            <small>${this.balance} left out of ${this.supply}</small>
+          </div>
           <sl-button variant="success" outline class="card-button">
-            Add Supply (${this.balance}/${this.supply})
+            Mint
           </sl-button>
         </div>
       </sl-card>
