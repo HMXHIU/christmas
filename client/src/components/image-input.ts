@@ -18,6 +18,9 @@ export class ImageInput extends LitElement {
   @property({ attribute: true, type: String })
   accessor label: string = "";
 
+  @property({ attribute: false })
+  accessor file: File | null = null;
+
   @state()
   accessor image: string = "";
 
@@ -26,6 +29,9 @@ export class ImageInput extends LitElement {
     const file = inputElement.files?.[0];
 
     if (file) {
+      // Set file
+      this.file = file;
+
       // Set image preview
       const reader = new FileReader();
       reader.onloadend = () => {

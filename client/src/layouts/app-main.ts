@@ -1,11 +1,14 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { classMap } from "lit/directives/class-map.js";
 import { Router } from "@vaadin/router";
 import { provide } from "@lit/context";
 import { Wallet } from "@solana/wallet-adapter-react";
 import { createContext } from "@lit/context";
 import { AnchorClient } from "../lib/anchor/anchorClient";
 import { ClientDevice, getClientDevice } from "../lib/utils";
+import { NFTStorageClient } from "../lib/nftStorageClient";
+import { NFT_STORAGE_TOKEN } from "../lib/constants";
 
 // Providers
 export const walletContext = createContext<Wallet | null>(Symbol("wallet"));
@@ -14,6 +17,9 @@ export const anchorClientContext = createContext<AnchorClient | null>(
 );
 export const clientDeviceContext = createContext<ClientDevice | null>(
   Symbol("client-device")
+);
+export const nftStorageClientContext = createContext<NFTStorageClient | null>(
+  Symbol("nft-storage")
 );
 
 // App Main
@@ -32,6 +38,12 @@ export class AppMain extends LitElement {
   @state()
   accessor clientDevice: ClientDevice | null = null;
 
+  @provide({ context: nftStorageClientContext })
+  @state()
+  accessor nftStorageClient: NFTStorageClient = new NFTStorageClient({
+    token: NFT_STORAGE_TOKEN,
+  });
+
   async connectedCallback() {
     super.connectedCallback();
 
@@ -43,9 +55,9 @@ export class AppMain extends LitElement {
   firstUpdated() {
     const router = new Router(this.shadowRoot?.querySelector("#page-route"));
     router.setRoutes([
-      { path: "/mint", component: "app-mint" },
-      { path: "/coupons", component: "app-coupons" },
-      { path: "(.*)", component: "app-coupons" },
+      { path: "/mint", component: "mint-page" },
+      { path: "/coupons", component: "coupons-page" },
+      { path: "(.*)", component: "coupons-page" },
     ]);
   }
 
@@ -61,6 +73,28 @@ export class AppMain extends LitElement {
     this.anchorClient = null;
   }
 
+  getContent() {
+    // TODO: the wallet is connected, but anchorClient is null, when refreshing the page, need to create anchorclient if there is a wallet on page refresh
+
+    return html`
+      <!-- Show page-route if there wallet is connected -->
+      <div
+        id="page-route"
+        class=${classMap({ hidden: !Boolean(this.anchorClient) })}
+      ></div>
+      <!-- Show onboard-wallet-page if wallet is not connected -->
+      <onboard-wallet-page
+        class=${classMap({ hidden: Boolean(this.anchorClient) })}
+      ></onboard-wallet-page>
+    `;
+  }
+
+  static styles = css`
+    .hidden {
+      display: none;
+    }
+  `;
+
   render() {
     return html`
       <!-- Header -->
@@ -68,18 +102,12 @@ export class AppMain extends LitElement {
         <app-header slot="header">
           <app-toolbar>
             <div main-title>App name</div>
-            <!-- Wallet -->
-            <solana-wallet
-              @on-connect-wallet=${this.onConnectWallet}
-              @on-disconnect-wallet=${this.onDisconnectWallet}
-            >
-            </solana-wallet>
           </app-toolbar>
         </app-header>
       </app-header-layout>
 
       <!-- Content -->
-      <div id="page-route"></div>
+      ${this.getContent()}
 
       <!-- Footer -->
       <app-footer>

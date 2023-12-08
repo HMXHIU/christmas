@@ -26,3 +26,4 @@ import "./layouts/app-main";
 import "./layouts/app-footer";
 import "./pages/coupons-page";
 import "./pages/mint-page";
+import "./pages/onboard-wallet-page";

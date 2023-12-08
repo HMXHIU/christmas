@@ -5,7 +5,7 @@ import { anchorClientContext, clientDeviceContext } from "../layouts/app-main";
 import { AnchorClient, Coupon } from "../lib/anchor/anchorClient";
 import { ClientDevice } from "../lib/utils";
 
-@customElement("app-coupons")
+@customElement("coupons-page")
 export class AppCoupons extends LitElement {
   @consume({ context: anchorClientContext })
   @state()
