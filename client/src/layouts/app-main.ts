@@ -3,7 +3,6 @@ import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { Router } from "@vaadin/router";
 import { provide } from "@lit/context";
-import { AnchorWallet, Wallet } from "@solana/wallet-adapter-react";
 import { createContext } from "@lit/context";
 import { AnchorClient } from "../lib/anchor/anchorClient";
 import { ClientDevice, getClientDevice } from "../lib/utils";
@@ -12,10 +11,6 @@ import { NFT_STORAGE_TOKEN } from "../lib/constants";
 import { WalletDetail } from "../components/solana-wallet";
 
 // Providers
-export const walletContext = createContext<Wallet | null>(Symbol("wallet"));
-export const anchorWalletContext = createContext<AnchorWallet | null>(
-  Symbol("anchor-wallet")
-);
 export const anchorClientContext = createContext<AnchorClient | null>(
   Symbol("anchor-client")
 );
@@ -30,14 +25,6 @@ export const nftStorageClientContext = createContext<NFTStorageClient | null>(
 @customElement("app-main")
 export class AppMain extends LitElement {
   // Providers
-  @provide({ context: walletContext })
-  @state()
-  accessor wallet: Wallet | null = null;
-
-  @provide({ context: anchorWalletContext })
-  @state()
-  accessor anchorWallet: AnchorWallet | null = null;
-
   @provide({ context: anchorClientContext })
   @state()
   accessor anchorClient: AnchorClient | null = null;
@@ -71,9 +58,6 @@ export class AppMain extends LitElement {
 
   onConnectWallet(e: CustomEvent<WalletDetail>) {
     const { wallet, anchorWallet } = e.detail;
-    this.wallet = wallet;
-    this.anchorWallet = anchorWallet;
-
     if (wallet && anchorWallet) {
       this.anchorClient = new AnchorClient({
         wallet: wallet,
@@ -83,7 +67,6 @@ export class AppMain extends LitElement {
     }
   }
   onDisconnectWallet(e: CustomEvent) {
-    this.wallet = null;
     this.anchorClient = null;
   }
 
@@ -119,6 +102,17 @@ export class AppMain extends LitElement {
         <app-header slot="header">
           <app-toolbar>
             <div main-title>App name</div>
+            <!-- Show disconnect if wallet is connected -->
+            <sl-button
+              variant="danger"
+              outline
+              class=${classMap({ hidden: !Boolean(this.anchorClient) })}
+              @click="${() => {
+                this.anchorClient?.wallet.adapter.disconnect();
+                this.anchorClient = null;
+              }}"
+              >Disconnect</sl-button
+            >
           </app-toolbar>
         </app-header>
       </app-header-layout>
