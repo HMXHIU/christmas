@@ -104,9 +104,13 @@ export class MintCouponCard extends LitElement {
             <!-- Balance -->
             <small>${this.balance} left out of ${this.supply}</small>
           </div>
-          <sl-button variant="success" outline class="card-button">
-            Mint
-          </sl-button>
+          <!-- Mint -->
+          <mint-coupon-dialog
+            supply=${this.supply}
+            balance=${this.balance}
+            .coupon=${this.coupon}
+            .couponMetadata=${this.couponMetadata}
+          ></mint-coupon-dialog>
         </div>
       </sl-card>
     `;

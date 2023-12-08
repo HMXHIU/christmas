@@ -8,7 +8,7 @@ import {
   clientDeviceContext,
   nftStorageClientContext,
 } from "../layouts/app-main";
-import { CreateCouponDetail } from "../components/create-coupon";
+import { CreateCouponDetail } from "../components/create-coupon-dialog";
 import { NFTStorageClient } from "../lib/nftStorageClient";
 import { Coupon } from "../lib/anchor/anchorClient";
 
@@ -79,11 +79,11 @@ export class AppMint extends LitElement {
     // TODO: Add validity period
     return html`
       <div>Mint Page</div>
-      <create-coupon
+      <create-coupon-dialog
         defaultRegion="${this.defaultRegion}"
         defaultGeohash="${this.defaultGeohash}"
         @on-create="${this.onCreateCoupon}"
-      ></create-coupon>
+      ></create-coupon-dialog>
 
       <sl-carousel class="scroll-hint" navigation style="--scroll-hint: 10%;">
         ${this.couponSupplyBalance.map(([coupon, supply, balance]) => {

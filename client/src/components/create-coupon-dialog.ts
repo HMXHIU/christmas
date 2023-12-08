@@ -10,7 +10,7 @@ export interface CreateCouponDetail {
   geo: string;
 }
 
-@customElement("create-coupon")
+@customElement("create-coupon-dialog")
 export class CreateCoupon extends LitElement {
   @query("#dialog")
   accessor dialog: any;
