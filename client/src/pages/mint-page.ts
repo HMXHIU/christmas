@@ -124,8 +124,6 @@ export class AppMint extends LitElement {
   getPage() {
     // TODO: Add validity period
     return html`
-      <div>Mint Page</div>
-
       <!-- Create coupon -->
       <create-coupon-dialog
         defaultRegion="${this.defaultRegion}"

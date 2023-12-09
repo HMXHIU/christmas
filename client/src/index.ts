@@ -29,6 +29,7 @@ import "@polymer/app-layout/app-layout.js";
 import "./components/solana-wallet";
 import "./components/coupon-card";
 import "./components/mint-coupon-card";
+import "./components/claimed-coupon-card";
 import "./components/create-coupon-dialog";
 import "./components/mint-coupon-dialog";
 import "./components/image-input";

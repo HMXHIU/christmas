@@ -16,6 +16,9 @@ export class ClaimedCouponCard extends LitElement {
     image: "",
   };
 
+  @property({ attribute: true, type: Number })
+  accessor balance!: number;
+
   static styles = css`
     .card-overview {
       max-width: 300px;
@@ -52,6 +55,8 @@ export class ClaimedCouponCard extends LitElement {
         <strong>${cleanString(this.coupon.account.name)}</strong><br />
         ${this.couponMetadata.description}<br />
         <small>${cleanString(this.coupon.account.geo)}</small>
+        <br />
+        <small>${this.balance} remaining</small>
 
         <div slot="footer">
           <sl-button variant="primary" pill>Claim</sl-button>

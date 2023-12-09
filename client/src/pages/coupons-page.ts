@@ -19,6 +19,9 @@ export class AppCoupons extends LitElement {
   @state()
   accessor coupons: Coupon[] = [];
 
+  @state()
+  accessor claimedCoupons: [Coupon, number][] = [];
+
   async onClaimCoupon(e: CustomEvent<ClaimCouponDetail>) {
     console.log(e.detail);
     const { coupon, couponMetadata } = e.detail;
@@ -33,7 +36,9 @@ export class AppCoupons extends LitElement {
         geo
       );
       // TODO: handle error
-      // TODO: fetch on claim success
+
+      // Refetch claimed coupons
+      await this.fetchClaimedCoupons();
     }
   }
 
@@ -45,6 +50,13 @@ export class AppCoupons extends LitElement {
     }
   }
 
+  async fetchClaimedCoupons() {
+    // Only fetch if `anchorClient`
+    if (this.anchorClient) {
+      this.claimedCoupons = await this.anchorClient.getClaimedCoupons();
+    }
+  }
+
   async willUpdate(changedProperties: PropertyValues<this>) {
     // `anchorClient` and `clientDevice` might come in 2 separate `willUpdate` events
     if (
@@ -52,6 +64,7 @@ export class AppCoupons extends LitElement {
       changedProperties.has("clientDevice")
     ) {
       await this.fetchCoupons();
+      await this.fetchClaimedCoupons();
     }
   }
 
@@ -86,7 +99,14 @@ export class AppCoupons extends LitElement {
         <sl-tab slot="nav" panel="food">Food</sl-tab>
         <sl-tab slot="nav" panel="others">Others</sl-tab>
         <sl-tab-panel name="claimed">
-          This is the general tab panel.
+          ${this.claimedCoupons.map(([coupon, balance]) => {
+            return html`<claimed-coupon-card
+              class="item"
+              .coupon=${coupon}
+              balance=${balance}
+              @on-claim=${this.onClaimCoupon}
+            ></claimed-coupon-card>`;
+          })}
         </sl-tab-panel>
       </sl-tab-group>
       <br />
