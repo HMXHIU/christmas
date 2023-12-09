@@ -4,13 +4,8 @@ import { Coupon, CouponMetadata } from "../lib/anchor/anchorClient";
 import { getCouponMetadata } from "../lib/utils";
 import { cleanString } from "../lib/anchor/utils";
 
-export interface ClaimCouponDetail {
-  coupon: Coupon;
-  couponMetadata: CouponMetadata;
-}
-
-@customElement("coupon-card")
-export class CouponCard extends LitElement {
+@customElement("claimed-coupon-card")
+export class ClaimedCouponCard extends LitElement {
   @property({ attribute: false })
   accessor coupon!: Coupon;
 
@@ -21,36 +16,9 @@ export class CouponCard extends LitElement {
     image: "",
   };
 
-  onClaimCoupon() {
-    this.dispatchEvent(
-      new CustomEvent<ClaimCouponDetail>("on-claim", {
-        bubbles: true,
-        composed: true,
-        detail: {
-          coupon: this.coupon,
-          couponMetadata: this.couponMetadata,
-        },
-      })
-    );
-  }
-
-  async firstUpdated() {
-    try {
-      this.couponMetadata = await getCouponMetadata(this.coupon);
-    } catch (error) {
-      this.couponMetadata = {
-        name: "",
-        description: "Not Available",
-        image: "",
-      };
-    }
-  }
-
   static styles = css`
     .card-overview {
-      max-width: 450px;
-      min-width: 300px;
-      width: 100%;
+      max-width: 300px;
     }
 
     .card-overview small {
@@ -64,6 +32,18 @@ export class CouponCard extends LitElement {
     }
   `;
 
+  async firstUpdated() {
+    try {
+      this.couponMetadata = await getCouponMetadata(this.coupon);
+    } catch (error) {
+      this.couponMetadata = {
+        name: "",
+        description: "Not Available",
+        image: "",
+      };
+    }
+  }
+
   render() {
     return html`
       <sl-card class="card-overview">
@@ -74,9 +54,7 @@ export class CouponCard extends LitElement {
         <small>${cleanString(this.coupon.account.geo)}</small>
 
         <div slot="footer">
-          <sl-button variant="primary" pill @click=${this.onClaimCoupon}
-            >Claim</sl-button
-          >
+          <sl-button variant="primary" pill>Claim</sl-button>
         </div>
       </sl-card>
     `;

@@ -4,6 +4,7 @@ import { consume } from "@lit/context";
 import { anchorClientContext, clientDeviceContext } from "../layouts/app-main";
 import { AnchorClient, Coupon } from "../lib/anchor/anchorClient";
 import { ClientDevice } from "../lib/utils";
+import { ClaimCouponDetail } from "../components/coupon-card";
 
 @customElement("coupons-page")
 export class AppCoupons extends LitElement {
@@ -17,6 +18,24 @@ export class AppCoupons extends LitElement {
 
   @state()
   accessor coupons: Coupon[] = [];
+
+  async onClaimCoupon(e: CustomEvent<ClaimCouponDetail>) {
+    console.log(e.detail);
+    const { coupon, couponMetadata } = e.detail;
+    if (this.anchorClient && this.clientDevice) {
+      const region = this.clientDevice.country?.code;
+      const geo = this.clientDevice.geohash;
+      // Claim from market, also creates a `User` using `region` and `geo`
+      await this.anchorClient.claimFromMarket(
+        coupon.account.mint,
+        1,
+        region,
+        geo
+      );
+      // TODO: handle error
+      // TODO: fetch on claim success
+    }
+  }
 
   async fetchCoupons() {
     // Only fetch if `anchorClient` and `clientDevice` exists
@@ -70,7 +89,7 @@ export class AppCoupons extends LitElement {
           This is the general tab panel.
         </sl-tab-panel>
       </sl-tab-group>
-
+      <br />
       <!-- Market coupons -->
       <sl-tab-group>
         <sl-tab slot="nav" panel="market">Market (All)</sl-tab>
@@ -82,6 +101,7 @@ export class AppCoupons extends LitElement {
               return html`<coupon-card
                 class="item"
                 .coupon=${coupon}
+                @on-claim=${this.onClaimCoupon}
               ></coupon-card>`;
             })}
           </ul>
