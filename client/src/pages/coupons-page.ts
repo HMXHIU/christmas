@@ -23,6 +23,7 @@ export class AppCoupons extends LitElement {
     const region = this.clientDevice?.country?.code;
     if (this.anchorClient && region) {
       this.coupons = await this.anchorClient.getCoupons(region);
+      console.log(this.coupons);
     }
   }
 

@@ -1,4 +1,4 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, PropertyValues } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { ClientDevice } from "../lib/utils";
 import { consume } from "@lit/context";
@@ -15,15 +15,15 @@ import { MintCouponDetail } from "../components/mint-coupon-dialog";
 
 @customElement("mint-page")
 export class AppMint extends LitElement {
-  @consume({ context: clientDeviceContext })
+  @consume({ context: clientDeviceContext, subscribe: true })
   @state()
   accessor clientDevice: ClientDevice | null = null;
 
-  @consume({ context: anchorClientContext })
+  @consume({ context: anchorClientContext, subscribe: true })
   @state()
   accessor anchorClient: AnchorClient | null = null;
 
-  @consume({ context: nftStorageClientContext })
+  @consume({ context: nftStorageClientContext, subscribe: true })
   @state()
   accessor nftStorageClient: NFTStorageClient | null = null;
 
@@ -35,6 +35,13 @@ export class AppMint extends LitElement {
 
   @state()
   accessor couponSupplyBalance: [Coupon, number, number][] = [];
+
+  async fetchCouponSupplyBalance() {
+    if (this.anchorClient) {
+      this.couponSupplyBalance =
+        (await this.anchorClient?.getMintedCoupons()) || [];
+    }
+  }
 
   async onCreateCoupon(e: CustomEvent<CreateCouponDetail>) {
     if (this.anchorClient && this.nftStorageClient) {
@@ -75,23 +82,46 @@ export class AppMint extends LitElement {
     }
   }
 
-  async firstUpdated() {
-    // Set defaults
-    this.defaultRegion = this.clientDevice?.country?.code || "";
-    this.defaultGeohash = this.clientDevice?.geohash || "";
-
-    // Get created coupons
-    this.couponSupplyBalance =
-      (await this.anchorClient?.getMintedCoupons()) || [];
+  async willUpdate(changedProperties: PropertyValues<this>) {
+    // `anchorClient` and `clientDevice` might come in 2 separate `willUpdate` events
+    if (
+      changedProperties.has("anchorClient") ||
+      changedProperties.has("clientDevice")
+    ) {
+      await this.fetchCouponSupplyBalance();
+      // Set defaults
+      this.defaultRegion = this.clientDevice?.country?.code || "";
+      this.defaultGeohash = this.clientDevice?.geohash || "";
+    }
   }
 
   static styles = css`
     sl-carousel {
       height: 250px;
     }
+    sl-spinner {
+      font-size: 3rem;
+      --indicator-color: deeppink;
+      --track-color: pink;
+    }
+    .loader {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
   `;
 
-  render() {
+  getLoading() {
+    return html`
+      <div class="loader">
+        <sl-spinner> </sl-spinner>
+      </div>
+    `;
+  }
+
+  getPage() {
     // TODO: Add validity period
     return html`
       <div>Mint Page</div>
@@ -119,5 +149,13 @@ export class AppMint extends LitElement {
         })}
       </sl-carousel>
     `;
+  }
+
+  render() {
+    if (this.anchorClient && this.clientDevice) {
+      return this.getPage();
+    } else {
+      return this.getLoading();
+    }
   }
 }
