@@ -99,14 +99,22 @@ export class AppCoupons extends LitElement {
         <sl-tab slot="nav" panel="food">Food</sl-tab>
         <sl-tab slot="nav" panel="others">Others</sl-tab>
         <sl-tab-panel name="claimed">
-          ${this.claimedCoupons.map(([coupon, balance]) => {
-            return html`<claimed-coupon-card
-              class="item"
-              .coupon=${coupon}
-              balance=${balance}
-              @on-claim=${this.onClaimCoupon}
-            ></claimed-coupon-card>`;
-          })}
+          <sl-carousel
+            class="scroll-hint"
+            navigation
+            style="--scroll-hint: 10%;"
+          >
+            ${this.claimedCoupons.map(([coupon, balance]) => {
+              return html`<sl-carousel-item
+                ><claimed-coupon-card
+                  class="item"
+                  .coupon=${coupon}
+                  balance=${balance}
+                  @on-claim=${this.onClaimCoupon}
+                ></claimed-coupon-card
+              ></sl-carousel-item>`;
+            })}
+          </sl-carousel>
         </sl-tab-panel>
       </sl-tab-group>
       <br />

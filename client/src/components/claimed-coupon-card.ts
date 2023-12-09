@@ -59,7 +59,7 @@ export class ClaimedCouponCard extends LitElement {
         <small>${this.balance} remaining</small>
 
         <div slot="footer">
-          <sl-button variant="primary" pill>Claim</sl-button>
+          <sl-button variant="primary" pill>Redeem</sl-button>
         </div>
       </sl-card>
     `;
