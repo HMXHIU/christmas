@@ -4,7 +4,7 @@ import { classMap } from "lit/directives/class-map.js";
 import { Router } from "@vaadin/router";
 import { provide } from "@lit/context";
 import { createContext } from "@lit/context";
-import { AnchorClient } from "../lib/anchor/anchorClient";
+import { AnchorClient, Coupon } from "../lib/anchor/anchorClient";
 import { ClientDevice, getClientDevice } from "../lib/utils";
 import { NFTStorageClient } from "../lib/nftStorageClient";
 import { NFT_STORAGE_TOKEN } from "../lib/constants";
@@ -42,7 +42,7 @@ export class AppMain extends LitElement {
   async connectedCallback() {
     super.connectedCallback();
 
-    // Get client device information
+    // Create ClientDevice
     this.clientDevice = await getClientDevice();
   }
 
@@ -56,18 +56,22 @@ export class AppMain extends LitElement {
     ]);
   }
 
-  onConnectWallet(e: CustomEvent<WalletDetail>) {
+  async onConnectWallet(e: CustomEvent<WalletDetail>) {
     const { wallet, anchorWallet } = e.detail;
     if (wallet && anchorWallet) {
+      // Create AnchorClient
       this.anchorClient = new AnchorClient({
         wallet: wallet,
         anchorWallet: anchorWallet,
       });
-      console.log(this.anchorClient);
+      console.log(
+        `app-main::onConnectWallet:: ${e.detail.anchorWallet.publicKey}`
+      );
     }
   }
   onDisconnectWallet(e: CustomEvent) {
     this.anchorClient = null;
+    console.log(`app-main::onDisconnectWallet`);
   }
 
   getContent() {

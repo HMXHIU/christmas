@@ -14,6 +14,7 @@ import "@shoelace-style/shoelace/dist/components/carousel/carousel.js";
 import "@shoelace-style/shoelace/dist/components/carousel-item/carousel-item.js";
 import "@shoelace-style/shoelace/dist/components/tooltip/tooltip.js";
 import "@shoelace-style/shoelace/dist/components/icon-button/icon-button.js";
+import "@shoelace-style/shoelace/dist/components/spinner/spinner.js";
 
 import { setBasePath } from "@shoelace-style/shoelace/dist/utilities/base-path.js";
 setBasePath("shoelace");
