@@ -23,7 +23,6 @@ export class AppCoupons extends LitElement {
     const region = this.clientDevice?.country?.code;
     if (this.anchorClient && region) {
       this.coupons = await this.anchorClient.getCoupons(region);
-      console.log(this.coupons);
     }
   }
 
@@ -62,14 +61,32 @@ export class AppCoupons extends LitElement {
 
   getPage() {
     return html`
-      <ul class="app-grid">
-        ${this.coupons.map((coupon) => {
-          return html`<coupon-card
-            class="item"
-            .coupon=${coupon}
-          ></coupon-card>`;
-        })}
-      </ul>
+      <!-- Claimed coupons -->
+      <sl-tab-group>
+        <sl-tab slot="nav" panel="claimed">Claimed (All)</sl-tab>
+        <sl-tab slot="nav" panel="food">Food</sl-tab>
+        <sl-tab slot="nav" panel="others">Others</sl-tab>
+        <sl-tab-panel name="claimed">
+          This is the general tab panel.
+        </sl-tab-panel>
+      </sl-tab-group>
+
+      <!-- Market coupons -->
+      <sl-tab-group>
+        <sl-tab slot="nav" panel="market">Market (All)</sl-tab>
+        <sl-tab slot="nav" panel="food">Food</sl-tab>
+        <sl-tab slot="nav" panel="others">Others</sl-tab>
+        <sl-tab-panel name="market">
+          <ul class="app-grid">
+            ${this.coupons.map((coupon) => {
+              return html`<coupon-card
+                class="item"
+                .coupon=${coupon}
+              ></coupon-card>`;
+            })}
+          </ul>
+        </sl-tab-panel>
+      </sl-tab-group>
     `;
   }
 

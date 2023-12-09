@@ -54,8 +54,7 @@ export class CouponCard extends LitElement {
         <small>${cleanString(this.coupon.account.geo)}</small>
 
         <div slot="footer">
-          <sl-button variant="primary" pill>More Info</sl-button>
-          <sl-rating></sl-rating>
+          <sl-button variant="primary" pill>Claim</sl-button>
         </div>
       </sl-card>
     `;
