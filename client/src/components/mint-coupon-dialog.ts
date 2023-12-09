@@ -3,6 +3,11 @@ import { customElement, property, state, query } from "lit/decorators.js";
 import { Coupon, CouponMetadata } from "../lib/anchor/anchorClient";
 import { cleanString } from "../lib/anchor/utils";
 
+export interface MintCouponDetail {
+  numTokens: number;
+  coupon: Coupon;
+}
+
 @customElement("mint-coupon-dialog")
 export class MintCoupon extends LitElement {
   @query("#dialog")
@@ -44,24 +49,19 @@ export class MintCoupon extends LitElement {
       new FormData(this.form); // construct a FormData object, which fires the formdata event
     });
     this.form.addEventListener("formdata", (e: FormDataEvent) => {
-      const parsed = Object.fromEntries(Array.from(e.formData.entries()));
+      const numTokens = parseInt(e.formData.get("numTokens") as string);
 
-      console.log(parsed);
-
-      // // Dispatch on-create event
-      // this.dispatchEvent(
-      //   new CustomEvent<CreateCouponDetail>("on-create", {
-      //     bubbles: true,
-      //     composed: true,
-      //     detail: {
-      //       name: parsed.name.toString(),
-      //       description: parsed.description.toString(),
-      //       image: this.imageInput.file,
-      //       region: parsed.region.toString(),
-      //       geo: parsed.geo.toString(),
-      //     },
-      //   })
-      // );
+      // Dispatch on-create event
+      this.dispatchEvent(
+        new CustomEvent<MintCouponDetail>("on-mint", {
+          bubbles: true,
+          composed: true,
+          detail: {
+            numTokens: numTokens,
+            coupon: this.coupon,
+          },
+        })
+      );
     });
   }
 
@@ -84,6 +84,7 @@ export class MintCoupon extends LitElement {
             type="number"
             label="Number of Coupons"
             min=${1}
+            value=${1}
             required
             help-text="${this.balance} left out of ${this.supply}"
           ></sl-input>

@@ -11,6 +11,7 @@ import {
 import { CreateCouponDetail } from "../components/create-coupon-dialog";
 import { NFTStorageClient } from "../lib/nftStorageClient";
 import { Coupon } from "../lib/anchor/anchorClient";
+import { MintCouponDetail } from "../components/mint-coupon-dialog";
 
 @customElement("mint-page")
 export class AppMint extends LitElement {
@@ -59,6 +60,21 @@ export class AppMint extends LitElement {
     }
   }
 
+  async onMintCoupon(e: CustomEvent<MintCouponDetail>) {
+    console.log(e.detail);
+    if (this.anchorClient && this.nftStorageClient) {
+      const { coupon, numTokens } = e.detail;
+
+      const tx = await this.anchorClient.mintToMarket(
+        coupon.account.mint,
+        coupon.account.region,
+        numTokens
+      );
+
+      // TODO: handle failed transactions
+    }
+  }
+
   async firstUpdated() {
     // Set defaults
     this.defaultRegion = this.clientDevice?.country?.code || "";
@@ -79,12 +95,15 @@ export class AppMint extends LitElement {
     // TODO: Add validity period
     return html`
       <div>Mint Page</div>
+
+      <!-- Create coupon -->
       <create-coupon-dialog
         defaultRegion="${this.defaultRegion}"
         defaultGeohash="${this.defaultGeohash}"
         @on-create="${this.onCreateCoupon}"
       ></create-coupon-dialog>
 
+      <!-- User's created coupons -->
       <sl-carousel class="scroll-hint" navigation style="--scroll-hint: 10%;">
         ${this.couponSupplyBalance.map(([coupon, supply, balance]) => {
           return html`
@@ -93,6 +112,7 @@ export class AppMint extends LitElement {
                 .coupon=${coupon}
                 supply=${supply}
                 balance=${balance}
+                @on-mint=${this.onMintCoupon}
               ></mint-coupon-card>
             </sl-carousel-item>
           `;
