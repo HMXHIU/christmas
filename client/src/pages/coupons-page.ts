@@ -78,6 +78,12 @@ export class AppCoupons extends LitElement {
       --indicator-color: deeppink;
       --track-color: pink;
     }
+    sl-carousel::part(scroll-container) {
+      height: 210px;
+    }
+    .app-grid {
+      height: 400px;
+    }
     .loader {
       margin: 0;
       display: flex;
@@ -99,14 +105,18 @@ export class AppCoupons extends LitElement {
     return html`
       <!-- Claimed coupons -->
       <sl-tab-group>
-        <sl-tab slot="nav" panel="claimed">Claimed (All)</sl-tab>
+        <sl-tab slot="nav" panel="claimed">My Coupons (All)</sl-tab>
         <sl-tab slot="nav" panel="food">Food</sl-tab>
         <sl-tab slot="nav" panel="others">Others</sl-tab>
-        <sl-tab-panel name="claimed">
+        <sl-tab-panel
+          name="claimed"
+          style="--padding: 0px; height: 250px; padding-top: 10px"
+        >
           <sl-carousel
             class="scroll-hint"
-            navigation
-            style="--scroll-hint: 10%;"
+            style="--aspect-ratio: 1/1;"
+            slides-per-page="2"
+            pagination
           >
             ${this.claimedCoupons.map(([coupon, balance]) => {
               return html`
@@ -129,7 +139,7 @@ export class AppCoupons extends LitElement {
         <sl-tab slot="nav" panel="food">Food</sl-tab>
         <sl-tab slot="nav" panel="others">Others</sl-tab>
         <sl-tab-panel name="market">
-          <ul class="app-grid">
+          <div class="app-grid">
             ${this.coupons.map((coupon) => {
               return html`
                 <coupon-card
@@ -139,7 +149,7 @@ export class AppCoupons extends LitElement {
                 ></coupon-card>
               `;
             })}
-          </ul>
+          </div>
         </sl-tab-panel>
       </sl-tab-group>
     `;

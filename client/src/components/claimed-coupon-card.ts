@@ -64,21 +64,26 @@ export class ClaimedCouponCard extends LitElement {
       color: var(--sl-color-neutral-500);
     }
     .card-overview::part(footer) {
-      padding-top: 5px;
-      padding-bottom: 5px;
+      padding-top: 7px;
+      padding-bottom: 7px;
     }
     .card-overview [slot="footer"] {
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
+    .coupon-info {
+      margin: 0px;
+    }
     img {
-      width: 200px;
-      height: 80px;
+      width: 180px;
+      height: 100px;
+      flex: 3;
     }
     .empty-image {
-      width: 200px;
-      height: 80px;
+      width: 180px;
+      height: 100px;
+      flex: 3;
     }
   `;
 
@@ -111,7 +116,7 @@ export class ClaimedCouponCard extends LitElement {
               </div>`}
           <!-- Coupon details -->
           <div slot="footer">
-            <p>
+            <p class="coupon-info">
               <strong>${cleanString(this.coupon.account.name)}</strong>
               <br />
               <small>${this.balance} remaining</small>

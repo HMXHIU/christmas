@@ -33,20 +33,20 @@ export class MintCouponCard extends LitElement {
       justify-content: space-between;
     }
     .card-overview::part(footer) {
-      padding-top: 5px;
-      padding-bottom: 5px;
+      padding-top: 7px;
+      padding-bottom: 7px;
     }
     .card-overview small {
       color: var(--sl-color-neutral-500);
     }
     img {
       width: 200px;
-      height: 80px;
+      height: 100px;
     }
     .empty-image {
       flex-grow: 3;
       width: 200px;
-      height: 80px;
+      height: 100px;
     }
     .card-button {
       flex: 1;
