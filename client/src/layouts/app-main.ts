@@ -100,6 +100,9 @@ export class AppMain extends LitElement {
     app-footer::part(bottom-nav) {
       background-color: rgba(255, 255, 255, 0.95);
     }
+    .app-body {
+      margin-bottom: 30px;
+    }
   `;
 
   render() {

@@ -5,6 +5,7 @@ import { anchorClientContext, clientDeviceContext } from "../layouts/app-main";
 import { AnchorClient, Coupon } from "../lib/anchor/anchorClient";
 import { ClientDevice } from "../lib/utils";
 import { ClaimCouponDetail } from "../components/coupon-card";
+import { RedeemCouponDetail } from "../components/redeem-coupon-dialog";
 
 @customElement("coupons-page")
 export class AppCoupons extends LitElement {
@@ -40,6 +41,10 @@ export class AppCoupons extends LitElement {
       // Refetch claimed coupons
       await this.fetchClaimedCoupons();
     }
+  }
+
+  onRedeemCoupon(e: CustomEvent<RedeemCouponDetail>) {
+    const { numTokens, coupon } = e.detail;
   }
 
   async fetchCoupons() {
@@ -105,14 +110,15 @@ export class AppCoupons extends LitElement {
             style="--scroll-hint: 10%;"
           >
             ${this.claimedCoupons.map(([coupon, balance]) => {
-              return html`<sl-carousel-item
-                ><claimed-coupon-card
-                  class="item"
-                  .coupon=${coupon}
-                  balance=${balance}
-                  @on-claim=${this.onClaimCoupon}
-                ></claimed-coupon-card
-              ></sl-carousel-item>`;
+              return html`
+                <sl-carousel-item>
+                  <claimed-coupon-card
+                    class="item"
+                    .coupon=${coupon}
+                    balance=${balance}
+                  ></claimed-coupon-card>
+                </sl-carousel-item>
+              `;
             })}
           </sl-carousel>
         </sl-tab-panel>
@@ -126,11 +132,13 @@ export class AppCoupons extends LitElement {
         <sl-tab-panel name="market">
           <ul class="app-grid">
             ${this.coupons.map((coupon) => {
-              return html`<coupon-card
-                class="item"
-                .coupon=${coupon}
-                @on-claim=${this.onClaimCoupon}
-              ></coupon-card>`;
+              return html`
+                <coupon-card
+                  class="item"
+                  .coupon=${coupon}
+                  @on-claim=${this.onClaimCoupon}
+                ></coupon-card>
+              `;
             })}
           </ul>
         </sl-tab-panel>

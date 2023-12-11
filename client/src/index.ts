@@ -18,6 +18,8 @@ import "@shoelace-style/shoelace/dist/components/spinner/spinner.js";
 import "@shoelace-style/shoelace/dist/components/tab/tab.js";
 import "@shoelace-style/shoelace/dist/components/tab-group/tab-group.js";
 import "@shoelace-style/shoelace/dist/components/tab-panel/tab-panel.js";
+import "@shoelace-style/shoelace/dist/components/qr-code/qr-code.js";
+import "@shoelace-style/shoelace/dist/components/divider/divider.js";
 
 import { setBasePath } from "@shoelace-style/shoelace/dist/utilities/base-path.js";
 setBasePath("shoelace");
@@ -31,6 +33,7 @@ import "./components/coupon-card";
 import "./components/mint-coupon-card";
 import "./components/claimed-coupon-card";
 import "./components/create-coupon-dialog";
+import "./components/redeem-coupon-dialog";
 import "./components/mint-coupon-dialog";
 import "./components/image-input";
 import "./layouts/app-main";
