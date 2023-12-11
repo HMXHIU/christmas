@@ -24,7 +24,6 @@ export class AppCoupons extends LitElement {
   accessor claimedCoupons: [Coupon, number][] = [];
 
   async onClaimCoupon(e: CustomEvent<ClaimCouponDetail>) {
-    console.log(e.detail);
     const { coupon, couponMetadata } = e.detail;
     if (this.anchorClient && this.clientDevice) {
       const region = this.clientDevice.country?.code;

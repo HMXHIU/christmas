@@ -51,6 +51,14 @@ export class RedeemCoupon extends LitElement {
     );
   }
 
+  copyToClipboard(text: string) {
+    if (text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Copied to clipboard!");
+      });
+    }
+  }
+
   static styles = css``;
 
   getAlreadyRedeem() {
@@ -62,7 +70,11 @@ export class RedeemCoupon extends LitElement {
       ></sl-qr-code>
       <!-- Alternative original redemption URL -->
       <sl-input type="text" value="${this.redemptionQRCodeURL}" disabled>
-        <sl-icon-button name="clipboard2-fill" slot="suffix"></sl-icon-button>
+        <sl-icon-button
+          name="clipboard2-fill"
+          slot="suffix"
+          @click=${() => this.copyToClipboard(this.redemptionQRCodeURL)}
+        ></sl-icon-button>
       </sl-input>
     `;
   }
