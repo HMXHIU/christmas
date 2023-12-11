@@ -4,6 +4,9 @@ import { customElement } from "lit/decorators.js";
 @customElement("app-footer")
 export class AppFooter extends LitElement {
   static styles = css`
+    :host {
+      display: block;
+    }
     .bottom-nav {
       overflow: hidden;
       position: fixed;
@@ -23,7 +26,7 @@ export class AppFooter extends LitElement {
 
   render() {
     return html`
-      <div class="bottom-nav">
+      <div part="bottom-nav" class="bottom-nav">
         <slot name="left"></slot>
         <slot name="center"></slot>
         <slot name="right"></slot>

@@ -59,6 +59,9 @@ export class CreateCoupon extends LitElement {
           },
         })
       );
+
+      // Close dialog
+      this.dialog.hide();
     });
   }
 

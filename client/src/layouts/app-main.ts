@@ -94,14 +94,20 @@ export class AppMain extends LitElement {
     .hidden {
       display: none;
     }
+    .toolbar {
+      background-color: rgba(255, 255, 255, 0.95);
+    }
+    app-footer::part(bottom-nav) {
+      background-color: rgba(255, 255, 255, 0.95);
+    }
   `;
 
   render() {
     return html`
       <!-- Header -->
       <app-header-layout>
-        <app-header slot="header">
-          <app-toolbar>
+        <app-header slot="header" fixed>
+          <app-toolbar class="toolbar">
             <div main-title>App name</div>
             <!-- Show disconnect if wallet is connected -->
             <sl-button
@@ -116,13 +122,12 @@ export class AppMain extends LitElement {
             >
           </app-toolbar>
         </app-header>
+        <!-- Content -->
+        <div class="app-body">${this.getContent()}</div>
       </app-header-layout>
 
-      <!-- Content -->
-      ${this.getContent()}
-
       <!-- Footer -->
-      <app-footer>
+      <app-footer class="footer">
         <a href="/coupons" slot="left"><sl-menu-item>Coupons</sl-menu-item></a>
         <a href="/mint" slot="right"><sl-menu-item>Mint</sl-menu-item></a>
       </app-footer>

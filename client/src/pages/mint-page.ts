@@ -79,6 +79,8 @@ export class AppMint extends LitElement {
       );
 
       // TODO: handle failed transactions
+
+      this.fetchCouponSupplyBalance();
     }
   }
 

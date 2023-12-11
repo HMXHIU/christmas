@@ -62,6 +62,9 @@ export class MintCoupon extends LitElement {
           },
         })
       );
+
+      // Close dialog
+      this.dialog.hide();
     });
   }
 
