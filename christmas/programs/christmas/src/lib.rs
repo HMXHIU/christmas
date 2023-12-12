@@ -4,6 +4,7 @@ mod coupon;
 mod defs;
 mod market;
 mod state;
+mod store;
 mod user;
 mod utils;
 use anchor_spl::token::{burn, mint_to, transfer, Burn, MintTo, Transfer};
@@ -11,6 +12,7 @@ use coupon::*;
 use market::*;
 use solana_program::rent::Rent;
 use state::*;
+use store::*;
 use user::*;
 use utils::utils::pad_string;
 
@@ -22,7 +24,7 @@ pub mod christmas {
     use crate::{
         defs::{
             COUPON_NAME_SIZE, COUPON_SYMBOL_SIZE, COUPON_URI_SIZE, GEO_SIZE, REGION_SIZE,
-            STRING_PREFIX_SIZE,
+            STORE_NAME_SIZE, STRING_PREFIX_SIZE,
         },
         utils::geo::code_to_country,
     };
@@ -47,6 +49,25 @@ pub mod christmas {
         ctx.accounts.user.region = pad_string(&region, REGION_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.user.geo = pad_string(&geo, GEO_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.user.bump = *ctx.bumps.get("user").unwrap();
+        Ok(())
+    }
+
+    pub fn create_store(
+        ctx: Context<CreateStore>,
+        name: String,
+        region: String,
+        geo: String,
+        uri: String,
+    ) -> Result<()> {
+        // check valid region
+        code_to_country(&region).unwrap();
+
+        ctx.accounts.store.name = pad_string(&name, STORE_NAME_SIZE - STRING_PREFIX_SIZE);
+        ctx.accounts.store.region = pad_string(&region, REGION_SIZE - STRING_PREFIX_SIZE);
+        ctx.accounts.store.geo = pad_string(&geo, GEO_SIZE - STRING_PREFIX_SIZE);
+        ctx.accounts.store.uri = pad_string(&uri, COUPON_URI_SIZE - STRING_PREFIX_SIZE);
+        ctx.accounts.store.bump = *ctx.bumps.get("store").unwrap();
+
         Ok(())
     }
 

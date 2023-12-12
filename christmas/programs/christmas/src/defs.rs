@@ -15,6 +15,9 @@ pub const COUPON_NAME_SIZE: usize = STRING_PREFIX_SIZE + 36;
 pub const COUPON_SYMBOL_SIZE: usize = STRING_PREFIX_SIZE + 14;
 pub const COUPON_URI_SIZE: usize = STRING_PREFIX_SIZE + 204;
 
+pub const STORE_NAME_SIZE: usize = STRING_PREFIX_SIZE + 36;
+pub const STORE_URI_SIZE: usize = STRING_PREFIX_SIZE + 204;
+
 pub const REGION_CODES: &'static [&'static str] = &[
     "AFG", "ALB", "DZA", "ASM", "AND", "AGO", "AIA", "ATA", "ATG", "ARG", "ARM", "ABW", "AUS",
     "AUT", "AZE", "BHS", "BHR", "BGD", "BRB", "BLR", "BEL", "BLZ", "BEN", "BMU", "BTN", "BOL",

@@ -3,33 +3,40 @@ import { Christmas } from "../target/types/christmas";
 import { web3 } from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 
-export function getUserPda(user: web3.PublicKey, programId: web3.PublicKey) {
+export function setupAnchor(): [anchor.Provider, Program<Christmas>] {
+    anchor.setProvider(anchor.AnchorProvider.env());
+    const provider = anchor.getProvider();
+    const program = anchor.workspace.Christmas as Program<Christmas>;
+    return [provider, program];
+}
+
+export function getUserPda(user: web3.PublicKey) {
+    const program = anchor.workspace.Christmas as Program<Christmas>;
+
     return web3.PublicKey.findProgramAddressSync(
         [anchor.utils.bytes.utf8.encode("user"), user.toBuffer()],
-        programId
+        program.programId
     );
 }
 
-export function getCouponPda(
-    mint: web3.PublicKey,
-    programId: web3.PublicKey
-): [web3.PublicKey, number] {
+export function getCouponPda(mint: web3.PublicKey): [web3.PublicKey, number] {
+    const program = anchor.workspace.Christmas as Program<Christmas>;
+
     return web3.PublicKey.findProgramAddressSync(
         [anchor.utils.bytes.utf8.encode("coupon"), mint.toBuffer()],
-        programId
+        program.programId
     );
 }
 
-export function getRegionMarketPda(
-    region: string,
-    programId: web3.PublicKey
-): [web3.PublicKey, number] {
+export function getRegionMarketPda(region: string): [web3.PublicKey, number] {
+    const program = anchor.workspace.Christmas as Program<Christmas>;
+
     return web3.PublicKey.findProgramAddressSync(
         [
             anchor.utils.bytes.utf8.encode("market"),
             anchor.utils.bytes.utf8.encode(region),
         ],
-        programId
+        program.programId
     );
 }
 
@@ -54,6 +61,39 @@ export async function createUser(
         .createUser(region, geo)
         .accounts({
             user: pda,
+            signer: wallet.publicKey,
+            systemProgram: web3.SystemProgram.programId,
+        })
+        .signers([wallet])
+        .rpc();
+
+    return [pda, bump];
+}
+
+export async function createStore(
+    wallet: web3.Keypair,
+    name: string,
+    region: string,
+    geo: string,
+    uri: string
+): Promise<[web3.PublicKey, number]> {
+    const program = anchor.workspace.Christmas as Program<Christmas>;
+
+    // Calculate the PDA of the store
+    const [pda, bump] = web3.PublicKey.findProgramAddressSync(
+        [
+            Buffer.from(anchor.utils.bytes.utf8.encode("store")),
+            Buffer.from(anchor.utils.bytes.utf8.encode(name)),
+            wallet.publicKey.toBuffer(),
+        ],
+        program.programId
+    );
+
+    // Create store
+    const tx = await program.methods
+        .createStore(name, region, geo, uri)
+        .accounts({
+            store: pda,
             signer: wallet.publicKey,
             systemProgram: web3.SystemProgram.programId,
         })
@@ -88,4 +128,8 @@ export async function requestAirdrop(
             });
         })
     );
+}
+
+export function cleanString(s: string) {
+    return s.replace(/\u0000+$/, "");
 }

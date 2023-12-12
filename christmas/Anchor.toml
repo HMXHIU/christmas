@@ -15,3 +15,4 @@ wallet = "/Users/benjaminhon/Developer/christmas/christmas/id_test.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+test_account_creation = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/test_account_creation.ts"
