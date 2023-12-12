@@ -3,11 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { Coupon, CouponMetadata } from "../lib/anchor/anchorClient";
 import { getCouponMetadata } from "../lib/utils";
 import { cleanString } from "../lib/anchor/utils";
-
-export interface ClaimCouponDetail {
-  coupon: Coupon;
-  couponMetadata: CouponMetadata;
-}
+import { ParsedAccountData } from "@solana/web3.js";
 
 @customElement("coupon-card")
 export class CouponCard extends LitElement {
@@ -20,19 +16,6 @@ export class CouponCard extends LitElement {
     description: "",
     image: "",
   };
-
-  onClaimCoupon() {
-    this.dispatchEvent(
-      new CustomEvent<ClaimCouponDetail>("on-claim", {
-        bubbles: true,
-        composed: true,
-        detail: {
-          coupon: this.coupon,
-          couponMetadata: this.couponMetadata,
-        },
-      })
-    );
-  }
 
   async firstUpdated() {
     try {
@@ -48,37 +31,62 @@ export class CouponCard extends LitElement {
 
   static styles = css`
     .card-overview {
-      max-width: 450px;
-      min-width: 300px;
-      width: 100%;
+      max-width: 350px;
     }
-
-    .card-overview small {
-      color: var(--sl-color-neutral-500);
-    }
-
     .card-overview [slot="footer"] {
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
+    .card-overview small {
+      color: var(--sl-color-neutral-500);
+    }
+    .coupon-info {
+      margin: 0px;
+    }
+    img {
+      width: 180px;
+      height: 100px;
+      flex: 3;
+    }
+    .empty-image {
+      width: 180px;
+      height: 100px;
+      flex: 3;
+    }
   `;
 
   render() {
     return html`
-      <sl-card class="card-overview">
-        <img slot="image" src="${this.couponMetadata.image}" />
+      <claim-coupon-dialog
+        .coupon=${this.coupon}
+        .couponMetadata=${this.couponMetadata}
+      >
+        <sl-card
+          class="card-overview"
+          slot="click-to-open"
+          part="card-overview"
+        >
+          <!-- Image -->
+          ${this.couponMetadata.image
+            ? html`<img slot="image" src="${this.couponMetadata.image}" />`
+            : html`<div class="empty-image">
+                <sl-icon name="image-fill"></sl-icon>
+              </div>`}
 
-        <strong>${cleanString(this.coupon.account.name)}</strong><br />
-        ${this.couponMetadata.description}<br />
-        <small>${cleanString(this.coupon.account.geo)}</small>
-
-        <div slot="footer">
-          <sl-button variant="primary" pill @click=${this.onClaimCoupon}
-            >Claim</sl-button
-          >
-        </div>
-      </sl-card>
+          <!-- Info -->
+          <div slot="footer">
+            <p class="coupon-info">
+              <strong>${cleanString(this.coupon.account.name)}</strong><br />
+              <small
+                >${this.coupon.tokenAccountData?.parsed.info.tokenAmount
+                  .uiAmount}
+                remaining</small
+              >
+            </p>
+          </div>
+        </sl-card>
+      </claim-coupon-dialog>
     `;
   }
 }

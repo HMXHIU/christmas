@@ -4,7 +4,7 @@ import { consume } from "@lit/context";
 import { anchorClientContext, clientDeviceContext } from "../layouts/app-main";
 import { AnchorClient, Coupon } from "../lib/anchor/anchorClient";
 import { ClientDevice } from "../lib/utils";
-import { ClaimCouponDetail } from "../components/coupon-card";
+import { ClaimCouponDetail } from "../components/claim-coupon-dialog";
 import { RedeemCouponDetail } from "../components/redeem-coupon-dialog";
 
 @customElement("coupons-page")
@@ -24,14 +24,15 @@ export class AppCoupons extends LitElement {
   accessor claimedCoupons: [Coupon, number][] = [];
 
   async onClaimCoupon(e: CustomEvent<ClaimCouponDetail>) {
-    const { coupon, couponMetadata } = e.detail;
+    const { coupon, numTokens } = e.detail;
     if (this.anchorClient && this.clientDevice) {
       const region = this.clientDevice.country?.code;
       const geo = this.clientDevice.geohash;
+
       // Claim from market, also creates a `User` using `region` and `geo`
       await this.anchorClient.claimFromMarket(
         coupon.account.mint,
-        1,
+        numTokens,
         region,
         geo
       );
@@ -90,6 +91,9 @@ export class AppCoupons extends LitElement {
       align-items: center;
       justify-content: center;
       height: 100vh;
+    }
+    coupon-card::part(card-overview) {
+      margin: 10px;
     }
   `;
 

@@ -101,7 +101,7 @@ export class AppMain extends LitElement {
       background-color: rgba(255, 255, 255, 0.95);
     }
     .app-body {
-      margin-bottom: 30px;
+      margin-bottom: 50px;
     }
   `;
 

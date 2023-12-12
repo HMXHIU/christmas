@@ -34,6 +34,7 @@ import "./components/mint-coupon-card";
 import "./components/claimed-coupon-card";
 import "./components/create-coupon-dialog";
 import "./components/redeem-coupon-dialog";
+import "./components/claim-coupon-dialog";
 import "./components/mint-coupon-dialog";
 import "./components/image-input";
 import "./layouts/app-main";
