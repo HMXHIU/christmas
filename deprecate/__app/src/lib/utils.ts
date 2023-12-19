@@ -1,33 +1,29 @@
+import * as web3 from "@solana/web3.js";
+import * as anchor from "@coral-xyz/anchor";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import { getCountriesForTimezone } from "countries-and-timezones";
 import { COUNTRY_DETAILS, IPFS_HTTP_GATEWAY } from "./constants";
 import geohash from "ngeohash";
-import {
-    Coupon,
-    CouponMetadata,
-} from "../../../lib/anchor-client/anchorClient";
 
-export interface Country {
-    code: string;
-    name: string;
+export function stringToBase58(str: string) {
+    const buffer = Buffer.from(str);
+    return bs58.encode(buffer);
 }
 
-export interface ClientDevice {
-    geolocationCoordinates: GeolocationCoordinates | null;
-    geohash: string | null;
-    country: Country | null;
+export function stringToUint8Array(input: string): Uint8Array {
+    const encoder = new TextEncoder();
+    return encoder.encode(input);
 }
 
-export async function getClientDevice(): Promise<ClientDevice> {
-    const geolocationCoordinates = await getDeviceLocation();
-    return {
-        geolocationCoordinates,
-        geohash: geohash.encode(
-            geolocationCoordinates.latitude,
-            geolocationCoordinates.longitude,
-            6
-        ),
-        country: getUserCountry(),
-    };
+export function getUserPda(user: web3.PublicKey, programId: web3.PublicKey) {
+    return web3.PublicKey.findProgramAddressSync(
+        [anchor.utils.bytes.utf8.encode("user"), user.toBuffer()],
+        programId
+    );
+}
+
+export function cleanString(s: string) {
+    return s.replace(/\u0000+$/, "");
 }
 
 export async function getUserGeohash(): Promise<string> {
@@ -69,7 +65,7 @@ export function generateQRCodeURL(kwargs: Record<string, string>): string {
         (typeof window !== "undefined" ? window.location.origin : undefined) ||
         "https://${origin}";
 
-    const queryParams: string[] = [];
+    const queryParams = [];
 
     for (const key in kwargs) {
         if (kwargs.hasOwnProperty(key)) {
@@ -94,12 +90,4 @@ export function nft_uri_to_url(uri: string): string {
     }
 
     return `https://${IPFS_HTTP_GATEWAY}/ipfs/${match[1]}`;
-}
-
-export async function getCouponMetadata(
-    coupon: Coupon
-): Promise<CouponMetadata> {
-    const url = nft_uri_to_url(coupon.account.uri);
-    const response = await fetch(url);
-    return await response.json();
 }

@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
     "types": ["mocha", "chai"],
-    "typeRoots": ["./node_modules/@types", "./app/src/types/"],
+    "typeRoots": ["./node_modules/@types"],
     "lib": [
       "es2015",
-      "DOM"  // for `window`
+      "dom"
     ],
     "module": "commonjs",
     "target": "es6",
+    // "strict": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true // import .json files
+    "resolveJsonModule": true, // import .json files
+    "skipLibCheck": true // skip type checking all .d.ts files
   }
 }

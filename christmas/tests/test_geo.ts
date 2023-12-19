@@ -10,7 +10,7 @@ import {
     REGION_SIZE,
     DISCRIMINATOR_SIZE,
     STRING_PREFIX_SIZE,
-} from "../app/src/lib/constants";
+} from "../lib/anchor-client/constants";
 
 describe("Test Geo", () => {
     // Configure the client to use the local cluster.
