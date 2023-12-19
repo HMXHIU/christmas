@@ -5,7 +5,6 @@ import { Router } from "@vaadin/router";
 import { provide } from "@lit/context";
 import { createContext } from "@lit/context";
 import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
-import { ClientDevice, getClientDevice } from "../lib/utils";
 import { NFTStorageClient } from "../lib/nftStorageClient";
 import { NFT_STORAGE_TOKEN } from "../lib/constants";
 import { WalletDetail } from "../components/solana-wallet";
@@ -13,9 +12,6 @@ import { WalletDetail } from "../components/solana-wallet";
 // Providers
 export const anchorClientContext = createContext<AnchorClient | null>(
     Symbol("anchor-client")
-);
-export const clientDeviceContext = createContext<ClientDevice | null>(
-    Symbol("client-device")
 );
 export const nftStorageClientContext = createContext<NFTStorageClient | null>(
     Symbol("nft-storage")
@@ -29,22 +25,11 @@ export class AppMain extends LitElement {
     @state()
     accessor anchorClient: AnchorClient | null = null;
 
-    @provide({ context: clientDeviceContext })
-    @state()
-    accessor clientDevice: ClientDevice | null = null;
-
     @provide({ context: nftStorageClientContext })
     @state()
     accessor nftStorageClient: NFTStorageClient = new NFTStorageClient({
         token: NFT_STORAGE_TOKEN,
     });
-
-    async connectedCallback() {
-        super.connectedCallback();
-
-        // Create ClientDevice
-        this.clientDevice = await getClientDevice();
-    }
 
     // Setup router
     firstUpdated() {

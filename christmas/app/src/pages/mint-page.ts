@@ -1,22 +1,24 @@
 import { LitElement, html, css, PropertyValues } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { ClientDevice } from "../lib/utils";
 import { consume } from "@lit/context";
 import { AnchorClient, Coupon } from "../../../lib/anchor-client/anchorClient";
 import {
     anchorClientContext,
-    clientDeviceContext,
     nftStorageClientContext,
 } from "../layouts/app-main";
 import { CreateCouponDetail } from "../components/create-coupon-dialog";
 import { NFTStorageClient } from "../lib/nftStorageClient";
 import { MintCouponDetail } from "../components/mint-coupon-dialog";
+import {
+    locationContext,
+    Location,
+} from "../providers/userDeviceClientProvider";
 
 @customElement("mint-page")
 export class MintPage extends LitElement {
-    @consume({ context: clientDeviceContext, subscribe: true })
+    @consume({ context: locationContext, subscribe: true })
     @state()
-    accessor clientDevice: ClientDevice | null = null;
+    accessor location: Location | null = null;
 
     @consume({ context: anchorClientContext, subscribe: true })
     @state()
@@ -84,15 +86,14 @@ export class MintPage extends LitElement {
     }
 
     async willUpdate(changedProperties: PropertyValues<this>) {
-        // `anchorClient` and `clientDevice` might come in 2 separate `willUpdate` events
         if (
-            changedProperties.has("anchorClient") ||
-            changedProperties.has("clientDevice")
+            (changedProperties.has("anchorClient") && this.anchorClient) ||
+            (changedProperties.has("location") && this.location)
         ) {
             await this.fetchCouponSupplyBalance();
             // Set defaults
-            this.defaultRegion = this.clientDevice?.country?.code || "";
-            this.defaultGeohash = this.clientDevice?.geohash || "";
+            this.defaultRegion = this.location.country.code || "";
+            this.defaultGeohash = this.location.geohash || "";
         }
     }
 
@@ -155,7 +156,7 @@ export class MintPage extends LitElement {
     }
 
     render() {
-        if (this.anchorClient && this.clientDevice) {
+        if (this.anchorClient && this.location) {
             return this.getPage();
         } else {
             return this.getLoading();

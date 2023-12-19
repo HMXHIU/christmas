@@ -1,68 +1,8 @@
-import { getCountriesForTimezone } from "countries-and-timezones";
-import { COUNTRY_DETAILS, IPFS_HTTP_GATEWAY } from "./constants";
-import geohash from "ngeohash";
+import { IPFS_HTTP_GATEWAY } from "./constants";
 import {
     Coupon,
     CouponMetadata,
 } from "../../../lib/anchor-client/anchorClient";
-
-export interface Country {
-    code: string;
-    name: string;
-}
-
-export interface ClientDevice {
-    geolocationCoordinates: GeolocationCoordinates | null;
-    geohash: string | null;
-    country: Country | null;
-}
-
-export async function getClientDevice(): Promise<ClientDevice> {
-    const geolocationCoordinates = await getDeviceLocation();
-    return {
-        geolocationCoordinates,
-        geohash: geohash.encode(
-            geolocationCoordinates.latitude,
-            geolocationCoordinates.longitude,
-            6
-        ),
-        country: getUserCountry(),
-    };
-}
-
-export async function getUserGeohash(): Promise<string> {
-    const { latitude, longitude } = await getDeviceLocation();
-    return geohash.encode(latitude, longitude, 6);
-}
-
-export function getDeviceLocation(): Promise<GeolocationCoordinates> {
-    return new Promise((resolve, reject) => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    resolve(position.coords);
-                },
-                (error) => {
-                    reject(new Error("Failed to retrieve geolocation."));
-                }
-            );
-        } else {
-            reject(new Error("Geolocation is not supported by this browser."));
-        }
-    });
-}
-
-export function getTimezone(): string {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone;
-}
-
-export function getUserCountry(): { code: string; name: string } {
-    const first = getCountriesForTimezone(getTimezone())[0];
-    return {
-        code: COUNTRY_DETAILS[first.id][0] || "USA",
-        name: first.name,
-    };
-}
 
 export function generateQRCodeURL(kwargs: Record<string, string>): string {
     const origin =

@@ -15,8 +15,8 @@ import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     getAssociatedTokenAddress,
 } from "@solana/spl-token";
-import { DISCRIMINATOR_SIZE, PUBKEY_SIZE } from "./constants";
-import { getUserCountry, getUserGeohash } from "../../app/src/lib/utils"; // TODO: move this to a library
+import { DISCRIMINATOR_SIZE, PUBKEY_SIZE } from "./def";
+import { getCountry, getGeohash } from "../user-device-client/utils"; // TODO: move this to a library
 import { Wallet, AnchorWallet } from "@solana/wallet-adapter-react";
 
 declare global {
@@ -649,10 +649,10 @@ export class AnchorClient {
         const user = await this.getUser();
         if (user === null) {
             if (!region) {
-                region = getUserCountry().code;
+                region = getCountry().code;
             }
             if (!geo) {
-                geo = await getUserGeohash();
+                geo = await getGeohash();
             }
             await this.createUser({ region, geo });
         }

@@ -1,11 +1,14 @@
-import { LitElement, html, css, PropertyValues } from "lit";
+import { LitElement, html, css, PropertyValues, PropertyValueMap } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { consume } from "@lit/context";
-import { anchorClientContext, clientDeviceContext } from "../layouts/app-main";
+import { anchorClientContext } from "../layouts/app-main";
 import { AnchorClient, Coupon } from "../../../lib/anchor-client/anchorClient";
-import { ClientDevice } from "../lib/utils";
 import { ClaimCouponDetail } from "../components/claim-coupon-dialog";
 import { RedeemCouponDetail } from "../components/redeem-coupon-dialog";
+import {
+    locationContext,
+    Location,
+} from "../providers/userDeviceClientProvider";
 
 @customElement("coupons-page")
 export class CouponsPage extends LitElement {
@@ -13,9 +16,9 @@ export class CouponsPage extends LitElement {
     @state()
     accessor anchorClient: AnchorClient | null = null;
 
-    @consume({ context: clientDeviceContext, subscribe: true })
+    @consume({ context: locationContext, subscribe: true })
     @state()
-    accessor clientDevice: ClientDevice | null = null;
+    accessor location: Location | null = null;
 
     @state()
     accessor coupons: Coupon[] = [];
@@ -25,16 +28,13 @@ export class CouponsPage extends LitElement {
 
     async onClaimCoupon(e: CustomEvent<ClaimCouponDetail>) {
         const { coupon, numTokens } = e.detail;
-        if (this.anchorClient && this.clientDevice) {
-            const region = this.clientDevice.country?.code;
-            const geo = this.clientDevice.geohash;
-
+        if (this.anchorClient && this.location) {
             // Claim from market, also creates a `User` using `region` and `geo`
             await this.anchorClient.claimFromMarket(
                 coupon.account.mint,
                 numTokens,
-                region,
-                geo
+                this.location.country.code,
+                this.location.geohash
             );
             // TODO: handle error
 
@@ -48,10 +48,11 @@ export class CouponsPage extends LitElement {
     }
 
     async fetchCoupons() {
-        // Only fetch if `anchorClient` and `clientDevice` exists
-        const region = this.clientDevice?.country?.code;
-        if (this.anchorClient && region) {
-            this.coupons = await this.anchorClient.getCoupons(region);
+        // Only fetch if `anchorClient` and `location` exists
+        if (this.anchorClient && this.location) {
+            this.coupons = await this.anchorClient.getCoupons(
+                this.location.country.code
+            );
         }
     }
 
@@ -62,12 +63,17 @@ export class CouponsPage extends LitElement {
         }
     }
 
+    async firstUpdated() {
+        await this.fetchCoupons();
+        await this.fetchClaimedCoupons();
+    }
+
     async willUpdate(changedProperties: PropertyValues<this>) {
-        // `anchorClient` and `clientDevice` might come in 2 separate `willUpdate` events
         if (
-            changedProperties.has("anchorClient") ||
-            changedProperties.has("clientDevice")
+            (changedProperties.has("anchorClient") && this.anchorClient) ||
+            (changedProperties.has("location") && this.location)
         ) {
+            console.log(`CHANGED: ${changedProperties}`);
             await this.fetchCoupons();
             await this.fetchClaimedCoupons();
         }
@@ -160,7 +166,7 @@ export class CouponsPage extends LitElement {
     }
 
     render() {
-        if (this.anchorClient && this.clientDevice) {
+        if (this.anchorClient && this.location) {
             return this.getPage();
         } else {
             return this.getLoading();
