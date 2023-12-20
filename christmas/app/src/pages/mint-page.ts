@@ -2,10 +2,9 @@ import { LitElement, html, css, PropertyValues } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { consume } from "@lit/context";
 import { AnchorClient, Coupon } from "../../../lib/anchor-client/anchorClient";
-import {
-    anchorClientContext,
-    nftStorageClientContext,
-} from "../layouts/app-main";
+import { nftStorageClientContext } from "../providers/nftStorageClientProvider";
+
+import { anchorClientContext } from "../providers/anchorClientProvider";
 import { CreateCouponDetail } from "../components/create-coupon-dialog";
 import { NFTStorageClient } from "../lib/nftStorageClient";
 import { MintCouponDetail } from "../components/mint-coupon-dialog";
@@ -69,7 +68,6 @@ export class MintPage extends LitElement {
     }
 
     async onMintCoupon(e: CustomEvent<MintCouponDetail>) {
-        console.log(e.detail);
         if (this.anchorClient && this.nftStorageClient) {
             const { coupon, numTokens } = e.detail;
 

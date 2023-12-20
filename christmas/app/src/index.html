@@ -14,7 +14,11 @@
 
     <body>
         <user-device-client-provider>
-            <app-main></app-main>
+            <anchor-client-provider>
+                <nft-storage-client-provider>
+                    <app-main></app-main>
+                </nft-storage-client-provider>
+            </anchor-client-provider>
         </user-device-client-provider>
         <script src="bundle.js"></script>
     </body>

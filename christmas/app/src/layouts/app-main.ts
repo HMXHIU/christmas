@@ -1,35 +1,17 @@
-import { LitElement, html, css } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { LitElement, html, css, PropertyValues } from "lit";
+import { customElement, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { Router } from "@vaadin/router";
-import { provide } from "@lit/context";
-import { createContext } from "@lit/context";
+import { consume } from "@lit/context";
 import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
-import { NFTStorageClient } from "../lib/nftStorageClient";
-import { NFT_STORAGE_TOKEN } from "../lib/constants";
-import { WalletDetail } from "../components/solana-wallet";
-
-// Providers
-export const anchorClientContext = createContext<AnchorClient | null>(
-    Symbol("anchor-client")
-);
-export const nftStorageClientContext = createContext<NFTStorageClient | null>(
-    Symbol("nft-storage")
-);
+import { anchorClientContext } from "../providers/anchorClientProvider";
 
 // App Main
 @customElement("app-main")
 export class AppMain extends LitElement {
-    // Providers
-    @provide({ context: anchorClientContext })
+    @consume({ context: anchorClientContext, subscribe: true })
     @state()
     accessor anchorClient: AnchorClient | null = null;
-
-    @provide({ context: nftStorageClientContext })
-    @state()
-    accessor nftStorageClient: NFTStorageClient = new NFTStorageClient({
-        token: NFT_STORAGE_TOKEN,
-    });
 
     // Setup router
     firstUpdated() {
@@ -43,24 +25,6 @@ export class AppMain extends LitElement {
         ]);
     }
 
-    async onConnectWallet(e: CustomEvent<WalletDetail>) {
-        const { wallet, anchorWallet } = e.detail;
-        if (wallet && anchorWallet) {
-            // Create AnchorClient
-            this.anchorClient = new AnchorClient({
-                wallet: wallet,
-                anchorWallet: anchorWallet,
-            });
-            console.log(
-                `app-main::onConnectWallet:: ${e.detail.anchorWallet.publicKey}`
-            );
-        }
-    }
-    onDisconnectWallet(e: CustomEvent) {
-        this.anchorClient = null;
-        console.log(`app-main::onDisconnectWallet`);
-    }
-
     getContent() {
         return html`
             <!-- Show page-route if there wallet is connected -->
@@ -71,8 +35,6 @@ export class AppMain extends LitElement {
             <!-- Show onboard-wallet-page if wallet is not connected -->
             <onboard-wallet-page
                 class=${classMap({ hidden: Boolean(this.anchorClient) })}
-                @on-connect-wallet=${this.onConnectWallet}
-                @on-disconnect-wallet=${this.onDisconnectWallet}
             ></onboard-wallet-page>
         `;
     }
@@ -107,8 +69,7 @@ export class AppMain extends LitElement {
                                 hidden: !Boolean(this.anchorClient),
                             })}
                             @click="${() => {
-                                this.anchorClient?.wallet.adapter.disconnect();
-                                this.anchorClient = null;
+                                this.anchorClient?.wallet.adapter.disconnect(); // this will trigget the `on-disconnect-wallet` event
                             }}"
                             >Disconnect</sl-button
                         >

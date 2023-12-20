@@ -1,7 +1,7 @@
 import { LitElement, html, css, PropertyValues, PropertyValueMap } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { consume } from "@lit/context";
-import { anchorClientContext } from "../layouts/app-main";
+import { anchorClientContext } from "../providers/anchorClientProvider";
 import { AnchorClient, Coupon } from "../../../lib/anchor-client/anchorClient";
 import { ClaimCouponDetail } from "../components/claim-coupon-dialog";
 import { RedeemCouponDetail } from "../components/redeem-coupon-dialog";
@@ -73,7 +73,6 @@ export class CouponsPage extends LitElement {
             (changedProperties.has("anchorClient") && this.anchorClient) ||
             (changedProperties.has("location") && this.location)
         ) {
-            console.log(`CHANGED: ${changedProperties}`);
             await this.fetchCoupons();
             await this.fetchClaimedCoupons();
         }
