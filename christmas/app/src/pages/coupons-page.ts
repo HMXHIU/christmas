@@ -2,7 +2,12 @@ import { LitElement, html, css, PropertyValues, PropertyValueMap } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { consume } from "@lit/context";
 import { anchorClientContext } from "../providers/anchorClientProvider";
-import { AnchorClient, Coupon } from "../../../lib/anchor-client/anchorClient";
+import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
+import {
+    Coupon,
+    Account,
+    TokenAccount,
+} from "../../../lib/anchor-client/types";
 import { ClaimCouponDetail } from "../components/claim-coupon-dialog";
 import { RedeemCouponDetail } from "../components/redeem-coupon-dialog";
 import {
@@ -21,10 +26,10 @@ export class CouponsPage extends LitElement {
     accessor location: Location | null = null;
 
     @state()
-    accessor coupons: Coupon[] = [];
+    accessor coupons: [Account<Coupon>, TokenAccount][] = [];
 
     @state()
-    accessor claimedCoupons: [Coupon, number][] = [];
+    accessor claimedCoupons: [Account<Coupon>, number][] = [];
 
     async onClaimCoupon(e: CustomEvent<ClaimCouponDetail>) {
         const { coupon, numTokens } = e.detail;
@@ -151,11 +156,12 @@ export class CouponsPage extends LitElement {
                 <sl-tab slot="nav" panel="others">Others</sl-tab>
                 <sl-tab-panel name="market">
                     <div class="app-grid">
-                        ${this.coupons.map((coupon) => {
+                        ${this.coupons.map(([coupon, tokenAccount]) => {
                             return html`
                                 <coupon-card
                                     class="item"
                                     .coupon=${coupon}
+                                    .tokenAccount=${tokenAccount}
                                     @on-claim=${this.onClaimCoupon}
                                 ></coupon-card>
                             `;

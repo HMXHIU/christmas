@@ -1,14 +1,15 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property, state, query } from "lit/decorators.js";
+import { customElement, property, query } from "lit/decorators.js";
 import {
+    Account,
     Coupon,
     CouponMetadata,
-} from "../../../lib/anchor-client/anchorClient";
+} from "../../../lib/anchor-client/types";
 import { cleanString } from "../../../lib/anchor-client/utils";
 
 export interface MintCouponDetail {
     numTokens: number;
-    coupon: Coupon;
+    coupon: Account<Coupon>;
 }
 
 @customElement("mint-coupon-dialog")
@@ -26,7 +27,7 @@ export class MintCoupon extends LitElement {
     accessor balance!: number;
 
     @property({ attribute: false })
-    accessor coupon!: Coupon;
+    accessor coupon!: Account<Coupon>;
 
     @property({ attribute: false })
     accessor couponMetadata: CouponMetadata = {
@@ -42,7 +43,7 @@ export class MintCoupon extends LitElement {
                 bubbles: true,
                 composed: true,
                 detail: {
-                    numTokens: parseInt(e.detail.get("numTokens") as string),
+                    numTokens: parseInt(e.detail.numTokens as string),
                     coupon: this.coupon,
                 },
             })

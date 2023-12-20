@@ -3,14 +3,15 @@ import { customElement, property, state } from "lit/decorators.js";
 import {
     Coupon,
     CouponMetadata,
-} from "../../../lib/anchor-client/anchorClient";
+    Account,
+} from "../../../lib/anchor-client/types";
 import { getCouponMetadata } from "../lib/utils";
 import { cleanString } from "../../../lib/anchor-client/utils";
 
 @customElement("mint-coupon-card")
 export class MintCouponCard extends LitElement {
     @property({ attribute: false })
-    accessor coupon!: Coupon;
+    accessor coupon!: Account<Coupon>;
 
     @property({ attribute: true, type: Number })
     accessor supply!: number;

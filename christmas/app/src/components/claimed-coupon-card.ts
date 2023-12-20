@@ -3,8 +3,9 @@ import { customElement, property, state } from "lit/decorators.js";
 import {
     Coupon,
     CouponMetadata,
-    AnchorClient,
-} from "../../../lib/anchor-client/anchorClient";
+    Account,
+} from "../../../lib/anchor-client/types";
+import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
 import { getCouponMetadata } from "../lib/utils";
 import { cleanString } from "../../../lib/anchor-client/utils";
 import { RedeemCouponDetail } from "../components/redeem-coupon-dialog";
@@ -19,7 +20,7 @@ export class ClaimedCouponCard extends LitElement {
     accessor anchorClient: AnchorClient | null = null;
 
     @property({ attribute: false })
-    accessor coupon!: Coupon;
+    accessor coupon!: Account<Coupon>;
 
     @state()
     accessor couponMetadata: CouponMetadata = {

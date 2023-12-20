@@ -1,8 +1,9 @@
 import { IPFS_HTTP_GATEWAY } from "./constants";
 import {
+    Account,
     Coupon,
     CouponMetadata,
-} from "../../../lib/anchor-client/anchorClient";
+} from "../../../lib/anchor-client/types";
 
 export function generateQRCodeURL(kwargs: Record<string, string>): string {
     const origin =
@@ -37,7 +38,7 @@ export function nft_uri_to_url(uri: string): string {
 }
 
 export async function getCouponMetadata(
-    coupon: Coupon
+    coupon: Account<Coupon>
 ): Promise<CouponMetadata> {
     const url = nft_uri_to_url(coupon.account.uri);
     const response = await fetch(url);

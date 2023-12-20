@@ -1,7 +1,8 @@
 import { LitElement, html, css, PropertyValues } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { consume } from "@lit/context";
-import { AnchorClient, Coupon } from "../../../lib/anchor-client/anchorClient";
+import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
+import { Account, Coupon } from "../../../lib/anchor-client/types";
 import { nftStorageClientContext } from "../providers/nftStorageClientProvider";
 
 import { anchorClientContext } from "../providers/anchorClientProvider";
@@ -34,7 +35,7 @@ export class MintPage extends LitElement {
     accessor defaultGeohash: string = "";
 
     @state()
-    accessor couponSupplyBalance: [Coupon, number, number][] = [];
+    accessor couponSupplyBalance: [Account<Coupon>, number, number][] = [];
 
     async fetchCouponSupplyBalance() {
         if (this.anchorClient) {

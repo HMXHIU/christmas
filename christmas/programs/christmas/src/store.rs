@@ -8,7 +8,7 @@ pub struct CreateStore<'info> {
     #[account(
         init_if_needed,
         payer = signer,
-        seeds = [b"store", name.as_bytes(), signer.key().as_ref()],
+        seeds = [b"store", signer.key().as_ref(), name.as_bytes()],
         bump,
         space = Store::len(),
     )]

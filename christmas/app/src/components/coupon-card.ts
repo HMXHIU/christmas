@@ -3,7 +3,9 @@ import { customElement, property, state } from "lit/decorators.js";
 import {
     Coupon,
     CouponMetadata,
-} from "../../../lib/anchor-client/anchorClient";
+    Account,
+    TokenAccount,
+} from "../../../lib/anchor-client/types";
 import { getCouponMetadata } from "../lib/utils";
 import { cleanString } from "../../../lib/anchor-client/utils";
 import { ParsedAccountData } from "@solana/web3.js";
@@ -11,7 +13,10 @@ import { ParsedAccountData } from "@solana/web3.js";
 @customElement("coupon-card")
 export class CouponCard extends LitElement {
     @property({ attribute: false })
-    accessor coupon!: Coupon;
+    accessor coupon!: Account<Coupon>;
+
+    @property({ attribute: false })
+    accessor tokenAccount!: TokenAccount;
 
     @state()
     accessor couponMetadata: CouponMetadata = {
@@ -60,6 +65,10 @@ export class CouponCard extends LitElement {
     `;
 
     render() {
+        const tokenAccountData = (
+            this.tokenAccount.account.data as ParsedAccountData
+        ).parsed.info;
+
         return html`
             <claim-coupon-dialog
                 .coupon=${this.coupon}
@@ -89,8 +98,7 @@ export class CouponCard extends LitElement {
                                 )}</strong
                             ><br />
                             <small
-                                >${this.coupon.tokenAccountData?.parsed.info
-                                    .tokenAmount.uiAmount}
+                                >${tokenAccountData.tokenAmount.uiAmount}
                                 remaining</small
                             >
                         </p>

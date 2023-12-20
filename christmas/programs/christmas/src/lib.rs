@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use solana_program::hash::hash;
 mod coupon;
 mod defs;
 mod market;

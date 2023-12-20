@@ -2,13 +2,14 @@ import { LitElement, html, css } from "lit";
 import { customElement, property, state, query } from "lit/decorators.js";
 import {
     Coupon,
+    Account,
     CouponMetadata,
-} from "../../../lib/anchor-client/anchorClient";
+} from "../../../lib/anchor-client/types";
 import { cleanString } from "../../../lib/anchor-client/utils";
 
 export interface ClaimCouponDetail {
     numTokens: number;
-    coupon: Coupon;
+    coupon: Account<Coupon>;
 }
 
 @customElement("claim-coupon-dialog")
@@ -23,7 +24,7 @@ export class ClaimCoupon extends LitElement {
     accessor form: any;
 
     @property({ attribute: false })
-    accessor coupon!: Coupon;
+    accessor coupon!: Account<Coupon>;
 
     @property({ attribute: false })
     accessor couponMetadata: CouponMetadata = {
