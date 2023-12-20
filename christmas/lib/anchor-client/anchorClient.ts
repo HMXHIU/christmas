@@ -34,7 +34,7 @@ export class AnchorClient {
     provider: anchor.Provider;
     program: anchor.Program<Christmas>;
     anchorWallet: AnchorWallet; // AnchorWallet from useAnchorWallet() to set up Anchor in the frontend
-    wallet: Wallet; // The Wallet from useWallet has more functionality, but can't be used to set up the AnchorProvider
+    wallet: Wallet | null; // The Wallet from useWallet has more functionality, but can't be used to set up the AnchorProvider
 
     constructor({
         programId,
@@ -43,30 +43,32 @@ export class AnchorClient {
         wallet,
     }: {
         anchorWallet: AnchorWallet;
-        wallet: Wallet;
+        wallet?: Wallet;
         programId?: web3.PublicKey;
         cluster?: string;
     }) {
         this.anchorWallet = anchorWallet;
-        this.wallet = wallet;
-        this.programId =
-            programId || new web3.PublicKey(anchor.workspace.programId);
+        this.wallet = wallet || null;
+
         this.cluster = cluster || "http://127.0.0.1:8899";
         this.connection = new web3.Connection(this.cluster, "confirmed");
-
-        console.log(
-            `Connected to cluster: ${this.cluster} program: ${this.programId}`
-        );
 
         this.provider = new anchor.AnchorProvider(
             this.connection,
             this.anchorWallet,
             anchor.AnchorProvider.defaultOptions()
         );
+        this.programId =
+            programId ||
+            new web3.PublicKey(anchor.workspace.Christmas.programId);
         this.program = new anchor.Program<Christmas>(
             idl as any,
             this.programId,
             this.provider
+        );
+
+        console.log(
+            `Connected to cluster: ${this.cluster} program: ${this.programId}`
         );
     }
 
@@ -706,5 +708,24 @@ export class AnchorClient {
     async getStore(name: string): Promise<Store> {
         const [storePda, _] = this.getStorePda(name);
         return await this.program.account.store.fetch(storePda);
+    }
+
+    async initializeProgram(): Promise<TransactionResult> {
+        const [programStatePda, _] = web3.PublicKey.findProgramAddressSync(
+            [anchor.utils.bytes.utf8.encode("state")],
+            this.programId
+        );
+        return await this.executeTransaction(
+            new Transaction().add(
+                await this.program.methods
+                    .initialize()
+                    .accounts({
+                        programState: programStatePda,
+                        signer: this.anchorWallet.publicKey,
+                        systemProgram: web3.SystemProgram.programId,
+                    })
+                    .instruction()
+            )
+        );
     }
 }

@@ -1,3 +1,6 @@
 {
-  "rust-analyzer.linkedProjects": ["./christmas/programs/christmas/Cargo.toml"]
+  "rust-analyzer.linkedProjects": [
+    "./christmas/programs/christmas/Cargo.toml"
+  ],
+  "cloudcode.duetAI.inlineSuggestions.enableAuto": false
 }
