@@ -70,11 +70,13 @@ export class CouponsPage extends LitElement {
 
     async willUpdate(changedProperties: PropertyValues<this>) {
         if (
-            (changedProperties.has("anchorClient") && this.anchorClient) ||
-            (changedProperties.has("location") && this.location)
+            changedProperties.has("anchorClient") ||
+            changedProperties.has("location")
         ) {
-            await this.fetchCoupons();
-            await this.fetchClaimedCoupons();
+            if (this.anchorClient && this.location) {
+                await this.fetchCoupons();
+                await this.fetchClaimedCoupons();
+            }
         }
     }
 

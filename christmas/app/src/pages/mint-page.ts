@@ -78,20 +78,21 @@ export class MintPage extends LitElement {
             );
 
             // TODO: handle failed transactions
-
             this.fetchCouponSupplyBalance();
         }
     }
 
     async willUpdate(changedProperties: PropertyValues<this>) {
         if (
-            (changedProperties.has("anchorClient") && this.anchorClient) ||
-            (changedProperties.has("location") && this.location)
+            changedProperties.has("anchorClient") ||
+            changedProperties.has("location")
         ) {
-            await this.fetchCouponSupplyBalance();
-            // Set defaults
-            this.defaultRegion = this.location.country.code || "";
-            this.defaultGeohash = this.location.geohash || "";
+            if (this.anchorClient && this.location) {
+                await this.fetchCouponSupplyBalance();
+                // Set defaults
+                this.defaultRegion = this.location.country.code || "";
+                this.defaultGeohash = this.location.geohash || "";
+            }
         }
     }
 

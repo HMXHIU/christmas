@@ -15,15 +15,6 @@ export class CreateCoupon extends LitElement {
     @query("#dialog")
     accessor dialog: any;
 
-    @query("#dialog-close")
-    accessor dialogClose: any;
-
-    @query("#dialog-open")
-    accessor dialogOpen: any;
-
-    @query("#form-submit")
-    accessor form: any;
-
     @query("#image-input")
     accessor imageInput: any;
 
@@ -33,60 +24,24 @@ export class CreateCoupon extends LitElement {
     @property({ attribute: true, type: String })
     accessor defaultGeohash: string = "";
 
-    firstUpdated() {
-        // Dialog events
-        this.dialogClose.addEventListener("click", () => this.dialog.hide());
-        this.dialogOpen.addEventListener("click", () => this.dialog.show());
+    onSubmit(e: CustomEvent) {
+        // Dispatch on-create event
+        this.dispatchEvent(
+            new CustomEvent<CreateCouponDetail>("on-create", {
+                bubbles: true,
+                composed: true,
+                detail: {
+                    name: e.detail.name.toString(),
+                    description: e.detail.description.toString(),
+                    image: this.imageInput.file,
+                    region: e.detail.region.toString(),
+                    geo: e.detail.geo.toString(),
+                },
+            })
+        );
 
-        // Form events
-        this.form.addEventListener("submit", (e: SubmitEvent) => {
-            e.preventDefault(); // prevent refresh browser
-
-            let entries = new Array();
-            new FormData(this.form).forEach((value, key) => {
-                entries.push([key, value]);
-            });
-
-            const parsed = Object.fromEntries(entries);
-
-            // Dispatch on-create event
-            this.dispatchEvent(
-                new CustomEvent<CreateCouponDetail>("on-create", {
-                    bubbles: true,
-                    composed: true,
-                    detail: {
-                        name: parsed.name.toString(),
-                        description: parsed.description.toString(),
-                        image: this.imageInput.file,
-                        region: parsed.region.toString(),
-                        geo: parsed.geo.toString(),
-                    },
-                })
-            );
-
-            // Close dialog
-            this.dialog.hide();
-        });
-        // this.form.addEventListener("formdata", (e: FormDataEvent) => {
-        //     const parsed = Object.fromEntries(Array.from(e.formData.entries()));
-        //     // Dispatch on-create event
-        //     this.dispatchEvent(
-        //         new CustomEvent<CreateCouponDetail>("on-create", {
-        //             bubbles: true,
-        //             composed: true,
-        //             detail: {
-        //                 name: parsed.name.toString(),
-        //                 description: parsed.description.toString(),
-        //                 image: this.imageInput.file,
-        //                 region: parsed.region.toString(),
-        //                 geo: parsed.geo.toString(),
-        //             },
-        //         })
-        //     );
-
-        //     // Close dialog
-        //     this.dialog.hide();
-        // });
+        // Close dialog
+        this.dialog.hide();
     }
 
     static styles = css`
@@ -103,86 +58,97 @@ export class CreateCoupon extends LitElement {
 
     render() {
         return html`
-            <sl-button id="dialog-open">Create Coupon</sl-button>
+            <sl-button id="dialog-open" @click=${() => this.dialog.show()}
+                >Create Coupon</sl-button
+            >
             <sl-dialog label="Create Coupon" id="dialog">
-                <form class="input-validation-required" id="form-submit">
-                    <sl-input name="name" label="Name" required></sl-input>
-                    <br />
-                    <sl-textarea
-                        name="description"
-                        label="Description"
-                        required
-                    ></sl-textarea>
-                    <br />
-                    <sl-select
-                        label="Category"
-                        clearable
-                        required
-                        value="other"
+                <form-event @on-submit=${this.onSubmit}>
+                    <form
+                        class="input-validation-required"
+                        action="submit"
+                        slot="form"
                     >
-                        <sl-option value="food">Food</sl-option>
-                        <sl-option value="events">Events</sl-option>
-                        <sl-option value="retail">Retail</sl-option>
-                        <sl-option value="other">Other</sl-option>
-                    </sl-select>
-                    <br />
-                    <sl-select
-                        label="Region"
-                        clearable
-                        required
-                        value=${this.defaultRegion}
-                        name="region"
-                    >
-                        ${Object.values(COUNTRY_DETAILS).map(
-                            ([code, name]) =>
-                                html`<sl-option value="${code}"
-                                    >${name}</sl-option
-                                >`
-                        )}
-                    </sl-select>
-                    <br />
+                        <sl-input name="name" label="Name" required></sl-input>
+                        <br />
+                        <sl-textarea
+                            name="description"
+                            label="Description"
+                            required
+                        ></sl-textarea>
+                        <br />
+                        <sl-select
+                            label="Category"
+                            clearable
+                            required
+                            value="other"
+                        >
+                            <sl-option value="food">Food</sl-option>
+                            <sl-option value="events">Events</sl-option>
+                            <sl-option value="retail">Retail</sl-option>
+                            <sl-option value="other">Other</sl-option>
+                        </sl-select>
+                        <br />
+                        <sl-select
+                            label="Region"
+                            clearable
+                            required
+                            value=${this.defaultRegion}
+                            name="region"
+                        >
+                            ${Object.values(COUNTRY_DETAILS).map(
+                                ([code, name]) =>
+                                    html`<sl-option value="${code}"
+                                        >${name}</sl-option
+                                    >`
+                            )}
+                        </sl-select>
+                        <br />
 
-                    <sl-input
-                        name="address"
-                        label="Address/Location"
-                    ></sl-input>
-                    <br />
-
-                    <label for="validity-period">Validity Period</label>
-                    <div class="date-container" id="validity-period">
                         <sl-input
-                            class="date-range"
-                            type="date"
-                            placeholder="Valid From"
+                            name="address"
+                            label="Address/Location"
                         ></sl-input>
+                        <br />
+
+                        <label for="validity-period">Validity Period</label>
+                        <div class="date-container" id="validity-period">
+                            <sl-input
+                                class="date-range"
+                                type="date"
+                                placeholder="Valid From"
+                            ></sl-input>
+                            <sl-input
+                                class="date-range"
+                                type="date"
+                                placeholder="Valid To"
+                            ></sl-input>
+                        </div>
+                        <br />
+
+                        <image-input
+                            label="Upload Image"
+                            id="image-input"
+                        ></image-input>
+                        <br />
+
                         <sl-input
-                            class="date-range"
-                            type="date"
-                            placeholder="Valid To"
+                            name="geo"
+                            label="Geohash"
+                            required
+                            value="${this.defaultGeohash}"
                         ></sl-input>
-                    </div>
-                    <br />
-
-                    <image-input
-                        label="Upload Image"
-                        id="image-input"
-                    ></image-input>
-                    <br />
-
-                    <sl-input
-                        name="geo"
-                        label="Geohash"
-                        required
-                        value="${this.defaultGeohash}"
-                    ></sl-input>
-                    <br /><br />
-                    <sl-button type="submit" variant="primary"
-                        >Submit</sl-button
-                    >
-                    <sl-button variant="primary" id="dialog-close"
-                        >Close</sl-button
-                    >
-                </form>
+                        <br /><br />
+                        <sl-button type="submit" variant="primary"
+                            >Submit</sl-button
+                        >
+                        <sl-button
+                            variant="primary"
+                            id="dialog-close"
+                            @click=${() => this.dialog.hide()}
+                            >Close</sl-button
+                        >
+                    </form>
+                </form-event>
             </sl-dialog>
         `;
     }

@@ -31,6 +31,7 @@ import "@polymer/app-layout/app-layout.js";
 import "./providers/userDeviceClientProvider";
 import "./providers/anchorClientProvider";
 import "./providers/nftStorageClientProvider";
+import "./components/form-event";
 import "./components/solana-wallet";
 import "./components/coupon-card";
 import "./components/mint-coupon-card";
