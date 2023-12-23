@@ -1,5 +1,6 @@
 import * as web3 from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
+import { BN } from "@coral-xyz/anchor";
 import { Transaction, Signer } from "@solana/web3.js";
 import idl from "../../target/idl/christmas.json";
 import { Christmas } from "../../target/types/christmas";
@@ -19,6 +20,7 @@ import {
     Coupon,
     Store,
     TokenAccount,
+    ProgramState,
 } from "./types";
 
 declare global {
@@ -88,14 +90,21 @@ export class AnchorClient {
             )
         ).value;
 
-        console.log(`Transaction: ${signature} Result: ${result}`);
+        console.log(
+            `Transaction: ${signature}\nResult:\n${JSON.stringify(
+                result,
+                null,
+                2
+            )}`
+        );
 
         return { result, signature };
     }
 
     async executeTransaction(
         tx: Transaction,
-        signers?: Array<Signer>
+        signers?: Array<Signer>,
+        options?: web3.SendOptions
     ): Promise<TransactionResult> {
         // set latest blockhash
         tx.recentBlockhash = (
@@ -113,6 +122,9 @@ export class AnchorClient {
         // sign and send
         const signature = await this.connection.sendRawTransaction(
             (await this.anchorWallet.signTransaction(tx)).serialize()
+            // {
+            //     skipPreflight: true, // TODO: REMOVE DEBUG
+            // }
         );
 
         // confirm transaction
@@ -209,6 +221,7 @@ export class AnchorClient {
         name,
         uri,
         symbol,
+        store,
         mint,
     }: {
         geo: string;
@@ -216,6 +229,7 @@ export class AnchorClient {
         name: string;
         uri: string;
         symbol: string;
+        store: web3.PublicKey;
         mint?: web3.Keypair;
     }): Promise<TransactionResult> {
         // generate new mint keys if not provided
@@ -236,6 +250,7 @@ export class AnchorClient {
             .accounts({
                 mint: mint.publicKey,
                 coupon: couponPda,
+                store: store,
                 signer: this.anchorWallet.publicKey,
                 systemProgram: web3.SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
@@ -278,7 +293,7 @@ export class AnchorClient {
 
         // Construct the instruction for the redeemCoupon transaction.
         const ix = await this.program.methods
-            .redeemCoupon(new anchor.BN(numTokens))
+            .redeemCoupon(new BN(numTokens))
             .accounts({
                 coupon: coupon,
                 mint: mint,
@@ -586,7 +601,7 @@ export class AnchorClient {
 
         // mint numTokens to region market
         const ix = await this.program.methods
-            .mintToMarket(region, new anchor.BN(numTokens))
+            .mintToMarket(region, new BN(numTokens))
             .accounts({
                 regionMarket: regionMarketPda,
                 regionMarketTokenAccount: regionMarketTokenAccountPda,
@@ -651,7 +666,7 @@ export class AnchorClient {
 
         // Build the instruction for the claimFromMarket transaction.
         const ix = await this.program.methods
-            .claimFromMarket(new anchor.BN(numTokens))
+            .claimFromMarket(new BN(numTokens))
             .accounts({
                 user: userPda,
                 userTokenAccount: userTokenAccount,
@@ -672,49 +687,76 @@ export class AnchorClient {
         return await this.executeTransaction(tx);
     }
 
-    getStorePda(name: string): [web3.PublicKey, number] {
+    /*
+    Store
+    */
+
+    getStorePda(id: BN, owner?: web3.PublicKey): [web3.PublicKey, number] {
         return web3.PublicKey.findProgramAddressSync(
             [
                 anchor.utils.bytes.utf8.encode("store"),
-                this.anchorWallet.publicKey.toBuffer(),
-                anchor.utils.bytes.utf8.encode(name),
+                owner
+                    ? owner.toBuffer()
+                    : this.anchorWallet.publicKey.toBuffer(),
+                id.toBuffer("be", 8),
             ],
             this.program.programId
         );
     }
 
-    async createStore(
-        name: string,
-        uri: string,
-        region: string,
-        geo: string
-    ): Promise<TransactionResult> {
-        const [storePda, _] = this.getStorePda(name);
+    async createStore({
+        name,
+        uri,
+        region,
+        geo,
+    }: {
+        name: string;
+        uri: string;
+        region: string;
+        geo: string;
+    }): Promise<TransactionResult> {
+        const storeId = await this.getAvailableStoreId();
+        const storePda = this.getStorePda(storeId)[0];
+        const programStatePda = this.getProgramStatePda()[0];
 
         return await this.executeTransaction(
             new Transaction().add(
                 await this.program.methods
-                    .createStore(name, region, geo, uri)
+                    .createStore(name, storeId, region, geo, uri)
                     .accounts({
                         store: storePda,
                         signer: this.anchorWallet.publicKey,
                         systemProgram: web3.SystemProgram.programId,
+                        state: programStatePda,
                     })
                     .instruction()
             )
         );
     }
 
-    async getStore(name: string): Promise<Store> {
-        const [storePda, _] = this.getStorePda(name);
+    async getStore(id: BN, owner?: web3.PublicKey): Promise<Store> {
+        const [storePda, _] = this.getStorePda(id, owner);
         return await this.program.account.store.fetch(storePda);
     }
 
-    async initializeProgram(): Promise<TransactionResult> {
-        const [programStatePda, _] = web3.PublicKey.findProgramAddressSync(
+    async getAvailableStoreId(): Promise<BN> {
+        const state = await this.getProgramState();
+        return state.storeCounter;
+    }
+
+    /*
+    Program
+    */
+
+    getProgramStatePda(): [web3.PublicKey, number] {
+        return web3.PublicKey.findProgramAddressSync(
             [anchor.utils.bytes.utf8.encode("state")],
             this.programId
         );
+    }
+
+    async initializeProgram(): Promise<TransactionResult> {
+        const [programStatePda, _] = this.getProgramStatePda();
         return await this.executeTransaction(
             new Transaction().add(
                 await this.program.methods
@@ -727,5 +769,10 @@ export class AnchorClient {
                     .instruction()
             )
         );
+    }
+
+    async getProgramState(): Promise<ProgramState> {
+        const [programStatePda, _] = this.getProgramStatePda();
+        return await this.program.account.programState.fetch(programStatePda);
     }
 }

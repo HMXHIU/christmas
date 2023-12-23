@@ -1,4 +1,4 @@
-use crate::defs::{BOOL_SIZE, BUMP_SIZE, DISCRIMINATOR_SIZE};
+use crate::defs::{BOOL_SIZE, BUMP_SIZE, DISCRIMINATOR_SIZE, U64_SIZE};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -20,11 +20,12 @@ pub struct Initialize<'info> {
 pub struct ProgramState {
     // Used to store global/shared state
     pub is_initialized: bool,
+    pub store_counter: u64,
     pub bump: u8,
 }
 
 impl ProgramState {
     fn len() -> usize {
-        DISCRIMINATOR_SIZE + BOOL_SIZE + BUMP_SIZE
+        DISCRIMINATOR_SIZE + BOOL_SIZE + U64_SIZE + BUMP_SIZE
     }
 }

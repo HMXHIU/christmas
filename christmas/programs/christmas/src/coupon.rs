@@ -4,6 +4,7 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use crate::defs::*;
 use crate::market::RegionMarket;
+use crate::store::Store;
 use crate::user::User;
 
 #[derive(Accounts)]
@@ -38,7 +39,7 @@ pub struct RedeemCoupon<'info> {
     symbol: String,
     region: String,
     geo: String,
-    uri: String
+    uri: String,
 )]
 pub struct CreateCoupon<'info> {
     #[account(
@@ -72,6 +73,12 @@ pub struct CreateCoupon<'info> {
         associated_token::authority = region_market,
     )]
     pub region_market_token_account: Account<'info, TokenAccount>,
+    #[account(
+        seeds = [b"store", signer.key().as_ref(), store.name.as_bytes()],
+        constraint = store.owner == signer.key(),
+        bump,
+    )]
+    pub store: Account<'info, Store>,
     #[account(mut)]
     pub signer: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -92,6 +99,7 @@ pub struct Coupon {
     pub uri: String, // to the json metadata
     pub region: String,
     pub geo: String,
+    pub store: Pubkey,
     pub bump: u8,
 }
 
@@ -105,6 +113,7 @@ impl Coupon {
             + COUPON_URI_SIZE
             + REGION_SIZE
             + GEO_SIZE
+            + PUBKEY_SIZE
             + BUMP_SIZE
     }
 }

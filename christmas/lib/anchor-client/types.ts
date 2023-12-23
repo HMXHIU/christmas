@@ -5,6 +5,7 @@ import {
     ParsedAccountData,
     AccountInfo,
 } from "@solana/web3.js";
+import { BN } from "@coral-xyz/anchor";
 
 export interface Coupon {
     updateAuthority: PublicKey;
@@ -14,6 +15,7 @@ export interface Coupon {
     uri: string;
     region: string;
     geo: string;
+    store: PublicKey;
     bump: number;
 }
 
@@ -25,13 +27,16 @@ export interface RegionMarket {
 export interface ProgramState {
     isInitialized: boolean;
     bump: number;
+    storeCounter: BN; // anchor returns u64 as BN
 }
 
 export interface Store {
     name: string;
+    id: BN;
     region: string;
     geo: string;
     uri: string;
+    owner: PublicKey;
     bump: number;
 }
 

@@ -36,6 +36,7 @@ pub mod christmas {
 
             // set initialized
             ctx.accounts.program_state.is_initialized = true;
+            ctx.accounts.program_state.store_counter = 0;
             ctx.accounts.program_state.bump = *ctx.bumps.get("program_state").unwrap();
         }
         Ok(())
@@ -54,6 +55,7 @@ pub mod christmas {
     pub fn create_store(
         ctx: Context<CreateStore>,
         name: String,
+        id: u64,
         region: String,
         geo: String,
         uri: String,
@@ -61,11 +63,16 @@ pub mod christmas {
         // check valid region
         code_to_country(&region).unwrap();
 
+        ctx.accounts.store.id = id;
         ctx.accounts.store.name = pad_string(&name, STORE_NAME_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.store.region = pad_string(&region, REGION_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.store.geo = pad_string(&geo, GEO_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.store.uri = pad_string(&uri, COUPON_URI_SIZE - STRING_PREFIX_SIZE);
+        ctx.accounts.store.owner = ctx.accounts.signer.key();
         ctx.accounts.store.bump = *ctx.bumps.get("store").unwrap();
+
+        // increment `store_counter` (Note: there is a max of 2^64 store)
+        ctx.accounts.state.store_counter = ctx.accounts.state.store_counter.saturating_add(1);
 
         Ok(())
     }
@@ -83,6 +90,7 @@ pub mod christmas {
 
         ctx.accounts.coupon.update_authority = ctx.accounts.signer.key();
         ctx.accounts.coupon.mint = ctx.accounts.mint.key();
+        ctx.accounts.coupon.store = ctx.accounts.store.key();
         ctx.accounts.coupon.name = pad_string(&name, COUPON_NAME_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.coupon.symbol = pad_string(&symbol, COUPON_SYMBOL_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.coupon.uri = pad_string(&uri, COUPON_URI_SIZE - STRING_PREFIX_SIZE);
