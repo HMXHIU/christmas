@@ -2,13 +2,14 @@ import { LitElement, html, css, PropertyValues } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { consume } from "@lit/context";
 import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
-import { Account, Coupon } from "../../../lib/anchor-client/types";
+import { Account, Coupon, Store } from "../../../lib/anchor-client/types";
 import { nftStorageClientContext } from "../providers/nftStorageClientProvider";
 
 import { anchorClientContext } from "../providers/anchorClientProvider";
 import { CreateCouponDetail } from "../components/create-coupon-dialog";
 import { NFTStorageClient } from "../lib/nftStorageClient";
 import { MintCouponDetail } from "../components/mint-coupon-dialog";
+import { CreateStoreDetail } from "../components/create-store-dialog";
 import {
     locationContext,
     Location,
@@ -35,12 +36,55 @@ export class MintPage extends LitElement {
     accessor defaultGeohash: string = "";
 
     @state()
+    accessor stores: Account<Store>[] = [];
+
+    @state()
     accessor couponSupplyBalance: [Account<Coupon>, number, number][] = [];
 
     async fetchCouponSupplyBalance() {
         if (this.anchorClient) {
             this.couponSupplyBalance =
                 (await this.anchorClient?.getMintedCoupons()) || [];
+        }
+    }
+
+    async fetchStores() {
+        if (this.anchorClient) {
+            this.stores = await this.anchorClient.getStores();
+
+            console.log(this.stores);
+        }
+    }
+
+    async onCreateStore(e: CustomEvent<CreateStoreDetail>) {
+        if (this.anchorClient && this.nftStorageClient) {
+            console.log(e.detail);
+
+            let metadataUrl = "";
+
+            if (e.detail.image) {
+                metadataUrl = await this.nftStorageClient.store({
+                    name: e.detail.name,
+                    description: e.detail.description,
+                    imageFile: e.detail.image,
+                    additionalMetadata: {
+                        address: e.detail.address,
+                    },
+                });
+                console.log(`Uploaded coupon metadata to ${metadataUrl}`);
+            }
+
+            const tx = await this.anchorClient.createStore({
+                name: e.detail.name,
+                geo: e.detail.geo,
+                region: e.detail.region,
+                uri: metadataUrl,
+            });
+
+            // refetch
+            this.fetchStores();
+
+            // TODO: handle failed transactions
         }
     }
 
@@ -60,6 +104,7 @@ export class MintPage extends LitElement {
                 geo: e.detail.geo,
                 region: e.detail.region,
                 name: e.detail.name,
+                store: null, // TODO: CREATE STORE
                 symbol: "", // TODO: remove symbol or auto set to user's stall
                 uri: metadataUrl,
             });
@@ -90,6 +135,7 @@ export class MintPage extends LitElement {
         ) {
             if (this.anchorClient && this.location) {
                 await this.fetchCouponSupplyBalance();
+                await this.fetchStores();
                 // Set defaults
                 this.defaultRegion = this.location.country.code || "";
                 this.defaultGeohash = this.location.geohash || "";
@@ -123,6 +169,30 @@ export class MintPage extends LitElement {
         `;
     }
 
+    getCreateStore() {
+        console.log(`stores: ${this.stores}`);
+        if (this.stores.length > 0) {
+            return html`
+                <p>you have these stores:</p>
+                ${this.stores.map((store) => {
+                    return html`<p>${store.account.name}</p>`;
+                })}
+                <!-- Create store -->
+                <create-store-dialog
+                    @on-create="${this.onCreateStore}"
+                ></create-store-dialog>
+            `;
+        } else {
+            return html`
+                <p>You dont have any stores create on:</p>
+                <!-- Create store -->
+                <create-store-dialog
+                    @on-create="${this.onCreateStore}"
+                ></create-store-dialog>
+            `;
+        }
+    }
+
     getPage() {
         // TODO: Add validity period
         return html`
@@ -132,6 +202,8 @@ export class MintPage extends LitElement {
                 defaultGeohash="${this.defaultGeohash}"
                 @on-create="${this.onCreateCoupon}"
             ></create-coupon-dialog>
+
+            ${this.getCreateStore()}
 
             <!-- User's created coupons -->
             <sl-carousel

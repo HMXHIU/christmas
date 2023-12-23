@@ -74,7 +74,7 @@ pub struct CreateCoupon<'info> {
     )]
     pub region_market_token_account: Account<'info, TokenAccount>,
     #[account(
-        seeds = [b"store", signer.key().as_ref(), store.name.as_bytes()],
+        seeds = [b"store", signer.key().as_ref(), &store.id.to_be_bytes()],
         constraint = store.owner == signer.key(),
         bump,
     )]
@@ -110,7 +110,7 @@ impl Coupon {
             + PUBKEY_SIZE
             + COUPON_NAME_SIZE
             + COUPON_SYMBOL_SIZE
-            + COUPON_URI_SIZE
+            + URI_SIZE
             + REGION_SIZE
             + GEO_SIZE
             + PUBKEY_SIZE

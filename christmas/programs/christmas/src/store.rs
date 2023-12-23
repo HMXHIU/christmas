@@ -44,7 +44,7 @@ impl Store {
             + STORE_NAME_SIZE
             + REGION_SIZE
             + GEO_SIZE
-            + STORE_URI_SIZE
+            + URI_SIZE
             + PUBKEY_SIZE
             + BUMP_SIZE
     }

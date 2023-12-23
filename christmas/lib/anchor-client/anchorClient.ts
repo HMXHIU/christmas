@@ -9,7 +9,15 @@ import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     getAssociatedTokenAddress,
 } from "@solana/spl-token";
-import { DISCRIMINATOR_SIZE, PUBKEY_SIZE } from "./def";
+import {
+    DISCRIMINATOR_SIZE,
+    PUBKEY_SIZE,
+    U64_SIZE,
+    STORE_NAME_SIZE,
+    REGION_SIZE,
+    GEO_SIZE,
+    URI_SIZE,
+} from "./def";
 import { getCountry, getGeohash } from "../user-device-client/utils"; // TODO: move this to a library
 import { Wallet, AnchorWallet } from "@solana/wallet-adapter-react";
 
@@ -72,130 +80,6 @@ export class AnchorClient {
         console.log(
             `Connected to cluster: ${this.cluster} program: ${this.programId}`
         );
-    }
-
-    async confirmTransaction(
-        signature: string,
-        commitment?: web3.Commitment
-    ): Promise<TransactionResult> {
-        const bh = await this.connection.getLatestBlockhash();
-        const result = (
-            await this.connection.confirmTransaction(
-                {
-                    blockhash: bh.blockhash,
-                    lastValidBlockHeight: bh.lastValidBlockHeight,
-                    signature: signature,
-                },
-                commitment
-            )
-        ).value;
-
-        console.log(
-            `Transaction: ${signature}\nResult:\n${JSON.stringify(
-                result,
-                null,
-                2
-            )}`
-        );
-
-        return { result, signature };
-    }
-
-    async executeTransaction(
-        tx: Transaction,
-        signers?: Array<Signer>,
-        options?: web3.SendOptions
-    ): Promise<TransactionResult> {
-        // set latest blockhash
-        tx.recentBlockhash = (
-            await this.connection.getLatestBlockhash("confirmed")
-        ).blockhash;
-
-        // set payer
-        tx.feePayer = this.anchorWallet.publicKey;
-
-        // additional signers if required
-        if (signers) {
-            tx.partialSign(...signers);
-        }
-
-        // sign and send
-        const signature = await this.connection.sendRawTransaction(
-            (await this.anchorWallet.signTransaction(tx)).serialize()
-            // {
-            //     skipPreflight: true, // TODO: REMOVE DEBUG
-            // }
-        );
-
-        // confirm transaction
-        return await this.confirmTransaction(signature);
-    }
-
-    async requestAirdrop(amount: number): Promise<TransactionResult> {
-        const signature = await this.connection.requestAirdrop(
-            this.anchorWallet.publicKey,
-            amount
-        );
-        // confirm transaction
-        return await this.confirmTransaction(signature);
-    }
-
-    getUserPda(wallet?: web3.PublicKey): [web3.PublicKey, number] {
-        return web3.PublicKey.findProgramAddressSync(
-            [
-                anchor.utils.bytes.utf8.encode("user"),
-                wallet
-                    ? wallet.toBuffer()
-                    : this.anchorWallet.publicKey.toBuffer(),
-            ],
-            this.program.programId
-        );
-    }
-
-    async getUserTokenAccount(
-        mint: web3.PublicKey,
-        wallet?: web3.PublicKey
-    ): Promise<web3.PublicKey> {
-        const userPda = this.getUserPda(wallet)[0];
-
-        return await getAssociatedTokenAddress(
-            mint,
-            userPda, // userPda not user
-            true // allowOwnerOffCurve - Allow the owner account to be a PDA (Program Derived Address)
-        );
-    }
-
-    async getUser(): Promise<User | null> {
-        const [pda, _] = this.getUserPda();
-        try {
-            return await this.program.account.user.fetch(pda);
-        } catch (error) {
-            return null;
-        }
-    }
-
-    async createUser({
-        geo,
-        region,
-    }: {
-        geo: string;
-        region: string;
-    }): Promise<TransactionResult> {
-        const [pda, _] = this.getUserPda();
-
-        const ix = await this.program.methods
-            .createUser(region, geo)
-            .accounts({
-                user: pda,
-                signer: this.anchorWallet.publicKey,
-                systemProgram: web3.SystemProgram.programId,
-            })
-            .instruction();
-
-        const tx = new Transaction();
-        tx.add(ix);
-
-        return await this.executeTransaction(tx);
     }
 
     getCouponPda(mint: web3.PublicKey): [web3.PublicKey, number] {
@@ -738,10 +622,90 @@ export class AnchorClient {
         const [storePda, _] = this.getStorePda(id, owner);
         return await this.program.account.store.fetch(storePda);
     }
+    async getStores(owner?: web3.PublicKey): Promise<Account<Store>[]> {
+        return this.program.account.store.all([
+            {
+                memcmp: {
+                    offset:
+                        DISCRIMINATOR_SIZE +
+                        U64_SIZE +
+                        STORE_NAME_SIZE +
+                        REGION_SIZE +
+                        GEO_SIZE +
+                        URI_SIZE,
+                    bytes: owner
+                        ? owner.toBase58()
+                        : this.anchorWallet.publicKey.toBase58(), // owner
+                },
+            },
+        ]);
+    }
 
     async getAvailableStoreId(): Promise<BN> {
         const state = await this.getProgramState();
         return state.storeCounter;
+    }
+
+    /*
+    User
+    */
+
+    getUserPda(wallet?: web3.PublicKey): [web3.PublicKey, number] {
+        return web3.PublicKey.findProgramAddressSync(
+            [
+                anchor.utils.bytes.utf8.encode("user"),
+                wallet
+                    ? wallet.toBuffer()
+                    : this.anchorWallet.publicKey.toBuffer(),
+            ],
+            this.program.programId
+        );
+    }
+
+    async getUserTokenAccount(
+        mint: web3.PublicKey,
+        wallet?: web3.PublicKey
+    ): Promise<web3.PublicKey> {
+        const userPda = this.getUserPda(wallet)[0];
+
+        return await getAssociatedTokenAddress(
+            mint,
+            userPda, // userPda not user
+            true // allowOwnerOffCurve - Allow the owner account to be a PDA (Program Derived Address)
+        );
+    }
+
+    async getUser(): Promise<User | null> {
+        const [pda, _] = this.getUserPda();
+        try {
+            return await this.program.account.user.fetch(pda);
+        } catch (error) {
+            return null;
+        }
+    }
+
+    async createUser({
+        geo,
+        region,
+    }: {
+        geo: string;
+        region: string;
+    }): Promise<TransactionResult> {
+        const [pda, _] = this.getUserPda();
+
+        const ix = await this.program.methods
+            .createUser(region, geo)
+            .accounts({
+                user: pda,
+                signer: this.anchorWallet.publicKey,
+                systemProgram: web3.SystemProgram.programId,
+            })
+            .instruction();
+
+        const tx = new Transaction();
+        tx.add(ix);
+
+        return await this.executeTransaction(tx);
     }
 
     /*
@@ -774,5 +738,75 @@ export class AnchorClient {
     async getProgramState(): Promise<ProgramState> {
         const [programStatePda, _] = this.getProgramStatePda();
         return await this.program.account.programState.fetch(programStatePda);
+    }
+
+    /*
+    Utils
+    */
+
+    async confirmTransaction(
+        signature: string,
+        commitment?: web3.Commitment
+    ): Promise<TransactionResult> {
+        const bh = await this.connection.getLatestBlockhash();
+        const result = (
+            await this.connection.confirmTransaction(
+                {
+                    blockhash: bh.blockhash,
+                    lastValidBlockHeight: bh.lastValidBlockHeight,
+                    signature: signature,
+                },
+                commitment
+            )
+        ).value;
+
+        console.log(
+            `Transaction: ${signature}\nResult:\n${JSON.stringify(
+                result,
+                null,
+                2
+            )}`
+        );
+
+        return { result, signature };
+    }
+
+    async executeTransaction(
+        tx: Transaction,
+        signers?: Array<Signer>,
+        options?: web3.SendOptions
+    ): Promise<TransactionResult> {
+        // set latest blockhash
+        tx.recentBlockhash = (
+            await this.connection.getLatestBlockhash("confirmed")
+        ).blockhash;
+
+        // set payer
+        tx.feePayer = this.anchorWallet.publicKey;
+
+        // additional signers if required
+        if (signers) {
+            tx.partialSign(...signers);
+        }
+
+        // sign and send
+        const signature = await this.connection.sendRawTransaction(
+            (await this.anchorWallet.signTransaction(tx)).serialize()
+            // {
+            //     skipPreflight: true, // TODO: REMOVE DEBUG
+            // }
+        );
+
+        // confirm transaction
+        return await this.confirmTransaction(signature);
+    }
+
+    async requestAirdrop(amount: number): Promise<TransactionResult> {
+        const signature = await this.connection.requestAirdrop(
+            this.anchorWallet.publicKey,
+            amount
+        );
+        // confirm transaction
+        return await this.confirmTransaction(signature);
     }
 }
