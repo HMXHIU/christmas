@@ -30,23 +30,7 @@ export class MintPage extends LitElement {
     accessor nftStorageClient: NFTStorageClient | null = null;
 
     @state()
-    accessor defaultRegion: string = "";
-
-    @state()
-    accessor defaultGeohash: string = "";
-
-    @state()
     accessor stores: Account<Store>[] = [];
-
-    @state()
-    accessor couponSupplyBalance: [Account<Coupon>, number, number][] = [];
-
-    async fetchCouponSupplyBalance() {
-        if (this.anchorClient) {
-            this.couponSupplyBalance =
-                (await this.anchorClient?.getMintedCoupons()) || [];
-        }
-    }
 
     async fetchStores() {
         if (this.anchorClient) {
@@ -84,57 +68,14 @@ export class MintPage extends LitElement {
         }
     }
 
-    async onCreateCoupon(e: CustomEvent<CreateCouponDetail>) {
-        if (this.anchorClient && this.nftStorageClient) {
-            let metadataUrl = "";
-            if (e.detail.image) {
-                metadataUrl = await this.nftStorageClient.store({
-                    name: e.detail.name,
-                    description: e.detail.description,
-                    imageFile: e.detail.image,
-                });
-                console.log(`Uploaded coupon metadata to ${metadataUrl}`);
-            }
-
-            const tx = await this.anchorClient.createCoupon({
-                geo: e.detail.geo,
-                region: e.detail.region,
-                name: e.detail.name,
-                store: e.detail.store.publicKey, // TODO: CREATE STORE
-                symbol: "", // TODO: remove symbol or auto set to user's stall
-                uri: metadataUrl,
-            });
-
-            // TODO: handle failed transactions
-        }
-    }
-
-    async onMintCoupon(e: CustomEvent<MintCouponDetail>) {
-        if (this.anchorClient && this.nftStorageClient) {
-            const { coupon, numTokens } = e.detail;
-
-            const tx = await this.anchorClient.mintToMarket(
-                coupon.account.mint,
-                coupon.account.region,
-                numTokens
-            );
-
-            // TODO: handle failed transactions
-            this.fetchCouponSupplyBalance();
-        }
-    }
-
     async willUpdate(changedProperties: PropertyValues<this>) {
         if (
             changedProperties.has("anchorClient") ||
             changedProperties.has("location")
         ) {
             if (this.anchorClient && this.location) {
-                await this.fetchCouponSupplyBalance();
+                // await this.fetchCouponSupplyBalance();
                 await this.fetchStores();
-                // Set defaults
-                this.defaultRegion = this.location.country.code || "";
-                this.defaultGeohash = this.location.geohash || "";
             }
         }
     }
@@ -193,11 +134,7 @@ export class MintPage extends LitElement {
             return html`
                 ${this.stores.map((store) => {
                     return html`
-                        <store-section
-                            .store=${store}
-                            @on-create="${this.onCreateCoupon}"
-                        >
-                        </store-section>
+                        <store-section .store=${store}> </store-section>
                     `;
                 })}
             `;
@@ -210,38 +147,6 @@ export class MintPage extends LitElement {
                 ></create-store-dialog>
             `;
         }
-
-        // // TODO: Add validity period
-        // return html`
-        //     <!-- Create coupon -->
-        //     <create-coupon-dialog
-        //         defaultRegion="${this.defaultRegion}"
-        //         defaultGeohash="${this.defaultGeohash}"
-        //         @on-create="${this.onCreateCoupon}"
-        //     ></create-coupon-dialog>
-
-        //     ${this.getCreateStore()}
-
-        //     <!-- User's created coupons -->
-        //     <sl-carousel
-        //         class="scroll-hint"
-        //         navigation
-        //         style="--scroll-hint: 10%;"
-        //     >
-        //         ${this.couponSupplyBalance.map(([coupon, supply, balance]) => {
-        //             return html`
-        //                 <sl-carousel-item>
-        //                     <mint-coupon-card
-        //                         .coupon=${coupon}
-        //                         supply=${supply}
-        //                         balance=${balance}
-        //                         @on-mint=${this.onMintCoupon}
-        //                     ></mint-coupon-card>
-        //                 </sl-carousel-item>
-        //             `;
-        //         })}
-        //     </sl-carousel>
-        // `;
     }
 
     render() {

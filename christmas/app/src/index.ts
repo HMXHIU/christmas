@@ -32,6 +32,7 @@ import "./providers/userDeviceClientProvider";
 import "./providers/anchorClientProvider";
 import "./providers/nftStorageClientProvider";
 import "./components/store-section";
+import "./components/side-scoller";
 import "./components/form-event";
 import "./components/solana-wallet";
 import "./components/coupon-card";

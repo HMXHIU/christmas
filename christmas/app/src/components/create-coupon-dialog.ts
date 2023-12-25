@@ -62,6 +62,9 @@ export class CreateCoupon extends LitElement {
             flex: 1;
             width: 40%;
         }
+        form {
+            max-height: 500px;
+        }
     `;
 
     render() {
@@ -71,11 +74,7 @@ export class CreateCoupon extends LitElement {
 
             <sl-dialog label="Create Coupon" id="dialog">
                 <form-event @on-submit=${this.onSubmit}>
-                    <form
-                        class="input-validation-required"
-                        action="submit"
-                        slot="form"
-                    >
+                    <form action="submit" slot="form">
                         <sl-input name="name" label="Name" required></sl-input>
                         <br />
                         <sl-textarea
@@ -149,12 +148,7 @@ export class CreateCoupon extends LitElement {
                         <sl-button type="submit" variant="primary"
                             >Submit</sl-button
                         >
-                        <sl-button
-                            variant="primary"
-                            id="dialog-close"
-                            @click=${() => this.dialog.hide()}
-                            >Close</sl-button
-                        >
+                        <br /><br />
                     </form>
                 </form-event>
             </sl-dialog>
