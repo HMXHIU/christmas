@@ -582,7 +582,7 @@ export class AnchorClient {
                 owner
                     ? owner.toBuffer()
                     : this.anchorWallet.publicKey.toBuffer(),
-                id.toBuffer("be", 8),
+                id.toArrayLike(Buffer, "be", 8),
             ],
             this.program.programId
         );

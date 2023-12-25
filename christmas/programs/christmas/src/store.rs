@@ -21,7 +21,6 @@ pub struct CreateStore<'info> {
         seeds = [b"state"],
         bump = state.bump
     )]
-    #[account()]
     pub state: Account<'info, ProgramState>,
     pub system_program: Program<'info, System>,
 }
