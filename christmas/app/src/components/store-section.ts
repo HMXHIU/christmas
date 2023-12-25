@@ -126,7 +126,7 @@ export class StoreSection extends LitElement {
                 <sl-tab slot="nav" panel="store">
                     ${this.store.account.name}
                 </sl-tab>
-                <sl-tab slot="nav" panel="info">Info</sl-tab>
+                <sl-tab slot="nav" panel="info">Store Information</sl-tab>
                 <sl-tab-panel name="store">
                     <side-scoller>
                         <create-coupon-dialog

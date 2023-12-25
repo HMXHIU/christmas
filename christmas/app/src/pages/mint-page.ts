@@ -96,6 +96,30 @@ export class MintPage extends LitElement {
             justify-content: center;
             height: 100vh;
         }
+        /* Styles for the store creation button */
+        .create-store-button {
+            margin: 20px;
+            width: 400px;
+            height: 100px;
+            border: 2px dashed #3498db; /* Dashed border with a blue color */
+            border-radius: 10px; /* Rounded corners */
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        /* Hover effect to change the background color */
+        .create-store-button:hover {
+            background-color: rgba(
+                52,
+                152,
+                219,
+                0.2
+            ); /* Light blue background on hover */
+        }
     `;
 
     getLoading() {
@@ -108,14 +132,13 @@ export class MintPage extends LitElement {
 
     getCreateStore() {
         return html`
-            <p>
-                ${this.stores.length > 0
-                    ? "create another store"
-                    : "start by creating a store"}
-            </p>
-            <!-- Create store -->
+            <sl-divider></sl-divider>
             <create-store-dialog @on-create="${this.onCreateStore}">
-                <sl-button slot="button">Create Store</sl-button>
+                <button class="create-store-button" slot="button">
+                    ${this.stores.length > 0
+                        ? "Create Another Store"
+                        : "Start By Creating A Store"}
+                </button>
             </create-store-dialog>
         `;
     }
@@ -126,6 +149,7 @@ export class MintPage extends LitElement {
                 return html` <store-section .store=${store}> </store-section> `;
             })}
             ${this.getCreateStore()}
+            <br />
         `;
     }
 
