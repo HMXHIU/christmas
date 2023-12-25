@@ -51,15 +51,11 @@ export class MintPage extends LitElement {
     async fetchStores() {
         if (this.anchorClient) {
             this.stores = await this.anchorClient.getStores();
-
-            console.log(this.stores);
         }
     }
 
     async onCreateStore(e: CustomEvent<CreateStoreDetail>) {
         if (this.anchorClient && this.nftStorageClient) {
-            console.log(e.detail);
-
             let metadataUrl = "";
 
             if (e.detail.image) {
@@ -104,7 +100,7 @@ export class MintPage extends LitElement {
                 geo: e.detail.geo,
                 region: e.detail.region,
                 name: e.detail.name,
-                store: null, // TODO: CREATE STORE
+                store: e.detail.store.publicKey, // TODO: CREATE STORE
                 symbol: "", // TODO: remove symbol or auto set to user's stall
                 uri: metadataUrl,
             });
@@ -170,7 +166,6 @@ export class MintPage extends LitElement {
     }
 
     getCreateStore() {
-        console.log(`stores: ${this.stores}`);
         if (this.stores.length > 0) {
             return html`
                 <p>you have these stores:</p>
@@ -194,37 +189,59 @@ export class MintPage extends LitElement {
     }
 
     getPage() {
-        // TODO: Add validity period
-        return html`
-            <!-- Create coupon -->
-            <create-coupon-dialog
-                defaultRegion="${this.defaultRegion}"
-                defaultGeohash="${this.defaultGeohash}"
-                @on-create="${this.onCreateCoupon}"
-            ></create-coupon-dialog>
-
-            ${this.getCreateStore()}
-
-            <!-- User's created coupons -->
-            <sl-carousel
-                class="scroll-hint"
-                navigation
-                style="--scroll-hint: 10%;"
-            >
-                ${this.couponSupplyBalance.map(([coupon, supply, balance]) => {
+        if (this.stores.length > 0) {
+            return html`
+                ${this.stores.map((store) => {
                     return html`
-                        <sl-carousel-item>
-                            <mint-coupon-card
-                                .coupon=${coupon}
-                                supply=${supply}
-                                balance=${balance}
-                                @on-mint=${this.onMintCoupon}
-                            ></mint-coupon-card>
-                        </sl-carousel-item>
+                        <store-section
+                            .store=${store}
+                            @on-create="${this.onCreateCoupon}"
+                        >
+                        </store-section>
                     `;
                 })}
-            </sl-carousel>
-        `;
+            `;
+        } else {
+            return html`
+                <p>Start by creating your store!</p>
+                <!-- Create store -->
+                <create-store-dialog
+                    @on-create="${this.onCreateStore}"
+                ></create-store-dialog>
+            `;
+        }
+
+        // // TODO: Add validity period
+        // return html`
+        //     <!-- Create coupon -->
+        //     <create-coupon-dialog
+        //         defaultRegion="${this.defaultRegion}"
+        //         defaultGeohash="${this.defaultGeohash}"
+        //         @on-create="${this.onCreateCoupon}"
+        //     ></create-coupon-dialog>
+
+        //     ${this.getCreateStore()}
+
+        //     <!-- User's created coupons -->
+        //     <sl-carousel
+        //         class="scroll-hint"
+        //         navigation
+        //         style="--scroll-hint: 10%;"
+        //     >
+        //         ${this.couponSupplyBalance.map(([coupon, supply, balance]) => {
+        //             return html`
+        //                 <sl-carousel-item>
+        //                     <mint-coupon-card
+        //                         .coupon=${coupon}
+        //                         supply=${supply}
+        //                         balance=${balance}
+        //                         @on-mint=${this.onMintCoupon}
+        //                     ></mint-coupon-card>
+        //                 </sl-carousel-item>
+        //             `;
+        //         })}
+        //     </sl-carousel>
+        // `;
     }
 
     render() {

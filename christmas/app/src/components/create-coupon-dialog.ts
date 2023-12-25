@@ -1,6 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { COUNTRY_DETAILS } from "../lib/constants";
+import { Account, Store } from "../../../lib/anchor-client/types";
 
 export interface CreateCouponDetail {
     name: string;
@@ -8,21 +9,22 @@ export interface CreateCouponDetail {
     image: File | null;
     region: string;
     geo: string;
+    store: Account<Store>;
 }
 
 @customElement("create-coupon-dialog")
 export class CreateCoupon extends LitElement {
+    @query('slot[name="button"]')
+    accessor buttonSlot: any;
+
     @query("#dialog")
     accessor dialog: any;
 
     @query("#image-input")
     accessor imageInput: any;
 
-    @property({ attribute: true, type: String })
-    accessor defaultRegion: string = "";
-
-    @property({ attribute: true, type: String })
-    accessor defaultGeohash: string = "";
+    @property({ attribute: false })
+    accessor store: Account<Store>;
 
     onSubmit(e: CustomEvent) {
         // Dispatch on-create event
@@ -36,12 +38,18 @@ export class CreateCoupon extends LitElement {
                     image: this.imageInput.file,
                     region: e.detail.region.toString(),
                     geo: e.detail.geo.toString(),
+                    store: this.store,
                 },
             })
         );
 
         // Close dialog
         this.dialog.hide();
+    }
+
+    protected firstUpdated() {
+        const button = this.buttonSlot.assignedNodes()[0];
+        button.addEventListener("click", () => this.dialog.show());
     }
 
     static styles = css`
@@ -58,9 +66,9 @@ export class CreateCoupon extends LitElement {
 
     render() {
         return html`
-            <sl-button id="dialog-open" @click=${() => this.dialog.show()}
-                >Create Coupon</sl-button
-            >
+            <!-- Button to trigger dialog -->
+            <slot name="button"></slot>
+
             <sl-dialog label="Create Coupon" id="dialog">
                 <form-event @on-submit=${this.onSubmit}>
                     <form
@@ -92,7 +100,7 @@ export class CreateCoupon extends LitElement {
                             label="Region"
                             clearable
                             required
-                            value=${this.defaultRegion}
+                            value=${this.store.account.region}
                             name="region"
                         >
                             ${Object.values(COUNTRY_DETAILS).map(
@@ -135,7 +143,7 @@ export class CreateCoupon extends LitElement {
                             name="geo"
                             label="Geohash"
                             required
-                            value="${this.defaultGeohash}"
+                            value="${this.store.account.geo}"
                         ></sl-input>
                         <br /><br />
                         <sl-button type="submit" variant="primary"
