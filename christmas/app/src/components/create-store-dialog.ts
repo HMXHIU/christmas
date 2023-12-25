@@ -21,6 +21,9 @@ export class CreateStore extends LitElement {
     @query("#dialog")
     accessor dialog: any;
 
+    @query('slot[name="button"]')
+    accessor buttonSlot: any;
+
     @query("#image-input")
     accessor imageInput: any;
 
@@ -49,6 +52,11 @@ export class CreateStore extends LitElement {
         this.dialog.hide();
     }
 
+    protected firstUpdated() {
+        const button = this.buttonSlot.assignedNodes()[0];
+        button.addEventListener("click", () => this.dialog.show());
+    }
+
     static styles = css`
         .date-container {
             display: flex;
@@ -63,9 +71,8 @@ export class CreateStore extends LitElement {
 
     render() {
         return html`
-            <sl-button id="dialog-open" @click=${() => this.dialog.show()}
-                >Create Store</sl-button
-            >
+            <!-- Button to trigger dialog -->
+            <slot name="button"></slot>
             <sl-dialog label="Create Store" id="dialog">
                 <form-event @on-submit=${this.onSubmit}>
                     <form

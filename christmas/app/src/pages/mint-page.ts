@@ -107,46 +107,26 @@ export class MintPage extends LitElement {
     }
 
     getCreateStore() {
-        if (this.stores.length > 0) {
-            return html`
-                <p>you have these stores:</p>
-                ${this.stores.map((store) => {
-                    return html`<p>${store.account.name}</p>`;
-                })}
-                <!-- Create store -->
-                <create-store-dialog
-                    @on-create="${this.onCreateStore}"
-                ></create-store-dialog>
-            `;
-        } else {
-            return html`
-                <p>You dont have any stores create on:</p>
-                <!-- Create store -->
-                <create-store-dialog
-                    @on-create="${this.onCreateStore}"
-                ></create-store-dialog>
-            `;
-        }
+        return html`
+            <p>
+                ${this.stores.length > 0
+                    ? "create another store"
+                    : "start by creating a store"}
+            </p>
+            <!-- Create store -->
+            <create-store-dialog @on-create="${this.onCreateStore}">
+                <sl-button slot="button">Create Store</sl-button>
+            </create-store-dialog>
+        `;
     }
 
     getPage() {
-        if (this.stores.length > 0) {
-            return html`
-                ${this.stores.map((store) => {
-                    return html`
-                        <store-section .store=${store}> </store-section>
-                    `;
-                })}
-            `;
-        } else {
-            return html`
-                <p>Start by creating your store!</p>
-                <!-- Create store -->
-                <create-store-dialog
-                    @on-create="${this.onCreateStore}"
-                ></create-store-dialog>
-            `;
-        }
+        return html`
+            ${this.stores.map((store) => {
+                return html` <store-section .store=${store}> </store-section> `;
+            })}
+            ${this.getCreateStore()}
+        `;
     }
 
     render() {

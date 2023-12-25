@@ -37,7 +37,9 @@ export class StoreSection extends LitElement {
     async fetchCouponSupplyBalance() {
         if (this.anchorClient) {
             this.couponSupplyBalance =
-                (await this.anchorClient.getMintedCoupons()) || [];
+                (await this.anchorClient.getMintedCoupons(
+                    this.store.publicKey
+                )) || [];
         }
     }
 

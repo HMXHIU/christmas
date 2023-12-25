@@ -17,6 +17,8 @@ import {
     REGION_SIZE,
     GEO_SIZE,
     URI_SIZE,
+    COUPON_NAME_SIZE,
+    COUPON_SYMBOL_SIZE,
 } from "./def";
 import { getCountry, getGeohash } from "../user-device-client/utils"; // TODO: move this to a library
 import { Wallet, AnchorWallet } from "@solana/wallet-adapter-react";
@@ -297,15 +299,36 @@ export class AnchorClient {
         }
     }
 
-    async getMintedCoupons(): Promise<[Account<Coupon>, number, number][]> {
-        const mintedCoupons = await this.program.account.coupon.all([
+    async getMintedCoupons(
+        store?: web3.PublicKey
+    ): Promise<[Account<Coupon>, number, number][]> {
+        let filters = [
             {
                 memcmp: {
                     offset: DISCRIMINATOR_SIZE,
                     bytes: this.anchorWallet.publicKey.toBase58(), // update_authority
                 },
             },
-        ]);
+        ];
+
+        if (store) {
+            filters.push({
+                memcmp: {
+                    offset:
+                        DISCRIMINATOR_SIZE +
+                        PUBKEY_SIZE +
+                        PUBKEY_SIZE +
+                        COUPON_NAME_SIZE +
+                        COUPON_SYMBOL_SIZE +
+                        URI_SIZE +
+                        REGION_SIZE +
+                        GEO_SIZE,
+                    bytes: store.toBase58(), // store
+                },
+            });
+        }
+
+        const mintedCoupons = await this.program.account.coupon.all(filters);
 
         const couponSupplyBalance = await Promise.allSettled(
             mintedCoupons.map(async (coupon) => {
