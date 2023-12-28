@@ -33,12 +33,6 @@ import {
     ProgramState,
 } from "./types";
 
-declare global {
-    interface Window {
-        solana: any; // turn off type checking
-    }
-}
-
 export class AnchorClient {
     programId: web3.PublicKey;
     cluster: string;

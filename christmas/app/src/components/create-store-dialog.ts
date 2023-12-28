@@ -106,11 +106,10 @@ export class CreateStore extends LitElement {
                         </sl-select>
                         <br />
 
-                        <sl-input
+                        <location-search
                             name="address"
                             label="Address/Location"
-                            autocomplete="address"
-                        ></sl-input>
+                        ></location-search>
                         <br />
 
                         <image-input

@@ -29,6 +29,7 @@
     "devDependencies": {
         "@types/bn.js": "^5.1.0",
         "@types/chai": "^4.3.0",
+        "@types/google.maps": "^3.54.10",
         "@types/lodash": "^4.14.202",
         "@types/mocha": "^9.0.0",
         "@types/ngeohash": "^0.6.8",
