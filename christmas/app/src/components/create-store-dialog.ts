@@ -74,7 +74,7 @@ export class CreateStore extends LitElement {
         }
 
         sl-dialog::part(panel) {
-            max-height: calc(90% - var(--sl-spacing-2x-large));
+            max-height: calc(85% - var(--sl-spacing-2x-large));
         }
 
         sl-input[name="geohash"] {

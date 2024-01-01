@@ -1,7 +1,12 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property, query } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { COUNTRY_DETAILS } from "../lib/constants";
-import { Account, Store } from "../../../lib/anchor-client/types";
+import {
+    Account,
+    Store,
+    StoreMetadata,
+} from "../../../lib/anchor-client/types";
+import { getStoreMetadata } from "../lib/utils";
 
 export interface CreateCouponDetail {
     name: string;
@@ -26,6 +31,9 @@ export class CreateCoupon extends LitElement {
     @property({ attribute: false })
     accessor store: Account<Store>;
 
+    @state()
+    accessor storeMetadata: StoreMetadata;
+
     onSubmit(e: CustomEvent) {
         // Dispatch on-create event
         this.dispatchEvent(
@@ -36,8 +44,8 @@ export class CreateCoupon extends LitElement {
                     name: e.detail.name.toString(),
                     description: e.detail.description.toString(),
                     image: this.imageInput.file,
-                    region: e.detail.region.toString(),
-                    geo: e.detail.geo.toString(),
+                    region: this.store.account.region,
+                    geo: this.store.account.geo,
                     store: this.store,
                 },
             })
@@ -47,12 +55,19 @@ export class CreateCoupon extends LitElement {
         this.dialog.hide();
     }
 
-    protected firstUpdated() {
+    protected async firstUpdated() {
+        // Attach event to slotted button
         const button = this.buttonSlot.assignedNodes()[0];
         button.addEventListener("click", () => this.dialog.show());
+
+        // Fetch store metadata
+        this.storeMetadata = await getStoreMetadata(this.store);
     }
 
     static styles = css`
+        sl-dialog::part(panel) {
+            max-height: calc(85% - var(--sl-spacing-2x-large));
+        }
         .date-container {
             display: flex;
             align-content: space-between;
@@ -61,9 +76,6 @@ export class CreateCoupon extends LitElement {
         .date-range {
             flex: 1;
             width: 40%;
-        }
-        form {
-            max-height: 500px;
         }
     `;
 
@@ -74,15 +86,18 @@ export class CreateCoupon extends LitElement {
 
             <sl-dialog label="Create Coupon" id="dialog">
                 <form-event @on-submit=${this.onSubmit}>
-                    <form action="submit" slot="form">
+                    <form action="submit" slot="form" id="createCouponForm">
+                        <!-- Coupon Name -->
                         <sl-input name="name" label="Name" required></sl-input>
                         <br />
+                        <!-- Coupon Description -->
                         <sl-textarea
                             name="description"
                             label="Description"
                             required
                         ></sl-textarea>
                         <br />
+                        <!-- Coupon Category -->
                         <sl-select
                             label="Category"
                             clearable
@@ -95,62 +110,47 @@ export class CreateCoupon extends LitElement {
                             <sl-option value="other">Other</sl-option>
                         </sl-select>
                         <br />
-                        <sl-select
-                            label="Region"
-                            clearable
-                            required
-                            value=${this.store.account.region}
-                            name="region"
-                        >
-                            ${Object.values(COUNTRY_DETAILS).map(
-                                ([code, name]) =>
-                                    html`<sl-option value="${code}"
-                                        >${name}</sl-option
-                                    >`
-                            )}
-                        </sl-select>
-                        <br />
-
-                        <sl-input
-                            name="address"
-                            label="Address/Location"
-                        ></sl-input>
-                        <br />
-
-                        <label for="validity-period">Validity Period</label>
-                        <div class="date-container" id="validity-period">
-                            <sl-input
-                                class="date-range"
-                                type="date"
-                                placeholder="Valid From"
-                            ></sl-input>
-                            <sl-input
-                                class="date-range"
-                                type="date"
-                                placeholder="Valid To"
-                            ></sl-input>
-                        </div>
-                        <br />
-
+                        <!-- Coupon Image -->
+                        <label for="image-input">Coupon Image</label>
                         <image-input
-                            label="Upload Image"
+                            label="150x150"
                             id="image-input"
                         ></image-input>
                         <br />
-
+                        <!-- Coupon Validity Period -->
+                        <div class="date-container">
+                            <sl-input
+                                name="validFrom"
+                                class="date-range"
+                                type="date"
+                                label="Valid From"
+                                placeholder="Valid From"
+                            ></sl-input>
+                            <sl-input
+                                name="validTo"
+                                class="date-range"
+                                type="date"
+                                label="Valid To"
+                                placeholder="Valid To"
+                            ></sl-input>
+                        </div>
+                        <sl-divider></sl-divider>
+                        <!-- Store Information -->
                         <sl-input
-                            name="geo"
-                            label="Geohash"
-                            required
-                            value="${this.store.account.geo}"
+                            label="Store"
+                            name="store"
+                            disabled
+                            value=${this.store.account.name}
                         ></sl-input>
-                        <br /><br />
-                        <sl-button type="submit" variant="primary"
-                            >Submit</sl-button
-                        >
-                        <br /><br />
                     </form>
                 </form-event>
+                <sl-button
+                    type="submit"
+                    variant="primary"
+                    slot="footer"
+                    form="createCouponForm"
+                    >Submit</sl-button
+                >
             </sl-dialog>
         `;
     }

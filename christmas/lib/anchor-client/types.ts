@@ -57,6 +57,13 @@ export interface CouponMetadata {
     image: string;
 }
 
+export interface StoreMetadata {
+    name: string;
+    description: string;
+    image: string;
+    address: string;
+}
+
 export interface Account<DataT> {
     publicKey: PublicKey;
     account: DataT;
