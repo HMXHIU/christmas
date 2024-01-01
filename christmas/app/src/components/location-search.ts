@@ -3,7 +3,7 @@ import { customElement, property } from "lit/decorators.js";
 import geohash from "ngeohash";
 
 import { COUNTRY_DETAILS } from "../../../lib/user-device-client/defs";
-import { Location } from "../../../lib/user-device-client/utils";
+import { Location } from "../../../lib/user-device-client/types";
 
 @customElement("location-search")
 export class LocationSearch extends LitElement {

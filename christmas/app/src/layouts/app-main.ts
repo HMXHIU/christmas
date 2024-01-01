@@ -4,7 +4,7 @@ import { classMap } from "lit/directives/class-map.js";
 import { Router } from "@vaadin/router";
 import { consume } from "@lit/context";
 import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
-import { anchorClientContext } from "../providers/anchorClientProvider";
+import { anchorClientContext } from "../providers/contexts";
 
 // App Main
 @customElement("app-main")

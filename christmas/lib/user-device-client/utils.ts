@@ -1,17 +1,7 @@
 import { getCountriesForTimezone } from "countries-and-timezones";
 import { COUNTRY_DETAILS } from "./defs";
 import geohash from "ngeohash";
-
-export interface Location {
-    geolocationCoordinates: GeolocationCoordinates | null;
-    geohash: string | null;
-    country: Country | null;
-}
-
-export interface Country {
-    code: string;
-    name: string;
-}
+import { Location } from "./types";
 
 export async function getLocation(): Promise<Location> {
     const geolocationCoordinates = await getGeolocationCoordinates();

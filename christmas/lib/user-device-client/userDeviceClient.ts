@@ -1,4 +1,5 @@
-import { getLocation, Location } from "./utils";
+import { getLocation } from "./utils";
+import { Location } from "./types";
 
 export class UserDeviceClient {
     location: Location;

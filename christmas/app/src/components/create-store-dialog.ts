@@ -1,11 +1,10 @@
 import { LitElement, html, css } from "lit";
 import { consume } from "@lit/context";
 import { customElement, state, query } from "lit/decorators.js";
-import { COUNTRY_DETAILS } from "../lib/constants";
-import {
-    locationContext,
-    Location,
-} from "../providers/userDeviceClientProvider";
+import { COUNTRY_DETAILS } from "../../../lib/user-device-client/defs";
+import { Location } from "../../../lib/user-device-client/types";
+
+import { locationContext } from "../providers/contexts";
 
 export interface CreateStoreDetail {
     name: string;

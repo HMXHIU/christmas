@@ -1,7 +1,7 @@
 import { LitElement, html, css, PropertyValues, PropertyValueMap } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { consume } from "@lit/context";
-import { anchorClientContext } from "../providers/anchorClientProvider";
+import { anchorClientContext } from "../providers/contexts";
 import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
 import {
     Coupon,
@@ -10,10 +10,8 @@ import {
 } from "../../../lib/anchor-client/types";
 import { ClaimCouponDetail } from "../components/claim-coupon-dialog";
 import { RedeemCouponDetail } from "../components/redeem-coupon-dialog";
-import {
-    locationContext,
-    Location,
-} from "../providers/userDeviceClientProvider";
+import { locationContext } from "../providers/contexts";
+import { Location } from "../../../lib/user-device-client/types";
 
 @customElement("coupons-page")
 export class CouponsPage extends LitElement {

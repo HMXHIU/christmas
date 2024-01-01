@@ -3,17 +3,15 @@ import { customElement, state } from "lit/decorators.js";
 import { consume } from "@lit/context";
 import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
 import { Account, Coupon, Store } from "../../../lib/anchor-client/types";
-import { nftStorageClientContext } from "../providers/nftStorageClientProvider";
+import { nftStorageClientContext } from "../providers/contexts";
 
-import { anchorClientContext } from "../providers/anchorClientProvider";
+import { anchorClientContext } from "../providers/contexts";
 import { CreateCouponDetail } from "../components/create-coupon-dialog";
 import { NFTStorageClient } from "../lib/nftStorageClient";
 import { MintCouponDetail } from "../components/mint-coupon-dialog";
 import { CreateStoreDetail } from "../components/create-store-dialog";
-import {
-    locationContext,
-    Location,
-} from "../providers/userDeviceClientProvider";
+import { Location } from "../../../lib/user-device-client/types";
+import { locationContext } from "../providers/contexts";
 
 @customElement("mint-page")
 export class MintPage extends LitElement {

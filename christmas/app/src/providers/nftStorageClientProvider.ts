@@ -1,12 +1,8 @@
 import { LitElement, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { provide } from "@lit/context";
-import { createContext } from "@lit/context";
 import { NFTStorageClient } from "../lib/nftStorageClient";
-
-export const nftStorageClientContext = createContext<NFTStorageClient | null>(
-    Symbol("anchor-client")
-);
+import { nftStorageClientContext } from "./contexts";
 
 @customElement("nft-storage-client-provider")
 export class NFTStorageClientProvider extends LitElement {

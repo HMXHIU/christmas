@@ -48,12 +48,6 @@ module.exports = {
                     ),
                     to: path.resolve(__dirname, "./app/dist/shoelace/assets"),
                 },
-                // HtmlWebpackPlugin automatically outputs to "./app/dist/index.html"
-                // // Copy index.html
-                // {
-                //     from: path.resolve(__dirname, "./app/src/index.html"),
-                //     to: path.resolve(__dirname, "./app/dist/index.html"),
-                // },
             ],
         }),
     ],
@@ -78,6 +72,9 @@ module.exports = {
         static: path.join(__dirname, "./app/dist"),
         compress: true,
         port: 4000,
+        devMiddleware: {
+            writeToDisk: true, // write to "./app/dist"
+        },
         historyApiFallback: {
             // Redirect all 404 errors to index.html
             rewrites: [{ from: /^\/(.*)$/, to: "/index.html" }],

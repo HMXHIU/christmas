@@ -22,7 +22,7 @@
                 </nft-storage-client-provider>
             </anchor-client-provider>
         </user-device-client-provider>
-        <script src="bundle.js"></script>
+        <!-- bundle.js will be injected by `HtmlWebpackPlugin` -->
         <script src="https://maps.googleapis.com/maps/api/js?key=<%= htmlWebpackPlugin.options.templateParameters.GOOGLE_MAPS_API_KEY %>&libraries=places"></script>
     </body>
 </html>

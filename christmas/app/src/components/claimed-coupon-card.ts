@@ -9,7 +9,7 @@ import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
 import { getCouponMetadata } from "../lib/utils";
 import { cleanString } from "../../../lib/anchor-client/utils";
 import { RedeemCouponDetail } from "../components/redeem-coupon-dialog";
-import { anchorClientContext } from "../providers/anchorClientProvider";
+import { anchorClientContext } from "../providers/contexts";
 import { consume } from "@lit/context";
 import { generateQRCodeURL } from "../lib/utils";
 

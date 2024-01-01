@@ -8,14 +8,14 @@ import {
     Store,
     StoreMetadata,
 } from "../../../lib/anchor-client/types";
-import { COUNTRY_DETAILS } from "../lib/constants";
+import { COUNTRY_DETAILS } from "../../../lib/user-device-client/defs";
 import { consume } from "@lit/context";
 import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
-import { anchorClientContext } from "../providers/anchorClientProvider";
+import { anchorClientContext } from "../providers/contexts";
 import { getCouponMetadata, getStoreMetadata } from "../lib/utils";
 import { cleanString } from "../../../lib/anchor-client/utils";
 import { ParsedAccountData } from "@solana/web3.js";
-import { nftStorageClientContext } from "../providers/nftStorageClientProvider";
+import { nftStorageClientContext } from "../providers/contexts";
 import { NFTStorageClient } from "../lib/nftStorageClient";
 import { MintCouponDetail } from "../components/mint-coupon-dialog";
 import { CreateCouponDetail } from "../components/create-coupon-dialog";
