@@ -1,12 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { COUNTRY_DETAILS } from "../lib/constants";
-import {
-    Account,
-    Store,
-    StoreMetadata,
-} from "../../../lib/anchor-client/types";
-import { getStoreMetadata } from "../lib/utils";
+import { Account, Store } from "../../../lib/anchor-client/types";
 
 export interface CreateCouponDetail {
     name: string;
@@ -30,9 +25,6 @@ export class CreateCoupon extends LitElement {
 
     @property({ attribute: false })
     accessor store: Account<Store>;
-
-    @state()
-    accessor storeMetadata: StoreMetadata;
 
     onSubmit(e: CustomEvent) {
         // Dispatch on-create event
@@ -59,9 +51,6 @@ export class CreateCoupon extends LitElement {
         // Attach event to slotted button
         const button = this.buttonSlot.assignedNodes()[0];
         button.addEventListener("click", () => this.dialog.show());
-
-        // Fetch store metadata
-        this.storeMetadata = await getStoreMetadata(this.store);
     }
 
     static styles = css`

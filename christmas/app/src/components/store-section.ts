@@ -6,11 +6,12 @@ import {
     Account,
     TokenAccount,
     Store,
+    StoreMetadata,
 } from "../../../lib/anchor-client/types";
 import { consume } from "@lit/context";
 import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
 import { anchorClientContext } from "../providers/anchorClientProvider";
-import { getCouponMetadata } from "../lib/utils";
+import { getCouponMetadata, getStoreMetadata } from "../lib/utils";
 import { cleanString } from "../../../lib/anchor-client/utils";
 import { ParsedAccountData } from "@solana/web3.js";
 import { nftStorageClientContext } from "../providers/nftStorageClientProvider";
@@ -32,6 +33,9 @@ export class StoreSection extends LitElement {
     accessor store!: Account<Store>;
 
     @state()
+    accessor storeMetadata: StoreMetadata;
+
+    @state()
     accessor couponSupplyBalance: [Account<Coupon>, number, number][] = [];
 
     async fetchCouponSupplyBalance() {
@@ -43,10 +47,16 @@ export class StoreSection extends LitElement {
         }
     }
 
+    async fetchStoreMetadata() {
+        // Fetch store metadata
+        this.storeMetadata = await getStoreMetadata(this.store);
+    }
+
     async willUpdate(changedProperties: PropertyValues<this>) {
         if (changedProperties.has("anchorClient")) {
             if (this.anchorClient) {
                 await this.fetchCouponSupplyBalance();
+                await this.fetchStoreMetadata();
             }
         }
     }
@@ -153,7 +163,9 @@ export class StoreSection extends LitElement {
                 </sl-tab-panel>
                 <sl-tab-panel name="info">
                     <p>${this.store.account.name}</p>
-                    <p>${this.store.account.region}</p>
+                    <p>${this.storeMetadata?.description}</p>
+                    <p>${this.storeMetadata?.address}</p>
+                    <img class="store-image" src=${this.storeMetadata?.image} />
                 </sl-tab-panel>
             </sl-tab-group>
         `;
