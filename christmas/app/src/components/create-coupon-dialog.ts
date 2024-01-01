@@ -1,6 +1,5 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import { COUNTRY_DETAILS } from "../lib/constants";
 import { Account, Store } from "../../../lib/anchor-client/types";
 
 export interface CreateCouponDetail {

@@ -54,7 +54,7 @@ export class CouponsPage extends LitElement {
 
     async fetchCoupons() {
         // Only fetch if `anchorClient` and `location` exists
-        if (this.anchorClient && this.location) {
+        if (this.anchorClient && this.location?.country?.code) {
             this.coupons = await this.anchorClient.getCoupons(
                 this.location.country.code
             );
@@ -96,6 +96,7 @@ export class CouponsPage extends LitElement {
         }
         .app-grid {
             height: 400px;
+            display: flex;
         }
         .loader {
             margin: 0;

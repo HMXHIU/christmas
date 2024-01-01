@@ -8,6 +8,7 @@ import {
     Store,
     StoreMetadata,
 } from "../../../lib/anchor-client/types";
+import { COUNTRY_DETAILS } from "../lib/constants";
 import { consume } from "@lit/context";
 import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
 import { anchorClientContext } from "../providers/anchorClientProvider";
@@ -164,6 +165,7 @@ export class StoreSection extends LitElement {
                 <sl-tab-panel name="info">
                     <p>${this.store.account.name}</p>
                     <p>${this.storeMetadata?.description}</p>
+                    <p>${this.store.account.region}</p>
                     <p>${this.storeMetadata?.address}</p>
                     <img class="store-image" src=${this.storeMetadata?.image} />
                 </sl-tab-panel>

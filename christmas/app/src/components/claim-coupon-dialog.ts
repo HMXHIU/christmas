@@ -27,11 +27,7 @@ export class ClaimCoupon extends LitElement {
     accessor coupon!: Account<Coupon>;
 
     @property({ attribute: false })
-    accessor couponMetadata: CouponMetadata = {
-        name: "",
-        description: "",
-        image: "",
-    };
+    accessor couponMetadata!: CouponMetadata;
 
     firstUpdated() {
         // Dialog events
@@ -55,8 +51,6 @@ export class ClaimCoupon extends LitElement {
         this.dialog.hide();
     }
 
-    static styles = css``;
-
     render() {
         return html`
             <slot name="click-to-open" id="dialog-open"></slot>
@@ -66,10 +60,7 @@ export class ClaimCoupon extends LitElement {
             >
                 <!-- Image -->
                 ${this.couponMetadata.image
-                    ? html`<img
-                          slot="image"
-                          src="${this.couponMetadata.image}"
-                      />`
+                    ? html`<img src=${this.couponMetadata.image} />`
                     : html`<div class="empty-image">
                           <sl-icon name="image-fill"></sl-icon>
                       </div>`}
