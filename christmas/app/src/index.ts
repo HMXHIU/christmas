@@ -25,9 +25,6 @@ import "@shoelace-style/shoelace/dist/components/details/details.js";
 import { setBasePath } from "@shoelace-style/shoelace/dist/utilities/base-path.js";
 setBasePath("shoelace");
 
-// app-layout
-import "@polymer/app-layout/app-layout.js";
-
 // custom
 import "./providers/userDeviceClientProvider";
 import "./providers/anchorClientProvider";
@@ -47,7 +44,6 @@ import "./components/claim-coupon-dialog";
 import "./components/mint-coupon-dialog";
 import "./components/image-input";
 import "./layouts/app-main";
-import "./layouts/app-footer";
 import "./pages/coupons-page";
 import "./pages/mint-page";
 import "./pages/onboard-wallet-page";

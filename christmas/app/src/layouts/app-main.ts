@@ -43,51 +43,82 @@ export class AppMain extends LitElement {
         .hidden {
             display: none;
         }
-        .toolbar {
-            background-color: rgba(255, 255, 255, 0.95);
-        }
-        app-footer::part(bottom-nav) {
-            background-color: rgba(255, 255, 255, 0.95);
-        }
         .app-body {
             margin-bottom: 50px;
+        }
+        .top-navbar,
+        .bottom-navbar {
+            background-color: rgba(255, 255, 255, 0.95);
+            color: black;
+            text-align: center;
+            padding: 5px;
+            z-index: 100; /* Ensure it's above other elements */
+            nav ul {
+                list-style-type: none;
+                margin: 0px;
+                padding: 10px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            nav a {
+                text-decoration: none;
+                color: black;
+            }
+        }
+        .top-navbar {
+            position: sticky;
+            top: 0px;
+        }
+        .bottom-navbar {
+            position: sticky;
+            bottom: 0px;
+            nav ul {
+                justify-content: space-evenly;
+            }
         }
     `;
 
     render() {
         return html`
             <!-- Header -->
-            <app-header-layout>
-                <app-header slot="header" fixed>
-                    <app-toolbar class="toolbar">
-                        <div main-title>App name</div>
-                        <!-- Show disconnect if wallet is connected -->
-                        <sl-button
-                            variant="danger"
-                            outline
-                            class=${classMap({
-                                hidden: !Boolean(this.anchorClient),
-                            })}
-                            @click="${() => {
-                                this.anchorClient?.wallet.adapter.disconnect(); // this will trigget the `on-disconnect-wallet` event
-                            }}"
-                            >Disconnect</sl-button
-                        >
-                    </app-toolbar>
-                </app-header>
-                <!-- Content -->
-                <div class="app-body">${this.getContent()}</div>
-            </app-header-layout>
+            <header class="top-navbar">
+                <nav>
+                    <ul>
+                        <li><a href="/coupons">App name</a></li>
+                        <li>
+                            <sl-button
+                                variant="danger"
+                                outline
+                                class=${classMap({
+                                    hidden: !Boolean(this.anchorClient),
+                                })}
+                                @click="${() => {
+                                    this.anchorClient?.wallet.adapter.disconnect(); // this will trigget the `on-disconnect-wallet` event
+                                }}"
+                                >Disconnect</sl-button
+                            >
+                        </li>
+                    </ul>
+                </nav>
+            </header>
+
+            <!-- Content -->
+            <div class="app-body">${this.getContent()}</div>
 
             <!-- Footer -->
-            <app-footer class="footer">
-                <a href="/coupons" slot="left"
-                    ><sl-menu-item>Coupons</sl-menu-item></a
-                >
-                <a href="/mint" slot="right"
-                    ><sl-menu-item>Mint</sl-menu-item></a
-                >
-            </app-footer>
+            <footer class="bottom-navbar">
+                <nav>
+                    <ul>
+                        <li>
+                            <a href="/coupons" slot="left">Coupons</a>
+                        </li>
+                        <li>
+                            <a href="/mint" slot="right">Mint</a>
+                        </li>
+                    </ul>
+                </nav>
+            </footer>
         `;
     }
 }
