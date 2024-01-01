@@ -4,7 +4,8 @@
         "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
         "test": "yarn run ts-mocha -p ./tsconfig.json -t 1000000 app/tests/**/*.ts",
         "dev": "webpack-dev-server --mode development",
-        "build": "webpack --mode production"
+        "build": "rm -rf ./app/dist/* && webpack --mode production",
+        "clean": "rm -rf ./app/dist/*"
     },
     "dependencies": {
         "@coral-xyz/anchor": "^0.29.0",
@@ -18,6 +19,7 @@
         "@solana/web3.js": "^1.87.6",
         "@vaadin/router": "^1.7.5",
         "countries-and-timezones": "^3.5.2",
+        "dotenv": "^16.3.1",
         "https-browserify": "^1.0.0",
         "lodash": "^4.17.21",
         "nft.storage": "^7.1.1",
@@ -41,6 +43,7 @@
         "copy-webpack-plugin": "^11.0.0",
         "crypto-browserify": "^3.12.0",
         "css-loader": "^6.8.1",
+        "html-webpack-plugin": "^5.6.0",
         "mini-css-extract-plugin": "^2.7.6",
         "mocha": "^9.0.3",
         "prettier": "^2.6.2",
