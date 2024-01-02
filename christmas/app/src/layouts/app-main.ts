@@ -43,8 +43,11 @@ export class AppMain extends LitElement {
         .hidden {
             display: none;
         }
-        .app-body {
-            margin-bottom: 50px;
+        .content {
+            padding-top: 60px;
+            padding-bottom: 50px;
+            display: flex;
+            flex-direction: column; /* Ensure a column layout */
         }
         .top-navbar,
         .bottom-navbar {
@@ -53,6 +56,8 @@ export class AppMain extends LitElement {
             text-align: center;
             padding: 5px;
             z-index: 100; /* Ensure it's above other elements */
+            position: fixed;
+            width: 100%;
             nav ul {
                 list-style-type: none;
                 margin: 0px;
@@ -67,11 +72,9 @@ export class AppMain extends LitElement {
             }
         }
         .top-navbar {
-            position: sticky;
             top: 0px;
         }
         .bottom-navbar {
-            position: sticky;
             bottom: 0px;
             nav ul {
                 justify-content: space-evenly;
@@ -104,7 +107,7 @@ export class AppMain extends LitElement {
             </header>
 
             <!-- Content -->
-            <div class="app-body">${this.getContent()}</div>
+            <div class="content">${this.getContent()}</div>
 
             <!-- Footer -->
             <footer class="bottom-navbar">
