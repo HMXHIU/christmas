@@ -58,34 +58,40 @@ export class ClaimedCouponCard extends LitElement {
     }
 
     static styles = css`
-        .card-overview {
-            max-width: 300px;
-            margin: 10px;
+        :host {
+            display: block;
+            margin: 10px 0px 0px 10px;
         }
-        .card-overview small {
-            color: var(--sl-color-neutral-500);
+        sl-card::part(base) {
+            width: var(--coupon-card-width);
+            height: var(--coupon-card-height);
+            margin: 0px;
         }
-        .card-overview::part(footer) {
-            padding-top: 7px;
-            padding-bottom: 7px;
-        }
-        .card-overview [slot="footer"] {
+        sl-card [slot="footer"] {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
+        sl-card small {
+            color: var(--sl-color-neutral-500);
+        }
         .coupon-info {
             margin: 0px;
         }
-        img {
-            width: 180px;
-            height: 100px;
-            flex: 3;
+        .coupon-image,
+        .empty-image {
+            height: var(--coupon-card-image-height);
+            max-height: 100%;
+            object-fit: contain; /* Maintain aspect ratio and fill container */
         }
         .empty-image {
-            width: 180px;
-            height: 100px;
-            flex: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            sl-icon {
+                flex: 1;
+            }
         }
     `;
 
@@ -109,18 +115,15 @@ export class ClaimedCouponCard extends LitElement {
                 redemptionQRCodeURL=${this.redemptionQRCodeURL}
                 @on-redeem=${this.onRedeemCoupon}
             >
-                <sl-card
-                    class="card-overview"
-                    slot="click-to-open"
-                    part="card-overview"
-                >
+                <sl-card slot="click-to-open" part="card-overview">
                     <!-- Image -->
                     ${this.couponMetadata.image
                         ? html`<img
                               slot="image"
+                              class="coupon-image"
                               src="${this.couponMetadata.image}"
                           />`
-                        : html`<div class="empty-image">
+                        : html`<div class="empty-image" slot="image">
                               <sl-icon name="image-fill"></sl-icon>
                           </div>`}
                     <!-- Coupon details -->
