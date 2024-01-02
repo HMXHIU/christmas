@@ -6,6 +6,25 @@
         <link rel="stylesheet" href="main.css" />
         <title>Index</title>
         <style>
+            :root {
+                /* Coupon Card */
+                --padding-around-coupon-card: 10px;
+                --coupon-card-max-width: 220px;
+                --coupon-card-min-width: 140px;
+                --coupon-card-width: calc(
+                    max(
+                        min(
+                            50vw - var(--padding-around-coupon-card) * 1.5,
+                            var(--coupon-card-max-width)
+                        ),
+                        var(--coupon-card-min-width)
+                    )
+                );
+                --coupon-card-height: calc(var(--coupon-card-width) * 1.5);
+                --coupon-card-image-height: calc(
+                    var(--coupon-card-height) * 0.67
+                );
+            }
             body {
                 font-family: "DM Sans";
                 margin: 0;

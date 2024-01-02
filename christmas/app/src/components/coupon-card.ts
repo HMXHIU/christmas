@@ -38,29 +38,40 @@ export class CouponCard extends LitElement {
     }
 
     static styles = css`
-        .card-overview {
-            max-width: 350px;
+        :host {
+            display: block;
+            margin: 10px 0px 0px 10px;
         }
-        .card-overview [slot="footer"] {
+        sl-card::part(base) {
+            width: var(--coupon-card-width);
+            height: var(--coupon-card-height);
+            margin: 0px;
+        }
+        sl-card [slot="footer"] {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .card-overview small {
+        sl-card small {
             color: var(--sl-color-neutral-500);
         }
         .coupon-info {
             margin: 0px;
         }
-        img {
-            width: 180px;
-            height: 100px;
-            flex: 3;
+        .coupon-image,
+        .empty-image {
+            height: var(--coupon-card-image-height);
+            max-height: 100%;
+            object-fit: contain; /* Maintain aspect ratio and fill container */
         }
         .empty-image {
-            width: 180px;
-            height: 100px;
-            flex: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            sl-icon {
+                flex: 1;
+            }
         }
     `;
 
@@ -82,13 +93,15 @@ export class CouponCard extends LitElement {
                     <!-- Image -->
                     ${this.couponMetadata.image
                         ? html`<img
+                              class="coupon-image"
                               slot="image"
                               src="${this.couponMetadata.image}"
                           />`
-                        : html`<div class="empty-image">
-                              <sl-icon name="image-fill"></sl-icon>
-                          </div>`}
-
+                        : html`
+                              <div class="empty-image" slot="image">
+                                  <sl-icon name="image-fill"></sl-icon>
+                              </div>
+                          `}
                     <!-- Info -->
                     <div slot="footer">
                         <p class="coupon-info">

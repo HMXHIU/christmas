@@ -60,6 +60,7 @@ export class ClaimedCouponCard extends LitElement {
     static styles = css`
         .card-overview {
             max-width: 300px;
+            margin: 10px;
         }
         .card-overview small {
             color: var(--sl-color-neutral-500);
@@ -108,7 +109,11 @@ export class ClaimedCouponCard extends LitElement {
                 redemptionQRCodeURL=${this.redemptionQRCodeURL}
                 @on-redeem=${this.onRedeemCoupon}
             >
-                <sl-card class="card-overview" slot="click-to-open">
+                <sl-card
+                    class="card-overview"
+                    slot="click-to-open"
+                    part="card-overview"
+                >
                     <!-- Image -->
                     ${this.couponMetadata.image
                         ? html`<img

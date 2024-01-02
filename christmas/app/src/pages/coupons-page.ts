@@ -31,7 +31,7 @@ export class CouponsPage extends LitElement {
 
     async onClaimCoupon(e: CustomEvent<ClaimCouponDetail>) {
         const { coupon, numTokens } = e.detail;
-        if (this.anchorClient && this.location) {
+        if (this.anchorClient && this.location?.country?.code) {
             // Claim from market, also creates a `User` using `region` and `geo`
             await this.anchorClient.claimFromMarket(
                 coupon.account.mint,
@@ -84,67 +84,41 @@ export class CouponsPage extends LitElement {
     }
 
     static styles = css`
-        sl-spinner {
-            font-size: 3rem;
-            --indicator-color: deeppink;
-            --track-color: pink;
+        .my-coupons-panel {
+            --padding: 0px;
+            padding-top: 5px;
+            padding-bottom: 5px;
         }
-        sl-carousel::part(scroll-container) {
-            height: 210px;
-        }
-        .app-grid {
-            height: 400px;
+        .my-coupons-panel::part(base) {
             display: flex;
         }
-        .loader {
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+        .market-coupons-panel {
+            overflow-x: hidden; /* Disable side scrolling */
+            overflow-y: hidden; /* Disable vertical scrolling */
         }
-        coupon-card::part(card-overview) {
-            margin: 10px;
+        .market-coupons-panel::part(base) {
+            display: flex;
+            flex-wrap: wrap;
         }
     `;
-
-    getLoading() {
-        return html`
-            <div class="loader">
-                <sl-spinner> </sl-spinner>
-            </div>
-        `;
-    }
 
     getPage() {
         return html`
             <!-- Claimed coupons -->
             <sl-tab-group>
-                <sl-tab slot="nav" panel="claimed">My Coupons (All)</sl-tab>
-                <sl-tab slot="nav" panel="food">Food</sl-tab>
-                <sl-tab slot="nav" panel="others">Others</sl-tab>
-                <sl-tab-panel
-                    name="claimed"
-                    style="--padding: 0px; height: 250px; padding-top: 10px"
-                >
-                    <sl-carousel
-                        class="scroll-hint"
-                        style="--aspect-ratio: 1/1;"
-                        slides-per-page="2"
-                        pagination
-                    >
-                        ${this.claimedCoupons.map(([coupon, balance]) => {
-                            return html`
-                                <sl-carousel-item>
-                                    <claimed-coupon-card
-                                        class="item"
-                                        .coupon=${coupon}
-                                        balance=${balance}
-                                    ></claimed-coupon-card>
-                                </sl-carousel-item>
-                            `;
-                        })}
-                    </sl-carousel>
+                <sl-tab slot="nav" panel="claimed">
+                    My Coupons (${this.claimedCoupons.length})
+                </sl-tab>
+                <sl-tab-panel name="claimed" class="my-coupons-panel">
+                    ${this.claimedCoupons.map(([coupon, balance]) => {
+                        return html`
+                            <claimed-coupon-card
+                                class="item"
+                                .coupon=${coupon}
+                                balance=${balance}
+                            ></claimed-coupon-card>
+                        `;
+                    })}
                 </sl-tab-panel>
             </sl-tab-group>
             <br />
@@ -153,19 +127,17 @@ export class CouponsPage extends LitElement {
                 <sl-tab slot="nav" panel="market">Market (All)</sl-tab>
                 <sl-tab slot="nav" panel="food">Food</sl-tab>
                 <sl-tab slot="nav" panel="others">Others</sl-tab>
-                <sl-tab-panel name="market">
-                    <div class="app-grid">
-                        ${this.coupons.map(([coupon, tokenAccount]) => {
-                            return html`
-                                <coupon-card
-                                    class="item"
-                                    .coupon=${coupon}
-                                    .tokenAccount=${tokenAccount}
-                                    @on-claim=${this.onClaimCoupon}
-                                ></coupon-card>
-                            `;
-                        })}
-                    </div>
+                <sl-tab-panel name="market" class="market-coupons-panel">
+                    ${this.coupons.map(([coupon, tokenAccount]) => {
+                        return html`
+                            <coupon-card
+                                class="item"
+                                .coupon=${coupon}
+                                .tokenAccount=${tokenAccount}
+                                @on-claim=${this.onClaimCoupon}
+                            ></coupon-card>
+                        `;
+                    })}
                 </sl-tab-panel>
             </sl-tab-group>
         `;
@@ -175,7 +147,7 @@ export class CouponsPage extends LitElement {
         if (this.anchorClient && this.location) {
             return this.getPage();
         } else {
-            return this.getLoading();
+            return html`<loading-page></loading-page>`;
         }
     }
 }

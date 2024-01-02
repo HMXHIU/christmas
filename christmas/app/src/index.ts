@@ -33,6 +33,7 @@ import "./components/store-section";
 import "./components/location-search";
 import "./components/side-scoller";
 import "./components/form-event";
+import "./components/loading-page";
 import "./components/solana-wallet";
 import "./components/coupon-card";
 import "./components/mint-coupon-card";
