@@ -40,6 +40,8 @@ pub struct RedeemCoupon<'info> {
     region: String,
     geo: String,
     uri: String,
+    valid_from: u64,
+    valid_to: u64,
 )]
 pub struct CreateCoupon<'info> {
     #[account(
@@ -100,6 +102,8 @@ pub struct Coupon {
     pub region: String,
     pub geo: String,
     pub store: Pubkey,
+    pub valid_from: u64,
+    pub valid_to: u64,
     pub bump: u8,
 }
 
@@ -114,6 +118,8 @@ impl Coupon {
             + REGION_SIZE
             + GEO_SIZE
             + PUBKEY_SIZE
+            + U64_SIZE
+            + U64_SIZE
             + BUMP_SIZE
     }
 }

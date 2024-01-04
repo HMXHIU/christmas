@@ -84,6 +84,8 @@ pub mod christmas {
         region: String,
         geo: String,
         uri: String,
+        valid_from: u64,
+        valid_to: u64,
     ) -> Result<()> {
         // check valid region
         code_to_country(&region).unwrap();
@@ -96,6 +98,8 @@ pub mod christmas {
         ctx.accounts.coupon.uri = pad_string(&uri, URI_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.coupon.region = pad_string(&region, REGION_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.coupon.geo = pad_string(&geo, GEO_SIZE - STRING_PREFIX_SIZE);
+        ctx.accounts.coupon.valid_from = valid_from;
+        ctx.accounts.coupon.valid_to = valid_to;
         ctx.accounts.coupon.bump = *ctx.bumps.get("coupon").unwrap();
 
         // check existing region market region else create

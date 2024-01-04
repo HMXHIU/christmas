@@ -16,6 +16,8 @@ export interface Coupon {
     region: string;
     geo: string;
     store: PublicKey;
+    validFrom: BN;
+    validTo: BN;
     bump: number;
 }
 

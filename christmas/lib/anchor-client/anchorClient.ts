@@ -22,6 +22,7 @@ import {
 } from "./def";
 import { getCountry, getGeohash } from "../user-device-client/utils"; // TODO: move this to a library
 import { Wallet, AnchorWallet } from "@solana/wallet-adapter-react";
+import { dateToBN } from "./utils";
 
 import {
     Account,
@@ -103,6 +104,8 @@ export class AnchorClient {
         symbol,
         store,
         mint,
+        validFrom,
+        validTo,
     }: {
         geo: string;
         region: string;
@@ -110,6 +113,8 @@ export class AnchorClient {
         uri: string;
         symbol: string;
         store: web3.PublicKey;
+        validFrom: Date;
+        validTo: Date;
         mint?: web3.Keypair;
     }): Promise<TransactionResult> {
         // generate new mint keys if not provided
@@ -126,7 +131,15 @@ export class AnchorClient {
 
         // create coupon
         const ix = await this.program.methods
-            .createCoupon(name, symbol, region, geo, uri)
+            .createCoupon(
+                name,
+                symbol,
+                region,
+                geo,
+                uri,
+                dateToBN(validFrom),
+                dateToBN(validTo)
+            )
             .accounts({
                 mint: mint.publicKey,
                 coupon: couponPda,

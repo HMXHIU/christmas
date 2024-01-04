@@ -31,6 +31,10 @@ describe("Test client", () => {
     const couponUri = "www.example.com";
     const couponSymbol = "#COU";
 
+    // validity period
+    const validFrom = new Date(Date.UTC(2024, 0, 1));
+    const validTo = new Date(Date.UTC(2025, 11, 31));
+
     const sellerKeypair = web3.Keypair.generate();
     const sellerAnchorWallet = new anchor.Wallet(sellerKeypair);
 
@@ -133,6 +137,8 @@ describe("Test client", () => {
                     name: couponName,
                     uri: couponUri,
                     symbol: couponSymbol,
+                    validFrom,
+                    validTo,
                 })
             ).result.err
         );
