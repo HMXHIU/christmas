@@ -12,6 +12,10 @@ import { MintCouponDetail } from "../components/mint-coupon-dialog";
 import { CreateStoreDetail } from "../components/create-store-dialog";
 import { Location } from "../../../lib/user-device-client/types";
 import { locationContext } from "../providers/contexts";
+import {
+    STORE_NAME_SIZE,
+    STRING_PREFIX_SIZE,
+} from "../../../lib/anchor-client/def";
 
 @customElement("mint-page")
 export class MintPage extends LitElement {
@@ -53,7 +57,10 @@ export class MintPage extends LitElement {
             }
 
             const tx = await this.anchorClient.createStore({
-                name: e.detail.name,
+                name: e.detail.name.slice(
+                    0,
+                    STORE_NAME_SIZE - STRING_PREFIX_SIZE
+                ), // also enforced in the form
                 geo: e.detail.geo,
                 region: e.detail.region,
                 uri: metadataUrl,
@@ -79,9 +86,6 @@ export class MintPage extends LitElement {
     }
 
     static styles = css`
-        sl-carousel {
-            height: 250px;
-        }
         sl-spinner {
             font-size: 3rem;
             --indicator-color: deeppink;

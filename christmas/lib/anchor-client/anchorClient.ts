@@ -19,6 +19,7 @@ import {
     URI_SIZE,
     COUPON_NAME_SIZE,
     COUPON_SYMBOL_SIZE,
+    STRING_PREFIX_SIZE,
 } from "./def";
 import { getCountry, getGeohash } from "../user-device-client/utils"; // TODO: move this to a library
 import { Wallet, AnchorWallet } from "@solana/wallet-adapter-react";
@@ -633,6 +634,16 @@ export class AnchorClient {
         const storePda = this.getStorePda(storeId)[0];
         const programStatePda = this.getProgramStatePda()[0];
 
+        if (name.length > STORE_NAME_SIZE - STRING_PREFIX_SIZE) {
+            throw Error(
+                `Store name exceeds maximum length of ${STORE_NAME_SIZE}`
+            );
+        }
+
+        if (uri.length > URI_SIZE - STRING_PREFIX_SIZE) {
+            throw Error(`Uri exceeds maximum length of ${URI_SIZE}`);
+        }
+
         return await this.executeTransaction(
             new Transaction().add(
                 await this.program.methods
@@ -652,6 +663,11 @@ export class AnchorClient {
         const [storePda, _] = this.getStorePda(id, owner);
         return await this.program.account.store.fetch(storePda);
     }
+
+    async getStoreByPda(pda: web3.PublicKey): Promise<Store> {
+        return await this.program.account.store.fetch(pda);
+    }
+
     async getStores(owner?: web3.PublicKey): Promise<Account<Store>[]> {
         return this.program.account.store.all([
             {
@@ -821,9 +837,11 @@ export class AnchorClient {
 
         // sign and send
         const signature = await this.connection.sendRawTransaction(
-            (await this.anchorWallet.signTransaction(tx)).serialize()
+            (await this.anchorWallet.signTransaction(tx)).serialize(),
+            options
+            // REMOVE FOR DEBUG ONLY
             // {
-            //     skipPreflight: true, // TODO: REMOVE DEBUG
+            //     skipPreflight: true,
             // }
         );
 

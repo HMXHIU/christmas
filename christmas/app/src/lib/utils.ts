@@ -57,17 +57,15 @@ export function fetchData(url: string, defaultValue: any = {}): Promise<any> {
 }
 
 export async function getCouponMetadata(
-    coupon: Account<Coupon>
+    coupon: Coupon
 ): Promise<CouponMetadata> {
-    const url = nft_uri_to_url(coupon.account.uri);
+    const url = nft_uri_to_url(coupon.uri);
     const data = await fetchData(url, {});
     return { ...data, image: nft_uri_to_url(data.image || "") };
 }
 
-export async function getStoreMetadata(
-    store: Account<Store>
-): Promise<StoreMetadata> {
-    const url = nft_uri_to_url(store.account.uri);
+export async function getStoreMetadata(store: Store): Promise<StoreMetadata> {
+    const url = nft_uri_to_url(store.uri);
     const data = await fetchData(url, {});
     return { ...data, image: nft_uri_to_url(data.image || "") };
 }

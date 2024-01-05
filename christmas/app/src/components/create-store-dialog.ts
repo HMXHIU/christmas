@@ -5,6 +5,10 @@ import { COUNTRY_DETAILS } from "../../../lib/user-device-client/defs";
 import { Location } from "../../../lib/user-device-client/types";
 
 import { locationContext } from "../providers/contexts";
+import {
+    STORE_NAME_SIZE,
+    STRING_PREFIX_SIZE,
+} from "../../../lib/anchor-client/def";
 
 export interface CreateStoreDetail {
     name: string;
@@ -99,6 +103,7 @@ export class CreateStore extends LitElement {
                         <sl-input
                             name="name"
                             label="Store Name"
+                            maxlength=${STORE_NAME_SIZE - STRING_PREFIX_SIZE}
                             required
                         ></sl-input>
                         <br />
@@ -107,6 +112,7 @@ export class CreateStore extends LitElement {
                         <sl-textarea
                             name="description"
                             label="Store Description"
+                            maxlength=${400}
                             required
                         ></sl-textarea>
                         <br />

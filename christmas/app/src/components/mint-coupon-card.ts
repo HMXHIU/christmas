@@ -65,15 +65,7 @@ export class MintCouponCard extends LitElement {
     `;
 
     async firstUpdated() {
-        try {
-            this.couponMetadata = await getCouponMetadata(this.coupon);
-        } catch (error) {
-            this.couponMetadata = {
-                name: "",
-                description: "Not Available",
-                image: "",
-            };
-        }
+        this.couponMetadata = await getCouponMetadata(this.coupon.account);
     }
 
     getDescriptionTooltip() {

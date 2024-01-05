@@ -1,6 +1,10 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { Account, Store } from "../../../lib/anchor-client/types";
+import {
+    COUPON_NAME_SIZE,
+    STRING_PREFIX_SIZE,
+} from "../../../lib/anchor-client/def";
 
 export interface CreateCouponDetail {
     name: string;
@@ -9,6 +13,8 @@ export interface CreateCouponDetail {
     region: string;
     geo: string;
     store: Account<Store>;
+    validFrom: Date;
+    validTo: Date;
 }
 
 @customElement("create-coupon-dialog")
@@ -25,6 +31,12 @@ export class CreateCoupon extends LitElement {
     @property({ attribute: false })
     accessor store: Account<Store>;
 
+    @query("#validFrom")
+    accessor validFrom: any;
+
+    @query("#validTo")
+    accessor validTo: any;
+
     onSubmit(e: CustomEvent) {
         // Dispatch on-create event
         this.dispatchEvent(
@@ -38,6 +50,8 @@ export class CreateCoupon extends LitElement {
                     region: this.store.account.region,
                     geo: this.store.account.geo,
                     store: this.store,
+                    validFrom: this.validFrom.valueAsDate,
+                    validTo: this.validTo.valueAsDate,
                 },
             })
         );
@@ -68,6 +82,11 @@ export class CreateCoupon extends LitElement {
     `;
 
     render() {
+        // Default validity period
+        const currentDate = new Date();
+        const defaultValidTo = new Date();
+        defaultValidTo.setMonth(currentDate.getMonth() + 6);
+
         return html`
             <!-- Button to trigger dialog -->
             <slot name="button"></slot>
@@ -76,12 +95,18 @@ export class CreateCoupon extends LitElement {
                 <form-event @on-submit=${this.onSubmit}>
                     <form action="submit" slot="form" id="createCouponForm">
                         <!-- Coupon Name -->
-                        <sl-input name="name" label="Name" required></sl-input>
+                        <sl-input
+                            name="name"
+                            label="Name"
+                            required
+                            maxlength=${COUPON_NAME_SIZE - STRING_PREFIX_SIZE}
+                        ></sl-input>
                         <br />
                         <!-- Coupon Description -->
                         <sl-textarea
                             name="description"
                             label="Description"
+                            maxlength=${200}
                             required
                         ></sl-textarea>
                         <br />
@@ -108,18 +133,22 @@ export class CreateCoupon extends LitElement {
                         <!-- Coupon Validity Period -->
                         <div class="date-container">
                             <sl-input
+                                id="validFrom"
                                 name="validFrom"
                                 class="date-range"
                                 type="date"
                                 label="Valid From"
-                                placeholder="Valid From"
+                                .valueAsDate=${currentDate}
+                                required
                             ></sl-input>
                             <sl-input
+                                id="validTo"
                                 name="validTo"
                                 class="date-range"
                                 type="date"
                                 label="Valid To"
-                                placeholder="Valid To"
+                                .valueAsDate=${defaultValidTo}
+                                required
                             ></sl-input>
                         </div>
                         <sl-divider></sl-divider>

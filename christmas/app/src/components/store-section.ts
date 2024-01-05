@@ -19,6 +19,10 @@ import { nftStorageClientContext } from "../providers/contexts";
 import { NFTStorageClient } from "../lib/nftStorageClient";
 import { MintCouponDetail } from "../components/mint-coupon-dialog";
 import { CreateCouponDetail } from "../components/create-coupon-dialog";
+import {
+    COUPON_NAME_SIZE,
+    STRING_PREFIX_SIZE,
+} from "../../../lib/anchor-client/def";
 
 @customElement("store-section")
 export class StoreSection extends LitElement {
@@ -50,7 +54,7 @@ export class StoreSection extends LitElement {
 
     async fetchStoreMetadata() {
         // Fetch store metadata
-        this.storeMetadata = await getStoreMetadata(this.store);
+        this.storeMetadata = await getStoreMetadata(this.store.account);
     }
 
     async willUpdate(changedProperties: PropertyValues<this>) {
@@ -91,6 +95,8 @@ export class StoreSection extends LitElement {
     async onCreateCoupon(e: CustomEvent<CreateCouponDetail>) {
         if (this.anchorClient && this.nftStorageClient) {
             let metadataUrl = "";
+
+            // Upload coupon image to nft storage
             if (e.detail.image) {
                 metadataUrl = await this.nftStorageClient.store({
                     name: e.detail.name,
@@ -100,13 +106,19 @@ export class StoreSection extends LitElement {
                 console.log(`Uploaded coupon metadata to ${metadataUrl}`);
             }
 
+            // Create coupon
             await this.anchorClient.createCoupon({
                 geo: e.detail.geo,
                 region: e.detail.region,
-                name: e.detail.name,
-                store: e.detail.store.publicKey, // TODO: CREATE STORE
-                symbol: "", // TODO: remove symbol or auto set to user's stall
+                name: e.detail.name.slice(
+                    0,
+                    COUPON_NAME_SIZE - STRING_PREFIX_SIZE
+                ), // also enforced in form
+                store: e.detail.store.publicKey,
+                symbol: "",
                 uri: metadataUrl,
+                validFrom: e.detail.validFrom,
+                validTo: e.detail.validTo,
             });
 
             // TODO: handle failed transactions

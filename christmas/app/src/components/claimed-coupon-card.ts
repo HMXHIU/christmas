@@ -97,7 +97,7 @@ export class ClaimedCouponCard extends LitElement {
 
     async firstUpdated() {
         try {
-            this.couponMetadata = await getCouponMetadata(this.coupon);
+            this.couponMetadata = await getCouponMetadata(this.coupon.account);
         } catch (error) {
             this.couponMetadata = {
                 name: "",
