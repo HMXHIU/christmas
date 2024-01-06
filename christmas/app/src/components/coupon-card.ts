@@ -71,8 +71,8 @@ export class CouponCard extends LitElement {
         }
         sl-card::part(body),
         sl-card::part(footer) {
-            padding-top: 0px;
-            padding-bottom: 0px;
+            padding-top: 5px;
+            padding-bottom: 5px;
             padding-left: 10px;
             padding-right: 10px;
         }
@@ -89,6 +89,7 @@ export class CouponCard extends LitElement {
             height: var(--coupon-card-image-height);
             max-height: 100%;
             object-fit: contain; /* Maintain aspect ratio and fill container */
+            object-position: top;
         }
         .empty-image {
             display: flex;
@@ -118,11 +119,25 @@ export class CouponCard extends LitElement {
             margin-bottom: 5px;
             margin-top: 5px;
         }
+        .store-image {
+            height: 60px;
+            width: 60px;
+        }
+        .store-details {
+            display: flex;
+            flex-direction: column;
+        }
         .store-name {
             font-size: var(--sl-font-size-medium);
+            margin: 0px;
+            padding: 0px 0px 5px 5px;
         }
         .store-address {
-            font-size: var(--sl-font-size-medium);
+            font-size: var(--sl-font-size-x-small);
+            font-weight: var(--sl-font-weight-light);
+            color: var(--sl-color-neutral-500);
+            margin: 0px;
+            padding: 0px 0px 5px 5px;
         }
     `;
 
@@ -172,7 +187,18 @@ export class CouponCard extends LitElement {
                     </p>
                     <!-- Store Info -->
                     <div slot="footer">
-                        <p class="store-name">${this.storeMetadata?.name}</p>
+                        <sl-avatar
+                            image=${this.storeMetadata?.image}
+                            label=${this.store?.name}
+                        ></sl-avatar>
+                        <div class="store-details">
+                            <p class="store-name">
+                                ${this.storeMetadata?.name}
+                            </p>
+                            <p class="store-address">
+                                ${this.storeMetadata?.address}
+                            </p>
+                        </div>
                     </div>
                 </sl-card>
             </claim-coupon-dialog>

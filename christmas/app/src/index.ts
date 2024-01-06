@@ -19,6 +19,7 @@ import "@shoelace-style/shoelace/dist/components/qr-code/qr-code.js";
 import "@shoelace-style/shoelace/dist/components/divider/divider.js";
 import "@shoelace-style/shoelace/dist/components/details/details.js";
 import "@shoelace-style/shoelace/dist/components/format-date/format-date.js";
+import "@shoelace-style/shoelace/dist/components/avatar/avatar.js";
 
 import { setBasePath } from "@shoelace-style/shoelace/dist/utilities/base-path.js";
 setBasePath("shoelace");
