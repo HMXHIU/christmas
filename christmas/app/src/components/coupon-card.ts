@@ -9,7 +9,7 @@ import {
     Store,
 } from "../../../lib/anchor-client/types";
 import { getCouponMetadata, getStoreMetadata } from "../lib/utils";
-import { cleanString } from "../../../lib/anchor-client/utils";
+import { bnToDate, cleanString } from "../../../lib/anchor-client/utils";
 import { ParsedAccountData } from "@solana/web3.js";
 import { anchorClientContext } from "../providers/contexts";
 import { consume } from "@lit/context";
@@ -195,6 +195,10 @@ export class CouponCard extends LitElement {
             this.tokenAccount.account.data as ParsedAccountData
         ).parsed.info;
 
+        const validTo = bnToDate(this.coupon.account.validTo);
+
+        console.log(validTo);
+
         return html`
             <claim-coupon-dialog
                 .coupon=${this.coupon}
@@ -228,8 +232,8 @@ export class CouponCard extends LitElement {
                             month="long"
                             day="numeric"
                             year="numeric"
-                            >${this.coupon.account.validTo}</sl-format-date
-                        >
+                            .date=${validTo}
+                        ></sl-format-date>
                     </p>
                     <p class="coupon-remaining">
                         ${tokenAccountData.tokenAmount.uiAmount} remaining
