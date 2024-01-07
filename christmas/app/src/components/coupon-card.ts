@@ -88,7 +88,7 @@ export class CouponCard extends LitElement {
         }
         sl-card [slot="footer"] {
             display: flex;
-            justify-content: space-between;
+            justify-content: start;
             align-items: center;
         }
         sl-card small {
@@ -136,20 +136,59 @@ export class CouponCard extends LitElement {
         .store-details {
             display: flex;
             flex-direction: column;
+            padding-left: 10px;
+            max-width: 100%;
+            overflow: hidden;
         }
         .store-name {
             font-size: var(--sl-font-size-medium);
             margin: 0px;
-            padding: 0px 0px 5px 5px;
+            padding: 0px 0px 5px 0px;
         }
         .store-address {
             font-size: var(--sl-font-size-x-small);
             font-weight: var(--sl-font-weight-light);
             color: var(--sl-color-neutral-500);
             margin: 0px;
-            padding: 0px 0px 5px 5px;
+            padding: 0px 0px 5px 0px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .store-distance {
+            font-size: var(--sl-font-size-x-small);
+            font-weight: var(--sl-font-weight-light);
+            font-style: italic;
+            color: var(--sl-color-success-500);
+            margin: 0px;
+            padding: 0px;
         }
     `;
+
+    getDistance() {
+        const distance = calculateDistance(
+            this.storeMetadata?.latitude,
+            this.storeMetadata?.longitude,
+            this.location?.geolocationCoordinates?.latitude,
+            this.location?.geolocationCoordinates?.longitude
+        );
+
+        if (distance) {
+            if (distance < 0.1) {
+                return html` <p class="store-distance">nearby</p> `;
+            } else if (distance < 1) {
+                return html`
+                    <p class="store-distance">
+                        ${Math.trunc(distance * 1000)}m
+                    </p>
+                `;
+            }
+            return html`
+                <p class="store-distance">${Math.round(distance)}km</p>
+            `;
+        }
+        return html``;
+    }
 
     render() {
         const tokenAccountData = (
@@ -207,17 +246,8 @@ export class CouponCard extends LitElement {
                             </p>
                             <p class="store-address">
                                 ${this.storeMetadata?.address}
-                                <br />
-                                ${calculateDistance(
-                                    this.storeMetadata?.latitude,
-                                    this.storeMetadata?.longitude,
-                                    this.location?.geolocationCoordinates
-                                        ?.latitude,
-                                    this.location?.geolocationCoordinates
-                                        ?.longitude
-                                )}
-                                km
                             </p>
+                            ${this.getDistance()}
                         </div>
                     </div>
                 </sl-card>
