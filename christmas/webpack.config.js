@@ -25,10 +25,22 @@ module.exports = {
         ],
     },
     plugins: [
+        new webpack.ProvidePlugin({
+            Buffer: ["buffer", "Buffer"],
+        }),
+        new webpack.ProvidePlugin({
+            process: "process/browser.js",
+        }),
         new webpack.EnvironmentPlugin([
             "GOOGLE_MAPS_API_KEY",
             "NFT_STORAGE_TOKEN",
             "ANCHOR_BROWSER",
+            "MINIO_ENDPOINT",
+            "MINIO_PORT",
+            "MINIO_BUCKET",
+            "MINIO_ACCESS_KEY",
+            "MINIO_SECRET_KEY",
+            "MINIO_USE_SSL",
         ]),
         new HtmlWebpackPlugin({
             template: path.resolve(__dirname, "./app/src/index.html"),
@@ -60,6 +72,9 @@ module.exports = {
             stream: require.resolve("stream-browserify"),
             crypto: require.resolve("crypto-browserify"),
             url: require.resolve("url"),
+            path: require.resolve("path-browserify"),
+            timers: require.resolve("timers-browserify"),
+            fs: require.resolve("browserify-fs"),
         },
     },
     output: {

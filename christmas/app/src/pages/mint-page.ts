@@ -7,7 +7,7 @@ import { nftStorageClientContext } from "../providers/contexts";
 
 import { anchorClientContext } from "../providers/contexts";
 import { CreateCouponDetail } from "../components/create-coupon-dialog";
-import { NFTStorageClient } from "../lib/nftStorageClient";
+import { NFTStorageClient } from "../../../lib/nftStorageClient";
 import { MintCouponDetail } from "../components/mint-coupon-dialog";
 import { CreateStoreDetail } from "../components/create-store-dialog";
 import { Location } from "../../../lib/user-device-client/types";
@@ -51,6 +51,8 @@ export class MintPage extends LitElement {
                     imageFile: e.detail.image,
                     additionalMetadata: {
                         address: e.detail.address,
+                        latitude: e.detail.latitude,
+                        longitude: e.detail.longitude,
                     },
                 });
                 console.log(`Uploaded coupon metadata to ${metadataUrl}`);

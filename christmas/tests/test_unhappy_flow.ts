@@ -1,5 +1,5 @@
 import { web3 } from "@coral-xyz/anchor";
-import { assert, expect } from "chai";
+
 import { AnchorClient } from "../lib/anchor-client/anchorClient";
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
@@ -15,25 +15,15 @@ import {
     STRING_PREFIX_SIZE,
 } from "../lib/anchor-client/def";
 
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
+chai.use(chaiAsPromised);
+import { assert, expect } from "chai";
+
 describe("Test Coupon", () => {
     // set provider
     const provider = anchor.AnchorProvider.env();
     anchor.setProvider(provider);
-
-    // const geo = "gbsuv7";
-    // const region = "SGP";
-
-    // let storeId: BN;
-    // const storeName = "My store";
-    // const storeUri = "https://example.com";
-
-    // const couponName = "coupon1";
-    // const couponUri = "www.example.com";
-    // const couponSymbol = "#COU";
-
-    // // validity period
-    // const validFrom = new Date(Date.UTC(2024, 0, 1));
-    // const validTo = new Date(Date.UTC(2025, 11, 31));
 
     const sellerKeypair = web3.Keypair.generate();
     const sellerAnchorWallet = new anchor.Wallet(sellerKeypair);
@@ -104,61 +94,13 @@ describe("Test Coupon", () => {
         const storeUri =
             "https://example.example.example.example.example.example.example.example.example.example.com";
 
-        await sellerClient.createStore({
-            name: storeName,
-            uri: storeUri,
-            region,
-            geo,
-        });
-
-        // test next store_counter
-        assert.ok(storeId.addn(1).eq(await sellerClient.getAvailableStoreId()));
-
-        let store = await sellerClient.getStore(storeId);
-        assert.equal(cleanString(store.name), storeName);
-        assert.equal(cleanString(store.region), region);
-        assert.equal(cleanString(store.uri), storeUri);
-        assert.equal(cleanString(store.geo), geo);
-        assert.ok(store.id.eq(storeId));
-        assert.ok(store.owner.equals(sellerClient.anchorWallet.publicKey));
+        expect(
+            sellerClient.createStore({
+                name: storeName,
+                uri: storeUri,
+                region,
+                geo,
+            })
+        ).to.be.rejectedWith("Store name exceeds maximum length of 40");
     });
-
-    // it("Create Coupon", async () => {
-    //     // get store
-    //     let [store, _] = await sellerClient.getStorePda(storeId);
-
-    //     // create coupon
-    //     assert.isNull(
-    //         (
-    //             await sellerClient.createCoupon({
-    //                 geo,
-    //                 region,
-    //                 store,
-    //                 name: couponName,
-    //                 uri: couponUri,
-    //                 symbol: couponSymbol,
-    //                 validFrom,
-    //                 validTo,
-    //             })
-    //         ).result.err
-    //     );
-
-    //     // check if coupon is created
-    //     const coupons = await sellerClient.getMintedCoupons();
-
-    //     assert.ok(coupons.length === 1);
-    //     const [coupon, supply, balance] = coupons[0];
-
-    //     assert.equal(cleanString(coupon.account.geo), geo);
-    //     assert.equal(cleanString(coupon.account.region), region);
-    //     assert.equal(cleanString(coupon.account.uri), couponUri);
-    //     assert.equal(cleanString(coupon.account.name), couponName);
-    //     assert.equal(cleanString(coupon.account.symbol), couponSymbol);
-    //     assert.ok(
-    //         coupon.account.updateAuthority.equals(
-    //             sellerClient.anchorWallet.publicKey
-    //         )
-    //     );
-    //     assert.ok(coupon.account.store.equals(store));
-    // });
 });

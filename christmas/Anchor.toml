@@ -18,7 +18,7 @@ wallet = "/Users/benjaminhon/.config/solana/id.json"
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
 # anchor run test_happy -- --skip-local-validator
 test_happy = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/test_happy_flow.ts"
+# anchor run test_unhappy_flow -- --skip-local-validator
+test_unhappy_flow = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/test_unhappy_flow.ts"
 # anchor run test_utils -- --skip-local-validator
 test_utils = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/test_utils.ts"
-# anchor run test_coupon -- --skip-local-validator
-test_coupon = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/test_coupon.ts"

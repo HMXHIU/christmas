@@ -17,6 +17,8 @@ export interface CreateStoreDetail {
     region: string;
     geo: string;
     address: string;
+    longitude: number;
+    latitude: number;
 }
 
 @customElement("create-store-dialog")
@@ -51,6 +53,8 @@ export class CreateStore extends LitElement {
                     description: e.detail.description.toString(),
                     image: this.imageInput.file,
                     region: e.detail.region.toString(),
+                    latitude: e.detail.latitude,
+                    longitude: e.detail.longitude,
                     geo: e.detail.geohash.toString(),
                     address: this.locationSearch.value, // `location-search` is not a form element
                 },

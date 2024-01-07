@@ -16,7 +16,7 @@ import { getCouponMetadata, getStoreMetadata } from "../lib/utils";
 import { cleanString } from "../../../lib/anchor-client/utils";
 import { ParsedAccountData } from "@solana/web3.js";
 import { nftStorageClientContext } from "../providers/contexts";
-import { NFTStorageClient } from "../lib/nftStorageClient";
+import { NFTStorageClient } from "../../../lib/nftStorageClient";
 import { MintCouponDetail } from "../components/mint-coupon-dialog";
 import { CreateCouponDetail } from "../components/create-coupon-dialog";
 import {

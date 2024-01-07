@@ -1,7 +1,7 @@
 import { createContext } from "@lit/context";
 import { Location } from "../../../lib/user-device-client/types";
 import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
-import { NFTStorageClient } from "../lib/nftStorageClient";
+import { NFTStorageClient } from "../../../lib/nftStorageClient";
 
 export const locationContext = createContext<Location | null>(
     Symbol("user-device-client")

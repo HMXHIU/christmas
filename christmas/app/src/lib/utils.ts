@@ -28,18 +28,13 @@ export function extractQueryParams(url: string): Record<string, string> {
 }
 
 export function nft_uri_to_url(uri: string): string {
-    // extract CID from uri
+    // Replace with gateway for IPFS
     const regex = /ipfs:\/\/(.+)/;
     const match = uri.match(regex);
-
-    if (!(match && match[1])) {
-        console.warn(
-            "failed to load image, nft metadata uri must start with ipfs://"
-        );
-        return "";
+    if (match && match[1]) {
+        return `https://${IPFS_HTTP_GATEWAY}/ipfs/${match[1]}`;
     }
-
-    return `https://${IPFS_HTTP_GATEWAY}/ipfs/${match[1]}`;
+    return uri;
 }
 
 export function fetchData(url: string, defaultValue: any = {}): Promise<any> {

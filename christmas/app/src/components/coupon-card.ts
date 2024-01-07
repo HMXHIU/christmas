@@ -14,9 +14,16 @@ import { ParsedAccountData } from "@solana/web3.js";
 import { anchorClientContext } from "../providers/contexts";
 import { consume } from "@lit/context";
 import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
+import { calculateDistance } from "../../../lib/utils";
+import { locationContext } from "../providers/contexts";
+import { Location } from "../../../lib/user-device-client/types";
 
 @customElement("coupon-card")
 export class CouponCard extends LitElement {
+    @consume({ context: locationContext, subscribe: true })
+    @state()
+    accessor location: Location | null = null;
+
     @consume({ context: anchorClientContext, subscribe: true })
     @state()
     accessor anchorClient: AnchorClient | null = null;
@@ -51,8 +58,11 @@ export class CouponCard extends LitElement {
     }
 
     async willUpdate(changedProperties: PropertyValues<this>) {
-        if (changedProperties.has("anchorClient")) {
-            if (this.anchorClient) {
+        if (
+            changedProperties.has("anchorClient") ||
+            changedProperties.has("location")
+        ) {
+            if (this.anchorClient && this.location) {
                 await this.fetchCouponMetadata();
                 await this.fetchStoreMetadata();
             }
@@ -197,6 +207,16 @@ export class CouponCard extends LitElement {
                             </p>
                             <p class="store-address">
                                 ${this.storeMetadata?.address}
+                                <br />
+                                ${calculateDistance(
+                                    this.storeMetadata?.latitude,
+                                    this.storeMetadata?.longitude,
+                                    this.location?.geolocationCoordinates
+                                        ?.latitude,
+                                    this.location?.geolocationCoordinates
+                                        ?.longitude
+                                )}
+                                km
                             </p>
                         </div>
                     </div>

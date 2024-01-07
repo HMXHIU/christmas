@@ -64,6 +64,8 @@ export interface StoreMetadata {
     description: string;
     image: string;
     address: string;
+    latitude: number;
+    longitude: number;
 }
 
 export interface Account<DataT> {
