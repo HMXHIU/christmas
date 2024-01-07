@@ -1,4 +1,4 @@
-import { NFTStorageClient } from "../lib/nftStorageClient";
+import { NFTMinioClient } from "../lib/nft-client/nftMinioClient";
 import { assert, expect } from "chai";
 
 describe("Test Storage", () => {

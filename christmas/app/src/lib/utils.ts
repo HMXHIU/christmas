@@ -1,6 +1,5 @@
 import { IPFS_HTTP_GATEWAY } from "./constants";
 import {
-    Account,
     Coupon,
     CouponMetadata,
     Store,

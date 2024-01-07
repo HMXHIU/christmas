@@ -1,5 +1,5 @@
 import { LitElement, html, css, PropertyValues, PropertyValueMap } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 import { consume } from "@lit/context";
 import { anchorClientContext } from "../providers/contexts";
 import { AnchorClient } from "../../../lib/anchor-client/anchorClient";

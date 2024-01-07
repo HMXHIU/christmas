@@ -27,7 +27,7 @@ setBasePath("shoelace");
 // custom
 import "./providers/userDeviceClientProvider";
 import "./providers/anchorClientProvider";
-import "./providers/nftStorageClientProvider";
+import "./providers/nftClientProvider";
 import "./components/store-section";
 import "./components/location-search";
 import "./components/side-scoller";

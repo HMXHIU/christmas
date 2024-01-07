@@ -2,13 +2,9 @@ import { LitElement, html, css, PropertyValues } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { consume } from "@lit/context";
 import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
-import { Account, Coupon, Store } from "../../../lib/anchor-client/types";
-import { nftStorageClientContext } from "../providers/contexts";
-
+import { Account, Store } from "../../../lib/anchor-client/types";
+import { nftClientContext } from "../providers/contexts";
 import { anchorClientContext } from "../providers/contexts";
-import { CreateCouponDetail } from "../components/create-coupon-dialog";
-import { NFTStorageClient } from "../../../lib/nftStorageClient";
-import { MintCouponDetail } from "../components/mint-coupon-dialog";
 import { CreateStoreDetail } from "../components/create-store-dialog";
 import { Location } from "../../../lib/user-device-client/types";
 import { locationContext } from "../providers/contexts";
@@ -16,6 +12,7 @@ import {
     STORE_NAME_SIZE,
     STRING_PREFIX_SIZE,
 } from "../../../lib/anchor-client/def";
+import { NFTClient } from "../../../lib/nft-client/types";
 
 @customElement("mint-page")
 export class MintPage extends LitElement {
@@ -27,9 +24,9 @@ export class MintPage extends LitElement {
     @state()
     accessor anchorClient: AnchorClient | null = null;
 
-    @consume({ context: nftStorageClientContext, subscribe: true })
+    @consume({ context: nftClientContext, subscribe: true })
     @state()
-    accessor nftStorageClient: NFTStorageClient | null = null;
+    accessor nftClientContext: NFTClient | null = null;
 
     @state()
     accessor stores: Account<Store>[] = [];
@@ -41,11 +38,11 @@ export class MintPage extends LitElement {
     }
 
     async onCreateStore(e: CustomEvent<CreateStoreDetail>) {
-        if (this.anchorClient && this.nftStorageClient) {
+        if (this.anchorClient && this.nftClientContext) {
             let metadataUrl = "";
 
             if (e.detail.image) {
-                metadataUrl = await this.nftStorageClient.store({
+                metadataUrl = await this.nftClientContext.store({
                     name: e.detail.name,
                     description: e.detail.description,
                     imageFile: e.detail.image,

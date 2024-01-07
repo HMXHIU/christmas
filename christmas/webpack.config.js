@@ -32,6 +32,7 @@ module.exports = {
             process: "process/browser.js",
         }),
         new webpack.EnvironmentPlugin([
+            "ENVIRONMENT",
             "GOOGLE_MAPS_API_KEY",
             "NFT_STORAGE_TOKEN",
             "ANCHOR_BROWSER",

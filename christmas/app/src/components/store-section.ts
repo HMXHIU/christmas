@@ -2,21 +2,16 @@ import { LitElement, html, css, PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import {
     Coupon,
-    CouponMetadata,
     Account,
-    TokenAccount,
     Store,
     StoreMetadata,
 } from "../../../lib/anchor-client/types";
-import { COUNTRY_DETAILS } from "../../../lib/user-device-client/defs";
 import { consume } from "@lit/context";
 import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
 import { anchorClientContext } from "../providers/contexts";
-import { getCouponMetadata, getStoreMetadata } from "../lib/utils";
-import { cleanString } from "../../../lib/anchor-client/utils";
-import { ParsedAccountData } from "@solana/web3.js";
-import { nftStorageClientContext } from "../providers/contexts";
-import { NFTStorageClient } from "../../../lib/nftStorageClient";
+import { getStoreMetadata } from "../lib/utils";
+import { nftClientContext } from "../providers/contexts";
+import { NFTClient } from "../../../lib/nft-client/types";
 import { MintCouponDetail } from "../components/mint-coupon-dialog";
 import { CreateCouponDetail } from "../components/create-coupon-dialog";
 import {
@@ -30,9 +25,9 @@ export class StoreSection extends LitElement {
     @state()
     accessor anchorClient: AnchorClient | null = null;
 
-    @consume({ context: nftStorageClientContext, subscribe: true })
+    @consume({ context: nftClientContext, subscribe: true })
     @state()
-    accessor nftStorageClient: NFTStorageClient | null = null;
+    accessor nftClient: NFTClient | null = null;
 
     @property({ attribute: false })
     accessor store!: Account<Store>;
@@ -93,12 +88,12 @@ export class StoreSection extends LitElement {
     `;
 
     async onCreateCoupon(e: CustomEvent<CreateCouponDetail>) {
-        if (this.anchorClient && this.nftStorageClient) {
+        if (this.anchorClient && this.nftClient) {
             let metadataUrl = "";
 
             // Upload coupon image to nft storage
             if (e.detail.image) {
-                metadataUrl = await this.nftStorageClient.store({
+                metadataUrl = await this.nftClient.store({
                     name: e.detail.name,
                     description: e.detail.description,
                     imageFile: e.detail.image,
@@ -128,7 +123,7 @@ export class StoreSection extends LitElement {
     }
 
     async onMintCoupon(e: CustomEvent<MintCouponDetail>) {
-        if (this.anchorClient && this.nftStorageClient) {
+        if (this.anchorClient && this.nftClient) {
             const { coupon, numTokens } = e.detail;
 
             await this.anchorClient.mintToMarket(
