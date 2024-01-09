@@ -3,6 +3,8 @@ const CopyPlugin = require("copy-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
+// const BundleAnalyzerPlugin =
+//     require("webpack-bundle-analyzer").BundleAnalyzerPlugin;
 
 // Load variables from .env
 require("dotenv").config();
@@ -61,8 +63,14 @@ module.exports = {
                     ),
                     to: path.resolve(__dirname, "./app/dist/shoelace/assets"),
                 },
+                // Copy demo assests
+                {
+                    from: path.resolve(__dirname, "tests/assets"),
+                    to: path.resolve(__dirname, "./app/dist/tests/assets"),
+                },
             ],
         }),
+        // new BundleAnalyzerPlugin(),
     ],
     resolve: {
         extensions: [".tsx", ".ts", ".js", ".json"],
@@ -84,6 +92,9 @@ module.exports = {
         clean: true,
     },
     devtool: "source-map",
+    optimization: {
+        usedExports: true,
+    },
     devServer: {
         static: path.join(__dirname, "./app/dist"),
         compress: true,

@@ -41,27 +41,31 @@ export class NFTMinioClient {
         name,
         description,
         imageFile,
+        imageUrl,
         additionalMetadata,
     }: {
         name: string;
         description: string;
-        imageFile: File;
+        imageFile?: File;
+        imageUrl?: string;
         additionalMetadata?: any;
     }): Promise<string> {
-        const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
-        const imageHash = createHash("sha256")
-            .update(imageBuffer)
-            .digest("hex");
-        const imageUrl = this.objectUrl(imageHash);
-
-        // Get or upload image
-        if (!(await this.objectExists(imageHash))) {
-            const objInfo = await this.client.putObject(
-                this.bucket,
-                imageHash,
-                imageBuffer
-            );
-            console.log("Uploaded image", objInfo);
+        // use imageUrl if provided else upload image from imageFile
+        if (imageUrl == null) {
+            const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
+            const imageHash = createHash("sha256")
+                .update(imageBuffer)
+                .digest("hex");
+            imageUrl = this.objectUrl(imageHash);
+            // Get or upload image
+            if (!(await this.objectExists(imageHash))) {
+                const objInfo = await this.client.putObject(
+                    this.bucket,
+                    imageHash,
+                    imageBuffer
+                );
+                console.log("Uploaded image", objInfo);
+            }
         }
 
         // Save metadata
