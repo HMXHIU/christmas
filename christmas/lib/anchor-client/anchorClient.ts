@@ -19,6 +19,7 @@ import {
     URI_SIZE,
     COUPON_NAME_SIZE,
     STRING_PREFIX_SIZE,
+    OFFSET_TO_GEO,
 } from "./def";
 import { getCountry, getGeohash } from "../user-device-client/utils"; // TODO: move this to a library
 import { Wallet, AnchorWallet } from "@solana/wallet-adapter-react";
@@ -33,6 +34,8 @@ import {
     ProgramState,
 } from "./types";
 import { timeStampToDate } from "../utils";
+import { stringToBase58 } from "./utils";
+import { Location } from "../user-device-client/types";
 
 export class AnchorClient {
     programId: web3.PublicKey;
@@ -42,20 +45,24 @@ export class AnchorClient {
     program: anchor.Program<Christmas>;
     anchorWallet: AnchorWallet; // AnchorWallet from useAnchorWallet() to set up Anchor in the frontend
     wallet: Wallet | null; // The Wallet from useWallet has more functionality, but can't be used to set up the AnchorProvider
+    location: Location; // when using AnchorClient not from the broswer, location is required for some functionality
 
     constructor({
         programId,
         cluster,
         anchorWallet,
         wallet,
+        location,
     }: {
         anchorWallet: AnchorWallet;
         wallet?: Wallet;
         programId?: web3.PublicKey;
         cluster?: string;
+        location?: Location;
     }) {
         this.anchorWallet = anchorWallet;
         this.wallet = wallet || null;
+        this.location = location;
 
         this.cluster = cluster || "http://127.0.0.1:8899";
         this.connection = new web3.Connection(this.cluster, "confirmed");
@@ -388,9 +395,6 @@ export class AnchorClient {
          * TODO: getParsedProgramAccounts will be too slow with no pagination when there is too many accounts in the region
          */
 
-        // get today
-        const today = date || new Date();
-
         // get token accounts owned by
         const regionMarketPda = this.getRegionMarketPda(region)[0];
         const tokenAccounts = await this.connection.getParsedProgramAccounts(
@@ -415,38 +419,50 @@ export class AnchorClient {
                     .tokenAmount.uiAmount > 0
         );
 
+        // get today
+        const today = date || new Date();
+
+        // get location
+        let geo = this.location?.geohash ?? (await getGeohash());
+
         // get coupons for mints in accountsWithBalance
-        const accounts = await Promise.allSettled(
-            accountsWithBalance.map(async (tokenAccount) => {
-                // get mint
-                const mint = (
-                    tokenAccount.account.data as web3.ParsedAccountData
-                ).parsed.info.mint;
+        return (
+            await Promise.allSettled(
+                accountsWithBalance.map(async (tokenAccount) => {
+                    // get mint
+                    const mint = (
+                        tokenAccount.account.data as web3.ParsedAccountData
+                    ).parsed.info.mint;
 
-                const xs = await this.program.account.coupon.all([
-                    // mint
-                    {
-                        memcmp: {
-                            offset: DISCRIMINATOR_SIZE + PUBKEY_SIZE,
-                            bytes: mint,
+                    const xs = await this.program.account.coupon.all([
+                        // filter mint
+                        {
+                            memcmp: {
+                                offset: DISCRIMINATOR_SIZE + PUBKEY_SIZE,
+                                bytes: mint,
+                            },
                         },
-                    },
-                ]);
+                        // filter within range
+                        {
+                            memcmp: {
+                                offset: OFFSET_TO_GEO + STRING_PREFIX_SIZE,
+                                bytes: stringToBase58(geo.slice(0, -1)), // reduce 1 precision level to get surrounding (TODO: this is not accurate for borders)
+                            },
+                        },
+                    ]);
 
-                // only return if in validity period
-                if (
-                    timeStampToDate(xs[0].account.validFrom) <= today &&
-                    timeStampToDate(xs[0].account.validTo) >= today
-                ) {
-                    return [xs[0], tokenAccount];
-                } else {
-                    throw new Error("Expired");
-                }
-            })
-        );
-
-        // Filter out the rejected promises
-        return accounts
+                    // only return if in validity period
+                    if (
+                        timeStampToDate(xs[0].account.validFrom) <= today &&
+                        timeStampToDate(xs[0].account.validTo) >= today
+                    ) {
+                        return [xs[0], tokenAccount];
+                    } else {
+                        throw new Error("Coupon expired");
+                    }
+                })
+            )
+        )
             .filter((result) => result && result.status === "fulfilled")
             .map(
                 (result) =>

@@ -1,24 +1,42 @@
 import { getCountriesForTimezone } from "countries-and-timezones";
-import { COUNTRY_DETAILS } from "./defs";
+import { COUNTRY_DETAILS, DEFAULT_GEOHASH_PRECISION } from "./defs";
 import geohash from "ngeohash";
 import { Location } from "./types";
 
-export async function getLocation(): Promise<Location> {
+export async function getLocation(
+    geoHashPrecision?: number
+): Promise<Location> {
     const geolocationCoordinates = await getGeolocationCoordinates();
     return {
         geolocationCoordinates,
         geohash: geohash.encode(
             geolocationCoordinates.latitude,
             geolocationCoordinates.longitude,
-            6
+            geoHashPrecision ?? DEFAULT_GEOHASH_PRECISION
         ),
         country: getCountry(),
     };
 }
 
-export async function getGeohash(): Promise<string> {
+export async function getGeohash(precision?: number): Promise<string> {
     const { latitude, longitude } = await getGeolocationCoordinates();
-    return geohash.encode(latitude, longitude, 6);
+    return geohash.encode(
+        latitude,
+        longitude,
+        precision ?? DEFAULT_GEOHASH_PRECISION
+    );
+}
+
+export async function getGeohashFromLatLng(
+    latitude: number,
+    longitude: number,
+    precision?: number
+): Promise<string> {
+    return geohash.encode(
+        latitude,
+        longitude,
+        precision ?? DEFAULT_GEOHASH_PRECISION
+    );
 }
 
 export function getGeolocationCoordinates(): Promise<GeolocationCoordinates> {

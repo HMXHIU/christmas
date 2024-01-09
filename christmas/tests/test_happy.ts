@@ -307,7 +307,7 @@ describe("Test client", () => {
     });
 
     it("Get users within radius", async () => {
-        // Create some users around singapore
+        // Create some users around singapore (https://geohash.softeng.co/w21z3w)
         // prettier-ignore
         let hashesAroundSingapore = [
             "w21z3w", "w21ze8", "w21zgh", "w21zem", "w21zd5", "w21z9c", "w21zg8", "w21ze0",

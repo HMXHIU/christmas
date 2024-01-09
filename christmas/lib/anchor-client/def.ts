@@ -49,3 +49,11 @@ export const OFFSET_TO_VALID_TO =
     GEO_SIZE +
     PUBKEY_SIZE +
     DATE_SIZE;
+
+export const OFFSET_TO_GEO =
+    DISCRIMINATOR_SIZE +
+    PUBKEY_SIZE +
+    PUBKEY_SIZE +
+    COUPON_NAME_SIZE +
+    URI_SIZE +
+    REGION_SIZE;
