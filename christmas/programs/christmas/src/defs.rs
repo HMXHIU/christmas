@@ -10,11 +10,20 @@ pub const URI_SIZE: usize = STRING_PREFIX_SIZE + 204;
 pub const GEO_SIZE: usize = STRING_PREFIX_SIZE + 6; // 6 characters of resolution
 pub const TWO_FACTOR_SIZE: usize = U8_SIZE * 32; // 256 bit
 pub const REGION_SIZE: usize = STRING_PREFIX_SIZE + 3; // 3 digit country code
-
 pub const COUPON_NAME_SIZE: usize = STRING_PREFIX_SIZE + 36;
-pub const COUPON_SYMBOL_SIZE: usize = STRING_PREFIX_SIZE + 14;
-
 pub const STORE_NAME_SIZE: usize = STRING_PREFIX_SIZE + 36;
+pub const DATE_SIZE: usize = U64_SIZE; // unix timestamp
+
+/**
+ * [DEPRECATED]
+ * decade|year|month|day
+ *
+ * Decade (10 bytes): 2020 = 0000000000 -> 2110 = 1111111111
+ * Year (9 bytes): 0 = 000000000 -> 9 = 111111111
+ * Month (11 bytes):  Jan = 00000000000 -> Dec = 11111111111
+ * Day (30 bytes): ..
+ */
+pub const DATE_CMP_SIZE: usize = 60;
 
 pub const REGION_CODES: &'static [&'static str] = &[
     "AFG", "ALB", "DZA", "ASM", "AND", "AGO", "AIA", "ATA", "ATG", "ARG", "ARM", "ABW", "AUS",

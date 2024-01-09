@@ -1,3 +1,5 @@
+import { BN } from "@coral-xyz/anchor";
+
 export function calculateDistance(
     lat1: number,
     lon1: number,
@@ -17,4 +19,8 @@ export function calculateDistance(
     const distance = Math.sqrt(x * x + y * y) * R;
 
     return distance;
+}
+
+export function timeStampToDate(timeStamp: BN): Date {
+    return new Date(timeStamp.toNumber());
 }

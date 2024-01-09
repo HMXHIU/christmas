@@ -83,6 +83,7 @@ export class ClaimedCouponCard extends LitElement {
             height: var(--coupon-card-image-height);
             max-height: 100%;
             object-fit: contain; /* Maintain aspect ratio and fill container */
+            object-position: top;
         }
         .empty-image {
             display: flex;

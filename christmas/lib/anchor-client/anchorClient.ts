@@ -18,12 +18,10 @@ import {
     GEO_SIZE,
     URI_SIZE,
     COUPON_NAME_SIZE,
-    COUPON_SYMBOL_SIZE,
     STRING_PREFIX_SIZE,
 } from "./def";
 import { getCountry, getGeohash } from "../user-device-client/utils"; // TODO: move this to a library
 import { Wallet, AnchorWallet } from "@solana/wallet-adapter-react";
-import { dateToBN } from "./utils";
 
 import {
     Account,
@@ -34,6 +32,7 @@ import {
     TokenAccount,
     ProgramState,
 } from "./types";
+import { timeStampToDate } from "../utils";
 
 export class AnchorClient {
     programId: web3.PublicKey;
@@ -102,7 +101,6 @@ export class AnchorClient {
         region,
         name,
         uri,
-        symbol,
         store,
         mint,
         validFrom,
@@ -112,7 +110,6 @@ export class AnchorClient {
         region: string;
         name: string;
         uri: string;
-        symbol: string;
         store: web3.PublicKey;
         validFrom: Date;
         validTo: Date;
@@ -134,12 +131,11 @@ export class AnchorClient {
         const ix = await this.program.methods
             .createCoupon(
                 name,
-                symbol,
                 region,
                 geo,
                 uri,
-                dateToBN(validFrom),
-                dateToBN(validTo)
+                new BN(validFrom.getTime()),
+                new BN(validTo.getTime())
             )
             .accounts({
                 mint: mint.publicKey,
@@ -327,7 +323,6 @@ export class AnchorClient {
                         PUBKEY_SIZE +
                         PUBKEY_SIZE +
                         COUPON_NAME_SIZE +
-                        COUPON_SYMBOL_SIZE +
                         URI_SIZE +
                         REGION_SIZE +
                         GEO_SIZE,
@@ -386,8 +381,16 @@ export class AnchorClient {
     }
 
     async getCoupons(
-        region: string
+        region: string,
+        date?: Date
     ): Promise<[Account<Coupon>, TokenAccount][]> {
+        /**
+         * TODO: getParsedProgramAccounts will be too slow with no pagination when there is too many accounts in the region
+         */
+
+        // get today
+        const today = date || new Date();
+
         // get token accounts owned by
         const regionMarketPda = this.getRegionMarketPda(region)[0];
         const tokenAccounts = await this.connection.getParsedProgramAccounts(
@@ -413,13 +416,15 @@ export class AnchorClient {
         );
 
         // get coupons for mints in accountsWithBalance
-        return await Promise.all(
+        const accounts = await Promise.allSettled(
             accountsWithBalance.map(async (tokenAccount) => {
+                // get mint
                 const mint = (
                     tokenAccount.account.data as web3.ParsedAccountData
                 ).parsed.info.mint;
 
                 const xs = await this.program.account.coupon.all([
+                    // mint
                     {
                         memcmp: {
                             offset: DISCRIMINATOR_SIZE + PUBKEY_SIZE,
@@ -428,9 +433,29 @@ export class AnchorClient {
                     },
                 ]);
 
-                return [xs[0], tokenAccount];
+                // only return if in validity period
+                if (
+                    timeStampToDate(xs[0].account.validFrom) <= today &&
+                    timeStampToDate(xs[0].account.validTo) >= today
+                ) {
+                    return [xs[0], tokenAccount];
+                } else {
+                    throw new Error("Expired");
+                }
             })
         );
+
+        // Filter out the rejected promises
+        return accounts
+            .filter((result) => result && result.status === "fulfilled")
+            .map(
+                (result) =>
+                    (
+                        result as PromiseFulfilledResult<
+                            [Account<Coupon>, TokenAccount]
+                        >
+                    ).value
+            );
     }
 
     async getClaimedCoupons(): Promise<[Account<Coupon>, number][]> {
@@ -838,11 +863,11 @@ export class AnchorClient {
         // sign and send
         const signature = await this.connection.sendRawTransaction(
             (await this.anchorWallet.signTransaction(tx)).serialize(),
-            options
+            // options
             // REMOVE FOR DEBUG ONLY
-            // {
-            //     skipPreflight: true,
-            // }
+            {
+                skipPreflight: true,
+            }
         );
 
         // confirm transaction

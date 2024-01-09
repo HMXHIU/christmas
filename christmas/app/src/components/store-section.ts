@@ -110,7 +110,6 @@ export class StoreSection extends LitElement {
                     COUPON_NAME_SIZE - STRING_PREFIX_SIZE
                 ), // also enforced in form
                 store: e.detail.store.publicKey,
-                symbol: "",
                 uri: metadataUrl,
                 validFrom: e.detail.validFrom,
                 validTo: e.detail.validTo,

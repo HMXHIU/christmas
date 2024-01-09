@@ -29,7 +29,6 @@ describe("Test client", () => {
 
     const couponName = "coupon1";
     const couponUri = "www.example.com";
-    const couponSymbol = "#COU";
 
     // validity period
     const validFrom = new Date(Date.UTC(2024, 0, 1));
@@ -127,7 +126,7 @@ describe("Test client", () => {
         // get store
         let [store, _] = await sellerClient.getStorePda(storeId);
 
-        // create coupon
+        // create coupon (within validity period)
         assert.isNull(
             (
                 await sellerClient.createCoupon({
@@ -136,7 +135,6 @@ describe("Test client", () => {
                     store,
                     name: couponName,
                     uri: couponUri,
-                    symbol: couponSymbol,
                     validFrom,
                     validTo,
                 })
@@ -145,7 +143,6 @@ describe("Test client", () => {
 
         // check if coupon is created
         const coupons = await sellerClient.getMintedCoupons();
-
         assert.ok(coupons.length === 1);
         const [coupon, supply, balance] = coupons[0];
 
@@ -153,7 +150,6 @@ describe("Test client", () => {
         assert.equal(cleanString(coupon.account.region), region);
         assert.equal(cleanString(coupon.account.uri), couponUri);
         assert.equal(cleanString(coupon.account.name), couponName);
-        assert.equal(cleanString(coupon.account.symbol), couponSymbol);
         assert.ok(
             coupon.account.updateAuthority.equals(
                 sellerClient.anchorWallet.publicKey
@@ -239,7 +235,6 @@ describe("Test client", () => {
         assert.equal(cleanString(coupon.account.region), region);
         assert.equal(cleanString(coupon.account.uri), couponUri);
         assert.equal(cleanString(coupon.account.name), couponName);
-        assert.equal(cleanString(coupon.account.symbol), couponSymbol);
     });
 
     it("Redeem coupon", async () => {

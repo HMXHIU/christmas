@@ -36,7 +36,6 @@ pub struct RedeemCoupon<'info> {
 #[derive(Accounts)]
 #[instruction(
     name: String,
-    symbol: String,
     region: String,
     geo: String,
     uri: String,
@@ -97,7 +96,6 @@ pub struct Coupon {
     pub update_authority: Pubkey,
     pub mint: Pubkey,
     pub name: String,
-    pub symbol: String,
     pub uri: String, // to the json metadata
     pub region: String,
     pub geo: String,
@@ -113,13 +111,12 @@ impl Coupon {
             + PUBKEY_SIZE
             + PUBKEY_SIZE
             + COUPON_NAME_SIZE
-            + COUPON_SYMBOL_SIZE
             + URI_SIZE
             + REGION_SIZE
             + GEO_SIZE
             + PUBKEY_SIZE
-            + U64_SIZE
-            + U64_SIZE
+            + DATE_SIZE
+            + DATE_SIZE
             + BUMP_SIZE
     }
 }

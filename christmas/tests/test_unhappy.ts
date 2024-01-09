@@ -34,6 +34,9 @@ describe("Test Coupon", () => {
     let sellerClient: AnchorClient;
     let buyerClient: AnchorClient;
 
+    const geo = "gbsuv7";
+    const region = "SGP";
+
     it("Initialize AnchorClient", async () => {
         sellerClient = new AnchorClient({ anchorWallet: sellerAnchorWallet });
         buyerClient = new AnchorClient({ anchorWallet: buyerAnchorWallet });
@@ -68,9 +71,6 @@ describe("Test Coupon", () => {
     });
 
     it("Create Users", async () => {
-        const geo = "gbsuv7";
-        const region = "SGP";
-
         await sellerClient.createUser({ geo, region });
         await buyerClient.createUser({ geo, region });
 
@@ -82,13 +82,11 @@ describe("Test Coupon", () => {
         assert.equal(cleanString(buyer.region), region);
     });
 
-    it("Create Store", async () => {
+    it("Create store with invalid params", async () => {
         /**
          * Test creating a store with a very long name and uri
          */
-        const geo = "gbsuv7";
-        const region = "SGP";
-        const storeId = await sellerClient.getAvailableStoreId();
+
         const storeName =
             "A very very very very very very very very very very very very very very very very long store name";
         const storeUri =
@@ -102,5 +100,89 @@ describe("Test Coupon", () => {
                 geo,
             })
         ).to.be.rejectedWith("Store name exceeds maximum length of 40");
+    });
+
+    it("Coupon validity", async () => {
+        // create store
+        const storeId = await sellerClient.getAvailableStoreId();
+        let [store, _] = await sellerClient.getStorePda(storeId);
+        const storeName = "ok store";
+        const storeUri = "https://example.store.com";
+        assert.isNull(
+            (
+                await sellerClient.createStore({
+                    name: storeName,
+                    uri: storeUri,
+                    region,
+                    geo,
+                })
+            ).result.err
+        );
+
+        const today = new Date();
+        const afterToday = new Date(today);
+        afterToday.setMonth(afterToday.getMonth() + 3);
+        const longAfterToday = new Date(today);
+        longAfterToday.setMonth(longAfterToday.getMonth() + 6);
+        const beforeToday = new Date(today);
+        beforeToday.setMonth(beforeToday.getMonth() - 3);
+        const longBeforeToday = new Date(today);
+        longBeforeToday.setMonth(longBeforeToday.getMonth() - 6);
+
+        // create coupons (out of validity period)
+        assert.isNull(
+            (
+                await sellerClient.createCoupon({
+                    geo,
+                    region,
+                    store,
+                    name: "before",
+                    uri: "https://coupon.com",
+                    validFrom: longBeforeToday,
+                    validTo: beforeToday,
+                })
+            ).result.err
+        );
+        assert.isNull(
+            (
+                await sellerClient.createCoupon({
+                    geo,
+                    region,
+                    store,
+                    name: "after",
+                    uri: "https://coupon.com",
+                    validFrom: afterToday,
+                    validTo: longAfterToday,
+                })
+            ).result.err
+        );
+
+        // mint out of valid period coupons
+        const mintedCoupons = await sellerClient.getMintedCoupons(store);
+
+        for (const [coupon, supply, balance] of mintedCoupons) {
+            if (
+                ["after", "before"].includes(cleanString(coupon.account.name))
+            ) {
+                assert.isNull(
+                    (
+                        await sellerClient.mintToMarket(
+                            coupon.account.mint,
+                            coupon.account.region,
+                            1
+                        )
+                    ).result.err
+                );
+            }
+        }
+
+        // check does not return out of validity coupons
+        const marketCoupons = await sellerClient.getCoupons(region);
+        const couponNames = marketCoupons.map(([coupon, _]) => {
+            return cleanString(coupon.account.name);
+        });
+
+        assert.notOk(couponNames.includes("after"));
+        assert.notOk(couponNames.includes("before"));
     });
 });

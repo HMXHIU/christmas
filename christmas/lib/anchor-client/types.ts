@@ -7,11 +7,17 @@ import {
 } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
 
+export interface MemCmp {
+    memcmp: {
+        offset: number;
+        bytes: string;
+    };
+}
+
 export interface Coupon {
     updateAuthority: PublicKey;
     mint: PublicKey;
     name: string;
-    symbol: string;
     uri: string;
     region: string;
     geo: string;

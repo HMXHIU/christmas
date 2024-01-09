@@ -22,8 +22,7 @@ pub mod christmas {
 
     use crate::{
         defs::{
-            COUPON_NAME_SIZE, COUPON_SYMBOL_SIZE, GEO_SIZE, REGION_SIZE, STORE_NAME_SIZE,
-            STRING_PREFIX_SIZE, URI_SIZE,
+            COUPON_NAME_SIZE, GEO_SIZE, REGION_SIZE, STORE_NAME_SIZE, STRING_PREFIX_SIZE, URI_SIZE,
         },
         utils::geo::code_to_country,
     };
@@ -80,7 +79,6 @@ pub mod christmas {
     pub fn create_coupon(
         ctx: Context<CreateCoupon>,
         name: String,
-        symbol: String,
         region: String,
         geo: String,
         uri: String,
@@ -94,7 +92,6 @@ pub mod christmas {
         ctx.accounts.coupon.mint = ctx.accounts.mint.key();
         ctx.accounts.coupon.store = ctx.accounts.store.key();
         ctx.accounts.coupon.name = pad_string(&name, COUPON_NAME_SIZE - STRING_PREFIX_SIZE);
-        ctx.accounts.coupon.symbol = pad_string(&symbol, COUPON_SYMBOL_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.coupon.uri = pad_string(&uri, URI_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.coupon.region = pad_string(&region, REGION_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.coupon.geo = pad_string(&geo, GEO_SIZE - STRING_PREFIX_SIZE);

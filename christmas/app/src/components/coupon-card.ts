@@ -9,12 +9,12 @@ import {
     Store,
 } from "../../../lib/anchor-client/types";
 import { getCouponMetadata, getStoreMetadata } from "../lib/utils";
-import { bnToDate, cleanString } from "../../../lib/anchor-client/utils";
+import { bytesToDate, cleanString } from "../../../lib/anchor-client/utils";
 import { ParsedAccountData } from "@solana/web3.js";
 import { anchorClientContext } from "../providers/contexts";
 import { consume } from "@lit/context";
 import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
-import { calculateDistance } from "../../../lib/utils";
+import { calculateDistance, timeStampToDate } from "../../../lib/utils";
 import { locationContext } from "../providers/contexts";
 import { Location } from "../../../lib/user-device-client/types";
 
@@ -195,9 +195,7 @@ export class CouponCard extends LitElement {
             this.tokenAccount.account.data as ParsedAccountData
         ).parsed.info;
 
-        const validTo = bnToDate(this.coupon.account.validTo);
-
-        console.log(validTo);
+        const validTo = timeStampToDate(this.coupon.account.validTo);
 
         return html`
             <claim-coupon-dialog

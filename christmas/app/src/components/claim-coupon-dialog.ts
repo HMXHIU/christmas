@@ -51,6 +51,36 @@ export class ClaimCoupon extends LitElement {
         this.dialog.hide();
     }
 
+    static styles = css`
+        .empty-image,
+        .coupon-image {
+            width: 100%;
+        }
+        .empty-image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            sl-icon {
+                flex: 1;
+            }
+        }
+    `;
+
+    getImage() {
+        if (this.couponMetadata.image) {
+            return html`<img
+                class="coupon-image"
+                src=${this.couponMetadata.image}
+            />`;
+        } else {
+            return html`
+                <div class="empty-image">
+                    <sl-icon name="image-fill"></sl-icon>
+                </div>
+            `;
+        }
+    }
+
     render() {
         return html`
             <slot name="click-to-open" id="dialog-open"></slot>
@@ -59,11 +89,7 @@ export class ClaimCoupon extends LitElement {
                 id="dialog"
             >
                 <!-- Image -->
-                ${this.couponMetadata.image
-                    ? html`<img src=${this.couponMetadata.image} />`
-                    : html`<div class="empty-image">
-                          <sl-icon name="image-fill"></sl-icon>
-                      </div>`}
+                ${this.getImage()}
                 <!-- Description -->
                 <p>${this.couponMetadata.description}</p>
                 <!-- Claim -->
