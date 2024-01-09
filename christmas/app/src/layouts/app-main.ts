@@ -40,6 +40,11 @@ export class AppMain extends LitElement {
     }
 
     static styles = css`
+        .title {
+            font-family: "Pacifico", cursive;
+            font-size: var(--sl-font-size-x-large);
+            color: var(--sl-color-red-700);
+        }
         .hidden {
             display: none;
         }
@@ -68,7 +73,6 @@ export class AppMain extends LitElement {
             }
             nav a {
                 text-decoration: none;
-                color: black;
             }
         }
         .top-navbar {
@@ -88,7 +92,7 @@ export class AppMain extends LitElement {
             <header class="top-navbar">
                 <nav>
                     <ul>
-                        <li><a href="/coupons">App name</a></li>
+                        <li><a href="/coupons" class="title">Community</a></li>
                         <li>
                             <sl-button
                                 variant="danger"
