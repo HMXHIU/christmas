@@ -83,7 +83,7 @@ describe("Generate Demo Content", () => {
                 name: "SereneSpa Emporium",
                 description:
                     "Discover a haven of serenity at SereneSpa Emporium. Your one-stop destination for luxurious spa essentials and wellness treasures.",
-                image: "http://localhost:4000/tests/assets/store_spa.jpeg",
+                image: "http://localhost:4000/tests/assets/coupon_spa.jpeg",
                 address: "123 Tranquil Lane, Blissful City, Zenland",
                 latitude: location.geolocationCoordinates.latitude,
                 longitude: location.geolocationCoordinates.longitude,
@@ -100,7 +100,7 @@ describe("Generate Demo Content", () => {
                 name: "Luxurious Lotions Boutique",
                 description:
                     "Indulge in the finest lotions at Luxurious Lotions Boutique. Elevate your skincare ritual with our curated collection of luxurious products.",
-                image: "http://localhost:4000/tests/assets/store_lotion.jpeg",
+                image: "http://localhost:4000/tests/assets/coupon_lotion.jpeg",
                 address: "456 Opulence Street, Radiant Town, Glowville",
                 latitude: location.geolocationCoordinates.latitude,
                 longitude: location.geolocationCoordinates.longitude,
@@ -117,7 +117,7 @@ describe("Generate Demo Content", () => {
                 name: "Glowing Gifts Emporium",
                 description:
                     "Find joy in every gift at Glowing Gifts Emporium. Discover a world of surprises that illuminate your senses.",
-                image: "http://localhost:4000/tests/assets/store_gift.jpeg",
+                image: "http://localhost:4000/tests/assets/coupon_free_gift.jpeg",
                 address: "789 Radiance Avenue, Joyful City, Blissland",
                 latitude: location.geolocationCoordinates.latitude,
                 longitude: location.geolocationCoordinates.longitude,
@@ -134,7 +134,7 @@ describe("Generate Demo Content", () => {
                 name: "ZenTech Wellness Hub",
                 description:
                     "Experience wellness in the digital age at ZenTech Wellness Hub. Your journey to CyberZen begins here.",
-                image: "http://localhost:4000/tests/assets/store_cyber.jpeg",
+                image: "http://localhost:4000/tests/assets/coupon_cyber.jpeg",
                 address: "101 Digital Drive, Tech Town, Silicon Zen",
                 latitude: location.geolocationCoordinates.latitude,
                 longitude: location.geolocationCoordinates.longitude,
@@ -151,7 +151,7 @@ describe("Generate Demo Content", () => {
                 name: "VinoVibes Cellars",
                 description:
                     "Raise your glass to joy at VinoVibes Cellars. Explore a world of exquisite wines that enhance your spa experience.",
-                image: "http://localhost:4000/tests/assets/store_wine.jpeg",
+                image: "http://localhost:4000/tests/assets/coupon_wine.jpeg",
                 address: "321 Vineyard Street, Cheersville, Wineland",
                 latitude: location.geolocationCoordinates.latitude,
                 longitude: location.geolocationCoordinates.longitude,
@@ -168,7 +168,7 @@ describe("Generate Demo Content", () => {
                 name: "Purrfect Relaxation Haven",
                 description:
                     "Find tranquility in the company of feline friends at Purrfect Relaxation Haven. Your ultimate destination for a purrfect spa experience.",
-                image: "http://localhost:4000/tests/assets/store_cat.jpeg",
+                image: "http://localhost:4000/tests/assets/coupon_cat.jpeg",
                 address: "567 Calm Street, Catville, Purrland",
                 latitude: location.geolocationCoordinates.latitude,
                 longitude: location.geolocationCoordinates.longitude,
