@@ -9,7 +9,6 @@ import {
     Store,
 } from "../../../lib/anchor-client/types";
 import { getCouponMetadata, getStoreMetadata } from "../lib/utils";
-import { bytesToDate, cleanString } from "../../../lib/anchor-client/utils";
 import { ParsedAccountData } from "@solana/web3.js";
 import { anchorClientContext } from "../providers/contexts";
 import { consume } from "@lit/context";
@@ -69,101 +68,7 @@ export class CouponCard extends LitElement {
         }
     }
 
-    static styles = css`
-        :host {
-            display: block;
-            margin: 10px 0px 0px 10px;
-        }
-        sl-card::part(base) {
-            width: var(--coupon-card-width);
-            height: var(--coupon-card-height);
-            margin: 0px;
-        }
-        sl-card::part(body),
-        sl-card::part(footer) {
-            padding-top: 5px;
-            padding-bottom: 5px;
-            padding-left: 10px;
-            padding-right: 10px;
-        }
-        sl-card [slot="footer"] {
-            display: flex;
-            justify-content: start;
-            align-items: center;
-        }
-        sl-card small {
-            color: var(--sl-color-neutral-500);
-        }
-        .coupon-image,
-        .empty-image {
-            height: var(--coupon-card-image-height);
-            max-height: 100%;
-            object-fit: contain; /* Maintain aspect ratio and fill container */
-            object-position: top;
-        }
-        .empty-image {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            sl-icon {
-                flex: 1;
-            }
-        }
-        .coupon-name {
-            font-size: var(--sl-font-size-medium);
-            font-weight: var(--sl-font-weight-semibold);
-        }
-        .coupon-expiry {
-            font-size: var(--sl-font-size-x-small);
-            font-style: italic;
-            font-weight: var(--sl-font-weight-light);
-            color: var(--sl-color-neutral-500);
-            margin-bottom: 5px;
-            margin-top: 5px;
-        }
-        .coupon-remaining {
-            font-size: var(--sl-font-size-x-small);
-            font-weight: var(--sl-font-weight-light);
-            color: var(--sl-color-neutral-500);
-            margin-bottom: 5px;
-            margin-top: 5px;
-        }
-        .store-image {
-            height: 60px;
-            width: 60px;
-        }
-        .store-details {
-            display: flex;
-            flex-direction: column;
-            padding-left: 10px;
-            max-width: 100%;
-            overflow: hidden;
-        }
-        .store-name {
-            font-size: var(--sl-font-size-medium);
-            margin: 0px;
-            padding: 0px 0px 5px 0px;
-        }
-        .store-address {
-            font-size: var(--sl-font-size-x-small);
-            font-weight: var(--sl-font-weight-light);
-            color: var(--sl-color-neutral-500);
-            margin: 0px;
-            padding: 0px 0px 5px 0px;
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-        }
-        .store-distance {
-            font-size: var(--sl-font-size-x-small);
-            font-weight: var(--sl-font-weight-light);
-            font-style: italic;
-            color: var(--sl-color-success-500);
-            margin: 0px;
-            padding: 0px;
-        }
-    `;
+    static styles = css``;
 
     getDistance() {
         const distance = calculateDistance(
@@ -197,62 +102,29 @@ export class CouponCard extends LitElement {
 
         const validTo = timeStampToDate(this.coupon.account.validTo);
 
+        const distance = calculateDistance(
+            this.storeMetadata?.latitude,
+            this.storeMetadata?.longitude,
+            this.location?.geolocationCoordinates?.latitude,
+            this.location?.geolocationCoordinates?.longitude
+        );
+
         return html`
             <claim-coupon-dialog
                 .coupon=${this.coupon}
                 .couponMetadata=${this.couponMetadata}
             >
-                <sl-card
-                    class="card-overview"
+                <coupon-base-card
                     slot="click-to-open"
-                    part="card-overview"
-                >
-                    <!-- Image -->
-                    ${this.couponMetadata.image
-                        ? html`<img
-                              class="coupon-image"
-                              slot="image"
-                              src="${this.couponMetadata.image}"
-                          />`
-                        : html`
-                              <div class="empty-image" slot="image">
-                                  <sl-icon name="image-fill"></sl-icon>
-                              </div>
-                          `}
-                    <!-- Coupon Name -->
-                    <p class="coupon-name">
-                        ${cleanString(this.coupon.account.name)}
-                    </p>
-                    <!-- Expiry -->
-                    <p class="coupon-expiry">
-                        Expires
-                        <sl-format-date
-                            month="long"
-                            day="numeric"
-                            year="numeric"
-                            .date=${validTo}
-                        ></sl-format-date>
-                    </p>
-                    <p class="coupon-remaining">
-                        ${tokenAccountData.tokenAmount.uiAmount} remaining
-                    </p>
-                    <!-- Store Info -->
-                    <div slot="footer">
-                        <sl-avatar
-                            image=${this.storeMetadata?.image}
-                            label=${this.store?.name}
-                        ></sl-avatar>
-                        <div class="store-details">
-                            <p class="store-name">
-                                ${this.storeMetadata?.name}
-                            </p>
-                            <p class="store-address">
-                                ${this.storeMetadata?.address}
-                            </p>
-                            ${this.getDistance()}
-                        </div>
-                    </div>
-                </sl-card>
+                    distance=${distance}
+                    couponImageUrl=${this.couponMetadata.image}
+                    couponName=${this.coupon.account.name}
+                    remaining=${tokenAccountData.tokenAmount.uiAmount}
+                    storeImageUrl=${this.storeMetadata?.image}
+                    storeName=${this.storeMetadata?.name}
+                    storeAddress=${this.storeMetadata?.address}
+                    .expiry=${validTo}
+                ></coupon-base-card>
             </claim-coupon-dialog>
         `;
     }

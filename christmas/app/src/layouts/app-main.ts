@@ -25,20 +25,6 @@ export class AppMain extends LitElement {
         ]);
     }
 
-    getContent() {
-        return html`
-            <!-- Show page-route if there wallet is connected -->
-            <div
-                id="page-route"
-                class=${classMap({ hidden: !Boolean(this.anchorClient) })}
-            ></div>
-            <!-- Show onboard-wallet-page if wallet is not connected -->
-            <onboard-wallet-page
-                class=${classMap({ hidden: Boolean(this.anchorClient) })}
-            ></onboard-wallet-page>
-        `;
-    }
-
     static styles = css`
         .title {
             font-family: "Pacifico", cursive;
@@ -85,6 +71,20 @@ export class AppMain extends LitElement {
             }
         }
     `;
+
+    getContent() {
+        return html`
+            <!-- Show page-route if there wallet is connected -->
+            <div
+                id="page-route"
+                class=${classMap({ hidden: !Boolean(this.anchorClient) })}
+            ></div>
+            <!-- Show onboard-wallet-page if wallet is not connected -->
+            <onboard-wallet-page
+                class=${classMap({ hidden: Boolean(this.anchorClient) })}
+            ></onboard-wallet-page>
+        `;
+    }
 
     render() {
         return html`

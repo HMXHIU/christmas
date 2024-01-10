@@ -35,6 +35,7 @@ import "./components/form-event";
 import "./components/loading-page";
 import "./components/solana-wallet";
 import "./components/coupon-card";
+import "./components/coupon-base-card";
 import "./components/mint-coupon-card";
 import "./components/claimed-coupon-card";
 import "./components/create-coupon-dialog";

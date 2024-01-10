@@ -40,7 +40,8 @@ describe("Generate Demo Content", () => {
     let buyerClient: AnchorClient;
 
     // locations
-    const geoHere = "w21z98";
+    // const geoHere = "w21z98";
+    const geoHere = "w21z71";
     const region = "SGP";
     const { latitude, longitude } = ngeohash.decode(geoHere);
     const location: Location = {
