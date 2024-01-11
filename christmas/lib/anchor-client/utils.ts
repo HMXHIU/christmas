@@ -1,6 +1,6 @@
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
-import { OFFSET_TO_VALID_FROM, OFFSET_TO_VALID_TO } from "./def";
+import { OFFSET_TO_VALID_FROM, OFFSET_TO_VALID_TO } from "./defs";
 import { MemCmp } from "./types";
 
 export function stringToBase58(str: string) {

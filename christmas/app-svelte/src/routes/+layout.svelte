@@ -8,7 +8,6 @@
 	import { UserDeviceClient } from '../../../lib/user-device-client/userDeviceClient';
 
 	onMount(async () => {
-		console.log('MOUTNING');
 		// set userDeviceClient
 		const client = new UserDeviceClient();
 		await client.initialize();

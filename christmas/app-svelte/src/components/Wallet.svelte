@@ -5,7 +5,7 @@
 	import { SolanaConnect } from 'solana-connect';
 	import type { Adapter } from '@solana/wallet-adapter-base';
 	import { AnchorClient } from '../../../lib/anchor-client/anchorClient';
-	import { PROGRAM_ID } from '$lib/defs';
+	import { PROGRAM_ID } from '../../../lib/anchor-client/defs';
 	import { onMount } from 'svelte';
 
 	onMount(async () => {

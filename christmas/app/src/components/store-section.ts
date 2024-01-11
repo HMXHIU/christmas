@@ -17,7 +17,7 @@ import { CreateCouponDetail } from "../components/create-coupon-dialog";
 import {
     COUPON_NAME_SIZE,
     STRING_PREFIX_SIZE,
-} from "../../../lib/anchor-client/def";
+} from "../../../lib/anchor-client/defs";
 
 @customElement("store-section")
 export class StoreSection extends LitElement {

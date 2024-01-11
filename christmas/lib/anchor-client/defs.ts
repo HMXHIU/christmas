@@ -1,3 +1,5 @@
+export const PROGRAM_ID = "B2ejsK7m3eYPerru92hS73Gx7sQ7J83DKoLHGwn6pg5v";
+
 export const DISCRIMINATOR_SIZE = 8;
 export const PUBKEY_SIZE = 32;
 export const U8_SIZE = 1;

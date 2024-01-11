@@ -1,8 +1,6 @@
 import { writable, readable } from 'svelte/store';
 import type { AnchorClient } from '../../lib/anchor-client/anchorClient';
-
 import type { Coupon, Account, TokenAccount } from '../../lib/anchor-client/types';
-
 import { UserDeviceClient } from '../../lib/user-device-client/userDeviceClient';
 import type { NFTClient } from '../../lib/nft-client/types';
 import { NFTMinioClient } from '../../lib/nft-client/nftMinioClient';

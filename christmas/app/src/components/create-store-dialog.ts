@@ -8,7 +8,7 @@ import { locationContext } from "../providers/contexts";
 import {
     STORE_NAME_SIZE,
     STRING_PREFIX_SIZE,
-} from "../../../lib/anchor-client/def";
+} from "../../../lib/anchor-client/defs";
 
 export interface CreateStoreDetail {
     name: string;

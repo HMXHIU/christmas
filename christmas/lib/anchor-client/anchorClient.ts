@@ -20,7 +20,7 @@ import {
     COUPON_NAME_SIZE,
     STRING_PREFIX_SIZE,
     OFFSET_TO_GEO,
-} from "./def";
+} from "./defs";
 import { getCountry, getGeohash } from "../user-device-client/utils"; // TODO: move this to a library
 import { Wallet, AnchorWallet } from "@solana/wallet-adapter-react";
 

@@ -13,7 +13,7 @@ import {
     DISCRIMINATOR_SIZE,
     REGION_SIZE,
     STRING_PREFIX_SIZE,
-} from "../lib/anchor-client/def";
+} from "../lib/anchor-client/defs";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";

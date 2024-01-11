@@ -40,8 +40,8 @@ describe("Generate Demo Content", () => {
     let buyerClient: AnchorClient;
 
     // locations
-    // const geoHere = "w21z98";
-    const geoHere = "w21z71";
+    const geoHere = "w21z98"; // faber heights
+    // const geoHere = "w21z71"; // metacamp
     const region = "SGP";
     const { latitude, longitude } = ngeohash.decode(geoHere);
     const location: Location = {
@@ -78,13 +78,13 @@ describe("Generate Demo Content", () => {
                 name: "SereneSpa",
                 description:
                     "Unwind with our exclusive spa coupon! Indulge in blissful relaxation and pamper yourself. Your escape to tranquility awaits.",
-                image: "http://localhost:4000/tests/assets/coupon_spa.jpeg",
+                image: "http://localhost:5173/demo/assets/coupon_spa.jpeg",
             },
             storeMetadata: {
                 name: "SereneSpa Emporium",
                 description:
                     "Discover a haven of serenity at SereneSpa Emporium. Your one-stop destination for luxurious spa essentials and wellness treasures.",
-                image: "http://localhost:4000/tests/assets/coupon_spa.jpeg",
+                image: "http://localhost:5173/demo/assets/coupon_spa.jpeg",
                 address: "123 Tranquil Lane, Blissful City, Zenland",
                 latitude: location.geolocationCoordinates.latitude,
                 longitude: location.geolocationCoordinates.longitude,
@@ -95,13 +95,13 @@ describe("Generate Demo Content", () => {
                 name: "LuxeLotion",
                 description:
                     "Dive into luxury with our lotion coupon. Silky smoothness meets rejuvenation. Nourish your skin and elevate your self-care routine.",
-                image: "http://localhost:4000/tests/assets/coupon_lotion.jpeg",
+                image: "http://localhost:5173/demo/assets/coupon_lotion.jpeg",
             },
             storeMetadata: {
                 name: "Luxurious Lotions Boutique",
                 description:
                     "Indulge in the finest lotions at Luxurious Lotions Boutique. Elevate your skincare ritual with our curated collection of luxurious products.",
-                image: "http://localhost:4000/tests/assets/coupon_lotion.jpeg",
+                image: "http://localhost:5173/demo/assets/coupon_lotion.jpeg",
                 address: "456 Opulence Street, Radiant Town, Glowville",
                 latitude: location.geolocationCoordinates.latitude,
                 longitude: location.geolocationCoordinates.longitude,
@@ -112,13 +112,13 @@ describe("Generate Demo Content", () => {
                 name: "GiftGlow",
                 description:
                     "Exclusively for you - a free gift! Elevate your pampering routine with a complimentary surprise. Because you deserve a little extra joy.",
-                image: "http://localhost:4000/tests/assets/coupon_free_gift.jpeg",
+                image: "http://localhost:5173/demo/assets/coupon_free_gift.jpeg",
             },
             storeMetadata: {
                 name: "Glowing Gifts Emporium",
                 description:
                     "Find joy in every gift at Glowing Gifts Emporium. Discover a world of surprises that illuminate your senses.",
-                image: "http://localhost:4000/tests/assets/coupon_free_gift.jpeg",
+                image: "http://localhost:5173/demo/assets/coupon_free_gift.jpeg",
                 address: "789 Radiance Avenue, Joyful City, Blissland",
                 latitude: location.geolocationCoordinates.latitude,
                 longitude: location.geolocationCoordinates.longitude,
@@ -129,13 +129,13 @@ describe("Generate Demo Content", () => {
                 name: "CyberZen",
                 description:
                     "Dive into the digital spa experience with our cyber coupon. Immerse yourself in wellness, tech style. Upgrade your self-care game now.",
-                image: "http://localhost:4000/tests/assets/coupon_cyber.jpeg",
+                image: "http://localhost:5173/demo/assets/coupon_cyber.jpeg",
             },
             storeMetadata: {
                 name: "ZenTech Wellness Hub",
                 description:
                     "Experience wellness in the digital age at ZenTech Wellness Hub. Your journey to CyberZen begins here.",
-                image: "http://localhost:4000/tests/assets/coupon_cyber.jpeg",
+                image: "http://localhost:5173/demo/assets/coupon_cyber.jpeg",
                 address: "101 Digital Drive, Tech Town, Silicon Zen",
                 latitude: location.geolocationCoordinates.latitude,
                 longitude: location.geolocationCoordinates.longitude,
@@ -146,13 +146,13 @@ describe("Generate Demo Content", () => {
                 name: "VinoVibes",
                 description:
                     "Sip, relax, and save with our wine coupon. A toast to indulgence! Uncork the moments of joy and elevate your spa experience.",
-                image: "http://localhost:4000/tests/assets/coupon_wine.jpeg",
+                image: "http://localhost:5173/demo/assets/coupon_wine.jpeg",
             },
             storeMetadata: {
                 name: "VinoVibes Cellars",
                 description:
                     "Raise your glass to joy at VinoVibes Cellars. Explore a world of exquisite wines that enhance your spa experience.",
-                image: "http://localhost:4000/tests/assets/coupon_wine.jpeg",
+                image: "http://localhost:5173/demo/assets/coupon_wine.jpeg",
                 address: "321 Vineyard Street, Cheersville, Wineland",
                 latitude: location.geolocationCoordinates.latitude,
                 longitude: location.geolocationCoordinates.longitude,
@@ -163,13 +163,13 @@ describe("Generate Demo Content", () => {
                 name: "PurrfectSpa",
                 description:
                     "Embrace tranquility with our cat-inspired spa coupon. Your feline companion for relaxation. Unwind in the purrfect spa ambiance.",
-                image: "http://localhost:4000/tests/assets/coupon_cat.jpeg",
+                image: "http://localhost:5173/demo/assets/coupon_cat.jpeg",
             },
             storeMetadata: {
                 name: "Purrfect Relaxation Haven",
                 description:
                     "Find tranquility in the company of feline friends at Purrfect Relaxation Haven. Your ultimate destination for a purrfect spa experience.",
-                image: "http://localhost:4000/tests/assets/coupon_cat.jpeg",
+                image: "http://localhost:5173/demo/assets/coupon_cat.jpeg",
                 address: "567 Calm Street, Catville, Purrland",
                 latitude: location.geolocationCoordinates.latitude,
                 longitude: location.geolocationCoordinates.longitude,
