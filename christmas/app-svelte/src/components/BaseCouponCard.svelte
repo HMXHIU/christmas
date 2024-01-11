@@ -37,9 +37,9 @@
 	</header>
 	<section class="p-4 flex-none">
 		<!-- Coupon Name -->
-		<p class="coupon-name">{cleanString(couponName)}</p>
+		<p class="text-sm">{cleanString(couponName)}</p>
 		<!-- Expiry -->
-		<p class="coupon-expiry">
+		<p class="text-xs">
 			Expires
 			{new Intl.DateTimeFormat('en-US', {
 				year: 'numeric',
@@ -49,7 +49,7 @@
 		</p>
 		<!-- Remaining -->
 		{#if remaining}
-			<p class="coupon-remaining">
+			<p class="text-xs">
 				{remaining} remaining
 			</p>
 		{/if}
@@ -66,11 +66,11 @@
 				{/if}
 			</div>
 			<div>
-				<p class="store-name">{storeName}</p>
-				<p class="store-address">{storeAddress}</p>
+				<p class="text-sm">{storeName}</p>
+				<p class="text-xs">{storeAddress}</p>
 				<!-- Distance -->
 				{#if distance}
-					<p class="store-distance">{getDistance(distance)}</p>
+					<p class="text-xs">{getDistance(distance)}</p>
 				{/if}
 			</div>
 		</footer>

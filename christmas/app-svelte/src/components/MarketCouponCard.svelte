@@ -2,8 +2,9 @@
 	import type { ParsedAccountData } from '@solana/web3.js';
 	import { fetchCouponMetadata, fetchStoreMetadata } from '$lib';
 	import type { Account, Coupon, TokenAccount } from '../../../lib/anchor-client/types';
-	import { timeStampToDate } from '../../../lib/utils';
+	import { calculateDistance, timeStampToDate } from '../../../lib/utils';
 	import BaseCouponCard from './BaseCouponCard.svelte';
+	import { userDeviceClient } from '../store';
 
 	export let coupon: Account<Coupon>;
 	export let tokenAccount: TokenAccount;
@@ -13,14 +14,20 @@
 
 	let fetchMetadataAsync = fetchMetadata();
 	async function fetchMetadata() {
-		return {
-			couponMetadata: await fetchCouponMetadata(coupon.account),
-			storeMetadata: await fetchStoreMetadata(coupon.account.store)
-		};
+		const couponMetadata = await fetchCouponMetadata(coupon.account);
+		const storeMetadata = await fetchStoreMetadata(coupon.account.store);
+		const distance = calculateDistance(
+			storeMetadata.latitude,
+			storeMetadata.longitude,
+			$userDeviceClient!.location!.geolocationCoordinates!.latitude!,
+			$userDeviceClient!.location!.geolocationCoordinates!.longitude!
+		);
+
+		return { couponMetadata, storeMetadata, distance };
 	}
 </script>
 
-{#await fetchMetadataAsync then { couponMetadata, storeMetadata }}
+{#await fetchMetadataAsync then { couponMetadata, storeMetadata, distance }}
 	<BaseCouponCard
 		couponName={coupon.account.name}
 		couponImageUrl={couponMetadata.image}
@@ -28,6 +35,7 @@
 		storeAddress={storeMetadata.address}
 		storeImageUrl={storeMetadata.image}
 		remaining={tokenAmount}
+		{distance}
 		expiry={timeStampToDate(coupon.account.validTo)}
 	></BaseCouponCard>
 {/await}
