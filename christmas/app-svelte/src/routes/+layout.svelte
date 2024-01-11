@@ -6,6 +6,7 @@
 
 <!-- App Shell -->
 <AppShell>
+	<!-- pageHeader -->
 	<svelte:fragment slot="pageHeader">
 		<!-- App Bar -->
 		<AppBar>
@@ -18,13 +19,13 @@
 		</AppBar>
 	</svelte:fragment>
 
-	<!-- (pageFooter) -->
+	<!-- pageFooter -->
 	<svelte:fragment slot="footer">
 		<AppBar gridColumns="grid-cols-3" slotLead="place-self-end" slotTrail="place-self-start">
 			<svelte:fragment slot="lead">
 				<a
 					class="btn btn-sm variant-ghost-surface"
-					href="https://twitter.com/SkeletonUI"
+					href="/coupons"
 					target="_blank"
 					rel="noreferrer"
 				>
@@ -32,17 +33,13 @@
 				</a>
 			</svelte:fragment>
 			<svelte:fragment slot="trail">
-				<a
-					class="btn btn-sm variant-ghost-surface"
-					href="https://github.com/skeletonlabs/skeleton"
-					target="_blank"
-					rel="noreferrer"
-				>
+				<a class="btn btn-sm variant-ghost-surface" href="/mint" target="_blank" rel="noreferrer">
 					Mint
 				</a>
 			</svelte:fragment>
 		</AppBar>
 	</svelte:fragment>
+
 	<!-- Page Route Content -->
 	<slot />
 </AppShell>
