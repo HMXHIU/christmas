@@ -2,6 +2,30 @@
 	import '../app.postcss';
 	import { AppShell, AppBar } from '@skeletonlabs/skeleton';
 	import Wallet from '../components/Wallet.svelte';
+	import { userDeviceClient, anchorClient } from '../store';
+	import { onMount } from 'svelte';
+	import { fetchMarketCoupons } from '$lib';
+	import { UserDeviceClient } from '../../../lib/user-device-client/userDeviceClient';
+
+	onMount(async () => {
+		console.log('MOUTNING');
+		// set userDeviceClient
+		const client = new UserDeviceClient();
+		await client.initialize();
+		userDeviceClient.update(() => client);
+
+		// fetch market coupons when userDeviceClient and anchorClient are ready
+		userDeviceClient.subscribe(async (dc) => {
+			if (dc && $anchorClient) {
+				await fetchMarketCoupons();
+			}
+		});
+		anchorClient.subscribe(async (ac) => {
+			if (ac && $userDeviceClient) {
+				await fetchMarketCoupons();
+			}
+		});
+	});
 </script>
 
 <!-- App Shell -->
@@ -11,7 +35,7 @@
 		<!-- App Bar -->
 		<AppBar>
 			<svelte:fragment slot="lead">
-				<strong class="text-xl uppercase">Community</strong>
+				<strong class="text-xl uppercase"><a href="/">Community</a></strong>
 			</svelte:fragment>
 			<svelte:fragment slot="trail">
 				<Wallet />
@@ -23,19 +47,10 @@
 	<svelte:fragment slot="footer">
 		<AppBar gridColumns="grid-cols-3" slotLead="place-self-end" slotTrail="place-self-start">
 			<svelte:fragment slot="lead">
-				<a
-					class="btn btn-sm variant-ghost-surface"
-					href="/coupons"
-					target="_blank"
-					rel="noreferrer"
-				>
-					Coupons
-				</a>
+				<a class="btn btn-sm variant-ghost-surface" href="/coupons"> Coupons </a>
 			</svelte:fragment>
 			<svelte:fragment slot="trail">
-				<a class="btn btn-sm variant-ghost-surface" href="/mint" target="_blank" rel="noreferrer">
-					Mint
-				</a>
+				<a class="btn btn-sm variant-ghost-surface" href="/mint"> Mint </a>
 			</svelte:fragment>
 		</AppBar>
 	</svelte:fragment>
