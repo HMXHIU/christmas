@@ -6,7 +6,7 @@ import type {
 	StoreMetadata,
 	TokenAccount
 } from '../../../lib/anchor-client/types';
-import { anchorClient, userDeviceClient, marketCoupons } from '../store';
+import { anchorClient, userDeviceClient, marketCoupons, claimedCoupons } from '../store';
 import { get } from 'svelte/store';
 import { getCouponMetadata, getStoreMetadata } from '../../../lib/utils';
 
@@ -39,4 +39,38 @@ export async function fetchCouponMetadata(coupon: Coupon): Promise<CouponMetadat
 	// update `couponMetadata` store (caching)
 
 	return couponMetadata;
+}
+
+export async function fetchClaimedCoupons(): Promise<[Account<Coupon>, number][]> {
+	const ac = get(anchorClient);
+
+	if (ac) {
+		const coupons = await ac.getClaimedCoupons();
+		// update `claimedCoupons` store
+		claimedCoupons.update(() => coupons);
+		return coupons;
+	}
+	return [];
+}
+
+export async function claimCoupon({
+	coupon,
+	numTokens
+}: {
+	coupon: Account<Coupon>;
+	numTokens: number;
+}) {
+	const ac = get(anchorClient);
+	const dc = get(userDeviceClient);
+
+	if (ac && dc?.location?.country?.code) {
+		// Claim from market, also creates a `User` using `region` and `geo`
+		await ac.claimFromMarket(
+			coupon.account.mint,
+			numTokens,
+			dc?.location.country.code,
+			dc?.location.geohash
+		);
+		// TODO: handle error
+	}
 }

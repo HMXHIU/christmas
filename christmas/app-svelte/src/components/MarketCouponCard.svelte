@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { fetchCouponMetadata, fetchStoreMetadata } from '$lib';
+	import { claimCoupon, fetchClaimedCoupons, fetchCouponMetadata, fetchStoreMetadata } from '$lib';
 	import type {
 		Account,
 		Coupon,
@@ -46,8 +46,6 @@
 		const modal: ModalSettings = {
 			type: 'component',
 			component: c,
-			title: 'Custom Form Component',
-			body: 'Complete the form below and then press submit.',
 			meta: {
 				coupon,
 				tokenAccount,
@@ -55,7 +53,12 @@
 				storeMetadata,
 				distance
 			},
-			response: (r) => console.log('response:', r)
+			response: async ({ numTokens, coupon }) => {
+				// Claim coupon
+				await claimCoupon({ numTokens, coupon });
+				// Refetch claimed coupons
+				await fetchClaimedCoupons();
+			}
 		};
 		modalStore.trigger(modal);
 	}

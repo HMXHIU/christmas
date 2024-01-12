@@ -7,7 +7,6 @@
 		Account,
 		Coupon,
 		CouponMetadata,
-		Store,
 		StoreMetadata
 	} from '../../../lib/anchor-client/types';
 	import { timeStampToDate } from '../../../lib/utils';
@@ -15,16 +14,6 @@
 	export let parent: SvelteComponent;
 
 	const modalStore = getModalStore();
-
-	// Form Data
-	const formData = {
-		name: 'Jane Doe',
-		tel: '214-555-1234',
-		email: 'jdoe@email.com'
-	};
-
-	// Base Classes
-	const cBase = 'card w-modal shadow-xl';
 
 	let coupon: Account<Coupon> = $modalStore[0].meta.coupon;
 	let couponMetadata: CouponMetadata = $modalStore[0].meta.couponMetadata;
@@ -35,13 +24,17 @@
 		.tokenAmount.uiAmount;
 
 	function onFormSubmit(): void {
-		if ($modalStore[0].response) $modalStore[0].response(formData);
+		if ($modalStore[0].response)
+			$modalStore[0].response({
+				numTokens: 1,
+				coupon
+			});
 		modalStore.close();
 	}
 </script>
 
 {#if $modalStore[0]}
-	<div class="modal-example-form {cBase}">
+	<div class="card w-modal shadow-xl">
 		<BaseCouponCard
 			couponName={coupon.account.name}
 			couponDescription={couponMetadata.description}
@@ -55,10 +48,8 @@
 		></BaseCouponCard>
 
 		<footer class="modal-footer p-4 {parent.regionFooter}">
-			<button class="btn {parent.buttonNeutral}" on:click={parent.onClose}
-				>{parent.buttonTextCancel}</button
-			>
-			<button class="btn {parent.buttonPositive}" on:click={onFormSubmit}>Submit Form</button>
+			<button class="btn {parent.buttonNeutral}" on:click={parent.onClose}>Maybe next time</button>
+			<button class="btn {parent.buttonPositive}" on:click={onFormSubmit}>Get it now</button>
 		</footer>
 	</div>
 {/if}

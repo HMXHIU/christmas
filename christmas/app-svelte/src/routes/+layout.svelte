@@ -4,7 +4,7 @@
 	import Wallet from '../components/Wallet.svelte';
 	import { userDeviceClient, anchorClient } from '../store';
 	import { onMount } from 'svelte';
-	import { fetchMarketCoupons } from '$lib';
+	import { fetchClaimedCoupons, fetchMarketCoupons } from '$lib';
 	import { UserDeviceClient } from '../../../lib/user-device-client/userDeviceClient';
 	import { initializeStores } from '@skeletonlabs/skeleton';
 	import { Modal, getModalStore } from '@skeletonlabs/skeleton';
@@ -22,11 +22,13 @@
 		userDeviceClient.subscribe(async (dc) => {
 			if (dc && $anchorClient) {
 				await fetchMarketCoupons();
+				await fetchClaimedCoupons();
 			}
 		});
 		anchorClient.subscribe(async (ac) => {
 			if (ac && $userDeviceClient) {
 				await fetchMarketCoupons();
+				await fetchClaimedCoupons();
 			}
 		});
 	});

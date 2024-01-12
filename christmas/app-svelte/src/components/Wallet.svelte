@@ -9,7 +9,7 @@
 	import { onMount } from 'svelte';
 
 	onMount(async () => {
-		$solanaConnect = new SolanaConnect();
+		$solanaConnect = $solanaConnect || new SolanaConnect();
 		$solanaConnect!.onWalletChange((adapter: Adapter | null) => {
 			if (adapter == null) {
 				$anchorClient = null;

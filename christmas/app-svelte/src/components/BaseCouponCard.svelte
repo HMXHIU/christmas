@@ -62,7 +62,7 @@
 	{#if storeName}
 		<!-- Store -->
 		<footer class="card-footer flex flex-row flex-none p-3">
-			<div class="flex flex-col mr-2">
+			<div class="flex flex-col mr-2 my-auto">
 				<!-- Store Image -->
 				{#if storeImageUrl != null}
 					<Avatar src={storeImageUrl} width="w-16" rounded="rounded-full" />
