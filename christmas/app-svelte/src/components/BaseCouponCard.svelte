@@ -26,18 +26,10 @@
 	}
 </script>
 
-<div class="card flex flex-col h-full">
-	<!-- Distance -->
-	{#if distance}
-		<div class="relative inline-block text-xs">
-			<span class="badge variant-filled-surface absolute -top-3 -left-0 z-10"
-				>{getDistance(distance)}</span
-			>
-		</div>
-	{/if}
+<div class="card flex flex-col h-full overflow-hidden">
 	<header class="card-header p-0 grow">
 		<!-- Image -->
-		<div class="overflow-hidden relative z-0">
+		<div class="overflow-hidden relative">
 			{#if couponImageUrl}
 				<img
 					class="coupon-image w-full {redemptionQRCodeURL ? 'blur-lg' : ''}"
@@ -84,6 +76,12 @@
 				day: 'numeric'
 			}).format(expiry)}
 		</p>
+		<!-- Distance -->
+		{#if distance}
+			<p class="text-xs text-right text-success-400 mt-1 mr-1">
+				{getDistance(distance)}
+			</p>
+		{/if}
 		<!-- Remaining -->
 		{#if remaining}
 			<p class="text-xs italic text-right text-primary-50 text-opacity-50 mt-1 mr-1">
@@ -119,6 +117,3 @@
 		</footer>
 	{/if}
 </div>
-
-<style>
-</style>

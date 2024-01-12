@@ -38,7 +38,8 @@
 				<!-- Will never reach this  -->
 				<p>This coupon has been used</p>
 			{:else if redemptionQRCodeURL}
-				<QrCode data={redemptionQRCodeURL} height={300} width={300}></QrCode>
+				<QrCode data={redemptionQRCodeURL} image={storeMetadata.image} height={300} width={300}
+				></QrCode>
 			{:else}
 				<BaseCouponCard
 					couponName={coupon.account.name}
@@ -54,7 +55,7 @@
 				></BaseCouponCard>
 			{/if}
 		</div>
-
+		<hr class="mt-4" />
 		<section class="p-4">
 			<p>
 				This coupon will be only be valid for <span class="text-success-400 font-bold">15mins</span
