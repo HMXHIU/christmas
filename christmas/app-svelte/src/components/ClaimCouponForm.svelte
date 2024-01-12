@@ -23,7 +23,7 @@
 	let tokenAmount = ($modalStore[0].meta.tokenAccount.account.data as ParsedAccountData).parsed.info
 		.tokenAmount.uiAmount;
 
-	function onFormSubmit(): void {
+	function onClaimCoupon(): void {
 		if ($modalStore[0].response)
 			$modalStore[0].response({
 				numTokens: 1,
@@ -49,7 +49,7 @@
 
 		<footer class="modal-footer p-4 {parent.regionFooter}">
 			<button class="btn {parent.buttonNeutral}" on:click={parent.onClose}>Maybe next time</button>
-			<button class="btn {parent.buttonPositive}" on:click={onFormSubmit}>Get it now</button>
+			<button class="btn {parent.buttonPositive}" on:click={onClaimCoupon}>Get it now</button>
 		</footer>
 	</div>
 {/if}

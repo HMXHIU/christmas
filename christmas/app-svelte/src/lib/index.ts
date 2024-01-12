@@ -8,7 +8,7 @@ import type {
 } from '../../../lib/anchor-client/types';
 import { anchorClient, userDeviceClient, marketCoupons, claimedCoupons } from '../store';
 import { get } from 'svelte/store';
-import { getCouponMetadata, getStoreMetadata } from '../../../lib/utils';
+import { generateQRCodeURL, getCouponMetadata, getStoreMetadata } from '../../../lib/utils';
 
 export async function fetchMarketCoupons(): Promise<[Account<Coupon>, TokenAccount][]> {
 	const ac = get(anchorClient);
@@ -73,4 +73,38 @@ export async function claimCoupon({
 		);
 		// TODO: handle error
 	}
+}
+
+export async function redeemCoupon({
+	coupon,
+	numTokens
+}: {
+	coupon: Account<Coupon>;
+	numTokens: number;
+}): Promise<string | null> {
+	const ac = get(anchorClient);
+
+	if (ac) {
+		// Redeem coupon
+		const transactionResult = await ac.redeemCoupon({
+			coupon: coupon.publicKey,
+			mint: coupon.account.mint,
+			numTokens
+		});
+
+		// Coupon already redeemed
+		if (transactionResult.result.err != null) {
+			return null;
+		}
+
+		// Generate and set redemptionQRCodeURL
+		return generateQRCodeURL({
+			signature: transactionResult.signature,
+			wallet: ac.anchorWallet.publicKey.toString(),
+			mint: coupon.account.mint.toString(),
+			numTokens: String(numTokens)
+		});
+	}
+
+	return null;
 }

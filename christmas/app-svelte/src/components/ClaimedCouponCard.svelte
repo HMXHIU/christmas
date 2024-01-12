@@ -1,23 +1,23 @@
 <script lang="ts">
-	import { claimCoupon, fetchCouponMetadata, fetchStoreMetadata } from '$lib';
+	import { fetchCouponMetadata, fetchStoreMetadata, redeemCoupon } from '$lib';
 	import type {
 		Account,
 		Coupon,
-		TokenAccount,
 		CouponMetadata,
 		StoreMetadata
 	} from '../../../lib/anchor-client/types';
 	import { calculateDistance, timeStampToDate } from '../../../lib/utils';
 	import BaseCouponCard from './BaseCouponCard.svelte';
-	import { userDeviceClient } from '../store';
-	import type { ModalSettings, ModalComponent } from '@skeletonlabs/skeleton';
+	import { userDeviceClient, redeemedCoupons } from '../store';
+	import type { ModalSettings } from '@skeletonlabs/skeleton';
 	import { getModalStore } from '@skeletonlabs/skeleton';
-	import ClaimCouponForm from './ClaimCouponForm.svelte';
-
-	const modalStore = getModalStore();
+	import RedeemCouponForm from './RedeemCouponForm.svelte';
 
 	export let coupon: Account<Coupon>;
-	export let tokenAccount: TokenAccount;
+	export let balance: number;
+
+	const modalStore = getModalStore();
+	const couponKey = coupon.publicKey.toString();
 
 	let fetchMetadataAsync = fetchMetadata();
 	async function fetchMetadata() {
@@ -29,11 +29,10 @@
 			$userDeviceClient!.location!.geolocationCoordinates!.latitude!,
 			$userDeviceClient!.location!.geolocationCoordinates!.longitude!
 		);
-
 		return { couponMetadata, storeMetadata, distance };
 	}
 
-	function claimCouponModal({
+	function redeemCouponModal({
 		couponMetadata,
 		storeMetadata,
 		distance
@@ -41,38 +40,49 @@
 		couponMetadata: CouponMetadata;
 		storeMetadata: StoreMetadata;
 		distance: number;
-	}): void {
-		const c: ModalComponent = { ref: ClaimCouponForm };
-		const modal: ModalSettings = {
-			type: 'component',
-			component: c,
-			meta: {
-				coupon,
-				tokenAccount,
-				couponMetadata,
-				storeMetadata,
-				distance
-			},
-			response: async ({ numTokens, coupon }) => {
-				// Claim coupon
-				await claimCoupon({ numTokens, coupon });
-				// Refetch claimed coupons
+	}) {
+		new Promise<string>((resolve) => {
+			const modal: ModalSettings = {
+				type: 'component',
+				component: { ref: RedeemCouponForm },
+				meta: {
+					coupon,
+					couponMetadata,
+					storeMetadata,
+					distance,
+					balance,
+					redemptionQRCodeURL: $redeemedCoupons[couponKey]
+				},
+				response: async (modalRedemptionQRCodeURL) => {
+					resolve(modalRedemptionQRCodeURL);
+				}
+			};
+			// Open modal
+			modalStore.trigger(modal);
+		}).then((modalRedemptionQRCodeURL) => {
+			// Will also be called when the modal is closed then `modalRedemptionQRCodeURL=undefined`
+			if (modalRedemptionQRCodeURL) {
+				redeemedCoupons.update((r) => {
+					// Set `redeemedCoupons` store
+					r[coupon.publicKey.toString()] = modalRedemptionQRCodeURL;
+					return r;
+				});
 			}
-		};
-		modalStore.trigger(modal);
+		});
 	}
 </script>
 
 {#await fetchMetadataAsync then { couponMetadata, storeMetadata, distance }}
-	<a href={null} on:click={() => claimCouponModal({ couponMetadata, storeMetadata, distance })}>
+	<a
+		href={null}
+		on:click={async () => await redeemCouponModal({ couponMetadata, storeMetadata, distance })}
+	>
 		<BaseCouponCard
 			couponName={coupon.account.name}
 			couponImageUrl={couponMetadata.image}
-			storeName={storeMetadata.name}
-			storeAddress={storeMetadata.address}
-			storeImageUrl={storeMetadata.image}
 			{distance}
 			expiry={timeStampToDate(coupon.account.validTo)}
+			redemptionQRCodeURL={$redeemedCoupons[couponKey]}
 		></BaseCouponCard>
 	</a>
 {/await}

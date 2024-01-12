@@ -42,6 +42,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@solana/qr-code-styling": "^1.6.0",
     "solana-connect": "^0.1.10"
   }
 }

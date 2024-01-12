@@ -11,6 +11,7 @@
 	export let storeImageUrl: string | null = null;
 	export let storeName: string | null = null;
 	export let storeAddress: string | null = null;
+	export let redemptionQRCodeURL: string | null = null;
 
 	function getDistance(distance: number): string {
 		if (distance) {
@@ -26,15 +27,54 @@
 </script>
 
 <div class="card flex flex-col h-full">
+	<!-- Distance -->
+	{#if distance}
+		<div class="relative inline-block text-xs">
+			<span class="badge variant-filled-surface absolute -top-3 -left-0 z-10"
+				>{getDistance(distance)}</span
+			>
+		</div>
+	{/if}
 	<header class="card-header p-0 grow">
 		<!-- Image -->
-		{#if couponImageUrl}
-			<img class="coupon-image w-full" src={couponImageUrl} alt="coupon" />
-		{:else}
-			<div class="empty-image">
-				<sl-icon name="image-fill"></sl-icon>
-			</div>
-		{/if}
+		<div class="overflow-hidden relative z-0">
+			{#if couponImageUrl}
+				<img
+					class="coupon-image w-full {redemptionQRCodeURL ? 'blur-lg' : ''}"
+					src={couponImageUrl}
+					alt="coupon"
+				/>
+			{:else if redemptionQRCodeURL == null}
+				<div class="empty-image">
+					<sl-icon name="image-fill"></sl-icon>
+				</div>
+			{/if}
+			{#if redemptionQRCodeURL}
+				<div
+					class="btn-icon variant-filled absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-1"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke-width="1.5"
+						stroke="currentColor"
+						class="w-6 h-6"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z"
+						/>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z"
+						/>
+					</svg>
+				</div>
+			{/if}
+		</div>
 		<!-- Expiry -->
 		<p class="text-xs italic text-right text-primary-50 text-opacity-50 mt-1 mr-1">
 			Expires
@@ -75,10 +115,6 @@
 				<p class="text-sm font-bold">{storeName}</p>
 				<!-- Store Address -->
 				<p class="text-xs text-ellipsis text-nowrap overflow-hidden">{storeAddress}</p>
-				<!-- Distance -->
-				{#if distance}
-					<p class="text-xs">{getDistance(distance)}</p>
-				{/if}
 			</div>
 		</footer>
 	{/if}

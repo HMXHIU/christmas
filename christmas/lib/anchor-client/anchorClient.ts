@@ -161,7 +161,7 @@ export class AnchorClient {
     }
 
     /**
-     * Issuer redeems a coupon for a specified mint from a user, essentially burning the user's token.
+     * Redeems a coupon for a specified mint from a user, essentially burning the user's token.
      * @param params - Parameters for the coupon redemption.
      * @param params.coupon - The coupon's public key.
      * @param params.mint - The mint associated with the coupon and tokens.
