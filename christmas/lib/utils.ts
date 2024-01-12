@@ -19,7 +19,10 @@ export function calculateDistance(
     const lat1Rad = (lat1 * Math.PI) / 180;
     const lat2Rad = (lat2 * Math.PI) / 180;
 
-    const x = (lon2 - lon1) * Math.cos((lat1Rad + lat2Rad) / 2);
+    const lon1Rad = (lon1 * Math.PI) / 180;
+    const lon2Rad = (lon2 * Math.PI) / 180;
+
+    const x = (lon2Rad - lon1Rad) * Math.cos((lat1Rad + lat2Rad) / 2);
     const y = lat2Rad - lat1Rad;
 
     // Distance using Equirectangular approximation

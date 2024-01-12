@@ -6,6 +6,11 @@
 	import { onMount } from 'svelte';
 	import { fetchMarketCoupons } from '$lib';
 	import { UserDeviceClient } from '../../../lib/user-device-client/userDeviceClient';
+	import { initializeStores } from '@skeletonlabs/skeleton';
+	import { Modal, getModalStore } from '@skeletonlabs/skeleton';
+
+	// Skeleton (Modals)
+	initializeStores();
 
 	onMount(async () => {
 		// set userDeviceClient
@@ -26,6 +31,9 @@
 		});
 	});
 </script>
+
+<!-- Modal -->
+<Modal />
 
 <!-- App Shell -->
 <AppShell>

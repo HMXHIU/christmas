@@ -4,6 +4,7 @@
 
 	export let couponName: string;
 	export let expiry: Date;
+	export let couponDescription: string | null = null;
 	export let couponImageUrl: string | null = null;
 	export let remaining: number | null = null;
 	export let distance: number | null = null;
@@ -24,7 +25,7 @@
 	}
 </script>
 
-<div class="card flex flex-col">
+<div class="card flex flex-col h-full">
 	<header class="card-header p-0 grow">
 		<!-- Image -->
 		{#if couponImageUrl}
@@ -34,12 +35,8 @@
 				<sl-icon name="image-fill"></sl-icon>
 			</div>
 		{/if}
-	</header>
-	<section class="p-4 flex-none">
-		<!-- Coupon Name -->
-		<p class="text-sm">{cleanString(couponName)}</p>
 		<!-- Expiry -->
-		<p class="text-xs">
+		<p class="text-xs italic text-right text-primary-50 text-opacity-50 mt-1 mr-1">
 			Expires
 			{new Intl.DateTimeFormat('en-US', {
 				year: 'numeric',
@@ -49,15 +46,23 @@
 		</p>
 		<!-- Remaining -->
 		{#if remaining}
-			<p class="text-xs">
+			<p class="text-xs italic text-right text-primary-50 text-opacity-50 mt-1 mr-1">
 				{remaining} remaining
 			</p>
+		{/if}
+	</header>
+	<section class="p-3 flex-none">
+		<!-- Coupon Name -->
+		<p class="text-base font-bold">{cleanString(couponName)}</p>
+		<!-- Coupon Description -->
+		{#if couponDescription}
+			<p class="text-base">{cleanString(couponDescription)}</p>
 		{/if}
 	</section>
 	{#if storeName}
 		<!-- Store -->
-		<footer class="card-footer flex flex-row flex-none">
-			<div class="flex flex-col">
+		<footer class="card-footer flex flex-row flex-none p-3">
+			<div class="flex flex-col mr-2">
 				<!-- Store Image -->
 				{#if storeImageUrl != null}
 					<Avatar src={storeImageUrl} width="w-16" rounded="rounded-full" />
@@ -65,9 +70,11 @@
 					<Avatar initials={storeName.slice(2)} width="w-16" rounded="rounded-full" />
 				{/if}
 			</div>
-			<div>
-				<p class="text-sm">{storeName}</p>
-				<p class="text-xs">{storeAddress}</p>
+			<div class="overflow-hidden my-auto">
+				<!-- Store Name -->
+				<p class="text-sm font-bold">{storeName}</p>
+				<!-- Store Address -->
+				<p class="text-xs text-ellipsis text-nowrap overflow-hidden">{storeAddress}</p>
 				<!-- Distance -->
 				{#if distance}
 					<p class="text-xs">{getDistance(distance)}</p>
