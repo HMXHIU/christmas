@@ -29,7 +29,7 @@
 <div class="card flex flex-col h-full overflow-hidden">
 	<header class="card-header p-0 grow">
 		<!-- Image -->
-		<div class="overflow-hidden relative">
+		<div class="overflow-hidden relative max-h-36">
 			{#if couponImageUrl}
 				<img
 					class="coupon-image w-full {redemptionQRCodeURL ? 'blur-lg' : ''}"
