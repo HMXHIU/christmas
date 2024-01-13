@@ -1,60 +1,72 @@
 <script lang="ts">
 	import type { SvelteComponent } from 'svelte';
 	import { getModalStore } from '@skeletonlabs/skeleton';
-
-	// Props
-	/** Exposes parent props to this component. */
-	export let parent: SvelteComponent;
+	import { STORE_NAME_SIZE, STRING_PREFIX_SIZE } from '../../../lib/anchor-client/defs';
+	import ImageInput from './ImageInput.svelte';
+	import type { Location } from '../../../lib/user-device-client/types';
+	import { userDeviceClient } from '../store';
+	import LocationSearch from './LocationSearch.svelte';
 
 	const modalStore = getModalStore();
 
+	export let parent: SvelteComponent;
+
+	let defaultLocation: Location = $userDeviceClient!.location; // fallback to use device location
+
 	// Form Data
 	const formData = {
-		name: 'Jane Doe',
-		tel: '214-555-1234',
-		email: 'jdoe@email.com'
+		name: '',
+		description: ''
 	};
 
 	// We've created a custom submit function to pass the response and close the modal.
-	function onFormSubmit(): void {
+	function onCreateStore(): void {
 		if ($modalStore[0].response) $modalStore[0].response(formData);
 		modalStore.close();
 	}
-
-	// Base Classes
-	const cBase = 'card p-4 w-modal shadow-xl space-y-4';
-	const cHeader = 'text-2xl font-bold';
-	const cForm = 'border border-surface-500 p-4 space-y-4 rounded-container-token';
 </script>
 
 {#if $modalStore[0]}
-	<div class="modal-example-form {cBase}">
-		<header class={cHeader}>{$modalStore[0].title ?? '(title missing)'}</header>
-		<article>{$modalStore[0].body ?? '(body missing)'}</article>
-		<!-- Enable for debugging: -->
-		<form class="modal-form {cForm}">
+	<div class="card space-y-4 shadow-xl">
+		<form class="p-4 space-y-4 rounded-container-token'">
+			<!-- Store name -->
 			<label class="label">
 				<span>Name</span>
-				<input class="input" type="text" bind:value={formData.name} placeholder="Enter name..." />
-			</label>
-			<label class="label">
-				<span>Phone Number</span>
-				<input class="input" type="tel" bind:value={formData.tel} placeholder="Enter phone..." />
-			</label>
-			<label class="label">
-				<span>Email</span>
 				<input
 					class="input"
-					type="email"
-					bind:value={formData.email}
-					placeholder="Enter email address..."
+					type="text"
+					required
+					maxlength={STORE_NAME_SIZE - STRING_PREFIX_SIZE}
+					bind:value={formData.name}
+					placeholder="Give it a nice name :)"
 				/>
 			</label>
+
+			<!-- Store description -->
+			<label class="label">
+				<span>Description</span>
+				<textarea
+					class="textarea"
+					rows="4"
+					required
+					placeholder="What is your community store about?"
+					maxlength={400}
+					bind:value={formData.description}
+				/>
+			</label>
+
+			<!-- Store logo -->
+			<ImageInput label="Logo" message="150x150"></ImageInput>
+
+			<hr />
+
+			<!-- Address -->
+			<LocationSearch label="Address"></LocationSearch>
 		</form>
 		<!-- prettier-ignore -->
-		<footer class="modal-footer {parent.regionFooter}">
-			<button class="btn {parent.buttonNeutral}" on:click={parent.onClose}>{parent.buttonTextCancel}</button>
-			<button class="btn {parent.buttonPositive}" on:click={onFormSubmit}>Submit Form</button>
+		<footer class="modal-footer p-4 {parent.regionFooter}">
+			<button class="btn {parent.buttonNeutral}" on:click={parent.onClose}>Maybe later</button>
+			<button class="btn {parent.buttonPositive}" on:click={onCreateStore}>Create Store</button>
 		</footer>
 	</div>
 {/if}

@@ -7,7 +7,7 @@
 	import { fetchClaimedCoupons, fetchMarketCoupons } from '$lib';
 	import { UserDeviceClient } from '../../../lib/user-device-client/userDeviceClient';
 	import { initializeStores } from '@skeletonlabs/skeleton';
-	import { Modal, getModalStore } from '@skeletonlabs/skeleton';
+	import { Modal } from '@skeletonlabs/skeleton';
 
 	// Skeleton (Modals)
 	initializeStores();

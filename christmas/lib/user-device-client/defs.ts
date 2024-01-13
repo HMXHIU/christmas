@@ -1,6 +1,6 @@
 export const DEFAULT_GEOHASH_PRECISION = 6;
 
-export const COUNTRY_DETAILS = {
+export const COUNTRY_DETAILS: { [countryCode: string]: [string, string] } = {
     AF: ["AFG", "Afghanistan"],
     AL: ["ALB", "Albania"],
     DZ: ["DZA", "Algeria"],
