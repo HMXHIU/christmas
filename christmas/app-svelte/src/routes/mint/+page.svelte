@@ -26,6 +26,6 @@
 	<button
 		type="button"
 		class="btn variant-soft-tertiary mx-auto mt-8"
-		on:click={async () => await createStoreModal()}>Create A Community Store</button
+		on:click={async () => await createStoreModal()}>Start By Creating A Community Store</button
 	>
 </div>

@@ -1,72 +1,196 @@
 <script lang="ts">
 	import type { SvelteComponent } from 'svelte';
+	import { onMount } from 'svelte';
 	import { getModalStore } from '@skeletonlabs/skeleton';
 	import { STORE_NAME_SIZE, STRING_PREFIX_SIZE } from '../../../lib/anchor-client/defs';
 	import ImageInput from './ImageInput.svelte';
-	import type { Location } from '../../../lib/user-device-client/types';
 	import { userDeviceClient } from '../store';
+	import ngeohash from 'ngeohash';
 	import LocationSearch from './LocationSearch.svelte';
+	import { COUNTRY_DETAILS } from '../../../lib/user-device-client/defs';
+
+	import * as yup from 'yup';
 
 	const modalStore = getModalStore();
 
 	export let parent: SvelteComponent;
 
-	let defaultLocation: Location = $userDeviceClient!.location; // fallback to use device location
+	let values: {
+		name?: string;
+		description?: string;
+		address?: string;
+		region?: string;
+		latitude?: number;
+		longitude?: number;
+		geohash?: string | null;
+	} = {};
 
-	// Form Data
-	const formData = {
-		name: '',
-		description: ''
-	};
+	let errors: {
+		name?: string;
+		description?: string;
+		address?: string;
+		region?: string;
+		longitude?: string;
+		latitude?: string;
+		geohash?: string;
+	} = {};
 
-	// We've created a custom submit function to pass the response and close the modal.
-	function onCreateStore(): void {
-		if ($modalStore[0].response) $modalStore[0].response(formData);
-		modalStore.close();
+	// update geohash if user manually changes latitude or longitude
+	if (values.latitude != null && values.longitude != null) {
+		values.geohash = ngeohash.encode(values.latitude, values.longitude, 6);
+	}
+
+	const schema = yup.object().shape({
+		name: yup.string().required('Your store needs a name.'),
+		description: yup.string().required('Your store needs a description.'),
+		address: yup.string().required('Your store needs an address.'),
+		region: yup.string().required('Your store needs to belong to a region.'),
+		latitude: yup.number().required('Your store needs coordinates.'),
+		longitude: yup.number().required('Your store needs coordinates.')
+	});
+
+	onMount(async () => {
+		// only use default location on initial load
+		values = {
+			region: $userDeviceClient?.location.country?.code,
+			latitude: $userDeviceClient?.location.geolocationCoordinates?.latitude,
+			longitude: $userDeviceClient?.location.geolocationCoordinates?.longitude,
+			geohash: $userDeviceClient?.location?.geohash
+		};
+	});
+
+	async function onCreateStore() {
+		try {
+			await schema.validate(values, { abortEarly: false }); // `abortEarly: false` to get all the errors
+			errors = {};
+
+			// Success
+			if ($modalStore[0].response) $modalStore[0].response(values);
+			modalStore.close();
+		} catch (err) {
+			errors = extractErrors(err);
+		}
+	}
+
+	function extractErrors(err: any) {
+		return err.inner.reduce((acc: any, err: any) => {
+			return { ...acc, [err.path]: err.message };
+		}, {});
+	}
+
+	function onManualLatLng(ev: Event) {
+		if (values.latitude != null && values.longitude != null) {
+			values.geohash = ngeohash.encode(values.latitude, values.longitude, 6);
+			values = values;
+		}
 	}
 </script>
 
 {#if $modalStore[0]}
-	<div class="card space-y-4 shadow-xl">
-		<form class="p-4 space-y-4 rounded-container-token'">
+	<div class="card space-y-4 shadow-xl w-11/12">
+		<form
+			class="p-4 space-y-4 rounded-container-token"
+			id="createStoreForm"
+			on:submit|preventDefault={onCreateStore}
+		>
 			<!-- Store name -->
 			<label class="label">
-				<span>Name</span>
+				<span>Store Name</span>
 				<input
 					class="input"
 					type="text"
-					required
 					maxlength={STORE_NAME_SIZE - STRING_PREFIX_SIZE}
-					bind:value={formData.name}
+					bind:value={values.name}
 					placeholder="Give it a nice name :)"
 				/>
+				{#if errors.name}
+					<p class="text-xs text-error-400">{errors.name}</p>
+				{/if}
 			</label>
 
 			<!-- Store description -->
 			<label class="label">
-				<span>Description</span>
+				<span>Store Description</span>
 				<textarea
 					class="textarea"
 					rows="4"
-					required
 					placeholder="What is your community store about?"
 					maxlength={400}
-					bind:value={formData.description}
+					bind:value={values.description}
 				/>
+				{#if errors.description}
+					<p class="text-xs text-error-400">{errors.description}</p>
+				{/if}
 			</label>
 
 			<!-- Store logo -->
-			<ImageInput label="Logo" message="150x150"></ImageInput>
+			<ImageInput label="Store Logo" message="150x150"></ImageInput>
 
 			<hr />
 
 			<!-- Address -->
-			<LocationSearch label="Address"></LocationSearch>
+			<LocationSearch
+				bind:region={values.region}
+				bind:address={values.address}
+				bind:latitude={values.latitude}
+				bind:longitude={values.longitude}
+				bind:geohash={values.geohash}
+				label="Store Address"
+			></LocationSearch>
+			{#if errors.address}
+				<p class="text-xs text-error-400">{errors.address}</p>
+			{/if}
+
+			<!-- Country -->
+			<label class="label">
+				<span>Country</span>
+				<select class="select" name="region" bind:value={values.region}>
+					{#each Object.values(COUNTRY_DETAILS) as [code, name] (code)}
+						<option value={code}>{name}</option>
+					{/each}
+				</select>
+				{#if errors.region}
+					<p class="text-xs text-error-400">{errors.region}</p>
+				{/if}
+			</label>
+
+			<div class="flex flex-row gap-4">
+				<!-- Latitude -->
+				<label class="label">
+					<span>Latitude</span>
+					<input
+						class="input"
+						type="text"
+						name="latitude"
+						bind:value={values.longitude}
+						on:change={onManualLatLng}
+					/>
+				</label>
+				<!-- Longitude -->
+				<label class="label">
+					<span>Longitude</span>
+					<input
+						class="input"
+						type="text"
+						name="longitude"
+						bind:value={values.latitude}
+						on:change={onManualLatLng}
+					/>
+				</label>
+				<!-- Geohash -->
+				<label class="label">
+					<span>Geohash</span>
+					<input class="input" type="text" name="geohash" disabled bind:value={values.geohash} />
+				</label>
+			</div>
+			{#if errors.latitude || errors.longitude || errors.geohash}
+				<p class="text-xs text-error-400">{errors.latitude}</p>
+			{/if}
 		</form>
 		<!-- prettier-ignore -->
 		<footer class="modal-footer p-4 {parent.regionFooter}">
 			<button class="btn {parent.buttonNeutral}" on:click={parent.onClose}>Maybe later</button>
-			<button class="btn {parent.buttonPositive}" on:click={onCreateStore}>Create Store</button>
+			<button class="btn {parent.buttonPositive}" form="createStoreForm" type="submit">Create Store</button>
 		</footer>
 	</div>
 {/if}

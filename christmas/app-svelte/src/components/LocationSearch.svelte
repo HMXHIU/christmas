@@ -2,15 +2,15 @@
 	import { onMount } from 'svelte';
 	import { COUNTRY_DETAILS } from '../../../lib/user-device-client/defs';
 	import ngeohash from 'ngeohash';
-	import type { Location } from '../../../lib/user-device-client/types';
 	import { Loader } from '@googlemaps/js-api-loader';
 
 	export let label: string = '';
 	export let address: string = '';
-	export let required: boolean = false;
-	export let location: Location | null = null;
-	export let countryCode: string | null = null;
+	export let region: string | null = null;
 	export let countryName: string | null = null;
+	export let latitude: number | null = null;
+	export let longitude: number | null = null;
+	export let geohash: string | null = null;
 
 	let locationInput: HTMLInputElement;
 
@@ -29,8 +29,8 @@
 				const places = searchBox.getPlaces();
 				if (places != null && places.length != 0) {
 					const place = places[0];
-					const lat = place.geometry?.location?.lat();
-					const lng = place.geometry?.location?.lng();
+					latitude = place.geometry?.location?.lat() || null;
+					longitude = place.geometry?.location?.lng() || null;
 
 					// set `address` for parent form
 					address = place['formatted_address'] || '';
@@ -38,28 +38,13 @@
 
 					for (const component of address_components) {
 						if (component.types.includes('country')) {
-							[countryCode, countryName] = COUNTRY_DETAILS[component.short_name];
+							[region, countryName] = COUNTRY_DETAILS[component.short_name];
 							break;
 						}
 					}
 
-					if (lat != null && lng != null && countryCode && countryName) {
-						location = {
-							geohash: ngeohash.encode(lat, lng, 6),
-							geolocationCoordinates: {
-								latitude: lat,
-								longitude: lng,
-								accuracy: 0,
-								altitude: null,
-								altitudeAccuracy: null,
-								heading: null,
-								speed: null
-							},
-							country: {
-								code: countryCode,
-								name: countryName
-							}
-						};
+					if (latitude != null && longitude != null) {
+						geohash = ngeohash.encode(latitude, longitude, 6);
 					}
 				}
 			});
@@ -75,6 +60,6 @@
 		type="text"
 		bind:this={locationInput}
 		bind:value={address}
-		{required}
+		placeholder="Your Store's Address"
 	/>
 </label>

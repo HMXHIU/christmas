@@ -1,6 +1,7 @@
 <script lang="ts">
 	export let label = '';
 	export let message = '';
+
 	let file = null;
 	let image: string | null = null;
 	let fileInput: HTMLInputElement;
@@ -25,6 +26,7 @@
 	const onButtonClick = () => {
 		// Trigger the hidden file input
 		fileInput?.click();
+		console.log('BTN CLICK');
 	};
 </script>
 
@@ -37,6 +39,7 @@
 		{/if}
 		<input
 			bind:this={fileInput}
+			class="input"
 			type="file"
 			id="image"
 			name="image"

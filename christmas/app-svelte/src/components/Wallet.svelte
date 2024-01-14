@@ -9,27 +9,33 @@
 	import { onMount } from 'svelte';
 
 	onMount(async () => {
-		$solanaConnect = $solanaConnect || new SolanaConnect();
-		$solanaConnect!.onWalletChange((adapter: Adapter | null) => {
-			if (adapter == null) {
-				$anchorClient = null;
-				console.log('disconnected');
-			} else {
-				// set anchorClient
-				$anchorClient = new AnchorClient({
-					programId: new PublicKey(PROGRAM_ID),
-					anchorWallet: adapter as AnchorWallet,
-					wallet: {
-						adapter,
-						readyState: adapter?.readyState
-					}
-				});
-				console.log('connected:', adapter.name, adapter.publicKey?.toString());
-			}
-		});
+		if ($solanaConnect == null) {
+			$solanaConnect = new SolanaConnect();
+			$solanaConnect.onWalletChange((adapter: Adapter | null) => {
+				if (adapter == null) {
+					$anchorClient = null;
+					console.log('disconnected');
+				} else {
+					// set anchorClient
+					$anchorClient = new AnchorClient({
+						programId: new PublicKey(PROGRAM_ID),
+						anchorWallet: adapter as AnchorWallet,
+						wallet: {
+							adapter,
+							readyState: adapter?.readyState
+						}
+					});
+					console.log('connected:', adapter.name, adapter.publicKey?.toString());
+				}
+			});
+		}
 	});
+
+	function handleLoginLogout() {
+		$solanaConnect?.openMenu();
+	}
 </script>
 
-<button type="button" class="btn variant-filled" on:click={() => $solanaConnect?.openMenu()}
+<button type="button" class="btn variant-filled" on:click={handleLoginLogout}
 	>{$anchorClient ? 'Logout' : 'Login'}</button
 >
