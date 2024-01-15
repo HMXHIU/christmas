@@ -7,10 +7,15 @@ export default defineConfig({
 	envDir: '../',
 	plugins: [nodePolyfills(), sveltekit(), purgeCss()],
 	define: {
-		process: {
-			env: {
-				NODE_DEBUG: false
-			}
+		// process: {
+		// 	env: {
+		// 		NODE_DEBUG: false
+		// 	}
+		// }
+	},
+	resolve: {
+		alias: {
+			process: 'process/browser'
 		}
 	}
 });

@@ -3,12 +3,32 @@ import type {
 	Account,
 	Coupon,
 	CouponMetadata,
+	Store,
 	StoreMetadata,
 	TokenAccount
 } from '../../../lib/anchor-client/types';
-import { anchorClient, userDeviceClient, marketCoupons, claimedCoupons } from '../store';
+import {
+	anchorClient,
+	userDeviceClient,
+	nftClient,
+	marketCoupons,
+	claimedCoupons,
+	stores
+} from '../store';
 import { get } from 'svelte/store';
 import { generateQRCodeURL, getCouponMetadata, getStoreMetadata } from '../../../lib/utils';
+import { STORE_NAME_SIZE, STRING_PREFIX_SIZE } from '../../../lib/anchor-client/defs';
+
+export interface CreateStoreFormResult {
+	name: string;
+	description: string;
+	address: string;
+	region: string;
+	latitude: number;
+	longitude: number;
+	geohash: string;
+	logo: File | null;
+}
 
 export async function fetchMarketCoupons(): Promise<[Account<Coupon>, TokenAccount][]> {
 	const ac = get(anchorClient);
@@ -49,6 +69,18 @@ export async function fetchClaimedCoupons(): Promise<[Account<Coupon>, number][]
 		// update `claimedCoupons` store
 		claimedCoupons.update(() => coupons);
 		return coupons;
+	}
+	return [];
+}
+
+export async function fetchStores(): Promise<Account<Store>[]> {
+	const ac = get(anchorClient);
+
+	if (ac) {
+		const clientStores = await ac.getStores();
+		// update `stores` store
+		stores.set(clientStores);
+		return clientStores;
 	}
 	return [];
 }
@@ -107,4 +139,45 @@ export async function redeemCoupon({
 	}
 
 	return null;
+}
+
+export async function createStore({
+	name,
+	description,
+	address,
+	region,
+	latitude,
+	longitude,
+	geohash,
+	logo
+}: CreateStoreFormResult) {
+	const ac = get(anchorClient);
+	const nc = get(nftClient);
+
+	if (ac != null && nc != null) {
+		let metadataUrl = '';
+
+		if (logo) {
+			metadataUrl = await nc.store({
+				name,
+				description,
+				imageFile: logo,
+				additionalMetadata: {
+					address: address,
+					latitude: latitude,
+					longitude: longitude
+				}
+			});
+			console.log(`Uploaded coupon metadata to ${metadataUrl}`);
+		}
+
+		const tx = await ac.createStore({
+			name: name.slice(0, STORE_NAME_SIZE - STRING_PREFIX_SIZE), // also enforced in the form
+			geo: geohash,
+			region,
+			uri: metadataUrl
+		});
+	}
+
+	return '';
 }

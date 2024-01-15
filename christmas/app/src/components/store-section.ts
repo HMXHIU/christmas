@@ -151,7 +151,7 @@ export class StoreSection extends LitElement {
                             @on-create="${this.onCreateCoupon}"
                         >
                             <button class="create-coupon-button" slot="button">
-                                Create Coupon
+                                <p class="text-sm">Create Coupon</p>
                             </button>
                         </create-coupon-dialog>
                         ${this.couponSupplyBalance.map(

@@ -1,9 +1,9 @@
 <script lang="ts">
 	export let label = '';
 	export let message = '';
+	export let file: File | null = null;
+	export let image: string | null = null;
 
-	let file = null;
-	let image: string | null = null;
 	let fileInput: HTMLInputElement;
 
 	const onChangeImage = (event: Event) => {
@@ -26,13 +26,14 @@
 	const onButtonClick = () => {
 		// Trigger the hidden file input
 		fileInput?.click();
-		console.log('BTN CLICK');
 	};
 </script>
 
-<label class="label" for="image">
+<!-- Don't use <label> as it screws up the hitbox -->
+<div class="label">
 	<span>{label}</span>
-	<button class="input-box" on:click={onButtonClick}>
+	<!-- Note: type="button" to prevent the button from triggering form submit in parent, also add preventDefault to be safe -->
+	<button class="input-box" on:click={onButtonClick} type="button">
 		{message}
 		{#if image}
 			<img src={image} alt="Preview" />
@@ -41,13 +42,11 @@
 			bind:this={fileInput}
 			class="input"
 			type="file"
-			id="image"
-			name="image"
 			accept="image/*"
-			on:change={onChangeImage}
+			on:change|preventDefault={onChangeImage}
 		/>
 	</button>
-</label>
+</div>
 
 <style>
 	img {

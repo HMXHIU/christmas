@@ -57,6 +57,7 @@ export class NFTMinioClient {
                 .update(imageBuffer)
                 .digest("hex");
             imageUrl = this.objectUrl(imageHash);
+
             // Get or upload image
             if (!(await this.objectExists(imageHash))) {
                 const objInfo = await this.client.putObject(

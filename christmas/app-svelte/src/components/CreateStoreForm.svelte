@@ -23,6 +23,7 @@
 		latitude?: number;
 		longitude?: number;
 		geohash?: string | null;
+		logo?: File | null;
 	} = {};
 
 	let errors: {
@@ -60,6 +61,7 @@
 	});
 
 	async function onCreateStore() {
+		console.log('ON CREATE STORE');
 		try {
 			await schema.validate(values, { abortEarly: false }); // `abortEarly: false` to get all the errors
 			errors = {};
@@ -101,7 +103,7 @@
 					type="text"
 					maxlength={STORE_NAME_SIZE - STRING_PREFIX_SIZE}
 					bind:value={values.name}
-					placeholder="Give it a nice name :)"
+					placeholder="Your community store"
 				/>
 				{#if errors.name}
 					<p class="text-xs text-error-400">{errors.name}</p>
@@ -124,7 +126,7 @@
 			</label>
 
 			<!-- Store logo -->
-			<ImageInput label="Store Logo" message="150x150"></ImageInput>
+			<ImageInput label="Store Logo" message="150x150" bind:file={values.logo}></ImageInput>
 
 			<hr />
 
@@ -144,7 +146,7 @@
 			<!-- Country -->
 			<label class="label">
 				<span>Country</span>
-				<select class="select" name="region" bind:value={values.region}>
+				<select class="select" bind:value={values.region}>
 					{#each Object.values(COUNTRY_DETAILS) as [code, name] (code)}
 						<option value={code}>{name}</option>
 					{/each}
@@ -161,7 +163,6 @@
 					<input
 						class="input"
 						type="text"
-						name="latitude"
 						bind:value={values.longitude}
 						on:change={onManualLatLng}
 					/>
@@ -172,7 +173,6 @@
 					<input
 						class="input"
 						type="text"
-						name="longitude"
 						bind:value={values.latitude}
 						on:change={onManualLatLng}
 					/>
@@ -180,7 +180,7 @@
 				<!-- Geohash -->
 				<label class="label">
 					<span>Geohash</span>
-					<input class="input" type="text" name="geohash" disabled bind:value={values.geohash} />
+					<input class="input" type="text" disabled bind:value={values.geohash} />
 				</label>
 			</div>
 			{#if errors.latitude || errors.longitude || errors.geohash}
