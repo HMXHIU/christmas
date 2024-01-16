@@ -30,6 +30,14 @@ export interface CreateStoreFormResult {
 	logo: File | null;
 }
 
+export interface CreateCouponFormResult {
+	name: string;
+	description: string;
+	validFrom: Date;
+	validTo: Date;
+	image: File | null;
+}
+
 export async function fetchMarketCoupons(): Promise<[Account<Coupon>, TokenAccount][]> {
 	const ac = get(anchorClient);
 	const dc = get(userDeviceClient);

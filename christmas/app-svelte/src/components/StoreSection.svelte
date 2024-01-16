@@ -1,8 +1,14 @@
 <script lang="ts">
-	import { AccordionItem, Avatar } from '@skeletonlabs/skeleton';
+	import { Avatar } from '@skeletonlabs/skeleton';
 	import type { Account, StoreMetadata, Store } from '../../../lib/anchor-client/types';
 	import { cleanString } from '../../../lib/anchor-client/utils';
 	import { fetchStoreMetadata } from '$lib';
+	import type { CreateCouponFormResult } from '$lib';
+	import { getModalStore } from '@skeletonlabs/skeleton';
+	import type { ModalSettings } from '@skeletonlabs/skeleton';
+	import CreateCouponForm from './CreateCouponForm.svelte';
+
+	const modalStore = getModalStore();
 
 	export let store: Account<Store>;
 
@@ -10,6 +16,26 @@
 	async function fetchMetadata(): Promise<{ storeMetadata: StoreMetadata }> {
 		const storeMetadata = await fetchStoreMetadata(store.publicKey);
 		return { storeMetadata };
+	}
+
+	function createCouponModal() {
+		new Promise<{}>((resolve) => {
+			const modal: ModalSettings = {
+				type: 'component',
+				component: { ref: CreateCouponForm },
+				meta: {},
+				response: (values) => {
+					resolve(values);
+				}
+			};
+			// Open modal
+			modalStore.trigger(modal);
+		}).then(async (values) => {
+			if (values) {
+				// Create coupon
+				// await createCoupon(values as CreateCouponFormResult);
+			}
+		});
 	}
 </script>
 
@@ -29,7 +55,9 @@
 				</div>
 			</div>
 			<div class="my-auto">
-				<button type="button" class="btn variant-filled">Create Coupon </button>
+				<button type="button" class="btn variant-filled" on:click={createCouponModal}
+					>Create Coupon</button
+				>
 			</div>
 		</header>
 
@@ -37,18 +65,3 @@
 		<div class="min-h-32">coupons</div>
 	</div>
 {/await}
-
-<style>
-	.create-coupon-button {
-		width: 120px;
-		height: 210px;
-		border: 2px dashed #3498db; /* Dashed border with a blue color */
-		border-radius: 10px; /* Rounded corners */
-		background-color: transparent;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		cursor: pointer;
-		transition: background-color 0.3s ease;
-	}
-</style>

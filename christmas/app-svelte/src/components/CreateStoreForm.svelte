@@ -61,7 +61,6 @@
 	});
 
 	async function onCreateStore() {
-		console.log('ON CREATE STORE');
 		try {
 			await schema.validate(values, { abortEarly: false }); // `abortEarly: false` to get all the errors
 			errors = {};
