@@ -2,24 +2,21 @@
 	import { Avatar } from '@skeletonlabs/skeleton';
 	import type { Account, StoreMetadata, Store } from '../../../lib/anchor-client/types';
 	import { cleanString } from '../../../lib/anchor-client/utils';
-	import { fetchStoreMetadata } from '$lib';
-	import type { CreateCouponFormResult } from '$lib';
+	import { fetchMintedCouponSupplyBalance, fetchStoreMetadata } from '$lib';
+	import { createCoupon, type CreateCouponFormResult } from '$lib';
 	import { getModalStore } from '@skeletonlabs/skeleton';
 	import type { ModalSettings } from '@skeletonlabs/skeleton';
 	import CreateCouponForm from './CreateCouponForm.svelte';
+	import { mintedCoupons, storesMetadata } from '../store';
 
 	const modalStore = getModalStore();
 
 	export let store: Account<Store>;
 
-	let fetchMetadataAsync = fetchMetadata();
-	async function fetchMetadata(): Promise<{ storeMetadata: StoreMetadata }> {
-		const storeMetadata = await fetchStoreMetadata(store.publicKey);
-		return { storeMetadata };
-	}
+	const storeKey = store.publicKey.toString();
 
 	function createCouponModal() {
-		new Promise<{}>((resolve) => {
+		new Promise<CreateCouponFormResult>((resolve) => {
 			const modal: ModalSettings = {
 				type: 'component',
 				component: { ref: CreateCouponForm },
@@ -33,25 +30,31 @@
 		}).then(async (values) => {
 			if (values) {
 				// Create coupon
-				// await createCoupon(values as CreateCouponFormResult);
+				await createCoupon({
+					...values,
+					store
+				});
+				// Refetch coupons
+				await fetchMintedCouponSupplyBalance(store);
 			}
 		});
 	}
 </script>
 
-{#await fetchMetadataAsync then { storeMetadata }}
+{#await fetchStoreMetadata(store.publicKey) then}
 	<div class="flex flex-col">
+		<!-- Store -->
 		<header class="flex flex-row justify-between px-4 py-3 bg-surface-200-700-token">
 			<div class="flex flex-row space-x-3 my-auto">
-				{#if storeMetadata.image != null}
-					<Avatar src={storeMetadata.image} rounded="rounded-full" />
+				{#if $storesMetadata[storeKey].image != null}
+					<Avatar src={$storesMetadata[storeKey].image} rounded="rounded-full" />
 				{:else}
 					<Avatar initials={store.account.name.slice(2)} rounded="rounded-full" />
 				{/if}
 				<div class="flex flex-col my-auto">
 					<p class="text-base font-bold">{cleanString(store.account.name)}</p>
-					<p class="text-sm italic">{storeMetadata.address}</p>
-					<p class="text-sm">{storeMetadata.description}</p>
+					<p class="text-sm italic">{$storesMetadata[storeKey].address}</p>
+					<p class="text-sm">{$storesMetadata[storeKey].description}</p>
 				</div>
 			</div>
 			<div class="my-auto">
@@ -62,6 +65,12 @@
 		</header>
 
 		<!-- Coupons -->
-		<div class="min-h-32">coupons</div>
+		{#await fetchMintedCouponSupplyBalance(store) then}
+			{#each $mintedCoupons[store.publicKey.toString()] as [coupon, supply, balance]}
+				<div class="min-h-32">{coupon.account.name}</div>
+				<div class="min-h-32">{supply}</div>
+				<div class="min-h-32">{balance}</div>
+			{/each}
+		{/await}
 	</div>
 {/await}

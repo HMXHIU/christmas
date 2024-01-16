@@ -4,10 +4,7 @@
 	import { getModalStore } from '@skeletonlabs/skeleton';
 	import { COUPON_NAME_SIZE, STRING_PREFIX_SIZE } from '../../../lib/anchor-client/defs';
 	import ImageInput from './ImageInput.svelte';
-	import { userDeviceClient } from '../store';
-	import ngeohash from 'ngeohash';
-
-	import { COUNTRY_DETAILS } from '../../../lib/user-device-client/defs';
+	import DateInput from './DateInput.svelte';
 
 	import * as yup from 'yup';
 
@@ -34,7 +31,7 @@
 		name: yup.string().required('Your coupon needs a name.'),
 		description: yup.string().required('Your coupon needs a description.'),
 		validFrom: yup.date().required('Your coupon needs a validity period.'),
-		validTo: yup.number().required('Your coupon needs a validity period.')
+		validTo: yup.date().required('Your coupon needs a validity period.')
 	});
 
 	// Only use default validity period on initial load
@@ -48,8 +45,6 @@
 			validFrom: currentDate,
 			validTo: defaultValidTo
 		};
-
-		console.log(values);
 	});
 
 	async function onCreateCoupon() {
@@ -117,15 +112,9 @@
 			<!-- Coupon Validity Period -->
 			<div class="flex flex-row gap-4">
 				<!-- Valid From -->
-				<label class="label">
-					<span>Valid From</span>
-					<input class="input" type="date" bind:value={values.validFrom} />
-				</label>
+				<DateInput label="Valid From" bind:value={values.validFrom}></DateInput>
 				<!-- Valid To -->
-				<label class="label">
-					<span>Valid To</span>
-					<input class="input" type="date" bind:value={values.validTo} />
-				</label>
+				<DateInput label="Valid To" bind:value={values.validTo}></DateInput>
 			</div>
 			{#if errors.validFrom || errors.validTo}
 				<p class="text-xs text-error-400">{errors.validFrom}</p>

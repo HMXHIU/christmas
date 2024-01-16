@@ -13,11 +13,18 @@ import {
 	nftClient,
 	marketCoupons,
 	claimedCoupons,
-	stores
+	mintedCoupons,
+	stores,
+	storesMetadata
 } from '../store';
 import { get } from 'svelte/store';
 import { generateQRCodeURL, getCouponMetadata, getStoreMetadata } from '../../../lib/utils';
-import { STORE_NAME_SIZE, STRING_PREFIX_SIZE } from '../../../lib/anchor-client/defs';
+import {
+	COUPON_NAME_SIZE,
+	STORE_NAME_SIZE,
+	STRING_PREFIX_SIZE
+} from '../../../lib/anchor-client/defs';
+import { cleanString } from '../../../lib/anchor-client/utils';
 
 export interface CreateStoreFormResult {
 	name: string;
@@ -44,7 +51,7 @@ export async function fetchMarketCoupons(): Promise<[Account<Coupon>, TokenAccou
 
 	if (ac && dc?.location?.country?.code) {
 		const coupons = await ac.getCoupons(dc.location.country.code);
-		// update `marketCoupons` store
+		// Update `$ marketCoupons`
 		marketCoupons.update(() => coupons);
 		return coupons;
 	}
@@ -56,7 +63,11 @@ export async function fetchStoreMetadata(storePda: PublicKey): Promise<StoreMeta
 	const store = await ac!.getStoreByPda(storePda);
 	const storeMetadata = await getStoreMetadata(store!);
 
-	// update `storeMetadata` store (caching)
+	// Update `$storeMetadata`
+	storesMetadata.update((d) => {
+		d[storePda.toString()] = storeMetadata;
+		return d;
+	});
 
 	return storeMetadata;
 }
@@ -64,9 +75,27 @@ export async function fetchStoreMetadata(storePda: PublicKey): Promise<StoreMeta
 export async function fetchCouponMetadata(coupon: Coupon): Promise<CouponMetadata> {
 	const couponMetadata = await getCouponMetadata(coupon);
 
-	// update `couponMetadata` store (caching)
+	// TODO: Update `$couponMetadata`
 
 	return couponMetadata;
+}
+
+export async function fetchMintedCouponSupplyBalance(
+	store: Account<Store>
+): Promise<[Account<Coupon>, number, number][]> {
+	const ac = get(anchorClient);
+	if (ac) {
+		const couponsSupplyBalance = await ac.getMintedCoupons(store.publicKey);
+
+		// Update `$mintedCoupons`
+		mintedCoupons.update((d) => {
+			d[store.publicKey.toString()] = couponsSupplyBalance;
+			return d;
+		});
+
+		return couponsSupplyBalance;
+	}
+	return [];
 }
 
 export async function fetchClaimedCoupons(): Promise<[Account<Coupon>, number][]> {
@@ -74,8 +103,8 @@ export async function fetchClaimedCoupons(): Promise<[Account<Coupon>, number][]
 
 	if (ac) {
 		const coupons = await ac.getClaimedCoupons();
-		// update `claimedCoupons` store
-		claimedCoupons.update(() => coupons);
+		// Update `$claimedCoupons`
+		claimedCoupons.set(coupons);
 		return coupons;
 	}
 	return [];
@@ -86,7 +115,7 @@ export async function fetchStores(): Promise<Account<Store>[]> {
 
 	if (ac) {
 		const clientStores = await ac.getStores();
-		// update `stores` store
+		// Update `$stores`
 		stores.set(clientStores);
 		return clientStores;
 	}
@@ -176,7 +205,7 @@ export async function createStore({
 					longitude: longitude
 				}
 			});
-			console.log(`Uploaded coupon metadata to ${metadataUrl}`);
+			console.log(`Uploaded store metadata to ${metadataUrl}`);
 		}
 
 		const tx = await ac.createStore({
@@ -186,6 +215,50 @@ export async function createStore({
 			uri: metadataUrl
 		});
 	}
+}
 
-	return '';
+export async function createCoupon({
+	image,
+	name,
+	description,
+	validFrom,
+	validTo,
+	store
+}: {
+	image: File | null;
+	name: string;
+	description: string;
+	validFrom: Date;
+	validTo: Date;
+	store: Account<Store>;
+}) {
+	const ac = get(anchorClient);
+	const nc = get(nftClient);
+
+	if (ac != null && nc != null) {
+		let metadataUrl = '';
+
+		// Upload coupon image to nft storage
+		if (image) {
+			metadataUrl = await nc.store({
+				name,
+				description,
+				imageFile: image
+			});
+			console.log(`Uploaded coupon metadata to ${metadataUrl}`);
+		}
+
+		// Create coupon
+		await ac.createCoupon({
+			geo: cleanString(store.account.geo),
+			region: cleanString(store.account.region),
+			name: name.slice(0, COUPON_NAME_SIZE - STRING_PREFIX_SIZE), // also enforced in form
+			store: store.publicKey,
+			uri: metadataUrl,
+			validFrom: validFrom,
+			validTo: validTo
+		});
+	}
+
+	// await this.fetchCouponSupplyBalance();
 }

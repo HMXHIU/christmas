@@ -4,13 +4,20 @@
 	import Wallet from '../components/Wallet.svelte';
 	import { userDeviceClient, anchorClient } from '../store';
 	import { onMount } from 'svelte';
-	import { fetchClaimedCoupons, fetchMarketCoupons } from '$lib';
+	import { fetchClaimedCoupons, fetchMarketCoupons, fetchStores } from '$lib';
 	import { UserDeviceClient } from '../../../lib/user-device-client/userDeviceClient';
 	import { initializeStores } from '@skeletonlabs/skeleton';
 	import { Modal } from '@skeletonlabs/skeleton';
 
 	// Skeleton (Modals)
 	initializeStores();
+
+	async function fetchUserContent() {
+		// TODO: put in their respective pages for more efficiency
+		await fetchMarketCoupons();
+		await fetchClaimedCoupons();
+		await fetchStores();
+	}
 
 	onMount(async () => {
 		// set userDeviceClient
@@ -21,14 +28,12 @@
 		// fetch market coupons when userDeviceClient and anchorClient are ready
 		userDeviceClient.subscribe(async (dc) => {
 			if (dc && $anchorClient) {
-				await fetchMarketCoupons();
-				await fetchClaimedCoupons();
+				await fetchUserContent();
 			}
 		});
 		anchorClient.subscribe(async (ac) => {
 			if (ac && $userDeviceClient) {
-				await fetchMarketCoupons();
-				await fetchClaimedCoupons();
+				await fetchUserContent();
 			}
 		});
 	});

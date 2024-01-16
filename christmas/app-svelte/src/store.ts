@@ -1,6 +1,12 @@
 import { writable, readable } from 'svelte/store';
 import type { AnchorClient } from '../../lib/anchor-client/anchorClient';
-import type { Coupon, Account, TokenAccount, Store } from '../../lib/anchor-client/types';
+import type {
+	Coupon,
+	Account,
+	TokenAccount,
+	Store,
+	StoreMetadata
+} from '../../lib/anchor-client/types';
 import { UserDeviceClient } from '../../lib/user-device-client/userDeviceClient';
 import type { NFTClient } from '../../lib/nft-client/types';
 import { NFTMinioClient } from '../../lib/nft-client/nftMinioClient';
@@ -28,3 +34,5 @@ export let marketCoupons = writable<[Account<Coupon>, TokenAccount][]>([]);
 export let claimedCoupons = writable<[Account<Coupon>, number][]>([]);
 export let redeemedCoupons = writable<Record<string, string>>({});
 export let stores = writable<Account<Store>[]>([]);
+export let storesMetadata = writable<Record<string, StoreMetadata>>({});
+export let mintedCoupons = writable<Record<string, [Account<Coupon>, number, number][]>>({});
