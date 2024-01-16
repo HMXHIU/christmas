@@ -15,7 +15,8 @@ import {
 	claimedCoupons,
 	mintedCoupons,
 	stores,
-	storesMetadata
+	storesMetadata,
+	couponsMetadata
 } from '../store';
 import { get } from 'svelte/store';
 import { generateQRCodeURL, getCouponMetadata, getStoreMetadata } from '../../../lib/utils';
@@ -72,10 +73,13 @@ export async function fetchStoreMetadata(storePda: PublicKey): Promise<StoreMeta
 	return storeMetadata;
 }
 
-export async function fetchCouponMetadata(coupon: Coupon): Promise<CouponMetadata> {
-	const couponMetadata = await getCouponMetadata(coupon);
-
-	// TODO: Update `$couponMetadata`
+export async function fetchCouponMetadata(coupon: Account<Coupon>): Promise<CouponMetadata> {
+	const couponMetadata = await getCouponMetadata(coupon.account);
+	// Update `$couponMetadata`
+	couponsMetadata.update((d) => {
+		d[coupon.publicKey.toString()] = couponMetadata;
+		return d;
+	});
 
 	return couponMetadata;
 }
@@ -239,11 +243,11 @@ export async function createCoupon({
 		let metadataUrl = '';
 
 		// Upload coupon image to nft storage
-		if (image) {
+		if (image || description) {
 			metadataUrl = await nc.store({
 				name,
 				description,
-				imageFile: image
+				...(image ? { imageFile: image } : {})
 			});
 			console.log(`Uploaded coupon metadata to ${metadataUrl}`);
 		}
@@ -259,6 +263,18 @@ export async function createCoupon({
 			validTo: validTo
 		});
 	}
+}
 
-	// await this.fetchCouponSupplyBalance();
+export async function mintCoupon({
+	coupon,
+	numTokens
+}: {
+	numTokens: number;
+	coupon: Account<Coupon>;
+}) {
+	const ac = get(anchorClient);
+
+	if (ac != null) {
+		await ac.mintToMarket(coupon.account.mint, coupon.account.region, numTokens);
+	}
 }

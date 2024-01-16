@@ -15,8 +15,8 @@ export class NFTStorageClient {
         additionalMetadata,
     }: {
         name: string;
-        description: string;
-        imageFile: File;
+        description?: string | null;
+        imageFile?: File | null;
         additionalMetadata?: any;
     }): Promise<string> {
         const slugifiedName = kebabCase(name);
@@ -25,10 +25,12 @@ export class NFTStorageClient {
         const blob = new Blob([imageFile], { type: imageFile.type });
         const metadata = await (this.client as NFTStorage).store({
             name: name,
-            description: description,
+            ...(description && { description }),
             // TODO: change extension based on type
-            image: new File([blob], `${slugifiedName}.jpg`, {
-                type: imageFile.type,
+            ...(imageFile && {
+                image: new File([blob], `${slugifiedName}.jpg`, {
+                    type: imageFile.type,
+                }),
             }),
             ...(additionalMetadata || {}),
         });

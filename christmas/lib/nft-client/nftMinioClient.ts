@@ -45,13 +45,13 @@ export class NFTMinioClient {
         additionalMetadata,
     }: {
         name: string;
-        description: string;
-        imageFile?: File;
-        imageUrl?: string;
+        description?: string | null;
+        imageFile?: File | null;
+        imageUrl?: string | null;
         additionalMetadata?: any;
     }): Promise<string> {
-        // use imageUrl if provided else upload image from imageFile
-        if (imageUrl == null) {
+        // use imageFile if there is else fallback on imageUrl
+        if (imageFile != null) {
             const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
             const imageHash = createHash("sha256")
                 .update(imageBuffer)
@@ -72,8 +72,8 @@ export class NFTMinioClient {
         // Save metadata
         const metadata = {
             name: name,
-            description: description,
-            image: imageUrl,
+            ...(description && { description }),
+            ...(imageUrl && { image: imageUrl }),
             ...(additionalMetadata || {}),
         };
         const metadataHash = createHash("sha256")

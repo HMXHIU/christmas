@@ -6,6 +6,7 @@ import {
     Store,
     StoreMetadata,
 } from "./anchor-client/types";
+import { cleanString } from "./anchor-client/utils";
 
 export function calculateDistance(
     lat1: number,
@@ -66,29 +67,32 @@ export function nft_uri_to_url(uri: string): string {
 }
 
 export function fetchData(url: string, defaultValue: any = {}): Promise<any> {
-    return fetch(url)
-        .then((res) => {
-            if (!res.ok) {
-                throw new Error(`HTTP error! Status: ${res.status}`);
-            }
-            return res.json();
-        })
-        .catch((error) => {
-            console.warn("Error fetching data:", error);
-            return defaultValue; // Return the specified default value on error
-        });
+    if (url) {
+        return fetch(url)
+            .then((res) => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! Status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .catch((error) => {
+                console.warn(`Could not fetch ${url}`);
+                return defaultValue; // Return the specified default value on error
+            });
+    }
+    return defaultValue;
 }
 
 export async function getCouponMetadata(
     coupon: Coupon
 ): Promise<CouponMetadata> {
-    const url = nft_uri_to_url(coupon.uri);
+    const url = nft_uri_to_url(cleanString(coupon.uri));
     const data = await fetchData(url, {});
     return { ...data, image: nft_uri_to_url(data.image || "") };
 }
 
 export async function getStoreMetadata(store: Store): Promise<StoreMetadata> {
-    const url = nft_uri_to_url(store.uri);
+    const url = nft_uri_to_url(cleanString(store.uri));
     const data = await fetchData(url, {});
     return { ...data, image: nft_uri_to_url(data.image || "") };
 }

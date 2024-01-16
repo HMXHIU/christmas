@@ -21,7 +21,7 @@
 
 	let fetchMetadataAsync = fetchMetadata();
 	async function fetchMetadata() {
-		const couponMetadata = await fetchCouponMetadata(coupon.account);
+		const couponMetadata = await fetchCouponMetadata(coupon);
 		const storeMetadata = await fetchStoreMetadata(coupon.account.store);
 		const distance = calculateDistance(
 			storeMetadata.latitude,

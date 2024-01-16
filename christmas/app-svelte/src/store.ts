@@ -5,7 +5,8 @@ import type {
 	Account,
 	TokenAccount,
 	Store,
-	StoreMetadata
+	StoreMetadata,
+	CouponMetadata
 } from '../../lib/anchor-client/types';
 import { UserDeviceClient } from '../../lib/user-device-client/userDeviceClient';
 import type { NFTClient } from '../../lib/nft-client/types';
@@ -36,3 +37,4 @@ export let redeemedCoupons = writable<Record<string, string>>({});
 export let stores = writable<Account<Store>[]>([]);
 export let storesMetadata = writable<Record<string, StoreMetadata>>({});
 export let mintedCoupons = writable<Record<string, [Account<Coupon>, number, number][]>>({});
+export let couponsMetadata = writable<Record<string, CouponMetadata>>({});
