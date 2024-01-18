@@ -1,280 +1,321 @@
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey } from "@solana/web3.js";
 import type {
-	Account,
-	Coupon,
-	CouponMetadata,
-	Store,
-	StoreMetadata,
-	TokenAccount
-} from '../../../lib/anchor-client/types';
+    Account,
+    Coupon,
+    CouponMetadata,
+    Store,
+    StoreMetadata,
+    TokenAccount,
+} from "../../../lib/anchor-client/types";
 import {
-	anchorClient,
-	userDeviceClient,
-	nftClient,
-	marketCoupons,
-	claimedCoupons,
-	mintedCoupons,
-	stores,
-	storesMetadata,
-	couponsMetadata
-} from '../store';
-import { get } from 'svelte/store';
-import { generateQRCodeURL, getCouponMetadata, getStoreMetadata } from '../../../lib/utils';
+    anchorClient,
+    userDeviceClient,
+    nftClient,
+    marketCoupons,
+    claimedCoupons,
+    mintedCoupons,
+    stores,
+    storesMetadata,
+    couponsMetadata,
+} from "../store";
+import { get } from "svelte/store";
 import {
-	COUPON_NAME_SIZE,
-	STORE_NAME_SIZE,
-	STRING_PREFIX_SIZE
-} from '../../../lib/anchor-client/defs';
-import { cleanString } from '../../../lib/anchor-client/utils';
+    generateQRCodeURL,
+    getCouponMetadata,
+    getStoreMetadata,
+} from "../../../lib/utils";
+import {
+    COUPON_NAME_SIZE,
+    STORE_NAME_SIZE,
+    STRING_PREFIX_SIZE,
+} from "../../../lib/anchor-client/defs";
+import { cleanString } from "../../../lib/anchor-client/utils";
 
 export interface CreateStoreFormResult {
-	name: string;
-	description: string;
-	address: string;
-	region: string;
-	latitude: number;
-	longitude: number;
-	geohash: string;
-	logo: File | null;
+    name: string;
+    description: string;
+    address: string;
+    region: string;
+    latitude: number;
+    longitude: number;
+    geohash: string;
+    logo: File | null;
 }
 
 export interface CreateCouponFormResult {
-	name: string;
-	description: string;
-	validFrom: Date;
-	validTo: Date;
-	image: File | null;
+    name: string;
+    description: string;
+    validFrom: Date;
+    validTo: Date;
+    image: File | null;
 }
 
-export async function fetchMarketCoupons(): Promise<[Account<Coupon>, TokenAccount][]> {
-	const ac = get(anchorClient);
-	const dc = get(userDeviceClient);
+export async function fetchMarketCoupons(): Promise<
+    [Account<Coupon>, TokenAccount][]
+> {
+    const ac = get(anchorClient);
+    const dc = get(userDeviceClient);
 
-	if (ac && dc?.location?.country?.code) {
-		const coupons = await ac.getCoupons(dc.location.country.code);
-		// Update `$ marketCoupons`
-		marketCoupons.update(() => coupons);
-		return coupons;
-	}
-	return [];
+    if (ac && dc?.location?.country?.code) {
+        const coupons = await ac.getCoupons(dc.location.country.code);
+        // Update `$ marketCoupons`
+        marketCoupons.update(() => coupons);
+        return coupons;
+    }
+    return [];
 }
 
-export async function fetchStoreMetadata(storePda: PublicKey): Promise<StoreMetadata> {
-	const ac = get(anchorClient);
-	const store = await ac!.getStoreByPda(storePda);
-	const storeMetadata = await getStoreMetadata(store!);
+export async function fetchStoreMetadata(
+    storePda: PublicKey,
+): Promise<StoreMetadata> {
+    const ac = get(anchorClient);
+    const store = await ac!.getStoreByPda(storePda);
+    const storeMetadata = await getStoreMetadata(store!);
 
-	// Update `$storeMetadata`
-	storesMetadata.update((d) => {
-		d[storePda.toString()] = storeMetadata;
-		return d;
-	});
+    // Update `$storeMetadata`
+    storesMetadata.update((d) => {
+        d[storePda.toString()] = storeMetadata;
+        return d;
+    });
 
-	return storeMetadata;
+    return storeMetadata;
 }
 
-export async function fetchCouponMetadata(coupon: Account<Coupon>): Promise<CouponMetadata> {
-	const couponMetadata = await getCouponMetadata(coupon.account);
-	// Update `$couponMetadata`
-	couponsMetadata.update((d) => {
-		d[coupon.publicKey.toString()] = couponMetadata;
-		return d;
-	});
+export async function fetchCouponMetadata(
+    coupon: Account<Coupon>,
+): Promise<CouponMetadata> {
+    const couponMetadata = await getCouponMetadata(coupon.account);
+    // Update `$couponMetadata`
+    couponsMetadata.update((d) => {
+        d[coupon.publicKey.toString()] = couponMetadata;
+        return d;
+    });
 
-	return couponMetadata;
+    return couponMetadata;
 }
 
 export async function fetchMintedCouponSupplyBalance(
-	store: Account<Store>
+    store: Account<Store>,
 ): Promise<[Account<Coupon>, number, number][]> {
-	const ac = get(anchorClient);
-	if (ac) {
-		const couponsSupplyBalance = await ac.getMintedCoupons(store.publicKey);
+    const ac = get(anchorClient);
+    if (ac) {
+        const couponsSupplyBalance = await ac.getMintedCoupons(store.publicKey);
 
-		// Update `$mintedCoupons`
-		mintedCoupons.update((d) => {
-			d[store.publicKey.toString()] = couponsSupplyBalance;
-			return d;
-		});
+        // Update `$mintedCoupons`
+        mintedCoupons.update((d) => {
+            d[store.publicKey.toString()] = couponsSupplyBalance;
+            return d;
+        });
 
-		return couponsSupplyBalance;
-	}
-	return [];
+        return couponsSupplyBalance;
+    }
+    return [];
 }
 
-export async function fetchClaimedCoupons(): Promise<[Account<Coupon>, number][]> {
-	const ac = get(anchorClient);
+export async function fetchClaimedCoupons(): Promise<
+    [Account<Coupon>, number][]
+> {
+    const ac = get(anchorClient);
 
-	if (ac) {
-		const coupons = await ac.getClaimedCoupons();
-		// Update `$claimedCoupons`
-		claimedCoupons.set(coupons);
-		return coupons;
-	}
-	return [];
+    if (ac) {
+        const coupons = await ac.getClaimedCoupons();
+        // Update `$claimedCoupons`
+        claimedCoupons.set(coupons);
+        return coupons;
+    }
+    return [];
 }
 
 export async function fetchStores(): Promise<Account<Store>[]> {
-	const ac = get(anchorClient);
+    const ac = get(anchorClient);
 
-	if (ac) {
-		const clientStores = await ac.getStores();
-		// Update `$stores`
-		stores.set(clientStores);
-		return clientStores;
-	}
-	return [];
+    if (ac) {
+        const clientStores = await ac.getStores();
+        // Update `$stores`
+        stores.set(clientStores);
+        return clientStores;
+    }
+    return [];
 }
 
 export async function claimCoupon({
-	coupon,
-	numTokens
+    coupon,
+    numTokens,
 }: {
-	coupon: Account<Coupon>;
-	numTokens: number;
+    coupon: Account<Coupon>;
+    numTokens: number;
 }) {
-	const ac = get(anchorClient);
-	const dc = get(userDeviceClient);
+    const ac = get(anchorClient);
+    const dc = get(userDeviceClient);
 
-	if (ac && dc?.location?.country?.code) {
-		// Claim from market, also creates a `User` using `region` and `geo`
-		await ac.claimFromMarket(
-			coupon.account.mint,
-			numTokens,
-			dc?.location.country.code,
-			dc?.location.geohash
-		);
-		// TODO: handle error
-	}
+    if (ac && dc?.location?.country?.code) {
+        // Claim from market, also creates a `User` using `region` and `geo`
+        await ac.claimFromMarket(
+            coupon.account.mint,
+            numTokens,
+            dc?.location.country.code,
+            dc?.location.geohash,
+        );
+        // TODO: handle error
+    }
 }
 
 export async function redeemCoupon({
-	coupon,
-	numTokens
+    coupon,
+    numTokens,
 }: {
-	coupon: Account<Coupon>;
-	numTokens: number;
+    coupon: Account<Coupon>;
+    numTokens: number;
 }): Promise<string | null> {
-	const ac = get(anchorClient);
+    const ac = get(anchorClient);
 
-	if (ac) {
-		// Redeem coupon
-		const transactionResult = await ac.redeemCoupon({
-			coupon: coupon.publicKey,
-			mint: coupon.account.mint,
-			numTokens
-		});
+    if (ac) {
+        // Redeem coupon
+        const transactionResult = await ac.redeemCoupon({
+            coupon: coupon.publicKey,
+            mint: coupon.account.mint,
+            numTokens,
+        });
 
-		// Coupon already redeemed
-		if (transactionResult.result.err != null) {
-			return null;
-		}
+        // Coupon already redeemed
+        if (transactionResult.result.err != null) {
+            return null;
+        }
 
-		// Generate and set redemptionQRCodeURL
-		return generateQRCodeURL({
-			signature: transactionResult.signature,
-			wallet: ac.anchorWallet.publicKey.toString(),
-			mint: coupon.account.mint.toString(),
-			numTokens: String(numTokens)
-		});
-	}
+        // Generate and set redemptionQRCodeURL
+        return generateQRCodeURL({
+            signature: transactionResult.signature,
+            wallet: ac.anchorWallet.publicKey.toString(),
+            mint: coupon.account.mint.toString(),
+            numTokens: String(numTokens),
+        });
+    }
 
-	return null;
+    return null;
 }
 
 export async function createStore({
-	name,
-	description,
-	address,
-	region,
-	latitude,
-	longitude,
-	geohash,
-	logo
+    name,
+    description,
+    address,
+    region,
+    latitude,
+    longitude,
+    geohash,
+    logo,
 }: CreateStoreFormResult) {
-	const ac = get(anchorClient);
-	const nc = get(nftClient);
+    const ac = get(anchorClient);
+    const nc = get(nftClient);
 
-	if (ac != null && nc != null) {
-		let metadataUrl = '';
+    if (ac != null && nc != null) {
+        let metadataUrl = "";
 
-		if (logo) {
-			metadataUrl = await nc.store({
-				name,
-				description,
-				imageFile: logo,
-				additionalMetadata: {
-					address: address,
-					latitude: latitude,
-					longitude: longitude
-				}
-			});
-			console.log(`Uploaded store metadata to ${metadataUrl}`);
-		}
+        if (logo) {
+            metadataUrl = await nc.store({
+                name,
+                description,
+                imageFile: logo,
+                additionalMetadata: {
+                    address: address,
+                    latitude: latitude,
+                    longitude: longitude,
+                },
+            });
+            console.log(`Uploaded store metadata to ${metadataUrl}`);
+        }
 
-		const tx = await ac.createStore({
-			name: name.slice(0, STORE_NAME_SIZE - STRING_PREFIX_SIZE), // also enforced in the form
-			geo: geohash,
-			region,
-			uri: metadataUrl
-		});
-	}
+        const tx = await ac.createStore({
+            name: name.slice(0, STORE_NAME_SIZE - STRING_PREFIX_SIZE), // also enforced in the form
+            geo: geohash,
+            region,
+            uri: metadataUrl,
+        });
+    }
 }
 
 export async function createCoupon({
-	image,
-	name,
-	description,
-	validFrom,
-	validTo,
-	store
+    image,
+    name,
+    description,
+    validFrom,
+    validTo,
+    store,
 }: {
-	image: File | null;
-	name: string;
-	description: string;
-	validFrom: Date;
-	validTo: Date;
-	store: Account<Store>;
+    image: File | null;
+    name: string;
+    description: string;
+    validFrom: Date;
+    validTo: Date;
+    store: Account<Store>;
 }) {
-	const ac = get(anchorClient);
-	const nc = get(nftClient);
+    const ac = get(anchorClient);
+    const nc = get(nftClient);
 
-	if (ac != null && nc != null) {
-		let metadataUrl = '';
+    if (ac != null && nc != null) {
+        let metadataUrl = "";
 
-		// Upload coupon image to nft storage
-		if (image || description) {
-			metadataUrl = await nc.store({
-				name,
-				description,
-				...(image ? { imageFile: image } : {})
-			});
-			console.log(`Uploaded coupon metadata to ${metadataUrl}`);
-		}
+        // Upload coupon image to nft storage
+        if (image || description) {
+            metadataUrl = await nc.store({
+                name,
+                description,
+                ...(image ? { imageFile: image } : {}),
+            });
+            console.log(`Uploaded coupon metadata to ${metadataUrl}`);
+        }
 
-		// Create coupon
-		await ac.createCoupon({
-			geo: cleanString(store.account.geo),
-			region: cleanString(store.account.region),
-			name: name.slice(0, COUPON_NAME_SIZE - STRING_PREFIX_SIZE), // also enforced in form
-			store: store.publicKey,
-			uri: metadataUrl,
-			validFrom: validFrom,
-			validTo: validTo
-		});
-	}
+        // Create coupon
+        await ac.createCoupon({
+            geo: cleanString(store.account.geo),
+            region: cleanString(store.account.region),
+            name: name.slice(0, COUPON_NAME_SIZE - STRING_PREFIX_SIZE), // also enforced in form
+            store: store.publicKey,
+            uri: metadataUrl,
+            validFrom: validFrom,
+            validTo: validTo,
+        });
+    }
 }
 
 export async function mintCoupon({
-	coupon,
-	numTokens
+    coupon,
+    numTokens,
 }: {
-	numTokens: number;
-	coupon: Account<Coupon>;
+    numTokens: number;
+    coupon: Account<Coupon>;
 }) {
-	const ac = get(anchorClient);
+    const ac = get(anchorClient);
 
-	if (ac != null) {
-		await ac.mintToMarket(coupon.account.mint, coupon.account.region, numTokens);
-	}
+    if (ac != null) {
+        await ac.mintToMarket(
+            coupon.account.mint,
+            coupon.account.region,
+            numTokens,
+        );
+    }
+}
+
+export async function verifyRedemption({
+    signature,
+    mint,
+    numTokens,
+    wallet,
+}: {
+    signature: string;
+    mint: string;
+    numTokens: string;
+    wallet: string;
+}): Promise<{ isVerified: boolean; err: string }> {
+    const ac = get(anchorClient);
+
+    if (ac != null) {
+        return await ac.verifyRedemption({
+            mint: new PublicKey(mint),
+            wallet: new PublicKey(wallet),
+            signature,
+            numTokens: parseInt(numTokens),
+        });
+    }
+
+    return { isVerified: false, err: "Log in to verify..." };
 }

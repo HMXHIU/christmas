@@ -71,7 +71,8 @@
                 <button
                     class="btn {parent.buttonNeutral}"
                     on:click={parent.onClose}>Ok it's verified</button
-                >{:else}
+                >
+            {:else}
                 <button
                     class="btn {parent.buttonNeutral}"
                     on:click={parent.onClose}>Save it for later</button

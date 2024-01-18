@@ -9,10 +9,11 @@
 
     const modalStore = getModalStore();
 
+    let html5QrCode: Html5Qrcode;
     let qrParams: any = {};
 
     onMount(() => {
-        const html5QrCode = new Html5Qrcode("reader");
+        html5QrCode = new Html5Qrcode("reader");
 
         html5QrCode.start(
             { facingMode: "environment" }, // front camera
@@ -25,11 +26,27 @@
             onScanSuccess,
             onScanFailure,
         );
+
+        // Stop scanning on dismount
+        return () => {
+            html5QrCode.stop();
+        };
     });
 
-    function onScanSuccess(decodedText: string, decodedResult: any) {
+    async function onScanSuccess(decodedText: string, decodedResult: any) {
         qrParams = extractQueryParams(decodedText);
-        console.log(JSON.stringify(qrParams, null, 2));
+        // Return modal response
+        if ($modalStore[0].response) {
+            await html5QrCode
+                .stop()
+                .then((ignore) => {
+                    // QR Code scanning is stopped.
+                })
+                .catch((err) => {
+                    // Stop failed, handle it.
+                });
+            $modalStore[0].response(qrParams);
+        }
     }
 
     function onScanFailure(error: any) {}
@@ -40,16 +57,9 @@
         <header class="w-full">
             <div id="reader" class="w-full"></div>
         </header>
-        <section class="p-4">
-            {#each Object.entries(qrParams) as [key, value]}
-                <p>
-                    {key}: {value}
-                </p>
-            {/each}
-        </section>
         <footer class="modal-footer p-4">
             <button class="btn {parent.buttonNeutral}" on:click={parent.onClose}
-                >Close</button
+                >Done</button
             >
         </footer>
     </div>

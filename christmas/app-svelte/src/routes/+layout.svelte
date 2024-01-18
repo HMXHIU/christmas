@@ -10,7 +10,12 @@
     import Wallet from "../components/Wallet.svelte";
     import { userDeviceClient, anchorClient } from "../store";
     import { onMount } from "svelte";
-    import { fetchClaimedCoupons, fetchMarketCoupons, fetchStores } from "$lib";
+    import {
+        fetchClaimedCoupons,
+        fetchMarketCoupons,
+        fetchStores,
+        verifyRedemption,
+    } from "$lib";
     import { UserDeviceClient } from "../../../lib/user-device-client/userDeviceClient";
     import type { ModalSettings } from "@skeletonlabs/skeleton";
     import QrScanner from "../components/QRScanner.svelte";
@@ -47,15 +52,54 @@
     });
 
     function onQRScan() {
-        new Promise<string>((resolve) => {
+        new Promise<any>((resolve) => {
             const modal: ModalSettings = {
                 type: "component",
                 component: { ref: QrScanner },
                 meta: {},
+                response: async (result) => {
+                    resolve(result);
+                },
             };
             // Open modal
             modalStore.trigger(modal);
-        });
+        })
+            .then(async (qrParams) => {
+                if (qrParams) {
+                    const { signature, mint, numTokens, wallet } = qrParams;
+                    return {
+                        signature,
+                        mint,
+                        numTokens,
+                        wallet,
+                        verifyRedemption: await verifyRedemption({
+                            signature,
+                            mint,
+                            numTokens,
+                            wallet,
+                        }),
+                    };
+                }
+                // close without resolving
+                return null;
+            })
+            .then((result) => {
+                modalStore.close();
+                if (result) {
+                    const { verifyRedemption, mint } = result;
+                    const { isVerified, err } = verifyRedemption;
+                    // Trigger another modal to show the validation result
+                    modalStore.trigger({
+                        type: "alert",
+                        // Data
+                        title: mint,
+                        body: isVerified
+                            ? `✅ Redemption Verified`
+                            : `❌ ${err}`,
+                        image: "https://i.imgur.com/WOgTG96.gif",
+                    });
+                }
+            });
     }
 </script>
 
