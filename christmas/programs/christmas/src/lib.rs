@@ -13,7 +13,7 @@ use solana_program::rent::Rent;
 use state::*;
 use store::*;
 use user::*;
-use utils::utils::pad_string;
+use utils::utils::*;
 
 declare_id!("B2ejsK7m3eYPerru92hS73Gx7sQ7J83DKoLHGwn6pg5v");
 
@@ -25,6 +25,11 @@ pub mod christmas {
             COUPON_NAME_SIZE, GEO_SIZE, REGION_SIZE, STORE_NAME_SIZE, STRING_PREFIX_SIZE, URI_SIZE,
         },
         utils::geo::code_to_country,
+    };
+
+    use self::{
+        defs::{DATE_HASH_BITS, DATE_HASH_SIZE, DAYS_SINCE_1_JAN_2024, MS_PER_DAY},
+        utils::utils::u8_to_byte_mask,
     };
 
     use super::*;
@@ -88,6 +93,7 @@ pub mod christmas {
         // check valid region
         code_to_country(&region).unwrap();
 
+        ctx.accounts.coupon.bump = *ctx.bumps.get("coupon").unwrap();
         ctx.accounts.coupon.update_authority = ctx.accounts.signer.key();
         ctx.accounts.coupon.mint = ctx.accounts.mint.key();
         ctx.accounts.coupon.store = ctx.accounts.store.key();
@@ -97,7 +103,17 @@ pub mod christmas {
         ctx.accounts.coupon.geo = pad_string(&geo, GEO_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.coupon.valid_from = valid_from;
         ctx.accounts.coupon.valid_to = valid_to;
-        ctx.accounts.coupon.bump = *ctx.bumps.get("coupon").unwrap();
+
+        // init supply
+        ctx.accounts.coupon.has_supply = false;
+        ctx.accounts.coupon.supply = 0;
+
+        // calculate date hashes
+        let valid_from_days: u64 = epoch_days_from_date(valid_from);
+        let valid_to_days: u64 = epoch_days_from_date(valid_to);
+        ctx.accounts.coupon.datehash_overflow = valid_from_days > valid_to_days;
+        ctx.accounts.coupon.valid_from_hash = days_to_byte_mask(valid_from_days);
+        ctx.accounts.coupon.valid_to_hash = days_to_byte_mask(valid_to_days);
 
         // check existing region market region else create
         if ctx.accounts.region_market.region.is_empty() {
@@ -108,7 +124,6 @@ pub mod christmas {
             assert!(ctx.accounts.region_market.region == region);
             assert!(ctx.accounts.region_market.bump == *ctx.bumps.get("region_market").unwrap())
         }
-
         Ok(())
     }
 

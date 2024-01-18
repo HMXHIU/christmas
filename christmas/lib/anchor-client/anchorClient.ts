@@ -21,7 +21,7 @@ import {
     STRING_PREFIX_SIZE,
     OFFSET_TO_GEO,
 } from "./defs";
-import { getCountry, getGeohash } from "../user-device-client/utils"; // TODO: move this to a library
+import { getCountry, getGeohash } from "../user-device-client/utils";
 import { Wallet, AnchorWallet } from "@solana/wallet-adapter-react";
 
 import {
@@ -393,6 +393,11 @@ export class AnchorClient {
     ): Promise<[Account<Coupon>, TokenAccount][]> {
         /**
          * TODO: getParsedProgramAccounts will be too slow with no pagination when there is too many accounts in the region
+         *
+         * 1. Add 2 supply fields in Coupon (has_supply: bool, supply: u32) - need to modify everytime user redeems a coupon
+         * 2. Filter by region, has_supply field on Coupon
+         * 3. Add date coarse search field in Coupon
+         *
          */
 
         // get token accounts owned by

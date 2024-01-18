@@ -1,6 +1,8 @@
 pub const DISCRIMINATOR_SIZE: usize = 8;
 pub const PUBKEY_SIZE: usize = 32;
 pub const U8_SIZE: usize = 1;
+pub const U16_SIZE: usize = 2;
+pub const U32_SIZE: usize = 4;
 pub const U64_SIZE: usize = 8;
 pub const BOOL_SIZE: usize = 1;
 pub const STRING_PREFIX_SIZE: usize = 4;
@@ -14,16 +16,13 @@ pub const COUPON_NAME_SIZE: usize = STRING_PREFIX_SIZE + 36;
 pub const STORE_NAME_SIZE: usize = STRING_PREFIX_SIZE + 36;
 pub const DATE_SIZE: usize = U64_SIZE; // unix timestamp
 
-/**
- * [DEPRECATED]
- * decade|year|month|day
- *
- * Decade (10 bytes): 2020 = 0000000000 -> 2110 = 1111111111
- * Year (9 bytes): 0 = 000000000 -> 9 = 111111111
- * Month (11 bytes):  Jan = 00000000000 -> Dec = 11111111111
- * Day (30 bytes): ..
- */
-pub const DATE_CMP_SIZE: usize = 60;
+pub const DATE_HASH_SIZE: usize = 32; // 32 * 8 = 256 days per epoch since 1 jan 2024
+pub const DATE_HASH_OVERFLOW_SIZE: usize = BOOL_SIZE;
+pub const HAS_SUPPLY_SIZE: usize = BOOL_SIZE;
+pub const SUPPLY_SIZE: usize = U32_SIZE;
+pub const DAYS_SINCE_1_JAN_2024: u64 = 19357;
+pub const MS_PER_DAY: u64 = 1000 * 60 * 60 * 24;
+pub const DATE_HASH_BITS: u64 = DATE_HASH_SIZE as u64 * 8;
 
 pub const REGION_CODES: &'static [&'static str] = &[
     "AFG", "ALB", "DZA", "ASM", "AND", "AGO", "AIA", "ATA", "ATG", "ARG", "ARM", "ABW", "AUS",

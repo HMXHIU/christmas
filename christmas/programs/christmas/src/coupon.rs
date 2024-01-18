@@ -97,11 +97,16 @@ pub struct Coupon {
     pub mint: Pubkey,
     pub name: String,
     pub uri: String, // to the json metadata
-    pub region: String,
-    pub geo: String,
+    pub region: String, // TODO: change to u16, use a hashmap to map integer to region to save space
+    pub geo: String, // TODO: change to geohash for consistency with datehash, change to [u8; 6] to lower the size
     pub store: Pubkey,
     pub valid_from: u64,
     pub valid_to: u64,
+    pub valid_from_hash: [u8; 32],
+    pub valid_to_hash: [u8; 32],
+    pub datehash_overflow: bool,
+    pub has_supply: bool,
+    pub supply: u32,
     pub bump: u8,
 }
 
@@ -117,6 +122,11 @@ impl Coupon {
             + PUBKEY_SIZE
             + DATE_SIZE
             + DATE_SIZE
+            + DATE_HASH_SIZE
+            + DATE_HASH_SIZE
+            + DATE_HASH_OVERFLOW_SIZE
+            + HAS_SUPPLY_SIZE
+            + SUPPLY_SIZE
             + BUMP_SIZE
     }
 }
