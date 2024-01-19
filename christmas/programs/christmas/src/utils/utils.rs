@@ -35,7 +35,7 @@ pub fn days_to_byte_mask(days: u64) -> [u8; DATE_HASH_SIZE] {
         byte_mask[i as usize] = 0xff;
     }
     // fill in half byte
-    if full_bytes < 32 {
+    if full_bytes < DATE_HASH_SIZE as u64 {
         byte_mask[full_bytes as usize] = u8_to_byte_mask(half_byte as u8);
     }
 

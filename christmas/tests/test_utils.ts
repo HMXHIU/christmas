@@ -1,279 +1,92 @@
 import { filter } from "lodash";
 import {
-    dateToBytes,
-    bytesToDate,
-    getDateFilterMask,
+    epochDaysFromDate,
+    u8ToByteMask,
+    daysToByteMask,
     getDateWithinRangeFilterCombinations,
 } from "../lib/anchor-client/utils";
 import { assert, expect } from "chai";
+import {
+    DATE_HASH_BITS,
+    DATE_HASH_SIZE,
+    DAYS_SINCE_1_JAN_2024,
+} from "../lib/anchor-client/defs";
 
 describe("Test utils", () => {
-    /**
-     * [DEPRECATED]
-     */
-    it("Test date to bytes", async () => {
-        // Jan 01 2024
-        let date = new Date(Date.UTC(2024, 0, 1));
-        assert.ok(
-            Buffer.from(dateToBytes(date)).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Decade (10 bits)
-                        1, 1, 1, 1, 0, 0, 0, 0, 0, // Year (9 bits)
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Month (11 bits)
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Day (30 bits)
-                    ])
-                )
-            )
-        );
-        assert.equal(bytesToDate(dateToBytes(date)).getTime(), date.getTime());
-
-        // Dec 31 2023
-        date = new Date(Date.UTC(2023, 11, 31));
-        assert.ok(
-            Buffer.from(dateToBytes(date)).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                        1, 1, 1, 0, 0, 0, 0, 0, 0,
-                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                    ])
-                )
-            )
-        );
-        assert.equal(bytesToDate(dateToBytes(date)).getTime(), date.getTime());
+    describe("u8ToByteMask", () => {
+        it("should return the correct byte mask", () => {
+            assert.equal(u8ToByteMask(0), 0x00);
+            assert.equal(u8ToByteMask(1), 0b10000000);
+            assert.equal(u8ToByteMask(2), 0b11000000);
+            assert.equal(u8ToByteMask(3), 0b11100000);
+            assert.equal(u8ToByteMask(4), 0b11110000);
+            assert.equal(u8ToByteMask(5), 0b11111000);
+            assert.equal(u8ToByteMask(6), 0b11111100);
+            assert.equal(u8ToByteMask(7), 0b11111110);
+            assert.equal(u8ToByteMask(8), 0b11111111);
+        });
     });
 
-    /**
-     * [DEPRECATED]
-     */
-    it("Test date filter mask (Case 1)", async () => {
-        // prettier-ignore
-        const today = Uint8Array.from([
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Decade (10 bits)
-            1, 1, 1, 1, 0, 0, 0, 0, 0, // Year (9 bits)
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Month (11 bits)
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Day (30 bits)
-        ])
+    describe("daysToByteMask", () => {
+        it("should return the correct byte mask", () => {
+            let byteMask: Uint8Array = new Uint8Array(DATE_HASH_SIZE).fill(0);
+            byteMask[0] = 0xff;
+            expect(daysToByteMask(8)).to.eql(byteMask);
 
-        // year equal
-        let [offset, bytes] = getDateFilterMask(today, "year", "equal");
-        assert.equal(offset, 10);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([1, 1, 1, 1, 0, 0, 0, 0, 0])
-                )
-            )
-        );
-        // year lesser
-        [offset, bytes] = getDateFilterMask(today, "year", "lesser");
-        assert.equal(offset, 13);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([0, 0, 0, 0, 0, 0])
-                )
-            )
-        );
-        // year greater
-        [offset, bytes] = getDateFilterMask(today, "year", "greater");
-        assert.equal(offset, 10);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([1, 1, 1, 1, 1])
-                )
-            )
-        );
+            byteMask[1] = 0xff;
+            expect(daysToByteMask(16)).to.eql(byteMask);
 
-        // month equal
-        [offset, bytes] = getDateFilterMask(today, "month", "equal");
-        assert.equal(offset, 10 + 9);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-                )
-            )
-        );
-        // month lesser
-        [offset, bytes] = getDateFilterMask(today, "month", "lesser");
-        assert.equal(offset, 10 + 9);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-                )
-            )
-        );
-        // month greater
-        [offset, bytes] = getDateFilterMask(today, "month", "greater");
-        assert.equal(offset, 10 + 9);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([1])
-                )
-            )
-        );
+            byteMask = new Uint8Array(DATE_HASH_SIZE).fill(0xff);
+            expect(daysToByteMask(256)).to.eql(byteMask);
 
-        // day equal
-        [offset, bytes] = getDateFilterMask(today, "day", "equal");
-        assert.equal(offset, 10 + 9 + 11);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,])
-                )
-            )
-        );
-        // day lesser
-        [offset, bytes] = getDateFilterMask(today, "day", "lesser");
-        assert.equal(offset, 10 + 9 + 11);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,])
-                )
-            )
-        );
-        // day greater
-        [offset, bytes] = getDateFilterMask(today, "day", "greater");
-        assert.equal(offset, 10 + 9 + 11);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([1])
-                )
-            )
-        );
+            byteMask = new Uint8Array(DATE_HASH_SIZE).fill(0);
+            expect(daysToByteMask(257)).to.eql(byteMask);
+        });
     });
 
-    /**
-     * [DEPRECATED]
-     */
-    it("Test date filter mask (Case 2)", async () => {
-        // prettier-ignore
-        const today = Uint8Array.from([
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Decade (10 bits)
-            1, 1, 1, 1, 1, 1, 1, 1, 1, // Year (9 bits)
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // Month (11 bits)
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // Day (30 bits)
-        ])
+    describe("epochDaysFromDate", () => {
+        it("should return the correct epoch days", () => {
+            const jan_1 = DAYS_SINCE_1_JAN_2024 * 24 * 60 * 60 * 1000;
+            const jan_2 = (DAYS_SINCE_1_JAN_2024 + 1) * 24 * 60 * 60 * 1000;
+            const lastEpochDay =
+                (DAYS_SINCE_1_JAN_2024 + DATE_HASH_BITS) * 24 * 60 * 60 * 1000;
+            const nextEpochDay_1 =
+                (DAYS_SINCE_1_JAN_2024 + DATE_HASH_BITS + 1) *
+                24 *
+                60 *
+                60 *
+                1000;
+            const nextEpochDay_2 =
+                (DAYS_SINCE_1_JAN_2024 + DATE_HASH_BITS + 2) *
+                24 *
+                60 *
+                60 *
+                1000;
 
-        // year equal
-        let [offset, bytes] = getDateFilterMask(today, "year", "equal");
-        assert.equal(offset, 10);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([1, 1, 1, 1, 1, 1, 1, 1, 1,])
-                )
-            )
-        );
-        // year lesser
-        [offset, bytes] = getDateFilterMask(today, "year", "lesser");
-        assert.equal(offset, 10 + 8);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([0])
-                )
-            )
-        );
-        // year greater
-        [offset, bytes] = getDateFilterMask(today, "year", "greater");
-        assert.equal(offset, 10);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([1, 1, 1, 1, 1, 1, 1, 1, 1,])
-                )
-            )
-        );
+            expect(epochDaysFromDate(jan_1)).to.equal(0);
+            expect(epochDaysFromDate(jan_2)).to.equal(1);
+            expect(epochDaysFromDate(lastEpochDay)).to.equal(DATE_HASH_BITS);
+            expect(epochDaysFromDate(nextEpochDay_1)).to.equal(0);
 
-        // month equal
-        [offset, bytes] = getDateFilterMask(today, "month", "equal");
-        assert.equal(offset, 10 + 9);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,])
-                )
-            )
-        );
-        // month lesser
-        [offset, bytes] = getDateFilterMask(today, "month", "lesser");
-        assert.equal(offset, 10 + 9 + 10);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([0])
-                )
-            )
-        );
-        // month greater
-        [offset, bytes] = getDateFilterMask(today, "month", "greater");
-        assert.equal(offset, 10 + 9);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,])
-                )
-            )
-        );
+            let byteMask: Uint8Array = new Uint8Array(DATE_HASH_SIZE).fill(0);
+            expect(daysToByteMask(epochDaysFromDate(jan_1))).to.deep.equal(
+                byteMask
+            );
+            expect(
+                daysToByteMask(epochDaysFromDate(nextEpochDay_1))
+            ).to.deep.equal(byteMask);
 
-        // day equal
-        [offset, bytes] = getDateFilterMask(today, "day", "equal");
-        assert.equal(offset, 10 + 9 + 11);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,])
-                )
-            )
-        );
-        // day lesser
-        [offset, bytes] = getDateFilterMask(today, "day", "lesser");
-        assert.equal(offset, 10 + 9 + 11 + 29);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([0])
-                )
-            )
-        );
-        // day greater
-        [offset, bytes] = getDateFilterMask(today, "day", "greater");
-        assert.equal(offset, 10 + 9 + 11);
-        assert.ok(
-            Buffer.from(bytes).equals(
-                Buffer.from(
-                    // prettier-ignore
-                    Uint8Array.from([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,])
-                )
-            )
-        );
+            byteMask[0] = 0b10000000;
+            expect(
+                daysToByteMask(epochDaysFromDate(nextEpochDay_2))
+            ).to.deep.equal(byteMask);
+
+            byteMask = new Uint8Array(DATE_HASH_SIZE).fill(0xff);
+            expect(
+                daysToByteMask(epochDaysFromDate(lastEpochDay))
+            ).to.deep.equal(byteMask);
+        });
     });
+
+    // Add additional test cases as needed for other utility functions
 });

@@ -3,6 +3,8 @@ export const PROGRAM_ID = "B2ejsK7m3eYPerru92hS73Gx7sQ7J83DKoLHGwn6pg5v";
 export const DISCRIMINATOR_SIZE = 8;
 export const PUBKEY_SIZE = 32;
 export const U8_SIZE = 1;
+export const U16_SIZE = 2;
+export const U32_SIZE = 4;
 export const U64_SIZE = 8;
 export const BOOL_SIZE = 1;
 export const STRING_PREFIX_SIZE = 4;
@@ -14,34 +16,37 @@ export const COUPON_NAME_SIZE = STRING_PREFIX_SIZE + 36;
 export const COUPON_SYMBOL_SIZE = STRING_PREFIX_SIZE + 14;
 export const STORE_NAME_SIZE = STRING_PREFIX_SIZE + 36;
 export const URI_SIZE = STRING_PREFIX_SIZE + 204;
-export const DATE_CMP_SIZE = 60;
 export const DATE_SIZE = U64_SIZE;
+export const DATE_HASH_SIZE = 32; // 32 * 8 = 256 days per epoch since 1 jan 2024
+export const DATE_HASH_OVERFLOW_SIZE = BOOL_SIZE;
+export const HAS_SUPPLY_SIZE = BOOL_SIZE;
+export const SUPPLY_SIZE = U32_SIZE;
+export const DAYS_SINCE_1_JAN_2024 = 19357;
+export const MS_PER_DAY = 1000 * 60 * 60 * 24;
+export const DATE_HASH_BITS = DATE_HASH_SIZE * 8;
 
 export const USER_ACCOUNT_SIZE =
-    DISCRIMINATOR_SIZE + TWO_FACTOR_SIZE + REGION_SIZE + GEO_SIZE + BUMP_SIZE;
+    DISCRIMINATOR_SIZE + REGION_SIZE + GEO_SIZE + BUMP_SIZE;
 
-export const COUPON_METADATA_SIZE =
+export const COUPON_ACCOUNT_SIZE =
     DISCRIMINATOR_SIZE +
     PUBKEY_SIZE +
     PUBKEY_SIZE +
     COUPON_NAME_SIZE +
-    COUPON_SYMBOL_SIZE +
     URI_SIZE +
     REGION_SIZE +
     GEO_SIZE +
+    PUBKEY_SIZE +
+    DATE_SIZE +
+    DATE_SIZE +
+    DATE_HASH_SIZE +
+    DATE_HASH_SIZE +
+    DATE_HASH_OVERFLOW_SIZE +
+    HAS_SUPPLY_SIZE +
+    SUPPLY_SIZE +
     BUMP_SIZE;
 
-export const OFFSET_TO_VALID_FROM =
-    DISCRIMINATOR_SIZE +
-    PUBKEY_SIZE +
-    PUBKEY_SIZE +
-    COUPON_NAME_SIZE +
-    URI_SIZE +
-    REGION_SIZE +
-    GEO_SIZE +
-    PUBKEY_SIZE;
-
-export const OFFSET_TO_VALID_TO =
+export const OFFSET_TO_VALID_FROM_HASH =
     DISCRIMINATOR_SIZE +
     PUBKEY_SIZE +
     PUBKEY_SIZE +
@@ -50,7 +55,21 @@ export const OFFSET_TO_VALID_TO =
     REGION_SIZE +
     GEO_SIZE +
     PUBKEY_SIZE +
+    DATE_SIZE +
     DATE_SIZE;
+
+export const OFFSET_TO_VALID_TO_HASH =
+    DISCRIMINATOR_SIZE +
+    PUBKEY_SIZE +
+    PUBKEY_SIZE +
+    COUPON_NAME_SIZE +
+    URI_SIZE +
+    REGION_SIZE +
+    GEO_SIZE +
+    PUBKEY_SIZE +
+    DATE_SIZE +
+    DATE_SIZE +
+    DATE_HASH_SIZE;
 
 export const OFFSET_TO_GEO =
     DISCRIMINATOR_SIZE +

@@ -86,6 +86,10 @@ export class AnchorClient {
         );
     }
 
+    /*
+    Coupons
+    */
+
     getCouponPda(mint: web3.PublicKey): [web3.PublicKey, number] {
         return web3.PublicKey.findProgramAddressSync(
             [anchor.utils.bytes.utf8.encode("coupon"), mint.toBuffer()],
