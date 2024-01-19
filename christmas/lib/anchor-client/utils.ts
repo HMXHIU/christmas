@@ -7,6 +7,7 @@ import {
     DAYS_SINCE_1_JAN_2024,
     DATE_HASH_BITS,
     DATE_HASH_SIZE,
+    OFFSET_TO_DATE_HASH_OVERFLOW,
 } from "./defs";
 import { MemCmp } from "./types";
 
@@ -106,7 +107,6 @@ export function getDateLessThanOrEqualByteMask(
     dateInMilliseconds: number
 ): [number, Uint8Array] | null {
     const byteMask = daysToByteMask(epochDaysFromDate(dateInMilliseconds));
-
     let offset = 0;
 
     // set the offset to the first 0x00 byte
@@ -130,39 +130,92 @@ export function getDateLessThanOrEqualByteMask(
     }
 }
 
+/**
+ * Generate memory comparison filters such that VALID_FROM_HASH < date < VALID_TO_HASH.
+ *
+ * case 1: no overflow
+ *
+ * validFrom: 1111111111000000000000000
+ * validTo: 1111111111111111111000000
+ * overflow: false // validFrom < validTo
+ * date: 1111111111111000000000000
+ *
+ * case 2a: validTo overflow, today has not overflow
+ * date is lesser than validTo but because of overflow of validTo it is now greater, we cant tell by comparing `111111111111111111111`
+ * match overflow=1 && validFrom < date `0000`
+ *
+ * validFrom: 1111111111111111111000000
+ * validTo: 1110000000000000000000000
+ * overflow: true // validTo < validFrom
+ * date: 1111111111111111111110000
+ *
+ * case 2b: validTo overflow, today has overflow
+ * date it is greater than validFrom because of overflow, but we cant tell from comparing `00000000000000000000000` as it will fail
+ * match overflow=1 && validTo > date `11`
+ *
+ * validFrom: 1111111111111111111000000
+ * validTo: 1110000000000000000000000
+ * overflow: true // validTo < validFrom
+ * date: 1100000000000000000000000
+ *
+ * case 3: validTo & validFrom overflow (indistinguishable from case 1 (no need to handle))
+ *
+ * validFrom: 1100000000000000000000000
+ * validTo: 1110000000000000000000000
+ * overflow: false
+ * date: 1111111111111111111110000
+ *
+ * Thus need to do 3 queries
+ *
+ * 1. normal
+ * 2. match overflow=1 && validTo > date
+ * 3. match overflow=1 && validFrom < date
+ *
+ * @param {Date} date - The date for which to generate filter combinations.
+ * @returns {MemCmp[][]} An array of memory comparison filter combinations.
+ */
 export function getDateWithinRangeFilterCombinations(date: Date): MemCmp[][] {
     const now = (date || new Date()).getTime();
 
-    const greaterThanNowMask = getDateLessThanOrEqualByteMask(now);
-    const lesserThanNowMask = getDateGreaterThanOrEqualByteMask(now);
+    const validFromMask = getDateLessThanOrEqualByteMask(now);
+    const validToMask = getDateGreaterThanOrEqualByteMask(now);
 
-    const nowGreaterThanValidFrom =
-        greaterThanNowMask != null
+    const validFromFilter =
+        validFromMask != null
             ? [
                   {
                       memcmp: {
-                          offset:
-                              OFFSET_TO_VALID_FROM_HASH + greaterThanNowMask[0],
-                          bytes: bs58.encode(greaterThanNowMask[1]),
+                          offset: OFFSET_TO_VALID_FROM_HASH + validFromMask[0],
+                          bytes: bs58.encode(validFromMask[1]),
                       },
                   },
               ]
             : [];
 
-    const nowLesserThanValidTo =
-        lesserThanNowMask != null
+    const validToFilter =
+        validToMask != null
             ? [
                   {
                       memcmp: {
-                          offset:
-                              OFFSET_TO_VALID_TO_HASH + lesserThanNowMask[0],
-                          bytes: bs58.encode(lesserThanNowMask[1]),
+                          offset: OFFSET_TO_VALID_TO_HASH + validToMask[0],
+                          bytes: bs58.encode(validToMask[1]),
                       },
                   },
               ]
             : [];
 
-    // TODO: Permutate with overflow
+    const overflowTrueFilter = [
+        {
+            memcmp: {
+                offset: OFFSET_TO_DATE_HASH_OVERFLOW,
+                bytes: bs58.encode(Uint8Array.from([1])),
+            },
+        },
+    ];
 
-    return [[...nowGreaterThanValidFrom, ...nowLesserThanValidTo]];
+    return [
+        [...validFromFilter, ...validToFilter],
+        [...overflowTrueFilter, ...validToFilter],
+        [...overflowTrueFilter, ...validFromFilter],
+    ];
 }

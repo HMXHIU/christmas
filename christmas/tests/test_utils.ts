@@ -12,7 +12,11 @@ import {
     DATE_HASH_BITS,
     DATE_HASH_SIZE,
     DAYS_SINCE_1_JAN_2024,
+    OFFSET_TO_DATE_HASH_OVERFLOW,
+    OFFSET_TO_VALID_FROM_HASH,
+    OFFSET_TO_VALID_TO_HASH,
 } from "../lib/anchor-client/defs";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
 describe("Test utils", () => {
     describe("u8ToByteMask", () => {
@@ -184,6 +188,162 @@ describe("Test utils", () => {
 
             // Everything should be less thus no mask
             expect(getDateLessThanOrEqualByteMask(lastEpochDay)).to.be.null;
+        });
+    });
+
+    describe("getDateWithinRangeFilterCombinations", () => {
+        it("should return the correct filter combinations", () => {
+            const jan_1 = new Date(DAYS_SINCE_1_JAN_2024 * 24 * 60 * 60 * 1000);
+
+            const jan_9 = new Date(
+                (DAYS_SINCE_1_JAN_2024 + 8) * 24 * 60 * 60 * 1000
+            );
+            const lastEpochDay = new Date(
+                (DAYS_SINCE_1_JAN_2024 + DATE_HASH_BITS) * 24 * 60 * 60 * 1000
+            );
+
+            /*
+             *
+             * 1 Jan 2024 is 0...0
+             *
+             * - Any validTo is always greater -> null
+             * - Any validFrom must be 0...0 or from the previous epoch 111111...0
+             * - In the normal case if validFrom - validTo is in the previous epoch, 0...0 is already out -> False
+             * - In the overflow case, validTo is sure to have crossed the boundary of 0...0 -> True
+             *
+             */
+            expect(getDateWithinRangeFilterCombinations(jan_1)).to.eql([
+                [
+                    {
+                        memcmp: {
+                            offset: OFFSET_TO_VALID_FROM_HASH, // 0 offset
+                            bytes: bs58.encode(
+                                new Uint8Array(DATE_HASH_SIZE).fill(0)
+                            ),
+                        },
+                    },
+                ],
+                [
+                    {
+                        memcmp: {
+                            offset: OFFSET_TO_DATE_HASH_OVERFLOW,
+                            bytes: bs58.encode(Uint8Array.from([1])), // overflow
+                        },
+                    },
+                ],
+                [
+                    {
+                        memcmp: {
+                            offset: OFFSET_TO_DATE_HASH_OVERFLOW,
+                            bytes: bs58.encode(Uint8Array.from([1])), // overflow
+                        },
+                    },
+                    {
+                        memcmp: {
+                            offset: OFFSET_TO_VALID_FROM_HASH,
+                            bytes: bs58.encode(
+                                new Uint8Array(DATE_HASH_SIZE).fill(0)
+                            ),
+                        },
+                    },
+                ],
+            ]);
+
+            /*
+             *
+             * 9 Jan 2024 is 0xff...0
+             *
+             */
+            expect(getDateWithinRangeFilterCombinations(jan_9)).to.eql([
+                [
+                    {
+                        memcmp: {
+                            offset: OFFSET_TO_VALID_FROM_HASH + 1,
+                            bytes: bs58.encode(
+                                new Uint8Array(DATE_HASH_SIZE - 1).fill(0)
+                            ),
+                        },
+                    },
+                    {
+                        memcmp: {
+                            offset: OFFSET_TO_VALID_TO_HASH,
+                            bytes: bs58.encode(Uint8Array.from([0xff])),
+                        },
+                    },
+                ],
+                [
+                    {
+                        memcmp: {
+                            offset: OFFSET_TO_DATE_HASH_OVERFLOW,
+                            bytes: bs58.encode(Uint8Array.from([1])), // overflow
+                        },
+                    },
+                    {
+                        memcmp: {
+                            offset: OFFSET_TO_VALID_TO_HASH,
+                            bytes: bs58.encode(Uint8Array.from([0xff])),
+                        },
+                    },
+                ],
+                [
+                    {
+                        memcmp: {
+                            offset: OFFSET_TO_DATE_HASH_OVERFLOW,
+                            bytes: bs58.encode(Uint8Array.from([1])), // overflow
+                        },
+                    },
+                    {
+                        memcmp: {
+                            offset: OFFSET_TO_VALID_FROM_HASH + 1,
+                            bytes: bs58.encode(
+                                new Uint8Array(DATE_HASH_SIZE - 1).fill(0)
+                            ),
+                        },
+                    },
+                ],
+            ]);
+
+            /*
+             *
+             * lastEpochDay is 0xff...0xff
+             *
+             */
+            expect(getDateWithinRangeFilterCombinations(lastEpochDay)).to.eql([
+                [
+                    {
+                        memcmp: {
+                            offset: OFFSET_TO_VALID_TO_HASH,
+                            bytes: bs58.encode(
+                                new Uint8Array(DATE_HASH_SIZE).fill(0xff)
+                            ),
+                        },
+                    },
+                ],
+                [
+                    {
+                        memcmp: {
+                            offset: OFFSET_TO_DATE_HASH_OVERFLOW,
+                            bytes: bs58.encode(Uint8Array.from([1])), // overflow
+                        },
+                    },
+                    {
+                        memcmp: {
+                            offset: OFFSET_TO_VALID_TO_HASH,
+                            bytes: bs58.encode(
+                                new Uint8Array(DATE_HASH_SIZE).fill(0xff)
+                            ),
+                        },
+                    },
+                ],
+                [
+                    {
+                        memcmp: {
+                            offset: OFFSET_TO_DATE_HASH_OVERFLOW,
+                            bytes: bs58.encode(Uint8Array.from([1])), // overflow
+                        },
+                    },
+                ],
+            ]);
         });
     });
 });
