@@ -3,6 +3,8 @@ import {
     epochDaysFromDate,
     u8ToByteMask,
     daysToByteMask,
+    getDateGreaterThanOrEqualByteMask,
+    getDateLessThanOrEqualByteMask,
     getDateWithinRangeFilterCombinations,
 } from "../lib/anchor-client/utils";
 import { assert, expect } from "chai";
@@ -88,5 +90,100 @@ describe("Test utils", () => {
         });
     });
 
-    // Add additional test cases as needed for other utility functions
+    describe("getDateGreaterThanOrEqualByteMask", () => {
+        it("should return the correct mask to compare date >= validFrom", () => {
+            // Simulated 'today' dates
+            const jan_1 = DAYS_SINCE_1_JAN_2024 * 24 * 60 * 60 * 1000;
+            const jan_2 = (DAYS_SINCE_1_JAN_2024 + 1) * 24 * 60 * 60 * 1000;
+            const jan_9 = (DAYS_SINCE_1_JAN_2024 + 8) * 24 * 60 * 60 * 1000;
+            const lastEpochDay =
+                (DAYS_SINCE_1_JAN_2024 + DATE_HASH_BITS) * 24 * 60 * 60 * 1000;
+            const nextEpochDay_1 =
+                (DAYS_SINCE_1_JAN_2024 + DATE_HASH_BITS + 1) *
+                24 *
+                60 *
+                60 *
+                1000;
+            const nextEpochDay_2 =
+                (DAYS_SINCE_1_JAN_2024 + DATE_HASH_BITS + 2) *
+                24 *
+                60 *
+                60 *
+                1000;
+
+            // Everything should be greater thus no mask
+            expect(getDateGreaterThanOrEqualByteMask(jan_1)).to.be.null;
+            expect(getDateGreaterThanOrEqualByteMask(nextEpochDay_1)).to.be
+                .null;
+
+            // Not a full byte mask
+            expect(getDateGreaterThanOrEqualByteMask(jan_2)).to.be.null;
+            expect(getDateGreaterThanOrEqualByteMask(nextEpochDay_2)).to.be
+                .null;
+
+            // First full byte mask
+            expect(getDateGreaterThanOrEqualByteMask(jan_9)).to.eql([
+                0,
+                new Uint8Array([0xff]),
+            ]);
+
+            // full byte mask
+            expect(getDateGreaterThanOrEqualByteMask(lastEpochDay)).to.eql([
+                0,
+                new Uint8Array(DATE_HASH_SIZE).fill(0xff),
+            ]);
+        });
+    });
+
+    describe("getDateLessThanOrEqualByteMask", () => {
+        it("should return the correct mask to compare date <= validTo", () => {
+            // Simulated 'today' dates
+            const jan_1 = DAYS_SINCE_1_JAN_2024 * 24 * 60 * 60 * 1000;
+            const jan_2 = (DAYS_SINCE_1_JAN_2024 + 1) * 24 * 60 * 60 * 1000;
+            const jan_9 = (DAYS_SINCE_1_JAN_2024 + 8) * 24 * 60 * 60 * 1000;
+            const lastEpochDay =
+                (DAYS_SINCE_1_JAN_2024 + DATE_HASH_BITS) * 24 * 60 * 60 * 1000;
+            const nextEpochDay_1 =
+                (DAYS_SINCE_1_JAN_2024 + DATE_HASH_BITS + 1) *
+                24 *
+                60 *
+                60 *
+                1000;
+            const nextEpochDay_2 =
+                (DAYS_SINCE_1_JAN_2024 + DATE_HASH_BITS + 2) *
+                24 *
+                60 *
+                60 *
+                1000;
+
+            // Full 0's
+            expect(getDateLessThanOrEqualByteMask(jan_1)).to.eql([
+                0,
+                new Uint8Array(DATE_HASH_SIZE).fill(0),
+            ]);
+            expect(getDateLessThanOrEqualByteMask(nextEpochDay_1)).to.eql([
+                0,
+                new Uint8Array(DATE_HASH_SIZE).fill(0),
+            ]);
+
+            // Not a full byte mask - still return 8 days beyond
+            expect(getDateLessThanOrEqualByteMask(jan_2)).to.eql([
+                1,
+                new Uint8Array(DATE_HASH_SIZE - 1).fill(0),
+            ]);
+            expect(getDateLessThanOrEqualByteMask(nextEpochDay_2)).to.eql([
+                1,
+                new Uint8Array(DATE_HASH_SIZE - 1).fill(0),
+            ]);
+
+            // First full byte mask
+            expect(getDateLessThanOrEqualByteMask(jan_9)).to.eql([
+                1,
+                new Uint8Array(DATE_HASH_SIZE - 1).fill(0),
+            ]);
+
+            // Everything should be less thus no mask
+            expect(getDateLessThanOrEqualByteMask(lastEpochDay)).to.be.null;
+        });
+    });
 });
