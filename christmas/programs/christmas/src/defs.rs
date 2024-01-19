@@ -20,7 +20,7 @@ pub const DATE_HASH_SIZE: usize = 32; // 32 * 8 = 256 days per epoch since 1 jan
 pub const DATE_HASH_OVERFLOW_SIZE: usize = BOOL_SIZE;
 pub const HAS_SUPPLY_SIZE: usize = BOOL_SIZE;
 pub const SUPPLY_SIZE: usize = U32_SIZE;
-pub const DAYS_SINCE_1_JAN_2024: u64 = 19357;
+pub const DAYS_SINCE_1_JAN_2024: u64 = 19722; // Math.floor(new Date(2024, 0, 1).getTime() / MS_PER_DAY)
 pub const MS_PER_DAY: u64 = 1000 * 60 * 60 * 24;
 pub const DATE_HASH_BITS: u64 = DATE_HASH_SIZE as u64 * 8;
 

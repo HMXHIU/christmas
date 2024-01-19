@@ -170,11 +170,12 @@ describe("Test client", () => {
         // mint coupon to region market
         assert.isNull(
             (
-                await sellerClient.mintToMarket(
-                    coupon.account.mint,
-                    coupon.account.region,
-                    numTokens
-                )
+                await sellerClient.mintToMarket({
+                    mint: coupon.account.mint,
+                    region: coupon.account.region,
+                    coupon: coupon.publicKey,
+                    numTokens,
+                })
             ).result.err
         );
 

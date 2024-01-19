@@ -20,6 +20,8 @@ import {
     COUPON_NAME_SIZE,
     STRING_PREFIX_SIZE,
     OFFSET_TO_GEO,
+    OFFSET_TO_REGION,
+    OFFSET_TO_HAS_SUPPLY,
 } from "./defs";
 import { getCountry, getGeohash } from "../user-device-client/utils";
 import { Wallet, AnchorWallet } from "@solana/wallet-adapter-react";
@@ -34,8 +36,11 @@ import {
     ProgramState,
 } from "./types";
 import { timeStampToDate } from "../utils";
-import { stringToBase58 } from "./utils";
+import { getDateWithinRangeFilterCombinations, stringToBase58 } from "./utils";
 import { Location } from "../user-device-client/types";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+
+// import "./scratchpad";
 
 export class AnchorClient {
     programId: web3.PublicKey;
@@ -395,14 +400,8 @@ export class AnchorClient {
         region: string,
         date?: Date
     ): Promise<[Account<Coupon>, TokenAccount][]> {
-        /**
-         * TODO: getParsedProgramAccounts will be too slow with no pagination when there is too many accounts in the region
-         *
-         * 1. Add 2 supply fields in Coupon (has_supply: bool, supply: u32) - need to modify everytime user redeems a coupon
-         * 2. Filter by region, has_supply field on Coupon
-         * 3. Add date coarse search field in Coupon
-         *
-         */
+        // const xs = await this.getCouponsEfficiently(region, date);
+        // console.log("xs", xs);
 
         // get token accounts owned by
         const regionMarketPda = this.getRegionMarketPda(region)[0];
@@ -462,6 +461,7 @@ export class AnchorClient {
 
                     // only return if in validity period
                     if (
+                        xs.length > 0 &&
                         timeStampToDate(xs[0].account.validFrom) <= today &&
                         timeStampToDate(xs[0].account.validTo) >= today
                     ) {
@@ -472,7 +472,13 @@ export class AnchorClient {
                 })
             )
         )
-            .filter((result) => result && result.status === "fulfilled")
+            .filter((result) => {
+                if (result.status !== "fulfilled") {
+                    console.warn(result.reason);
+                }
+
+                return result && result.status === "fulfilled";
+            })
             .map(
                 (result) =>
                     (
@@ -480,6 +486,66 @@ export class AnchorClient {
                             [Account<Coupon>, TokenAccount]
                         >
                     ).value
+            );
+    }
+
+    async getCouponsEfficiently(
+        region: string,
+        date?: Date
+    ): Promise<Account<Coupon>[]> {
+        // get today
+        const today = date || new Date();
+
+        // get location
+        let geo = this.location?.geohash ?? (await getGeohash());
+
+        const filters = getDateWithinRangeFilterCombinations(today).map(
+            (dateFilters) => {
+                // TODO: need to bunch all the memcmp fields together as solana only accepts max of 4 filters
+                return [
+                    // // region
+                    // {
+                    //     memcmp: {
+                    //         offset: OFFSET_TO_REGION + STRING_PREFIX_SIZE,
+                    //         bytes: stringToBase58(region),
+                    //     },
+                    // },
+                    // // has supply
+                    // {
+                    //     memcmp: {
+                    //         offset: OFFSET_TO_HAS_SUPPLY,
+                    //         bytes: bs58.encode(Uint8Array.from([1])),
+                    //     },
+                    // },
+                    // // within range
+                    // {
+                    //     memcmp: {
+                    //         offset: OFFSET_TO_GEO + STRING_PREFIX_SIZE,
+                    //         bytes: stringToBase58(geo.slice(0, -1)), // reduce 1 precision level to get surrounding (TODO: this is not accurate for borders)
+                    //     },
+                    // },
+                    // within validity period
+                    ...dateFilters,
+                ];
+            }
+        );
+
+        return (
+            await Promise.allSettled(
+                filters.map(async (filter) => {
+                    return await this.program.account.coupon.all(filter);
+                })
+            )
+        )
+            .filter((result) => {
+                if (result.status !== "fulfilled") {
+                    console.warn(result.reason);
+                }
+                return result && result.status === "fulfilled";
+            })
+            .flatMap(
+                (result) =>
+                    (result as PromiseFulfilledResult<Account<Coupon>[]>).value
             );
     }
 
@@ -555,11 +621,17 @@ export class AnchorClient {
         return [regionMarketPda, regionMarketTokenAccountPda];
     }
 
-    async mintToMarket(
-        mint: web3.PublicKey,
-        region: string,
-        numTokens: number
-    ): Promise<TransactionResult> {
+    async mintToMarket({
+        mint,
+        coupon,
+        region,
+        numTokens,
+    }: {
+        mint: web3.PublicKey;
+        coupon: web3.PublicKey;
+        region: string;
+        numTokens: number;
+    }): Promise<TransactionResult> {
         // the region is the coupon.region of the respective mint
         const [regionMarketPda, regionMarketTokenAccountPda] =
             await this.getRegionMarketPdasFromMint(mint);
@@ -571,6 +643,7 @@ export class AnchorClient {
                 regionMarket: regionMarketPda,
                 regionMarketTokenAccount: regionMarketTokenAccountPda,
                 mint: mint,
+                coupon: coupon,
                 signer: this.anchorWallet.publicKey,
                 systemProgram: web3.SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,

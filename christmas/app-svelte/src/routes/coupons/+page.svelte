@@ -24,16 +24,16 @@
     news = [...news, ...news]; // need double for wrap around scolling
 
     const haikus = [
-        "Void whispers silence, Echoes in an empty heart, Lost, the soul departs.",
-        "Hollow, the spaces, Unseen shadows linger on, Emptiness, a song.",
-        "Barren fields of dreams, Desolation in the air, Silent echoes scream.",
-        "Empty rooms echo, Shadows dance in vacant halls, Loneliness enthralls.",
-        "A vacant vessel, Drifting in an empty sea, Lost eternity.",
-        "Deserted echoes, Empty whispers of the wind, Solitude within.",
-        "Silent night descends, Stars flicker in void's embrace, Loneliness transcends.",
-        "Absent footsteps fall, On barren paths of sorrow, Emptiness, a call.",
-        "Infinite void's gaze, Empty eyes reflect the void, Soulless, aching void.",
-        "Fallen autumn leaves, Whispers of the empty wind, Nature's void perceived.",
+        "Void whispers silence, Echoes in an empty heart, Lost, the soul departs",
+        "Hollow, the spaces, Unseen shadows linger on, Emptiness, a song",
+        "Barren fields of dreams, Desolation in the air, Silent echoes scream",
+        "Empty rooms echo, Shadows dance in vacant halls, Loneliness enthralls",
+        "A vacant vessel, Drifting in an empty sea, Lost eternity",
+        "Deserted echoes, Empty whispers of the wind, Solitude within",
+        "Silent night descends, Stars flicker in void's embrace, Loneliness transcends",
+        "Absent footsteps fall, On barren paths of sorrow, Emptiness, a call",
+        "Infinite void's gaze, Empty eyes reflect the void, Soulless, aching void",
+        "Fallen autumn leaves, Whispers of the empty wind, Nature's void perceived",
     ];
 </script>
 
@@ -47,8 +47,11 @@
         </div>
     {/each}
     {#if $claimedCoupons.length < 1}
-        <p class="text-surface-400 italic my-auto mx-auto text-center">
-            {haikus[Math.round(Math.random() * haikus.length)]}
+        <p class="text-surface-300 my-auto mx-auto text-center">
+            Your claimed coupons goes here<br /><br />
+            <span class="italic text-surface-400">
+                {haikus[Math.round(Math.random() * haikus.length)]}
+            </span>
         </p>
     {/if}
 </div>
@@ -69,6 +72,16 @@
     {#each $marketCoupons as [coupon, tokenAccount] (coupon.publicKey)}
         <MarketCouponCard {coupon} {tokenAccount}></MarketCouponCard>
     {/each}
+</div>
+<div class="px-4 py-4 mt-2">
+    {#if $marketCoupons.length < 1}
+        <p class="text-surface-300 mx-auto text-center">
+            There are no community coupons in your area<br /><br />
+            <span class="italic text-surface-400">
+                {haikus[Math.round(Math.random() * haikus.length)]}
+            </span>
+        </p>
+    {/if}
 </div>
 
 <style>

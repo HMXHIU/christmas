@@ -287,11 +287,12 @@ export async function mintCoupon({
     const ac = get(anchorClient);
 
     if (ac != null) {
-        await ac.mintToMarket(
-            coupon.account.mint,
-            coupon.account.region,
+        await ac.mintToMarket({
+            mint: coupon.account.mint,
+            region: coupon.account.region,
+            coupon: coupon.publicKey,
             numTokens,
-        );
+        });
     }
 }
 

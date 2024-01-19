@@ -24,6 +24,11 @@ export interface Coupon {
     store: PublicKey;
     validFrom: BN;
     validTo: BN;
+    validFromHash: number[];
+    validToHash: number[];
+    datehashOverflow: boolean;
+    hasSupply: boolean;
+    supply: number;
     bump: number;
 }
 

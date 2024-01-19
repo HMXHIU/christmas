@@ -21,7 +21,7 @@ export const DATE_HASH_SIZE = 32; // 32 * 8 = 256 days per epoch since 1 jan 202
 export const DATE_HASH_OVERFLOW_SIZE = BOOL_SIZE;
 export const HAS_SUPPLY_SIZE = BOOL_SIZE;
 export const SUPPLY_SIZE = U32_SIZE;
-export const DAYS_SINCE_1_JAN_2024 = 19357;
+export const DAYS_SINCE_1_JAN_2024 = 19722; // Math.floor(new Date(2024, 0, 1).getTime() / MS_PER_DAY)
 export const MS_PER_DAY = 1000 * 60 * 60 * 24;
 export const DATE_HASH_BITS = DATE_HASH_SIZE * 8;
 
@@ -70,6 +70,28 @@ export const OFFSET_TO_VALID_TO_HASH =
     DATE_SIZE +
     DATE_SIZE +
     DATE_HASH_SIZE;
+
+export const OFFSET_TO_REGION =
+    DISCRIMINATOR_SIZE +
+    PUBKEY_SIZE +
+    PUBKEY_SIZE +
+    COUPON_NAME_SIZE +
+    URI_SIZE;
+
+export const OFFSET_TO_HAS_SUPPLY =
+    DISCRIMINATOR_SIZE +
+    PUBKEY_SIZE +
+    PUBKEY_SIZE +
+    COUPON_NAME_SIZE +
+    URI_SIZE +
+    REGION_SIZE +
+    GEO_SIZE +
+    PUBKEY_SIZE +
+    DATE_SIZE +
+    DATE_SIZE +
+    DATE_HASH_SIZE +
+    DATE_HASH_SIZE +
+    DATE_HASH_OVERFLOW_SIZE;
 
 export const OFFSET_TO_DATE_HASH_OVERFLOW =
     DISCRIMINATOR_SIZE +

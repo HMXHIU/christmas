@@ -213,6 +213,25 @@ export function getDateWithinRangeFilterCombinations(date: Date): MemCmp[][] {
         },
     ];
 
+    const days = epochDaysFromDate(now);
+    console.log(`
+    
+
+    epochDaysFromDate: ${days}
+    daysToByteMask: ${daysToByteMask(days)}
+
+    validFromMask: ${
+        validFromMask != null
+            ? [validFromMask[0], "->", validFromMask[1]]
+            : null
+    }
+    validToMask: ${
+        validToMask != null ? [validToMask[0], "->", validToMask[1]] : null
+    }
+    
+    
+    `);
+
     return [
         [...validFromFilter, ...validToFilter],
         [...overflowTrueFilter, ...validToFilter],

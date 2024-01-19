@@ -39,9 +39,11 @@ describe("Generate Demo Content", () => {
     let sellerClient: AnchorClient;
     let buyerClient: AnchorClient;
 
-    // locations
+    // locations (https://geohash.softeng.co/w21z3w)
     const geoHere = "w21z98"; // faber heights
     // const geoHere = "w21z71"; // metacamp
+    // const geoHere = "w21z4w"; // harbour front
+
     const region = "SGP";
     const { latitude, longitude } = ngeohash.decode(geoHere);
     const location: Location = {
@@ -283,11 +285,12 @@ describe("Generate Demo Content", () => {
             for (const [coupon, supply, balance] of mintedCoupons) {
                 assert.isNull(
                     (
-                        await sellerClient.mintToMarket(
-                            coupon.account.mint,
-                            coupon.account.region,
-                            1
-                        )
+                        await sellerClient.mintToMarket({
+                            mint: coupon.account.mint,
+                            region: coupon.account.region,
+                            coupon: coupon.publicKey,
+                            numTokens: 1,
+                        })
                     ).result.err
                 );
             }

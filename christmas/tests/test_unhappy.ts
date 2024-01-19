@@ -200,11 +200,12 @@ describe("Test Unhappy", () => {
             ) {
                 assert.isNull(
                     (
-                        await sellerClient.mintToMarket(
-                            coupon.account.mint,
-                            coupon.account.region,
-                            1
-                        )
+                        await sellerClient.mintToMarket({
+                            mint: coupon.account.mint,
+                            region: coupon.account.region,
+                            coupon: coupon.publicKey,
+                            numTokens: 1,
+                        })
                     ).result.err
                 );
             }
@@ -247,11 +248,12 @@ describe("Test Unhappy", () => {
             ) {
                 assert.isNull(
                     (
-                        await sellerClient.mintToMarket(
-                            coupon.account.mint,
-                            coupon.account.region,
-                            1
-                        )
+                        await sellerClient.mintToMarket({
+                            mint: coupon.account.mint,
+                            region: coupon.account.region,
+                            coupon: coupon.publicKey,
+                            numTokens: 1,
+                        })
                     ).result.err
                 );
             }

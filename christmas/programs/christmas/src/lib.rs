@@ -169,6 +169,14 @@ pub mod christmas {
 
         mint_to(cpi_ctx, num_tokens)?;
 
+        // update supply (NOTE: will panic when overflow but its ok - dont allow more than u32 tokens (throw a better error))
+        ctx.accounts.coupon.supply += num_tokens as u32;
+        if ctx.accounts.coupon.supply > 0 {
+            ctx.accounts.coupon.has_supply = true;
+        } else {
+            ctx.accounts.coupon.has_supply = false;
+        }
+
         Ok(())
     }
 

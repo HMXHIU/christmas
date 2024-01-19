@@ -73,6 +73,15 @@ pub struct MintToMarket<'info> {
         mint::freeze_authority = signer,
     )]
     pub mint: Account<'info, Mint>,
+    #[account(
+        mut,
+        seeds = [b"coupon", mint.key().as_ref()],
+        bump = coupon.bump,
+        constraint = coupon.mint == mint.key(), // coupon is for this mint
+        constraint = coupon.region == region_market.region,  // coupon is for this region
+        constraint = coupon.update_authority == signer.key(),
+    )]
+    pub coupon: Account<'info, Coupon>,
     #[account(mut)]
     pub signer: Signer<'info>,
     pub system_program: Program<'info, System>,
