@@ -50,7 +50,7 @@
         <p class="text-surface-300 my-auto mx-auto text-center">
             Your claimed coupons goes here<br /><br />
             <span class="italic text-surface-400">
-                {haikus[Math.round(Math.random() * haikus.length)]}
+                {haikus[Math.round(Math.random() * (haikus.length - 1))]}
             </span>
         </p>
     {/if}

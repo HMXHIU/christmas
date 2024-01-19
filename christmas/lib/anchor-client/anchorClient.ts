@@ -501,7 +501,7 @@ export class AnchorClient {
 
         const filters = getDateWithinRangeFilterCombinations(today).map(
             (dateFilters) => {
-                // TODO: need to bunch all the memcmp fields together as solana only accepts max of 4 filters
+                // TODO: need to bunch all the memcmp fields together as solana only accepts max of 4 filters, each 128 bytes
                 return [
                     // // region
                     // {

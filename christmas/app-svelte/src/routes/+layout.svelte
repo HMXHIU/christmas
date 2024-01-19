@@ -33,11 +33,6 @@
     }
 
     onMount(async () => {
-        // set userDeviceClient
-        const client = new UserDeviceClient();
-        await client.initialize();
-        userDeviceClient.update(() => client);
-
         // fetch market coupons when userDeviceClient and anchorClient are ready
         userDeviceClient.subscribe(async (dc) => {
             if (dc && $anchorClient) {
@@ -49,6 +44,11 @@
                 await fetchUserContent();
             }
         });
+
+        // set userDeviceClient (Note: after subscribe)
+        const client = new UserDeviceClient();
+        await client.initialize();
+        userDeviceClient.set(client);
     });
 
     function onQRScan() {
