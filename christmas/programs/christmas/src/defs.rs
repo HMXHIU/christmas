@@ -9,9 +9,9 @@ pub const STRING_PREFIX_SIZE: usize = 4;
 
 pub const BUMP_SIZE: usize = 1;
 pub const URI_SIZE: usize = STRING_PREFIX_SIZE + 204;
-pub const GEO_SIZE: usize = STRING_PREFIX_SIZE + 6; // 6 characters of resolution
+pub const GEOHASH_SIZE: usize = 6; // 6 characters of resolution
 pub const TWO_FACTOR_SIZE: usize = U8_SIZE * 32; // 256 bit
-pub const REGION_SIZE: usize = STRING_PREFIX_SIZE + 3; // 3 digit country code
+pub const REGION_SIZE: usize = 3; // 3 character country code
 pub const COUPON_NAME_SIZE: usize = STRING_PREFIX_SIZE + 36;
 pub const STORE_NAME_SIZE: usize = STRING_PREFIX_SIZE + 36;
 pub const DATE_SIZE: usize = U64_SIZE; // unix timestamp

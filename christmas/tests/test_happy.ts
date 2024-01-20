@@ -3,7 +3,7 @@ import { assert, expect } from "chai";
 import { AnchorClient } from "../lib/anchor-client/anchorClient";
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import { cleanString } from "../lib/anchor-client/utils";
+import { cleanString, stringToUint8Array } from "../lib/anchor-client/utils";
 import { getMint } from "@solana/spl-token";
 import { generateQRCodeURL, extractQueryParams } from "../app/src/lib/utils";
 import { requestAirdrop, createUser } from "./utils";
@@ -20,8 +20,8 @@ describe("Test client", () => {
     const provider = anchor.AnchorProvider.env();
     anchor.setProvider(provider);
 
-    const geo = "gbsuv7";
-    const region = "SGP";
+    const geohash = Array.from(stringToUint8Array("gbsuv7"));
+    const region = Array.from(stringToUint8Array("SGP"));
 
     let storeId: BN;
     const storeName = "My store";
@@ -77,15 +77,15 @@ describe("Test client", () => {
     });
 
     it("Create Users", async () => {
-        await sellerClient.createUser({ geo, region });
-        await buyerClient.createUser({ geo, region });
+        await sellerClient.createUser({ geohash, region });
+        await buyerClient.createUser({ geohash, region });
 
         const seller = await sellerClient.getUser();
-        assert.equal(cleanString(seller.geo), geo);
-        assert.equal(cleanString(seller.region), region);
+        expect(seller.geohash).to.eql(geohash);
+        expect(seller.region).to.eql(region);
         const buyer = await buyerClient.getUser();
-        assert.equal(cleanString(buyer.geo), geo);
-        assert.equal(cleanString(buyer.region), region);
+        expect(buyer.geohash).to.eql(geohash);
+        expect(buyer.region).to.eql(region);
     });
 
     it("Create Store", async () => {
@@ -95,7 +95,7 @@ describe("Test client", () => {
             name: storeName,
             uri: storeUri,
             region,
-            geo,
+            geohash,
         });
 
         // test next store_counter
@@ -103,9 +103,9 @@ describe("Test client", () => {
 
         let store = await sellerClient.getStore(storeId);
         assert.equal(cleanString(store.name), storeName);
-        assert.equal(cleanString(store.region), region);
+        expect(store.region).to.eql(region);
         assert.equal(cleanString(store.uri), storeUri);
-        assert.equal(cleanString(store.geo), geo);
+        expect(store.geohash).to.eql(geohash);
         assert.ok(store.id.eq(storeId));
         assert.ok(store.owner.equals(sellerClient.anchorWallet.publicKey));
 
@@ -115,9 +115,9 @@ describe("Test client", () => {
             sellerClient.anchorWallet.publicKey
         );
         assert.equal(cleanString(store.name), storeName);
-        assert.equal(cleanString(store.region), region);
+        expect(store.region).to.eql(region);
         assert.equal(cleanString(store.uri), storeUri);
-        assert.equal(cleanString(store.geo), geo);
+        expect(store.geohash).to.eql(geohash);
         assert.ok(store.id.eq(storeId));
         assert.ok(store.owner.equals(sellerClient.anchorWallet.publicKey));
     });
@@ -130,7 +130,7 @@ describe("Test client", () => {
         assert.isNull(
             (
                 await sellerClient.createCoupon({
-                    geo,
+                    geohash,
                     region,
                     store,
                     name: couponName,
@@ -146,8 +146,8 @@ describe("Test client", () => {
         assert.ok(coupons.length === 1);
         const [coupon, supply, balance] = coupons[0];
 
-        assert.equal(cleanString(coupon.account.geo), geo);
-        assert.equal(cleanString(coupon.account.region), region);
+        expect(coupon.account.geohash).to.eql(geohash);
+        expect(coupon.account.region).to.eql(region);
         assert.equal(cleanString(coupon.account.uri), couponUri);
         assert.equal(cleanString(coupon.account.name), couponName);
         assert.ok(
@@ -186,7 +186,7 @@ describe("Test client", () => {
             await sellerClient.program.account.regionMarket.fetch(
                 regionMarketPda
             );
-        assert.equal(regionMarket.region, coupon.account.region);
+        expect(regionMarket.region).to.eql(coupon.account.region);
 
         // check regionMarketTokenAccountPda balance
         const balance = await sellerClient.connection.getTokenAccountBalance(
@@ -232,8 +232,8 @@ describe("Test client", () => {
         const [coupon, balance] = couponsBalance[0];
 
         assert.equal(balance, 1);
-        assert.equal(cleanString(coupon.account.geo), geo);
-        assert.equal(cleanString(coupon.account.region), region);
+        expect(coupon.account.geohash).to.eql(geohash);
+        expect(coupon.account.region).to.eql(region);
         assert.equal(cleanString(coupon.account.uri), couponUri);
         assert.equal(cleanString(coupon.account.name), couponName);
     });
@@ -340,8 +340,12 @@ describe("Test client", () => {
             userLocations.map(([user, geo]) => {
                 return new Promise<[web3.PublicKey, number]>(
                     async (resolve) => {
-                        const region = "SGP";
-                        const [pda, bump] = await createUser(user, region, geo);
+                        const region = Array.from(stringToUint8Array("SGP"));
+                        const [pda, bump] = await createUser(
+                            user,
+                            region,
+                            geohash
+                        );
                         resolve([pda, bump]);
                     }
                 );

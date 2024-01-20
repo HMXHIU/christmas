@@ -213,24 +213,83 @@ export function getDateWithinRangeFilterCombinations(date: Date): MemCmp[][] {
         },
     ];
 
-    const days = epochDaysFromDate(now);
-    console.log(`
-    
+    return [
+        [...validFromFilter, ...validToFilter],
+        [...overflowTrueFilter, ...validToFilter],
+        [...overflowTrueFilter, ...validFromFilter],
+    ];
+}
 
-    epochDaysFromDate: ${days}
-    daysToByteMask: ${daysToByteMask(days)}
+export function getMarketCouponsFilterCombinations({
+    date,
+    region,
+    geohash,
+}: {
+    date: Date;
+    region: string;
+    geohash: string;
+}): MemCmp[][] {
+    const now = (date || new Date()).getTime();
 
-    validFromMask: ${
+    const validFromMask = getDateLessThanOrEqualByteMask(now);
+    const validToMask = getDateGreaterThanOrEqualByteMask(now);
+
+    // const regionMask =
+
+    // // region
+    // {
+    //     memcmp: {
+    //         offset: OFFSET_TO_REGION + STRING_PREFIX_SIZE,
+    //         bytes: stringToBase58(region),
+    //     },
+    // },
+    // // has supply
+    // {
+    //     memcmp: {
+    //         offset: OFFSET_TO_HAS_SUPPLY,
+    //         bytes: bs58.encode(Uint8Array.from([1])),
+    //     },
+    // },
+    // // within range
+    // {
+    //     memcmp: {
+    //         offset: OFFSET_TO_GEO + STRING_PREFIX_SIZE,
+    //         bytes: stringToBase58(geo.slice(0, -1)), // reduce 1 precision level to get surrounding (TODO: this is not accurate for borders)
+    //     },
+    // },
+
+    const validFromFilter =
         validFromMask != null
-            ? [validFromMask[0], "->", validFromMask[1]]
-            : null
-    }
-    validToMask: ${
-        validToMask != null ? [validToMask[0], "->", validToMask[1]] : null
-    }
-    
-    
-    `);
+            ? [
+                  {
+                      memcmp: {
+                          offset: OFFSET_TO_VALID_FROM_HASH + validFromMask[0],
+                          bytes: bs58.encode(validFromMask[1]),
+                      },
+                  },
+              ]
+            : [];
+
+    const validToFilter =
+        validToMask != null
+            ? [
+                  {
+                      memcmp: {
+                          offset: OFFSET_TO_VALID_TO_HASH + validToMask[0],
+                          bytes: bs58.encode(validToMask[1]),
+                      },
+                  },
+              ]
+            : [];
+
+    const overflowTrueFilter = [
+        {
+            memcmp: {
+                offset: OFFSET_TO_DATE_HASH_OVERFLOW,
+                bytes: bs58.encode(Uint8Array.from([1])),
+            },
+        },
+    ];
 
     return [
         [...validFromFilter, ...validToFilter],

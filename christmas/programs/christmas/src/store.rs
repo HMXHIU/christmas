@@ -29,8 +29,8 @@ pub struct CreateStore<'info> {
 pub struct Store {
     pub id: u64, // unique to each store, check `store_counter` in `state`
     pub name: String,
-    pub region: String,
-    pub geo: String,
+    pub region: [u8; 3],
+    pub geohash: [u8; 6],
     pub uri: String,   // to the json metadata
     pub owner: Pubkey, // set to signer
     pub bump: u8,
@@ -42,7 +42,7 @@ impl Store {
             + U64_SIZE
             + STORE_NAME_SIZE
             + REGION_SIZE
-            + GEO_SIZE
+            + GEOHASH_SIZE
             + URI_SIZE
             + PUBKEY_SIZE
             + BUMP_SIZE

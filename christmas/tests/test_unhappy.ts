@@ -3,7 +3,7 @@ import ngeohash from "ngeohash";
 import { AnchorClient } from "../lib/anchor-client/anchorClient";
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import { cleanString } from "../lib/anchor-client/utils";
+import { cleanString, stringToUint8Array } from "../lib/anchor-client/utils";
 import { getMint } from "@solana/spl-token";
 import { generateQRCodeURL, extractQueryParams } from "../app/src/lib/utils";
 import { requestAirdrop, createUser } from "./utils";
@@ -38,14 +38,16 @@ describe("Test Unhappy", () => {
     let store: web3.PublicKey;
 
     // locations
-    const geoHere = "w21z3w";
-    const geoNorth = "w21z98";
-    const geoSouth = "w21z1x";
-    const geoEast = "w21z6m";
-    const geoWest = "w21z2u";
+    const geoHere = Array.from(stringToUint8Array("w21z3w"));
+    const geoNorth = Array.from(stringToUint8Array("w21z98"));
+    const geoSouth = Array.from(stringToUint8Array("w21z1x"));
+    const geoEast = Array.from(stringToUint8Array("w21z6m"));
+    const geoWest = Array.from(stringToUint8Array("w21z2u"));
 
-    const region = "SGP";
-    const { latitude, longitude } = ngeohash.decode(geoHere);
+    const region = Array.from(stringToUint8Array("SGP"));
+    const { latitude, longitude } = ngeohash.decode(
+        String.fromCharCode(...geoHere)
+    );
     const location: Location = {
         geohash: geoHere,
         country: {
@@ -114,15 +116,15 @@ describe("Test Unhappy", () => {
     });
 
     it("Create Users", async () => {
-        await sellerClient.createUser({ geo: geoHere, region });
-        await buyerClient.createUser({ geo: geoHere, region });
+        await sellerClient.createUser({ geohash: geoHere, region });
+        await buyerClient.createUser({ geohash: geoHere, region });
 
         const seller = await sellerClient.getUser();
-        assert.equal(cleanString(seller.geo), geoHere);
-        assert.equal(cleanString(seller.region), region);
+        expect(seller.geohash).to.eql(geoHere);
+        expect(seller.region).to.eql(region);
         const buyer = await buyerClient.getUser();
-        assert.equal(cleanString(buyer.geo), geoHere);
-        assert.equal(cleanString(buyer.region), region);
+        expect(buyer.geohash).to.eql(geoHere);
+        expect(buyer.region).to.eql(region);
     });
 
     it("Create store with invalid params", async () => {
@@ -140,7 +142,7 @@ describe("Test Unhappy", () => {
                 name: storeName,
                 uri: storeUri,
                 region,
-                geo: geoHere,
+                geohash: geoHere,
             })
         ).to.be.rejectedWith("Store name exceeds maximum length of 40");
     });
@@ -156,7 +158,7 @@ describe("Test Unhappy", () => {
                     name: storeName,
                     uri: storeUri,
                     region,
-                    geo: geoHere,
+                    geohash: geoHere,
                 })
             ).result.err
         );
@@ -167,7 +169,7 @@ describe("Test Unhappy", () => {
         assert.isNull(
             (
                 await sellerClient.createCoupon({
-                    geo: geoHere,
+                    geohash: geoHere,
                     region,
                     store,
                     name: "before",
@@ -180,7 +182,7 @@ describe("Test Unhappy", () => {
         assert.isNull(
             (
                 await sellerClient.createCoupon({
-                    geo: geoHere,
+                    geohash: geoHere,
                     region,
                     store,
                     name: "after",
@@ -226,10 +228,10 @@ describe("Test Unhappy", () => {
             assert.isNull(
                 (
                     await sellerClient.createCoupon({
-                        geo,
+                        geohash: geo,
                         region,
                         store,
-                        name: geo,
+                        name: String.fromCharCode(...geo),
                         uri: `https://geohash.softeng.co/${geo}`,
                         validFrom: beforeToday,
                         validTo: afterToday,
@@ -240,11 +242,16 @@ describe("Test Unhappy", () => {
 
         // mint coupons
         const mintedCoupons = await sellerClient.getMintedCoupons(store);
+
         for (const [coupon, supply, balance] of mintedCoupons) {
             if (
-                [geoHere, geoNorth, geoSouth, geoEast, geoWest].includes(
-                    cleanString(coupon.account.name)
-                )
+                [
+                    String.fromCharCode(...geoHere),
+                    String.fromCharCode(...geoNorth),
+                    String.fromCharCode(...geoSouth),
+                    String.fromCharCode(...geoEast),
+                    String.fromCharCode(...geoWest),
+                ].includes(cleanString(coupon.account.name))
             ) {
                 assert.isNull(
                     (
@@ -263,11 +270,16 @@ describe("Test Unhappy", () => {
         const couponNames = (await sellerClient.getCoupons(region)).map(
             ([coupon, _]) => cleanString(coupon.account.name)
         );
-        for (const geo of [geoNorth, geoSouth, geoEast, geoWest]) {
+        for (const geo of [
+            String.fromCharCode(...geoNorth),
+            String.fromCharCode(...geoSouth),
+            String.fromCharCode(...geoEast),
+            String.fromCharCode(...geoWest),
+        ]) {
             assert.notOk(couponNames.includes(geo));
         }
 
         // check returns coupon in range
-        assert.ok(couponNames.includes(geoHere));
+        assert.ok(couponNames.includes(String.fromCharCode(...geoHere)));
     });
 });

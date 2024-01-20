@@ -30,8 +30,8 @@ export async function requestAirdrop(
 
 export async function createUser(
     wallet: anchor.web3.Keypair,
-    region: string,
-    geo: string
+    region: number[],
+    geohash: number[]
 ): Promise<[anchor.web3.PublicKey, number]> {
     const program = anchor.workspace.Christmas as anchor.Program<Christmas>;
 
@@ -46,7 +46,7 @@ export async function createUser(
 
     // Create user
     const tx = await program.methods
-        .createUser(region, geo)
+        .createUser(region, geohash)
         .accounts({
             user: pda,
             signer: wallet.publicKey,

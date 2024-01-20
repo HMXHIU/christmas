@@ -15,13 +15,12 @@ import {
     U64_SIZE,
     STORE_NAME_SIZE,
     REGION_SIZE,
-    GEO_SIZE,
+    GEOHASH_SIZE,
     URI_SIZE,
     COUPON_NAME_SIZE,
     STRING_PREFIX_SIZE,
     OFFSET_TO_GEO,
-    OFFSET_TO_REGION,
-    OFFSET_TO_HAS_SUPPLY,
+    OFFSET_TO_STORE,
 } from "./defs";
 import { getCountry, getGeohash } from "../user-device-client/utils";
 import { Wallet, AnchorWallet } from "@solana/wallet-adapter-react";
@@ -102,18 +101,15 @@ export class AnchorClient {
         );
     }
 
-    getRegionMarketPda(region: string): [web3.PublicKey, number] {
+    getRegionMarketPda(region: number[]): [web3.PublicKey, number] {
         return web3.PublicKey.findProgramAddressSync(
-            [
-                anchor.utils.bytes.utf8.encode("market"),
-                anchor.utils.bytes.utf8.encode(region),
-            ],
+            [anchor.utils.bytes.utf8.encode("market"), Uint8Array.from(region)],
             this.program.programId
         );
     }
 
     async createCoupon({
-        geo,
+        geohash,
         region,
         name,
         uri,
@@ -122,8 +118,8 @@ export class AnchorClient {
         validFrom,
         validTo,
     }: {
-        geo: string;
-        region: string;
+        geohash: number[];
+        region: number[];
         name: string;
         uri: string;
         store: web3.PublicKey;
@@ -148,7 +144,7 @@ export class AnchorClient {
             .createCoupon(
                 name,
                 region,
-                geo,
+                geohash,
                 uri,
                 new BN(validFrom.getTime()),
                 new BN(validTo.getTime())
@@ -166,6 +162,7 @@ export class AnchorClient {
             .instruction();
         const tx = new Transaction();
         tx.add(ix);
+
         return await this.executeTransaction(tx, [mint]);
     }
 
@@ -334,14 +331,7 @@ export class AnchorClient {
         if (store) {
             filters.push({
                 memcmp: {
-                    offset:
-                        DISCRIMINATOR_SIZE +
-                        PUBKEY_SIZE +
-                        PUBKEY_SIZE +
-                        COUPON_NAME_SIZE +
-                        URI_SIZE +
-                        REGION_SIZE +
-                        GEO_SIZE,
+                    offset: OFFSET_TO_STORE,
                     bytes: store.toBase58(), // store
                 },
             });
@@ -397,12 +387,9 @@ export class AnchorClient {
     }
 
     async getCoupons(
-        region: string,
+        region: number[],
         date?: Date
     ): Promise<[Account<Coupon>, TokenAccount][]> {
-        // const xs = await this.getCouponsEfficiently(region, date);
-        // console.log("xs", xs);
-
         // get token accounts owned by
         const regionMarketPda = this.getRegionMarketPda(region)[0];
         const tokenAccounts = await this.connection.getParsedProgramAccounts(
@@ -431,7 +418,7 @@ export class AnchorClient {
         const today = date || new Date();
 
         // get location
-        let geo = this.location?.geohash ?? (await getGeohash());
+        let geohash = this.location?.geohash ?? (await getGeohash());
 
         // get coupons for mints in accountsWithBalance
         return (
@@ -450,11 +437,11 @@ export class AnchorClient {
                                 bytes: mint,
                             },
                         },
-                        // filter within range
+                        // filter within range (reduce 1 precision level to get surrounding (TODO: this is not accurate for borders)
                         {
                             memcmp: {
-                                offset: OFFSET_TO_GEO + STRING_PREFIX_SIZE,
-                                bytes: stringToBase58(geo.slice(0, -1)), // reduce 1 precision level to get surrounding (TODO: this is not accurate for borders)
+                                offset: OFFSET_TO_GEO,
+                                bytes: bs58.encode(geohash.slice(0, -1)),
                             },
                         },
                     ]);
@@ -490,7 +477,7 @@ export class AnchorClient {
     }
 
     async getCouponsEfficiently(
-        region: string,
+        region: number[],
         date?: Date
     ): Promise<Account<Coupon>[]> {
         // get today
@@ -601,7 +588,7 @@ export class AnchorClient {
 
     async getRegionMarketPdasFromMint(
         mint: web3.PublicKey,
-        region?: string
+        region?: number[]
     ): Promise<[web3.PublicKey, web3.PublicKey]> {
         // this region is not provided, try to get it from the coupon (this requires the coupon to exist)
         if (region === undefined) {
@@ -629,7 +616,7 @@ export class AnchorClient {
     }: {
         mint: web3.PublicKey;
         coupon: web3.PublicKey;
-        region: string;
+        region: number[];
         numTokens: number;
     }): Promise<TransactionResult> {
         // the region is the coupon.region of the respective mint
@@ -665,8 +652,8 @@ export class AnchorClient {
     async claimFromMarket(
         mint: web3.PublicKey,
         numTokens: number,
-        region?: string | null,
-        geo?: string | null
+        region?: number[] | null,
+        geohash?: number[] | null
     ): Promise<TransactionResult> {
         // Get the Program Derived Addresses (PDAs) for the region market and the associated token account.
         const [regionMarketPda, regionMarketTokenAccountPda] =
@@ -675,13 +662,13 @@ export class AnchorClient {
         // Check if a user exists, and create one if not.
         const user = await this.getUser();
         if (user === null) {
-            if (!region) {
+            if (region == null) {
                 region = getCountry().code;
             }
-            if (!geo) {
-                geo = await getGeohash();
+            if (!geohash) {
+                geohash = await getGeohash();
             }
-            await this.createUser({ region, geo });
+            await this.createUser({ region, geohash });
         }
 
         // Calculate the Program Derived Address (PDA) for the user (User needs to be created already by this point).
@@ -746,12 +733,12 @@ export class AnchorClient {
         name,
         uri,
         region,
-        geo,
+        geohash,
     }: {
         name: string;
         uri: string;
-        region: string;
-        geo: string;
+        region: number[];
+        geohash: number[];
     }): Promise<TransactionResult> {
         const storeId = await this.getAvailableStoreId();
         const storePda = this.getStorePda(storeId)[0];
@@ -770,7 +757,7 @@ export class AnchorClient {
         return await this.executeTransaction(
             new Transaction().add(
                 await this.program.methods
-                    .createStore(name, storeId, region, geo, uri)
+                    .createStore(name, storeId, region, geohash, uri)
                     .accounts({
                         store: storePda,
                         signer: this.anchorWallet.publicKey,
@@ -800,7 +787,7 @@ export class AnchorClient {
                         U64_SIZE +
                         STORE_NAME_SIZE +
                         REGION_SIZE +
-                        GEO_SIZE +
+                        GEOHASH_SIZE +
                         URI_SIZE,
                     bytes: owner
                         ? owner.toBase58()
@@ -854,16 +841,16 @@ export class AnchorClient {
     }
 
     async createUser({
-        geo,
+        geohash,
         region,
     }: {
-        geo: string;
-        region: string;
+        geohash: number[];
+        region: number[];
     }): Promise<TransactionResult> {
         const [pda, _] = this.getUserPda();
 
         const ix = await this.program.methods
-            .createUser(region, geo)
+            .createUser(region, geohash)
             .accounts({
                 user: pda,
                 signer: this.anchorWallet.publicKey,

@@ -36,8 +36,8 @@ pub struct RedeemCoupon<'info> {
 #[derive(Accounts)]
 #[instruction(
     name: String,
-    region: String,
-    geo: String,
+    region: [u8; 3],
+    geohash: [u8; 6],
     uri: String,
     valid_from: u64,
     valid_to: u64,
@@ -61,7 +61,7 @@ pub struct CreateCoupon<'info> {
     pub coupon: Account<'info, Coupon>,
     #[account(
         init_if_needed,
-        seeds = [b"market", region.as_bytes()],
+        seeds = [b"market", region.as_ref()],
         bump,
         payer = signer,
         space = RegionMarket::len()
@@ -92,41 +92,53 @@ pub struct Coupon {
     /*
     Follow Metaplex standards as much as possible
     https://docs.metaplex.com/programs/token-metadata/accounts
+
+    TODO: Move to Token 22 and store it in the Mint Account
+    https://github.com/solana-labs/solana-program-library/tree/master/token-metadata/interface
     */
     pub update_authority: Pubkey,
     pub mint: Pubkey,
     pub name: String,
-    pub uri: String, // to the json metadata
-    pub region: String, // TODO: change to u16, use a hashmap to map integer to region to save space
-    pub geo: String, // TODO: change to geohash for consistency with datehash, change to [u8; 6] to lower the size
+    pub uri: String, // to metadata
+
+    // convenience fields (instead of fetching from uri)
     pub store: Pubkey,
     pub valid_from: u64,
     pub valid_to: u64,
+    pub supply: u32,
+
+    // memcmp block (must be in 1 continuous block < 128 bytes for 1 single memcmp filter, as there is a limit of 4 filters)
+    pub region: [u8; 3],
+    pub geohash: [u8; 6],
+    pub has_supply: bool,
     pub valid_from_hash: [u8; 32],
     pub valid_to_hash: [u8; 32],
     pub datehash_overflow: bool,
-    pub has_supply: bool,
-    pub supply: u32,
-    pub bump: u8,
+
+    // bump
+    pub bump: u8, // TODO: might not need once move to Mint Account
 }
 
 impl Coupon {
     fn len() -> usize {
         DISCRIMINATOR_SIZE
-            + PUBKEY_SIZE
-            + PUBKEY_SIZE
+            + PUBKEY_SIZE // update_authority
+            + PUBKEY_SIZE // mint
             + COUPON_NAME_SIZE
             + URI_SIZE
-            + REGION_SIZE
-            + GEO_SIZE
-            + PUBKEY_SIZE
-            + DATE_SIZE
-            + DATE_SIZE
-            + DATE_HASH_SIZE
-            + DATE_HASH_SIZE
-            + DATE_HASH_OVERFLOW_SIZE
-            + HAS_SUPPLY_SIZE
+            // convenience fields
+            + PUBKEY_SIZE // store
+            + DATE_SIZE // valid_from
+            + DATE_SIZE // valid_to
             + SUPPLY_SIZE
+            // memcmp block
+            + REGION_SIZE
+            + GEOHASH_SIZE
+            + HAS_SUPPLY_SIZE
+            + DATE_HASH_SIZE // valid_from_hash
+            + DATE_HASH_SIZE // valid_to_hash
+            + DATE_HASH_OVERFLOW_SIZE
+            // bump
             + BUMP_SIZE
     }
 }

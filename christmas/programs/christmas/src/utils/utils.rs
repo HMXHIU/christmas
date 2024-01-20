@@ -44,7 +44,6 @@ pub fn days_to_byte_mask(days: u64) -> [u8; DATE_HASH_SIZE] {
 
 #[cfg(test)]
 mod tests {
-    use solana_program::log;
 
     use super::*;
 

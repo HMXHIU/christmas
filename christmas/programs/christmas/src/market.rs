@@ -50,11 +50,11 @@ pub struct ClaimFromMarket<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(region: String)]
+#[instruction(region: [u8; 3])]
 pub struct MintToMarket<'info> {
     #[account(
         init_if_needed,
-        seeds = [b"market", region.as_bytes()],
+        seeds = [b"market", region.as_ref()],
         bump,
         payer = signer,
         space = RegionMarket::len()
@@ -91,7 +91,7 @@ pub struct MintToMarket<'info> {
 
 #[account]
 pub struct RegionMarket {
-    pub region: String,
+    pub region: [u8; 3],
     pub bump: u8,
 }
 

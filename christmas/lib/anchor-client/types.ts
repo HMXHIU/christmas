@@ -19,8 +19,8 @@ export interface Coupon {
     mint: PublicKey;
     name: string;
     uri: string;
-    region: string;
-    geo: string;
+    region: number[];
+    geohash: number[];
     store: PublicKey;
     validFrom: BN;
     validTo: BN;
@@ -33,7 +33,7 @@ export interface Coupon {
 }
 
 export interface RegionMarket {
-    region: string;
+    region: number[];
     bump: number;
 }
 
@@ -46,16 +46,16 @@ export interface ProgramState {
 export interface Store {
     name: string;
     id: BN;
-    region: string;
-    geo: string;
+    region: number[];
+    geohash: number[];
     uri: string;
     owner: PublicKey;
     bump: number;
 }
 
 export interface User {
-    region: string;
-    geo: string;
+    region: number[];
+    geohash: number[];
     bump: number;
 }
 

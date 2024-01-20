@@ -2,6 +2,7 @@ import { getCountriesForTimezone } from "countries-and-timezones";
 import { COUNTRY_DETAILS, DEFAULT_GEOHASH_PRECISION } from "./defs";
 import geohash from "ngeohash";
 import { Location } from "./types";
+import { stringToUint8Array } from "../anchor-client/utils";
 
 export async function getLocation(
     geoHashPrecision?: number
@@ -9,21 +10,29 @@ export async function getLocation(
     const geolocationCoordinates = await getGeolocationCoordinates();
     return {
         geolocationCoordinates,
-        geohash: geohash.encode(
-            geolocationCoordinates.latitude,
-            geolocationCoordinates.longitude,
-            geoHashPrecision ?? DEFAULT_GEOHASH_PRECISION
+        geohash: Array.from(
+            stringToUint8Array(
+                geohash.encode(
+                    geolocationCoordinates.latitude,
+                    geolocationCoordinates.longitude,
+                    geoHashPrecision ?? DEFAULT_GEOHASH_PRECISION
+                )
+            )
         ),
         country: getCountry(),
     };
 }
 
-export async function getGeohash(precision?: number): Promise<string> {
+export async function getGeohash(precision?: number): Promise<number[]> {
     const { latitude, longitude } = await getGeolocationCoordinates();
-    return geohash.encode(
-        latitude,
-        longitude,
-        precision ?? DEFAULT_GEOHASH_PRECISION
+    return Array.from(
+        stringToUint8Array(
+            geohash.encode(
+                latitude,
+                longitude,
+                precision ?? DEFAULT_GEOHASH_PRECISION
+            )
+        )
     );
 }
 
@@ -60,10 +69,12 @@ export function getTimezone(): string {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
-export function getCountry(): { code: string; name: string } {
+export function getCountry(): { code: number[]; name: string } {
     const first = getCountriesForTimezone(getTimezone())[0];
     return {
-        code: COUNTRY_DETAILS[first.id][0] || "USA",
+        code: Array.from(
+            stringToUint8Array(COUNTRY_DETAILS[first.id][0] || "USA")
+        ),
         name: first.name,
     };
 }

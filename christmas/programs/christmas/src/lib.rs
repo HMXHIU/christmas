@@ -21,15 +21,8 @@ declare_id!("B2ejsK7m3eYPerru92hS73Gx7sQ7J83DKoLHGwn6pg5v");
 pub mod christmas {
 
     use crate::{
-        defs::{
-            COUPON_NAME_SIZE, GEO_SIZE, REGION_SIZE, STORE_NAME_SIZE, STRING_PREFIX_SIZE, URI_SIZE,
-        },
-        utils::geo::code_to_country,
-    };
-
-    use self::{
-        defs::{DATE_HASH_BITS, DATE_HASH_SIZE, DAYS_SINCE_1_JAN_2024, MS_PER_DAY},
-        utils::utils::u8_to_byte_mask,
+        defs::{COUPON_NAME_SIZE, STORE_NAME_SIZE, STRING_PREFIX_SIZE, URI_SIZE},
+        utils::geo::code_bytes_to_country,
     };
 
     use super::*;
@@ -46,12 +39,12 @@ pub mod christmas {
         Ok(())
     }
 
-    pub fn create_user(ctx: Context<CreateUser>, region: String, geo: String) -> Result<()> {
+    pub fn create_user(ctx: Context<CreateUser>, region: [u8; 3], geohash: [u8; 6]) -> Result<()> {
         // check valid region
-        code_to_country(&region).unwrap();
+        code_bytes_to_country(&region).unwrap();
 
-        ctx.accounts.user.region = pad_string(&region, REGION_SIZE - STRING_PREFIX_SIZE);
-        ctx.accounts.user.geo = pad_string(&geo, GEO_SIZE - STRING_PREFIX_SIZE);
+        ctx.accounts.user.region = region;
+        ctx.accounts.user.geohash = geohash;
         ctx.accounts.user.bump = *ctx.bumps.get("user").unwrap();
         Ok(())
     }
@@ -60,17 +53,17 @@ pub mod christmas {
         ctx: Context<CreateStore>,
         name: String,
         id: u64,
-        region: String,
-        geo: String,
+        region: [u8; 3],
+        geohash: [u8; 6],
         uri: String,
     ) -> Result<()> {
         // check valid region
-        code_to_country(&region).unwrap();
+        code_bytes_to_country(&region).unwrap();
 
         ctx.accounts.store.id = id;
         ctx.accounts.store.name = pad_string(&name, STORE_NAME_SIZE - STRING_PREFIX_SIZE);
-        ctx.accounts.store.region = pad_string(&region, REGION_SIZE - STRING_PREFIX_SIZE);
-        ctx.accounts.store.geo = pad_string(&geo, GEO_SIZE - STRING_PREFIX_SIZE);
+        ctx.accounts.store.region = region;
+        ctx.accounts.store.geohash = geohash;
         ctx.accounts.store.uri = pad_string(&uri, URI_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.store.owner = ctx.accounts.signer.key();
         ctx.accounts.store.bump = *ctx.bumps.get("store").unwrap();
@@ -84,14 +77,14 @@ pub mod christmas {
     pub fn create_coupon(
         ctx: Context<CreateCoupon>,
         name: String,
-        region: String,
-        geo: String,
+        region: [u8; 3],
+        geohash: [u8; 6],
         uri: String,
         valid_from: u64,
         valid_to: u64,
     ) -> Result<()> {
         // check valid region
-        code_to_country(&region).unwrap();
+        code_bytes_to_country(&region).unwrap();
 
         ctx.accounts.coupon.bump = *ctx.bumps.get("coupon").unwrap();
         ctx.accounts.coupon.update_authority = ctx.accounts.signer.key();
@@ -99,8 +92,8 @@ pub mod christmas {
         ctx.accounts.coupon.store = ctx.accounts.store.key();
         ctx.accounts.coupon.name = pad_string(&name, COUPON_NAME_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.coupon.uri = pad_string(&uri, URI_SIZE - STRING_PREFIX_SIZE);
-        ctx.accounts.coupon.region = pad_string(&region, REGION_SIZE - STRING_PREFIX_SIZE);
-        ctx.accounts.coupon.geo = pad_string(&geo, GEO_SIZE - STRING_PREFIX_SIZE);
+        ctx.accounts.coupon.region = region;
+        ctx.accounts.coupon.geohash = geohash;
         ctx.accounts.coupon.valid_from = valid_from;
         ctx.accounts.coupon.valid_to = valid_to;
 
@@ -115,10 +108,9 @@ pub mod christmas {
         ctx.accounts.coupon.valid_from_hash = days_to_byte_mask(valid_from_days);
         ctx.accounts.coupon.valid_to_hash = days_to_byte_mask(valid_to_days);
 
-        // check existing region market region else create
-        if ctx.accounts.region_market.region.is_empty() {
-            ctx.accounts.region_market.region =
-                pad_string(&region, REGION_SIZE - STRING_PREFIX_SIZE);
+        // check existing region market region else create ([0, 0, 0] is uninitialized)
+        if ctx.accounts.region_market.region == [0, 0, 0] {
+            ctx.accounts.region_market.region = region;
             ctx.accounts.region_market.bump = *ctx.bumps.get("region_market").unwrap();
         } else {
             assert!(ctx.accounts.region_market.region == region);
@@ -150,11 +142,11 @@ pub mod christmas {
 
     pub fn mint_to_market(
         ctx: Context<MintToMarket>,
-        region: String,
+        region: [u8; 3],
         num_tokens: u64,
     ) -> Result<()> {
         // check valid region
-        code_to_country(&region).unwrap();
+        code_bytes_to_country(&region).unwrap();
 
         let cpi_accounts = MintTo {
             mint: ctx.accounts.mint.to_account_info(),
@@ -165,7 +157,7 @@ pub mod christmas {
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
 
         ctx.accounts.region_market.bump = *ctx.bumps.get("region_market").unwrap();
-        ctx.accounts.region_market.region = pad_string(&region, REGION_SIZE - STRING_PREFIX_SIZE);
+        ctx.accounts.region_market.region = region;
 
         mint_to(cpi_ctx, num_tokens)?;
 
@@ -195,7 +187,7 @@ pub mod christmas {
                 },
                 &[&[
                     b"market".as_ref(),
-                    ctx.accounts.region_market.region.as_bytes(),
+                    &ctx.accounts.region_market.region,
                     &[ctx.accounts.region_market.bump],
                 ]],
             ),
