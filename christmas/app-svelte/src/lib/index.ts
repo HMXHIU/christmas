@@ -29,7 +29,10 @@ import {
     STORE_NAME_SIZE,
     STRING_PREFIX_SIZE,
 } from "../../../lib/anchor-client/defs";
-import { cleanString } from "../../../lib/anchor-client/utils";
+import {
+    cleanString,
+    stringToUint8Array,
+} from "../../../lib/anchor-client/utils";
 
 export interface CreateStoreFormResult {
     name: string;
@@ -226,8 +229,8 @@ export async function createStore({
 
         const tx = await ac.createStore({
             name: name.slice(0, STORE_NAME_SIZE - STRING_PREFIX_SIZE), // also enforced in the form
-            geo: geohash,
-            region,
+            geohash: Array.from(stringToUint8Array(geohash)),
+            region: Array.from(stringToUint8Array(region)),
             uri: metadataUrl,
         });
     }
@@ -266,8 +269,8 @@ export async function createCoupon({
 
         // Create coupon
         await ac.createCoupon({
-            geo: cleanString(store.account.geo),
-            region: cleanString(store.account.region),
+            geohash: store.account.geohash,
+            region: store.account.region,
             name: name.slice(0, COUPON_NAME_SIZE - STRING_PREFIX_SIZE), // also enforced in form
             store: store.publicKey,
             uri: metadataUrl,

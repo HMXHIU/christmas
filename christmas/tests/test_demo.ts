@@ -2,7 +2,7 @@ import { web3 } from "@coral-xyz/anchor";
 import ngeohash from "ngeohash";
 import { AnchorClient } from "../lib/anchor-client/anchorClient";
 import * as anchor from "@coral-xyz/anchor";
-import { cleanString } from "../lib/anchor-client/utils";
+import { cleanString, stringToUint8Array } from "../lib/anchor-client/utils";
 
 import { NFTMinioClient } from "../lib/nft-client/nftMinioClient";
 
@@ -40,12 +40,15 @@ describe("Generate Demo Content", () => {
     let buyerClient: AnchorClient;
 
     // locations (https://geohash.softeng.co/w21z3w)
-    const geoHere = "w21z98"; // faber heights
-    // const geoHere = "w21z71"; // metacamp
-    // const geoHere = "w21z4w"; // harbour front
+    // const geoHere = Array.from(stringToUint8Array("w21z98")); // faber heights
+    // const geoHere = Array.from(stringToUint8Array("w21z71")); // metacamp
+    // const geoHere = Array.from(stringToUint8Array("w21z4w")); // harbour front
+    const geoHere = Array.from(stringToUint8Array("w21z3p")); // clementi mall
 
-    const region = "SGP";
-    const { latitude, longitude } = ngeohash.decode(geoHere);
+    const region = Array.from(stringToUint8Array("SGP"));
+    const { latitude, longitude } = ngeohash.decode(
+        String.fromCharCode(...geoHere)
+    );
     const location: Location = {
         geohash: geoHere,
         country: {
@@ -218,15 +221,15 @@ describe("Generate Demo Content", () => {
     });
 
     it("Create Users", async () => {
-        await sellerClient.createUser({ geo: geoHere, region });
-        await buyerClient.createUser({ geo: geoHere, region });
+        await sellerClient.createUser({ geohash: geoHere, region });
+        await buyerClient.createUser({ geohash: geoHere, region });
 
         const seller = await sellerClient.getUser();
-        assert.equal(cleanString(seller.geo), geoHere);
-        assert.equal(cleanString(seller.region), region);
+        expect(seller.geohash).to.be.eql(geoHere);
+        expect(seller.region).to.be.eql(region);
         const buyer = await buyerClient.getUser();
-        assert.equal(cleanString(buyer.geo), geoHere);
-        assert.equal(cleanString(buyer.region), region);
+        expect(buyer.geohash).to.be.eql(geoHere);
+        expect(buyer.region).to.be.eql(region);
     });
 
     it("Create Demo Content", async () => {
@@ -252,7 +255,7 @@ describe("Generate Demo Content", () => {
                         name: storeMetadata.name,
                         uri: metadataUrl,
                         region,
-                        geo: geoHere,
+                        geohash: geoHere,
                     })
                 ).result.err
             );
@@ -268,7 +271,7 @@ describe("Generate Demo Content", () => {
             assert.isNull(
                 (
                     await sellerClient.createCoupon({
-                        geo: geoHere,
+                        geohash: geoHere,
                         region,
                         store,
                         name: couponMetadata.name,
