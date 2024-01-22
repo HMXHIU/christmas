@@ -3,7 +3,7 @@
     import { COUNTRY_DETAILS } from "../../../lib/user-device-client/defs";
     import ngeohash from "ngeohash";
     import { Loader } from "@googlemaps/js-api-loader";
-    import { Autocomplete, popup } from "@skeletonlabs/skeleton";
+    import { Autocomplete } from "@skeletonlabs/skeleton";
     import type {
         AutocompleteOption,
         PopupSettings,
@@ -120,13 +120,15 @@
         type="search"
         name="autocomplete-search"
         autocomplete="off"
-        value={address}
+        bind:value={address}
         on:keyup={searchAddress}
         placeholder="Search Address..."
-        use:popup={popupSettings}
     />
     <!-- Autocomplete options -->
-    <div data-popup="popupAutocomplete" class="z-50 bg-surface-500">
+    <div
+        class="card w-full max-w-sm max-h-48 p-3 overflow-y-auto"
+        tabindex="-1"
+    >
         <Autocomplete
             bind:options={addressOptions}
             on:selection={onSelectAddress}

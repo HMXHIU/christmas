@@ -43,7 +43,6 @@
   },
   "type": "module",
   "dependencies": {
-    "@floating-ui/dom": "^1.5.4",
     "@googlemaps/js-api-loader": "^1.16.2",
     "@solana/qr-code-styling": "^1.6.0",
     "html5-qrcode": "^2.3.8",

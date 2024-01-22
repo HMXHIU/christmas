@@ -19,20 +19,9 @@
     import { UserDeviceClient } from "../../../lib/user-device-client/userDeviceClient";
     import type { ModalSettings } from "@skeletonlabs/skeleton";
     import QrScanner from "../components/QRScanner.svelte";
-    import {
-        computePosition,
-        autoUpdate,
-        offset,
-        shift,
-        flip,
-        arrow,
-    } from "@floating-ui/dom";
-    import { storePopup } from "@skeletonlabs/skeleton";
 
     // Skeleton (Modals)
     initializeStores();
-    // Skeleton (Popups)
-    storePopup.set({ computePosition, autoUpdate, offset, shift, flip, arrow });
 
     const modalStore = getModalStore();
 
