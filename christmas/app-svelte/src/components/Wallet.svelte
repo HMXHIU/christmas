@@ -1,41 +1,47 @@
 <script lang="ts">
-	import type { AnchorWallet } from '@solana/wallet-adapter-react';
-	import { PublicKey } from '@solana/web3.js';
-	import { anchorClient, solanaConnect } from '../store';
-	import { SolanaConnect } from 'solana-connect';
-	import type { Adapter } from '@solana/wallet-adapter-base';
-	import { AnchorClient } from '../../../lib/anchor-client/anchorClient';
-	import { PROGRAM_ID } from '../../../lib/anchor-client/defs';
-	import { onMount } from 'svelte';
+    import type { AnchorWallet } from "@solana/wallet-adapter-react";
+    import { PublicKey } from "@solana/web3.js";
+    import { anchorClient, solanaConnect } from "../store";
+    import { SolanaConnect } from "solana-connect";
+    import type { Adapter } from "@solana/wallet-adapter-base";
+    import { AnchorClient } from "../../../lib/anchor-client/anchorClient";
+    import { PROGRAM_ID } from "../../../lib/anchor-client/defs";
+    import { onMount } from "svelte";
+    import { PUBLIC_RPC_ENDPOINT } from "$env/static/public";
 
-	onMount(async () => {
-		if ($solanaConnect == null) {
-			$solanaConnect = new SolanaConnect();
-			$solanaConnect.onWalletChange((adapter: Adapter | null) => {
-				if (adapter == null) {
-					$anchorClient = null;
-					console.log('disconnected');
-				} else {
-					// set anchorClient
-					$anchorClient = new AnchorClient({
-						programId: new PublicKey(PROGRAM_ID),
-						anchorWallet: adapter as AnchorWallet,
-						wallet: {
-							adapter,
-							readyState: adapter?.readyState
-						}
-					});
-					console.log('connected:', adapter.name, adapter.publicKey?.toString());
-				}
-			});
-		}
-	});
+    onMount(async () => {
+        if ($solanaConnect == null) {
+            $solanaConnect = new SolanaConnect();
+            $solanaConnect.onWalletChange((adapter: Adapter | null) => {
+                if (adapter == null) {
+                    $anchorClient = null;
+                    console.log("disconnected");
+                } else {
+                    // set anchorClient
+                    $anchorClient = new AnchorClient({
+                        programId: new PublicKey(PROGRAM_ID),
+                        anchorWallet: adapter as AnchorWallet,
+                        wallet: {
+                            adapter,
+                            readyState: adapter?.readyState,
+                        },
+                        cluster: PUBLIC_RPC_ENDPOINT,
+                    });
+                    console.log(
+                        "connected:",
+                        adapter.name,
+                        adapter.publicKey?.toString(),
+                    );
+                }
+            });
+        }
+    });
 
-	function handleLoginLogout() {
-		$solanaConnect?.openMenu();
-	}
+    function handleLoginLogout() {
+        $solanaConnect?.openMenu();
+    }
 </script>
 
-<button type="button" class="btn variant-filled" on:click={handleLoginLogout}
-	>{$anchorClient ? 'Logout' : 'Login'}</button
->
+<button type="button" class="btn variant-filled" on:click={handleLoginLogout}>
+    {$anchorClient ? "Logout" : "Login"}
+</button>

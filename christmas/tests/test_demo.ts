@@ -2,7 +2,7 @@ import { web3 } from "@coral-xyz/anchor";
 import ngeohash from "ngeohash";
 import { AnchorClient } from "../lib/anchor-client/anchorClient";
 import * as anchor from "@coral-xyz/anchor";
-import { cleanString, stringToUint8Array } from "../lib/anchor-client/utils";
+import { stringToUint8Array } from "../lib/anchor-client/utils";
 
 import { NFTMinioClient } from "../lib/nft-client/nftMinioClient";
 
