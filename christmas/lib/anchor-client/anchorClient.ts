@@ -55,8 +55,6 @@ import { getDateWithinRangeFilterCombinations, stringToBase58 } from "./utils";
 import { Location } from "../user-device-client/types";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
-// import "./scratchpad";
-
 export class AnchorClient {
     programId: PublicKey;
     cluster: string;
@@ -105,9 +103,9 @@ export class AnchorClient {
         );
     }
 
-    /*
+    /****************************************************************************
     Coupons
-    */
+    ****************************************************************************/
 
     getCouponPda(mint: PublicKey): [PublicKey, number] {
         return PublicKey.findProgramAddressSync(
@@ -670,37 +668,7 @@ export class AnchorClient {
         region?: number[] | null,
         geohash?: number[] | null
     ): Promise<TransactionResult> {
-        const ix = await this.claimFromMarketIx({
-            mint,
-            numTokens,
-            region,
-            geohash,
-        });
-
-        // Create a new transaction, add the instruction, and execute the transaction.
-        const tx = new Transaction();
-        tx.add(ix);
-        return await this.executeTransaction(tx);
-    }
-
-    async claimFromMarketIx({
-        mint,
-        numTokens,
-        region,
-        geohash,
-        wallet,
-    }: {
-        mint: PublicKey;
-        numTokens: number;
-        region?: number[] | null;
-        geohash?: number[] | null;
-        wallet?: PublicKey | null;
-    }): Promise<TransactionInstruction> {
-        // Get the Program Derived Addresses (PDAs) for the region market and the associated token account.
-        const [regionMarketPda, regionMarketTokenAccountPda] =
-            await this.getRegionMarketPdasFromMint(mint);
-
-        // Check if a user exists, and create one if not. (TODO: Get rid of user, just use wallet)
+        // Create user if it doesn't exist.
         const user = await this.getUser();
         if (user === null) {
             if (region == null) {
@@ -712,8 +680,38 @@ export class AnchorClient {
             await this.createUser({ region, geohash });
         }
 
-        // Calculate the Program Derived Address (PDA) for the user (User needs to be created already by this point).
-        const userPda = this.getUserPda()[0];
+        // Claim from market.
+        const ix = await this.claimFromMarketIx({
+            mint,
+            numTokens,
+        });
+
+        const tx = new Transaction();
+        tx.add(ix);
+        return await this.executeTransaction(tx);
+    }
+
+    async claimFromMarketIx({
+        mint,
+        numTokens,
+        wallet,
+    }: {
+        mint: PublicKey;
+        numTokens: number;
+        wallet?: PublicKey | null;
+    }): Promise<TransactionInstruction> {
+        // Get the Program Derived Addresses (PDAs) for the region market and the associated token account.
+        const [regionMarketPda, regionMarketTokenAccountPda] =
+            await this.getRegionMarketPdasFromMint(mint);
+
+        // Check if user exists.
+        const user = await this.getUser(wallet);
+        if (user == null) {
+            throw new Error("User does not exist");
+        }
+
+        // Calculate the Program Derived Address (PDA) for the user (Note: User needs to be created already by this point).
+        const userPda = this.getUserPda(wallet)[0];
 
         // Calculate the associated token account owned by the userPda (Owned by the userPda not the user).
         const userTokenAccount = await getAssociatedTokenAddress(
@@ -748,9 +746,9 @@ export class AnchorClient {
             .instruction();
     }
 
-    /*
+    /****************************************************************************
     Store
-    */
+    ****************************************************************************/
 
     getStorePda(id: BN, owner?: PublicKey): [PublicKey, number] {
         return PublicKey.findProgramAddressSync(
@@ -838,11 +836,11 @@ export class AnchorClient {
         return state.storeCounter;
     }
 
-    /*
+    /***************************************************************************
     User
-    */
+    ***************************************************************************/
 
-    getUserPda(wallet?: PublicKey): [PublicKey, number] {
+    getUserPda(wallet?: PublicKey | null): [PublicKey, number] {
         return PublicKey.findProgramAddressSync(
             [
                 utils.bytes.utf8.encode("user"),
@@ -867,8 +865,8 @@ export class AnchorClient {
         );
     }
 
-    async getUser(): Promise<User | null> {
-        const [pda, _] = this.getUserPda();
+    async getUser(wallet?: PublicKey | null): Promise<User | null> {
+        const [pda, _] = this.getUserPda(wallet);
         try {
             return await this.program.account.user.fetch(pda);
         } catch (error) {
@@ -883,9 +881,24 @@ export class AnchorClient {
         geohash: number[];
         region: number[];
     }): Promise<TransactionResult> {
-        const [pda, _] = this.getUserPda();
+        const tx = new Transaction();
+        tx.add(await this.createUserIx({ geohash, region }));
 
-        const ix = await this.program.methods
+        return await this.executeTransaction(tx);
+    }
+
+    async createUserIx({
+        geohash,
+        region,
+        wallet,
+    }: {
+        geohash: number[];
+        region: number[];
+        wallet?: PublicKey | null;
+    }): Promise<TransactionInstruction> {
+        const [pda, _] = this.getUserPda(wallet);
+
+        return await this.program.methods
             .createUser(region, geohash)
             .accounts({
                 user: pda,
@@ -893,16 +906,11 @@ export class AnchorClient {
                 systemProgram: SystemProgram.programId,
             })
             .instruction();
-
-        const tx = new Transaction();
-        tx.add(ix);
-
-        return await this.executeTransaction(tx);
     }
 
-    /*
+    /***************************************************************************
     Program
-    */
+    ***************************************************************************/
 
     getProgramStatePda(): [PublicKey, number] {
         return PublicKey.findProgramAddressSync(
@@ -932,9 +940,9 @@ export class AnchorClient {
         return await this.program.account.programState.fetch(programStatePda);
     }
 
-    /*
+    /****************************************************************************
     Utils
-    */
+    ****************************************************************************/
 
     async confirmTransaction(
         signature: string,
