@@ -1,11 +1,17 @@
 import { web3 } from "@coral-xyz/anchor";
 import { assert, expect } from "chai";
-import { AnchorClient } from "../lib/anchor-client/anchorClient";
+import { AnchorClient } from "../app/src/lib/clients/anchor-client/anchorClient";
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import { cleanString, stringToUint8Array } from "../lib/anchor-client/utils";
+import {
+    cleanString,
+    stringToUint8Array,
+} from "../app/src/lib/clients/anchor-client/utils";
 import { getMint } from "@solana/spl-token";
-import { generateQRCodeURL, extractQueryParams } from "../app/src/lib/utils";
+import {
+    generateQRCodeURL,
+    extractQueryParams,
+} from "../app/src/lib/clients/utils";
 import { requestAirdrop, createUser } from "./utils";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import {
@@ -13,7 +19,7 @@ import {
     DISCRIMINATOR_SIZE,
     REGION_SIZE,
     STRING_PREFIX_SIZE,
-} from "../lib/anchor-client/defs";
+} from "../app/src/lib/clients/anchor-client/defs";
 
 describe("Test client", () => {
     // set provider

@@ -1,4 +1,3 @@
-import { filter } from "lodash";
 import {
     epochDaysFromDate,
     u8ToByteMask,
@@ -6,7 +5,7 @@ import {
     getDateGreaterThanOrEqualByteMask,
     getDateLessThanOrEqualByteMask,
     getDateWithinRangeFilterCombinations,
-} from "../lib/anchor-client/utils";
+} from "../app/src/lib/clients/anchor-client/utils";
 import { assert, expect } from "chai";
 import {
     DATE_HASH_BITS,
@@ -15,7 +14,7 @@ import {
     OFFSET_TO_DATE_HASH_OVERFLOW,
     OFFSET_TO_VALID_FROM_HASH,
     OFFSET_TO_VALID_TO_HASH,
-} from "../lib/anchor-client/defs";
+} from "../app/src/lib/clients/anchor-client/defs";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
 describe("Test utils", () => {

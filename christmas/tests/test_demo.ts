@@ -1,17 +1,20 @@
 import { web3 } from "@coral-xyz/anchor";
 import ngeohash from "ngeohash";
-import { AnchorClient } from "../lib/anchor-client/anchorClient";
+import { AnchorClient } from "../app/src/lib/clients/anchor-client/anchorClient";
 import * as anchor from "@coral-xyz/anchor";
-import { stringToUint8Array } from "../lib/anchor-client/utils";
+import { stringToUint8Array } from "../app/src/lib/clients/anchor-client/utils";
 
-import { NFTMinioClient } from "../lib/nft-client/nftMinioClient";
+import { NFTMinioClient } from "../app/src/lib/clients/nft-client/nftMinioClient";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 import { assert, expect } from "chai";
-import { Location } from "../lib/user-device-client/types";
-import { CouponMetadata, StoreMetadata } from "../lib/anchor-client/types";
+import { Location } from "../app/src/lib/clients/user-device-client/types";
+import {
+    CouponMetadata,
+    StoreMetadata,
+} from "../app/src/lib/clients/anchor-client/types";
 
 // load env
 require("dotenv").config();

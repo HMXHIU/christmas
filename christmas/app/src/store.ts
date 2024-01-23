@@ -1,0 +1,42 @@
+import { writable, readable } from "svelte/store";
+import type { AnchorClient } from "$lib/clients/anchor-client/anchorClient";
+import type {
+    Coupon,
+    Account,
+    TokenAccount,
+    Store,
+    StoreMetadata,
+    CouponMetadata,
+} from "$lib/clients/anchor-client/types";
+import { UserDeviceClient } from "$lib/clients/user-device-client/userDeviceClient";
+import type { NFTClient } from "$lib/clients/nft-client/types";
+import { NFTMinioClient } from "$lib/clients/nft-client/nftMinioClient";
+import { NFTStorageClient } from "$lib/clients/nft-client/nftStorageClient";
+import { SolanaConnect } from "solana-connect";
+
+export let solanaConnect = writable<SolanaConnect | null>(null);
+export let anchorClient = writable<AnchorClient | null>(null);
+export let userDeviceClient = writable<UserDeviceClient | null>(null);
+export let nftClient = readable<NFTClient>(
+    import.meta.env.DEV
+        ? new NFTMinioClient({
+              accessKey: import.meta.env.VITE_MINIO_ACCESS_KEY,
+              secretKey: import.meta.env.VITE_MINIO_SECRET_KEY,
+              port: parseInt(import.meta.env.VITE_MINIO_PORT),
+              endPoint: import.meta.env.VITE_MINIO_ENDPOINT,
+              useSSL: JSON.parse(import.meta.env.VITE_MINIO_USE_SSL),
+              bucket: import.meta.env.VITE_MINIO_BUCKET,
+          })
+        : new NFTStorageClient({
+              token: import.meta.env.VITE_NFT_STORAGE_TOKEN,
+          }),
+);
+export let marketCoupons = writable<[Account<Coupon>, TokenAccount][]>([]);
+export let claimedCoupons = writable<[Account<Coupon>, number][]>([]);
+export let redeemedCoupons = writable<Record<string, string>>({});
+export let stores = writable<Account<Store>[]>([]);
+export let storesMetadata = writable<Record<string, StoreMetadata>>({});
+export let mintedCoupons = writable<
+    Record<string, [Account<Coupon>, number, number][]>
+>({});
+export let couponsMetadata = writable<Record<string, CouponMetadata>>({});
