@@ -1,7 +1,24 @@
-import * as web3 from "@solana/web3.js";
-import * as anchor from "@coral-xyz/anchor";
-import { BN } from "@coral-xyz/anchor";
-import { Transaction, Signer } from "@solana/web3.js";
+import {
+    BN,
+    Program,
+    Provider,
+    AnchorProvider,
+    workspace,
+    utils,
+} from "@coral-xyz/anchor";
+import {
+    Transaction,
+    Signer,
+    TransactionInstruction,
+    PublicKey,
+    Connection,
+    ParsedAccountData,
+    Keypair,
+    SystemProgram,
+    SendOptions,
+    TransactionSignature,
+    Commitment,
+} from "@solana/web3.js";
 import idl from "../../target/idl/christmas.json";
 import { Christmas } from "../../target/types/christmas";
 import {
@@ -17,7 +34,6 @@ import {
     REGION_SIZE,
     GEOHASH_SIZE,
     URI_SIZE,
-    COUPON_NAME_SIZE,
     STRING_PREFIX_SIZE,
     OFFSET_TO_GEO,
     OFFSET_TO_STORE,
@@ -42,11 +58,11 @@ import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 // import "./scratchpad";
 
 export class AnchorClient {
-    programId: web3.PublicKey;
+    programId: PublicKey;
     cluster: string;
-    connection: web3.Connection;
-    provider: anchor.Provider;
-    program: anchor.Program<Christmas>;
+    connection: Connection;
+    provider: Provider;
+    program: Program<Christmas>;
     anchorWallet: AnchorWallet; // AnchorWallet from useAnchorWallet() to set up Anchor in the frontend
     wallet: Wallet | null; // The Wallet from useWallet has more functionality, but can't be used to set up the AnchorProvider
     location: Location; // when using AnchorClient not from the broswer, location is required for some functionality
@@ -60,7 +76,7 @@ export class AnchorClient {
     }: {
         anchorWallet: AnchorWallet;
         wallet?: Wallet;
-        programId?: web3.PublicKey;
+        programId?: PublicKey;
         cluster?: string;
         location?: Location;
     }) {
@@ -69,17 +85,16 @@ export class AnchorClient {
         this.location = location;
 
         this.cluster = cluster || "http://127.0.0.1:8899";
-        this.connection = new web3.Connection(this.cluster, "confirmed");
+        this.connection = new Connection(this.cluster, "confirmed");
 
-        this.provider = new anchor.AnchorProvider(
+        this.provider = new AnchorProvider(
             this.connection,
             this.anchorWallet,
-            anchor.AnchorProvider.defaultOptions()
+            AnchorProvider.defaultOptions()
         );
         this.programId =
-            programId ||
-            new web3.PublicKey(anchor.workspace.Christmas.programId);
-        this.program = new anchor.Program<Christmas>(
+            programId || new PublicKey(workspace.Christmas.programId);
+        this.program = new Program<Christmas>(
             idl as any,
             this.programId,
             this.provider
@@ -94,16 +109,16 @@ export class AnchorClient {
     Coupons
     */
 
-    getCouponPda(mint: web3.PublicKey): [web3.PublicKey, number] {
-        return web3.PublicKey.findProgramAddressSync(
-            [anchor.utils.bytes.utf8.encode("coupon"), mint.toBuffer()],
+    getCouponPda(mint: PublicKey): [PublicKey, number] {
+        return PublicKey.findProgramAddressSync(
+            [utils.bytes.utf8.encode("coupon"), mint.toBuffer()],
             this.program.programId
         );
     }
 
-    getRegionMarketPda(region: number[]): [web3.PublicKey, number] {
-        return web3.PublicKey.findProgramAddressSync(
-            [anchor.utils.bytes.utf8.encode("market"), Uint8Array.from(region)],
+    getRegionMarketPda(region: number[]): [PublicKey, number] {
+        return PublicKey.findProgramAddressSync(
+            [utils.bytes.utf8.encode("market"), Uint8Array.from(region)],
             this.program.programId
         );
     }
@@ -122,14 +137,14 @@ export class AnchorClient {
         region: number[];
         name: string;
         uri: string;
-        store: web3.PublicKey;
+        store: PublicKey;
         validFrom: Date;
         validTo: Date;
-        mint?: web3.Keypair;
+        mint?: Keypair;
     }): Promise<TransactionResult> {
         // generate new mint keys if not provided
         if (mint === undefined) {
-            mint = web3.Keypair.generate();
+            mint = Keypair.generate();
         }
 
         // calculate region market accounts
@@ -154,7 +169,7 @@ export class AnchorClient {
                 coupon: couponPda,
                 store: store,
                 signer: this.anchorWallet.publicKey,
-                systemProgram: web3.SystemProgram.programId,
+                systemProgram: SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 regionMarket: regionMarketPda,
                 regionMarketTokenAccount: regionMarketTokenAccountPda,
@@ -180,8 +195,8 @@ export class AnchorClient {
         mint,
         numTokens = 1,
     }: {
-        coupon: web3.PublicKey;
-        mint: web3.PublicKey;
+        coupon: PublicKey;
+        mint: PublicKey;
         numTokens: number;
     }): Promise<TransactionResult> {
         // Calculate the Program Derived Address (PDA) for the user.
@@ -220,9 +235,9 @@ export class AnchorClient {
         mint,
         numTokens,
     }: {
-        signature: web3.TransactionSignature;
-        mint: web3.PublicKey;
-        wallet: web3.PublicKey;
+        signature: TransactionSignature;
+        mint: PublicKey;
+        wallet: PublicKey;
         numTokens: number;
     }): Promise<{ isVerified: boolean; err: string }> {
         try {
@@ -317,7 +332,7 @@ export class AnchorClient {
     }
 
     async getMintedCoupons(
-        store?: web3.PublicKey
+        store?: PublicKey
     ): Promise<[Account<Coupon>, number, number][]> {
         let filters = [
             {
@@ -410,8 +425,8 @@ export class AnchorClient {
         );
         const accountsWithBalance = tokenAccounts.filter(
             (x) =>
-                (x.account.data as web3.ParsedAccountData).parsed.info
-                    .tokenAmount.uiAmount > 0
+                (x.account.data as ParsedAccountData).parsed.info.tokenAmount
+                    .uiAmount > 0
         );
 
         // get today
@@ -426,7 +441,7 @@ export class AnchorClient {
                 accountsWithBalance.map(async (tokenAccount) => {
                     // get mint
                     const mint = (
-                        tokenAccount.account.data as web3.ParsedAccountData
+                        tokenAccount.account.data as ParsedAccountData
                     ).parsed.info.mint;
 
                     const xs = await this.program.account.coupon.all([
@@ -561,13 +576,13 @@ export class AnchorClient {
         const mintsBalance = tokenAccounts
             .filter(
                 (x) =>
-                    (x.account.data as web3.ParsedAccountData).parsed.info
+                    (x.account.data as ParsedAccountData).parsed.info
                         .tokenAmount.uiAmount > 0
             )
             .map((x) => [
-                (x.account.data as web3.ParsedAccountData).parsed.info.mint,
-                (x.account.data as web3.ParsedAccountData).parsed.info
-                    .tokenAmount.uiAmount,
+                (x.account.data as ParsedAccountData).parsed.info.mint,
+                (x.account.data as ParsedAccountData).parsed.info.tokenAmount
+                    .uiAmount,
             ]);
 
         // get (coupon, balance)
@@ -587,9 +602,9 @@ export class AnchorClient {
     }
 
     async getRegionMarketPdasFromMint(
-        mint: web3.PublicKey,
+        mint: PublicKey,
         region?: number[]
-    ): Promise<[web3.PublicKey, web3.PublicKey]> {
+    ): Promise<[PublicKey, PublicKey]> {
         // this region is not provided, try to get it from the coupon (this requires the coupon to exist)
         if (region === undefined) {
             const couponPda = this.getCouponPda(mint)[0];
@@ -614,8 +629,8 @@ export class AnchorClient {
         region,
         numTokens,
     }: {
-        mint: web3.PublicKey;
-        coupon: web3.PublicKey;
+        mint: PublicKey;
+        coupon: PublicKey;
         region: number[];
         numTokens: number;
     }): Promise<TransactionResult> {
@@ -632,7 +647,7 @@ export class AnchorClient {
                 mint: mint,
                 coupon: coupon,
                 signer: this.anchorWallet.publicKey,
-                systemProgram: web3.SystemProgram.programId,
+                systemProgram: SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
             })
@@ -650,16 +665,42 @@ export class AnchorClient {
      * @returns A promise that resolves to a SignatureResult indicating the outcome of the claim transaction.
      */
     async claimFromMarket(
-        mint: web3.PublicKey,
+        mint: PublicKey,
         numTokens: number,
         region?: number[] | null,
         geohash?: number[] | null
     ): Promise<TransactionResult> {
+        const ix = await this.claimFromMarketIx({
+            mint,
+            numTokens,
+            region,
+            geohash,
+        });
+
+        // Create a new transaction, add the instruction, and execute the transaction.
+        const tx = new Transaction();
+        tx.add(ix);
+        return await this.executeTransaction(tx);
+    }
+
+    async claimFromMarketIx({
+        mint,
+        numTokens,
+        region,
+        geohash,
+        wallet,
+    }: {
+        mint: PublicKey;
+        numTokens: number;
+        region?: number[] | null;
+        geohash?: number[] | null;
+        wallet?: PublicKey | null;
+    }): Promise<TransactionInstruction> {
         // Get the Program Derived Addresses (PDAs) for the region market and the associated token account.
         const [regionMarketPda, regionMarketTokenAccountPda] =
             await this.getRegionMarketPdasFromMint(mint);
 
-        // Check if a user exists, and create one if not.
+        // Check if a user exists, and create one if not. (TODO: Get rid of user, just use wallet)
         const user = await this.getUser();
         if (user === null) {
             if (region == null) {
@@ -690,7 +731,7 @@ export class AnchorClient {
         );
 
         // Build the instruction for the claimFromMarket transaction.
-        const ix = await this.program.methods
+        return await this.program.methods
             .claimFromMarket(new BN(numTokens))
             .accounts({
                 user: userPda,
@@ -700,26 +741,21 @@ export class AnchorClient {
                 regionMarketTokenAccount: regionMarketTokenAccountPda,
                 mint: mint,
                 signer: this.anchorWallet.publicKey,
-                systemProgram: web3.SystemProgram.programId,
+                systemProgram: SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
             })
             .instruction();
-
-        // Create a new transaction, add the instruction, and execute the transaction.
-        const tx = new Transaction();
-        tx.add(ix);
-        return await this.executeTransaction(tx);
     }
 
     /*
     Store
     */
 
-    getStorePda(id: BN, owner?: web3.PublicKey): [web3.PublicKey, number] {
-        return web3.PublicKey.findProgramAddressSync(
+    getStorePda(id: BN, owner?: PublicKey): [PublicKey, number] {
+        return PublicKey.findProgramAddressSync(
             [
-                anchor.utils.bytes.utf8.encode("store"),
+                utils.bytes.utf8.encode("store"),
                 owner
                     ? owner.toBuffer()
                     : this.anchorWallet.publicKey.toBuffer(),
@@ -761,7 +797,7 @@ export class AnchorClient {
                     .accounts({
                         store: storePda,
                         signer: this.anchorWallet.publicKey,
-                        systemProgram: web3.SystemProgram.programId,
+                        systemProgram: SystemProgram.programId,
                         state: programStatePda,
                     })
                     .instruction()
@@ -769,16 +805,16 @@ export class AnchorClient {
         );
     }
 
-    async getStore(id: BN, owner?: web3.PublicKey): Promise<Store> {
+    async getStore(id: BN, owner?: PublicKey): Promise<Store> {
         const [storePda, _] = this.getStorePda(id, owner);
         return await this.program.account.store.fetch(storePda);
     }
 
-    async getStoreByPda(pda: web3.PublicKey): Promise<Store> {
+    async getStoreByPda(pda: PublicKey): Promise<Store> {
         return await this.program.account.store.fetch(pda);
     }
 
-    async getStores(owner?: web3.PublicKey): Promise<Account<Store>[]> {
+    async getStores(owner?: PublicKey): Promise<Account<Store>[]> {
         return this.program.account.store.all([
             {
                 memcmp: {
@@ -806,10 +842,10 @@ export class AnchorClient {
     User
     */
 
-    getUserPda(wallet?: web3.PublicKey): [web3.PublicKey, number] {
-        return web3.PublicKey.findProgramAddressSync(
+    getUserPda(wallet?: PublicKey): [PublicKey, number] {
+        return PublicKey.findProgramAddressSync(
             [
-                anchor.utils.bytes.utf8.encode("user"),
+                utils.bytes.utf8.encode("user"),
                 wallet
                     ? wallet.toBuffer()
                     : this.anchorWallet.publicKey.toBuffer(),
@@ -819,9 +855,9 @@ export class AnchorClient {
     }
 
     async getUserTokenAccount(
-        mint: web3.PublicKey,
-        wallet?: web3.PublicKey
-    ): Promise<web3.PublicKey> {
+        mint: PublicKey,
+        wallet?: PublicKey
+    ): Promise<PublicKey> {
         const userPda = this.getUserPda(wallet)[0];
 
         return await getAssociatedTokenAddress(
@@ -854,7 +890,7 @@ export class AnchorClient {
             .accounts({
                 user: pda,
                 signer: this.anchorWallet.publicKey,
-                systemProgram: web3.SystemProgram.programId,
+                systemProgram: SystemProgram.programId,
             })
             .instruction();
 
@@ -868,9 +904,9 @@ export class AnchorClient {
     Program
     */
 
-    getProgramStatePda(): [web3.PublicKey, number] {
-        return web3.PublicKey.findProgramAddressSync(
-            [anchor.utils.bytes.utf8.encode("state")],
+    getProgramStatePda(): [PublicKey, number] {
+        return PublicKey.findProgramAddressSync(
+            [utils.bytes.utf8.encode("state")],
             this.programId
         );
     }
@@ -884,7 +920,7 @@ export class AnchorClient {
                     .accounts({
                         programState: programStatePda,
                         signer: this.anchorWallet.publicKey,
-                        systemProgram: web3.SystemProgram.programId,
+                        systemProgram: SystemProgram.programId,
                     })
                     .instruction()
             )
@@ -902,7 +938,7 @@ export class AnchorClient {
 
     async confirmTransaction(
         signature: string,
-        commitment?: web3.Commitment
+        commitment?: Commitment
     ): Promise<TransactionResult> {
         const bh = await this.connection.getLatestBlockhash();
         const result = (
@@ -930,7 +966,7 @@ export class AnchorClient {
     async executeTransaction(
         tx: Transaction,
         signers?: Array<Signer>,
-        options?: web3.SendOptions
+        options?: SendOptions
     ): Promise<TransactionResult> {
         // set latest blockhash
         tx.recentBlockhash = (

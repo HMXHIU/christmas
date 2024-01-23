@@ -30,11 +30,19 @@ export const POST = async (event: any) => {
     let urlParams = event.url.searchParams;
     let signer_ip = event.request.headers.get("x-forwarded-for");
 
-    // Validate parameters
-    const { label, message, recipient, account } = _validateParams(
+    // Get solana pay parameters
+    const { label, message, recipient } = _getAndValidateSolanaPayParams(
         urlParams,
         body,
     );
+
+    // Get procedure parameters
+    const p = _getAndValidateProcedure(body);
+    if (p !== null) {
+        const { procedure, parameters } = p;
+        console.log(`procedure: ${procedure}`);
+        console.log(`parameters: ${JSON.stringify(parameters)}`);
+    }
 
     // Set up connection and signer
     const connection = new Connection(PUBLIC_RPC_ENDPOINT, "processed");
@@ -66,32 +74,80 @@ export const POST = async (event: any) => {
     });
 };
 
-export function _validateParams(urlParams: URLSearchParams, body: any) {
+export function _getAndValidateSolanaPayParams(
+    urlParams: URLSearchParams,
+    body: any,
+) {
+    // Get label from urlParams
     let labelParam = urlParams.get("label");
     if (labelParam && typeof labelParam !== "string")
         throw new Error("invalid label");
     let label = labelParam || undefined;
 
+    // Get message from urlParams
     let messageParam = urlParams.get("message");
     if (messageParam && typeof messageParam !== "string")
         throw new Error("invalid message");
     let message = messageParam || undefined;
 
+    // Get recipient from urlParams
     let recipientParam = urlParams.get("recipient");
     if (!recipientParam) throw new Error("missing recipient");
     if (typeof recipientParam !== "string")
         throw new Error("invalid recipient");
     let recipient = new PublicKey(recipientParam);
 
-    // Account provided in the transaction request body by the wallet.
-    let account = body.account;
-    if (!account) throw new Error("missing account");
-    if (typeof account !== "string") throw new Error("invalid account");
-
     return {
         label,
         message,
         recipient,
-        account,
+    };
+}
+
+export function _getAndValidateProcedure(body: any): Procedure | null {
+    let procedure = body.procedure;
+    let parameters = body.parameters;
+
+    if (procedure === "claimFromMarket") {
+        return _validateClaimFromMarketProcedure(parameters);
+    }
+
+    return null;
+}
+
+function _validateClaimFromMarketProcedure(
+    parameters: any,
+): ClaimFromMarketProcedure {
+    // check numtokens is a number > 0
+    if (!parameters.numTokens || typeof parameters.numTokens !== "number")
+        throw new Error("invalid numTokens");
+
+    // check mint is a valid string
+    if (!parameters.mint || typeof parameters.mint !== "string")
+        throw new Error("invalid mint");
+
+    return {
+        procedure: "claimFromMarket",
+        parameters: {
+            mint: new PublicKey(parameters.mint),
+            numTokens: parameters.numTokens,
+            region: parameters.region || null,
+            geohash: parameters.geohash || null,
+        },
+    };
+}
+
+interface Procedure {
+    procedure: string;
+    parameters: any;
+}
+
+interface ClaimFromMarketProcedure extends Procedure {
+    procedure: "claimFromMarket";
+    parameters: {
+        mint: PublicKey;
+        numTokens: number;
+        region?: number[] | null;
+        geohash?: number[] | null;
     };
 }
