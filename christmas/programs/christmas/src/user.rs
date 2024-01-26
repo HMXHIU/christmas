@@ -6,13 +6,14 @@ use crate::defs::*;
 pub struct CreateUser<'info> {
     #[account(
         init_if_needed,
-        payer = signer,
+        payer = payer, // the payer might not be the signer (pay on behalf of the signer)
         seeds = [b"user", signer.key().as_ref()],
         bump,
         space = User::len(),
     )]
     pub user: Account<'info, User>,
     #[account(mut)]
+    pub payer: Signer<'info>,
     pub signer: Signer<'info>,
     pub system_program: Program<'info, System>,
 }

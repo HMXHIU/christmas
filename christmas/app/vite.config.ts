@@ -1,6 +1,7 @@
 import { purgeCss } from "vite-plugin-tailwind-purgecss";
 import { sveltekit } from "@sveltejs/kit/vite";
 import { defineConfig } from "vite";
+// "vite-plugin-node-polyfills": "^0.17.0" is required for this to work 0.19.0 does not work with buffer
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 export default defineConfig({
@@ -10,16 +11,6 @@ export default defineConfig({
     resolve: {
         alias: {
             process: "process/browser",
-            buffer: "buffer/",
-        },
-    },
-    build: {
-        rollupOptions: {
-            external: [
-                "vite-plugin-node-polyfills/shims/buffer",
-                "vite-plugin-node-polyfills/shims/global",
-                "vite-plugin-node-polyfills/shims/process",
-            ],
         },
     },
 });

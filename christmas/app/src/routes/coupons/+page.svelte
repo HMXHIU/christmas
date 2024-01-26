@@ -1,4 +1,12 @@
 <script lang="ts">
+    import { PUBLIC_FEE_PAYER_PUBKEY } from "$env/static/public";
+    import { generateQRCodeURL } from "$lib/clients/utils";
+    import {
+        Message,
+        PublicKey,
+        Transaction,
+        VersionedTransaction,
+    } from "@solana/web3.js";
     import ClaimedCouponCard from "../../components/ClaimedCouponCard.svelte";
     import MarketCouponCard from "../../components/MarketCouponCard.svelte";
     import {
@@ -41,31 +49,75 @@
         "Fallen autumn leaves, Whispers of the empty wind, Nature's void perceived",
     ];
 
-    function createUser() {
-        const url = `${window.location.origin}/api/solana-pay`; // replace with your actual URL
-        const data = {
-            // your data here
-            procedure: "createUser",
-            parameters: {
-                wallet: $anchorClient?.anchorWallet.publicKey.toString(),
-                geohash: $userDeviceClient?.location.geohash,
-                region: $userDeviceClient?.location.country?.code,
-            },
-        };
+    // async function createUser() {
+    //     const url = generateQRCodeURL(
+    //         {
+    //             label: "hello",
+    //             message: "world",
+    //             recipient: PUBLIC_FEE_PAYER_PUBKEY,
+    //         },
+    //         "api/solana-pay",
+    //     );
 
-        fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(data),
-        })
-            .then((response) => response.json())
-            .then((data) => console.log(data))
-            .catch((error) => {
-                console.error("Error:", error);
-            });
-    }
+    //     const ix = await $anchorClient?.createUserIx({
+    //         wallet: $anchorClient?.anchorWallet.publicKey,
+    //         geohash: $userDeviceClient?.location?.geohash!,
+    //         region: $userDeviceClient?.location?.country?.code!,
+    //         payer: new PublicKey(PUBLIC_FEE_PAYER_PUBKEY),
+    //     });
+    //     let latestBlockHash =
+    //         await $anchorClient?.connection.getLatestBlockhash();
+    //     let tx = new Transaction({
+    //         blockhash: latestBlockHash!.blockhash,
+    //         lastValidBlockHeight: latestBlockHash!.lastValidBlockHeight,
+    //         feePayer: new PublicKey(PUBLIC_FEE_PAYER_PUBKEY),
+    //     });
+    //     tx.add(ix!);
+
+    //     const signedTx = await $anchorClient?.anchorWallet.signTransaction(tx);
+
+    //     const serializedTransaction = signedTx?.serialize({
+    //         verifySignatures: false, // TODO: What does this do?
+    //         requireAllSignatures: false,
+    //     });
+    //     const base64Transaction = serializedTransaction?.toString("base64");
+
+    //     const data = {
+    //         // your data here
+    //         procedure: "createUser",
+    //         parameters: {
+    //             transaction: base64Transaction,
+    //             // wallet: $anchorClient?.anchorWallet.publicKey.toString(),
+    //             // geohash: $userDeviceClient?.location?.geohash,
+    //             // region: $userDeviceClient?.location?.country?.code,
+    //         },
+    //     };
+
+    //     fetch(url, {
+    //         method: "POST",
+    //         headers: {
+    //             "Content-Type": "application/json",
+    //         },
+    //         body: JSON.stringify(data),
+    //     })
+    //         .then((response) => response.json())
+    //         .then(({ transaction, message }) => {
+    //             console.log(transaction);
+    //             // deserialize transaction
+    //             const tx = Transaction.from(Buffer.from(transaction, "base64"));
+
+    //             return $anchorClient?.signAndSendTransaction({ tx });
+    //         })
+    //         .then((signature) => {
+    //             console.log(signature);
+    //         })
+    //         .catch((error) => {
+    //             console.error("Error:", error);
+    //             console.log(
+    //                 JSON.stringify(error, Object.getOwnPropertyNames(error), 2),
+    //             );
+    //         });
+    // }
 </script>
 
 <!-- Claimed coupons -->
@@ -86,13 +138,13 @@
         </p>
     {/if}
 </div>
-
+<!-- 
 <button
     class="btn-icon bg-surface-800 relative w-14 -top-5 right: -right-[calc(50%-2rem)]"
     on:click={createUser}
 >
     Create User
-</button>
+</button> -->
 
 <!-- Market News -->
 <header

@@ -6,7 +6,11 @@
         Store,
     } from "$lib/clients/anchor-client/types";
     import { cleanString } from "$lib/clients/anchor-client/utils";
-    import { fetchMintedCouponSupplyBalance, fetchStoreMetadata } from "$lib";
+    import {
+        fetchMarketCoupons,
+        fetchMintedCouponSupplyBalance,
+        fetchStoreMetadata,
+    } from "$lib";
     import { createCoupon, type CreateCouponFormResult } from "$lib";
     import { getModalStore } from "@skeletonlabs/skeleton";
     import type { ModalSettings } from "@skeletonlabs/skeleton";
@@ -41,6 +45,8 @@
                 });
                 // Refetch coupons
                 await fetchMintedCouponSupplyBalance(store);
+                // Refetch market place coupons
+                await fetchMarketCoupons();
             }
         });
     }
@@ -50,6 +56,8 @@
     ) {
         // Refetch coupons
         await fetchMintedCouponSupplyBalance(store);
+        // Refetch market place coupons
+        await fetchMarketCoupons();
     }
 </script>
 

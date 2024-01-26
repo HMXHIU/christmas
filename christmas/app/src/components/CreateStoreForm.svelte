@@ -59,12 +59,12 @@
         // only use default location on initial load
         values = {
             region: String.fromCharCode(
-                ...($userDeviceClient?.location.country?.code || []),
+                ...($userDeviceClient?.location?.country?.code || []),
             ),
             latitude:
-                $userDeviceClient?.location.geolocationCoordinates?.latitude,
+                $userDeviceClient?.location?.geolocationCoordinates?.latitude,
             longitude:
-                $userDeviceClient?.location.geolocationCoordinates?.longitude,
+                $userDeviceClient?.location?.geolocationCoordinates?.longitude,
             geohash: String.fromCharCode(
                 ...($userDeviceClient?.location?.geohash || []),
             ),
@@ -165,7 +165,7 @@
             <label class="label">
                 <span>Country</span>
                 <select class="select" bind:value={values.region}>
-                    {#each Object.values(COUNTRY_DETAILS) as [code, name] (code)}
+                    {#each Object.entries(COUNTRY_DETAILS) as [key, [code, name]] (key)}
                         <option value={code}>{name}</option>
                     {/each}
                 </select>

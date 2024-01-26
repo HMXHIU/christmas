@@ -4,7 +4,7 @@ import {
     AnchorProvider,
     utils,
 } from "@coral-xyz/anchor";
-import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+import bs58 from "bs58";
 import { BN } from "bn.js";
 import {
     Transaction,
@@ -18,6 +18,9 @@ import {
     type SendOptions,
     type TransactionSignature,
     type Commitment,
+    type SerializeConfig,
+    type Version,
+    VersionedTransaction,
 } from "@solana/web3.js";
 import idl from "../../../../../target/idl/christmas.json";
 import { type Christmas } from "../../../../../target/types/christmas";
@@ -53,6 +56,7 @@ import type {
 import { timeStampToDate } from "../utils";
 import { getDateWithinRangeFilterCombinations } from "./utils";
 import { type Location } from "../user-device-client/types";
+import type { Key } from "readline";
 
 export class AnchorClient {
     programId: PublicKey;
@@ -61,6 +65,7 @@ export class AnchorClient {
     provider: Provider;
     program: Program<Christmas>;
     anchorWallet: AnchorWallet; // AnchorWallet from useAnchorWallet() to set up Anchor in the frontend
+    keypair: Keypair | null; // When using private key instead of wallet
     wallet: Wallet | null; // The Wallet from useWallet has more functionality, but can't be used to set up the AnchorProvider
     location: Location | null; // when using AnchorClient not from the broswer, location is required for some functionality
 
@@ -70,16 +75,19 @@ export class AnchorClient {
         anchorWallet,
         wallet,
         location,
+        keypair,
     }: {
         anchorWallet: AnchorWallet;
         wallet?: Wallet;
         programId?: PublicKey;
         cluster?: string;
         location?: Location;
+        keypair?: Keypair;
     }) {
         this.anchorWallet = anchorWallet;
         this.wallet = wallet || null;
         this.location = location || null;
+        this.keypair = keypair || null;
 
         this.cluster = cluster || "http://127.0.0.1:8899";
         this.connection = new Connection(this.cluster, "confirmed");
@@ -889,10 +897,12 @@ export class AnchorClient {
         geohash,
         region,
         wallet,
+        payer,
     }: {
         geohash: number[];
         region: number[];
         wallet?: PublicKey | null;
+        payer?: PublicKey | null;
     }): Promise<TransactionInstruction> {
         const [pda, _] = this.getUserPda(wallet);
 
@@ -901,6 +911,7 @@ export class AnchorClient {
             .accounts({
                 user: pda,
                 signer: this.anchorWallet.publicKey,
+                payer: payer || this.anchorWallet.publicKey,
                 systemProgram: SystemProgram.programId,
             })
             .instruction();
@@ -974,6 +985,8 @@ export class AnchorClient {
         signers?: Array<Signer>,
         options?: SendOptions,
     ): Promise<TransactionResult> {
+        options = options || {};
+
         // set latest blockhash
         tx.recentBlockhash = (
             await this.connection.getLatestBlockhash("confirmed")
@@ -987,14 +1000,38 @@ export class AnchorClient {
             tx.partialSign(...signers);
         }
 
-        // sign and send
+        // FOR DEBUG ONLY
+        // return await this.signAndSendTransaction({tx, options: {
+        //     ...options,
+        //     skipPreflight: true,
+        // }});
+
+        return await this.signAndSendTransaction({ tx, options });
+    }
+
+    async signAndSendTransaction({
+        tx,
+        options,
+        serializeConfig,
+        alreadySigned,
+    }: {
+        tx: Transaction | VersionedTransaction;
+        options?: SendOptions;
+        serializeConfig?: SerializeConfig;
+        alreadySigned?: boolean;
+    }): Promise<TransactionResult> {
+        options = options || {};
+        alreadySigned = alreadySigned || false;
+
+        // sign
+        const signedTx = alreadySigned
+            ? tx
+            : await this.anchorWallet.signTransaction(tx);
+
+        // send transaction
         const signature = await this.connection.sendRawTransaction(
-            (await this.anchorWallet.signTransaction(tx)).serialize(),
-            // options
-            // REMOVE FOR DEBUG ONLY
-            {
-                skipPreflight: true,
-            },
+            signedTx.serialize(serializeConfig),
+            options,
         );
 
         // confirm transaction

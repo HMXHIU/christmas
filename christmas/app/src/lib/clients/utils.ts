@@ -1,4 +1,4 @@
-import { BN } from "@coral-xyz/anchor";
+import { BN } from "bn.js";
 import { IPFS_HTTP_GATEWAY } from "./nft-client/defs";
 import type {
     Coupon,
@@ -36,7 +36,10 @@ export function timeStampToDate(timeStamp: BN): Date {
     return new Date(timeStamp.toNumber());
 }
 
-export function generateQRCodeURL(kwargs: Record<string, string>): string {
+export function generateQRCodeURL(
+    kwargs: Record<string, string>,
+    uri?: string,
+): string {
     const origin =
         (typeof window !== "undefined" ? window.location.origin : undefined) ||
         "https://${origin}";
@@ -48,8 +51,9 @@ export function generateQRCodeURL(kwargs: Record<string, string>): string {
             queryParams.push(`${key}=${encodeURIComponent(kwargs[key])}`);
         }
     }
+    const url = new URL(uri || "", origin);
 
-    return `${origin}?${queryParams.sort().join("&")}`;
+    return `${url}?${queryParams.sort().join("&")}`;
 }
 
 export function extractQueryParams(url: string): Record<string, string> {

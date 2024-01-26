@@ -10,10 +10,13 @@ import {
     PublicKey,
     Transaction,
     TransactionInstruction,
+    TransactionMessage,
+    VersionedTransaction,
 } from "@solana/web3.js";
 import { AnchorClient } from "$lib/clients/anchor-client/anchorClient";
-import { PROGRAM_ID } from "$lib/clients/anchor-client/defs";
+import { GEOHASH_SIZE, PROGRAM_ID } from "$lib/clients/anchor-client/defs";
 import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
+import { COUNTRY_DETAILS } from "$lib/clients/user-device-client/defs";
 
 // Load keypair
 const FEE_PAYER_PUBKEY = new PublicKey(PUBLIC_FEE_PAYER_PUBKEY);
@@ -54,17 +57,36 @@ export const POST = async (event: any) => {
 
     // Get procedure instruction
     const { procedure, parameters } = body;
-    const procedureIx = await _getProcedureIx(body);
-    if (procedureIx == null) {
-        throw new Error("Invalid procedure");
-    }
-
     console.log(`
     [${signer_ip} -> ${procedure}]
     label: ${label}
     message: ${message}
     recipient: ${recipient}
+    parameters: ${JSON.stringify(parameters, null, 2)}
     `);
+
+    const procedureIx = await _getProcedureIx(body);
+    if (procedureIx == null) {
+        throw new Error("Invalid procedure");
+    }
+
+    // Create serialized transaction
+    const base64Transaction = await _createSerializedTransaction(procedureIx);
+
+    return json({
+        transaction: base64Transaction,
+        message: message,
+    });
+};
+
+async function _createSerializedTransaction(ix: TransactionInstruction) {
+    // const messageV0 = new VersionedTransaction(
+    //     new TransactionMessage({
+    //         payerKey: FEE_PAYER_PUBKEY,
+    //         recentBlockhash: latestBlockHash.blockhash,
+    //         [procedureIx]
+    //     }).compileToV0Message(),
+    // );
 
     // Set up connection and signer
     const connection = new Connection(PUBLIC_RPC_ENDPOINT, "processed");
@@ -81,25 +103,22 @@ export const POST = async (event: any) => {
     });
 
     // Add procedure instruction
-    tx.add(procedureIx);
+    tx.add(ix);
 
     // Partially sign to take on fees
     tx.partialSign(signer);
 
     // Serialize partially signed transaction.
     const serializedTransaction = tx.serialize({
-        verifySignatures: false,
+        verifySignatures: false, // TODO: What does this do?
         requireAllSignatures: false,
     });
     const base64Transaction = serializedTransaction.toString("base64");
 
-    return json({
-        transaction: base64Transaction,
-        message: message,
-    });
-};
+    return base64Transaction;
+}
 
-export function _getSolanaPayParams(urlParams: URLSearchParams) {
+function _getSolanaPayParams(urlParams: URLSearchParams) {
     // Get label from urlParams
     let label = urlParams.get("label");
     if (!label || typeof label !== "string") throw new Error("invalid label");
@@ -121,7 +140,7 @@ export function _getSolanaPayParams(urlParams: URLSearchParams) {
     };
 }
 
-export async function _getProcedureIx({
+async function _getProcedureIx({
     procedure,
     parameters,
 }: {
@@ -166,16 +185,24 @@ function _getCreateUserProdecureIx(
     if (!parameters.wallet || typeof parameters.wallet !== "string")
         throw new Error("Invalid wallet");
 
-    // check region is a valid string
-    if (!parameters.region || typeof parameters.region !== "string")
-        throw new Error("Invalid region");
+    // check valid region
+    try {
+        COUNTRY_DETAILS[String.fromCharCode(...parameters.region)];
+    } catch (error) {
+        throw new Error(`Invalid region: ${parameters.region}`);
+    }
 
     // check geohash is a valid string
-    if (!parameters.geohash || typeof parameters.geohash !== "string")
-        throw new Error("Invalid geohash");
+    if (
+        !parameters.geohash ||
+        !Array.isArray(parameters.geohash) ||
+        parameters.geohash.length !== GEOHASH_SIZE
+    )
+        throw new Error(`Invalid geohash: ${parameters.geohash}`);
 
     return anchorClient.createUserIx({
         wallet: new PublicKey(parameters.wallet),
+        payer: FEE_PAYER_PUBKEY,
         region: parameters.region,
         geohash: parameters.geohash,
     });
