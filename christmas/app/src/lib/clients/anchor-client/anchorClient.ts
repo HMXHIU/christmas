@@ -901,8 +901,8 @@ export class AnchorClient {
     }: {
         geohash: number[];
         region: number[];
-        wallet?: PublicKey | null;
-        payer?: PublicKey | null;
+        wallet?: PublicKey | null; // the user pubkey (defaults to this.anchorWallet.publicKey)
+        payer?: PublicKey | null; // the payer pubkey (defaults to this.anchorWallet.publicKey)
     }): Promise<TransactionInstruction> {
         const [pda, _] = this.getUserPda(wallet);
 
@@ -910,7 +910,7 @@ export class AnchorClient {
             .createUser(region, geohash)
             .accounts({
                 user: pda,
-                signer: this.anchorWallet.publicKey,
+                signer: wallet || this.anchorWallet.publicKey,
                 payer: payer || this.anchorWallet.publicKey,
                 systemProgram: SystemProgram.programId,
             })
@@ -1013,18 +1013,18 @@ export class AnchorClient {
         tx,
         options,
         serializeConfig,
-        alreadySigned,
+        skipSign,
     }: {
         tx: Transaction | VersionedTransaction;
         options?: SendOptions;
         serializeConfig?: SerializeConfig;
-        alreadySigned?: boolean;
+        skipSign?: boolean;
     }): Promise<TransactionResult> {
         options = options || {};
-        alreadySigned = alreadySigned || false;
+        skipSign = skipSign || false;
 
         // sign
-        const signedTx = alreadySigned
+        const signedTx = skipSign
             ? tx
             : await this.anchorWallet.signTransaction(tx);
 
