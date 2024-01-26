@@ -1,4 +1,4 @@
-import { json } from "@sveltejs/kit";
+import { json, error } from "@sveltejs/kit";
 import {
     PUBLIC_FEE_PAYER_PUBKEY,
     PUBLIC_RPC_ENDPOINT,
@@ -10,6 +10,7 @@ import {
     PublicKey,
     Transaction,
     TransactionInstruction,
+    VersionedMessage,
 } from "@solana/web3.js";
 import { AnchorClient } from "$lib/clients/anchor-client/anchorClient";
 import { GEOHASH_SIZE, PROGRAM_ID } from "$lib/clients/anchor-client/defs";
@@ -32,28 +33,33 @@ const anchorClient = new AnchorClient({
 
 /** @type {import('@sveltejs/kit').RequestHandler} */
 export const POST = async (event: any) => {
-    // Get request body and url parameters
-    let body = await event.request.json();
+    try {
+        // Get request body and url parameters
+        let body = await event.request.json();
 
-    // Get procedure instruction
-    const { procedure, parameters } = body;
+        // Get procedure instruction
+        const { procedure, parameters } = body;
 
-    console.log(`
-        procedure: ${procedure}
-        parameters: ${JSON.stringify(parameters, null, 2)}
-    `);
+        console.log(`
+            procedure: ${procedure}
+            parameters: ${JSON.stringify(parameters, null, 2)}
+        `);
 
-    const procedureIx = await _getProcedureIx(body);
-    if (procedureIx == null) {
-        throw new Error("Invalid procedure");
+        const procedureIx = await _getProcedureIx(body);
+        if (procedureIx == null) {
+            error(500, { message: "Invalid procedure" });
+        }
+
+        // Create serialized transaction
+        const base64Transaction =
+            await _createSerializedTransaction(procedureIx);
+
+        return json({
+            transaction: base64Transaction,
+        });
+    } catch (e: any) {
+        error(500, { message: e.toString() });
     }
-
-    // Create serialized transaction
-    const base64Transaction = await _createSerializedTransaction(procedureIx);
-
-    return json({
-        transaction: base64Transaction,
-    });
 };
 
 async function _createSerializedTransaction(ix: TransactionInstruction) {
@@ -121,6 +127,7 @@ function _getClaimFromMarketProcedureIx(
         mint: new PublicKey(parameters.mint),
         numTokens: parameters.numTokens,
         wallet: new PublicKey(parameters.wallet),
+        payer: FEE_PAYER_PUBKEY,
     });
 }
 
@@ -138,18 +145,9 @@ function _getCreateUserProdecureIx(
         throw new Error(`Invalid region: ${parameters.region}`);
     }
 
-    // check geohash is a valid string
-    if (
-        !parameters.geohash ||
-        !Array.isArray(parameters.geohash) ||
-        parameters.geohash.length !== GEOHASH_SIZE
-    )
-        throw new Error(`Invalid geohash: ${parameters.geohash}`);
-
     return anchorClient.createUserIx({
         wallet: new PublicKey(parameters.wallet),
         payer: FEE_PAYER_PUBKEY,
         region: parameters.region,
-        geohash: parameters.geohash,
     });
 }

@@ -39,12 +39,11 @@ pub mod christmas {
         Ok(())
     }
 
-    pub fn create_user(ctx: Context<CreateUser>, region: [u8; 3], geohash: [u8; 6]) -> Result<()> {
+    pub fn create_user(ctx: Context<CreateUser>, region: [u8; 3]) -> Result<()> {
         // check valid region
         code_bytes_to_country(&region).unwrap();
 
         ctx.accounts.user.region = region;
-        ctx.accounts.user.geohash = geohash;
         ctx.accounts.user.bump = *ctx.bumps.get("user").unwrap();
         Ok(())
     }
@@ -173,6 +172,12 @@ pub mod christmas {
     }
 
     pub fn claim_from_market(ctx: Context<ClaimFromMarket>, num_tokens: u64) -> Result<()> {
+        // set user fields (from region_market) if it is being created
+        if ctx.accounts.user.bump == 0 {
+            ctx.accounts.user.region = ctx.accounts.region_market.region;
+            ctx.accounts.user.bump = *ctx.bumps.get("user").unwrap();
+        }
+
         transfer(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),

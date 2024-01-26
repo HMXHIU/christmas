@@ -5,7 +5,7 @@ import {
     utils,
 } from "@coral-xyz/anchor";
 import bs58 from "bs58";
-import { BN } from "bn.js";
+import BN from "bn.js";
 import {
     Transaction,
     type Signer,
@@ -19,7 +19,6 @@ import {
     type TransactionSignature,
     type Commitment,
     type SerializeConfig,
-    type Version,
     VersionedTransaction,
 } from "@solana/web3.js";
 import idl from "../../../../../target/idl/christmas.json";
@@ -56,7 +55,6 @@ import type {
 import { timeStampToDate } from "../utils";
 import { getDateWithinRangeFilterCombinations } from "./utils";
 import { type Location } from "../user-device-client/types";
-import type { Key } from "readline";
 
 export class AnchorClient {
     programId: PublicKey;
@@ -182,7 +180,7 @@ export class AnchorClient {
         const tx = new Transaction();
         tx.add(ix);
 
-        return await this.executeTransaction(tx, [mint]);
+        return await this.executeTransaction({ tx, signers: [mint] });
     }
 
     /**
@@ -229,7 +227,7 @@ export class AnchorClient {
         // Build and execute the transaction.
         const tx = new Transaction();
         tx.add(ix);
-        return await this.executeTransaction(tx);
+        return await this.executeTransaction({ tx });
     }
 
     // TODO: write tests for each invalid case
@@ -659,7 +657,7 @@ export class AnchorClient {
 
         const tx = new Transaction();
         tx.add(ix);
-        return await this.executeTransaction(tx);
+        return await this.executeTransaction({ tx });
     }
 
     /**
@@ -668,24 +666,13 @@ export class AnchorClient {
      * @param numTokens - The number of tokens to be claimed from the market.
      * @returns A promise that resolves to a SignatureResult indicating the outcome of the claim transaction.
      */
-    async claimFromMarket(
-        mint: PublicKey,
-        numTokens: number,
-        region?: number[] | null,
-        geohash?: number[] | null,
-    ): Promise<TransactionResult> {
-        // Create user if it doesn't exist.
-        const user = await this.getUser();
-        if (user === null) {
-            if (region == null) {
-                region = getCountry().code;
-            }
-            if (!geohash) {
-                geohash = await getGeohash();
-            }
-            await this.createUser({ region, geohash });
-        }
-
+    async claimFromMarket({
+        mint,
+        numTokens,
+    }: {
+        mint: PublicKey;
+        numTokens: number;
+    }): Promise<TransactionResult> {
         // Claim from market.
         const ix = await this.claimFromMarketIx({
             mint,
@@ -694,17 +681,19 @@ export class AnchorClient {
 
         const tx = new Transaction();
         tx.add(ix);
-        return await this.executeTransaction(tx);
+        return await this.executeTransaction({ tx });
     }
 
     async claimFromMarketIx({
         mint,
         numTokens,
-        wallet,
+        wallet, // user claiming the coupon (defaults to this.anchorWallet.publicKey)
+        payer, // the payer of the transaction (defaults to this.anchorWallet.publicKey)
     }: {
         mint: PublicKey;
         numTokens: number;
         wallet?: PublicKey | null;
+        payer?: PublicKey | null;
     }): Promise<TransactionInstruction> {
         // Get the Program Derived Addresses (PDAs) for the region market and the associated token account.
         const [regionMarketPda, regionMarketTokenAccountPda] =
@@ -729,11 +718,6 @@ export class AnchorClient {
         // Calculate the Program Derived Address (PDA) for the coupon.
         let couponPda = this.getCouponPda(mint)[0];
 
-        // Output information about the transaction.
-        console.log(
-            `signer: ${this.anchorWallet.publicKey} couponPda: ${couponPda} regionMarket: ${regionMarketPda} regionMarketTokenAccountPda: ${regionMarketTokenAccountPda}`,
-        );
-
         // Build the instruction for the claimFromMarket transaction.
         return await this.program.methods
             .claimFromMarket(new BN(numTokens))
@@ -744,7 +728,8 @@ export class AnchorClient {
                 regionMarket: regionMarketPda,
                 regionMarketTokenAccount: regionMarketTokenAccountPda,
                 mint: mint,
-                signer: this.anchorWallet.publicKey,
+                signer: wallet || this.anchorWallet.publicKey,
+                payer: payer || this.anchorWallet.publicKey,
                 systemProgram: SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -794,8 +779,8 @@ export class AnchorClient {
             throw Error(`Uri exceeds maximum length of ${URI_SIZE}`);
         }
 
-        return await this.executeTransaction(
-            new Transaction().add(
+        return await this.executeTransaction({
+            tx: new Transaction().add(
                 await this.program.methods
                     .createStore(name, storeId, region, geohash, uri)
                     .accounts({
@@ -806,7 +791,7 @@ export class AnchorClient {
                     })
                     .instruction(),
             ),
-        );
+        });
     }
 
     async getStore(id: BN, owner?: PublicKey): Promise<Store> {
@@ -881,25 +866,20 @@ export class AnchorClient {
     }
 
     async createUser({
-        geohash,
         region,
     }: {
-        geohash: number[];
         region: number[];
     }): Promise<TransactionResult> {
         const tx = new Transaction();
-        tx.add(await this.createUserIx({ geohash, region }));
-
-        return await this.executeTransaction(tx);
+        tx.add(await this.createUserIx({ region }));
+        return await this.executeTransaction({ tx });
     }
 
     async createUserIx({
-        geohash,
         region,
         wallet,
         payer,
     }: {
-        geohash: number[];
         region: number[];
         wallet?: PublicKey | null; // the user pubkey (defaults to this.anchorWallet.publicKey)
         payer?: PublicKey | null; // the payer pubkey (defaults to this.anchorWallet.publicKey)
@@ -907,7 +887,7 @@ export class AnchorClient {
         const [pda, _] = this.getUserPda(wallet);
 
         return await this.program.methods
-            .createUser(region, geohash)
+            .createUser(region)
             .accounts({
                 user: pda,
                 signer: wallet || this.anchorWallet.publicKey,
@@ -930,8 +910,8 @@ export class AnchorClient {
 
     async initializeProgram(): Promise<TransactionResult> {
         const [programStatePda, _] = this.getProgramStatePda();
-        return await this.executeTransaction(
-            new Transaction().add(
+        return await this.executeTransaction({
+            tx: new Transaction().add(
                 await this.program.methods
                     .initialize()
                     .accounts({
@@ -941,7 +921,7 @@ export class AnchorClient {
                     })
                     .instruction(),
             ),
-        );
+        });
     }
 
     async getProgramState(): Promise<ProgramState> {
@@ -980,11 +960,15 @@ export class AnchorClient {
         return { result, signature };
     }
 
-    async executeTransaction(
-        tx: Transaction,
-        signers?: Array<Signer>,
-        options?: SendOptions,
-    ): Promise<TransactionResult> {
+    async executeTransaction({
+        tx,
+        signers,
+        options,
+    }: {
+        tx: Transaction;
+        signers?: Array<Signer>;
+        options?: SendOptions;
+    }): Promise<TransactionResult> {
         options = options || {};
 
         // set latest blockhash

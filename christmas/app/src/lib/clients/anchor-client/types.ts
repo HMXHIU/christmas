@@ -55,7 +55,6 @@ export interface Store {
 
 export interface User {
     region: number[];
-    geohash: number[];
     bump: number;
 }
 

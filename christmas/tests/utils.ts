@@ -46,7 +46,7 @@ export async function createUser(
 
     // Create user
     const tx = await program.methods
-        .createUser(region, geohash)
+        .createUser(region)
         .accounts({
             user: pda,
             signer: wallet.publicKey,

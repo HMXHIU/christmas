@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Transaction } from "@solana/web3.js";
 import type {
     Account,
     Coupon,
@@ -6,6 +6,7 @@ import type {
     Store,
     StoreMetadata,
     TokenAccount,
+    TransactionResult,
 } from "./clients/anchor-client/types";
 import {
     anchorClient,
@@ -29,7 +30,7 @@ import {
     STORE_NAME_SIZE,
     STRING_PREFIX_SIZE,
 } from "./clients/anchor-client/defs";
-import { cleanString, stringToUint8Array } from "./clients/anchor-client/utils";
+import { stringToUint8Array } from "./clients/anchor-client/utils";
 
 export interface CreateStoreFormResult {
     name: string;
@@ -144,20 +145,35 @@ export async function claimCoupon({
 }: {
     coupon: Account<Coupon>;
     numTokens: number;
-}) {
+}): Promise<TransactionResult> {
     const ac = get(anchorClient);
     const dc = get(userDeviceClient);
 
     if (ac && dc?.location?.country?.code) {
-        // Claim from market, also creates a `User` using `region` and `geo`
-        await ac.claimFromMarket(
-            coupon.account.mint,
-            numTokens,
-            dc?.location.country.code,
-            dc?.location.geohash,
-        );
-        // TODO: handle error
+        // Try to claim for free
+        const txResult = await payForTransaction({
+            procedure: "claimFromMarket",
+            parameters: {
+                wallet: ac!.anchorWallet.publicKey.toString(),
+                mint: coupon.account.mint.toString(),
+                numTokens,
+            },
+        });
+
+        // Try paying for claim
+        if (txResult.result.err != null) {
+            console.log("Failed to claim for free, paying for claim...");
+            return await ac.claimFromMarket({
+                mint: coupon.account.mint,
+                numTokens,
+            });
+        } else {
+            return txResult;
+        }
     }
+    throw new Error(
+        "Failed to claim coupon, ensure that location is enabled and wallet is connected",
+    );
 }
 
 export async function redeemCoupon({
@@ -319,4 +335,62 @@ export async function verifyRedemption({
     }
 
     return { isVerified: false, err: "Log in to verify..." };
+}
+
+export async function createUser(): Promise<TransactionResult> {
+    const ac = get(anchorClient);
+    const dc = get(userDeviceClient);
+
+    if (ac != null && dc?.location?.country?.code != null) {
+        // Try to create user for free
+        const txResult = await payForTransaction({
+            procedure: "createUser",
+            parameters: {
+                wallet: ac.anchorWallet.publicKey.toString(),
+                region: dc.location.country.code,
+            },
+        });
+
+        // Try paying for user
+        if (txResult.result.err != null) {
+            console.log("Failed to create user for free, paying for user...");
+            return await ac.createUser({
+                region: dc.location.country.code,
+            });
+        }
+    }
+    throw new Error(
+        "Failed to create user, ensure that location is enabled and wallet is connected",
+    );
+}
+
+async function payForTransaction({
+    procedure,
+    parameters,
+}: {
+    procedure: string;
+    parameters: any;
+}): Promise<TransactionResult> {
+    const ac = get(anchorClient);
+
+    if (ac != null) {
+        const url = generateQRCodeURL({}, "api/pay-for");
+
+        return await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ procedure, parameters }),
+        })
+            .then((response) => response.json())
+            .then(({ transaction }) => {
+                return ac.signAndSendTransaction({
+                    tx: Transaction.from(Buffer.from(transaction, "base64")),
+                });
+            });
+    }
+    throw new Error(
+        "Failed to pay for transaction, ensure that wallet is connected",
+    );
 }

@@ -7,16 +7,18 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 
 #[derive(Accounts)]
 pub struct ClaimFromMarket<'info> {
-    #[account(  // user needs to exist
+    // create user if needed when claiming coupon
+    #[account(
+        init_if_needed,
+        payer = payer, // the payer might not be the signer (pay on behalf of the signer)
         seeds = [b"user", signer.key().as_ref()],
-        bump = user.bump,
-        constraint = user.region == region_market.region, // user can only claim from his own region
-        constraint = user.region == coupon.region, // user can only claim from his own region
+        bump,
+        space = User::len(),
     )]
     pub user: Account<'info, User>,
     #[account(
         init_if_needed,
-        payer = signer,
+        payer = payer,
         associated_token::mint = mint,
         associated_token::authority = user,  // note: user not signer
     )]
@@ -43,6 +45,7 @@ pub struct ClaimFromMarket<'info> {
     )]
     pub coupon: Account<'info, Coupon>,
     #[account(mut)]
+    pub payer: Signer<'info>,
     pub signer: Signer<'info>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Program<'info, Token>,

@@ -83,14 +83,12 @@ describe("Test client", () => {
     });
 
     it("Create Users", async () => {
-        await sellerClient.createUser({ geohash, region });
-        await buyerClient.createUser({ geohash, region });
+        await sellerClient.createUser({ region });
+        await buyerClient.createUser({ region });
 
         const seller = await sellerClient.getUser();
-        expect(seller.geohash).to.eql(geohash);
         expect(seller.region).to.eql(region);
         const buyer = await buyerClient.getUser();
-        expect(buyer.geohash).to.eql(geohash);
         expect(buyer.region).to.eql(region);
     });
 
@@ -220,7 +218,10 @@ describe("Test client", () => {
         );
 
         // claim 1 token
-        await buyerClient.claimFromMarket(coupon.account.mint, 1);
+        await buyerClient.claimFromMarket({
+            mint: coupon.account.mint,
+            numTokens: 1,
+        });
 
         // check balance after
         const balanceAfter =

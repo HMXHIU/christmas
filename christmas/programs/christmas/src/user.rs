@@ -21,12 +21,11 @@ pub struct CreateUser<'info> {
 #[account]
 pub struct User {
     pub region: [u8; 3],
-    pub geohash: [u8; 6],
     pub bump: u8,
 }
 
 impl User {
     pub fn len() -> usize {
-        DISCRIMINATOR_SIZE + REGION_SIZE + GEOHASH_SIZE + BUMP_SIZE
+        DISCRIMINATOR_SIZE + REGION_SIZE + BUMP_SIZE
     }
 }

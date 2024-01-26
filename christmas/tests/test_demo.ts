@@ -43,10 +43,10 @@ describe("Generate Demo Content", () => {
     let buyerClient: AnchorClient;
 
     // locations (https://geohash.softeng.co/w21z3w)
-    // const geoHere = Array.from(stringToUint8Array("w21z98")); // faber heights
+    const geoHere = Array.from(stringToUint8Array("w21z98")); // faber heights
     // const geoHere = Array.from(stringToUint8Array("w21z71")); // metacamp
     // const geoHere = Array.from(stringToUint8Array("w21z4w")); // harbour front
-    const geoHere = Array.from(stringToUint8Array("w21z3p")); // clementi mall
+    // const geoHere = Array.from(stringToUint8Array("w21z3p")); // clementi mall
 
     const region = Array.from(stringToUint8Array("SGP"));
     const { latitude, longitude } = ngeohash.decode(
@@ -224,14 +224,12 @@ describe("Generate Demo Content", () => {
     });
 
     it("Create Users", async () => {
-        await sellerClient.createUser({ geohash: geoHere, region });
-        await buyerClient.createUser({ geohash: geoHere, region });
+        await sellerClient.createUser({ region });
+        await buyerClient.createUser({ region });
 
         const seller = await sellerClient.getUser();
-        expect(seller.geohash).to.be.eql(geoHere);
         expect(seller.region).to.be.eql(region);
         const buyer = await buyerClient.getUser();
-        expect(buyer.geohash).to.be.eql(geoHere);
         expect(buyer.region).to.be.eql(region);
     });
 

@@ -122,14 +122,12 @@ describe("Test Unhappy", () => {
     });
 
     it("Create Users", async () => {
-        await sellerClient.createUser({ geohash: geoHere, region });
-        await buyerClient.createUser({ geohash: geoHere, region });
+        await sellerClient.createUser({ region });
+        await buyerClient.createUser({ region });
 
         const seller = await sellerClient.getUser();
-        expect(seller.geohash).to.eql(geoHere);
         expect(seller.region).to.eql(region);
         const buyer = await buyerClient.getUser();
-        expect(buyer.geohash).to.eql(geoHere);
         expect(buyer.region).to.eql(region);
     });
 

@@ -1,4 +1,4 @@
-import { BN } from "bn.js";
+import BN from "bn.js";
 import { IPFS_HTTP_GATEWAY } from "./nft-client/defs";
 import type {
     Coupon,
@@ -51,7 +51,7 @@ export function generateQRCodeURL(
             queryParams.push(`${key}=${encodeURIComponent(kwargs[key])}`);
         }
     }
-    const url = new URL(uri || "", origin);
+    const url = uri ? new URL(uri, origin) : origin;
 
     return `${url}?${queryParams.sort().join("&")}`;
 }
