@@ -8,9 +8,10 @@
         CouponMetadata,
         StoreMetadata,
     } from "$lib/clients/anchor-client/types";
-    import { timeStampToDate } from "$lib/clients/utils";
+    import { generateQRCodeURL, timeStampToDate } from "$lib/clients/utils";
     import QrCode from "./QRCode.svelte";
     import { redeemCoupon } from "$lib";
+    import { anchorClient } from "../store";
 
     export let parent: SvelteComponent;
 
@@ -25,8 +26,18 @@
         $modalStore[0].meta.redemptionQRCodeURL;
 
     async function onRedeemCoupon() {
-        if ($modalStore[0].response) {
-            redemptionQRCodeURL = await redeemCoupon({ numTokens: 1, coupon });
+        if ($modalStore[0].response && $anchorClient != null) {
+            const numTokens = 1;
+            const transactionResult = await redeemCoupon({ numTokens, coupon });
+
+            // Generate redemptionQRCodeURL
+            redemptionQRCodeURL = generateQRCodeURL({
+                signature: transactionResult.signature,
+                wallet: $anchorClient.anchorWallet.publicKey.toString(),
+                mint: coupon.account.mint.toString(),
+                numTokens: String(numTokens),
+            });
+
             $modalStore[0].response(redemptionQRCodeURL);
         }
     }

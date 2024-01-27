@@ -28,8 +28,9 @@ pub struct RedeemCoupon<'info> {
         associated_token::authority = user,
     )]
     pub user_token_account: Account<'info, TokenAccount>,
-    #[account(mut)]
     pub signer: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
     pub token_program: Program<'info, Token>,
 }
 

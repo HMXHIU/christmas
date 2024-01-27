@@ -182,32 +182,37 @@ export async function redeemCoupon({
 }: {
     coupon: Account<Coupon>;
     numTokens: number;
-}): Promise<string | null> {
+}): Promise<TransactionResult> {
     const ac = get(anchorClient);
 
     if (ac) {
-        // Redeem coupon
-        const transactionResult = await ac.redeemCoupon({
-            coupon: coupon.publicKey,
-            mint: coupon.account.mint,
-            numTokens,
+        // Try to redeem for free
+        const txResult = await payForTransaction({
+            procedure: "redeemCoupon",
+            parameters: {
+                coupon: coupon.publicKey.toString(),
+                wallet: ac.anchorWallet.publicKey.toString(),
+                mint: coupon.account.mint.toString(),
+                numTokens,
+            },
         });
 
-        // Coupon already redeemed
-        if (transactionResult.result.err != null) {
-            return null;
+        // Try to pay for redemption
+        if (txResult.result.err != null) {
+            console.log("Failed to redeem for free, paying for redemption...");
+            return await ac.redeemCoupon({
+                coupon: coupon.publicKey,
+                mint: coupon.account.mint,
+                numTokens,
+            });
+        } else {
+            return txResult;
         }
-
-        // Generate and set redemptionQRCodeURL
-        return generateQRCodeURL({
-            signature: transactionResult.signature,
-            wallet: ac.anchorWallet.publicKey.toString(),
-            mint: coupon.account.mint.toString(),
-            numTokens: String(numTokens),
-        });
     }
 
-    return null;
+    throw new Error(
+        "Failed to redeem coupon, ensure that location is enabled and wallet is connected",
+    );
 }
 
 export async function createStore({

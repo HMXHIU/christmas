@@ -1,22 +1,7 @@
 <script lang="ts">
-    import { PUBLIC_FEE_PAYER_PUBKEY } from "$env/static/public";
-    import { generateQRCodeURL } from "$lib/clients/utils";
-    import {
-        Message,
-        PublicKey,
-        Transaction,
-        VersionedMessage,
-        VersionedTransaction,
-    } from "@solana/web3.js";
     import ClaimedCouponCard from "../../components/ClaimedCouponCard.svelte";
     import MarketCouponCard from "../../components/MarketCouponCard.svelte";
-    import {
-        marketCoupons,
-        claimedCoupons,
-        userDeviceClient,
-        anchorClient,
-    } from "../../store";
-    import { createUser } from "$lib";
+    import { marketCoupons, claimedCoupons } from "../../store";
 
     // News
     let news = new Array();

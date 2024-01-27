@@ -33,33 +33,23 @@ const anchorClient = new AnchorClient({
 
 /** @type {import('@sveltejs/kit').RequestHandler} */
 export const POST = async (event: any) => {
-    try {
-        // Get request body and url parameters
-        let body = await event.request.json();
+    // Get request body and url parameters
+    let body = await event.request.json();
 
-        // Get procedure instruction
-        const { procedure, parameters } = body;
+    // Get procedure instruction
+    const { procedure, parameters } = body;
+    console.log(`
+        procedure: ${procedure}
+        parameters: ${JSON.stringify(parameters, null, 2)}
+    `);
+    const procedureIx = await _getProcedureIx(body);
 
-        console.log(`
-            procedure: ${procedure}
-            parameters: ${JSON.stringify(parameters, null, 2)}
-        `);
+    // Create serialized transaction
+    const base64Transaction = await _createSerializedTransaction(procedureIx);
 
-        const procedureIx = await _getProcedureIx(body);
-        if (procedureIx == null) {
-            error(500, { message: "Invalid procedure" });
-        }
-
-        // Create serialized transaction
-        const base64Transaction =
-            await _createSerializedTransaction(procedureIx);
-
-        return json({
-            transaction: base64Transaction,
-        });
-    } catch (e: any) {
-        error(500, { message: e.toString() });
-    }
+    return json({
+        transaction: base64Transaction,
+    });
 };
 
 async function _createSerializedTransaction(ix: TransactionInstruction) {
@@ -73,7 +63,7 @@ async function _createSerializedTransaction(ix: TransactionInstruction) {
     let tx = new Transaction({
         blockhash: latestBlockHash.blockhash,
         lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-        feePayer: FEE_PAYER_PUBKEY,
+        feePayer: FEE_PAYER_PUBKEY, // pay for transaction fee
     });
 
     // Add procedure instruction
@@ -98,14 +88,16 @@ async function _getProcedureIx({
 }: {
     procedure: string;
     parameters: any;
-}): Promise<TransactionInstruction | null> {
+}): Promise<TransactionInstruction> {
     if (procedure === "claimFromMarket") {
         return await _getClaimFromMarketProcedureIx(parameters);
     } else if (procedure === "createUser") {
         return await _getCreateUserProdecureIx(parameters);
+    } else if (procedure === "redeemCoupon") {
+        return await _getRedeemCouponIx(parameters);
     }
 
-    return null;
+    throw new Error(`Invalid procedure: ${procedure}`);
 }
 
 function _getClaimFromMarketProcedureIx(
@@ -149,5 +141,30 @@ function _getCreateUserProdecureIx(
         wallet: new PublicKey(parameters.wallet),
         payer: FEE_PAYER_PUBKEY,
         region: parameters.region,
+    });
+}
+
+function _getRedeemCouponIx(parameters: any): Promise<TransactionInstruction> {
+    // check wallet is a valid string
+    if (!parameters.wallet || typeof parameters.wallet !== "string")
+        throw new Error("Invalid wallet");
+
+    // check coupon is a valid string
+    if (!parameters.coupon || typeof parameters.coupon !== "string")
+        throw new Error("Invalid coupon");
+
+    // check numtokens is a number > 0
+    if (!parameters.numTokens || typeof parameters.numTokens !== "number")
+        throw new Error("Invalid numTokens");
+
+    // check mint is a valid string
+    if (!parameters.mint || typeof parameters.mint !== "string")
+        throw new Error("Invalid mint");
+
+    return anchorClient.redeemCouponIx({
+        wallet: new PublicKey(parameters.wallet),
+        coupon: new PublicKey(parameters.coupon),
+        numTokens: parameters.numTokens,
+        mint: new PublicKey(parameters.mint),
     });
 }

@@ -183,15 +183,6 @@ export class AnchorClient {
         return await this.executeTransaction({ tx, signers: [mint] });
     }
 
-    /**
-     * Redeems a coupon for a specified mint from a user, essentially burning the user's token.
-     * @param params - Parameters for the coupon redemption.
-     * @param params.coupon - The coupon's public key.
-     * @param params.mint - The mint associated with the coupon and tokens.
-     * @param params.wallet - The public key of the wallet to redeem from.
-     * @param params.numTokens - The number of tokens to redeem (defaults to 1).
-     * @returns A promise resolving to a SignatureResult indicating the redemption's outcome.
-     */
     async redeemCoupon({
         coupon,
         mint,
@@ -201,8 +192,33 @@ export class AnchorClient {
         mint: PublicKey;
         numTokens: number;
     }): Promise<TransactionResult> {
+        const ix = await this.redeemCouponIx({
+            coupon,
+            mint,
+            numTokens,
+        });
+
+        // Build and execute the transaction.
+        const tx = new Transaction();
+        tx.add(ix);
+        return await this.executeTransaction({ tx });
+    }
+
+    async redeemCouponIx({
+        coupon,
+        mint,
+        wallet, // wallet to redeem to (defaults to this.anchorWallet.publicKey)
+        payer, // payer of the transaction (defaults to this.anchorWallet.publicKey)
+        numTokens,
+    }: {
+        coupon: PublicKey;
+        mint: PublicKey;
+        wallet?: PublicKey | null;
+        payer?: PublicKey | null;
+        numTokens: number;
+    }): Promise<TransactionInstruction> {
         // Calculate the Program Derived Address (PDA) for the user.
-        const userPda = this.getUserPda()[0];
+        const userPda = this.getUserPda(wallet)[0];
 
         // Get the associated token account owned by the userPda.
         const userTokenAccount = await getAssociatedTokenAddress(
@@ -212,22 +228,18 @@ export class AnchorClient {
         );
 
         // Construct the instruction for the redeemCoupon transaction.
-        const ix = await this.program.methods
+        return await this.program.methods
             .redeemCoupon(new BN(numTokens))
             .accounts({
                 coupon: coupon,
                 mint: mint,
                 user: userPda,
                 userTokenAccount: userTokenAccount,
-                signer: this.anchorWallet.publicKey,
+                signer: wallet || this.anchorWallet.publicKey,
+                payer: payer || this.anchorWallet.publicKey,
                 tokenProgram: TOKEN_PROGRAM_ID,
             })
             .instruction();
-
-        // Build and execute the transaction.
-        const tx = new Transaction();
-        tx.add(ix);
-        return await this.executeTransaction({ tx });
     }
 
     // TODO: write tests for each invalid case
@@ -702,7 +714,7 @@ export class AnchorClient {
         // Check if user exists.
         const user = await this.getUser(wallet);
         if (user == null) {
-            throw new Error("User does not exist");
+            console.log("User does not exist, and will be created ...");
         }
 
         // Calculate the Program Derived Address (PDA) for the user (Note: User needs to be created already by this point).
@@ -983,12 +995,6 @@ export class AnchorClient {
         if (signers) {
             tx.partialSign(...signers);
         }
-
-        // FOR DEBUG ONLY
-        // return await this.signAndSendTransaction({tx, options: {
-        //     ...options,
-        //     skipPreflight: true,
-        // }});
 
         return await this.signAndSendTransaction({ tx, options });
     }
