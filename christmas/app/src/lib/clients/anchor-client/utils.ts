@@ -217,12 +217,12 @@ export function getDateWithinRangeFilterCombinations(date: Date): MemCmp[][] {
         validFromMask:
             offset: ${validFromMask?.[0]}
             bytes: ${validFromMask?.[1]}
-            enc: ${bs58.encode(validFromMask![1])}
+            enc: ${bs58.encode(validFromMask?.[1] ?? [])}
         
         validToMask:
             offset: ${validToMask?.[0]}
             bytes: ${validToMask?.[1]}
-            enc: ${bs58.encode(validToMask![1])}
+            enc: ${bs58.encode(validToMask?.[1] ?? [])}
     `);
 
     return [
