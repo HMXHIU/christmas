@@ -57,3 +57,11 @@ export async function createUser(
 
     return [pda, bump];
 }
+
+export function getRandomDate(startYear: number, endYear: number): Date {
+    const year =
+        Math.floor(Math.random() * (endYear - startYear + 1)) + startYear;
+    const month = Math.floor(Math.random() * 12);
+    const day = Math.floor(Math.random() * 28) + 1; // To ensure valid date for all months
+    return new Date(Date.UTC(year, month, day));
+}

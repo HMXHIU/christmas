@@ -53,7 +53,10 @@ import type {
     ProgramState,
 } from "./types";
 import { timeStampToDate } from "../utils";
-import { getDateWithinRangeFilterCombinations } from "./utils";
+import {
+    getDateWithinRangeFilterCombinations,
+    getMarketCouponsFilterCombinations,
+} from "./utils";
 import { type Location } from "../user-device-client/types";
 
 export class AnchorClient {
@@ -505,46 +508,27 @@ export class AnchorClient {
             );
     }
 
-    async getCouponsEfficiently(
-        region: number[],
-        date?: Date,
-    ): Promise<Account<Coupon>[]> {
+    async getCouponsEfficiently({
+        region,
+        geohash,
+        date,
+    }: {
+        region?: number[];
+        geohash?: number[];
+        date?: Date;
+    }): Promise<Account<Coupon>[]> {
         // get today
         const today = date || new Date();
 
         // get location
-        let geo = this.location?.geohash ?? (await getGeohash());
+        geohash = geohash ?? this.location?.geohash ?? (await getGeohash());
+        region = region ?? this.location?.country?.code ?? getCountry().code;
 
-        const filters = getDateWithinRangeFilterCombinations(today).map(
-            (dateFilters) => {
-                // TODO: need to bunch all the memcmp fields together as solana only accepts max of 4 filters, each 128 bytes
-                return [
-                    // // region
-                    // {
-                    //     memcmp: {
-                    //         offset: OFFSET_TO_REGION + STRING_PREFIX_SIZE,
-                    //         bytes: stringToBase58(region),
-                    //     },
-                    // },
-                    // // has supply
-                    // {
-                    //     memcmp: {
-                    //         offset: OFFSET_TO_HAS_SUPPLY,
-                    //         bytes: bs58.encode(Uint8Array.from([1])),
-                    //     },
-                    // },
-                    // // within range
-                    // {
-                    //     memcmp: {
-                    //         offset: OFFSET_TO_GEO + STRING_PREFIX_SIZE,
-                    //         bytes: stringToBase58(geo.slice(0, -1)), // reduce 1 precision level to get surrounding (TODO: this is not accurate for borders)
-                    //     },
-                    // },
-                    // within validity period
-                    ...dateFilters,
-                ];
-            },
-        );
+        const filters = getMarketCouponsFilterCombinations({
+            date: today,
+            region,
+            geohash,
+        });
 
         return (
             await Promise.allSettled(

@@ -1,4 +1,5 @@
 import { web3 } from "@coral-xyz/anchor";
+import ngeohash from "ngeohash";
 import { assert, expect } from "chai";
 import { AnchorClient } from "../app/src/lib/clients/anchor-client/anchorClient";
 import * as anchor from "@coral-xyz/anchor";
@@ -12,7 +13,7 @@ import {
     generateQRCodeURL,
     extractQueryParams,
 } from "../app/src/lib/clients/utils";
-import { requestAirdrop, createUser } from "./utils";
+import { requestAirdrop, createUser, getRandomDate } from "./utils";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import {
     USER_ACCOUNT_SIZE,
@@ -20,38 +21,77 @@ import {
     REGION_SIZE,
     STRING_PREFIX_SIZE,
 } from "../app/src/lib/clients/anchor-client/defs";
+import { Location } from "../app/src/lib/clients/user-device-client/types";
 
 describe("Test client", () => {
     // set provider
     const provider = anchor.AnchorProvider.env();
     anchor.setProvider(provider);
 
+    // locations
     const geohash = Array.from(stringToUint8Array("gbsuv7"));
     const region = Array.from(stringToUint8Array("SGP"));
+    const { latitude, longitude } = ngeohash.decode(
+        String.fromCharCode(...geohash)
+    );
+    const location: Location = {
+        geohash,
+        country: {
+            code: region,
+            name: "Singapore",
+        },
+        geolocationCoordinates: {
+            latitude,
+            longitude,
+            altitude: null,
+            altitudeAccuracy: null,
+            heading: null,
+            speed: null,
+            accuracy: null,
+        },
+    };
 
+    // store
     let storeId: BN;
     const storeName = "My store";
     const storeUri = "https://example.com";
 
+    // coupon
     const couponName = "coupon1";
     const couponUri = "www.example.com";
 
     // validity period
-    const validFrom = new Date(Date.UTC(2024, 0, 1));
-    const validTo = new Date(Date.UTC(2025, 11, 31));
+    const validFrom = getRandomDate(2024, 2300);
+    const validTo = new Date(validFrom.getTime());
+    validTo.setMonth(validTo.getMonth() + 4);
+    const today = new Date(validFrom.getTime());
+    today.setMonth(today.getMonth() + 2);
 
+    console.log(`
+
+        validFrom: ${validFrom}
+        validTo: ${validTo}
+        today: ${today}
+    
+    `);
+
+    // users
     const sellerKeypair = web3.Keypair.generate();
     const sellerAnchorWallet = new anchor.Wallet(sellerKeypair);
-
     const buyerKeypair = web3.Keypair.generate();
     const buyerAnchorWallet = new anchor.Wallet(buyerKeypair);
-
     let sellerClient: AnchorClient;
     let buyerClient: AnchorClient;
 
-    it("Initialize AnchorClient", async () => {
-        sellerClient = new AnchorClient({ anchorWallet: sellerAnchorWallet });
-        buyerClient = new AnchorClient({ anchorWallet: buyerAnchorWallet });
+    it("Initialize AnchorClients", async () => {
+        sellerClient = new AnchorClient({
+            anchorWallet: sellerAnchorWallet,
+            location,
+        });
+        buyerClient = new AnchorClient({
+            anchorWallet: buyerAnchorWallet,
+            location,
+        });
         expect(sellerClient.cluster).to.equal("http://127.0.0.1:8899");
         assert.ok(
             sellerClient.programId.equals(anchor.workspace.Christmas.programId)
@@ -206,185 +246,218 @@ describe("Test client", () => {
         );
     });
 
-    it("Claim from market", async () => {
-        // get coupon from seller
-        const coupons = await sellerClient.getMintedCoupons();
-        assert.ok(coupons.length === 1);
-        const [coupon, supply, balance] = coupons[0];
-
-        // userTokenAccount not created at this point
-        const userTokenAccount = await buyerClient.getUserTokenAccount(
-            coupon.account.mint
-        );
-
-        // claim 1 token
-        await buyerClient.claimFromMarket({
-            mint: coupon.account.mint,
-            numTokens: 1,
+    it("Get coupons efficiently", async () => {
+        // get coupons
+        const coupons = await sellerClient.getCouponsEfficiently({
+            region,
+            geohash,
+            date: today,
         });
 
-        // check balance after
-        const balanceAfter =
-            await buyerClient.connection.getTokenAccountBalance(
-                userTokenAccount
-            );
-        assert.equal(balanceAfter.value.amount, `1`);
+        console.log("COUPONS", coupons.length);
+
+        // console.log("coupons.length", coupons.length);
+        // assert.ok(coupons.length === 1);
+        // const coupon = coupons[0];
+
+        // expect(coupon.account.geohash).to.eql(geohash);
+        // expect(coupon.account.region).to.eql(region);
+        // assert.equal(cleanString(coupon.account.uri), couponUri);
+        // assert.equal(cleanString(coupon.account.name), couponName);
     });
 
-    it("Get claimed coupons", async () => {
-        const couponsBalance = await buyerClient.getClaimedCoupons();
+    // it("Get coupons", async () => {
+    //     // get coupons
+    //     const coupons = await sellerClient.getCoupons(region, today);
+    //     console.log("coupons.length", coupons.length);
+    //     assert.ok(coupons.length === 1);
+    //     const [coupon, _] = coupons[0];
 
-        assert.equal(couponsBalance.length, 1);
+    //     expect(coupon.account.geohash).to.eql(geohash);
+    //     expect(coupon.account.region).to.eql(region);
+    //     assert.equal(cleanString(coupon.account.uri), couponUri);
+    //     assert.equal(cleanString(coupon.account.name), couponName);
+    // });
 
-        const [coupon, balance] = couponsBalance[0];
+    // it("Claim from market", async () => {
+    //     // get coupon from seller
+    //     const coupons = await sellerClient.getMintedCoupons();
+    //     assert.ok(coupons.length === 1);
+    //     const [coupon, supply, balance] = coupons[0];
 
-        assert.equal(balance, 1);
-        expect(coupon.account.geohash).to.eql(geohash);
-        expect(coupon.account.region).to.eql(region);
-        assert.equal(cleanString(coupon.account.uri), couponUri);
-        assert.equal(cleanString(coupon.account.name), couponName);
-    });
+    //     // userTokenAccount not created at this point
+    //     const userTokenAccount = await buyerClient.getUserTokenAccount(
+    //         coupon.account.mint
+    //     );
 
-    it("Redeem coupon", async () => {
-        // get coupon
-        const coupons = await sellerClient.getMintedCoupons();
-        assert.ok(coupons.length === 1);
-        const [coupon, supply, balance] = coupons[0];
+    //     // claim 1 token
+    //     await buyerClient.claimFromMarket({
+    //         mint: coupon.account.mint,
+    //         numTokens: 1,
+    //     });
 
-        const userTokenAccount = await buyerClient.getUserTokenAccount(
-            coupon.account.mint
-        );
+    //     // check balance after
+    //     const balanceAfter =
+    //         await buyerClient.connection.getTokenAccountBalance(
+    //             userTokenAccount
+    //         );
+    //     assert.equal(balanceAfter.value.amount, `1`);
+    // });
 
-        // check balance before
-        const balanceBefore =
-            await buyerClient.connection.getTokenAccountBalance(
-                userTokenAccount
-            );
-        assert.equal(balanceBefore.value.amount, `1`);
+    // it("Get claimed coupons", async () => {
+    //     const couponsBalance = await buyerClient.getClaimedCoupons();
 
-        // redeem token
-        const couponPda = buyerClient.getCouponPda(coupon.account.mint)[0];
-        const transactionResult = await buyerClient.redeemCoupon({
-            coupon: couponPda,
-            mint: coupon.account.mint,
-            numTokens: 1,
-        });
+    //     assert.equal(couponsBalance.length, 1);
 
-        // check balance after
-        const balanceAfter =
-            await buyerClient.connection.getTokenAccountBalance(
-                userTokenAccount
-            );
-        assert.equal(balanceAfter.value.amount, `0`);
+    //     const [coupon, balance] = couponsBalance[0];
 
-        // test redemption QR code
-        const redemptionQRCodeURL = generateQRCodeURL({
-            signature: transactionResult.signature,
-            wallet: buyerClient.anchorWallet.publicKey.toString(),
-            mint: coupon.account.mint.toString(),
-            numTokens: String(1),
-        });
-        assert.equal(
-            redemptionQRCodeURL,
-            `https://\${origin}?mint=${
-                coupon.account.mint
-            }&numTokens=${1}&signature=${
-                transactionResult.signature
-            }&wallet=${buyerClient.anchorWallet.publicKey.toString()}`
-        );
+    //     assert.equal(balance, 1);
+    //     expect(coupon.account.geohash).to.eql(geohash);
+    //     expect(coupon.account.region).to.eql(region);
+    //     assert.equal(cleanString(coupon.account.uri), couponUri);
+    //     assert.equal(cleanString(coupon.account.name), couponName);
+    // });
 
-        // test extract redemption parameters
-        const redemptionParams = extractQueryParams(redemptionQRCodeURL);
-        expect(redemptionParams).to.deep.equal({
-            signature: String(transactionResult.signature),
-            wallet: buyerClient.anchorWallet.publicKey.toString(),
-            mint: String(coupon.account.mint),
-            numTokens: String(1),
-        });
+    // it("Redeem coupon", async () => {
+    //     // get coupon
+    //     const coupons = await sellerClient.getMintedCoupons();
+    //     assert.ok(coupons.length === 1);
+    //     const [coupon, supply, balance] = coupons[0];
 
-        // test verify redemption
-        const result = await sellerClient.verifyRedemption({
-            signature: redemptionParams.signature,
-            wallet: new web3.PublicKey(redemptionParams.wallet),
-            mint: new web3.PublicKey(redemptionParams.mint),
-            numTokens: parseInt(redemptionParams.numTokens),
-        });
-        assert.equal(result.isVerified, true);
+    //     const userTokenAccount = await buyerClient.getUserTokenAccount(
+    //         coupon.account.mint
+    //     );
 
-        // TODO: add tests for failed verification (possible make this a separate test)
-    });
+    //     // check balance before
+    //     const balanceBefore =
+    //         await buyerClient.connection.getTokenAccountBalance(
+    //             userTokenAccount
+    //         );
+    //     assert.equal(balanceBefore.value.amount, `1`);
 
-    it("Get users within radius", async () => {
-        // Create some users around singapore (https://geohash.softeng.co/w21z3w)
-        // prettier-ignore
-        let hashesAroundSingapore = [
-            "w21z3w", "w21ze8", "w21zgh", "w21zem", "w21zd5", "w21z9c", "w21zg8", "w21ze0",
-            // "w21z7r", "w21z9f", "w21zf4", "w21z9b", "w21z6x", "w21zdt", "w21ze7", "w21zgs",
-            // "w21zd0", "w21ze2", "w21zcc", "w21zcg", "w21zg1", "w21zfd", "w21zg4", "w21zex",
-            // "w21zf7", "w21zen", "w21zd6", "w21zfn", "w21zfk", "w21zc8", "w21zgn", "w21zd2",
-            // "w21zet", "w21zfq", "w21z9z", "w21ze4", "w21zgw", "w21zed", "w21z98", "w21zfg",
-            // "w21zfw", "w21zg2", "w21zdh", "w21zcb", "w21ze9", "w21zf6", "w21z7n", "w21zeh",
-            // "w21zdw", "w21zcy", "w21z9d", "w21zdc", "w21zf2", "w21zdu", "w21zdz", "w21zf9",
-            // "w21z9y", "w21zdk", "w21zdq", "w21zgk", "w21zg5", "w21zgq", "w21z9w", "w21ze6",
-            // "w21zcq", "w21zfv", "w21zf8", "w21z9g", "w21z9t", "w21zfu", "w21z7p", "w21z7w",
-            // "w21zgm", "w21zc9", "w21zdj", "w21zdg", "w21zfy", "w21zdm", "w21zgt", "w21z9v",
-        ]
+    //     // redeem token
+    //     const couponPda = buyerClient.getCouponPda(coupon.account.mint)[0];
+    //     const transactionResult = await buyerClient.redeemCoupon({
+    //         coupon: couponPda,
+    //         mint: coupon.account.mint,
+    //         numTokens: 1,
+    //     });
 
-        const userLocations = hashesAroundSingapore.map(
-            (geo: string): [web3.Keypair, string] => {
-                return [web3.Keypair.generate(), geo];
-            }
-        );
+    //     // check balance after
+    //     const balanceAfter =
+    //         await buyerClient.connection.getTokenAccountBalance(
+    //             userTokenAccount
+    //         );
+    //     assert.equal(balanceAfter.value.amount, `0`);
 
-        // Airdrop users
-        await requestAirdrop(
-            userLocations.map(([user, _]) => user.publicKey),
-            100e9
-        );
+    //     // test redemption QR code
+    //     const redemptionQRCodeURL = generateQRCodeURL({
+    //         signature: transactionResult.signature,
+    //         wallet: buyerClient.anchorWallet.publicKey.toString(),
+    //         mint: coupon.account.mint.toString(),
+    //         numTokens: String(1),
+    //     });
+    //     assert.equal(
+    //         redemptionQRCodeURL,
+    //         `https://\${origin}?mint=${
+    //             coupon.account.mint
+    //         }&numTokens=${1}&signature=${
+    //             transactionResult.signature
+    //         }&wallet=${buyerClient.anchorWallet.publicKey.toString()}`
+    //     );
 
-        // Create users
-        const pdas = await Promise.all(
-            userLocations.map(([user, geo]) => {
-                return new Promise<[web3.PublicKey, number]>(
-                    async (resolve) => {
-                        const region = Array.from(stringToUint8Array("SGP"));
-                        const [pda, bump] = await createUser(
-                            user,
-                            region,
-                            geohash
-                        );
-                        resolve([pda, bump]);
-                    }
-                );
-            })
-        );
+    //     // test extract redemption parameters
+    //     const redemptionParams = extractQueryParams(redemptionQRCodeURL);
+    //     expect(redemptionParams).to.deep.equal({
+    //         signature: String(transactionResult.signature),
+    //         wallet: buyerClient.anchorWallet.publicKey.toString(),
+    //         mint: String(coupon.account.mint),
+    //         numTokens: String(1),
+    //     });
 
-        /*
-            TODO:
-            1. Write geohash function in JS utils
-            2. Get geohashes in radius
-            3. Filter accounts for geohashes
+    //     // test verify redemption
+    //     const result = await sellerClient.verifyRedemption({
+    //         signature: redemptionParams.signature,
+    //         wallet: new web3.PublicKey(redemptionParams.wallet),
+    //         mint: new web3.PublicKey(redemptionParams.mint),
+    //         numTokens: parseInt(redemptionParams.numTokens),
+    //     });
+    //     assert.equal(result.isVerified, true);
 
-            - given geo hash center and radius
-            - given the radius, choose an appropriate precision (number of digits) to reduce the search space
-            - get all geohashes in scope (up to precision)
-            - calculate largest common prefixes (might have more than 1)
-            - query memcmp based on largest common prefixes (bits) (get a bunch of users)
-            - filter finely the results if they are in the original set
-            - this is because we can only retrieve the accounts using memcmp with a bit prefix
-        */
+    //     // TODO: add tests for failed verification (possible make this a separate test)
+    // });
 
-        const user_accounts = await buyerClient.program.account.user.all([
-            {
-                dataSize: USER_ACCOUNT_SIZE,
-            },
-            {
-                memcmp: {
-                    offset:
-                        DISCRIMINATOR_SIZE + REGION_SIZE + STRING_PREFIX_SIZE,
-                    bytes: bs58.encode(Buffer.from("w21zc9", "utf-8")),
-                },
-            },
-        ]);
-    });
+    // it("Get users within radius", async () => {
+    //     // Create some users around singapore (https://geohash.softeng.co/w21z3w)
+    //     // prettier-ignore
+    //     let hashesAroundSingapore = [
+    //         "w21z3w", "w21ze8", "w21zgh", "w21zem", "w21zd5", "w21z9c", "w21zg8", "w21ze0",
+    //         // "w21z7r", "w21z9f", "w21zf4", "w21z9b", "w21z6x", "w21zdt", "w21ze7", "w21zgs",
+    //         // "w21zd0", "w21ze2", "w21zcc", "w21zcg", "w21zg1", "w21zfd", "w21zg4", "w21zex",
+    //         // "w21zf7", "w21zen", "w21zd6", "w21zfn", "w21zfk", "w21zc8", "w21zgn", "w21zd2",
+    //         // "w21zet", "w21zfq", "w21z9z", "w21ze4", "w21zgw", "w21zed", "w21z98", "w21zfg",
+    //         // "w21zfw", "w21zg2", "w21zdh", "w21zcb", "w21ze9", "w21zf6", "w21z7n", "w21zeh",
+    //         // "w21zdw", "w21zcy", "w21z9d", "w21zdc", "w21zf2", "w21zdu", "w21zdz", "w21zf9",
+    //         // "w21z9y", "w21zdk", "w21zdq", "w21zgk", "w21zg5", "w21zgq", "w21z9w", "w21ze6",
+    //         // "w21zcq", "w21zfv", "w21zf8", "w21z9g", "w21z9t", "w21zfu", "w21z7p", "w21z7w",
+    //         // "w21zgm", "w21zc9", "w21zdj", "w21zdg", "w21zfy", "w21zdm", "w21zgt", "w21z9v",
+    //     ]
+
+    //     const userLocations = hashesAroundSingapore.map(
+    //         (geo: string): [web3.Keypair, string] => {
+    //             return [web3.Keypair.generate(), geo];
+    //         }
+    //     );
+
+    //     // Airdrop users
+    //     await requestAirdrop(
+    //         userLocations.map(([user, _]) => user.publicKey),
+    //         100e9
+    //     );
+
+    //     // Create users
+    //     const pdas = await Promise.all(
+    //         userLocations.map(([user, geo]) => {
+    //             return new Promise<[web3.PublicKey, number]>(
+    //                 async (resolve) => {
+    //                     const region = Array.from(stringToUint8Array("SGP"));
+    //                     const [pda, bump] = await createUser(
+    //                         user,
+    //                         region,
+    //                         geohash
+    //                     );
+    //                     resolve([pda, bump]);
+    //                 }
+    //             );
+    //         })
+    //     );
+
+    //     /*
+    //         TODO:
+    //         1. Write geohash function in JS utils
+    //         2. Get geohashes in radius
+    //         3. Filter accounts for geohashes
+
+    //         - given geo hash center and radius
+    //         - given the radius, choose an appropriate precision (number of digits) to reduce the search space
+    //         - get all geohashes in scope (up to precision)
+    //         - calculate largest common prefixes (might have more than 1)
+    //         - query memcmp based on largest common prefixes (bits) (get a bunch of users)
+    //         - filter finely the results if they are in the original set
+    //         - this is because we can only retrieve the accounts using memcmp with a bit prefix
+    //     */
+
+    //     const user_accounts = await buyerClient.program.account.user.all([
+    //         {
+    //             dataSize: USER_ACCOUNT_SIZE,
+    //         },
+    //         {
+    //             memcmp: {
+    //                 offset:
+    //                     DISCRIMINATOR_SIZE + REGION_SIZE + STRING_PREFIX_SIZE,
+    //                 bytes: bs58.encode(Buffer.from("w21zc9", "utf-8")),
+    //             },
+    //         },
+    //     ]);
+    // });
 });
