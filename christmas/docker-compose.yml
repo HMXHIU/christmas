@@ -15,10 +15,22 @@ services:
             - MINIO_ROOT_PASSWORD=password # development only
             - MINIO_DEFAULT_BUCKETS=bucket # development only
 
+    redis-stack-svc:
+        image: redis/redis-stack:latest
+        environment:
+            - REDIS_ARGS=--requirepass ${REDIS_PASSWORD}
+        volumes:
+            - redis_data:/data
+        ports:
+            - "6379:6379"
+            - "8001:8001" # redis insight at http://localhost:8001
+
 networks:
     minionetwork:
         driver: bridge
 
 volumes:
     minio_data:
+        driver: local
+    redis_data:
         driver: local

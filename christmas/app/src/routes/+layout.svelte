@@ -116,6 +116,12 @@
                 <strong class="text-xl uppercase"
                     ><a href="/">Community</a></strong
                 >
+                <strong class="text-xl uppercase text-slate-400"
+                    >&nbsp///&nbsp</strong
+                >
+                <strong class="text-xl uppercase text-success-400"
+                    ><a href="/crossover">Crossover</a></strong
+                >
             </svelte:fragment>
             <svelte:fragment slot="trail">
                 <Wallet />

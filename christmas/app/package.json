@@ -58,6 +58,7 @@
     "lodash": "^4.17.21",
     "minio": "^7.1.3",
     "nft.storage": "^7.1.1",
+    "redis-om": "^0.4.3",
     "solana-connect": "^0.1.10",
     "yup": "^1.3.3"
   }
