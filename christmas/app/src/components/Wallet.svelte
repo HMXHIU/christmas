@@ -1,47 +1,66 @@
 <script lang="ts">
     import type { AnchorWallet } from "@solana/wallet-adapter-react";
     import { PublicKey } from "@solana/web3.js";
-    import { anchorClient, solanaConnect } from "../store";
-    import { SolanaConnect } from "solana-connect";
-    import type { Adapter } from "@solana/wallet-adapter-base";
+    import { anchorClient, solana } from "../store";
     import { AnchorClient } from "$lib/clients/anchor-client/anchorClient";
     import { PROGRAM_ID } from "$lib/clients/anchor-client/defs";
-    import { onMount } from "svelte";
     import { PUBLIC_RPC_ENDPOINT } from "$env/static/public";
+    import type { ModalSettings } from "@skeletonlabs/skeleton";
+    import { getModalStore } from "@skeletonlabs/skeleton";
+    import DownloadWallet from "./DownloadWallet.svelte";
+    import { onMount } from "svelte";
+
+    // Only support phantom wallet for now
+    const modalStore = getModalStore();
+    let isConnected = false;
 
     onMount(async () => {
-        if ($solanaConnect == null) {
-            $solanaConnect = new SolanaConnect();
-            $solanaConnect.onWalletChange((adapter: Adapter | null) => {
-                if (adapter == null) {
-                    $anchorClient = null;
-                    console.log("disconnected");
-                } else {
-                    // set anchorClient
-                    $anchorClient = new AnchorClient({
-                        programId: new PublicKey(PROGRAM_ID),
-                        anchorWallet: adapter as AnchorWallet,
-                        wallet: {
-                            adapter,
-                            readyState: adapter?.readyState,
-                        },
-                        cluster: PUBLIC_RPC_ENDPOINT,
-                    });
-                    console.log(
-                        "connected:",
-                        adapter.name,
-                        adapter.publicKey?.toString(),
-                    );
-                }
-            });
-        }
+        $solana = getProvider();
+        isConnected = $solana.isConnected;
     });
 
-    function handleLoginLogout() {
-        $solanaConnect?.openMenu();
+    const downloadPhantomModal: ModalSettings = {
+        type: "component",
+        component: { ref: DownloadWallet },
+    };
+
+    async function handleLoginLogout() {
+        modalStore.trigger(downloadPhantomModal);
+
+        // Ask user to download phantom wallet
+        if ($solana == null) {
+            $anchorClient = null;
+            modalStore.trigger(downloadPhantomModal);
+        }
+        // Connect & create anchorClient
+        else if (!isConnected) {
+            await $solana.connect();
+            isConnected = true;
+            $anchorClient = new AnchorClient({
+                programId: new PublicKey(PROGRAM_ID),
+                anchorWallet: $solana as AnchorWallet,
+                cluster: PUBLIC_RPC_ENDPOINT,
+            });
+        }
+        // Disconnect
+        else {
+            await $solana.disconnect();
+            isConnected = false;
+            $anchorClient = null;
+        }
+    }
+
+    function getProvider() {
+        if ("phantom" in window) {
+            const provider = window.phantom?.solana;
+            if (provider?.isPhantom) {
+                return provider;
+            }
+        }
+        return null;
     }
 </script>
 
 <button type="button" class="btn variant-filled" on:click={handleLoginLogout}>
-    {$anchorClient ? "Logout" : "Login"}
+    {isConnected ? "Logout" : "Login"}
 </button>

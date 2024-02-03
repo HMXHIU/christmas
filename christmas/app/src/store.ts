@@ -12,9 +12,7 @@ import { UserDeviceClient } from "$lib/clients/user-device-client/userDeviceClie
 import type { NFTClient } from "$lib/clients/nft-client/types";
 import { NFTMinioClient } from "$lib/clients/nft-client/nftMinioClient";
 import { NFTStorageClient } from "$lib/clients/nft-client/nftStorageClient";
-import { SolanaConnect } from "solana-connect";
-
-export let solanaConnect = writable<SolanaConnect | null>(null);
+export let solana = writable<any | null>(null);
 export let anchorClient = writable<AnchorClient | null>(null);
 export let userDeviceClient = writable<UserDeviceClient | null>(null);
 export let nftClient = readable<NFTClient>(

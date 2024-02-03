@@ -43,9 +43,9 @@ describe("Generate Demo Content", () => {
     let buyerClient: AnchorClient;
 
     // locations (https://geohash.softeng.co/w21z3w)
-    // const geoHere = Array.from(stringToUint8Array("w21z98")); // faber heights
+    const geoHere = Array.from(stringToUint8Array("w21z98")); // faber heights
     // const geoHere = Array.from(stringToUint8Array("w21z71")); // metacamp
-    const geoHere = Array.from(stringToUint8Array("w21z4w")); // harbour front
+    // const geoHere = Array.from(stringToUint8Array("w21z4w")); // harbour front
     // const geoHere = Array.from(stringToUint8Array("w21z3p")); // clementi mall
 
     const region = Array.from(stringToUint8Array("SGP"));
