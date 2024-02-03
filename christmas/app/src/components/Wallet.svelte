@@ -25,8 +25,6 @@
     };
 
     async function handleLoginLogout() {
-        modalStore.trigger(downloadPhantomModal);
-
         // Ask user to download phantom wallet
         if ($solana == null) {
             $anchorClient = null;
