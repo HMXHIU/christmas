@@ -5,36 +5,33 @@ import type {
 } from "@solana/wallet-standard-features";
 import { verifySignIn } from "@solana/wallet-standard-util";
 
-import {
-    JWT_SECRET_KEY,
-    JWT_EXPIRES_IN,
-    ENVIRONMENT,
-} from "$env/static/private";
+import { JWT_SECRET_KEY, ENVIRONMENT } from "$env/static/private";
 import { PUBLIC_HOST } from "$env/static/public";
 import base58 from "bs58";
+import { getRandomValues } from "crypto";
 
-export async function signJWT(payload: object): Promise<string> {
+export async function signJWT(
+    payload: object,
+    expiresIn: number,
+    key: string,
+): Promise<string> {
     return new Promise((resolve, reject) => {
-        jwt.sign(
-            payload,
-            JWT_SECRET_KEY,
-            {
-                expiresIn: parseInt(JWT_EXPIRES_IN),
-            },
-            (err, token) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(token!);
-                }
-            },
-        );
+        jwt.sign(payload, key, { expiresIn }, (err, token) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(token!);
+            }
+        });
     });
 }
 
-export function verifyJWT(token: string): Promise<string | JwtPayload> {
+export function verifyJWT(
+    token: string,
+    key: string,
+): Promise<string | JwtPayload> {
     return new Promise((resolve, reject) => {
-        jwt.verify(token, JWT_SECRET_KEY, (err, decoded) => {
+        jwt.verify(token, key, (err, decoded) => {
             if (err) {
                 reject(err);
             } else {
@@ -57,14 +54,17 @@ export const createSignInDataForSIWS = async (): Promise<SolanaSignInInput> => {
         chainId = "devnet";
     }
 
+    // generate random nonce (min 8 chars) TODO: Who checks the nonce????
+    const nonce = base58.encode(getRandomValues(new Uint8Array(8)));
+
     const signInData: SolanaSignInInput = {
         domain,
         statement:
             "Clicking Sign or Approve only means you have proved this wallet is owned by you. This request will not trigger any blockchain transaction or cost any gas fee.",
         version: "1",
-        nonce: "oBbLoEldZs",
+        nonce: nonce,
         issuedAt: currentDateTime,
-        resources: ["https://example.com", "https://phantom.app/"],
+        resources: ["https://phantom.app/"],
         chainId,
     };
 

@@ -1,3 +1,4 @@
+import { JWT_SECRET_KEY } from "$env/static/private";
 import { verifyJWT } from "$lib/server";
 
 export async function handle({ event, resolve }) {
@@ -5,6 +6,7 @@ export async function handle({ event, resolve }) {
 
     // Attempt to get token from cookies
     let authToken = cookies.get("token") || null;
+
     // Attempt to get token from Authorization header
     if (
         authToken == null &&
@@ -14,13 +16,11 @@ export async function handle({ event, resolve }) {
             request.headers.get("Authorization")?.split("Bearer ")[1] || null;
     }
 
-    console.log("authToken", authToken);
-
     // Set locals.user if token is valid (locals.user != null determines if user is logged in)
     if (authToken) {
         try {
-            const user = await verifyJWT(authToken);
-            // verify jwt data is UserSession
+            const user = await verifyJWT(authToken, JWT_SECRET_KEY);
+            // verify data is UserSession
             if (typeof user !== "object" || user.publicKey == null) {
                 throw new Error("Invalid token.");
             }

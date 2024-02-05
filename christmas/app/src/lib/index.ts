@@ -36,7 +36,9 @@ import {
 import { stringToUint8Array } from "./clients/anchor-client/utils";
 import { AnchorClient } from "./clients/anchor-client/anchorClient";
 import type { AnchorWallet } from "@solana/wallet-adapter-react";
-import { PUBLIC_RPC_ENDPOINT } from "$env/static/public";
+import { PUBLIC_JWT_EXPIRES_IN, PUBLIC_RPC_ENDPOINT } from "$env/static/public";
+
+let refreshInterval: NodeJS.Timeout | null = null;
 
 export interface CreateStoreFormResult {
     name: string;
@@ -443,6 +445,23 @@ export async function logIn() {
             cluster: PUBLIC_RPC_ENDPOINT,
         }),
     );
+
+    // Set up refresh token timer
+    refreshInterval = setInterval(
+        async () => {
+            const refreshTokenResult = await fetch("/api/auth/refresh", {
+                method: "POST",
+            });
+            if (refreshTokenResult.ok) {
+                console.log("Refreshed token");
+            } else {
+                console.error(
+                    `Failed to refresh token: ${refreshTokenResult.statusText}`,
+                );
+            }
+        },
+        parseInt(PUBLIC_JWT_EXPIRES_IN) * 1000 - 2000, // Refresh token 2 seconds before it expires
+    );
 }
 
 export async function logOut() {
@@ -456,4 +475,10 @@ export async function logOut() {
     claimedCoupons.set([]);
     mintedCoupons.set({});
     redeemedCoupons.set({});
+
+    // clear refresh token timer
+    if (refreshInterval != null) {
+        clearInterval(refreshInterval);
+        console.log("Cleared refresh token timer");
+    }
 }
