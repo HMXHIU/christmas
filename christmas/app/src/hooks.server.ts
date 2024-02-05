@@ -1,18 +1,20 @@
 import { verifyJWT } from "$lib/server";
 
 export async function handle({ event, resolve }) {
-    const { locals, request, cookies } = event;
+    const { locals, request, cookies, url } = event;
 
-    // Get token from cookies or Authorization header
-    let authToken = cookies.get("token");
+    // Attempt to get token from cookies
+    let authToken = cookies.get("token") || null;
+    // Attempt to get token from Authorization header
     if (
-        !authToken &&
+        authToken == null &&
         request.headers.get("Authorization")?.startsWith("Bearer ")
     ) {
-        authToken = request.headers.get("Authorization")?.split("Bearer ")[1];
+        authToken =
+            request.headers.get("Authorization")?.split("Bearer ")[1] || null;
     }
 
-    // Set user in locals if token is valid (locals.user != null determines if user is logged in)
+    // Set locals.user if token is valid (locals.user != null determines if user is logged in)
     if (authToken) {
         try {
             const user = await verifyJWT(authToken);
@@ -24,6 +26,8 @@ export async function handle({ event, resolve }) {
         } catch (error) {
             locals.user = null;
         }
+    } else {
+        locals.user = null;
     }
 
     return await resolve(event);

@@ -5,11 +5,6 @@ import {
     verifySIWS,
 } from "$lib/server/index.js";
 import { json } from "@sveltejs/kit";
-import type {
-    SolanaSignInInput,
-    SolanaSignInOutput,
-} from "@solana/wallet-standard-features";
-import base58 from "bs58";
 
 export async function POST({ request, params, cookies, locals }) {
     const { op } = params;
@@ -17,6 +12,7 @@ export async function POST({ request, params, cookies, locals }) {
     // Login (api/auth/login)
     if (op === "login") {
         // Verify solana signed message
+
         let { solanaSignInInput, solanaSignInOutput } = await request.json();
         const isVerified = verifySIWS(solanaSignInInput, solanaSignInOutput);
 

@@ -21,8 +21,8 @@ import {
     PUBLIC_MINIO_BUCKET,
     PUBLIC_NFT_STORAGE_TOKEN,
 } from "$env/static/public";
-export let solana = writable<any | null>(null);
-export let token = writable<string | null>(null); // jwt access token (if cookies not available)
+
+export let token = writable<string | null>(null); // jwt access token (cookies fallback, null if logged out)
 export let anchorClient = writable<AnchorClient | null>(null);
 export let userDeviceClient = writable<UserDeviceClient | null>(null);
 export let nftClient = readable<NFTClient>(

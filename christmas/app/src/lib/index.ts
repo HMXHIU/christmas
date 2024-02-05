@@ -18,6 +18,7 @@ import {
     stores,
     storesMetadata,
     couponsMetadata,
+    token,
 } from "../store";
 import { get } from "svelte/store";
 import {
@@ -27,10 +28,14 @@ import {
 } from "./clients/utils";
 import {
     COUPON_NAME_SIZE,
+    PROGRAM_ID,
     STORE_NAME_SIZE,
     STRING_PREFIX_SIZE,
 } from "./clients/anchor-client/defs";
 import { stringToUint8Array } from "./clients/anchor-client/utils";
+import { AnchorClient } from "./clients/anchor-client/anchorClient";
+import type { AnchorWallet } from "@solana/wallet-adapter-react";
+import { PUBLIC_RPC_ENDPOINT } from "$env/static/public";
 
 export interface CreateStoreFormResult {
     name: string;
@@ -398,4 +403,50 @@ async function payForTransaction({
     throw new Error(
         "Failed to pay for transaction, ensure that wallet is connected",
     );
+}
+
+export async function logIn() {
+    const solanaSignInInput = await (await fetch("/api/auth/siws")).json();
+    const solanaSignInOutput = await (window as any).phantom?.solana.signIn(
+        solanaSignInInput,
+    );
+    const loginResult = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            solanaSignInInput,
+            solanaSignInOutput,
+        }),
+    });
+
+    if (!loginResult.ok) {
+        throw new Error(loginResult.statusText);
+    }
+
+    const { status, token: loginToken } = await loginResult.json();
+
+    if (status !== "success" || loginToken == null) {
+        throw new Error("Failed to log in");
+    }
+
+    // Set token in store (fallback if cookies not allowed)
+    token.set(loginToken);
+
+    // Set anchor client
+    anchorClient.set(
+        new AnchorClient({
+            programId: new PublicKey(PROGRAM_ID),
+            anchorWallet: (window as any).solana as AnchorWallet,
+            cluster: PUBLIC_RPC_ENDPOINT,
+        }),
+    );
+}
+
+export async function logOut() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    await (window as any).solana.disconnect();
+    token.set(null);
+    anchorClient.set(null);
 }
