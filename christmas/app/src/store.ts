@@ -12,21 +12,31 @@ import { UserDeviceClient } from "$lib/clients/user-device-client/userDeviceClie
 import type { NFTClient } from "$lib/clients/nft-client/types";
 import { NFTMinioClient } from "$lib/clients/nft-client/nftMinioClient";
 import { NFTStorageClient } from "$lib/clients/nft-client/nftStorageClient";
+import {
+    PUBLIC_MINIO_ACCESS_KEY,
+    PUBLIC_MINIO_SECRET_KEY,
+    PUBLIC_MINIO_PORT,
+    PUBLIC_MINIO_ENDPOINT,
+    PUBLIC_MINIO_USE_SSL,
+    PUBLIC_MINIO_BUCKET,
+    PUBLIC_NFT_STORAGE_TOKEN,
+} from "$env/static/public";
 export let solana = writable<any | null>(null);
+export let token = writable<string | null>(null); // jwt access token (if cookies not available)
 export let anchorClient = writable<AnchorClient | null>(null);
 export let userDeviceClient = writable<UserDeviceClient | null>(null);
 export let nftClient = readable<NFTClient>(
     import.meta.env.DEV
         ? new NFTMinioClient({
-              accessKey: import.meta.env.VITE_MINIO_ACCESS_KEY,
-              secretKey: import.meta.env.VITE_MINIO_SECRET_KEY,
-              port: parseInt(import.meta.env.VITE_MINIO_PORT),
-              endPoint: import.meta.env.VITE_MINIO_ENDPOINT,
-              useSSL: JSON.parse(import.meta.env.VITE_MINIO_USE_SSL),
-              bucket: import.meta.env.VITE_MINIO_BUCKET,
+              accessKey: PUBLIC_MINIO_ACCESS_KEY,
+              secretKey: PUBLIC_MINIO_SECRET_KEY,
+              port: parseInt(PUBLIC_MINIO_PORT),
+              endPoint: PUBLIC_MINIO_ENDPOINT,
+              useSSL: JSON.parse(PUBLIC_MINIO_USE_SSL),
+              bucket: PUBLIC_MINIO_BUCKET,
           })
         : new NFTStorageClient({
-              token: import.meta.env.VITE_NFT_STORAGE_TOKEN,
+              token: PUBLIC_NFT_STORAGE_TOKEN,
           }),
 );
 export let marketCoupons = writable<[Account<Coupon>, TokenAccount][]>([]);

@@ -2,11 +2,10 @@
 // for information about these interfaces
 // and what to do when importing types
 
-export interface UserSession {
-    publicKey: string;
-}
-
 declare namespace App {
+    interface UserSession {
+        publicKey: string;
+    }
     interface Locals {
         user: UserSession | null;
     }

@@ -1,8 +1,15 @@
 import { JWT_EXPIRES_IN } from "$env/static/private";
-import { signJWT } from "$lib/server/index.js";
+import {
+    createSignInDataForSIWS,
+    signJWT,
+    verifySIWS,
+} from "$lib/server/index.js";
 import { json } from "@sveltejs/kit";
-import type { UserSession } from "../../../../app";
-import nacl from "tweetnacl";
+import type {
+    SolanaSignInInput,
+    SolanaSignInOutput,
+} from "@solana/wallet-standard-features";
+import base58 from "bs58";
 
 export async function POST({ request, params, cookies, locals }) {
     const { op } = params;
@@ -10,19 +17,13 @@ export async function POST({ request, params, cookies, locals }) {
     // Login (api/auth/login)
     if (op === "login") {
         // Verify solana signed message
-        const { publicKey, signature, message } = await request.json();
-        const isVerified = nacl.sign.detached.verify(
-            message,
-            signature,
-            publicKey,
-        );
-
-        // TODO: Verify message using nonce
+        let { solanaSignInInput, solanaSignInOutput } = await request.json();
+        const isVerified = verifySIWS(solanaSignInInput, solanaSignInOutput);
 
         // Authorized
         if (isVerified) {
-            const userSession: UserSession = {
-                publicKey: "asd",
+            const userSession: App.UserSession = {
+                publicKey: solanaSignInOutput.address,
             };
 
             const token = await signJWT(userSession);
@@ -78,5 +79,10 @@ export async function GET({ params, locals }) {
         } catch (error: any) {
             return json({ message: error.message }, { status: 500 });
         }
+    }
+
+    // Sign In With Solana - get signInData (api/auth/siws)
+    if (op === "siws") {
+        return json(await createSignInDataForSIWS());
     }
 }

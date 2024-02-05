@@ -15,7 +15,12 @@ export async function handle({ event, resolve }) {
     // Set user in locals if token is valid (locals.user != null determines if user is logged in)
     if (authToken) {
         try {
-            locals.user = await verifyJWT(authToken);
+            const user = await verifyJWT(authToken);
+            // verify jwt data is UserSession
+            if (typeof user !== "object" || user.publicKey == null) {
+                throw new Error("Invalid token.");
+            }
+            locals.user = user as App.UserSession;
         } catch (error) {
             locals.user = null;
         }

@@ -10,6 +10,7 @@
     } from "@skeletonlabs/skeleton";
 
     import { throttle } from "lodash";
+    import { PUBLIC_GOOGLE_MAPS_API_KEY } from "$env/static/public";
 
     export let label: string = "";
     export let address: string = "";
@@ -104,7 +105,7 @@
     onMount(async () => {
         // Initialize google maps placesService
         const loader = new Loader({
-            apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+            apiKey: PUBLIC_GOOGLE_MAPS_API_KEY,
             version: "weekly",
         });
         const placesLibrary = await loader.importLibrary("places");
