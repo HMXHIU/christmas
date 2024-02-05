@@ -446,22 +446,22 @@ export async function logIn() {
         }),
     );
 
-    // Set up refresh token timer
-    refreshInterval = setInterval(
-        async () => {
-            const refreshTokenResult = await fetch("/api/auth/refresh", {
-                method: "POST",
-            });
-            if (refreshTokenResult.ok) {
-                console.log("Refreshed token");
-            } else {
-                console.error(
-                    `Failed to refresh token: ${refreshTokenResult.statusText}`,
-                );
-            }
-        },
-        parseInt(PUBLIC_JWT_EXPIRES_IN) * 1000 - 2000, // Refresh token 2 seconds before it expires
-    );
+    // // Set up refresh token timer
+    // refreshInterval = setInterval(
+    //     async () => {
+    //         const refreshTokenResult = await fetch("/api/auth/refresh", {
+    //             method: "POST",
+    //         });
+    //         if (refreshTokenResult.ok) {
+    //             console.log("Refreshed token");
+    //         } else {
+    //             console.error(
+    //                 `Failed to refresh token: ${refreshTokenResult.statusText}`,
+    //             );
+    //         }
+    //     },
+    //     parseInt(PUBLIC_JWT_EXPIRES_IN) * 1000 - 2000, // Refresh token 2 seconds before it expires
+    // );
 }
 
 export async function logOut() {
@@ -476,9 +476,26 @@ export async function logOut() {
     mintedCoupons.set({});
     redeemedCoupons.set({});
 
-    // clear refresh token timer
-    if (refreshInterval != null) {
-        clearInterval(refreshInterval);
-        console.log("Cleared refresh token timer");
+    // // clear refresh token timer
+    // if (refreshInterval != null) {
+    //     clearInterval(refreshInterval);
+    //     console.log("Cleared refresh token timer");
+    // }
+}
+
+export async function refresh() {
+    const refreshTokenResult = await fetch("/api/auth/refresh", {
+        method: "POST",
+    });
+    if (refreshTokenResult.ok) {
+        const { token: loginToken } = await refreshTokenResult.json();
+
+        // Set token in store (fallback if cookies not allowed)
+        token.set(loginToken);
+        console.log("Refreshed token");
+    } else {
+        console.error(
+            `Failed to refresh token: ${refreshTokenResult.statusText}`,
+        );
     }
 }
