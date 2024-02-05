@@ -29,7 +29,7 @@ export async function POST({ request, params, cookies, locals }) {
                 httpOnly: true,
                 secure: true,
                 sameSite: "strict",
-                maxAge: parseInt(JWT_EXPIRES_IN) * 60,
+                maxAge: parseInt(JWT_EXPIRES_IN), // in seconds
             });
 
             return json({ status: "success", token });

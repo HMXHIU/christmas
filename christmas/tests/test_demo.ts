@@ -3,7 +3,6 @@ import ngeohash from "ngeohash";
 import { AnchorClient } from "../app/src/lib/clients/anchor-client/anchorClient";
 import * as anchor from "@coral-xyz/anchor";
 import { stringToUint8Array } from "../app/src/lib/clients/anchor-client/utils";
-
 import { NFTMinioClient } from "../app/src/lib/clients/nft-client/nftMinioClient";
 
 import chai from "chai";
@@ -26,12 +25,12 @@ describe("Generate Demo Content", () => {
 
     // nft client
     const nftClient = new NFTMinioClient({
-        accessKey: process.env.MINIO_ACCESS_KEY,
-        secretKey: process.env.MINIO_SECRET_KEY,
-        port: parseInt(process.env.MINIO_PORT),
-        endPoint: process.env.MINIO_ENDPOINT,
-        useSSL: JSON.parse(process.env.MINIO_USE_SSL),
-        bucket: process.env.MINIO_BUCKET,
+        accessKey: process.env.PUBLIC_MINIO_ACCESS_KEY,
+        secretKey: process.env.PUBLIC_MINIO_SECRET_KEY,
+        port: parseInt(process.env.PUBLIC_MINIO_PORT),
+        endPoint: process.env.PUBLIC_MINIO_ENDPOINT,
+        useSSL: JSON.parse(process.env.PUBLIC_MINIO_USE_SSL),
+        bucket: process.env.PUBLIC_MINIO_BUCKET,
     });
 
     // users

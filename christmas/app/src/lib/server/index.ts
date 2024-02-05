@@ -19,7 +19,7 @@ export async function signJWT(payload: object): Promise<string> {
             payload,
             JWT_SECRET_KEY,
             {
-                expiresIn: JWT_EXPIRES_IN,
+                expiresIn: parseInt(JWT_EXPIRES_IN),
             },
             (err, token) => {
                 if (err) {

@@ -19,6 +19,7 @@ import {
     storesMetadata,
     couponsMetadata,
     token,
+    redeemedCoupons,
 } from "../store";
 import { get } from "svelte/store";
 import {
@@ -449,4 +450,10 @@ export async function logOut() {
     await (window as any).solana.disconnect();
     token.set(null);
     anchorClient.set(null);
+
+    // clear all stores
+    marketCoupons.set([]);
+    claimedCoupons.set([]);
+    mintedCoupons.set({});
+    redeemedCoupons.set({});
 }

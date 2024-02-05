@@ -14,6 +14,8 @@ export async function handle({ event, resolve }) {
             request.headers.get("Authorization")?.split("Bearer ")[1] || null;
     }
 
+    console.log("authToken", authToken);
+
     // Set locals.user if token is valid (locals.user != null determines if user is logged in)
     if (authToken) {
         try {
@@ -23,7 +25,8 @@ export async function handle({ event, resolve }) {
                 throw new Error("Invalid token.");
             }
             locals.user = user as App.UserSession;
-        } catch (error) {
+        } catch (error: any) {
+            console.error("Error verifying token:", error.message);
             locals.user = null;
         }
     } else {
