@@ -1,7 +1,7 @@
 use crate::defs::{DATE_HASH_BITS, DATE_HASH_SIZE, DAYS_SINCE_1_JAN_2024, MS_PER_DAY};
 
 pub fn pad_string(s: &str, length: usize) -> String {
-    assert!(s.len() <= length);
+    assert!(s.len() <= length); // string should not be longer than length
     let zeros = vec![0u8; length - s.len()];
 
     return s.to_owned() + std::str::from_utf8(&zeros).unwrap();

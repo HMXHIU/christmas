@@ -1,13 +1,4 @@
 import { json } from "@sveltejs/kit";
-import {
-    PUBLIC_FEE_PAYER_PUBKEY,
-    PUBLIC_RPC_ENDPOINT,
-} from "$env/static/public";
-import { FEE_PAYER_PRIVATE_KEY as FEE_PAYER_PRIVATE_KEY_JSON } from "$env/static/private";
-import { Keypair, PublicKey } from "@solana/web3.js";
-import { AnchorClient } from "$lib/clients/anchor-client/anchorClient";
-import { PROGRAM_ID } from "$lib/clients/anchor-client/defs";
-import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
 import { parseURL } from "@solana/pay";
 
 /** @type {import('@sveltejs/kit').RequestHandler} */

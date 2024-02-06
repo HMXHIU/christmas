@@ -6,6 +6,9 @@ import {
     REDIS_HOST,
     REDIS_PORT,
 } from "$env/static/private";
+import { serverAnchorClient } from "..";
+import { PublicKey } from "@solana/web3.js";
+import base58 from "bs58";
 
 // Exports
 export { redisClient, redisSubscribeClient, loadUserMetadataToRedis };
@@ -27,7 +30,12 @@ const redisClient = createClient({
 const redisSubscribeClient = redisClient.duplicate();
 
 // Load user metadata from storage to redis
-function loadUserMetadataToRedis(publicKey: string) {
+async function loadUserMetadataToRedis(publicKey: string) {
+    const user = await serverAnchorClient.getUser(new PublicKey(publicKey));
+
+    if (user != null) {
+    }
+
     // Read user metadata from nft storage
     // const userMetadata = await readUserMetadata(publicKey);
 }

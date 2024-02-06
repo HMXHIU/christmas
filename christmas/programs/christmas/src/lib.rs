@@ -39,12 +39,13 @@ pub mod christmas {
         Ok(())
     }
 
-    pub fn create_user(ctx: Context<CreateUser>, region: [u8; 3]) -> Result<()> {
+    pub fn create_user(ctx: Context<CreateUser>, region: [u8; 3], uri: String) -> Result<()> {
         // check valid region
         code_bytes_to_country(&region).unwrap();
 
         ctx.accounts.user.region = region;
         ctx.accounts.user.bump = *ctx.bumps.get("user").unwrap();
+        ctx.accounts.user.uri = pad_string(&uri, URI_SIZE - STRING_PREFIX_SIZE);
         Ok(())
     }
 
@@ -59,7 +60,7 @@ pub mod christmas {
         // check valid region
         code_bytes_to_country(&region).unwrap();
 
-        ctx.accounts.store.id = id;
+        ctx.accounts.store.id = id; // unique (can have same name but different id)
         ctx.accounts.store.name = pad_string(&name, STORE_NAME_SIZE - STRING_PREFIX_SIZE);
         ctx.accounts.store.region = region;
         ctx.accounts.store.geohash = geohash;
