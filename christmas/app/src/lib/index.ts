@@ -22,11 +22,7 @@ import {
     redeemedCoupons,
 } from "../store";
 import { get } from "svelte/store";
-import {
-    generateQRCodeURL,
-    getCouponMetadata,
-    getStoreMetadata,
-} from "./clients/utils";
+import { getCouponMetadata, getStoreMetadata } from "./clients/utils";
 import {
     COUPON_NAME_SIZE,
     PROGRAM_ID,
@@ -36,9 +32,27 @@ import {
 import { stringToUint8Array } from "./clients/anchor-client/utils";
 import { AnchorClient } from "./clients/anchor-client/anchorClient";
 import type { AnchorWallet } from "@solana/wallet-adapter-react";
-import { PUBLIC_JWT_EXPIRES_IN, PUBLIC_RPC_ENDPOINT } from "$env/static/public";
+import { PUBLIC_RPC_ENDPOINT } from "$env/static/public";
 
-let refreshInterval: NodeJS.Timeout | null = null;
+// Exports
+export {
+    fetchMarketCoupons,
+    fetchStoreMetadata,
+    fetchCouponMetadata,
+    fetchMintedCouponSupplyBalance,
+    fetchClaimedCoupons,
+    fetchStores,
+    claimCoupon,
+    redeemCoupon,
+    createStore,
+    createCoupon,
+    mintCoupon,
+    verifyRedemption,
+    createUser,
+    logIn,
+    logOut,
+    refresh,
+};
 
 export interface CreateStoreFormResult {
     name: string;
@@ -59,7 +73,7 @@ export interface CreateCouponFormResult {
     image: File | null;
 }
 
-export async function fetchMarketCoupons(): Promise<
+async function fetchMarketCoupons(): Promise<
     [Account<Coupon>, TokenAccount][]
 > {
     const ac = get(anchorClient);
@@ -74,9 +88,7 @@ export async function fetchMarketCoupons(): Promise<
     return [];
 }
 
-export async function fetchStoreMetadata(
-    storePda: PublicKey,
-): Promise<StoreMetadata> {
+async function fetchStoreMetadata(storePda: PublicKey): Promise<StoreMetadata> {
     const ac = get(anchorClient);
     const store = await ac!.getStoreByPda(storePda);
     const storeMetadata = await getStoreMetadata(store!);
@@ -90,7 +102,7 @@ export async function fetchStoreMetadata(
     return storeMetadata;
 }
 
-export async function fetchCouponMetadata(
+async function fetchCouponMetadata(
     coupon: Account<Coupon>,
 ): Promise<CouponMetadata> {
     const couponMetadata = await getCouponMetadata(coupon.account);
@@ -103,7 +115,7 @@ export async function fetchCouponMetadata(
     return couponMetadata;
 }
 
-export async function fetchMintedCouponSupplyBalance(
+async function fetchMintedCouponSupplyBalance(
     store: Account<Store>,
 ): Promise<[Account<Coupon>, number, number][]> {
     const ac = get(anchorClient);
@@ -121,9 +133,7 @@ export async function fetchMintedCouponSupplyBalance(
     return [];
 }
 
-export async function fetchClaimedCoupons(): Promise<
-    [Account<Coupon>, number][]
-> {
+async function fetchClaimedCoupons(): Promise<[Account<Coupon>, number][]> {
     const ac = get(anchorClient);
 
     if (ac) {
@@ -135,7 +145,7 @@ export async function fetchClaimedCoupons(): Promise<
     return [];
 }
 
-export async function fetchStores(): Promise<Account<Store>[]> {
+async function fetchStores(): Promise<Account<Store>[]> {
     const ac = get(anchorClient);
 
     if (ac) {
@@ -147,7 +157,7 @@ export async function fetchStores(): Promise<Account<Store>[]> {
     return [];
 }
 
-export async function claimCoupon({
+async function claimCoupon({
     coupon,
     numTokens,
 }: {
@@ -159,7 +169,7 @@ export async function claimCoupon({
 
     if (ac && dc?.location?.country?.code) {
         // Try to claim for free
-        const txResult = await payForTransaction({
+        const txResult = await _payForTransaction({
             procedure: "claimFromMarket",
             parameters: {
                 wallet: ac!.anchorWallet.publicKey.toString(),
@@ -184,7 +194,7 @@ export async function claimCoupon({
     );
 }
 
-export async function redeemCoupon({
+async function redeemCoupon({
     coupon,
     numTokens,
 }: {
@@ -195,7 +205,7 @@ export async function redeemCoupon({
 
     if (ac) {
         // Try to redeem for free
-        const txResult = await payForTransaction({
+        const txResult = await _payForTransaction({
             procedure: "redeemCoupon",
             parameters: {
                 coupon: coupon.publicKey.toString(),
@@ -223,7 +233,7 @@ export async function redeemCoupon({
     );
 }
 
-export async function createStore({
+async function createStore({
     name,
     description,
     address,
@@ -262,7 +272,7 @@ export async function createStore({
     }
 }
 
-export async function createCoupon({
+async function createCoupon({
     image,
     name,
     description,
@@ -306,7 +316,7 @@ export async function createCoupon({
     }
 }
 
-export async function mintCoupon({
+async function mintCoupon({
     coupon,
     numTokens,
 }: {
@@ -325,7 +335,7 @@ export async function mintCoupon({
     }
 }
 
-export async function verifyRedemption({
+async function verifyRedemption({
     signature,
     mint,
     numTokens,
@@ -350,13 +360,13 @@ export async function verifyRedemption({
     return { isVerified: false, err: "Log in to verify..." };
 }
 
-export async function createUser(): Promise<TransactionResult> {
+async function createUser(): Promise<TransactionResult> {
     const ac = get(anchorClient);
     const dc = get(userDeviceClient);
 
     if (ac != null && dc?.location?.country?.code != null) {
         // Try to create user for free
-        const txResult = await payForTransaction({
+        const txResult = await _payForTransaction({
             procedure: "createUser",
             parameters: {
                 wallet: ac.anchorWallet.publicKey.toString(),
@@ -377,38 +387,7 @@ export async function createUser(): Promise<TransactionResult> {
     );
 }
 
-async function payForTransaction({
-    procedure,
-    parameters,
-}: {
-    procedure: string;
-    parameters: any;
-}): Promise<TransactionResult> {
-    const ac = get(anchorClient);
-
-    if (ac != null) {
-        const url = generateQRCodeURL({}, "api/pay-for");
-
-        return await fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ procedure, parameters }),
-        })
-            .then((response) => response.json())
-            .then(({ transaction }) => {
-                return ac.signAndSendTransaction({
-                    tx: Transaction.from(Buffer.from(transaction, "base64")),
-                });
-            });
-    }
-    throw new Error(
-        "Failed to pay for transaction, ensure that wallet is connected",
-    );
-}
-
-export async function logIn() {
+async function logIn() {
     const solanaSignInInput = await (await fetch("/api/auth/siws")).json();
     const solanaSignInOutput = await (window as any).phantom?.solana.signIn(
         solanaSignInInput,
@@ -445,26 +424,9 @@ export async function logIn() {
             cluster: PUBLIC_RPC_ENDPOINT,
         }),
     );
-
-    // // Set up refresh token timer
-    // refreshInterval = setInterval(
-    //     async () => {
-    //         const refreshTokenResult = await fetch("/api/auth/refresh", {
-    //             method: "POST",
-    //         });
-    //         if (refreshTokenResult.ok) {
-    //             console.log("Refreshed token");
-    //         } else {
-    //             console.error(
-    //                 `Failed to refresh token: ${refreshTokenResult.statusText}`,
-    //             );
-    //         }
-    //     },
-    //     parseInt(PUBLIC_JWT_EXPIRES_IN) * 1000 - 2000, // Refresh token 2 seconds before it expires
-    // );
 }
 
-export async function logOut() {
+async function logOut() {
     await fetch("/api/auth/logout", { method: "POST" });
     await (window as any).solana.disconnect();
     token.set(null);
@@ -475,15 +437,9 @@ export async function logOut() {
     claimedCoupons.set([]);
     mintedCoupons.set({});
     redeemedCoupons.set({});
-
-    // // clear refresh token timer
-    // if (refreshInterval != null) {
-    //     clearInterval(refreshInterval);
-    //     console.log("Cleared refresh token timer");
-    // }
 }
 
-export async function refresh() {
+async function refresh() {
     const refreshTokenResult = await fetch("/api/auth/refresh", {
         method: "POST",
     });
@@ -498,4 +454,33 @@ export async function refresh() {
             `Failed to refresh token: ${refreshTokenResult.statusText}`,
         );
     }
+}
+
+async function _payForTransaction({
+    procedure,
+    parameters,
+}: {
+    procedure: string;
+    parameters: any;
+}): Promise<TransactionResult> {
+    const ac = get(anchorClient);
+
+    if (ac != null) {
+        return await fetch("/api/pay-for", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ procedure, parameters }),
+        })
+            .then((response) => response.json())
+            .then(({ transaction }) => {
+                return ac.signAndSendTransaction({
+                    tx: Transaction.from(Buffer.from(transaction, "base64")),
+                });
+            });
+    }
+    throw new Error(
+        "Failed to pay for transaction, ensure that wallet is connected",
+    );
 }

@@ -4,13 +4,47 @@ import type {
     SolanaSignInOutput,
 } from "@solana/wallet-standard-features";
 import { verifySignIn } from "@solana/wallet-standard-util";
-
-import { JWT_SECRET_KEY, ENVIRONMENT } from "$env/static/private";
-import { PUBLIC_HOST } from "$env/static/public";
+import { ENVIRONMENT } from "$env/static/private";
+import {
+    PUBLIC_FEE_PAYER_PUBKEY,
+    PUBLIC_HOST,
+    PUBLIC_RPC_ENDPOINT,
+} from "$env/static/public";
+import { FEE_PAYER_PRIVATE_KEY as FEE_PAYER_PRIVATE_KEY_JSON } from "$env/static/private";
 import base58 from "bs58";
 import { getRandomValues } from "crypto";
+import { AnchorClient } from "$lib/clients/anchor-client/anchorClient";
+import { PublicKey, Keypair } from "@solana/web3.js";
+import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
+import { PROGRAM_ID } from "$lib/clients/anchor-client/defs";
 
-export async function signJWT(
+// Exports
+export {
+    FEE_PAYER_PUBKEY,
+    feePayerKeypair,
+    serverAnchorClient,
+    verifySIWS,
+    createSignInDataForSIWS,
+    signJWT,
+    verifyJWT,
+};
+
+// Load fee payer keypair
+const FEE_PAYER_PUBKEY = new PublicKey(PUBLIC_FEE_PAYER_PUBKEY);
+const FEE_PAYER_PRIVATE_KEY = new Uint8Array(
+    JSON.parse(FEE_PAYER_PRIVATE_KEY_JSON),
+);
+const feePayerKeypair = Keypair.fromSecretKey(FEE_PAYER_PRIVATE_KEY);
+
+// Create server anchor client
+const serverAnchorClientKeypair = Keypair.generate();
+const serverAnchorClient = new AnchorClient({
+    programId: new PublicKey(PROGRAM_ID),
+    anchorWallet: new AnchorWallet(serverAnchorClientKeypair),
+    cluster: PUBLIC_RPC_ENDPOINT,
+});
+
+async function signJWT(
     payload: object,
     expiresIn: number,
     key: string,
@@ -26,7 +60,7 @@ export async function signJWT(
     });
 }
 
-export function verifyJWT(
+async function verifyJWT(
     token: string,
     key: string,
 ): Promise<string | JwtPayload> {
@@ -41,7 +75,7 @@ export function verifyJWT(
     });
 }
 
-export const createSignInDataForSIWS = async (): Promise<SolanaSignInInput> => {
+async function createSignInDataForSIWS(): Promise<SolanaSignInInput> {
     const now: Date = new Date();
     const currentUrl = new URL(PUBLIC_HOST);
     const domain = currentUrl.host;
@@ -69,9 +103,9 @@ export const createSignInDataForSIWS = async (): Promise<SolanaSignInInput> => {
     };
 
     return signInData;
-};
+}
 
-export function verifySIWS(input: SolanaSignInInput, output: any): boolean {
+function verifySIWS(input: SolanaSignInInput, output: any): boolean {
     // Get chains based on environment
     let chains: `${string}:${string}`[] = ["solana:localnet"];
     if (ENVIRONMENT === "production") {

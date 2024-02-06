@@ -129,26 +129,9 @@
     onMount(() => {
         scrollChatBottom();
     });
-
-    async function onEnter() {
-        // sign message with solana wallet (wallet needs to be connected first)
-
-        const response = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ username: "admin", password: "admin" }),
-        });
-        console.log(await response.json());
-    }
 </script>
 
 <section class="card">
-    <button class="btn variant-filled-primary" on:click={onEnter}>
-        Enter
-    </button>
-
     <div class="chat w-full h-full grid grid-cols-1 lg:grid-cols-[30%_1fr]">
         <!-- Navigation -->
         <div

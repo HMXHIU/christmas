@@ -1,35 +1,17 @@
-import { json, error } from "@sveltejs/kit";
+import { PUBLIC_RPC_ENDPOINT } from "$env/static/public";
+import { COUNTRY_DETAILS } from "$lib/clients/user-device-client/defs";
 import {
-    PUBLIC_FEE_PAYER_PUBKEY,
-    PUBLIC_RPC_ENDPOINT,
-} from "$env/static/public";
-import { FEE_PAYER_PRIVATE_KEY as FEE_PAYER_PRIVATE_KEY_JSON } from "$env/static/private";
+    FEE_PAYER_PUBKEY,
+    feePayerKeypair,
+    serverAnchorClient,
+} from "$lib/server";
 import {
     Connection,
-    Keypair,
     PublicKey,
     Transaction,
     TransactionInstruction,
-    VersionedMessage,
 } from "@solana/web3.js";
-import { AnchorClient } from "$lib/clients/anchor-client/anchorClient";
-import { GEOHASH_SIZE, PROGRAM_ID } from "$lib/clients/anchor-client/defs";
-import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
-import { COUNTRY_DETAILS } from "$lib/clients/user-device-client/defs";
-
-// Load keypair
-const FEE_PAYER_PUBKEY = new PublicKey(PUBLIC_FEE_PAYER_PUBKEY);
-const FEE_PAYER_PRIVATE_KEY = new Uint8Array(
-    JSON.parse(FEE_PAYER_PRIVATE_KEY_JSON),
-);
-const feePayerKeypair = Keypair.fromSecretKey(FEE_PAYER_PRIVATE_KEY);
-
-// Create anchor client using FEE_PAYER_PRIVATE_KEY
-const anchorClient = new AnchorClient({
-    programId: new PublicKey(PROGRAM_ID),
-    anchorWallet: new AnchorWallet(feePayerKeypair),
-    cluster: PUBLIC_RPC_ENDPOINT,
-});
+import { json } from "@sveltejs/kit";
 
 /** @type {import('@sveltejs/kit').RequestHandler} */
 export const POST = async (event: any) => {
@@ -115,7 +97,7 @@ function _getClaimFromMarketProcedureIx(
     if (!parameters.mint || typeof parameters.mint !== "string")
         throw new Error("Invalid mint");
 
-    return anchorClient.claimFromMarketIx({
+    return serverAnchorClient.claimFromMarketIx({
         mint: new PublicKey(parameters.mint),
         numTokens: parameters.numTokens,
         wallet: new PublicKey(parameters.wallet),
@@ -130,14 +112,14 @@ function _getCreateUserProdecureIx(
     if (!parameters.wallet || typeof parameters.wallet !== "string")
         throw new Error("Invalid wallet");
 
-    // check valid region (TODO: check should be moved into anchorClient or backend)
+    // check valid region (TODO: check should be moved into AnchorClient or backend)
     try {
         COUNTRY_DETAILS[String.fromCharCode(...parameters.region)];
     } catch (error) {
         throw new Error(`Invalid region: ${parameters.region}`);
     }
 
-    return anchorClient.createUserIx({
+    return serverAnchorClient.createUserIx({
         wallet: new PublicKey(parameters.wallet),
         payer: FEE_PAYER_PUBKEY,
         region: parameters.region,
@@ -161,8 +143,9 @@ function _getRedeemCouponIx(parameters: any): Promise<TransactionInstruction> {
     if (!parameters.mint || typeof parameters.mint !== "string")
         throw new Error("Invalid mint");
 
-    return anchorClient.redeemCouponIx({
+    return serverAnchorClient.redeemCouponIx({
         wallet: new PublicKey(parameters.wallet),
+        payer: FEE_PAYER_PUBKEY,
         coupon: new PublicKey(parameters.coupon),
         numTokens: parameters.numTokens,
         mint: new PublicKey(parameters.mint),
