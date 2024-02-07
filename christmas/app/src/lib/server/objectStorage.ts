@@ -8,7 +8,6 @@ import {
     PUBLIC_MINIO_SECRET_KEY,
 } from "$env/static/public";
 import type { Readable } from "stream";
-import { read } from "fs";
 
 export { BUCKETS, ObjectStorage };
 
@@ -120,7 +119,17 @@ class ObjectStorage {
         return JSON.parse(await readable.read());
     }
 
-    static objectUrl(bucket: string, name: string): string {
+    static objectUrl({
+        bucket,
+        name,
+        owner,
+    }: {
+        bucket: string;
+        name: string;
+        owner: string | null;
+    }): string {
+        const prefix = owner ? "private" : "public";
+
         const objectUrl =
             (useSSL ? "https://" : "http://") +
             endPoint +
@@ -128,6 +137,8 @@ class ObjectStorage {
             port +
             "/" +
             bucket +
+            "/" +
+            prefix +
             "/" +
             name;
         return objectUrl;

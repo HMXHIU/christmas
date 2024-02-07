@@ -12,7 +12,7 @@ test("Test Public Object Storage", async () => {
         name: "tile2",
     };
 
-    // Test create public object
+    // Create public object
     await ObjectStorage.putObject({
         owner: null,
         bucket: "user",
@@ -27,7 +27,16 @@ test("Test Public Object Storage", async () => {
         data: publicData2,
     });
 
-    // Test public object exists
+    // Object url
+    expect(
+        ObjectStorage.objectUrl({
+            owner: null,
+            bucket: "user",
+            name: "tile1",
+        }),
+    ).toEqual("http://127.0.0.1:9000/user/public/tile1");
+
+    // Public object exists
     await expect(
         ObjectStorage.objectExists({
             owner: null,
@@ -64,7 +73,6 @@ test("Test Public Object Storage", async () => {
 test("Test Private Object Storage", async () => {
     const keypair = Keypair.generate();
     const owner = keypair.publicKey.toBase58();
-
     const privateData = {
         publicKey: owner,
     };
@@ -76,6 +84,15 @@ test("Test Private Object Storage", async () => {
         name: owner,
         data: JSON.stringify(privateData),
     });
+
+    // Object url
+    expect(
+        ObjectStorage.objectUrl({
+            owner,
+            bucket: "user",
+            name: owner,
+        }),
+    ).toEqual(`http://127.0.0.1:9000/user/private/${owner}`);
 
     // Private object exists
     await expect(
