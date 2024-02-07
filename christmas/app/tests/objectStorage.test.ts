@@ -4,8 +4,12 @@ import { ObjectStorage } from "$lib/server/objectStorage";
 import { expect, test } from "vitest";
 
 test("Test Public Object Storage", async () => {
+    // owner = null for public object
     const publicData = {
         name: "tile1",
+    };
+    const publicData2 = {
+        name: "tile2",
     };
 
     // Test create public object
@@ -13,7 +17,14 @@ test("Test Public Object Storage", async () => {
         owner: null,
         bucket: "user",
         name: "tile1",
-        data: publicData,
+        data: JSON.stringify(publicData),
+    });
+
+    await ObjectStorage.putJSONObject({
+        owner: null,
+        bucket: "user",
+        name: "tile2",
+        data: publicData2,
     });
 
     // Test public object exists
@@ -22,6 +33,14 @@ test("Test Public Object Storage", async () => {
             owner: null,
             bucket: "user",
             name: "tile1",
+        }),
+    ).resolves.toBe(true);
+
+    await expect(
+        ObjectStorage.objectExists({
+            owner: null,
+            bucket: "user",
+            name: "tile2",
         }),
     ).resolves.toBe(true);
 
@@ -44,25 +63,26 @@ test("Test Public Object Storage", async () => {
 
 test("Test Private Object Storage", async () => {
     const keypair = Keypair.generate();
+    const owner = keypair.publicKey.toBase58();
 
     const privateData = {
-        publicKey: keypair.publicKey.toBase58(),
+        publicKey: owner,
     };
 
-    // Test create private object
+    // Create private object
     await ObjectStorage.putObject({
-        owner: keypair.publicKey.toBase58(),
+        owner,
         bucket: "user",
-        name: keypair.publicKey.toBase58(),
-        data: privateData,
+        name: owner,
+        data: JSON.stringify(privateData),
     });
 
-    // Test private object exists
+    // Private object exists
     await expect(
         ObjectStorage.objectExists({
-            owner: keypair.publicKey.toBase58(),
+            owner,
             bucket: "user",
-            name: keypair.publicKey.toBase58(),
+            name: owner,
         }),
     ).resolves.toBe(true);
 
@@ -70,7 +90,7 @@ test("Test Private Object Storage", async () => {
         ObjectStorage.objectExists({
             owner: null,
             bucket: "user",
-            name: keypair.publicKey.toBase58(),
+            name: owner,
         }),
     ).resolves.toBe(false);
 
@@ -78,7 +98,29 @@ test("Test Private Object Storage", async () => {
         ObjectStorage.objectExists({
             owner: "doesnotexists",
             bucket: "user",
-            name: keypair.publicKey.toBase58(),
+            name: owner,
+        }),
+    ).rejects.toThrowError();
+
+    // Get object
+    const readable = await ObjectStorage.getObject({
+        owner,
+        name: owner,
+        bucket: "user",
+    });
+    expect(JSON.parse(await readable.read())).toEqual(privateData);
+
+    // Get JSON object
+    await expect(
+        ObjectStorage.getJSONObject({ owner, name: owner, bucket: "user" }),
+    ).resolves.toEqual(privateData);
+
+    // Get permission denied
+    await expect(
+        ObjectStorage.getJSONObject({
+            owner,
+            name: "doesnotexsits",
+            bucket: "user",
         }),
     ).rejects.toThrowError();
 });

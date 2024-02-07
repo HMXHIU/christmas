@@ -8,6 +8,7 @@ import {
     PUBLIC_MINIO_SECRET_KEY,
 } from "$env/static/public";
 import type { Readable } from "stream";
+import { read } from "fs";
 
 export { BUCKETS, ObjectStorage };
 
@@ -35,12 +36,32 @@ initializeBuckets();
 /**
  * Do not expose this to client (only backend)
  * All operations should be done through ObjectStorage (with permission checks)
+ * If owner is null, the object is public else private
  */
 class ObjectStorage {
-    /**
-     * If owner is null, the object is public else private
-     */
     static async putObject({
+        owner,
+        bucket,
+        name,
+        data,
+    }: {
+        owner: string | null;
+        bucket: string;
+        name: string;
+        data: string | Buffer | Readable;
+    }) {
+        const prefix = owner ? "private" : "public";
+
+        if (owner && name !== owner) {
+            throw new Error(
+                `Permission denied: ${bucket} ${owner} does not own ${name}`,
+            );
+        }
+
+        await client.putObject(bucket, `${prefix}/${name}`, data);
+    }
+
+    static async putJSONObject({
         owner,
         bucket,
         name,
@@ -84,6 +105,19 @@ class ObjectStorage {
         }
 
         return await client.getObject(bucket, `${prefix}/${name}`);
+    }
+
+    static async getJSONObject({
+        owner,
+        bucket,
+        name,
+    }: {
+        owner: string | null;
+        bucket: string;
+        name: string;
+    }): Promise<object> {
+        const readable = await this.getObject({ owner, bucket, name });
+        return JSON.parse(await readable.read());
     }
 
     static objectUrl(bucket: string, name: string): string {
