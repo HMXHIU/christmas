@@ -223,8 +223,8 @@ describe("Generate Demo Content", () => {
     });
 
     it("Create Users", async () => {
-        await sellerClient.createUser({ region });
-        await buyerClient.createUser({ region });
+        await sellerClient.createUser({ region, uri: "" });
+        await buyerClient.createUser({ region, uri: "" });
 
         const seller = await sellerClient.getUser();
         expect(seller.region).to.be.eql(region);

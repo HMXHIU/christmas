@@ -17,7 +17,6 @@ export async function POST({ request, params, cookies, locals }) {
     // Login (api/auth/login)
     if (op === "login") {
         // Verify solana signed message
-
         let { solanaSignInInput, solanaSignInOutput } = await request.json();
         const isVerified = verifySIWS(solanaSignInInput, solanaSignInOutput);
 
@@ -38,6 +37,7 @@ export async function POST({ request, params, cookies, locals }) {
                 parseInt(PUBLIC_REFRESH_JWT_EXPIRES_IN),
                 REFRESH_JWT_SECRET_KEY,
             );
+            // TODO: This seems to be setting 2 set-cookies headers
             cookies.set("token", token, {
                 path: "/",
                 httpOnly: true,
@@ -84,6 +84,7 @@ export async function POST({ request, params, cookies, locals }) {
     // Refresh (api/auth/refresh)
     else if (op === "refresh") {
         const refreshToken = cookies.get("refreshToken");
+
         if (!refreshToken) {
             return json(
                 {

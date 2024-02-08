@@ -8,7 +8,6 @@ import {
 } from "$env/static/private";
 import { serverAnchorClient } from "..";
 import { PublicKey } from "@solana/web3.js";
-import base58 from "bs58";
 
 // Exports
 export { redisClient, redisSubscribeClient, loadUserMetadataToRedis };

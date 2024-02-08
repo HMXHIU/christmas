@@ -17,6 +17,7 @@ import { AnchorClient } from "$lib/clients/anchor-client/anchorClient";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
 import { PROGRAM_ID } from "$lib/clients/anchor-client/defs";
+import type { RequestEvent } from "@sveltejs/kit";
 
 // Exports
 export {
@@ -27,6 +28,7 @@ export {
     createSignInDataForSIWS,
     signJWT,
     verifyJWT,
+    requireLogin,
 };
 
 // Load fee payer keypair
@@ -113,6 +115,7 @@ function verifySIWS(input: SolanaSignInInput, output: any): boolean {
     } else if (ENVIRONMENT === "staging") {
         chains = ["solana:devnet"];
     }
+
     // Deserialize output
     const serialisedOutput: SolanaSignInOutput = {
         // Patch for missing account in solanaSignInOutput
@@ -126,4 +129,11 @@ function verifySIWS(input: SolanaSignInInput, output: any): boolean {
         signedMessage: new Uint8Array(output.signedMessage.data),
     };
     return verifySignIn(input, serialisedOutput);
+}
+
+function requireLogin(request: RequestEvent): App.UserSession {
+    if (!request.locals.user) {
+        throw new Error("Unauthorized");
+    }
+    return request.locals.user;
 }

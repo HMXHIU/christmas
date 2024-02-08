@@ -13,28 +13,23 @@ test("Test Public Object Storage", async () => {
     };
 
     // Create public object
-    await ObjectStorage.putObject({
-        owner: null,
-        bucket: "user",
-        name: "tile1",
-        data: JSON.stringify(publicData),
-    });
-
-    await ObjectStorage.putJSONObject({
-        owner: null,
-        bucket: "user",
-        name: "tile2",
-        data: publicData2,
-    });
-
-    // Object url
-    expect(
-        ObjectStorage.objectUrl({
+    await expect(
+        ObjectStorage.putObject({
             owner: null,
             bucket: "user",
             name: "tile1",
+            data: JSON.stringify(publicData),
         }),
-    ).toEqual("http://127.0.0.1:9000/user/public/tile1");
+    ).resolves.toEqual("http://127.0.0.1:9000/user/public/tile1");
+
+    await expect(
+        ObjectStorage.putJSONObject({
+            owner: null,
+            bucket: "user",
+            name: "tile2",
+            data: publicData2,
+        }),
+    ).resolves.toEqual("http://127.0.0.1:9000/user/public/tile2");
 
     // Public object exists
     await expect(
@@ -78,21 +73,14 @@ test("Test Private Object Storage", async () => {
     };
 
     // Create private object
-    await ObjectStorage.putObject({
-        owner,
-        bucket: "user",
-        name: owner,
-        data: JSON.stringify(privateData),
-    });
-
-    // Object url
-    expect(
-        ObjectStorage.objectUrl({
+    await expect(
+        ObjectStorage.putObject({
             owner,
             bucket: "user",
             name: owner,
+            data: JSON.stringify(privateData),
         }),
-    ).toEqual(`http://127.0.0.1:9000/user/private/${owner}`);
+    ).resolves.toEqual(`http://127.0.0.1:9000/user/private/${owner}`);
 
     // Private object exists
     await expect(

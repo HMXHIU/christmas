@@ -48,7 +48,7 @@ class ObjectStorage {
         bucket: string;
         name: string;
         data: string | Buffer | Readable;
-    }) {
+    }): Promise<string> {
         const prefix = owner ? "private" : "public";
 
         if (owner && name !== owner) {
@@ -58,6 +58,7 @@ class ObjectStorage {
         }
 
         await client.putObject(bucket, `${prefix}/${name}`, data);
+        return this.objectUrl({ owner, bucket, name });
     }
 
     static async putJSONObject({
@@ -70,7 +71,7 @@ class ObjectStorage {
         bucket: string;
         name: string;
         data: object;
-    }) {
+    }): Promise<string> {
         const prefix = owner ? "private" : "public";
 
         if (owner && name !== owner) {
@@ -84,6 +85,7 @@ class ObjectStorage {
             `${prefix}/${name}`,
             JSON.stringify(data),
         );
+        return this.objectUrl({ owner, bucket, name });
     }
 
     static async getObject({
@@ -129,7 +131,6 @@ class ObjectStorage {
         owner: string | null;
     }): string {
         const prefix = owner ? "private" : "public";
-
         const objectUrl =
             (useSSL ? "https://" : "http://") +
             endPoint +

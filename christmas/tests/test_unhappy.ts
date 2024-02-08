@@ -7,19 +7,6 @@ import {
     cleanString,
     stringToUint8Array,
 } from "../app/src/lib/clients/anchor-client/utils";
-import { getMint } from "@solana/spl-token";
-import {
-    generateQRCodeURL,
-    extractQueryParams,
-} from "../app/src/lib/clients/utils";
-import { requestAirdrop, createUser } from "./utils";
-import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
-import {
-    USER_ACCOUNT_SIZE,
-    DISCRIMINATOR_SIZE,
-    REGION_SIZE,
-    STRING_PREFIX_SIZE,
-} from "../app/src/lib/clients/anchor-client/defs";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -122,8 +109,8 @@ describe("Test Unhappy", () => {
     });
 
     it("Create Users", async () => {
-        await sellerClient.createUser({ region });
-        await buyerClient.createUser({ region });
+        await sellerClient.createUser({ region, uri: "" });
+        await buyerClient.createUser({ region, uri: "" });
 
         const seller = await sellerClient.getUser();
         expect(seller.region).to.eql(region);
