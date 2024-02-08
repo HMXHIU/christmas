@@ -5,78 +5,50 @@ import { expect, test } from "vitest";
 import { createSignInMessage } from "@solana/wallet-standard-util";
 
 import nacl from "tweetnacl";
-
-test("Test Login", async () => {
-    const user = Keypair.generate();
-
-    // get SIWS sign in message
-    const solanaSignInInput = await (
-        await fetch("http://localhost:5173/api/auth/siws")
-    ).json();
-    const signInMessage = createSignInMessage(solanaSignInInput);
-
-    // Replicate solana.signIn
-    const solanaSignInOutput = {
-        address: user.publicKey.toBase58(),
-        signature: Buffer.from(
-            nacl.sign.detached(signInMessage, user.secretKey),
-        ),
-        signedMessage: Buffer.from(signInMessage),
-    };
-
-    const loginResult = await fetch("http://localhost:5173/api/auth/login", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            solanaSignInInput,
-            solanaSignInOutput,
-        }),
-    });
-
-    const { status, token } = await loginResult.json();
-
-    expect(
-        (jwt.decode(token, { complete: true })?.payload as JwtPayload)
-            .publicKey,
-    ).toEqual(user.publicKey.toBase58());
-    expect(status).toBe("success");
-});
+import { login } from "./auth.test";
+import { getCookiesFromResponse } from "./utils";
+import { PUBLIC_HOST } from "$env/static/public";
+import { json } from "stream/consumers";
 
 test("Test User API", async () => {
-    // login
     const user = Keypair.generate();
 
-    const solanaSignInInput = await (
-        await fetch("http://localhost:5173/api/auth/siws")
-    ).json();
+    // Login
+    let response = await login(user);
+    const cookies = getCookiesFromResponse(response);
 
-    const signInMessage = createSignInMessage(solanaSignInInput);
-
-    // replicate solana.signIn
-    const solanaSignInOutput = {
-        address: user.publicKey.toBase58(),
-        signature: Buffer.from(
-            nacl.sign.detached(signInMessage, user.secretKey),
-        ),
-        signedMessage: Buffer.from(signInMessage),
-    };
-
-    const loginResult = await fetch("http://localhost:5173/api/auth/login", {
+    // Initialize user
+    response = await fetch("http://localhost:5173/api/user/init", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
+            Cookie: cookies,
         },
-        body: JSON.stringify({
-            solanaSignInInput,
-            solanaSignInOutput,
-        }),
+    });
+    const initResult = await response.json();
+    expect(initResult).toEqual({
+        status: "success",
+        url: `${PUBLIC_HOST}/api/storage/user/public/${user.publicKey.toBase58()}`,
     });
 
-    console.log(JSON.stringify(await loginResult.json(), null, 2));
+    // Get user metadata
+    response = await fetch(initResult.url);
+    const metadata = await response.json();
+    expect(metadata).toEqual({
+        publicKey: user.publicKey.toBase58(),
+    });
 
-    // fetch("/api/auth/login", {
-    //     method: "POST",
-    //     body: JSON.stringify({ publicKey: user.publicKey }),
+    // Reinitialize user
+    response = await fetch("http://localhost:5173/api/user/init", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Cookie: cookies,
+        },
+    });
+    const reinitResult = await response.json();
+    expect(reinitResult).toEqual({
+        status: "error",
+        message: "User is already initialized",
+    });
 });

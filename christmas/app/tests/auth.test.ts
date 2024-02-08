@@ -5,16 +5,11 @@ import { createSignInMessage } from "@solana/wallet-standard-util";
 import nacl from "tweetnacl";
 import { getCookiesFromResponse } from "./utils";
 
-test("Test Auth", async () => {
-    const user = Keypair.generate();
-
-    // get SIWS sign in message
+export async function login(user: Keypair): Promise<Response> {
     const solanaSignInInput = await (
         await fetch("http://localhost:5173/api/auth/siws")
     ).json();
     const signInMessage = createSignInMessage(solanaSignInInput);
-
-    // Replicate solana.signIn
     const solanaSignInOutput = {
         address: user.publicKey.toBase58(),
         signature: Buffer.from(
@@ -22,9 +17,7 @@ test("Test Auth", async () => {
         ),
         signedMessage: Buffer.from(signInMessage),
     };
-
-    // Login
-    let response = await fetch("http://localhost:5173/api/auth/login", {
+    return await fetch("http://localhost:5173/api/auth/login", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -34,7 +27,15 @@ test("Test Auth", async () => {
             solanaSignInOutput,
         }),
     });
+}
+
+test("Test Auth", async () => {
+    const user = Keypair.generate();
+
+    // Login
+    let response = await login(user);
     const loginResult = await response.json();
+    const cookies = getCookiesFromResponse(response);
 
     expect(
         (
@@ -43,8 +44,6 @@ test("Test Auth", async () => {
         ).publicKey,
     ).toEqual(user.publicKey.toBase58());
     expect(loginResult.status).toBe("success");
-
-    const cookies = getCookiesFromResponse(response);
 
     // Refresh
     const refreshResult = await (

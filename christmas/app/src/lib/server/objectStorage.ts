@@ -6,6 +6,7 @@ import {
     PUBLIC_MINIO_USE_SSL,
     PUBLIC_MINIO_ACCESS_KEY,
     PUBLIC_MINIO_SECRET_KEY,
+    PUBLIC_HOST,
 } from "$env/static/public";
 import type { Readable } from "stream";
 
@@ -85,6 +86,7 @@ class ObjectStorage {
             `${prefix}/${name}`,
             JSON.stringify(data),
         );
+
         return this.objectUrl({ owner, bucket, name });
     }
 
@@ -131,18 +133,7 @@ class ObjectStorage {
         owner: string | null;
     }): string {
         const prefix = owner ? "private" : "public";
-        const objectUrl =
-            (useSSL ? "https://" : "http://") +
-            endPoint +
-            ":" +
-            port +
-            "/" +
-            bucket +
-            "/" +
-            prefix +
-            "/" +
-            name;
-        return objectUrl;
+        return `${PUBLIC_HOST}/api/storage/${bucket}/${prefix}/${name}`;
     }
 
     static async objectExists({

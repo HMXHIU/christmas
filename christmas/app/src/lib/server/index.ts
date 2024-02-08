@@ -17,7 +17,7 @@ import { AnchorClient } from "$lib/clients/anchor-client/anchorClient";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
 import { PROGRAM_ID } from "$lib/clients/anchor-client/defs";
-import type { RequestEvent } from "@sveltejs/kit";
+import { error, type RequestEvent } from "@sveltejs/kit";
 
 // Exports
 export {
@@ -133,7 +133,7 @@ function verifySIWS(input: SolanaSignInInput, output: any): boolean {
 
 function requireLogin(request: RequestEvent): App.UserSession {
     if (!request.locals.user) {
-        throw new Error("Unauthorized");
+        error(401, "Unauthorized");
     }
     return request.locals.user;
 }

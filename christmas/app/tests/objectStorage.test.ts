@@ -2,6 +2,7 @@ import { Keypair } from "@solana/web3.js";
 
 import { ObjectStorage } from "$lib/server/objectStorage";
 import { expect, test } from "vitest";
+import { PUBLIC_HOST } from "$env/static/public";
 
 test("Test Public Object Storage", async () => {
     // owner = null for public object
@@ -20,7 +21,7 @@ test("Test Public Object Storage", async () => {
             name: "tile1",
             data: JSON.stringify(publicData),
         }),
-    ).resolves.toEqual("http://127.0.0.1:9000/user/public/tile1");
+    ).resolves.toEqual(`${PUBLIC_HOST}/api/storage/user/public/tile1`);
 
     await expect(
         ObjectStorage.putJSONObject({
@@ -29,7 +30,7 @@ test("Test Public Object Storage", async () => {
             name: "tile2",
             data: publicData2,
         }),
-    ).resolves.toEqual("http://127.0.0.1:9000/user/public/tile2");
+    ).resolves.toEqual(`${PUBLIC_HOST}/api/storage/user/public/tile2`);
 
     // Public object exists
     await expect(
@@ -80,7 +81,7 @@ test("Test Private Object Storage", async () => {
             name: owner,
             data: JSON.stringify(privateData),
         }),
-    ).resolves.toEqual(`http://127.0.0.1:9000/user/private/${owner}`);
+    ).resolves.toEqual(`${PUBLIC_HOST}/api/storage/user/private/${owner}`);
 
     // Private object exists
     await expect(
