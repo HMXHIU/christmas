@@ -18,6 +18,7 @@ import { PublicKey, Keypair } from "@solana/web3.js";
 import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
 import { PROGRAM_ID } from "$lib/clients/anchor-client/defs";
 import { error, type RequestEvent } from "@sveltejs/kit";
+import crypto from "crypto";
 
 // Exports
 export {
@@ -29,6 +30,7 @@ export {
     signJWT,
     verifyJWT,
     requireLogin,
+    hashObject,
 };
 
 // Load fee payer keypair
@@ -136,4 +138,11 @@ function requireLogin(request: RequestEvent): App.UserSession {
         error(401, "Unauthorized");
     }
     return request.locals.user;
+}
+
+function hashObject(obj: any): string {
+    const str = JSON.stringify(obj);
+    const hash = crypto.createHash("sha256");
+    hash.update(str);
+    return hash.digest("hex");
 }

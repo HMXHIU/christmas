@@ -5,7 +5,8 @@ import type {
     ParsedAccountData,
     AccountInfo,
 } from "@solana/web3.js";
-import { BN } from "@coral-xyz/anchor";
+import BN from "bn.js";
+import yup from "yup";
 
 export interface MemCmp {
     memcmp: {
@@ -63,20 +64,24 @@ export interface TransactionResult {
     signature: TransactionSignature;
 }
 
-export interface CouponMetadata {
-    name: string;
-    description: string;
-    image: string;
-}
+export const CouponMetadataSchema = yup.object().shape({
+    name: yup.string().required(),
+    description: yup.string().required(),
+    image: yup.string().required(),
+});
 
-export interface StoreMetadata {
-    name: string;
-    description: string;
-    image: string;
-    address: string;
-    latitude: number;
-    longitude: number;
-}
+export type CouponMetadata = yup.InferType<typeof CouponMetadataSchema>;
+
+export const StoreMetadataSchema = yup.object().shape({
+    name: yup.string().required(),
+    description: yup.string().required(),
+    image: yup.string().required(),
+    address: yup.string().required(),
+    latitude: yup.number().required(),
+    longitude: yup.number().required(),
+});
+
+export type StoreMetadata = yup.InferType<typeof StoreMetadataSchema>;
 
 export interface Account<DataT> {
     publicKey: PublicKey;

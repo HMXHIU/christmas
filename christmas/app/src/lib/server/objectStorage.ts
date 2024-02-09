@@ -28,6 +28,8 @@ const client = new Client({
 
 const BUCKETS = {
     user: "user",
+    coupon: "coupon",
+    store: "store",
 };
 
 // Initialize buckets

@@ -45,7 +45,7 @@ export async function POST(event) {
 
 export async function GET(event) {
     /**
-     * Get user metadata (might include private data)
+     * Get user metadata (might include private data), for public user data just use the metadata url
      *
      * Requires login
      */
