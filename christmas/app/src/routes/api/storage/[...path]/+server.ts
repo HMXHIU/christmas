@@ -5,60 +5,69 @@ import {
 } from "$lib/clients/anchor-client/types.js";
 import { hashObject, requireLogin } from "$lib/server/index.js";
 import { BUCKETS, ObjectStorage } from "$lib/server/objectStorage.js";
-import { json } from "@sveltejs/kit";
+import { json, redirect } from "@sveltejs/kit";
 
 export async function GET(event) {
     const { path } = event.params as { path: string };
     const [bucket, acl, filename] = path.split("/");
 
+    // Check valid bucket
+    if (!Object.values(BUCKETS).includes(bucket)) {
+        return json(
+            { status: "error", message: `Invalid bucket: ${bucket}` },
+            { status: 400 },
+        );
+    }
+
+    // Check valid acl
+    if (!["public", "private"].includes(acl)) {
+        return json(
+            { status: "error", message: `Invalid acl: ${acl}` },
+            { status: 400 },
+        );
+    }
+
+    // Check require login
+    let owner = null;
     if (acl === "private") {
         const user = requireLogin(event);
-        if (filename !== user.publicKey) {
+        owner = user.publicKey;
+    }
+
+    // Get redirect url
+    try {
+        if (
+            [
+                BUCKETS.coupon,
+                BUCKETS.store,
+                BUCKETS.user,
+                BUCKETS.image,
+            ].includes(bucket)
+        ) {
+            const redirectUrl = await ObjectStorage.redirectObjectUrl({
+                owner,
+                bucket,
+                name: filename,
+            });
+
+            return new Response(null, {
+                status: 302,
+                headers: {
+                    Location: redirectUrl,
+                },
+            });
+        } else {
             return json(
                 {
                     status: "error",
-                    message: "Permission denied: user does not own file",
+                    message: `Invalid bucket: ${bucket} not supported`,
                 },
-                { status: 403 },
-            );
-        }
-
-        try {
-            return json(
-                await ObjectStorage.getJSONObject({
-                    owner: user.publicKey,
-                    bucket,
-                    name: filename,
-                }),
-            );
-        } catch (error: any) {
-            return json(
-                { status: "error", message: error.message },
                 { status: 400 },
             );
         }
-    } else if (acl === "public") {
-        try {
-            return json(
-                await ObjectStorage.getJSONObject({
-                    owner: null,
-                    bucket,
-                    name: filename,
-                }),
-            );
-        } catch (error: any) {
-            return json(
-                { status: "error", message: error.message },
-                { status: 400 },
-            );
-        }
-    } else {
+    } catch (error: any) {
         return json(
-            {
-                status: "error",
-                message:
-                    "Invalid URL, must be {bucket}/{acl=public|private}/{name}",
-            },
+            { status: "error", message: error.message },
             { status: 400 },
         );
     }
@@ -87,16 +96,46 @@ export async function POST(event) {
         );
     }
 
+    // Get content type
+    const contentType =
+        event.request.headers.get("content-type") || "octet-stream";
+
     // Verify data
-    const data = await event.request.json();
-    let parsedData = data;
+    let parsedData: any;
+
     try {
         if (bucket === "coupon") {
-            parsedData = await CouponMetadataSchema.validate(data);
+            parsedData = await CouponMetadataSchema.validate(
+                await event.request.json(),
+            );
         } else if (bucket === "store") {
-            parsedData = await StoreMetadataSchema.validate(data);
+            parsedData = await StoreMetadataSchema.validate(
+                await event.request.json(),
+            );
         } else if (bucket === "user") {
-            parsedData = await UserMetadataSchema.validate(data);
+            parsedData = await UserMetadataSchema.validate(
+                await event.request.json(),
+            );
+        } else if (bucket === "image") {
+            // Check data is image
+            if (!contentType?.startsWith("image")) {
+                return json(
+                    {
+                        status: "error",
+                        message: "Invalid content type: image must be an image",
+                    },
+                    { status: 400 },
+                );
+            }
+            parsedData = Buffer.from(await event.request.arrayBuffer());
+        } else {
+            return json(
+                {
+                    status: "error",
+                    message: `Invalid bucket: ${bucket} upload not supported`,
+                },
+                { status: 400 },
+            );
         }
     } catch (error: any) {
         return json(
@@ -108,22 +147,28 @@ export async function POST(event) {
     // Object name must be under user namespace (a user can't write to another user's namespace)
     const name = hashObject([bucket, user.publicKey, parsedData]);
 
-    // Get content type
-    const contentType = event.request.headers.get("content-type");
-
     // Upload
     if (contentType === "application/json") {
-        const url = await ObjectStorage.putJSONObject({
-            owner: acl === "private" ? user.publicKey : null,
-            bucket: bucket,
-            name: name,
-            data: parsedData,
-        });
+        const url = await ObjectStorage.putJSONObject(
+            {
+                owner: acl === "private" ? user.publicKey : null,
+                bucket: bucket,
+                name: name,
+                data: parsedData,
+            },
+            { "Content-Type": "application/json" },
+        );
+        return json({ status: "success", url });
+    } else {
+        const url = await ObjectStorage.putObject(
+            {
+                owner: acl === "private" ? user.publicKey : null,
+                bucket: bucket,
+                name: name,
+                data: parsedData,
+            },
+            { "Content-Type": contentType },
+        );
         return json({ status: "success", url });
     }
-
-    return json(
-        { status: "error", message: "Invalid content type" },
-        { status: 400 },
-    );
 }

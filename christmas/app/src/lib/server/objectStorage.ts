@@ -45,17 +45,20 @@ initializeBuckets();
  * - If owner is null, the object is public else private
  */
 class ObjectStorage {
-    static async putObject({
-        owner,
-        bucket,
-        name,
-        data,
-    }: {
-        owner: string | null;
-        bucket: string;
-        name: string;
-        data: string | Buffer | Readable;
-    }): Promise<string> {
+    static async putObject(
+        {
+            owner,
+            bucket,
+            name,
+            data,
+        }: {
+            owner: string | null;
+            bucket: string;
+            name: string;
+            data: string | Buffer | Readable;
+        },
+        metaData?: Record<string, string>,
+    ): Promise<string> {
         const prefix = owner ? "private" : "public";
 
         // Check valid bucket
@@ -64,7 +67,7 @@ class ObjectStorage {
         }
 
         // Upload object
-        await client.putObject(bucket, `${prefix}/${name}`, data);
+        await client.putObject(bucket, `${prefix}/${name}`, data, metaData);
 
         // Tag private objects
         if (owner != null) {
@@ -76,23 +79,29 @@ class ObjectStorage {
         return this.objectUrl({ owner, bucket, name });
     }
 
-    static async putJSONObject({
-        owner,
-        bucket,
-        name,
-        data,
-    }: {
-        owner: string | null;
-        bucket: string;
-        name: string;
-        data: object;
-    }): Promise<string> {
-        return this.putObject({
+    static async putJSONObject(
+        {
             owner,
             bucket,
             name,
-            data: JSON.stringify(data),
-        });
+            data,
+        }: {
+            owner: string | null;
+            bucket: string;
+            name: string;
+            data: object;
+        },
+        metaData?: Record<string, string>,
+    ): Promise<string> {
+        return this.putObject(
+            {
+                owner,
+                bucket,
+                name,
+                data: JSON.stringify(data),
+            },
+            metaData,
+        );
     }
 
     static async getObject({
@@ -159,6 +168,40 @@ class ObjectStorage {
     }): string {
         const prefix = owner ? "private" : "public";
         return `${PUBLIC_HOST}/api/storage/${bucket}/${prefix}/${name}`;
+    }
+
+    static async redirectObjectUrl({
+        bucket,
+        name,
+        owner,
+    }: {
+        bucket: string;
+        name: string;
+        owner: string | null;
+    }): Promise<string> {
+        const prefix = owner ? "private" : "public";
+
+        return await client.presignedUrl(
+            "GET",
+            bucket,
+            `${prefix}/${name}`,
+            24 * 60 * 60,
+        );
+
+        // TODO: Public folder should be public an no need presigned
+        // // Private objects require presigned url
+        // if (prefix === "private") {
+        //     return await client.presignedUrl(
+        //         "GET",
+        //         bucket,
+        //         `${prefix}/${name}`,
+        //         24 * 60 * 60,
+        //     );
+        // }
+        // // Public objects can be accessed directly
+        // else {
+        //     return `${useSSL ? "https" : "http"}://${endPoint}:${port}/${bucket}/${prefix}/${name}`;
+        // }
     }
 
     static async objectExists({

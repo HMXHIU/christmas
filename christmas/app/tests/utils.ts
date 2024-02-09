@@ -1,3 +1,6 @@
+import fs from "fs";
+import path from "path";
+
 export function getCookiesFromResponse(response: Response): string {
     let cookies: string[] = [];
 
@@ -9,4 +12,9 @@ export function getCookiesFromResponse(response: Response): string {
     });
 
     return cookies.join("; ");
+}
+
+export function readImageAsBuffer(imagePath: string): Buffer {
+    const absolutePath = path.resolve(__dirname, imagePath);
+    return fs.readFileSync(absolutePath);
 }
