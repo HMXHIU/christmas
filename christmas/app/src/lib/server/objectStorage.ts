@@ -30,15 +30,19 @@ const BUCKETS = {
     user: "user",
     coupon: "coupon",
     store: "store",
+    image: "image",
 };
 
 // Initialize buckets
 initializeBuckets();
 
 /**
- * Do not expose this to client (only backend)
- * All operations should be done through ObjectStorage (with permission checks)
- * If owner is null, the object is public else private
+ *
+ * Notes:
+ *
+ * - Do not expose this to client (only backend)
+ * - All operations should be done through ObjectStorage (with permission checks)
+ * - If owner is null, the object is public else private
  */
 class ObjectStorage {
     static async putObject({
@@ -54,13 +58,21 @@ class ObjectStorage {
     }): Promise<string> {
         const prefix = owner ? "private" : "public";
 
-        if (owner && name !== owner) {
-            throw new Error(
-                `Permission denied: ${bucket} ${owner} does not own ${name}`,
-            );
+        // Check valid bucket
+        if (!Object.values(BUCKETS).includes(bucket)) {
+            throw new Error(`Invalid bucket: ${bucket}`);
         }
 
+        // Upload object
         await client.putObject(bucket, `${prefix}/${name}`, data);
+
+        // Tag private objects
+        if (owner != null) {
+            await client.setObjectTagging(bucket, `${prefix}/${name}`, {
+                owner,
+            });
+        }
+
         return this.objectUrl({ owner, bucket, name });
     }
 
@@ -75,21 +87,12 @@ class ObjectStorage {
         name: string;
         data: object;
     }): Promise<string> {
-        const prefix = owner ? "private" : "public";
-
-        if (owner && name !== owner) {
-            throw new Error(
-                `Permission denied: ${bucket} ${owner} does not own ${name}`,
-            );
-        }
-
-        await client.putObject(
+        return this.putObject({
+            owner,
             bucket,
-            `${prefix}/${name}`,
-            JSON.stringify(data),
-        );
-
-        return this.objectUrl({ owner, bucket, name });
+            name,
+            data: JSON.stringify(data),
+        });
     }
 
     static async getObject({
@@ -103,10 +106,30 @@ class ObjectStorage {
     }): Promise<Readable> {
         const prefix = owner ? "private" : "public";
 
-        if (owner && name !== owner) {
-            throw new Error(
-                `Permission denied: ${bucket} ${owner} does not own ${name}`,
+        // Check valid bucket
+        if (!Object.values(BUCKETS).includes(bucket)) {
+            throw new Error(`Invalid bucket: ${bucket}`);
+        }
+
+        // Check object owner if private
+        if (owner != null) {
+            let ownerTag = await getObjectTag(
+                bucket,
+                `${prefix}/${name}`,
+                "owner",
             );
+
+            if (ownerTag == null) {
+                throw new Error(
+                    `Private object ${bucket}/${prefix}/${name} missing owner tag`,
+                );
+            }
+
+            if (ownerTag !== owner) {
+                throw new Error(
+                    `Permission denied: ${owner} does not own ${bucket}/${prefix}/${name}`,
+                );
+            }
         }
 
         return await client.getObject(bucket, `${prefix}/${name}`);
@@ -150,7 +173,7 @@ class ObjectStorage {
         const prefix = owner ? "private" : "public";
         if (owner && name !== owner) {
             throw new Error(
-                `Permission denied: ${bucket} ${owner} does not own ${name}`,
+                `Permission denied: ${owner} does not own ${bucket}/${prefix}/${name}`,
             );
         }
         try {
@@ -178,4 +201,20 @@ function initializeBuckets() {
             }
         });
     }
+}
+
+async function getObjectTag(
+    bucket: string,
+    name: string,
+    key: string,
+): Promise<string | null> {
+    // Get object tags
+    const tags = await client.getObjectTagging(bucket, name);
+
+    for (const tag of tags) {
+        if (tag.Key === key) {
+            return tag.Value;
+        }
+    }
+    return null;
 }

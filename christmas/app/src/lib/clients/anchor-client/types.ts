@@ -54,6 +54,12 @@ export interface Store {
     bump: number;
 }
 
+export const UserMetadataSchema = yup.object().shape({
+    publicKey: yup.string().required(),
+});
+
+export type UserMetadata = yup.InferType<typeof UserMetadataSchema>;
+
 export interface User {
     region: number[];
     bump: number;

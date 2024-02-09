@@ -12,13 +12,12 @@ import {
 } from "$env/static/public";
 import { FEE_PAYER_PRIVATE_KEY as FEE_PAYER_PRIVATE_KEY_JSON } from "$env/static/private";
 import base58 from "bs58";
-import { getRandomValues } from "crypto";
+import { getRandomValues, createHash } from "crypto";
 import { AnchorClient } from "$lib/clients/anchor-client/anchorClient";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
 import { PROGRAM_ID } from "$lib/clients/anchor-client/defs";
 import { error, type RequestEvent } from "@sveltejs/kit";
-import crypto from "crypto";
 
 // Exports
 export {
@@ -141,8 +140,19 @@ function requireLogin(request: RequestEvent): App.UserSession {
 }
 
 function hashObject(obj: any): string {
-    const str = JSON.stringify(obj);
-    const hash = crypto.createHash("sha256");
+    const str = sortedStringify(obj);
+    const hash = createHash("sha256");
     hash.update(str);
     return hash.digest("hex");
+}
+
+function sortedStringify(obj: any): string {
+    if (typeof obj !== "object" || obj === null || Array.isArray(obj)) {
+        return JSON.stringify(obj);
+    }
+    const keys = Object.keys(obj).sort();
+    const sortedObj = keys
+        .map((key) => `${JSON.stringify(key)}:${sortedStringify(obj[key])}`)
+        .join(",");
+    return `{${sortedObj}}`;
 }
