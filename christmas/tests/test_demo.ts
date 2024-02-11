@@ -26,9 +26,9 @@ describe("Generate Demo Content", () => {
     // nft client
     const nftClient = new NFTMinioClient({
         accessKey: process.env.PUBLIC_MINIO_ACCESS_KEY,
-        secretKey: process.env.PUBLIC_MINIO_SECRET_KEY,
-        port: parseInt(process.env.PUBLIC_MINIO_PORT),
-        endPoint: process.env.PUBLIC_MINIO_ENDPOINT,
+        secretKey: process.env.MINIO_SECRET_KEY,
+        port: parseInt(process.env.MINIO_PORT),
+        endPoint: process.env.MINIO_ENDPOINT,
         useSSL: JSON.parse(process.env.PUBLIC_MINIO_USE_SSL),
         bucket: process.env.PUBLIC_MINIO_BUCKET,
     });

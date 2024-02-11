@@ -11,7 +11,6 @@ import type {
 import {
     anchorClient,
     userDeviceClient,
-    nftClient,
     marketCoupons,
     claimedCoupons,
     mintedCoupons,
@@ -33,6 +32,7 @@ import { stringToUint8Array } from "./clients/anchor-client/utils";
 import { AnchorClient } from "./clients/anchor-client/anchorClient";
 import type { AnchorWallet } from "@solana/wallet-adapter-react";
 import { PUBLIC_RPC_ENDPOINT } from "$env/static/public";
+import { StorageClient } from "./clients/storage-client";
 
 // Exports
 export {
@@ -244,26 +244,19 @@ async function createStore({
     logo,
 }: CreateStoreFormResult) {
     const ac = get(anchorClient);
-    const nc = get(nftClient);
 
-    if (ac != null && nc != null) {
-        let metadataUrl = "";
+    if (ac != null) {
+        const metadataUrl = await StorageClient.uploadStore({
+            name,
+            description,
+            image: logo ? await StorageClient.uploadImage(logo) : "",
+            address: address,
+            latitude: latitude,
+            longitude: longitude,
+        });
+        console.log(`Uploaded store metadata to ${metadataUrl}`);
 
-        if (logo) {
-            metadataUrl = await nc.store({
-                name,
-                description,
-                imageFile: logo,
-                additionalMetadata: {
-                    address: address,
-                    latitude: latitude,
-                    longitude: longitude,
-                },
-            });
-            console.log(`Uploaded store metadata to ${metadataUrl}`);
-        }
-
-        const tx = await ac.createStore({
+        await ac.createStore({
             name: name.slice(0, STORE_NAME_SIZE - STRING_PREFIX_SIZE), // also enforced in the form
             geohash: Array.from(stringToUint8Array(geohash)),
             region: Array.from(stringToUint8Array(region)),
@@ -288,20 +281,14 @@ async function createCoupon({
     store: Account<Store>;
 }) {
     const ac = get(anchorClient);
-    const nc = get(nftClient);
 
-    if (ac != null && nc != null) {
-        let metadataUrl = "";
-
-        // Upload coupon image to nft storage
-        if (image || description) {
-            metadataUrl = await nc.store({
-                name,
-                description,
-                ...(image ? { imageFile: image } : {}),
-            });
-            console.log(`Uploaded coupon metadata to ${metadataUrl}`);
-        }
+    if (ac != null) {
+        const metadataUrl = await StorageClient.uploadCoupon({
+            name,
+            description,
+            image: image ? await StorageClient.uploadImage(image) : "",
+        });
+        console.log(`Uploaded coupon metadata to ${metadataUrl}`);
 
         // Create coupon
         await ac.createCoupon({
@@ -365,6 +352,11 @@ async function createUser(): Promise<TransactionResult> {
     const dc = get(userDeviceClient);
 
     if (ac != null && dc?.location?.country?.code != null) {
+        // Create user metadata
+        const userMetadataUrl = await StorageClient.uploadUser({
+            publicKey: ac.anchorWallet.publicKey.toString(),
+        });
+
         // Try to create user for free
         const txResult = await _payForTransaction({
             procedure: "createUser",
@@ -379,6 +371,7 @@ async function createUser(): Promise<TransactionResult> {
             console.log("Failed to create user for free, paying for user...");
             return await ac.createUser({
                 region: dc.location.country.code,
+                uri: userMetadataUrl,
             });
         }
     }

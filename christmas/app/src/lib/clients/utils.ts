@@ -1,5 +1,5 @@
 import BN from "bn.js";
-import { IPFS_HTTP_GATEWAY } from "./nft-client/defs";
+
 import type {
     Coupon,
     CouponMetadata,
@@ -7,6 +7,7 @@ import type {
     StoreMetadata,
 } from "./anchor-client/types";
 import { cleanString } from "./anchor-client/utils";
+import { PUBLIC_IPFS_HTTP_GATEWAY } from "$env/static/public";
 
 export function calculateDistance(
     lat1: number,
@@ -65,7 +66,7 @@ export function nft_uri_to_url(uri: string): string {
     const regex = /ipfs:\/\/(.+)/;
     const match = uri.match(regex);
     if (match && match[1]) {
-        return `https://${IPFS_HTTP_GATEWAY}/ipfs/${match[1]}`;
+        return `https://${PUBLIC_IPFS_HTTP_GATEWAY}/ipfs/${match[1]}`;
     }
     return uri;
 }

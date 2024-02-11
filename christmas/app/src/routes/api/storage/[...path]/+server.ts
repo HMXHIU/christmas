@@ -5,7 +5,7 @@ import {
 } from "$lib/clients/anchor-client/types.js";
 import { hashObject, requireLogin } from "$lib/server/index.js";
 import { BUCKETS, ObjectStorage } from "$lib/server/objectStorage.js";
-import { json, redirect } from "@sveltejs/kit";
+import { json } from "@sveltejs/kit";
 
 export async function GET(event) {
     const { path } = event.params as { path: string };
@@ -100,7 +100,7 @@ export async function POST(event) {
     const contentType =
         event.request.headers.get("content-type") || "octet-stream";
 
-    // Verify data
+    // Validate data
     let parsedData: any;
 
     try {

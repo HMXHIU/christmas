@@ -1,22 +1,22 @@
 import { Client } from "minio";
 
 import {
-    PUBLIC_MINIO_ENDPOINT,
-    PUBLIC_MINIO_PORT,
-    PUBLIC_MINIO_USE_SSL,
-    PUBLIC_MINIO_ACCESS_KEY,
-    PUBLIC_MINIO_SECRET_KEY,
-    PUBLIC_HOST,
-} from "$env/static/public";
+    MINIO_ENDPOINT,
+    MINIO_PORT,
+    MINIO_USE_SSL,
+    MINIO_ACCESS_KEY,
+    MINIO_SECRET_KEY,
+} from "$env/static/private";
+import { PUBLIC_HOST } from "$env/static/public";
 import type { Readable } from "stream";
 
 export { BUCKETS, ObjectStorage };
 
-const endPoint = PUBLIC_MINIO_ENDPOINT;
-const port = parseInt(PUBLIC_MINIO_PORT);
-const useSSL = JSON.parse(PUBLIC_MINIO_USE_SSL);
-const accessKey = PUBLIC_MINIO_ACCESS_KEY;
-const secretKey = PUBLIC_MINIO_SECRET_KEY;
+const endPoint = MINIO_ENDPOINT;
+const port = parseInt(MINIO_PORT);
+const useSSL = JSON.parse(MINIO_USE_SSL);
+const accessKey = MINIO_ACCESS_KEY;
+const secretKey = MINIO_SECRET_KEY;
 
 const client = new Client({
     endPoint,
@@ -188,7 +188,7 @@ class ObjectStorage {
             24 * 60 * 60,
         );
 
-        // TODO: Public folder should be public an no need presigned
+        // TODO: Public folder should be public and not need presigned
         // // Private objects require presigned url
         // if (prefix === "private") {
         //     return await client.presignedUrl(
