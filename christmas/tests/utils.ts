@@ -1,5 +1,8 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Christmas } from "../target/types/christmas";
+import { Keypair } from "@solana/web3.js";
+import { createSignInMessage } from "@solana/wallet-standard-util";
+import nacl from "tweetnacl";
 
 export async function requestAirdrop(
     publicKeys: anchor.web3.PublicKey[],
@@ -64,4 +67,28 @@ export function getRandomDate(startYear: number, endYear: number): Date {
     const month = Math.floor(Math.random() * 12);
     const day = Math.floor(Math.random() * 28) + 1; // To ensure valid date for all months
     return new Date(Date.UTC(year, month, day));
+}
+
+export async function login(user: Keypair): Promise<Response> {
+    const solanaSignInInput = await (
+        await fetch("http://localhost:5173/api/auth/siws")
+    ).json();
+    const signInMessage = createSignInMessage(solanaSignInInput);
+    const solanaSignInOutput = {
+        address: user.publicKey.toBase58(),
+        signature: Buffer.from(
+            nacl.sign.detached(signInMessage, user.secretKey)
+        ),
+        signedMessage: Buffer.from(signInMessage),
+    };
+    return await fetch("http://localhost:5173/api/auth/login", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            solanaSignInInput,
+            solanaSignInOutput,
+        }),
+    });
 }

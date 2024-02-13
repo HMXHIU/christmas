@@ -3,7 +3,6 @@ import ngeohash from "ngeohash";
 import { AnchorClient } from "../app/src/lib/clients/anchor-client/anchorClient";
 import * as anchor from "@coral-xyz/anchor";
 import { stringToUint8Array } from "../app/src/lib/clients/anchor-client/utils";
-import { NFTMinioClient } from "../app/src/lib/clients/nft-client/nftMinioClient";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -14,6 +13,8 @@ import {
     CouponMetadata,
     StoreMetadata,
 } from "../app/src/lib/clients/anchor-client/types";
+import { login } from "./utils";
+import { getCookiesFromResponse } from "../app/tests/utils";
 
 // load env
 require("dotenv").config();
@@ -22,16 +23,6 @@ describe("Generate Demo Content", () => {
     // set provider
     const provider = anchor.AnchorProvider.env();
     anchor.setProvider(provider);
-
-    // nft client
-    const nftClient = new NFTMinioClient({
-        accessKey: process.env.PUBLIC_MINIO_ACCESS_KEY,
-        secretKey: process.env.MINIO_SECRET_KEY,
-        port: parseInt(process.env.MINIO_PORT),
-        endPoint: process.env.MINIO_ENDPOINT,
-        useSSL: JSON.parse(process.env.PUBLIC_MINIO_USE_SSL),
-        bucket: process.env.PUBLIC_MINIO_BUCKET,
-    });
 
     // users
     const sellerKeypair = web3.Keypair.generate();
@@ -233,39 +224,67 @@ describe("Generate Demo Content", () => {
     });
 
     it("Create Demo Content", async () => {
-        for (const { storeMetadata, couponMetadata } of demoStoresCoupons) {
-            // create store metadata
-            let metadataUrl = await nftClient.store({
-                name: storeMetadata.name,
-                description: storeMetadata.description,
-                imageUrl: storeMetadata.image,
-                additionalMetadata: {
-                    address: storeMetadata.address,
-                    latitude: storeMetadata.latitude,
-                    longitude: storeMetadata.longitude,
-                },
-            });
+        // Login
+        let response = await login(sellerKeypair);
+        const cookies = getCookiesFromResponse(response);
 
-            // create store
+        for (const { storeMetadata, couponMetadata } of demoStoresCoupons) {
+            // Create store metadata
+            response = await fetch(
+                `${process.env.PUBLIC_HOST}/api/storage/store/public`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Cookie: cookies,
+                    },
+                    body: JSON.stringify({
+                        name: storeMetadata.name,
+                        description: storeMetadata.description,
+                        image: storeMetadata.image,
+                        address: storeMetadata.address,
+                        latitude: storeMetadata.latitude,
+                        longitude: storeMetadata.longitude,
+                    }),
+                }
+            );
+
+            const createStoreMetadataResult = await response.json();
+            expect(createStoreMetadataResult.status).to.equal("success");
+
+            // Create store
             const storeId = await sellerClient.getAvailableStoreId();
             const store = await sellerClient.getStorePda(storeId)[0];
             assert.isNull(
                 (
                     await sellerClient.createStore({
                         name: storeMetadata.name,
-                        uri: metadataUrl,
+                        uri: createStoreMetadataResult.url,
                         region,
                         geohash: geoHere,
                     })
                 ).result.err
             );
 
-            // create coupon metadata
-            metadataUrl = await nftClient.store({
-                name: couponMetadata.name,
-                description: couponMetadata.description,
-                imageUrl: couponMetadata.image,
-            });
+            // Create coupon metadata
+            response = await fetch(
+                `${process.env.PUBLIC_HOST}/api/storage/coupon/public`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Cookie: cookies,
+                    },
+                    body: JSON.stringify({
+                        name: couponMetadata.name,
+                        description: couponMetadata.description,
+                        image: couponMetadata.image,
+                    }),
+                }
+            );
+
+            const createCouponMetadataResult = await response.json();
+            expect(createCouponMetadataResult.status).to.equal("success");
 
             // create coupon
             assert.isNull(
@@ -275,7 +294,7 @@ describe("Generate Demo Content", () => {
                         region,
                         store,
                         name: couponMetadata.name,
-                        uri: metadataUrl,
+                        uri: createCouponMetadataResult.url,
                         validFrom: beforeToday,
                         validTo: afterToday,
                     })

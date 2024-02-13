@@ -13,6 +13,7 @@
     },
     "devDependencies": {
         "@solana/spl-token": "^0.3.11",
+        "@solana/wallet-standard-util": "^1.1.1",
         "@types/chai-as-promised": "^7.1.8",
         "@types/mocha": "^10.0.6",
         "chai": "^4.3.4",
@@ -22,6 +23,7 @@
         "ngeohash": "^0.6.3",
         "prettier": "^2.6.2",
         "ts-mocha": "^10.0.0",
+        "tweetnacl": "^1.0.3",
         "typescript": "^5.3.3"
     },
     "prettier": {
