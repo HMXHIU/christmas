@@ -18,6 +18,19 @@ pub struct CreateUser<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+pub struct UpdateUser<'info> {
+    #[account(
+        mut,
+        seeds=[b"user", signer.key().as_ref()],
+        bump
+    )]
+    pub user: Account<'info, User>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub signer: Signer<'info>, // can only update own account
+}
+
 #[account]
 pub struct User {
     pub region: [u8; 3],

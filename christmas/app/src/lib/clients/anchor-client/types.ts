@@ -54,8 +54,17 @@ export interface Store {
     bump: number;
 }
 
+export const PlayerMetadataSchema = yup.object().shape({
+    player: yup.string().required(),
+    name: yup.string().required(),
+    tile: yup.string().optional(),
+});
+
+export type PlayerMetadata = yup.InferType<typeof PlayerMetadataSchema>;
+
 export const UserMetadataSchema = yup.object().shape({
     publicKey: yup.string().required(),
+    crossover: PlayerMetadataSchema.optional().default(undefined), // yup casts to {} if undefined
 });
 
 export type UserMetadata = yup.InferType<typeof UserMetadataSchema>;
@@ -63,6 +72,7 @@ export type UserMetadata = yup.InferType<typeof UserMetadataSchema>;
 export interface User {
     region: number[];
     bump: number;
+    uri: string;
 }
 
 export interface TransactionResult {

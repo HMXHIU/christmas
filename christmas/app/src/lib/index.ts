@@ -165,18 +165,25 @@ async function claimCoupon({
     numTokens: number;
 }): Promise<TransactionResult> {
     const ac = get(anchorClient);
-    const dc = get(userDeviceClient);
 
-    if (ac && dc?.location?.country?.code) {
-        // Try to claim for free
-        const txResult = await _payForTransaction({
-            procedure: "claimFromMarket",
-            parameters: {
-                wallet: ac!.anchorWallet.publicKey.toString(),
-                mint: coupon.account.mint.toString(),
-                numTokens,
+    if (ac) {
+        // Try to claim for free (requires login)
+        const txResult = await fetch("/api/community/coupon/claim", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
             },
-        });
+            body: JSON.stringify({
+                numTokens,
+                mint: coupon.account.mint.toString(),
+            }),
+        })
+            .then((response) => response.json())
+            .then(({ transaction }) => {
+                return ac.signAndSendTransaction({
+                    tx: Transaction.from(Buffer.from(transaction, "base64")),
+                });
+            });
 
         // Try paying for claim
         if (txResult.result.err != null) {
@@ -189,9 +196,7 @@ async function claimCoupon({
             return txResult;
         }
     }
-    throw new Error(
-        "Failed to claim coupon, ensure that location is enabled and wallet is connected",
-    );
+    throw new Error("Failed to claim coupon, ensure that wallet is connected");
 }
 
 async function redeemCoupon({
@@ -205,15 +210,23 @@ async function redeemCoupon({
 
     if (ac) {
         // Try to redeem for free
-        const txResult = await _payForTransaction({
-            procedure: "redeemCoupon",
-            parameters: {
-                coupon: coupon.publicKey.toString(),
-                wallet: ac.anchorWallet.publicKey.toString(),
-                mint: coupon.account.mint.toString(),
-                numTokens,
+        const txResult = await fetch("/api/community/coupon/redeem", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
             },
-        });
+            body: JSON.stringify({
+                coupon: coupon.publicKey.toString(),
+                numTokens,
+                mint: coupon.account.mint.toString(),
+            }),
+        })
+            .then((response) => response.json())
+            .then(({ transaction }) => {
+                return ac.signAndSendTransaction({
+                    tx: Transaction.from(Buffer.from(transaction, "base64")),
+                });
+            });
 
         // Try to pay for redemption
         if (txResult.result.err != null) {
@@ -228,9 +241,7 @@ async function redeemCoupon({
         }
     }
 
-    throw new Error(
-        "Failed to redeem coupon, ensure that location is enabled and wallet is connected",
-    );
+    throw new Error("Failed to redeem coupon, ensure that wallet is connected");
 }
 
 async function createStore({
@@ -358,13 +369,22 @@ async function createUser(): Promise<TransactionResult> {
         });
 
         // Try to create user for free
-        const txResult = await _payForTransaction({
-            procedure: "createUser",
-            parameters: {
-                wallet: ac.anchorWallet.publicKey.toString(),
-                region: dc.location.country.code,
+        const txResult = await fetch("/api/community/user/create", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
             },
-        });
+            body: JSON.stringify({
+                region: dc.location.country.code,
+                uri: userMetadataUrl,
+            }),
+        })
+            .then((response) => response.json())
+            .then(({ transaction }) => {
+                return ac.signAndSendTransaction({
+                    tx: Transaction.from(Buffer.from(transaction, "base64")),
+                });
+            });
 
         // Try paying for user
         if (txResult.result.err != null) {
@@ -447,33 +467,4 @@ async function refresh() {
             `Failed to refresh token: ${refreshTokenResult.statusText}`,
         );
     }
-}
-
-async function _payForTransaction({
-    procedure,
-    parameters,
-}: {
-    procedure: string;
-    parameters: any;
-}): Promise<TransactionResult> {
-    const ac = get(anchorClient);
-
-    if (ac != null) {
-        return await fetch("/api/pay-for", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ procedure, parameters }),
-        })
-            .then((response) => response.json())
-            .then(({ transaction }) => {
-                return ac.signAndSendTransaction({
-                    tx: Transaction.from(Buffer.from(transaction, "base64")),
-                });
-            });
-    }
-    throw new Error(
-        "Failed to pay for transaction, ensure that wallet is connected",
-    );
 }

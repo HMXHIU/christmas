@@ -134,6 +134,26 @@ describe("Test client", () => {
         expect(buyer.region).to.eql(region);
     });
 
+    it("Update User", async () => {
+        const updatedRegionIdx = Math.floor(
+            Math.random() * Object.values(COUNTRY_DETAILS).length
+        );
+        const updatedRegionCode =
+            Object.values(COUNTRY_DETAILS)[updatedRegionIdx][0];
+
+        const updatedUri = "https://updated.com";
+
+        const updatedRegion = Array.from(stringToUint8Array(updatedRegionCode));
+        await buyerClient.updateUser({
+            region: updatedRegion,
+            uri: updatedUri,
+        });
+
+        const buyer = await buyerClient.getUser();
+        expect(buyer.region).to.eql(updatedRegion);
+        expect(cleanString(buyer.uri)).to.eql(updatedUri);
+    });
+
     it("Create Store", async () => {
         storeId = await sellerClient.getAvailableStoreId();
 

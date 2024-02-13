@@ -7,7 +7,8 @@ import type {
     StoreMetadata,
 } from "./anchor-client/types";
 import { cleanString } from "./anchor-client/utils";
-import { PUBLIC_IPFS_HTTP_GATEWAY } from "$env/static/public";
+
+const PUBLIC_IPFS_HTTP_GATEWAY = "ipfs.io";
 
 export function calculateDistance(
     lat1: number,

@@ -49,6 +49,12 @@ pub mod christmas {
         Ok(())
     }
 
+    pub fn update_user(ctx: Context<UpdateUser>, region: [u8; 3], uri: String) -> Result<()> {
+        ctx.accounts.user.region = region;
+        ctx.accounts.user.uri = pad_string(&uri, URI_SIZE - STRING_PREFIX_SIZE);
+        Ok(())
+    }
+
     pub fn create_store(
         ctx: Context<CreateStore>,
         name: String,

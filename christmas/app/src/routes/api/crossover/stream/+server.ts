@@ -1,6 +1,6 @@
 import type { RequestHandler } from "./$types";
 import { redisClient, redisSubscribeClient } from "$lib/server/crossover/redis";
-import { connectedUsers } from "$lib/server/crossover/crossover";
+import { connectedUsers } from "$lib/server/crossover";
 
 export const GET: RequestHandler = ({ url }) => {
     // Authenticate user

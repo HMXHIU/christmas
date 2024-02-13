@@ -14,7 +14,13 @@ import { FEE_PAYER_PRIVATE_KEY as FEE_PAYER_PRIVATE_KEY_JSON } from "$env/static
 import base58 from "bs58";
 import { getRandomValues, createHash } from "crypto";
 import { AnchorClient } from "$lib/clients/anchor-client/anchorClient";
-import { PublicKey, Keypair } from "@solana/web3.js";
+import {
+    PublicKey,
+    Keypair,
+    Transaction,
+    TransactionInstruction,
+    Connection,
+} from "@solana/web3.js";
 import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
 import { PROGRAM_ID } from "$lib/clients/anchor-client/defs";
 import { error, type RequestEvent } from "@sveltejs/kit";
@@ -30,6 +36,7 @@ export {
     verifyJWT,
     requireLogin,
     hashObject,
+    createSerializedTransaction,
 };
 
 // Load fee payer keypair
@@ -155,4 +162,34 @@ function sortedStringify(obj: any): string {
         .map((key) => `${JSON.stringify(key)}:${sortedStringify(obj[key])}`)
         .join(",");
     return `{${sortedObj}}`;
+}
+
+async function createSerializedTransaction(ix: TransactionInstruction) {
+    // Set up connection and signer
+    const connection = new Connection(PUBLIC_RPC_ENDPOINT, "processed");
+
+    // Get latest blockchash and block height
+    let latestBlockHash = await connection.getLatestBlockhash();
+
+    // Create tx with recent blockhash and splTransferIx
+    let tx = new Transaction({
+        blockhash: latestBlockHash.blockhash,
+        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+        feePayer: FEE_PAYER_PUBKEY, // pay for transaction fee
+    });
+
+    // Add procedure instruction
+    tx.add(ix);
+
+    // Partially sign to take on fees
+    tx.partialSign(feePayerKeypair);
+
+    // Serialize partially signed transaction (serialize verification done on client side).
+    const serializedTransaction = tx.serialize({
+        verifySignatures: false,
+        requireAllSignatures: false,
+    });
+    const base64Transaction = serializedTransaction.toString("base64");
+
+    return base64Transaction;
 }

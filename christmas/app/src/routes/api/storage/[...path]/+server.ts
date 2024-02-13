@@ -7,6 +7,7 @@ import { hashObject, requireLogin } from "$lib/server/index.js";
 import { BUCKETS, ObjectStorage } from "$lib/server/objectStorage.js";
 import { json } from "@sveltejs/kit";
 
+// Get storage (api/storage/{bucket}/{acl=public|private}/{name})
 export async function GET(event) {
     const { path } = event.params as { path: string };
     const [bucket, acl, filename] = path.split("/");

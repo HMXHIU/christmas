@@ -897,6 +897,41 @@ export class AnchorClient {
             .instruction();
     }
 
+    async updateUser({
+        region,
+        uri,
+    }: {
+        region: number[];
+        uri: string;
+    }): Promise<TransactionResult> {
+        const tx = new Transaction();
+        tx.add(await this.updateUserIx({ region, uri }));
+        return await this.executeTransaction({ tx });
+    }
+
+    async updateUserIx({
+        region,
+        uri,
+        wallet,
+        payer,
+    }: {
+        region: number[];
+        uri: string;
+        wallet?: PublicKey | null; // the user pubkey (defaults to this.anchorWallet.publicKey)
+        payer?: PublicKey | null; // the payer pubkey (defaults to this.anchorWallet.publicKey)
+    }): Promise<TransactionInstruction> {
+        const [pda, _] = this.getUserPda(wallet);
+
+        return await this.program.methods
+            .updateUser(region, uri)
+            .accounts({
+                user: pda,
+                signer: wallet || this.anchorWallet.publicKey,
+                payer: payer || this.anchorWallet.publicKey,
+            })
+            .instruction();
+    }
+
     /***************************************************************************
     Program
     ***************************************************************************/

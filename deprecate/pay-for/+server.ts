@@ -1,4 +1,5 @@
 import { PUBLIC_RPC_ENDPOINT } from "$env/static/public";
+import type { UserMetadata } from "$lib/clients/anchor-client/types";
 import { COUNTRY_DETAILS } from "$lib/clients/user-device-client/defs";
 import {
     FEE_PAYER_PUBKEY,
@@ -123,6 +124,7 @@ function _getCreateUserProdecureIx(
         wallet: new PublicKey(parameters.wallet),
         payer: FEE_PAYER_PUBKEY,
         region: parameters.region,
+        uri: parameters.uri || "",
     });
 }
 
