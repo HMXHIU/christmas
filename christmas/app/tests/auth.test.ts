@@ -5,6 +5,9 @@ import { createSignInMessage } from "@solana/wallet-standard-util";
 import nacl from "tweetnacl";
 import { getCookiesFromResponse } from "./utils";
 
+/**
+ * Login without a browser, without SIWS (required for tests)
+ */
 export async function login(user: Keypair): Promise<Response> {
     const solanaSignInInput = await (
         await fetch("http://localhost:5173/api/auth/siws")

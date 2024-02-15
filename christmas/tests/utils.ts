@@ -69,6 +69,9 @@ export function getRandomDate(startYear: number, endYear: number): Date {
     return new Date(Date.UTC(year, month, day));
 }
 
+/**
+ * Login without a browser, without SIWS (required for tests)
+ */
 export async function login(user: Keypair): Promise<Response> {
     const solanaSignInInput = await (
         await fetch("http://localhost:5173/api/auth/siws")

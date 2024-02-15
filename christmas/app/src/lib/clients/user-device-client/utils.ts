@@ -2,7 +2,7 @@ import { getCountriesForTimezone } from "countries-and-timezones";
 import { COUNTRY_DETAILS, DEFAULT_GEOHASH_PRECISION } from "./defs";
 import geohash from "ngeohash";
 import type { Location } from "./types";
-import { stringToUint8Array } from "../anchor-client/utils";
+import { stringToUint8Array } from "$lib/utils";
 
 export async function getLocation(
     geoHashPrecision?: number,

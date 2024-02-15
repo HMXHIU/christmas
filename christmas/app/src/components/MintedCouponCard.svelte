@@ -3,10 +3,10 @@
     import MintCouponForm from "./MintCouponForm.svelte";
     import type { ModalSettings } from "@skeletonlabs/skeleton";
 
-    import type { Account, Coupon } from "$lib/clients/anchor-client/types";
-    import { timeStampToDate } from "$lib/clients/utils";
+    import type { Account, Coupon } from "$lib/anchorClient/types";
+    import { timeStampToDate } from "$lib/utils";
     import { couponsMetadata } from "../store";
-    import { fetchCouponMetadata, mintCoupon } from "$lib";
+    import { fetchCouponMetadata, mintCoupon } from "$lib/community";
     import { getModalStore } from "@skeletonlabs/skeleton";
     import { createEventDispatcher } from "svelte";
 

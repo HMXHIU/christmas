@@ -6,7 +6,6 @@ import type {
     AccountInfo,
 } from "@solana/web3.js";
 import BN from "bn.js";
-import yup from "yup";
 
 export interface MemCmp {
     memcmp: {
@@ -54,21 +53,6 @@ export interface Store {
     bump: number;
 }
 
-export const PlayerMetadataSchema = yup.object().shape({
-    player: yup.string().required(),
-    name: yup.string().required(),
-    tile: yup.string().optional(),
-});
-
-export type PlayerMetadata = yup.InferType<typeof PlayerMetadataSchema>;
-
-export const UserMetadataSchema = yup.object().shape({
-    publicKey: yup.string().required(),
-    crossover: PlayerMetadataSchema.optional().default(undefined), // yup casts to {} if undefined
-});
-
-export type UserMetadata = yup.InferType<typeof UserMetadataSchema>;
-
 export interface User {
     region: number[];
     bump: number;
@@ -79,25 +63,6 @@ export interface TransactionResult {
     result: SignatureResult;
     signature: TransactionSignature;
 }
-
-export const CouponMetadataSchema = yup.object().shape({
-    name: yup.string().required(),
-    description: yup.string().required(),
-    image: yup.string().required(),
-});
-
-export type CouponMetadata = yup.InferType<typeof CouponMetadataSchema>;
-
-export const StoreMetadataSchema = yup.object().shape({
-    name: yup.string().required(),
-    description: yup.string().required(),
-    image: yup.string().required(),
-    address: yup.string().required(),
-    latitude: yup.number().required(),
-    longitude: yup.number().required(),
-});
-
-export type StoreMetadata = yup.InferType<typeof StoreMetadataSchema>;
 
 export interface Account<DataT> {
     publicKey: PublicKey;

@@ -15,12 +15,14 @@ wallet = "/Users/benjaminhon/.config/solana/id.json"
 
 [scripts]
 # anchor test --skip-local-validator
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+test = "yarn run ts-mocha -p ./tsconfig.json --file tests/setup-env-hook.js -t 1000000 tests/**/*.ts"
 # anchor run test_happy -- --skip-local-validator
-test_happy = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/test_happy.ts"
+test_happy = "yarn run ts-mocha -p ./tsconfig.json --file tests/setup-env-hook.js -t 1000000 tests/test_happy.ts"
 # anchor run test_unhappy -- --skip-local-validator
-test_unhappy = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/test_unhappy.ts"
+test_unhappy = "yarn run ts-mocha -p ./tsconfig.json --file tests/setup-env-hook.js -t 1000000 tests/test_unhappy.ts"
 # anchor run test_utils -- --skip-local-validator
-test_utils = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/test_utils.ts"
+test_utils = "yarn run ts-mocha -p ./tsconfig.json --file tests/setup-env-hook.js -t 1000000 tests/test_utils.ts"
 # anchor run test_demo -- --skip-local-validator
-test_demo = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/test_demo.ts"
+test_demo = "yarn run ts-mocha -p ./tsconfig.json --file tests/setup-env-hook.js -t 1000000 tests/test_demo.ts"
+# anchor run test_user -- --skip-local-validator
+test_user = "yarn run ts-mocha -p ./tsconfig.json --file tests/setup-env-hook.js -t 1000000 tests/test_user.ts"

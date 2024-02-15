@@ -1,27 +1,19 @@
 import { web3 } from "@coral-xyz/anchor";
 import ngeohash from "ngeohash";
 import { assert, expect } from "chai";
-import { AnchorClient } from "../app/src/lib/clients/anchor-client/anchorClient";
+import { AnchorClient } from "../app/src/lib/anchorClient";
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import {
-    cleanString,
-    stringToUint8Array,
-} from "../app/src/lib/clients/anchor-client/utils";
+import { cleanString, stringToUint8Array } from "../app/src/lib/utils";
 import { getMint } from "@solana/spl-token";
-import {
-    generateQRCodeURL,
-    extractQueryParams,
-} from "../app/src/lib/clients/utils";
+import { generateQRCodeURL, extractQueryParams } from "../app/src/lib/utils";
 import { getRandomDate } from "./utils";
 import { Location } from "../app/src/lib/clients/user-device-client/types";
 import { COUNTRY_DETAILS } from "../app/src/lib/clients/user-device-client/defs";
+import { PROGRAM_ID } from "../app/src/lib/anchorClient/defs";
+import { PublicKey } from "@solana/web3.js";
 
 describe("Test client", () => {
-    // set provider
-    const provider = anchor.AnchorProvider.env();
-    anchor.setProvider(provider);
-
     // locations
     const geohash = Array.from(stringToUint8Array("gbsuv7"));
     const regionIdx = Math.floor(
@@ -79,25 +71,19 @@ describe("Test client", () => {
 
     // users
     const sellerKeypair = web3.Keypair.generate();
-    const sellerAnchorWallet = new anchor.Wallet(sellerKeypair);
     const buyerKeypair = web3.Keypair.generate();
-    const buyerAnchorWallet = new anchor.Wallet(buyerKeypair);
     let sellerClient: AnchorClient;
     let buyerClient: AnchorClient;
 
     it("Initialize AnchorClients", async () => {
         sellerClient = new AnchorClient({
-            anchorWallet: sellerAnchorWallet,
-            location,
+            keypair: sellerKeypair,
         });
         buyerClient = new AnchorClient({
-            anchorWallet: buyerAnchorWallet,
-            location,
+            keypair: buyerKeypair,
         });
         expect(sellerClient.cluster).to.equal("http://127.0.0.1:8899");
-        assert.ok(
-            sellerClient.programId.equals(anchor.workspace.Christmas.programId)
-        );
+        assert.ok(sellerClient.programId.equals(new PublicKey(PROGRAM_ID)));
         assert.ok(
             sellerClient.provider.publicKey?.equals(sellerKeypair.publicKey)
         );
@@ -286,7 +272,11 @@ describe("Test client", () => {
 
     it("Get coupons", async () => {
         // get coupons
-        const coupons = await sellerClient.getCoupons(region, today);
+        const coupons = await sellerClient.getCoupons({
+            region,
+            geohash,
+            date: today,
+        });
         console.log("coupons.length", coupons.length);
         assert.ok(coupons.length === 1);
         const [coupon, _] = coupons[0];

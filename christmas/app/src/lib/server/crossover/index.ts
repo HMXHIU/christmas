@@ -1,12 +1,10 @@
 import type { ConnectedUser } from "./types";
 import { serverAnchorClient } from "$lib/server";
 import { PublicKey } from "@solana/web3.js";
-import type {
-    PlayerMetadata,
-    UserMetadata,
-} from "$lib/clients/anchor-client/types";
 import { type PlayerEntity } from "./redis/schema";
 import { playerRepository } from "./redis";
+import type { PlayerMetadata } from "$lib/crossover/types";
+import type { UserMetadata } from "$lib/community/types";
 
 // Exports
 export { connectedUsers, getLoadedPlayer, getPlayerMetadataFromStorage };

@@ -4,7 +4,7 @@
     import { getModalStore } from "@skeletonlabs/skeleton";
 
     import * as yup from "yup";
-    import type { Account, Coupon } from "$lib/clients/anchor-client/types";
+    import type { Account, Coupon } from "$lib/anchorClient/types";
 
     const modalStore = getModalStore();
 

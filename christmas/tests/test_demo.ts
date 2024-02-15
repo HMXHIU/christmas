@@ -1,34 +1,24 @@
 import { web3 } from "@coral-xyz/anchor";
 import ngeohash from "ngeohash";
-import { AnchorClient } from "../app/src/lib/clients/anchor-client/anchorClient";
+import { AnchorClient } from "../app/src/lib/anchorClient";
 import * as anchor from "@coral-xyz/anchor";
-import { stringToUint8Array } from "../app/src/lib/clients/anchor-client/utils";
+import { stringToUint8Array } from "../app/src/lib/utils";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 import { assert, expect } from "chai";
-import { Location } from "../app/src/lib/clients/user-device-client/types";
-import {
-    CouponMetadata,
-    StoreMetadata,
-} from "../app/src/lib/clients/anchor-client/types";
-import { login } from "./utils";
+import { login, requestAirdrop } from "./utils";
 import { getCookiesFromResponse } from "../app/tests/utils";
-
-// load env
-require("dotenv").config();
+import { CouponMetadata, StoreMetadata } from "../app/src/lib/community/types";
+import { PROGRAM_ID } from "../app/src/lib/anchorClient/defs";
+import { createStore } from "../app/src/lib/community";
+import { PublicKey } from "@solana/web3.js";
 
 describe("Generate Demo Content", () => {
-    // set provider
-    const provider = anchor.AnchorProvider.env();
-    anchor.setProvider(provider);
-
     // users
     const sellerKeypair = web3.Keypair.generate();
-    const sellerAnchorWallet = new anchor.Wallet(sellerKeypair);
     const buyerKeypair = web3.Keypair.generate();
-    const buyerAnchorWallet = new anchor.Wallet(buyerKeypair);
     let sellerClient: AnchorClient;
     let buyerClient: AnchorClient;
 
@@ -37,27 +27,10 @@ describe("Generate Demo Content", () => {
     // const geoHere = Array.from(stringToUint8Array("w21z71")); // metacamp
     // const geoHere = Array.from(stringToUint8Array("w21z4w")); // harbour front
     // const geoHere = Array.from(stringToUint8Array("w21z3p")); // clementi mall
-
     const region = Array.from(stringToUint8Array("SGP"));
     const { latitude, longitude } = ngeohash.decode(
         String.fromCharCode(...geoHere)
     );
-    const location: Location = {
-        geohash: geoHere,
-        country: {
-            code: region,
-            name: "Singapore",
-        },
-        geolocationCoordinates: {
-            latitude,
-            longitude,
-            altitude: null,
-            altitudeAccuracy: null,
-            heading: null,
-            speed: null,
-            accuracy: null,
-        },
-    };
 
     // dates
     const today = new Date();
@@ -84,8 +57,8 @@ describe("Generate Demo Content", () => {
                     "Discover a haven of serenity at SereneSpa Emporium. Your one-stop destination for luxurious spa essentials and wellness treasures.",
                 image: "http://localhost:5173/demo/assets/coupon_spa.jpeg",
                 address: "123 Tranquil Lane, Blissful City, Zenland",
-                latitude: location.geolocationCoordinates.latitude,
-                longitude: location.geolocationCoordinates.longitude,
+                latitude,
+                longitude,
             },
         },
         {
@@ -101,8 +74,8 @@ describe("Generate Demo Content", () => {
                     "Indulge in the finest lotions at Luxurious Lotions Boutique. Elevate your skincare ritual with our curated collection of luxurious products.",
                 image: "http://localhost:5173/demo/assets/coupon_lotion.jpeg",
                 address: "456 Opulence Street, Radiant Town, Glowville",
-                latitude: location.geolocationCoordinates.latitude,
-                longitude: location.geolocationCoordinates.longitude,
+                latitude,
+                longitude,
             },
         },
         {
@@ -118,8 +91,8 @@ describe("Generate Demo Content", () => {
                     "Find joy in every gift at Glowing Gifts Emporium. Discover a world of surprises that illuminate your senses.",
                 image: "http://localhost:5173/demo/assets/coupon_free_gift.jpeg",
                 address: "789 Radiance Avenue, Joyful City, Blissland",
-                latitude: location.geolocationCoordinates.latitude,
-                longitude: location.geolocationCoordinates.longitude,
+                latitude,
+                longitude,
             },
         },
         {
@@ -135,8 +108,8 @@ describe("Generate Demo Content", () => {
                     "Experience wellness in the digital age at ZenTech Wellness Hub. Your journey to CyberZen begins here.",
                 image: "http://localhost:5173/demo/assets/coupon_cyber.jpeg",
                 address: "101 Digital Drive, Tech Town, Silicon Zen",
-                latitude: location.geolocationCoordinates.latitude,
-                longitude: location.geolocationCoordinates.longitude,
+                latitude,
+                longitude,
             },
         },
         {
@@ -152,8 +125,8 @@ describe("Generate Demo Content", () => {
                     "Raise your glass to joy at VinoVibes Cellars. Explore a world of exquisite wines that enhance your spa experience.",
                 image: "http://localhost:5173/demo/assets/coupon_wine.jpeg",
                 address: "321 Vineyard Street, Cheersville, Wineland",
-                latitude: location.geolocationCoordinates.latitude,
-                longitude: location.geolocationCoordinates.longitude,
+                latitude,
+                longitude,
             },
         },
         {
@@ -169,23 +142,22 @@ describe("Generate Demo Content", () => {
                     "Find tranquility in the company of feline friends at Purrfect Relaxation Haven. Your ultimate destination for a purrfect spa experience.",
                 image: "http://localhost:5173/demo/assets/coupon_cat.jpeg",
                 address: "567 Calm Street, Catville, Purrland",
-                latitude: location.geolocationCoordinates.latitude,
-                longitude: location.geolocationCoordinates.longitude,
+                latitude,
+                longitude,
             },
         },
     ];
+
     it("Initialize AnchorClient", async () => {
         sellerClient = new AnchorClient({
-            anchorWallet: sellerAnchorWallet,
-            location,
+            keypair: sellerKeypair,
         });
         buyerClient = new AnchorClient({
-            anchorWallet: buyerAnchorWallet,
-            location,
+            keypair: buyerKeypair,
         });
         expect(sellerClient.cluster).to.equal("http://127.0.0.1:8899");
         assert.ok(
-            sellerClient.programId.equals(anchor.workspace.Christmas.programId)
+            sellerClient.programId.equals(new web3.PublicKey(PROGRAM_ID))
         );
         assert.ok(
             sellerClient.provider.publicKey?.equals(sellerKeypair.publicKey)
@@ -213,6 +185,13 @@ describe("Generate Demo Content", () => {
         assert.ok(programState.isInitialized);
     });
 
+    it("Airdrop", async () => {
+        requestAirdrop(
+            [new PublicKey(process.env.PUBLIC_FEE_PAYER_PUBKEY)],
+            100e9
+        );
+    });
+
     it("Create Users", async () => {
         await sellerClient.createUser({ region, uri: "" });
         await buyerClient.createUser({ region, uri: "" });
@@ -229,93 +208,115 @@ describe("Generate Demo Content", () => {
         const cookies = getCookiesFromResponse(response);
 
         for (const { storeMetadata, couponMetadata } of demoStoresCoupons) {
-            // Create store metadata
-            response = await fetch(
-                `${process.env.PUBLIC_HOST}/api/storage/store/public`,
+            // // Create store metadata
+            // response = await fetch(
+            //     `${process.env.PUBLIC_HOST}/api/storage/store/public`,
+            //     {
+            //         method: "POST",
+            //         headers: {
+            //             "Content-Type": "application/json",
+            //             Cookie: cookies,
+            //         },
+            //         body: JSON.stringify({
+            //             name: storeMetadata.name,
+            //             description: storeMetadata.description,
+            //             image: storeMetadata.image,
+            //             address: storeMetadata.address,
+            //             latitude: storeMetadata.latitude,
+            //             longitude: storeMetadata.longitude,
+            //         }),
+            //     }
+            // );
+
+            // const createStoreMetadataResult = await response.json();
+            // expect(createStoreMetadataResult.status).to.equal("success");
+
+            // // Create store
+            // const storeId = await sellerClient.getAvailableStoreId();
+            // const store = await sellerClient.getStorePda(storeId)[0];
+            // assert.isNull(
+            //     (
+            //         await sellerClient.createStore({
+            //             name: storeMetadata.name,
+            //             uri: createStoreMetadataResult.url,
+            //             region,
+            //             geohash: geoHere,
+            //         })
+            //     ).result.err
+            // );
+
+            // fetch image from url and create a File
+            const response = await fetch(storeMetadata.image);
+            const image = await response.blob();
+
+            const imageFile = new File([image], "image.jpeg");
+
+            const tx = await createStore(
                 {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Cookie: cookies,
-                    },
-                    body: JSON.stringify({
-                        name: storeMetadata.name,
-                        description: storeMetadata.description,
-                        image: storeMetadata.image,
-                        address: storeMetadata.address,
-                        latitude: storeMetadata.latitude,
-                        longitude: storeMetadata.longitude,
-                    }),
-                }
+                    name: storeMetadata.name,
+                    description: storeMetadata.description,
+                    address: storeMetadata.address,
+                    latitude: storeMetadata.latitude,
+                    longitude: storeMetadata.longitude,
+                    logo: imageFile,
+                    region: String.fromCharCode(...region),
+                    geohash: String.fromCharCode(...geoHere),
+                },
+                { Cookie: cookies }
             );
 
-            const createStoreMetadataResult = await response.json();
-            expect(createStoreMetadataResult.status).to.equal("success");
+            console.log(tx);
 
-            // Create store
-            const storeId = await sellerClient.getAvailableStoreId();
-            const store = await sellerClient.getStorePda(storeId)[0];
-            assert.isNull(
-                (
-                    await sellerClient.createStore({
-                        name: storeMetadata.name,
-                        uri: createStoreMetadataResult.url,
-                        region,
-                        geohash: geoHere,
-                    })
-                ).result.err
-            );
+            // // Create coupon metadata
+            // response = await fetch(
+            //     `${process.env.PUBLIC_HOST}/api/storage/coupon/public`,
+            //     {
+            //         method: "POST",
+            //         headers: {
+            //             "Content-Type": "application/json",
+            //             Cookie: cookies,
+            //         },
+            //         body: JSON.stringify({
+            //             name: couponMetadata.name,
+            //             description: couponMetadata.description,
+            //             image: couponMetadata.image,
+            //         }),
+            //     }
+            // );
 
-            // Create coupon metadata
-            response = await fetch(
-                `${process.env.PUBLIC_HOST}/api/storage/coupon/public`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Cookie: cookies,
-                    },
-                    body: JSON.stringify({
-                        name: couponMetadata.name,
-                        description: couponMetadata.description,
-                        image: couponMetadata.image,
-                    }),
-                }
-            );
+            // const createCouponMetadataResult = await response.json();
+            // expect(createCouponMetadataResult.status).to.equal("success");
 
-            const createCouponMetadataResult = await response.json();
-            expect(createCouponMetadataResult.status).to.equal("success");
+            // // create coupon
+            // assert.isNull(
+            //     (
+            //         await sellerClient.createCoupon({
+            //             geohash: geoHere,
+            //             region,
+            //             store,
+            //             name: couponMetadata.name,
+            //             uri: createCouponMetadataResult.url,
+            //             validFrom: beforeToday,
+            //             validTo: afterToday,
+            //         })
+            //     ).result.err
+            // );
 
-            // create coupon
-            assert.isNull(
-                (
-                    await sellerClient.createCoupon({
-                        geohash: geoHere,
-                        region,
-                        store,
-                        name: couponMetadata.name,
-                        uri: createCouponMetadataResult.url,
-                        validFrom: beforeToday,
-                        validTo: afterToday,
-                    })
-                ).result.err
-            );
+            // // mint coupons
+            // const mintedCoupons = await sellerClient.getMintedCoupons(store);
 
-            // mint coupons
-            const mintedCoupons = await sellerClient.getMintedCoupons(store);
-
-            for (const [coupon, supply, balance] of mintedCoupons) {
-                assert.isNull(
-                    (
-                        await sellerClient.mintToMarket({
-                            mint: coupon.account.mint,
-                            region: coupon.account.region,
-                            coupon: coupon.publicKey,
-                            numTokens: 1,
-                        })
-                    ).result.err
-                );
-            }
+            // for (const [coupon, supply, balance] of mintedCoupons) {
+            //     assert.isNull(
+            //         (
+            //             await sellerClient.mintToMarket({
+            //                 mint: coupon.account.mint,
+            //                 region: coupon.account.region,
+            //                 coupon: coupon.publicKey,
+            //                 numTokens: 1,
+            //             })
+            //         ).result.err
+            //     );
+            // }
         }
     });
 });

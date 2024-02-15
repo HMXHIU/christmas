@@ -3,6 +3,7 @@ import {
     type Provider,
     AnchorProvider,
     utils,
+    Wallet as AnchorWallet,
 } from "@coral-xyz/anchor";
 import bs58 from "bs58";
 import BN from "bn.js";
@@ -21,8 +22,8 @@ import {
     type SerializeConfig,
     VersionedTransaction,
 } from "@solana/web3.js";
-import idl from "../../../../../target/idl/christmas.json";
-import { type Christmas } from "../../../../../target/types/christmas";
+import idl from "../../../../target/idl/christmas.json";
+import { type Christmas } from "../../../../target/types/christmas";
 import {
     TOKEN_PROGRAM_ID,
     ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -41,8 +42,7 @@ import {
     OFFSET_TO_STORE,
     PROGRAM_ID,
 } from "./defs";
-import { getCountry, getGeohash } from "../user-device-client/utils";
-import type { Wallet, AnchorWallet } from "@solana/wallet-adapter-react"; // TODO: remove this dependency, declare types in this package
+
 import type {
     Account,
     TransactionResult,
@@ -57,38 +57,30 @@ import {
     getDateWithinRangeFilterCombinations,
     getMarketCouponsFilterCombinations,
 } from "./utils";
-import { type Location } from "../user-device-client/types";
 
+/**
+ * Do not instantiate this on the client side, only on the server side.
+ */
 export class AnchorClient {
     programId: PublicKey;
     cluster: string;
     connection: Connection;
     provider: Provider;
     program: Program<Christmas>;
-    anchorWallet: AnchorWallet; // AnchorWallet from useAnchorWallet() to set up Anchor in the frontend
-    keypair: Keypair | null; // When using private key instead of wallet
-    wallet: Wallet | null; // The Wallet from useWallet has more functionality, but can't be used to set up the AnchorProvider
-    location: Location | null; // when using AnchorClient not from the broswer, location is required for some functionality
+    anchorWallet: AnchorWallet;
+    keypair: Keypair;
 
     constructor({
         programId,
         cluster,
-        anchorWallet,
-        wallet,
-        location,
         keypair,
     }: {
-        anchorWallet: AnchorWallet;
-        wallet?: Wallet;
+        keypair: Keypair;
         programId?: PublicKey;
         cluster?: string;
-        location?: Location;
-        keypair?: Keypair;
     }) {
-        this.anchorWallet = anchorWallet;
-        this.wallet = wallet || null;
-        this.location = location || null;
-        this.keypair = keypair || null;
+        this.anchorWallet = new AnchorWallet(keypair);
+        this.keypair = keypair;
 
         this.cluster = cluster || "http://127.0.0.1:8899";
         this.connection = new Connection(this.cluster, "confirmed");
@@ -128,6 +120,55 @@ export class AnchorClient {
         );
     }
 
+    async createCouponIx({
+        geohash,
+        region,
+        name,
+        uri,
+        store,
+        mint,
+        validFrom,
+        validTo,
+    }: {
+        geohash: number[];
+        region: number[];
+        name: string;
+        uri: string;
+        store: PublicKey;
+        mint: Keypair;
+        validFrom: Date;
+        validTo: Date;
+    }): Promise<TransactionInstruction> {
+        // calculate region market accounts
+        const [regionMarketPda, regionMarketTokenAccountPda] =
+            await this.getRegionMarketPdasFromMint(mint.publicKey, region);
+
+        // calculate couponPda
+        const [couponPda, _] = this.getCouponPda(mint.publicKey);
+
+        // create coupon
+        return await this.program.methods
+            .createCoupon(
+                name,
+                region,
+                geohash,
+                uri,
+                new BN(validFrom.getTime()),
+                new BN(validTo.getTime()),
+            )
+            .accounts({
+                mint: mint.publicKey,
+                coupon: couponPda,
+                store: store,
+                signer: this.anchorWallet.publicKey,
+                systemProgram: SystemProgram.programId,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                regionMarket: regionMarketPda,
+                regionMarketTokenAccount: regionMarketTokenAccountPda,
+            })
+            .instruction();
+    }
+
     async createCoupon({
         geohash,
         region,
@@ -152,34 +193,17 @@ export class AnchorClient {
             mint = Keypair.generate();
         }
 
-        // calculate region market accounts
-        const [regionMarketPda, regionMarketTokenAccountPda] =
-            await this.getRegionMarketPdasFromMint(mint.publicKey, region);
+        const ix = await this.createCouponIx({
+            geohash,
+            region,
+            name,
+            uri,
+            store,
+            mint: mint,
+            validFrom,
+            validTo,
+        });
 
-        // calculate couponPda
-        const [couponPda, _] = this.getCouponPda(mint.publicKey);
-
-        // create coupon
-        const ix = await this.program.methods
-            .createCoupon(
-                name,
-                region,
-                geohash,
-                uri,
-                new BN(validFrom.getTime()),
-                new BN(validTo.getTime()),
-            )
-            .accounts({
-                mint: mint.publicKey,
-                coupon: couponPda,
-                store: store,
-                signer: this.anchorWallet.publicKey,
-                systemProgram: SystemProgram.programId,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                regionMarket: regionMarketPda,
-                regionMarketTokenAccount: regionMarketTokenAccountPda,
-            })
-            .instruction();
         const tx = new Transaction();
         tx.add(ix);
 
@@ -245,7 +269,9 @@ export class AnchorClient {
             .instruction();
     }
 
-    // TODO: write tests for each invalid case
+    /**
+     * TODO: write tests for each invalid case
+     */
     async verifyRedemption({
         signature,
         wallet,
@@ -418,10 +444,15 @@ export class AnchorClient {
             );
     }
 
-    async getCoupons(
-        region: number[],
-        date?: Date,
-    ): Promise<[Account<Coupon>, TokenAccount][]> {
+    async getCoupons({
+        region,
+        geohash,
+        date,
+    }: {
+        region: number[];
+        geohash: number[];
+        date?: Date;
+    }): Promise<[Account<Coupon>, TokenAccount][]> {
         // get token accounts owned by
         const regionMarketPda = this.getRegionMarketPda(region)[0];
         const tokenAccounts = await this.connection.getParsedProgramAccounts(
@@ -448,9 +479,6 @@ export class AnchorClient {
 
         // get today
         const today = date || new Date();
-
-        // get location
-        let geohash = this.location?.geohash ?? (await getGeohash());
 
         // get coupons for mints in accountsWithBalance
         return (
@@ -513,16 +541,12 @@ export class AnchorClient {
         geohash,
         date,
     }: {
-        region?: number[];
-        geohash?: number[];
+        region: number[];
+        geohash: number[];
         date?: Date;
     }): Promise<Account<Coupon>[]> {
         // get today
         const today = date || new Date();
-
-        // get location
-        geohash = geohash ?? this.location?.geohash ?? (await getGeohash());
-        region = region ?? this.location?.country?.code ?? getCountry().code;
 
         const filters = getMarketCouponsFilterCombinations({
             date: today,
@@ -549,8 +573,10 @@ export class AnchorClient {
             );
     }
 
-    async getClaimedCoupons(): Promise<[Account<Coupon>, number][]> {
-        const userPda = this.getUserPda()[0];
+    async getClaimedCoupons(
+        wallet?: PublicKey,
+    ): Promise<[Account<Coupon>, number][]> {
+        const userPda = this.getUserPda(wallet)[0];
 
         // get token accounts of userPda
         const tokenAccounts = await this.connection.getParsedProgramAccounts(
@@ -621,7 +647,7 @@ export class AnchorClient {
         return [regionMarketPda, regionMarketTokenAccountPda];
     }
 
-    async mintToMarket({
+    async mintToMarketIx({
         mint,
         coupon,
         region,
@@ -631,13 +657,13 @@ export class AnchorClient {
         coupon: PublicKey;
         region: number[];
         numTokens: number;
-    }): Promise<TransactionResult> {
+    }): Promise<TransactionInstruction> {
         // the region is the coupon.region of the respective mint
         const [regionMarketPda, regionMarketTokenAccountPda] =
-            await this.getRegionMarketPdasFromMint(mint);
+            await this.getRegionMarketPdasFromMint(mint, region);
 
         // mint numTokens to region market
-        const ix = await this.program.methods
+        return await this.program.methods
             .mintToMarket(region, new BN(numTokens))
             .accounts({
                 regionMarket: regionMarketPda,
@@ -650,7 +676,30 @@ export class AnchorClient {
                 associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
             })
             .instruction();
+    }
 
+    /**
+     *
+     * TODO: Add separate payer from signer
+     */
+    async mintToMarket({
+        mint,
+        coupon,
+        region,
+        numTokens,
+    }: {
+        mint: PublicKey;
+        coupon: PublicKey;
+        region: number[];
+        numTokens: number;
+    }): Promise<TransactionResult> {
+        // mint numTokens to region market
+        const ix = await this.mintToMarketIx({
+            mint,
+            coupon,
+            region,
+            numTokens,
+        });
         const tx = new Transaction();
         tx.add(ix);
         return await this.executeTransaction({ tx });
@@ -750,18 +799,20 @@ export class AnchorClient {
         );
     }
 
-    async createStore({
+    async createStoreIx({
         name,
         uri,
         region,
         geohash,
+        storeId,
     }: {
         name: string;
         uri: string;
         region: number[];
         geohash: number[];
-    }): Promise<TransactionResult> {
-        const storeId = await this.getAvailableStoreId();
+        storeId?: BN;
+    }): Promise<TransactionInstruction> {
+        storeId = storeId || (await this.getAvailableStoreId());
         const storePda = this.getStorePda(storeId)[0];
         const programStatePda = this.getProgramStatePda()[0];
 
@@ -775,17 +826,49 @@ export class AnchorClient {
             throw Error(`Uri exceeds maximum length of ${URI_SIZE}`);
         }
 
+        return await this.program.methods
+            .createStore(name, storeId, region, geohash, uri)
+            .accounts({
+                store: storePda,
+                signer: this.anchorWallet.publicKey,
+                systemProgram: SystemProgram.programId,
+                state: programStatePda,
+            })
+            .instruction();
+    }
+
+    async createStore({
+        name,
+        uri,
+        region,
+        geohash,
+        storeId,
+    }: {
+        name: string;
+        uri: string;
+        region: number[];
+        geohash: number[];
+        storeId?: BN;
+    }): Promise<TransactionResult> {
+        if (name.length > STORE_NAME_SIZE - STRING_PREFIX_SIZE) {
+            throw Error(
+                `Store name exceeds maximum length of ${STORE_NAME_SIZE}`,
+            );
+        }
+
+        if (uri.length > URI_SIZE - STRING_PREFIX_SIZE) {
+            throw Error(`Uri exceeds maximum length of ${URI_SIZE}`);
+        }
+
         return await this.executeTransaction({
             tx: new Transaction().add(
-                await this.program.methods
-                    .createStore(name, storeId, region, geohash, uri)
-                    .accounts({
-                        store: storePda,
-                        signer: this.anchorWallet.publicKey,
-                        systemProgram: SystemProgram.programId,
-                        state: programStatePda,
-                    })
-                    .instruction(),
+                await this.createStoreIx({
+                    name,
+                    uri,
+                    region,
+                    geohash,
+                    storeId,
+                }),
             ),
         });
     }
@@ -799,7 +882,7 @@ export class AnchorClient {
         return await this.program.account.store.fetch(pda);
     }
 
-    async getStores(owner?: PublicKey): Promise<Account<Store>[]> {
+    async getStores(wallet?: PublicKey): Promise<Account<Store>[]> {
         return this.program.account.store.all([
             {
                 memcmp: {
@@ -810,8 +893,8 @@ export class AnchorClient {
                         REGION_SIZE +
                         GEOHASH_SIZE +
                         URI_SIZE,
-                    bytes: owner
-                        ? owner.toBase58()
+                    bytes: wallet
+                        ? wallet.toBase58()
                         : this.anchorWallet.publicKey.toBase58(), // owner
                 },
             },

@@ -1,8 +1,3 @@
-import {
-    CouponMetadataSchema,
-    StoreMetadataSchema,
-    UserMetadataSchema,
-} from "$lib/clients/anchor-client/types.js";
 import { hashObject, requireLogin } from "$lib/server/index.js";
 import { BUCKETS, ObjectStorage } from "$lib/server/objectStorage.js";
 import { json } from "@sveltejs/kit";
@@ -74,6 +69,9 @@ export async function GET(event) {
     }
 }
 
+/**
+ * Only support images (coupons, stores, users should be doing via respective enpoints)
+ */
 export async function POST(event) {
     const { path } = event.params as { path: string };
     const [bucket, acl] = path.split("/");
@@ -105,20 +103,7 @@ export async function POST(event) {
     let parsedData: any;
 
     try {
-        if (bucket === "coupon") {
-            parsedData = await CouponMetadataSchema.validate(
-                await event.request.json(),
-            );
-        } else if (bucket === "store") {
-            parsedData = await StoreMetadataSchema.validate(
-                await event.request.json(),
-            );
-        } else if (bucket === "user") {
-            parsedData = await UserMetadataSchema.validate(
-                await event.request.json(),
-            );
-        } else if (bucket === "image") {
-            // Check data is image
+        if (bucket === "image") {
             if (!contentType?.startsWith("image")) {
                 return json(
                     {

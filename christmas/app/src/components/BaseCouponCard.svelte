@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { cleanString } from "$lib/clients/anchor-client/utils";
+    import { cleanString } from "$lib/utils";
     import { Avatar } from "@skeletonlabs/skeleton";
 
     export let couponName: string;

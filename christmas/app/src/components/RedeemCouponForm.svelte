@@ -2,16 +2,11 @@
     import type { SvelteComponent } from "svelte";
     import { getModalStore } from "@skeletonlabs/skeleton";
     import BaseCouponCard from "./BaseCouponCard.svelte";
-    import type {
-        Account,
-        Coupon,
-        CouponMetadata,
-        StoreMetadata,
-    } from "$lib/clients/anchor-client/types";
-    import { generateQRCodeURL, timeStampToDate } from "$lib/clients/utils";
+    import type { Account, Coupon } from "$lib/anchorClient/types";
+    import { generateQRCodeURL, timeStampToDate } from "$lib/utils";
     import QrCode from "./QRCode.svelte";
-    import { redeemCoupon } from "$lib";
-    import { anchorClient } from "../store";
+    import { redeemCoupon } from "$lib/community";
+    import type { CouponMetadata, StoreMetadata } from "$lib/community/types";
 
     export let parent: SvelteComponent;
 
@@ -26,14 +21,14 @@
         $modalStore[0].meta.redemptionQRCodeURL;
 
     async function onRedeemCoupon() {
-        if ($modalStore[0].response && $anchorClient != null) {
+        if ($modalStore[0].response) {
             const numTokens = 1;
             const transactionResult = await redeemCoupon({ numTokens, coupon });
 
             // Generate redemptionQRCodeURL
             redemptionQRCodeURL = generateQRCodeURL({
                 signature: transactionResult.signature,
-                wallet: $anchorClient.anchorWallet.publicKey.toString(),
+                wallet: (window as any).solana.publicKey.toString(),
                 mint: coupon.account.mint.toString(),
                 numTokens: String(numTokens),
             });

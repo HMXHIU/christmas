@@ -4,20 +4,19 @@
         fetchClaimedCoupons,
         fetchCouponMetadata,
         fetchStoreMetadata,
-    } from "$lib";
+    } from "$lib/community";
     import type {
         Account,
         Coupon,
         TokenAccount,
-        CouponMetadata,
-        StoreMetadata,
-    } from "$lib/clients/anchor-client/types";
-    import { calculateDistance, timeStampToDate } from "$lib/clients/utils";
+    } from "$lib/anchorClient/types";
+    import { calculateDistance, timeStampToDate } from "$lib/utils";
     import BaseCouponCard from "./BaseCouponCard.svelte";
     import { userDeviceClient } from "../store";
     import type { ModalSettings, ModalComponent } from "@skeletonlabs/skeleton";
     import { getModalStore } from "@skeletonlabs/skeleton";
     import ClaimCouponForm from "./ClaimCouponForm.svelte";
+    import type { CouponMetadata, StoreMetadata } from "$lib/community/types";
 
     const modalStore = getModalStore();
 

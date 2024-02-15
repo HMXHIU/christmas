@@ -1,17 +1,19 @@
 import { COUNTRY_DETAILS } from "$lib/clients/user-device-client/defs";
+import { UserMetadataSchema } from "$lib/community/types.js";
 import {
     FEE_PAYER_PUBKEY,
     createSerializedTransaction,
+    hashObject,
     requireLogin,
     serverAnchorClient,
 } from "$lib/server";
+import { ObjectStorage } from "$lib/server/objectStorage.js";
 import { PublicKey } from "@solana/web3.js";
 import { error, json } from "@sveltejs/kit";
 import yup from "yup";
 
 const CreateUserParams = yup.object().shape({
     region: yup.array().of(yup.number().required()).required(),
-    uri: yup.string().optional(),
 });
 
 export async function POST(event) {
@@ -25,20 +27,33 @@ export async function POST(event) {
     // Create User (api/community/user/create)
     if (op === "create") {
         // Validate request body
-        const { region, uri } = await CreateUserParams.validate(body);
+        const { region } = await CreateUserParams.validate(body);
 
-        // check valid region (TODO: check should be moved into AnchorClient or backend)
+        // Check valid region
         try {
             COUNTRY_DETAILS[String.fromCharCode(...region)];
         } catch (err) {
             error(400, `Invalid region: ${region}`);
         }
 
+        // Validate & upload user metadata
+        const userMetadataUrl = await ObjectStorage.putJSONObject(
+            {
+                owner: null,
+                bucket: "user",
+                name: hashObject(["user", user.publicKey]),
+                data: await UserMetadataSchema.validate({
+                    publicKey: user.publicKey,
+                }),
+            },
+            { "Content-Type": "application/json" },
+        );
+
         const ix = await serverAnchorClient.createUserIx({
             wallet: new PublicKey(user.publicKey),
             payer: FEE_PAYER_PUBKEY,
             region: region,
-            uri: uri || "",
+            uri: userMetadataUrl,
         });
 
         const base64Transaction = await createSerializedTransaction(ix);

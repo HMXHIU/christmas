@@ -3,7 +3,7 @@
     import { getModalStore } from "@skeletonlabs/skeleton";
     import { onMount } from "svelte";
     import { Html5Qrcode } from "html5-qrcode";
-    import { extractQueryParams } from "$lib/clients/utils";
+    import { extractQueryParams } from "$lib/utils";
 
     export let parent: SvelteComponent;
 

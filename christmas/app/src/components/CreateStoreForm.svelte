@@ -5,7 +5,7 @@
     import {
         STORE_NAME_SIZE,
         STRING_PREFIX_SIZE,
-    } from "$lib/clients/anchor-client/defs";
+    } from "$lib/anchorClient/defs";
     import ImageInput from "./ImageInput.svelte";
     import { userDeviceClient } from "../store";
     import ngeohash from "ngeohash";

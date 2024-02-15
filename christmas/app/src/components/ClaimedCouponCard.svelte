@@ -1,21 +1,14 @@
 <script lang="ts">
-    import {
-        fetchCouponMetadata,
-        fetchStoreMetadata,
-        redeemCoupon,
-    } from "$lib";
-    import type {
-        Account,
-        Coupon,
-        CouponMetadata,
-        StoreMetadata,
-    } from "$lib/clients/anchor-client/types";
-    import { calculateDistance, timeStampToDate } from "$lib/clients/utils";
+    import { fetchCouponMetadata, fetchStoreMetadata } from "$lib/community";
+
+    import { calculateDistance, timeStampToDate } from "$lib/utils";
     import BaseCouponCard from "./BaseCouponCard.svelte";
     import { userDeviceClient, redeemedCoupons } from "../store";
     import type { ModalSettings } from "@skeletonlabs/skeleton";
     import { getModalStore } from "@skeletonlabs/skeleton";
     import RedeemCouponForm from "./RedeemCouponForm.svelte";
+    import type { CouponMetadata, StoreMetadata } from "$lib/community/types";
+    import type { Account, Coupon } from "$lib/anchorClient/types";
 
     export let coupon: Account<Coupon>;
     export let balance: number;

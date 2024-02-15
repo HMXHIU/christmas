@@ -1,4 +1,4 @@
-import { PlayerMetadataSchema } from "$lib/clients/anchor-client/types.js";
+import { PlayerMetadataSchema } from "$lib/crossover/types.js";
 import {
     getLoadedPlayer,
     getPlayerMetadataFromStorage,

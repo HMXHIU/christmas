@@ -1,29 +1,19 @@
 import { web3 } from "@coral-xyz/anchor";
 import ngeohash from "ngeohash";
-import { AnchorClient } from "../app/src/lib/clients/anchor-client/anchorClient";
+import { AnchorClient } from "../app/src/lib/anchorClient";
 import * as anchor from "@coral-xyz/anchor";
-import { BN } from "@coral-xyz/anchor";
-import {
-    cleanString,
-    stringToUint8Array,
-} from "../app/src/lib/clients/anchor-client/utils";
+import { cleanString, stringToUint8Array } from "../app/src/lib/utils";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 import { assert, expect } from "chai";
-import { Location } from "../app/src/lib/clients/user-device-client/types";
+import { PROGRAM_ID } from "../app/src/lib/anchorClient/defs";
 
 describe("Test Unhappy", () => {
-    // set provider
-    const provider = anchor.AnchorProvider.env();
-    anchor.setProvider(provider);
-
     // users
     const sellerKeypair = web3.Keypair.generate();
-    const sellerAnchorWallet = new anchor.Wallet(sellerKeypair);
     const buyerKeypair = web3.Keypair.generate();
-    const buyerAnchorWallet = new anchor.Wallet(buyerKeypair);
     let sellerClient: AnchorClient;
     let buyerClient: AnchorClient;
 
@@ -41,22 +31,6 @@ describe("Test Unhappy", () => {
     const { latitude, longitude } = ngeohash.decode(
         String.fromCharCode(...geoHere)
     );
-    const location: Location = {
-        geohash: geoHere,
-        country: {
-            code: region,
-            name: "Singapore",
-        },
-        geolocationCoordinates: {
-            latitude,
-            longitude,
-            altitude: null,
-            altitudeAccuracy: null,
-            heading: null,
-            speed: null,
-            accuracy: null,
-        },
-    };
 
     // dates
     const today = new Date();
@@ -71,16 +45,14 @@ describe("Test Unhappy", () => {
 
     it("Initialize AnchorClient", async () => {
         sellerClient = new AnchorClient({
-            anchorWallet: sellerAnchorWallet,
-            location,
+            keypair: sellerKeypair,
         });
         buyerClient = new AnchorClient({
-            anchorWallet: buyerAnchorWallet,
-            location,
+            keypair: buyerKeypair,
         });
         expect(sellerClient.cluster).to.equal("http://127.0.0.1:8899");
         assert.ok(
-            sellerClient.programId.equals(anchor.workspace.Christmas.programId)
+            sellerClient.programId.equals(new web3.PublicKey(PROGRAM_ID))
         );
         assert.ok(
             sellerClient.provider.publicKey?.equals(sellerKeypair.publicKey)
@@ -205,7 +177,10 @@ describe("Test Unhappy", () => {
         }
 
         // check does not return out of validity coupons
-        const marketCoupons = await sellerClient.getCoupons(region);
+        const marketCoupons = await sellerClient.getCoupons({
+            region,
+            geohash: geoHere,
+        });
         const couponNames = marketCoupons.map(([coupon, _]) => {
             return cleanString(coupon.account.name);
         });
@@ -258,9 +233,9 @@ describe("Test Unhappy", () => {
         }
 
         // check does not return out of range coupons
-        const couponNames = (await sellerClient.getCoupons(region)).map(
-            ([coupon, _]) => cleanString(coupon.account.name)
-        );
+        const couponNames = (
+            await sellerClient.getCoupons({ region, geohash: geoHere })
+        ).map(([coupon, _]) => cleanString(coupon.account.name));
         for (const geo of [
             String.fromCharCode(...geoNorth),
             String.fromCharCode(...geoSouth),

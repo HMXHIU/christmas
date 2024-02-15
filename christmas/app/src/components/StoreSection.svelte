@@ -1,17 +1,14 @@
 <script lang="ts">
     import { Avatar } from "@skeletonlabs/skeleton";
-    import type {
-        Account,
-        Coupon,
-        Store,
-    } from "$lib/clients/anchor-client/types";
-    import { cleanString } from "$lib/clients/anchor-client/utils";
+    import type { Account, Coupon, Store } from "$lib/anchorClient/types";
+    import { cleanString } from "$lib/utils";
     import {
         fetchMarketCoupons,
         fetchMintedCouponSupplyBalance,
         fetchStoreMetadata,
-    } from "$lib";
-    import { createCoupon, type CreateCouponFormResult } from "$lib";
+        createCoupon,
+        type CreateCouponFormResult,
+    } from "$lib/community";
     import { getModalStore } from "@skeletonlabs/skeleton";
     import type { ModalSettings } from "@skeletonlabs/skeleton";
     import CreateCouponForm from "./CreateCouponForm.svelte";
@@ -44,7 +41,7 @@
                     store,
                 });
                 // Refetch coupons
-                await fetchMintedCouponSupplyBalance(store);
+                await fetchMintedCouponSupplyBalance(store.publicKey);
                 // Refetch market place coupons
                 await fetchMarketCoupons();
             }
@@ -55,7 +52,7 @@
         event: CustomEvent<{ numTokens: string; coupon: Account<Coupon> }>,
     ) {
         // Refetch coupons
-        await fetchMintedCouponSupplyBalance(store);
+        await fetchMintedCouponSupplyBalance(store.publicKey);
         // Refetch market place coupons
         await fetchMarketCoupons();
     }
@@ -130,7 +127,7 @@
 
         <!-- Coupons -->
         <div class="grid grid-cols-2 gap-4 px-4 py-4 mt-2">
-            {#await fetchMintedCouponSupplyBalance(store) then}
+            {#await fetchMintedCouponSupplyBalance(store.publicKey) then}
                 {#each $mintedCoupons[store.publicKey.toString()] as [coupon, supply, balance]}
                     <MintedCouponCard
                         {coupon}

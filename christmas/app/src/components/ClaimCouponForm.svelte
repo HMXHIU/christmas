@@ -3,13 +3,10 @@
     import { getModalStore } from "@skeletonlabs/skeleton";
     import BaseCouponCard from "./BaseCouponCard.svelte";
     import type { ParsedAccountData } from "@solana/web3.js";
-    import type {
-        Account,
-        Coupon,
-        CouponMetadata,
-        StoreMetadata,
-    } from "$lib/clients/anchor-client/types";
-    import { timeStampToDate } from "$lib/clients/utils";
+    import type { Account, Coupon } from "$lib/anchorClient/types";
+
+    import type { CouponMetadata, StoreMetadata } from "$lib/community/types";
+    import { timeStampToDate } from "$lib/utils";
 
     export let parent: SvelteComponent;
 

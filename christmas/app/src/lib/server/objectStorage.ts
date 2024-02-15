@@ -187,21 +187,6 @@ class ObjectStorage {
             `${prefix}/${name}`,
             24 * 60 * 60,
         );
-
-        // TODO: Public folder should be public and not need presigned
-        // // Private objects require presigned url
-        // if (prefix === "private") {
-        //     return await client.presignedUrl(
-        //         "GET",
-        //         bucket,
-        //         `${prefix}/${name}`,
-        //         24 * 60 * 60,
-        //     );
-        // }
-        // // Public objects can be accessed directly
-        // else {
-        //     return `${useSSL ? "https" : "http"}://${endPoint}:${port}/${bucket}/${prefix}/${name}`;
-        // }
     }
 
     static async objectExists({

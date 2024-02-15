@@ -11,20 +11,6 @@ import {
 } from "./defs";
 import type { MemCmp } from "./types";
 
-export function stringToBase58(str: string) {
-    const buffer = Buffer.from(str);
-    return bs58.encode(buffer);
-}
-
-export function stringToUint8Array(input: string): Uint8Array {
-    const encoder = new TextEncoder();
-    return encoder.encode(input);
-}
-
-export function cleanString(s: string) {
-    return s.replace(/\u0000+$/, "");
-}
-
 export function epochDaysFromDate(date: number): number {
     return (
         (Math.floor(date / MS_PER_DAY) - DAYS_SINCE_1_JAN_2024) %

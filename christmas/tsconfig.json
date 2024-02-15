@@ -1,6 +1,14 @@
 {
   "compilerOptions": {
     "types": ["mocha", "chai"],
+    "paths": {
+			"$lib": [
+				"./app/src/lib"
+			],
+			"$lib/*": [
+				"./app/src/lib/*"
+			]
+		},
     "lib": [
       "es2015",
       "dom"

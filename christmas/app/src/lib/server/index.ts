@@ -13,16 +13,16 @@ import {
 import { FEE_PAYER_PRIVATE_KEY as FEE_PAYER_PRIVATE_KEY_JSON } from "$env/static/private";
 import base58 from "bs58";
 import { getRandomValues, createHash } from "crypto";
-import { AnchorClient } from "$lib/clients/anchor-client/anchorClient";
+import { AnchorClient } from "$lib/anchorClient";
 import {
     PublicKey,
     Keypair,
     Transaction,
     TransactionInstruction,
     Connection,
+    type Signer,
 } from "@solana/web3.js";
-import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
-import { PROGRAM_ID } from "$lib/clients/anchor-client/defs";
+import { PROGRAM_ID } from "$lib/anchorClient/defs";
 import { error, type RequestEvent } from "@sveltejs/kit";
 
 // Exports
@@ -50,7 +50,7 @@ const feePayerKeypair = Keypair.fromSecretKey(FEE_PAYER_PRIVATE_KEY);
 const serverAnchorClientKeypair = Keypair.generate();
 const serverAnchorClient = new AnchorClient({
     programId: new PublicKey(PROGRAM_ID),
-    anchorWallet: new AnchorWallet(serverAnchorClientKeypair),
+    keypair: serverAnchorClientKeypair,
     cluster: PUBLIC_RPC_ENDPOINT,
 });
 
@@ -164,7 +164,10 @@ function sortedStringify(obj: any): string {
     return `{${sortedObj}}`;
 }
 
-async function createSerializedTransaction(ix: TransactionInstruction) {
+async function createSerializedTransaction(
+    ix: TransactionInstruction,
+    signers?: Array<Signer>,
+) {
     // Set up connection and signer
     const connection = new Connection(PUBLIC_RPC_ENDPOINT, "processed");
 
@@ -183,6 +186,11 @@ async function createSerializedTransaction(ix: TransactionInstruction) {
 
     // Partially sign to take on fees
     tx.partialSign(feePayerKeypair);
+
+    // additional signers if required
+    if (signers) {
+        tx.partialSign(...signers);
+    }
 
     // Serialize partially signed transaction (serialize verification done on client side).
     const serializedTransaction = tx.serialize({
