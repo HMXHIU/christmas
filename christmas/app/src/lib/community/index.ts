@@ -5,6 +5,7 @@ import {
     type Store,
     type TokenAccount,
     type TransactionResult,
+    type User,
 } from "../anchorClient/types";
 
 import {
@@ -29,9 +30,10 @@ import type { CouponMetadata, StoreMetadata } from "./types";
 import { signAndSendTransaction } from "$lib/utils";
 import { PUBLIC_HOST } from "$env/static/public";
 import {
-    cleanCouponAccount,
+    cleanCouponBalance,
     cleanCouponSupplyBalance,
     cleanStoreAccount,
+    cleanUser,
 } from "./utils";
 
 // Exports
@@ -49,6 +51,7 @@ export {
     mintCoupon,
     verifyRedemption,
     createUser,
+    fetchUser,
     logIn,
     logOut,
     refresh,
@@ -184,7 +187,7 @@ async function fetchClaimedCoupons(
         if (!response.ok) {
             throw new Error(await response.text());
         }
-        return response.json();
+        return (await response.json()).map(cleanCouponBalance);
     });
 
     // Update `$claimedCoupons`
@@ -220,13 +223,13 @@ async function claimCoupon(
         coupon: Account<Coupon>;
         numTokens: number;
     },
-    headers: HeadersInit = {},
+    options?: { headers?: HeadersInit; wallet?: any },
 ): Promise<TransactionResult> {
     return await fetch(`${PUBLIC_HOST || ""}/api/community/coupon/claim`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            ...headers,
+            ...(options?.headers || {}),
         },
         body: JSON.stringify({
             numTokens,
@@ -242,6 +245,8 @@ async function claimCoupon(
         .then(({ transaction }) => {
             return signAndSendTransaction({
                 tx: Transaction.from(Buffer.from(transaction, "base64")),
+                wallet: options?.wallet,
+                commitment: "confirmed",
             });
         });
 }
@@ -254,13 +259,13 @@ async function redeemCoupon(
         coupon: Account<Coupon>;
         numTokens: number;
     },
-    headers: HeadersInit = {},
+    options?: { headers?: HeadersInit; wallet?: any },
 ): Promise<TransactionResult> {
     return await fetch(`${PUBLIC_HOST || ""}/api/community/coupon/redeem`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            ...headers,
+            ...(options?.headers || {}),
         },
         body: JSON.stringify({
             coupon: coupon.publicKey.toString(),
@@ -277,6 +282,8 @@ async function redeemCoupon(
         .then(({ transaction }) => {
             return signAndSendTransaction({
                 tx: Transaction.from(Buffer.from(transaction, "base64")),
+                wallet: options?.wallet,
+                commitment: "confirmed",
             });
         });
 }
@@ -390,11 +397,16 @@ async function mintCoupon(
         coupon,
         numTokens,
     }: {
-        numTokens: number;
         coupon: Account<Coupon>;
+        numTokens: number;
     },
     options?: { headers?: HeadersInit; wallet?: any },
 ): Promise<TransactionResult> {
+    const couponPda =
+        coupon.publicKey instanceof PublicKey
+            ? coupon.publicKey.toBase58()
+            : coupon.publicKey;
+
     return await fetch(`${PUBLIC_HOST || ""}/api/community/coupon/mint`, {
         method: "POST",
         headers: {
@@ -404,7 +416,7 @@ async function mintCoupon(
         body: JSON.stringify({
             mint: coupon.account.mint,
             region: coupon.account.region,
-            coupon: coupon.publicKey,
+            coupon: couponPda,
             numTokens,
         }),
     })
@@ -459,6 +471,17 @@ async function verifyRedemption(
         .then(({ isVerified, err }) => {
             return { isVerified, err };
         });
+}
+
+async function fetchUser(headers: HeadersInit = {}): Promise<User | null> {
+    return fetch(`${PUBLIC_HOST || ""}/api/community/user`, {
+        headers,
+    }).then(async (response) => {
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+        return cleanUser(await response.json());
+    });
 }
 
 async function createUser(

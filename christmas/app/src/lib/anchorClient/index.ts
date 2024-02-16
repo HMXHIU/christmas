@@ -987,6 +987,7 @@ export class AnchorClient {
         try {
             return await this.program.account.user.fetch(pda);
         } catch (error) {
+            console.error(error);
             return null;
         }
     }

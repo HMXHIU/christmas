@@ -6,8 +6,9 @@ import { BN } from "bn.js";
 export {
     cleanStoreAccount,
     cleanCouponAccount,
-    cleanUserAccount,
+    cleanUser,
     cleanCouponSupplyBalance,
+    cleanCouponBalance,
 };
 
 function cleanStoreAccount(store: Account<Store>) {
@@ -37,10 +38,12 @@ function cleanCouponSupplyBalance(
     return couponSupplyBalance;
 }
 
-function cleanUserAccount(user: Account<User>) {
-    user.account = {
-        ...user.account,
-        uri: cleanString(user.account.uri),
-    };
+function cleanCouponBalance(couponBalance: [Account<Coupon>, number]) {
+    couponBalance[0] = cleanCouponAccount(couponBalance[0]);
+    return couponBalance;
+}
+
+function cleanUser(user: User) {
+    user.uri = cleanString(user.uri);
     return user;
 }
