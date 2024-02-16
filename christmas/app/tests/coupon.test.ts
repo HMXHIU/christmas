@@ -13,6 +13,7 @@ import {
     fetchStoreMetadata,
     fetchStores,
     fetchUser,
+    fetchUserMetadata,
     mintCoupon,
     redeemCoupon,
 } from "$lib/community";
@@ -205,4 +206,6 @@ test("Test Coupon", async () => {
     // Check claimed coupons after redeeming
     claimedCoupons = await fetchClaimedCoupons({ Cookie: cookies });
     expect(claimedCoupons.length).toBe(0);
+
+    // TODO: test fetchMarketCoupons
 });

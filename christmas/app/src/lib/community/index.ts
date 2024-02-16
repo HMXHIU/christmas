@@ -26,7 +26,7 @@ import {
     STRING_PREFIX_SIZE,
 } from "../anchorClient/defs";
 import { stringToUint8Array } from "../utils";
-import type { CouponMetadata, StoreMetadata } from "./types";
+import type { CouponMetadata, StoreMetadata, UserMetadata } from "./types";
 import { signAndSendTransaction } from "$lib/utils";
 import { PUBLIC_HOST } from "$env/static/public";
 import {
@@ -52,6 +52,7 @@ export {
     verifyRedemption,
     createUser,
     fetchUser,
+    fetchUserMetadata,
     logIn,
     logOut,
     refresh,
@@ -75,6 +76,10 @@ export interface CreateCouponFormResult {
     validTo: Date;
     image: File | null;
     store: Account<Store>;
+}
+
+export interface CreateUserFormResult {
+    region: string;
 }
 
 async function fetchMarketCoupons(): Promise<
@@ -484,37 +489,51 @@ async function fetchUser(headers: HeadersInit = {}): Promise<User | null> {
     });
 }
 
-async function createUser(
+async function fetchUserMetadata(
+    user: User,
     headers: HeadersInit = {},
-): Promise<TransactionResult> {
-    const dc = get(userDeviceClient);
-
-    if (dc?.location?.country?.code != null) {
-        return await fetch(`${PUBLIC_HOST || ""}/api/community/user/create`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...headers,
-            },
-            body: JSON.stringify({
-                region: dc.location.country.code,
-            }),
-        })
-            .then(async (response) => {
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
-                return response.json();
-            })
-            .then(({ transaction }) => {
-                return signAndSendTransaction({
-                    tx: Transaction.from(Buffer.from(transaction, "base64")),
-                });
-            });
-    }
-    throw new Error(
-        "Failed to create user, ensure that location is enabled and wallet is connected",
+): Promise<UserMetadata> {
+    const userMetadata = await fetch(user.uri, { headers }).then(
+        async (response) => {
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+            return response.json();
+        },
     );
+
+    // TODO: Update `$userMetadata`
+
+    return userMetadata;
+}
+
+async function createUser(
+    { region }: CreateUserFormResult,
+    options?: { headers?: HeadersInit; wallet?: any },
+): Promise<TransactionResult> {
+    return fetch(`${PUBLIC_HOST || ""}/api/community/user/create`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...(options?.headers || {}),
+        },
+        body: JSON.stringify({
+            region: Array.from(stringToUint8Array(region)),
+        }),
+    })
+        .then(async (response) => {
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+            return response.json();
+        })
+        .then(({ transaction }) => {
+            return signAndSendTransaction({
+                tx: Transaction.from(Buffer.from(transaction, "base64")),
+                wallet: options?.wallet,
+                commitment: "confirmed",
+            });
+        });
 }
 
 async function logIn() {
