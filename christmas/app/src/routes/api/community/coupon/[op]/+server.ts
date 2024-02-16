@@ -56,160 +56,179 @@ export async function POST(event) {
     const user = requireLogin(event);
     const { params, request } = event;
     const { op } = params;
-    let body = await request.json();
 
-    // Claim (api/community/coupon/claim)
-    if (op === "claim") {
-        // Validate request body
-        const { numTokens, mint } = await ClaimCouponParams.validate(body);
+    try {
+        // Claim (api/community/coupon/claim)
+        if (op === "claim") {
+            let body = await request.json();
 
-        const ix = await serverAnchorClient.claimFromMarketIx({
-            mint: new PublicKey(mint),
-            numTokens,
-            wallet: new PublicKey(user.publicKey),
-            payer: FEE_PAYER_PUBKEY,
-        });
+            // Validate request body
+            const { numTokens, mint } = await ClaimCouponParams.validate(body);
 
-        const base64Transaction = await createSerializedTransaction(ix);
-        return json({
-            transaction: base64Transaction,
-        });
-    }
+            const ix = await serverAnchorClient.claimFromMarketIx({
+                mint: new PublicKey(mint),
+                numTokens,
+                wallet: new PublicKey(user.publicKey),
+                payer: FEE_PAYER_PUBKEY,
+            });
 
-    // Redeem (api/community/coupon/redeem)
-    else if (op === "redeem") {
-        // Validate request body
-        const { coupon, numTokens, mint } =
-            await RedeemCouponParams.validate(body);
-
-        const ix = await serverAnchorClient.redeemCouponIx({
-            wallet: new PublicKey(user.publicKey),
-            payer: FEE_PAYER_PUBKEY,
-            coupon: new PublicKey(coupon),
-            numTokens,
-            mint: new PublicKey(mint),
-        });
-
-        const base64Transaction = await createSerializedTransaction(ix);
-        return json({
-            transaction: base64Transaction,
-        });
-    }
-
-    // Verify (api/community/coupon/verify)
-    else if (op === "verify") {
-        // Validate request body
-        const { signature, mint, wallet, numTokens } =
-            await VerifyRedemptionParams.validate(body);
-
-        const { isVerified, err } = await serverAnchorClient.verifyRedemption({
-            mint: new PublicKey(mint),
-            wallet: new PublicKey(wallet),
-            numTokens,
-            signature,
-        });
-
-        return json({
-            isVerified,
-            err,
-        });
-    }
-
-    // Mint (api/community/coupon/mint)
-    else if (op === "mint") {
-        // Validate request body
-        const { region, mint, coupon, numTokens } =
-            await MintCouponParams.validate(body);
-
-        const ix = await serverAnchorClient.mintToMarketIx({
-            mint: new PublicKey(mint),
-            coupon: new PublicKey(coupon),
-            numTokens,
-            region,
-            payer: FEE_PAYER_PUBKEY,
-            wallet: new PublicKey(user.publicKey),
-        });
-
-        const base64Transaction = await createSerializedTransaction(ix);
-        return json({
-            transaction: base64Transaction,
-        });
-    }
-
-    // Create (api/community/coupon/create)
-    else if (op === "create") {
-        // Validate request body
-        const {
-            geohash,
-            region,
-            name,
-            description,
-            store,
-            validFrom,
-            validTo,
-        } = await CreateCouponParams.validate(body);
-
-        // Validate image
-        const imageFile = (await request.formData()).get("image") as File;
-        if (!imageFile) {
-            error(400, "Coupon image is required");
+            const base64Transaction = await createSerializedTransaction(ix);
+            return json({
+                transaction: base64Transaction,
+            });
         }
 
-        // Generate a new mint for coupon
-        const mint = Keypair.generate();
+        // Redeem (api/community/coupon/redeem)
+        else if (op === "redeem") {
+            let body = await request.json();
 
-        // Upload image
-        const imageUrl = await ObjectStorage.putObject(
-            {
-                owner: null,
-                bucket: "image",
-                name: hashObject([
-                    "image",
-                    user.publicKey,
-                    mint.publicKey.toBase58(),
-                ]),
-                data: Buffer.from(await imageFile.arrayBuffer()),
-            },
-            { "Content-Type": "image" },
-        );
+            // Validate request body
+            const { coupon, numTokens, mint } =
+                await RedeemCouponParams.validate(body);
 
-        // Validate & upload coupon metadata
-        const metadata = await CouponMetadataSchema.validate({
-            name,
-            description,
-            image: imageUrl,
-        });
-        const couponMetadataUrl = await ObjectStorage.putJSONObject(
-            {
-                owner: null,
-                bucket: "coupon",
-                name: hashObject([
-                    "coupon",
-                    user.publicKey,
-                    mint.publicKey.toBase58(),
-                ]),
-                data: metadata,
-            },
-            { "Content-Type": "application/json" },
-        );
+            const ix = await serverAnchorClient.redeemCouponIx({
+                wallet: new PublicKey(user.publicKey),
+                payer: FEE_PAYER_PUBKEY,
+                coupon: new PublicKey(coupon),
+                numTokens,
+                mint: new PublicKey(mint),
+            });
 
-        const ix = await serverAnchorClient.createCouponIx({
-            mint,
-            name,
-            region,
-            geohash,
-            store: new PublicKey(store),
-            validFrom,
-            validTo,
-            uri: couponMetadataUrl,
-            payer: FEE_PAYER_PUBKEY,
-            wallet: new PublicKey(user.publicKey),
-        });
+            const base64Transaction = await createSerializedTransaction(ix);
+            return json({
+                transaction: base64Transaction,
+            });
+        }
 
-        const base64Transaction = await createSerializedTransaction(ix, [mint]); // mint needs to sign as well
-        return json({
-            transaction: base64Transaction,
-        });
+        // Verify (api/community/coupon/verify)
+        else if (op === "verify") {
+            let body = await request.json();
+
+            // Validate request body
+            const { signature, mint, wallet, numTokens } =
+                await VerifyRedemptionParams.validate(body);
+
+            const { isVerified, err } =
+                await serverAnchorClient.verifyRedemption({
+                    mint: new PublicKey(mint),
+                    wallet: new PublicKey(wallet),
+                    numTokens,
+                    signature,
+                });
+
+            return json({
+                isVerified,
+                err,
+            });
+        }
+
+        // Mint (api/community/coupon/mint)
+        else if (op === "mint") {
+            let body = await request.json();
+
+            // Validate request body
+            const { region, mint, coupon, numTokens } =
+                await MintCouponParams.validate(body);
+
+            const ix = await serverAnchorClient.mintToMarketIx({
+                mint: new PublicKey(mint),
+                coupon: new PublicKey(coupon),
+                numTokens,
+                region,
+                payer: FEE_PAYER_PUBKEY,
+                wallet: new PublicKey(user.publicKey),
+            });
+
+            const base64Transaction = await createSerializedTransaction(ix);
+            return json({
+                transaction: base64Transaction,
+            });
+        }
+
+        // Create (api/community/coupon/create)
+        else if (op === "create") {
+            const { body, image } = Object.fromEntries(
+                await request.formData(),
+            );
+
+            // Validate request body
+            const {
+                geohash,
+                region,
+                name,
+                description,
+                store,
+                validFrom,
+                validTo,
+            } = await CreateCouponParams.validate(JSON.parse(body as string));
+
+            // Validate image
+            const imageFile = image as File;
+            if (!imageFile) {
+                error(400, "Store image is required");
+            }
+
+            // Generate a new mint for coupon
+            const mint = Keypair.generate();
+
+            // Upload image
+            const imageUrl = await ObjectStorage.putObject(
+                {
+                    owner: null,
+                    bucket: "image",
+                    name: hashObject([
+                        "image",
+                        user.publicKey,
+                        mint.publicKey.toBase58(),
+                    ]),
+                    data: Buffer.from(await imageFile.arrayBuffer()),
+                },
+                { "Content-Type": imageFile.type },
+            );
+
+            // Validate & upload coupon metadata
+            const metadata = await CouponMetadataSchema.validate({
+                name,
+                description,
+                image: imageUrl,
+            });
+            const couponMetadataUrl = await ObjectStorage.putJSONObject(
+                {
+                    owner: null,
+                    bucket: "coupon",
+                    name: hashObject([
+                        "coupon",
+                        user.publicKey,
+                        mint.publicKey.toBase58(),
+                    ]),
+                    data: metadata,
+                },
+                { "Content-Type": "application/json" },
+            );
+
+            const ix = await serverAnchorClient.createCouponIx({
+                mint,
+                name,
+                region,
+                geohash,
+                store: new PublicKey(store),
+                validFrom,
+                validTo,
+                uri: couponMetadataUrl,
+                payer: FEE_PAYER_PUBKEY,
+                wallet: new PublicKey(user.publicKey),
+            });
+
+            const base64Transaction = await createSerializedTransaction(ix, [
+                mint,
+            ]); // mint needs to sign as well
+            return json({
+                transaction: base64Transaction,
+            });
+        }
+    } catch (err: any) {
+        console.error(err);
+        error(500, err.message);
     }
 }
 
@@ -220,7 +239,7 @@ export async function GET(event) {
     // require login
     const user = requireLogin(event);
 
-    // Minted Coupons (api/community/coupon/claimed?store=<store>)
+    // Minted Coupons (api/community/coupon/minted?store=<store>)
     if (op === "minted") {
         // Get store
         const store = url.searchParams.get("store") || null;
@@ -228,9 +247,9 @@ export async function GET(event) {
             error(400, "Store is required");
         }
 
-        const coupons = await serverAnchorClient.getMintedCoupons(
-            new PublicKey(store),
-        );
+        const coupons = await serverAnchorClient.getMintedCoupons({
+            store: new PublicKey(store),
+        });
 
         return json(coupons);
     }

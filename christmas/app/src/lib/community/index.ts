@@ -28,6 +28,11 @@ import { stringToUint8Array } from "../utils";
 import type { CouponMetadata, StoreMetadata } from "./types";
 import { signAndSendTransaction } from "$lib/utils";
 import { PUBLIC_HOST } from "$env/static/public";
+import {
+    cleanCouponAccount,
+    cleanCouponSupplyBalance,
+    cleanStoreAccount,
+} from "./utils";
 
 // Exports
 export {
@@ -66,6 +71,7 @@ export interface CreateCouponFormResult {
     validFrom: Date;
     validTo: Date;
     image: File | null;
+    store: Account<Store>;
 }
 
 async function fetchMarketCoupons(): Promise<
@@ -77,10 +83,14 @@ async function fetchMarketCoupons(): Promise<
         const region = dc.location.country.code;
         const geoHash = dc.location.geohash;
 
-        const response = await fetch(
+        const coupons = await fetch(
             `/api/community/coupons/market?region=${region}&geoHash=${geoHash}`,
-        );
-        const coupons = await response.json();
+        ).then(async (response) => {
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+            return response.json();
+        });
 
         // Update `$ marketCoupons`
         marketCoupons.update(() => coupons);
@@ -89,15 +99,27 @@ async function fetchMarketCoupons(): Promise<
     return [];
 }
 
-async function fetchStoreMetadata(storePda: PublicKey): Promise<StoreMetadata> {
-    const response = await fetch(
-        `/api/community/store/metadata?store=${storePda.toString()}`,
-    );
-    const storeMetadata = await response.json();
+async function fetchStoreMetadata(
+    storePda: PublicKey | string,
+    headers: HeadersInit = {},
+): Promise<StoreMetadata> {
+    if (storePda instanceof PublicKey) {
+    }
+    storePda = storePda instanceof PublicKey ? storePda.toBase58() : storePda;
+
+    const storeMetadata = await fetch(
+        `${PUBLIC_HOST || ""}/api/community/store/metadata?store=${storePda}`,
+        { headers },
+    ).then(async (response) => {
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+        return response.json();
+    });
 
     // Update `$storeMetadata`
     storesMetadata.update((d) => {
-        d[storePda.toString()] = storeMetadata;
+        d[storePda as string] = storeMetadata;
         return d;
     });
 
@@ -106,8 +128,16 @@ async function fetchStoreMetadata(storePda: PublicKey): Promise<StoreMetadata> {
 
 async function fetchCouponMetadata(
     coupon: Account<Coupon>,
+    headers: HeadersInit = {},
 ): Promise<CouponMetadata> {
-    const couponMetadata = await (await fetch(coupon.account.uri)).json();
+    const couponMetadata = await fetch(coupon.account.uri, { headers }).then(
+        async (response) => {
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+            return response.json();
+        },
+    );
 
     // Update `$couponMetadata`
     couponsMetadata.update((d) => {
@@ -119,25 +149,43 @@ async function fetchCouponMetadata(
 }
 
 async function fetchMintedCouponSupplyBalance(
-    store: PublicKey,
+    store: PublicKey | string,
+    headers: HeadersInit = {},
 ): Promise<[Account<Coupon>, number, number][]> {
-    const response = await fetch(
-        `/api/community/store/minted?${store.toBase58()}`,
-    );
-    const couponsSupplyBalance = await response.json();
+    store = store instanceof PublicKey ? store.toBase58() : store;
+
+    const couponsSupplyBalance = await fetch(
+        `${PUBLIC_HOST || ""}/api/community/coupon/minted?store=${store}`,
+        { headers },
+    ).then(async (response) => {
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+
+        return (await response.json()).map(cleanCouponSupplyBalance);
+    });
 
     // Update `$mintedCoupons`
     mintedCoupons.update((d) => {
-        d[store.toBase58()] = couponsSupplyBalance;
+        d[store as string] = couponsSupplyBalance;
         return d;
     });
 
     return couponsSupplyBalance;
 }
 
-async function fetchClaimedCoupons(): Promise<[Account<Coupon>, number][]> {
-    const response = await fetch("/api/community/coupon/claimed");
-    const coupons = await response.json();
+async function fetchClaimedCoupons(
+    headers: HeadersInit = {},
+): Promise<[Account<Coupon>, number][]> {
+    const coupons = await fetch(
+        `${PUBLIC_HOST || ""}/api/community/coupon/claimed`,
+        { headers },
+    ).then(async (response) => {
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+        return response.json();
+    });
 
     // Update `$claimedCoupons`
     claimedCoupons.set(coupons);
@@ -145,9 +193,18 @@ async function fetchClaimedCoupons(): Promise<[Account<Coupon>, number][]> {
     return coupons;
 }
 
-async function fetchStores(): Promise<Account<Store>[]> {
-    const response = await fetch("/api/community/store/user");
-    const userStores = await response.json();
+async function fetchStores(
+    headers: HeadersInit = {},
+): Promise<Account<Store>[]> {
+    const userStores = await fetch(
+        `${PUBLIC_HOST || ""}/api/community/store/user`,
+        { headers },
+    ).then(async (response) => {
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+        return (await response.json()).map(cleanStoreAccount);
+    });
 
     // Update `$stores`
     stores.set(userStores);
@@ -155,24 +212,33 @@ async function fetchStores(): Promise<Account<Store>[]> {
     return userStores;
 }
 
-async function claimCoupon({
-    coupon,
-    numTokens,
-}: {
-    coupon: Account<Coupon>;
-    numTokens: number;
-}): Promise<TransactionResult> {
-    return await fetch("/api/community/coupon/claim", {
+async function claimCoupon(
+    {
+        coupon,
+        numTokens,
+    }: {
+        coupon: Account<Coupon>;
+        numTokens: number;
+    },
+    headers: HeadersInit = {},
+): Promise<TransactionResult> {
+    return await fetch(`${PUBLIC_HOST || ""}/api/community/coupon/claim`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
+            ...headers,
         },
         body: JSON.stringify({
             numTokens,
             mint: coupon.account.mint.toString(),
         }),
     })
-        .then((response) => response.json())
+        .then(async (response) => {
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+            return response.json();
+        })
         .then(({ transaction }) => {
             return signAndSendTransaction({
                 tx: Transaction.from(Buffer.from(transaction, "base64")),
@@ -180,17 +246,21 @@ async function claimCoupon({
         });
 }
 
-async function redeemCoupon({
-    coupon,
-    numTokens,
-}: {
-    coupon: Account<Coupon>;
-    numTokens: number;
-}): Promise<TransactionResult> {
-    return await fetch("/api/community/coupon/redeem", {
+async function redeemCoupon(
+    {
+        coupon,
+        numTokens,
+    }: {
+        coupon: Account<Coupon>;
+        numTokens: number;
+    },
+    headers: HeadersInit = {},
+): Promise<TransactionResult> {
+    return await fetch(`${PUBLIC_HOST || ""}/api/community/coupon/redeem`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
+            ...headers,
         },
         body: JSON.stringify({
             coupon: coupon.publicKey.toString(),
@@ -198,7 +268,12 @@ async function redeemCoupon({
             mint: coupon.account.mint.toString(),
         }),
     })
-        .then((response) => response.json())
+        .then(async (response) => {
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+            return response.json();
+        })
         .then(({ transaction }) => {
             return signAndSendTransaction({
                 tx: Transaction.from(Buffer.from(transaction, "base64")),
@@ -217,11 +292,10 @@ async function createStore(
         geohash,
         logo,
     }: CreateStoreFormResult,
-    { headers, wallet }: { headers: any; wallet?: any },
+    options?: { headers?: HeadersInit; wallet?: any },
 ): Promise<TransactionResult> {
     // Create form data with metadata and image
     const formData = new FormData();
-
     formData.set(
         "body",
         JSON.stringify({
@@ -241,9 +315,59 @@ async function createStore(
     // Create store
     return await fetch(`${PUBLIC_HOST || ""}/api/community/store/create`, {
         method: "POST",
-        headers: {
-            ...headers,
-        },
+        body: formData,
+        headers: options?.headers || {},
+    })
+        .then(async (response) => {
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+            return response.json();
+        })
+        .then(({ transaction }) => {
+            return signAndSendTransaction({
+                tx: Transaction.from(Buffer.from(transaction, "base64")),
+                wallet: options?.wallet,
+                commitment: "confirmed",
+            });
+        });
+}
+
+async function createCoupon(
+    {
+        image,
+        name,
+        description,
+        validFrom,
+        validTo,
+        store,
+    }: CreateCouponFormResult,
+    options?: { headers?: HeadersInit; wallet?: any },
+): Promise<TransactionResult> {
+    // Create form data with metadata and image
+    const formData = new FormData();
+
+    formData.set(
+        "body",
+        JSON.stringify({
+            name: name.slice(0, COUPON_NAME_SIZE - STRING_PREFIX_SIZE), // also enforced in form
+            description,
+            validFrom,
+            validTo,
+            store: store.publicKey.toString(),
+            geohash: store.account.geohash,
+            region: store.account.region,
+        }),
+    );
+
+    if (image != null) {
+        formData.set("image", image);
+    }
+
+    // Create coupon
+    return await fetch(`${PUBLIC_HOST || ""}/api/community/coupon/create`, {
+        method: "POST",
+        headers: options?.headers || {},
         body: formData,
     })
         .then(async (response) => {
@@ -255,71 +379,27 @@ async function createStore(
         .then(({ transaction }) => {
             return signAndSendTransaction({
                 tx: Transaction.from(Buffer.from(transaction, "base64")),
-                wallet,
+                wallet: options?.wallet,
+                commitment: "confirmed",
             });
         });
 }
 
-async function createCoupon({
-    image,
-    name,
-    description,
-    validFrom,
-    validTo,
-    store,
-}: {
-    image: File | null;
-    name: string;
-    description: string;
-    validFrom: Date;
-    validTo: Date;
-    store: Account<Store>;
-}): Promise<TransactionResult> {
-    // Create form data with metadata and image
-    const formData = new FormData();
-    formData.append(
-        "json",
-        JSON.stringify({
-            name: name.slice(0, COUPON_NAME_SIZE - STRING_PREFIX_SIZE), // also enforced in form
-            description,
-            validFrom,
-            validTo,
-            store: store.publicKey.toString(),
-            geohash: store.account.geohash,
-            region: store.account.region,
-        }),
-    );
-    if (image != null) {
-        formData.append("image", image);
-    }
-
-    // Create coupon
-    return await fetch("/api/community/coupon/create", {
+async function mintCoupon(
+    {
+        coupon,
+        numTokens,
+    }: {
+        numTokens: number;
+        coupon: Account<Coupon>;
+    },
+    options?: { headers?: HeadersInit; wallet?: any },
+): Promise<TransactionResult> {
+    return await fetch(`${PUBLIC_HOST || ""}/api/community/coupon/mint`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-        },
-        body: formData,
-    })
-        .then((response) => response.json())
-        .then(({ transaction }) => {
-            return signAndSendTransaction({
-                tx: Transaction.from(Buffer.from(transaction, "base64")),
-            });
-        });
-}
-
-async function mintCoupon({
-    coupon,
-    numTokens,
-}: {
-    numTokens: number;
-    coupon: Account<Coupon>;
-}): Promise<TransactionResult> {
-    return await fetch("/api/community/coupon/mint", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
+            ...(options?.headers || {}),
         },
         body: JSON.stringify({
             mint: coupon.account.mint,
@@ -328,29 +408,40 @@ async function mintCoupon({
             numTokens,
         }),
     })
-        .then((response) => response.json())
+        .then(async (response) => {
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+            return response.json();
+        })
         .then(({ transaction }) => {
             return signAndSendTransaction({
                 tx: Transaction.from(Buffer.from(transaction, "base64")),
+                wallet: options?.wallet,
+                commitment: "confirmed",
             });
         });
 }
 
-async function verifyRedemption({
-    signature,
-    mint,
-    numTokens,
-    wallet,
-}: {
-    signature: string;
-    mint: string;
-    numTokens: string;
-    wallet: string;
-}): Promise<{ isVerified: boolean; err: string }> {
-    return await fetch("/api/community/coupon/verify", {
+async function verifyRedemption(
+    {
+        signature,
+        mint,
+        numTokens,
+        wallet,
+    }: {
+        signature: string;
+        mint: string;
+        numTokens: string;
+        wallet: string;
+    },
+    headers: HeadersInit = {},
+): Promise<{ isVerified: boolean; err: string }> {
+    return await fetch(`${PUBLIC_HOST || ""}/api/community/coupon/verify`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
+            ...headers,
         },
         body: JSON.stringify({
             signature,
@@ -359,26 +450,39 @@ async function verifyRedemption({
             numTokens,
         }),
     })
-        .then((response) => response.json())
+        .then(async (response) => {
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+            return response.json();
+        })
         .then(({ isVerified, err }) => {
             return { isVerified, err };
         });
 }
 
-async function createUser(): Promise<TransactionResult> {
+async function createUser(
+    headers: HeadersInit = {},
+): Promise<TransactionResult> {
     const dc = get(userDeviceClient);
 
     if (dc?.location?.country?.code != null) {
-        return await fetch("/api/community/user/create", {
+        return await fetch(`${PUBLIC_HOST || ""}/api/community/user/create`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                ...headers,
             },
             body: JSON.stringify({
                 region: dc.location.country.code,
             }),
         })
-            .then((response) => response.json())
+            .then(async (response) => {
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+                return response.json();
+            })
             .then(({ transaction }) => {
                 return signAndSendTransaction({
                     tx: Transaction.from(Buffer.from(transaction, "base64")),
@@ -391,11 +495,13 @@ async function createUser(): Promise<TransactionResult> {
 }
 
 async function logIn() {
-    const solanaSignInInput = await (await fetch("/api/auth/siws")).json();
+    const solanaSignInInput = await (
+        await fetch(`${PUBLIC_HOST || ""}/api/auth/siws`)
+    ).json();
     const solanaSignInOutput = await (window as any).phantom?.solana.signIn(
         solanaSignInInput,
     );
-    const loginResult = await fetch("/api/auth/login", {
+    const loginResult = await fetch(`${PUBLIC_HOST || ""}/api/auth/login`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -421,7 +527,7 @@ async function logIn() {
 }
 
 async function logOut() {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetch(`${PUBLIC_HOST || ""}/api/auth/logout`, { method: "POST" });
     await (window as any).solana.disconnect();
     token.set(null);
 
@@ -433,9 +539,12 @@ async function logOut() {
 }
 
 async function refresh() {
-    const refreshTokenResult = await fetch("/api/auth/refresh", {
-        method: "POST",
-    });
+    const refreshTokenResult = await fetch(
+        `${PUBLIC_HOST || ""}/api/auth/refresh`,
+        {
+            method: "POST",
+        },
+    );
     if (refreshTokenResult.ok) {
         const { token: loginToken } = await refreshTokenResult.json();
 

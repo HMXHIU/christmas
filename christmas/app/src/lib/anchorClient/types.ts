@@ -65,7 +65,7 @@ export interface TransactionResult {
 }
 
 export interface Account<DataT> {
-    publicKey: PublicKey;
+    publicKey: PublicKey | string;
     account: DataT;
 }
 

@@ -150,6 +150,16 @@ export class AnchorClient {
         // calculate couponPda
         const [couponPda, _] = this.getCouponPda(mint.publicKey);
 
+        const signer = wallet || this.anchorWallet.publicKey;
+        payer = payer || this.anchorWallet.publicKey;
+
+        console.log(`
+        Creating coupon Ix:
+            coupon: ${couponPda}
+            signer: ${signer}
+            payer: ${payer}
+        `);
+
         // create coupon
         return await this.program.methods
             .createCoupon(
@@ -168,8 +178,8 @@ export class AnchorClient {
                 tokenProgram: TOKEN_PROGRAM_ID,
                 regionMarket: regionMarketPda,
                 regionMarketTokenAccount: regionMarketTokenAccountPda,
-                signer: wallet || this.anchorWallet.publicKey,
-                payer: payer || this.anchorWallet.publicKey,
+                signer,
+                payer,
             })
             .instruction();
     }
@@ -379,17 +389,23 @@ export class AnchorClient {
         }
     }
 
-    async getMintedCoupons(
-        store?: PublicKey,
-    ): Promise<[Account<Coupon>, number, number][]> {
-        let filters = [
-            {
+    async getMintedCoupons({
+        store,
+        wallet,
+    }: {
+        store?: PublicKey;
+        wallet?: PublicKey;
+    }): Promise<[Account<Coupon>, number, number][]> {
+        let filters = [];
+
+        if (wallet) {
+            filters.push({
                 memcmp: {
                     offset: DISCRIMINATOR_SIZE,
-                    bytes: this.anchorWallet.publicKey.toBase58(), // update_authority
+                    bytes: wallet.toBase58(), // update_authority
                 },
-            },
-        ];
+            });
+        }
 
         if (store) {
             filters.push({
@@ -398,6 +414,10 @@ export class AnchorClient {
                     bytes: store.toBase58(), // store
                 },
             });
+        }
+
+        if (!store && !wallet) {
+            throw new Error("At least one of store or wallet must be provided");
         }
 
         const mintedCoupons = await this.program.account.coupon.all(filters);
@@ -840,14 +860,24 @@ export class AnchorClient {
             throw Error(`Uri exceeds maximum length of ${URI_SIZE}`);
         }
 
+        let signer = wallet || this.anchorWallet.publicKey;
+        payer = payer || this.anchorWallet.publicKey;
+
+        console.log(`
+        Creating storeIx:
+            store: ${storePda}
+            signer: ${signer}
+            payer: ${payer}
+        `);
+
         return await this.program.methods
             .createStore(name, storeId, region, geohash, uri)
             .accounts({
                 store: storePda,
                 systemProgram: SystemProgram.programId,
                 state: programStatePda,
-                signer: wallet || this.anchorWallet.publicKey,
-                payer: payer || this.anchorWallet.publicKey,
+                signer,
+                payer,
             })
             .instruction();
     }
@@ -898,6 +928,10 @@ export class AnchorClient {
     }
 
     async getStores(wallet?: PublicKey): Promise<Account<Store>[]> {
+        const owner = wallet
+            ? wallet.toBase58()
+            : this.anchorWallet.publicKey.toBase58();
+
         return this.program.account.store.all([
             {
                 memcmp: {
@@ -908,9 +942,7 @@ export class AnchorClient {
                         REGION_SIZE +
                         GEOHASH_SIZE +
                         URI_SIZE,
-                    bytes: wallet
-                        ? wallet.toBase58()
-                        : this.anchorWallet.publicKey.toBase58(), // owner
+                    bytes: owner,
                 },
             },
         ]);
@@ -1082,13 +1114,10 @@ export class AnchorClient {
             )
         ).value;
 
-        console.log(
-            `Transaction: ${signature}\nResult:\n${JSON.stringify(
-                result,
-                null,
-                2,
-            )}`,
-        );
+        console.log(`
+        Transaction: ${signature}
+        Err: ${result.err}
+        `);
 
         return { result, signature };
     }
@@ -1125,11 +1154,13 @@ export class AnchorClient {
         options,
         serializeConfig,
         skipSign,
+        commitment,
     }: {
         tx: Transaction | VersionedTransaction;
         options?: SendOptions;
         serializeConfig?: SerializeConfig;
         skipSign?: boolean;
+        commitment?: Commitment;
     }): Promise<TransactionResult> {
         options = options || {};
         skipSign = skipSign || false;
@@ -1146,7 +1177,7 @@ export class AnchorClient {
         );
 
         // confirm transaction
-        return await this.confirmTransaction(signature);
+        return await this.confirmTransaction(signature, commitment);
     }
 
     async requestAirdrop(amount: number): Promise<TransactionResult> {

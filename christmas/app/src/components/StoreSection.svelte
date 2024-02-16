@@ -14,12 +14,16 @@
     import CreateCouponForm from "./CreateCouponForm.svelte";
     import { mintedCoupons, storesMetadata } from "../store";
     import MintedCouponCard from "./MintedCouponCard.svelte";
+    import { PublicKey } from "@solana/web3.js";
 
     const modalStore = getModalStore();
 
     export let store: Account<Store>;
 
-    const storeKey = store.publicKey.toString();
+    const storeKey =
+        store.publicKey instanceof PublicKey
+            ? store.publicKey.toBase58()
+            : store.publicKey;
 
     function createCouponModal() {
         new Promise<CreateCouponFormResult>((resolve) => {
@@ -28,7 +32,7 @@
                 component: { ref: CreateCouponForm },
                 meta: {},
                 response: (values) => {
-                    resolve(values);
+                    resolve({ ...values, store });
                 },
             };
             // Open modal
@@ -36,10 +40,7 @@
         }).then(async (values) => {
             if (values) {
                 // Create coupon
-                await createCoupon({
-                    ...values,
-                    store,
-                });
+                await createCoupon(values);
                 // Refetch coupons
                 await fetchMintedCouponSupplyBalance(store.publicKey);
                 // Refetch market place coupons

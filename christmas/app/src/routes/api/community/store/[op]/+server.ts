@@ -7,6 +7,7 @@ import {
     serverAnchorClient,
 } from "$lib/server";
 import { ObjectStorage } from "$lib/server/objectStorage.js";
+import { cleanString } from "$lib/utils.js";
 import { PublicKey } from "@solana/web3.js";
 import { error, json } from "@sveltejs/kit";
 import yup from "yup";
@@ -27,73 +28,88 @@ export async function POST(event) {
     const { params, request } = event;
     const { op } = params;
 
-    // Create (api/community/store/create)
-    if (op === "create") {
-        const { body, image } = Object.fromEntries(await request.formData());
+    try {
+        // Create (api/community/store/create)
+        if (op === "create") {
+            const { body, image } = Object.fromEntries(
+                await request.formData(),
+            );
 
-        // Validate request body
-        const {
-            geohash,
-            region,
-            name,
-            description,
-            latitude,
-            longitude,
-            address,
-        } = await CreateStoreParams.validate(JSON.parse(body as string));
+            // Validate request body
+            const {
+                geohash,
+                region,
+                name,
+                description,
+                latitude,
+                longitude,
+                address,
+            } = await CreateStoreParams.validate(JSON.parse(body as string));
 
-        // Validate image
-        const imageFile = image as File;
-        if (!imageFile) {
-            error(400, "Store image is required");
+            // Validate image
+            const imageFile = image as File;
+            if (!imageFile) {
+                error(400, "Store image is required");
+            }
+
+            // Get store id
+            const storeId = await serverAnchorClient.getAvailableStoreId();
+
+            // Store image
+            const imageUrl = await ObjectStorage.putObject(
+                {
+                    owner: null,
+                    bucket: "image",
+                    name: hashObject([
+                        "image",
+                        user.publicKey,
+                        storeId.toNumber(),
+                    ]),
+                    data: Buffer.from(await imageFile.arrayBuffer()),
+                },
+                { "Content-Type": imageFile.type },
+            );
+
+            // Validate & upload store metadata
+            const storeMetadataUrl = await ObjectStorage.putJSONObject(
+                {
+                    owner: null,
+                    bucket: "store",
+                    name: hashObject([
+                        "store",
+                        user.publicKey,
+                        storeId.toNumber(),
+                    ]),
+                    data: await StoreMetadataSchema.validate({
+                        name,
+                        description,
+                        address,
+                        latitude,
+                        longitude,
+                        image: imageUrl,
+                    }),
+                },
+                { "Content-Type": "application/json" },
+            );
+
+            const ix = await serverAnchorClient.createStoreIx({
+                name,
+                uri: storeMetadataUrl,
+                region,
+                geohash,
+                storeId,
+                payer: FEE_PAYER_PUBKEY,
+                wallet: new PublicKey(user.publicKey),
+            });
+
+            const base64Transaction = await createSerializedTransaction(ix);
+            return json({
+                transaction: base64Transaction,
+            });
         }
-
-        // Get store id
-        const storeId = await serverAnchorClient.getAvailableStoreId();
-
-        // Store image
-        const imageUrl = await ObjectStorage.putObject(
-            {
-                owner: null,
-                bucket: "image",
-                name: hashObject(["image", user.publicKey, storeId.toNumber()]),
-                data: Buffer.from(await imageFile.arrayBuffer()),
-            },
-            { "Content-Type": "image" },
-        );
-
-        // Validate & upload store metadata
-        const storeMetadataUrl = await ObjectStorage.putJSONObject(
-            {
-                owner: null,
-                bucket: "store",
-                name: hashObject(["store", user.publicKey, storeId.toNumber()]),
-                data: await StoreMetadataSchema.validate({
-                    name,
-                    description,
-                    address,
-                    latitude,
-                    longitude,
-                    image: imageUrl,
-                }),
-            },
-            { "Content-Type": "application/json" },
-        );
-
-        const ix = await serverAnchorClient.createStoreIx({
-            name,
-            uri: storeMetadataUrl,
-            region,
-            geohash,
-            storeId,
-            payer: FEE_PAYER_PUBKEY,
-            wallet: new PublicKey(user.publicKey),
-        });
-
-        const base64Transaction = await createSerializedTransaction(ix);
-        return json({
-            transaction: base64Transaction,
-        });
+    } catch (err: any) {
+        console.error(err);
+        error(500, err.message);
     }
 }
 
@@ -120,16 +136,15 @@ export async function GET(event) {
         return new Response(null, {
             status: 302,
             headers: {
-                Location: store.uri,
+                Location: cleanString(store.uri),
             },
         });
     }
 
     // Get logged in user's stores (api/community/store/user)
     else if (op === "user") {
-        const stores = await serverAnchorClient.getStores(
-            new PublicKey(user.publicKey),
+        return json(
+            await serverAnchorClient.getStores(new PublicKey(user.publicKey)),
         );
-        return json(stores);
     }
 }

@@ -130,12 +130,14 @@ async function signAndSendTransaction({
     serializeConfig,
     skipSign,
     wallet,
+    commitment,
 }: {
     tx: Transaction | VersionedTransaction;
     options?: SendOptions;
     serializeConfig?: SerializeConfig;
     skipSign?: boolean;
     wallet?: any;
+    commitment?: Commitment;
 }): Promise<TransactionResult> {
     options = options || {};
     skipSign = skipSign || false;
@@ -153,7 +155,7 @@ async function signAndSendTransaction({
     );
 
     // confirm transaction
-    return await confirmTransaction(signature);
+    return await confirmTransaction(signature, commitment);
 }
 
 async function confirmTransaction(

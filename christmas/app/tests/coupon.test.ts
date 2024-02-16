@@ -1,13 +1,20 @@
-import { Keypair } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { expect, test } from "vitest";
 import ngeohash from "ngeohash";
 import { login } from "./auth.test";
 import { getCookiesFromResponse, readImageAsBuffer } from "./utils";
-import { PUBLIC_HOST } from "$env/static/public";
-import { createCoupon, createStore } from "$lib/community";
+import {
+    createCoupon,
+    createStore,
+    fetchCouponMetadata,
+    fetchMintedCouponSupplyBalance,
+    fetchStoreMetadata,
+    fetchStores,
+} from "$lib/community";
 import { stringToUint8Array } from "$lib/utils";
 import { COUNTRY_DETAILS } from "$lib/clients/user-device-client/defs";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
+import { BN } from "bn.js";
 
 test("Test Create Coupon", async () => {
     const user = Keypair.generate();
@@ -44,9 +51,9 @@ test("Test Create Coupon", async () => {
     );
 
     // Create store
-    const store = await createStore(
+    let tx = await createStore(
         {
-            name: user.publicKey.toBase58(),
+            name: "store",
             description: user.publicKey.toBase58(),
             address: user.publicKey.toBase58(),
             region: regionCode,
@@ -60,33 +67,63 @@ test("Test Create Coupon", async () => {
             wallet: userWallet,
         },
     );
+    expect(tx.result.err).toBeNull();
 
-    // createCoupon({
-    //     image: imageFile,
-    //     name: user.publicKey.toBase58(),
-    //     description: user.publicKey.toBase58(),
-    //     validFrom: beforeToday,
-    //     validTo: afterToday,
-    //     store,
-    // });
+    // Fetch store
+    const stores = await fetchStores({ Cookie: cookies });
+    expect(stores.length).toBe(1);
+    expect(stores[0].account).toMatchObject({
+        name: "store",
+        region: stringToUint8Array(regionCode),
+        geohash: stringToUint8Array(geohash),
+        owner: user.publicKey.toBase58(),
+    });
 
-    // // Upload image
-    // response = await fetch(`${PUBLIC_HOST}/api/storage/image/public`, {
-    //     method: "POST",
-    //     headers: {
-    //         Cookie: cookies,
-    //         "Content-Type": "image/jpeg",
-    //     },
-    //     body: image,
-    // });
+    // Create coupon
+    tx = await createCoupon(
+        {
+            image: imageFile,
+            name: "coupon",
+            description: user.publicKey.toBase58(),
+            validFrom: beforeToday,
+            validTo: afterToday,
+            store: stores[0],
+        },
+        {
+            headers: { Cookie: cookies },
+            wallet: userWallet,
+        },
+    );
+    expect(tx.result.err).toBeNull();
 
-    // // Check response
-    // const createImageResult = await response.json();
-    // expect(createImageResult.status).toBe("success");
+    // Fetch coupon
+    const coupons = await fetchMintedCouponSupplyBalance(stores[0].publicKey, {
+        Cookie: cookies,
+    });
+    expect(coupons.length).toBe(1);
+    const [coupon, supply, balance] = coupons[0];
+    expect(supply).toBe(0);
+    expect(balance).toBe(0);
+    expect(coupon.account).toMatchObject({
+        name: "coupon",
+        updateAuthority: user.publicKey.toBase58(),
+        store: stores[0].publicKey,
+        region: stringToUint8Array(regionCode),
+        geohash: stringToUint8Array(geohash),
+        validFrom: new BN(beforeToday.getTime()),
+        validTo: new BN(afterToday.getTime()),
+    });
 
-    // // Check image
-    // response = await fetch(createImageResult.url);
-    // const blob = await response.blob();
-    // expect(blob).toEqual(image);
-    // expect(blob.type).toBe("image/jpeg");
+    // Fetch coupon metadata
+    const metadata = await fetchCouponMetadata(coupon, {
+        Cookie: cookies,
+    });
+    expect(metadata).toMatchObject({
+        name: "coupon",
+        description: user.publicKey.toBase58(),
+    });
+
+    // Fetch coupon image
+    const imageBlob = await (await fetch(metadata.image)).blob();
+    expect(imageBlob).toMatchObject(image);
 });
