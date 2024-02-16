@@ -1,5 +1,6 @@
 import { StoreMetadataSchema } from "$lib/community/types.js";
 import {
+    FEE_PAYER_PUBKEY,
     createSerializedTransaction,
     hashObject,
     requireLogin,
@@ -21,7 +22,7 @@ const CreateStoreParams = yup.object().shape({
 });
 
 export async function POST(event) {
-    // all store methods require login
+    // All store methods require login
     const user = requireLogin(event);
     const { params, request } = event;
     const { op } = params;
@@ -85,6 +86,8 @@ export async function POST(event) {
             region,
             geohash,
             storeId,
+            payer: FEE_PAYER_PUBKEY,
+            wallet: new PublicKey(user.publicKey),
         });
 
         const base64Transaction = await createSerializedTransaction(ix);
@@ -95,7 +98,7 @@ export async function POST(event) {
 }
 
 export async function GET(event) {
-    // require login
+    // All store methods require login
     const user = requireLogin(event);
 
     const { params, url } = event;

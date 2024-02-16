@@ -46,7 +46,7 @@ pub struct RedeemCoupon<'info> {
 pub struct CreateCoupon<'info> {
     #[account(
         init_if_needed,
-        payer = signer,
+        payer = payer,
         mint::decimals = 0,
         mint::authority = signer,
         mint::freeze_authority = signer,
@@ -54,7 +54,7 @@ pub struct CreateCoupon<'info> {
     pub mint: Account<'info, Mint>,
     #[account(
         init_if_needed,
-        payer = signer,
+        payer = payer,
         seeds = [b"coupon", mint.key().as_ref()],
         bump,
         space = Coupon::len(),
@@ -64,13 +64,13 @@ pub struct CreateCoupon<'info> {
         init_if_needed,
         seeds = [b"market", region.as_ref()],
         bump,
-        payer = signer,
+        payer = payer,
         space = RegionMarket::len()
     )]
     pub region_market: Account<'info, RegionMarket>,
     #[account(
         init_if_needed,
-        payer = signer,
+        payer = payer,
         associated_token::mint = mint,
         associated_token::authority = region_market,
     )]
@@ -81,8 +81,9 @@ pub struct CreateCoupon<'info> {
         bump,
     )]
     pub store: Account<'info, Store>,
-    #[account(mut)]
     pub signer: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,

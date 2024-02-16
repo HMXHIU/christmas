@@ -59,13 +59,13 @@ pub struct MintToMarket<'info> {
         init_if_needed,
         seeds = [b"market", region.as_ref()],
         bump,
-        payer = signer,
+        payer = payer,
         space = RegionMarket::len()
     )]
     pub region_market: Account<'info, RegionMarket>,
     #[account(
         init_if_needed,
-        payer = signer,
+        payer = payer,
         associated_token::mint = mint,
         associated_token::authority = region_market,
     )]
@@ -85,8 +85,9 @@ pub struct MintToMarket<'info> {
         constraint = coupon.update_authority == signer.key(),
     )]
     pub coupon: Account<'info, Coupon>,
-    #[account(mut)]
     pub signer: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Program<'info, Token>,

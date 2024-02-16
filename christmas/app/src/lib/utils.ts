@@ -129,19 +129,22 @@ async function signAndSendTransaction({
     options,
     serializeConfig,
     skipSign,
+    wallet,
 }: {
     tx: Transaction | VersionedTransaction;
     options?: SendOptions;
     serializeConfig?: SerializeConfig;
     skipSign?: boolean;
+    wallet?: any;
 }): Promise<TransactionResult> {
     options = options || {};
     skipSign = skipSign || false;
 
+    // defaults to window.solana
+    wallet = wallet || (window as any).solana;
+
     // sign
-    const signedTx = skipSign
-        ? tx
-        : await (window as any).solana.signTransaction(tx);
+    const signedTx = skipSign ? tx : await wallet.signTransaction(tx);
 
     // send transaction
     const signature = await connection.sendRawTransaction(
@@ -168,15 +171,6 @@ async function confirmTransaction(
             commitment,
         )
     ).value;
-
-    console.log(
-        `Transaction: ${signature}\nResult:\n${JSON.stringify(
-            result,
-            null,
-            2,
-        )}`,
-    );
-
     return { result, signature };
 }
 

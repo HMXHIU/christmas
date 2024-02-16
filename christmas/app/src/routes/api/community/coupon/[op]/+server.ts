@@ -126,6 +126,8 @@ export async function POST(event) {
             coupon: new PublicKey(coupon),
             numTokens,
             region,
+            payer: FEE_PAYER_PUBKEY,
+            wallet: new PublicKey(user.publicKey),
         });
 
         const base64Transaction = await createSerializedTransaction(ix);
@@ -200,6 +202,8 @@ export async function POST(event) {
             validFrom,
             validTo,
             uri: couponMetadataUrl,
+            payer: FEE_PAYER_PUBKEY,
+            wallet: new PublicKey(user.publicKey),
         });
 
         const base64Transaction = await createSerializedTransaction(ix, [mint]); // mint needs to sign as well

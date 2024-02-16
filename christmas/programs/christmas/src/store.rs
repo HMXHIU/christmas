@@ -7,15 +7,16 @@ use crate::{defs::*, state::ProgramState};
 pub struct CreateStore<'info> {
     #[account(
         init_if_needed,
-        payer = signer,
+        payer = payer,
         seeds = [b"store", signer.key().as_ref(), &id.to_be_bytes()],
         bump,
         constraint = id == state.store_counter,
         space = Store::len(),
     )]
     pub store: Account<'info, Store>,
-    #[account(mut)]
     pub signer: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
     #[account(
         mut,
         seeds = [b"state"],

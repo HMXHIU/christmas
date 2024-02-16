@@ -7,9 +7,11 @@ import { PUBLIC_HOST } from "$env/static/public";
 import { createCoupon, createStore } from "$lib/community";
 import { stringToUint8Array } from "$lib/utils";
 import { COUNTRY_DETAILS } from "$lib/clients/user-device-client/defs";
+import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 
 test("Test Create Coupon", async () => {
     const user = Keypair.generate();
+    const userWallet = new NodeWallet(user);
 
     // Login
     let response = await login(user);
@@ -53,7 +55,10 @@ test("Test Create Coupon", async () => {
             geohash,
             logo: imageFile,
         },
-        { Cookie: cookies },
+        {
+            headers: { Cookie: cookies },
+            wallet: userWallet,
+        },
     );
 
     // createCoupon({

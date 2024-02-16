@@ -217,7 +217,7 @@ async function createStore(
         geohash,
         logo,
     }: CreateStoreFormResult,
-    headers: any = {},
+    { headers, wallet }: { headers: any; wallet?: any },
 ): Promise<TransactionResult> {
     // Create form data with metadata and image
     const formData = new FormData();
@@ -255,6 +255,7 @@ async function createStore(
         .then(({ transaction }) => {
             return signAndSendTransaction({
                 tx: Transaction.from(Buffer.from(transaction, "base64")),
+                wallet,
             });
         });
 }

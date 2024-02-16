@@ -22,8 +22,8 @@ import {
     type SerializeConfig,
     VersionedTransaction,
 } from "@solana/web3.js";
-import idl from "../../../../target/idl/christmas.json";
-import { type Christmas } from "../../../../target/types/christmas";
+import idl from "../../../../../target/idl/christmas.json";
+import { type Christmas } from "../../../../../target/types/christmas";
 import {
     TOKEN_PROGRAM_ID,
     ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -52,11 +52,12 @@ import type {
     TokenAccount,
     ProgramState,
 } from "./types";
-import { timeStampToDate } from "../utils";
+import { timeStampToDate } from "../../utils";
 import {
     getDateWithinRangeFilterCombinations,
     getMarketCouponsFilterCombinations,
 } from "./utils";
+import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 
 /**
  * Do not instantiate this on the client side, only on the server side.
@@ -67,7 +68,7 @@ export class AnchorClient {
     connection: Connection;
     provider: Provider;
     program: Program<Christmas>;
-    anchorWallet: AnchorWallet;
+    anchorWallet: NodeWallet;
     keypair: Keypair;
 
     constructor({
@@ -79,7 +80,10 @@ export class AnchorClient {
         programId?: PublicKey;
         cluster?: string;
     }) {
-        this.anchorWallet = new AnchorWallet(keypair);
+        // @ts-ignore
+        this.anchorWallet = new NodeWallet(keypair);
+
+        console.log(this.anchorWallet);
         this.keypair = keypair;
 
         this.cluster = cluster || "http://127.0.0.1:8899";
@@ -129,8 +133,6 @@ export class AnchorClient {
         mint,
         validFrom,
         validTo,
-        wallet,
-        payer,
     }: {
         geohash: number[];
         region: number[];
@@ -140,8 +142,6 @@ export class AnchorClient {
         mint: Keypair;
         validFrom: Date;
         validTo: Date;
-        wallet?: PublicKey | null; // the user pubkey (defaults to this.anchorWallet.publicKey)
-        payer?: PublicKey | null; // the payer pubkey (defaults to this.anchorWallet.publicKey)
     }): Promise<TransactionInstruction> {
         // calculate region market accounts
         const [regionMarketPda, regionMarketTokenAccountPda] =
@@ -164,12 +164,11 @@ export class AnchorClient {
                 mint: mint.publicKey,
                 coupon: couponPda,
                 store: store,
+                signer: this.anchorWallet.publicKey,
                 systemProgram: SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 regionMarket: regionMarketPda,
                 regionMarketTokenAccount: regionMarketTokenAccountPda,
-                signer: wallet || this.anchorWallet.publicKey,
-                payer: payer || this.anchorWallet.publicKey,
             })
             .instruction();
     }
@@ -657,15 +656,11 @@ export class AnchorClient {
         coupon,
         region,
         numTokens,
-        wallet,
-        payer,
     }: {
         mint: PublicKey;
         coupon: PublicKey;
         region: number[];
         numTokens: number;
-        wallet?: PublicKey | null; // the user pubkey (defaults to this.anchorWallet.publicKey)
-        payer?: PublicKey | null; // the payer pubkey (defaults to this.anchorWallet.publicKey)
     }): Promise<TransactionInstruction> {
         // the region is the coupon.region of the respective mint
         const [regionMarketPda, regionMarketTokenAccountPda] =
@@ -679,11 +674,10 @@ export class AnchorClient {
                 regionMarketTokenAccount: regionMarketTokenAccountPda,
                 mint: mint,
                 coupon: coupon,
+                signer: this.anchorWallet.publicKey,
                 systemProgram: SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                signer: wallet || this.anchorWallet.publicKey,
-                payer: payer || this.anchorWallet.publicKey,
             })
             .instruction();
     }
@@ -796,7 +790,7 @@ export class AnchorClient {
     Store
     ****************************************************************************/
 
-    getStorePda(id: BN, owner?: PublicKey | null): [PublicKey, number] {
+    getStorePda(id: BN, owner?: PublicKey): [PublicKey, number] {
         return PublicKey.findProgramAddressSync(
             [
                 utils.bytes.utf8.encode("store"),
@@ -815,19 +809,15 @@ export class AnchorClient {
         region,
         geohash,
         storeId,
-        wallet,
-        payer,
     }: {
         name: string;
         uri: string;
         region: number[];
         geohash: number[];
         storeId?: BN;
-        wallet?: PublicKey | null; // the user pubkey (defaults to this.anchorWallet.publicKey)
-        payer?: PublicKey | null; // the payer pubkey (defaults to this.anchorWallet.publicKey)
     }): Promise<TransactionInstruction> {
         storeId = storeId || (await this.getAvailableStoreId());
-        const storePda = this.getStorePda(storeId, wallet)[0];
+        const storePda = this.getStorePda(storeId)[0];
         const programStatePda = this.getProgramStatePda()[0];
 
         if (name.length > STORE_NAME_SIZE - STRING_PREFIX_SIZE) {
@@ -844,10 +834,9 @@ export class AnchorClient {
             .createStore(name, storeId, region, geohash, uri)
             .accounts({
                 store: storePda,
+                signer: this.anchorWallet.publicKey,
                 systemProgram: SystemProgram.programId,
                 state: programStatePda,
-                signer: wallet || this.anchorWallet.publicKey,
-                payer: payer || this.anchorWallet.publicKey,
             })
             .instruction();
     }
@@ -888,7 +877,7 @@ export class AnchorClient {
         });
     }
 
-    async getStore(id: BN, owner?: PublicKey | null): Promise<Store> {
+    async getStore(id: BN, owner?: PublicKey): Promise<Store> {
         const [storePda, _] = this.getStorePda(id, owner);
         return await this.program.account.store.fetch(storePda);
     }
