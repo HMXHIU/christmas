@@ -10,7 +10,8 @@ pub struct CreateStore<'info> {
         payer = payer,
         seeds = [b"store", signer.key().as_ref(), &id.to_be_bytes()],
         bump,
-        constraint = id == state.store_counter,
+        // `id` is not unique just to add uniqueness to seeds (<= allows parallel instructions to run)
+        constraint = id <= state.store_counter, 
         space = Store::len(),
     )]
     pub store: Account<'info, Store>,

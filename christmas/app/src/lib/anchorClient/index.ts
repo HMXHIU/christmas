@@ -793,6 +793,19 @@ export class AnchorClient {
         // Calculate the Program Derived Address (PDA) for the coupon.
         let couponPda = this.getCouponPda(mint)[0];
 
+        console.log(`
+        Creating claimFromMarketIx:
+            mint: ${mint}
+            numTokens: ${numTokens}
+            user: ${userPda}
+            userTokenAccount: ${userTokenAccount}
+            coupon: ${couponPda}
+            regionMarket: ${regionMarketPda}
+            regionMarketTokenAccount: ${regionMarketTokenAccountPda}
+            signer: ${wallet || this.anchorWallet.publicKey}
+            payer: ${payer || this.anchorWallet.publicKey}
+        `);
+
         // Build the instruction for the claimFromMarket transaction.
         return await this.program.methods
             .claimFromMarket(new BN(numTokens))
@@ -816,6 +829,12 @@ export class AnchorClient {
     Store
     ****************************************************************************/
 
+    /**
+     * `id` is used instead of `name` as owner might have multiple stores with the same name.
+     *
+     * Notes:
+     * - `id` might not be globally unique, storePda is used for identification
+     */
     getStorePda(id: BN, owner?: PublicKey | null): [PublicKey, number] {
         return PublicKey.findProgramAddressSync(
             [
@@ -866,6 +885,7 @@ export class AnchorClient {
         console.log(`
         Creating storeIx:
             store: ${storePda}
+            storeId: ${storeId}
             signer: ${signer}
             payer: ${payer}
         `);
@@ -987,7 +1007,7 @@ export class AnchorClient {
         try {
             return await this.program.account.user.fetch(pda);
         } catch (error) {
-            console.error(error);
+            console.log(`User does not exist: ${pda}`);
             return null;
         }
     }

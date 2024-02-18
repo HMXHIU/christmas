@@ -37,14 +37,18 @@ const BUCKETS = {
 initializeBuckets();
 
 /**
- *
- * Notes:
+ * ObjectStorage
  *
  * - Do not expose this to client (only backend)
  * - All operations should be done through ObjectStorage (with permission checks)
  * - If owner is null, the object is public else private
  */
 class ObjectStorage {
+    /**
+     * Put object
+     *
+     * - Caller must ensure that the owner has permission to access the object
+     */
     static async putObject(
         {
             owner,

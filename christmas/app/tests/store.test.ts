@@ -59,6 +59,8 @@ test("Test Store", async () => {
             wallet: userWallet,
         },
     );
+
+    console.log(tx.result.err);
     expect(tx.result.err).toBeNull();
 
     // Fetch store
