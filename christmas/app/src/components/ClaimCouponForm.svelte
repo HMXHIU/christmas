@@ -2,7 +2,6 @@
     import type { SvelteComponent } from "svelte";
     import { getModalStore } from "@skeletonlabs/skeleton";
     import BaseCouponCard from "./BaseCouponCard.svelte";
-    import type { ParsedAccountData } from "@solana/web3.js";
     import type { Account, Coupon } from "$lib/anchorClient/types";
 
     import type { CouponMetadata, StoreMetadata } from "$lib/community/types";
@@ -16,10 +15,7 @@
     let couponMetadata: CouponMetadata = $modalStore[0].meta.couponMetadata;
     let storeMetadata: StoreMetadata = $modalStore[0].meta.storeMetadata;
     let distance: number = $modalStore[0].meta.distance;
-
-    let tokenAmount = (
-        $modalStore[0].meta.tokenAccount.account.data as ParsedAccountData
-    ).parsed.info.tokenAmount.uiAmount;
+    let balance: number = $modalStore[0].meta.balance;
 
     function onClaimCoupon(): void {
         if ($modalStore[0].response)
@@ -41,7 +37,7 @@
             storeAddress={storeMetadata.address}
             storeImageUrl={storeMetadata.image}
             {distance}
-            remaining={tokenAmount}
+            remaining={balance}
             expiry={timeStampToDate(coupon.account.validTo)}
         ></BaseCouponCard>
 

@@ -27,7 +27,16 @@
 
     async function fetchUserContent() {
         // TODO: put in their respective pages for more efficiency
-        await fetchMarketCoupons();
+        // Refetch market place coupons
+        if (
+            $userDeviceClient?.location?.country?.code &&
+            $userDeviceClient?.location?.geohash
+        ) {
+            await fetchMarketCoupons({
+                region: $userDeviceClient?.location?.country?.code,
+                geohash: $userDeviceClient?.location?.geohash,
+            });
+        }
         await fetchClaimedCoupons();
         await fetchStores();
     }

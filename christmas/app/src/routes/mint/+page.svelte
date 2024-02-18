@@ -3,8 +3,8 @@
     import { getModalStore } from "@skeletonlabs/skeleton";
     import CreateStoreForm from "../../components/CreateStoreForm.svelte";
 
-    import { createStore, fetchStores } from "$lib";
-    import type { CreateStoreFormResult } from "$lib";
+    import { createStore, fetchStores } from "$lib/community";
+    import type { CreateStoreFormResult } from "$lib/community";
     import { stores } from "../../store";
     import StoreSection from "../../components/StoreSection.svelte";
 

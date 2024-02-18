@@ -69,8 +69,8 @@
 
 <!-- Market coupons -->
 <div class="grid grid-cols-2 gap-4 px-4 py-4 mt-2">
-    {#each $marketCoupons as [coupon, tokenAccount] (coupon.publicKey)}
-        <MarketCouponCard {coupon} {tokenAccount}></MarketCouponCard>
+    {#each $marketCoupons as [coupon, balance] (coupon.publicKey)}
+        <MarketCouponCard {coupon} {balance}></MarketCouponCard>
     {/each}
 </div>
 <div class="px-4 py-4 mt-2">

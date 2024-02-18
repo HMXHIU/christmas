@@ -5,11 +5,7 @@
         fetchCouponMetadata,
         fetchStoreMetadata,
     } from "$lib/community";
-    import type {
-        Account,
-        Coupon,
-        TokenAccount,
-    } from "$lib/anchorClient/types";
+    import type { Account, Coupon } from "$lib/anchorClient/types";
     import { calculateDistance, timeStampToDate } from "$lib/utils";
     import BaseCouponCard from "./BaseCouponCard.svelte";
     import { userDeviceClient } from "../store";
@@ -21,7 +17,7 @@
     const modalStore = getModalStore();
 
     export let coupon: Account<Coupon>;
-    export let tokenAccount: TokenAccount;
+    export let balance: number;
 
     let fetchMetadataAsync = fetchMetadata();
     async function fetchMetadata() {
@@ -52,7 +48,7 @@
             component: c,
             meta: {
                 coupon,
-                tokenAccount,
+                balance,
                 couponMetadata,
                 storeMetadata,
                 distance,

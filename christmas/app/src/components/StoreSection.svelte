@@ -12,7 +12,7 @@
     import { getModalStore } from "@skeletonlabs/skeleton";
     import type { ModalSettings } from "@skeletonlabs/skeleton";
     import CreateCouponForm from "./CreateCouponForm.svelte";
-    import { mintedCoupons, storesMetadata } from "../store";
+    import { mintedCoupons, storesMetadata, userDeviceClient } from "../store";
     import MintedCouponCard from "./MintedCouponCard.svelte";
     import { PublicKey } from "@solana/web3.js";
 
@@ -44,7 +44,15 @@
                 // Refetch coupons
                 await fetchMintedCouponSupplyBalance(store.publicKey);
                 // Refetch market place coupons
-                await fetchMarketCoupons();
+                if (
+                    $userDeviceClient?.location?.country?.code &&
+                    $userDeviceClient?.location?.geohash
+                ) {
+                    await fetchMarketCoupons({
+                        region: $userDeviceClient?.location?.country?.code,
+                        geohash: $userDeviceClient?.location?.geohash,
+                    });
+                }
             }
         });
     }
@@ -55,7 +63,15 @@
         // Refetch coupons
         await fetchMintedCouponSupplyBalance(store.publicKey);
         // Refetch market place coupons
-        await fetchMarketCoupons();
+        if (
+            $userDeviceClient?.location?.country?.code &&
+            $userDeviceClient?.location?.geohash
+        ) {
+            await fetchMarketCoupons({
+                region: $userDeviceClient?.location?.country?.code,
+                geohash: $userDeviceClient?.location?.geohash,
+            });
+        }
     }
 </script>
 
