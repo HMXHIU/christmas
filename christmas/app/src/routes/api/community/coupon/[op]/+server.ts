@@ -7,6 +7,7 @@ import {
     serverAnchorClient,
 } from "$lib/server";
 import { ObjectStorage } from "$lib/server/objectStorage.js";
+import { stringToUint8Array } from "$lib/utils.js";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { error, json } from "@sveltejs/kit";
 import yup from "yup";
@@ -47,8 +48,8 @@ const CreateCouponParams = yup.object().shape({
 });
 
 const MarketCouponParams = yup.object().shape({
-    region: yup.array().of(yup.number().required()).required(),
-    geohash: yup.array().of(yup.number().required()).required(),
+    region: yup.string().required(),
+    geohash: yup.string().required(),
 });
 
 export async function POST(event) {
@@ -264,11 +265,14 @@ export async function GET(event) {
 
     // Market Coupons (api/community/coupon/market?region=<region>&geohash=<geohash>)
     else if (op === "market") {
+        const { region, geohash } = await MarketCouponParams.validate({
+            region: url.searchParams.get("region"),
+            geohash: url.searchParams.get("geohash"),
+        });
+
         const coupons = await serverAnchorClient.getCoupons({
-            ...(await MarketCouponParams.validate({
-                region: url.searchParams.get("region"),
-                geohash: url.searchParams.get("geohash"),
-            })),
+            region: Array.from(stringToUint8Array(region)),
+            geohash: Array.from(stringToUint8Array(geohash)),
             date: new Date(), // current date
         });
         return json(coupons);

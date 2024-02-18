@@ -1,39 +1,16 @@
-import { AnchorClient } from "../app/src/lib/anchorClient";
-import * as anchor from "@coral-xyz/anchor";
-
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-import { assert, expect } from "chai";
-
-import { login } from "./utils";
-import { getCookiesFromResponse } from "../app/tests/utils";
-import { Keypair } from "@solana/web3.js";
-import { signUp } from "../app/src/lib/crossover";
+import { expect } from "chai";
+import { getRandomRegion, getRandomAnchorClient } from "./utils";
 
 describe("Test User", () => {
-    // Create user keypair and anchor client
-    const name = "John Doe";
-    const userKeypair = Keypair.generate();
-    let anchorClient = new AnchorClient({
-        keypair: userKeypair,
-    });
+    const [userKeypair, anchorClient] = getRandomAnchorClient();
+    const region = getRandomRegion();
 
-    // Store cookies for login session
-    let cookies;
+    it("Test User", async () => {
+        const tx = await anchorClient.createUser({
+            region,
+            uri: "",
+        });
 
-    it("Test Login", async () => {
-        const response = await login(userKeypair);
-        cookies = getCookiesFromResponse(response);
-    });
-
-    it("Test Fail Sign Up", async () => {
-        expect(signUp({ name }, { Cookie: cookies })).to.be.rejectedWith(
-            `User account ${userKeypair.publicKey.toBase58()} does not exist`
-        );
-    });
-
-    it("Test Sign Up", async () => {
-        // Create user
+        expect(tx.result.err).to.be.null;
     });
 });

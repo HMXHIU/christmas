@@ -477,7 +477,7 @@ export class AnchorClient {
         region: number[];
         geohash: number[];
         date?: Date;
-    }): Promise<[Account<Coupon>, TokenAccount][]> {
+    }): Promise<[Account<Coupon>, number][]> {
         // get token accounts owned by
         const regionMarketPda = this.getRegionMarketPda(region)[0];
         const tokenAccounts = await this.connection.getParsedProgramAccounts(
@@ -537,7 +537,11 @@ export class AnchorClient {
                         timeStampToDate(xs[0].account.validFrom) <= today &&
                         timeStampToDate(xs[0].account.validTo) >= today
                     ) {
-                        return [xs[0], tokenAccount];
+                        let tokenAmount = (
+                            tokenAccount.account.data as ParsedAccountData
+                        ).parsed.info.tokenAmount.uiAmount;
+
+                        return [xs[0], tokenAmount];
                     } else {
                         throw new Error("Coupon expired");
                     }
@@ -548,14 +552,13 @@ export class AnchorClient {
                 if (result.status !== "fulfilled") {
                     console.warn(result.reason);
                 }
-
                 return result && result.status === "fulfilled";
             })
             .map(
                 (result) =>
                     (
                         result as PromiseFulfilledResult<
-                            [Account<Coupon>, TokenAccount]
+                            [Account<Coupon>, number]
                         >
                     ).value,
             );

@@ -9,6 +9,7 @@ import {
     createStore,
     fetchClaimedCoupons,
     fetchCouponMetadata,
+    fetchMarketCoupons,
     fetchMintedCouponSupplyBalance,
     fetchStoreMetadata,
     fetchStores,
@@ -74,7 +75,6 @@ test("Test Coupon", async () => {
             wallet: userWallet,
         },
     );
-    console.log(tx.result.err);
     expect(tx.result.err).toBeNull();
 
     // Fetch store
@@ -148,6 +148,29 @@ test("Test Coupon", async () => {
     );
     expect(tx.result.err).toBeNull();
 
+    // Fetch Market Coupons
+    const marketCoupons = await fetchMarketCoupons(
+        {
+            region: Array.from(stringToUint8Array(regionCode)),
+            geohash: Array.from(stringToUint8Array(geohash)),
+        },
+        { Cookie: cookies },
+    );
+    expect(marketCoupons.length).greaterThanOrEqual(1);
+
+    // get the last coupon in marketCoupons
+    [coupon, supply] = marketCoupons[0];
+    expect(supply).toBe(2);
+    expect(coupon.account).toMatchObject({
+        name: "coupon",
+        updateAuthority: user.publicKey.toBase58(),
+        store: stores[0].publicKey,
+        region: stringToUint8Array(regionCode),
+        geohash: stringToUint8Array(geohash),
+        validFrom: new BN(beforeToday.getTime()),
+        validTo: new BN(afterToday.getTime()),
+    });
+
     // Fetch coupon supply balance
     coupons = await fetchMintedCouponSupplyBalance(stores[0].publicKey, {
         Cookie: cookies,
@@ -207,6 +230,4 @@ test("Test Coupon", async () => {
     // Check claimed coupons after redeeming
     claimedCoupons = await fetchClaimedCoupons({ Cookie: cookies });
     expect(claimedCoupons.length).toBe(0);
-
-    // TODO: test fetchMarketCoupons
 });

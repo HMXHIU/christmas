@@ -8,14 +8,14 @@
         initializeStores,
     } from "@skeletonlabs/skeleton";
     import Wallet from "../components/Wallet.svelte";
-    import { userDeviceClient, anchorClient } from "../store";
+    import { userDeviceClient, token } from "../store";
     import { onMount } from "svelte";
     import {
         fetchClaimedCoupons,
         fetchMarketCoupons,
         fetchStores,
         verifyRedemption,
-    } from "$lib";
+    } from "$lib/community";
     import { UserDeviceClient } from "$lib/clients/user-device-client/userDeviceClient";
     import type { ModalSettings } from "@skeletonlabs/skeleton";
     import QrScanner from "../components/QRScanner.svelte";
@@ -35,12 +35,12 @@
     onMount(async () => {
         // fetch market coupons when userDeviceClient and anchorClient are ready
         userDeviceClient.subscribe(async (dc) => {
-            if (dc && $anchorClient) {
+            if (dc && $token) {
                 await fetchUserContent();
             }
         });
-        anchorClient.subscribe(async (ac) => {
-            if (ac && $userDeviceClient) {
+        token.subscribe(async (t) => {
+            if (t && $userDeviceClient) {
                 await fetchUserContent();
             }
         });

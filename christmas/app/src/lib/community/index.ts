@@ -82,29 +82,39 @@ export interface CreateUserFormResult {
     region: string;
 }
 
-async function fetchMarketCoupons(): Promise<
-    [Account<Coupon>, TokenAccount][]
-> {
+async function fetchMarketCoupons(
+    {
+        region,
+        geohash,
+    }: {
+        region: number[] | string;
+        geohash: number[] | string;
+    },
+    headers: HeadersInit = {},
+): Promise<[Account<Coupon>, number][]> {
     const dc = get(userDeviceClient);
 
-    if (dc?.location?.country?.code) {
-        const region = dc.location.country.code;
-        const geoHash = dc.location.geohash;
+    region =
+        typeof region === "string" ? region : String.fromCharCode(...region);
 
-        const coupons = await fetch(
-            `/api/community/coupons/market?region=${region}&geoHash=${geoHash}`,
+    geohash =
+        typeof geohash === "string" ? geohash : String.fromCharCode(...geohash);
+
+    const coupons = (
+        await fetch(
+            `${PUBLIC_HOST || ""}/api/community/coupon/market?region=${region}&geohash=${geohash}`,
+            { headers },
         ).then(async (response) => {
             if (!response.ok) {
                 throw new Error(await response.text());
             }
             return response.json();
-        });
+        })
+    ).map(cleanCouponBalance);
 
-        // Update `$ marketCoupons`
-        marketCoupons.update(() => coupons);
-        return coupons;
-    }
-    return [];
+    // Update `$marketCoupons`
+    marketCoupons.update(() => coupons);
+    return coupons;
 }
 
 async function fetchStoreMetadata(

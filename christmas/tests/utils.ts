@@ -1,8 +1,9 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Christmas } from "../target/types/christmas";
 import { Keypair } from "@solana/web3.js";
-import { createSignInMessage } from "@solana/wallet-standard-util";
-import nacl from "tweetnacl";
+import { COUNTRY_DETAILS } from "../app/src/lib/clients/user-device-client/defs";
+import { stringToUint8Array } from "../app/src/lib/utils";
+import { AnchorClient } from "../app/src/lib/anchorClient";
 
 export async function requestAirdrop(
     publicKeys: anchor.web3.PublicKey[],
@@ -69,29 +70,18 @@ export function getRandomDate(startYear: number, endYear: number): Date {
     return new Date(Date.UTC(year, month, day));
 }
 
-/**
- * Login without a browser, without SIWS (required for tests)
- */
-export async function login(user: Keypair): Promise<Response> {
-    const solanaSignInInput = await (
-        await fetch("http://localhost:5173/api/auth/siws")
-    ).json();
-    const signInMessage = createSignInMessage(solanaSignInInput);
-    const solanaSignInOutput = {
-        address: user.publicKey.toBase58(),
-        signature: Buffer.from(
-            nacl.sign.detached(signInMessage, user.secretKey)
-        ),
-        signedMessage: Buffer.from(signInMessage),
-    };
-    return await fetch("http://localhost:5173/api/auth/login", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            solanaSignInInput,
-            solanaSignInOutput,
-        }),
+export function getRandomRegion(): number[] {
+    const regionIdx = Math.floor(
+        Math.random() * Object.values(COUNTRY_DETAILS).length
+    );
+    const regionCode = Object.values(COUNTRY_DETAILS)[regionIdx][0];
+    return Array.from(stringToUint8Array(regionCode));
+}
+
+export function getRandomAnchorClient(): [Keypair, AnchorClient] {
+    const kp = Keypair.generate();
+    let anchorClient = new AnchorClient({
+        keypair: kp,
     });
+    return [kp, anchorClient];
 }

@@ -1,5 +1,5 @@
 import type { Account, Store, User } from "$lib/anchorClient/types";
-import type { Coupon } from "$lib/server/anchorClient/types";
+import type { Coupon } from "$lib/anchorClient/types";
 import { cleanString } from "$lib/utils";
 import { BN } from "bn.js";
 
