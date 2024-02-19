@@ -1,27 +1,23 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Christmas } from "../target/types/christmas";
-import { Keypair } from "@solana/web3.js";
+import { Connection, Keypair } from "@solana/web3.js";
 import { COUNTRY_DETAILS } from "../app/src/lib/clients/user-device-client/defs";
 import { stringToUint8Array } from "../app/src/lib/utils";
 import { AnchorClient } from "../app/src/lib/anchorClient";
+import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 
 export async function requestAirdrop(
     publicKeys: anchor.web3.PublicKey[],
-    amount: number
+    amount: number,
+    connection: Connection
 ) {
-    const provider = anchor.getProvider();
-
     // Airdrop in parallel
     await Promise.all(
         publicKeys.map((publicKey) => {
             return new Promise<void>(async (resolve) => {
-                const sig = await provider.connection.requestAirdrop(
-                    publicKey,
-                    amount
-                );
-                const blockHash =
-                    await provider.connection.getLatestBlockhash();
-                await provider.connection.confirmTransaction({
+                const sig = await connection.requestAirdrop(publicKey, amount);
+                const blockHash = await connection.getLatestBlockhash();
+                await connection.confirmTransaction({
                     blockhash: blockHash.blockhash,
                     lastValidBlockHeight: blockHash.lastValidBlockHeight,
                     signature: sig,
@@ -82,6 +78,7 @@ export function getRandomAnchorClient(): [Keypair, AnchorClient] {
     const kp = Keypair.generate();
     let anchorClient = new AnchorClient({
         keypair: kp,
+        wallet: new NodeWallet(kp),
     });
     return [kp, anchorClient];
 }

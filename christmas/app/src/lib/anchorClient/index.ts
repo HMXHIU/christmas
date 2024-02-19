@@ -57,6 +57,7 @@ import {
     getDateWithinRangeFilterCombinations,
     getMarketCouponsFilterCombinations,
 } from "./utils";
+import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 
 /**
  * Do not instantiate this on the client side, only on the server side.
@@ -67,27 +68,33 @@ export class AnchorClient {
     connection: Connection;
     provider: Provider;
     program: Program<Christmas>;
-    anchorWallet: AnchorWallet;
+    wallet: AnchorWallet | NodeWallet;
     keypair: Keypair;
 
     constructor({
         programId,
         cluster,
         keypair,
+        wallet,
     }: {
         keypair: Keypair;
         programId?: PublicKey;
         cluster?: string;
+        wallet?: AnchorWallet | NodeWallet;
     }) {
-        this.anchorWallet = new AnchorWallet(keypair);
+        this.wallet = wallet || new AnchorWallet(keypair);
         this.keypair = keypair;
+
+        if (!this.wallet?.publicKey.equals(keypair.publicKey)) {
+            throw new Error("Wallet and keypair must have the same public key");
+        }
 
         this.cluster = cluster || "http://127.0.0.1:8899";
         this.connection = new Connection(this.cluster, "confirmed");
 
         this.provider = new AnchorProvider(
             this.connection,
-            this.anchorWallet,
+            this.wallet,
             AnchorProvider.defaultOptions(),
         );
         this.programId = programId || new PublicKey(PROGRAM_ID);
@@ -140,8 +147,8 @@ export class AnchorClient {
         mint: Keypair;
         validFrom: Date;
         validTo: Date;
-        wallet?: PublicKey | null; // the user pubkey (defaults to this.anchorWallet.publicKey)
-        payer?: PublicKey | null; // the payer pubkey (defaults to this.anchorWallet.publicKey)
+        wallet?: PublicKey | null; // the user pubkey (defaults to this.wallet.publicKey)
+        payer?: PublicKey | null; // the payer pubkey (defaults to this.wallet.publicKey)
     }): Promise<TransactionInstruction> {
         // calculate region market accounts
         const [regionMarketPda, regionMarketTokenAccountPda] =
@@ -150,8 +157,8 @@ export class AnchorClient {
         // calculate couponPda
         const [couponPda, _] = this.getCouponPda(mint.publicKey);
 
-        const signer = wallet || this.anchorWallet.publicKey;
-        payer = payer || this.anchorWallet.publicKey;
+        const signer = wallet || this.wallet.publicKey;
+        payer = payer || this.wallet.publicKey;
 
         console.log(`
         Creating coupon Ix:
@@ -249,8 +256,8 @@ export class AnchorClient {
     async redeemCouponIx({
         coupon,
         mint,
-        wallet, // wallet to redeem to (defaults to this.anchorWallet.publicKey)
-        payer, // payer of the transaction (defaults to this.anchorWallet.publicKey)
+        wallet, // wallet to redeem to (defaults to this.wallet.publicKey)
+        payer, // payer of the transaction (defaults to this.wallet.publicKey)
         numTokens,
     }: {
         coupon: PublicKey;
@@ -277,8 +284,8 @@ export class AnchorClient {
                 mint: mint,
                 user: userPda,
                 userTokenAccount: userTokenAccount,
-                signer: wallet || this.anchorWallet.publicKey,
-                payer: payer || this.anchorWallet.publicKey,
+                signer: wallet || this.wallet.publicKey,
+                payer: payer || this.wallet.publicKey,
                 tokenProgram: TOKEN_PROGRAM_ID,
             })
             .instruction();
@@ -688,8 +695,8 @@ export class AnchorClient {
         coupon: PublicKey;
         region: number[];
         numTokens: number;
-        wallet?: PublicKey | null; // the user pubkey (defaults to this.anchorWallet.publicKey)
-        payer?: PublicKey | null; // the payer pubkey (defaults to this.anchorWallet.publicKey)
+        wallet?: PublicKey | null; // the user pubkey (defaults to this.wallet.publicKey)
+        payer?: PublicKey | null; // the payer pubkey (defaults to this.wallet.publicKey)
     }): Promise<TransactionInstruction> {
         // the region is the coupon.region of the respective mint
         const [regionMarketPda, regionMarketTokenAccountPda] =
@@ -706,8 +713,8 @@ export class AnchorClient {
                 systemProgram: SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                signer: wallet || this.anchorWallet.publicKey,
-                payer: payer || this.anchorWallet.publicKey,
+                signer: wallet || this.wallet.publicKey,
+                payer: payer || this.wallet.publicKey,
             })
             .instruction();
     }
@@ -722,11 +729,14 @@ export class AnchorClient {
         region,
         numTokens,
     }: {
-        mint: PublicKey;
-        coupon: PublicKey;
+        mint: PublicKey | string;
+        coupon: PublicKey | string;
         region: number[];
         numTokens: number;
     }): Promise<TransactionResult> {
+        mint = typeof mint === "string" ? new PublicKey(mint) : mint;
+        coupon = typeof coupon === "string" ? new PublicKey(coupon) : coupon;
+
         // mint numTokens to region market
         const ix = await this.mintToMarketIx({
             mint,
@@ -766,8 +776,8 @@ export class AnchorClient {
     async claimFromMarketIx({
         mint,
         numTokens,
-        wallet, // user claiming the coupon (defaults to this.anchorWallet.publicKey)
-        payer, // the payer of the transaction (defaults to this.anchorWallet.publicKey)
+        wallet, // user claiming the coupon (defaults to this.wallet.publicKey)
+        payer, // the payer of the transaction (defaults to this.wallet.publicKey)
     }: {
         mint: PublicKey;
         numTokens: number;
@@ -806,8 +816,8 @@ export class AnchorClient {
             coupon: ${couponPda}
             regionMarket: ${regionMarketPda}
             regionMarketTokenAccount: ${regionMarketTokenAccountPda}
-            signer: ${wallet || this.anchorWallet.publicKey}
-            payer: ${payer || this.anchorWallet.publicKey}
+            signer: ${wallet || this.wallet.publicKey}
+            payer: ${payer || this.wallet.publicKey}
         `);
 
         // Build the instruction for the claimFromMarket transaction.
@@ -820,8 +830,8 @@ export class AnchorClient {
                 regionMarket: regionMarketPda,
                 regionMarketTokenAccount: regionMarketTokenAccountPda,
                 mint: mint,
-                signer: wallet || this.anchorWallet.publicKey,
-                payer: payer || this.anchorWallet.publicKey,
+                signer: wallet || this.wallet.publicKey,
+                payer: payer || this.wallet.publicKey,
                 systemProgram: SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -843,9 +853,7 @@ export class AnchorClient {
         return PublicKey.findProgramAddressSync(
             [
                 utils.bytes.utf8.encode("store"),
-                owner
-                    ? owner.toBuffer()
-                    : this.anchorWallet.publicKey.toBuffer(),
+                owner ? owner.toBuffer() : this.wallet.publicKey.toBuffer(),
                 id.toArrayLike(Buffer, "be", 8),
             ],
             this.program.programId,
@@ -866,8 +874,8 @@ export class AnchorClient {
         region: number[];
         geohash: number[];
         storeId?: BN;
-        wallet?: PublicKey | null; // the user pubkey (defaults to this.anchorWallet.publicKey)
-        payer?: PublicKey | null; // the payer pubkey (defaults to this.anchorWallet.publicKey)
+        wallet?: PublicKey | null; // the user pubkey (defaults to this.wallet.publicKey)
+        payer?: PublicKey | null; // the payer pubkey (defaults to this.wallet.publicKey)
     }): Promise<TransactionInstruction> {
         storeId = storeId || (await this.getAvailableStoreId());
         const storePda = this.getStorePda(storeId, wallet)[0];
@@ -883,8 +891,8 @@ export class AnchorClient {
             throw Error(`Uri exceeds maximum length of ${URI_SIZE}`);
         }
 
-        let signer = wallet || this.anchorWallet.publicKey;
-        payer = payer || this.anchorWallet.publicKey;
+        let signer = wallet || this.wallet.publicKey;
+        payer = payer || this.wallet.publicKey;
 
         console.log(`
         Creating storeIx:
@@ -954,7 +962,7 @@ export class AnchorClient {
     async getStores(wallet?: PublicKey): Promise<Account<Store>[]> {
         const owner = wallet
             ? wallet.toBase58()
-            : this.anchorWallet.publicKey.toBase58();
+            : this.wallet.publicKey.toBase58();
 
         return this.program.account.store.all([
             {
@@ -985,9 +993,7 @@ export class AnchorClient {
         return PublicKey.findProgramAddressSync(
             [
                 utils.bytes.utf8.encode("user"),
-                wallet
-                    ? wallet.toBuffer()
-                    : this.anchorWallet.publicKey.toBuffer(),
+                wallet ? wallet.toBuffer() : this.wallet.publicKey.toBuffer(),
             ],
             this.program.programId,
         );
@@ -1036,8 +1042,8 @@ export class AnchorClient {
     }: {
         region: number[];
         uri: string;
-        wallet?: PublicKey | null; // the user pubkey (defaults to this.anchorWallet.publicKey)
-        payer?: PublicKey | null; // the payer pubkey (defaults to this.anchorWallet.publicKey)
+        wallet?: PublicKey | null; // the user pubkey (defaults to this.wallet.publicKey)
+        payer?: PublicKey | null; // the payer pubkey (defaults to this.wallet.publicKey)
     }): Promise<TransactionInstruction> {
         const [pda, _] = this.getUserPda(wallet);
 
@@ -1045,8 +1051,8 @@ export class AnchorClient {
             .createUser(region, uri)
             .accounts({
                 user: pda,
-                signer: wallet || this.anchorWallet.publicKey,
-                payer: payer || this.anchorWallet.publicKey,
+                signer: wallet || this.wallet.publicKey,
+                payer: payer || this.wallet.publicKey,
                 systemProgram: SystemProgram.programId,
             })
             .instruction();
@@ -1072,8 +1078,8 @@ export class AnchorClient {
     }: {
         region: number[];
         uri: string;
-        wallet?: PublicKey | null; // the user pubkey (defaults to this.anchorWallet.publicKey)
-        payer?: PublicKey | null; // the payer pubkey (defaults to this.anchorWallet.publicKey)
+        wallet?: PublicKey | null; // the user pubkey (defaults to this.wallet.publicKey)
+        payer?: PublicKey | null; // the payer pubkey (defaults to this.wallet.publicKey)
     }): Promise<TransactionInstruction> {
         const [pda, _] = this.getUserPda(wallet);
 
@@ -1081,8 +1087,8 @@ export class AnchorClient {
             .updateUser(region, uri)
             .accounts({
                 user: pda,
-                signer: wallet || this.anchorWallet.publicKey,
-                payer: payer || this.anchorWallet.publicKey,
+                signer: wallet || this.wallet.publicKey,
+                payer: payer || this.wallet.publicKey,
             })
             .instruction();
     }
@@ -1106,7 +1112,7 @@ export class AnchorClient {
                     .initialize()
                     .accounts({
                         programState: programStatePda,
-                        signer: this.anchorWallet.publicKey,
+                        signer: this.wallet.publicKey,
                         systemProgram: SystemProgram.programId,
                     })
                     .instruction(),
@@ -1164,7 +1170,7 @@ export class AnchorClient {
         ).blockhash;
 
         // set payer
-        tx.feePayer = this.anchorWallet.publicKey;
+        tx.feePayer = this.wallet.publicKey;
 
         // additional signers if required
         if (signers) {
@@ -1191,9 +1197,7 @@ export class AnchorClient {
         skipSign = skipSign || false;
 
         // sign
-        const signedTx = skipSign
-            ? tx
-            : await this.anchorWallet.signTransaction(tx);
+        const signedTx = skipSign ? tx : await this.wallet.signTransaction(tx);
 
         // send transaction
         const signature = await this.connection.sendRawTransaction(
@@ -1207,7 +1211,7 @@ export class AnchorClient {
 
     async requestAirdrop(amount: number): Promise<TransactionResult> {
         const signature = await this.connection.requestAirdrop(
-            this.anchorWallet.publicKey,
+            this.wallet.publicKey,
             amount,
         );
         // confirm transaction

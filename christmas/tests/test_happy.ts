@@ -7,7 +7,7 @@ import { BN } from "@coral-xyz/anchor";
 import { cleanString, stringToUint8Array } from "../app/src/lib/utils";
 import { getMint } from "@solana/spl-token";
 import { generateQRCodeURL, extractQueryParams } from "../app/src/lib/utils";
-import { getRandomDate } from "./utils";
+import { getRandomAnchorClient, getRandomDate } from "./utils";
 import { Location } from "../app/src/lib/clients/user-device-client/types";
 import { COUNTRY_DETAILS } from "../app/src/lib/clients/user-device-client/defs";
 import { PROGRAM_ID } from "../app/src/lib/anchorClient/defs";
@@ -45,6 +45,7 @@ describe("Test client", () => {
 
     // store
     let storeId: BN;
+    let storePda: PublicKey;
     const storeName = "My store";
     const storeUri = "https://example.com";
 
@@ -70,18 +71,10 @@ describe("Test client", () => {
     `);
 
     // users
-    const sellerKeypair = web3.Keypair.generate();
-    const buyerKeypair = web3.Keypair.generate();
-    let sellerClient: AnchorClient;
-    let buyerClient: AnchorClient;
+    const [sellerKeypair, sellerClient] = getRandomAnchorClient();
+    const [buyerKeypair, buyerClient] = getRandomAnchorClient();
 
     it("Initialize AnchorClients", async () => {
-        sellerClient = new AnchorClient({
-            keypair: sellerKeypair,
-        });
-        buyerClient = new AnchorClient({
-            keypair: buyerKeypair,
-        });
         expect(sellerClient.cluster).to.equal("http://127.0.0.1:8899");
         assert.ok(sellerClient.programId.equals(new PublicKey(PROGRAM_ID)));
         assert.ok(
@@ -159,24 +152,24 @@ describe("Test client", () => {
         assert.equal(cleanString(store.uri), storeUri);
         expect(store.geohash).to.eql(geohash);
         assert.ok(store.id.eq(storeId));
-        assert.ok(store.owner.equals(sellerClient.anchorWallet.publicKey));
+        assert.ok(store.owner.equals(sellerClient.wallet.publicKey));
 
         // get store by owner
         store = await sellerClient.getStore(
             storeId,
-            sellerClient.anchorWallet.publicKey
+            sellerClient.wallet.publicKey
         );
         assert.equal(cleanString(store.name), storeName);
         expect(store.region).to.eql(region);
         assert.equal(cleanString(store.uri), storeUri);
         expect(store.geohash).to.eql(geohash);
         assert.ok(store.id.eq(storeId));
-        assert.ok(store.owner.equals(sellerClient.anchorWallet.publicKey));
+        assert.ok(store.owner.equals(sellerClient.wallet.publicKey));
     });
 
     it("Create Coupon", async () => {
         // get store
-        let [store, _] = await sellerClient.getStorePda(storeId);
+        storePda = (await sellerClient.getStorePda(storeId))[0];
 
         // create coupon (within validity period)
         assert.isNull(
@@ -184,7 +177,7 @@ describe("Test client", () => {
                 await sellerClient.createCoupon({
                     geohash,
                     region,
-                    store,
+                    store: storePda,
                     name: couponName,
                     uri: couponUri,
                     validFrom,
@@ -194,7 +187,9 @@ describe("Test client", () => {
         );
 
         // check if coupon is created
-        const coupons = await sellerClient.getMintedCoupons();
+        const coupons = await sellerClient.getMintedCoupons({
+            store: storePda,
+        });
         assert.ok(coupons.length === 1);
         const [coupon, supply, balance] = coupons[0];
 
@@ -203,18 +198,18 @@ describe("Test client", () => {
         assert.equal(cleanString(coupon.account.uri), couponUri);
         assert.equal(cleanString(coupon.account.name), couponName);
         assert.ok(
-            coupon.account.updateAuthority.equals(
-                sellerClient.anchorWallet.publicKey
-            )
+            coupon.account.updateAuthority.equals(sellerClient.wallet.publicKey)
         );
-        assert.ok(coupon.account.store.equals(store));
+        assert.ok(coupon.account.store.equals(storePda));
     });
 
     it("Mint coupon", async () => {
         const numTokens = 10;
 
         // check mint supply before
-        const coupons = await sellerClient.getMintedCoupons();
+        const coupons = await sellerClient.getMintedCoupons({
+            store: storePda,
+        });
         assert.ok(coupons.length === 1);
         const [coupon, supply, _balance] = coupons[0]; // mint the first coupon
         assert.equal(supply, 0);
@@ -289,7 +284,9 @@ describe("Test client", () => {
 
     it("Claim from market", async () => {
         // get coupon from seller
-        const coupons = await sellerClient.getMintedCoupons();
+        const coupons = await sellerClient.getMintedCoupons({
+            store: storePda,
+        });
         assert.ok(coupons.length === 1);
         const [coupon, supply, balance] = coupons[0];
 
@@ -328,7 +325,9 @@ describe("Test client", () => {
 
     it("Redeem coupon", async () => {
         // get coupon
-        const coupons = await sellerClient.getMintedCoupons();
+        const coupons = await sellerClient.getMintedCoupons({
+            store: storePda,
+        });
         assert.ok(coupons.length === 1);
         const [coupon, supply, balance] = coupons[0];
 
@@ -361,7 +360,7 @@ describe("Test client", () => {
         // test redemption QR code
         const redemptionQRCodeURL = generateQRCodeURL({
             signature: transactionResult.signature,
-            wallet: buyerClient.anchorWallet.publicKey.toString(),
+            wallet: buyerClient.wallet.publicKey.toString(),
             mint: coupon.account.mint.toString(),
             numTokens: String(1),
         });
@@ -371,14 +370,14 @@ describe("Test client", () => {
                 coupon.account.mint
             }&numTokens=${1}&signature=${
                 transactionResult.signature
-            }&wallet=${buyerClient.anchorWallet.publicKey.toString()}`
+            }&wallet=${buyerClient.wallet.publicKey.toString()}`
         );
 
         // test extract redemption parameters
         const redemptionParams = extractQueryParams(redemptionQRCodeURL);
         expect(redemptionParams).to.deep.equal({
             signature: String(transactionResult.signature),
-            wallet: buyerClient.anchorWallet.publicKey.toString(),
+            wallet: buyerClient.wallet.publicKey.toString(),
             mint: String(coupon.account.mint),
             numTokens: String(1),
         });
