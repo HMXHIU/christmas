@@ -22,7 +22,6 @@ import { stringToUint8Array } from "$lib/utils";
 import { COUNTRY_DETAILS } from "$lib/clients/user-device-client/defs";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { BN } from "bn.js";
-import exp from "constants";
 
 test("Test Coupon", async () => {
     const user = Keypair.generate();

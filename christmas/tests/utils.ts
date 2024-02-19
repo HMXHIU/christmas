@@ -1,5 +1,4 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Christmas } from "../target/types/christmas";
 import { Connection, Keypair } from "@solana/web3.js";
 import { COUNTRY_DETAILS } from "../app/src/lib/clients/user-device-client/defs";
 import { stringToUint8Array } from "../app/src/lib/utils";
@@ -26,36 +25,6 @@ export async function requestAirdrop(
             });
         })
     );
-}
-
-export async function createUser(
-    wallet: anchor.web3.Keypair,
-    region: number[],
-    uri: string
-): Promise<[anchor.web3.PublicKey, number]> {
-    const program = anchor.workspace.Christmas as anchor.Program<Christmas>;
-
-    // Calculate the PDA of the user
-    const [pda, bump] = anchor.web3.PublicKey.findProgramAddressSync(
-        [
-            Buffer.from(anchor.utils.bytes.utf8.encode("user")),
-            wallet.publicKey.toBuffer(),
-        ],
-        program.programId
-    );
-
-    // Create user
-    const tx = await program.methods
-        .createUser(region, uri)
-        .accounts({
-            user: pda,
-            signer: wallet.publicKey,
-            systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([wallet])
-        .rpc();
-
-    return [pda, bump];
 }
 
 export function getRandomDate(startYear: number, endYear: number): Date {

@@ -1,14 +1,11 @@
 import { web3 } from "@coral-xyz/anchor";
-import ngeohash from "ngeohash";
 import { assert, expect } from "chai";
-import { AnchorClient } from "../app/src/lib/anchorClient";
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
 import { cleanString, stringToUint8Array } from "../app/src/lib/utils";
 import { getMint } from "@solana/spl-token";
 import { generateQRCodeURL, extractQueryParams } from "../app/src/lib/utils";
-import { getRandomAnchorClient, getRandomDate } from "./utils";
-import { Location } from "../app/src/lib/clients/user-device-client/types";
+import { getRandomAnchorClient, getRandomDate, getRandomRegion } from "./utils";
 import { COUNTRY_DETAILS } from "../app/src/lib/clients/user-device-client/defs";
 import { PROGRAM_ID } from "../app/src/lib/anchorClient/defs";
 import { PublicKey } from "@solana/web3.js";
@@ -16,32 +13,7 @@ import { PublicKey } from "@solana/web3.js";
 describe("Test client", () => {
     // locations
     const geohash = Array.from(stringToUint8Array("gbsuv7"));
-    const regionIdx = Math.floor(
-        Math.random() * Object.values(COUNTRY_DETAILS).length
-    );
-    const regionCode = Object.values(COUNTRY_DETAILS)[regionIdx][0];
-    const country = Object.values(COUNTRY_DETAILS)[regionIdx][1];
-    const region = Array.from(stringToUint8Array(regionCode));
-
-    const { latitude, longitude } = ngeohash.decode(
-        String.fromCharCode(...geohash)
-    );
-    const location: Location = {
-        geohash,
-        country: {
-            code: region,
-            name: country,
-        },
-        geolocationCoordinates: {
-            latitude,
-            longitude,
-            altitude: null,
-            altitudeAccuracy: null,
-            heading: null,
-            speed: null,
-            accuracy: null,
-        },
-    };
+    const region = getRandomRegion();
 
     // store
     let storeId: BN;
@@ -63,7 +35,6 @@ describe("Test client", () => {
     console.log(`
 
         region: ${region}
-        country: ${country}
         validFrom: ${validFrom}
         validTo: ${validTo}
         today: ${today}

@@ -1,6 +1,4 @@
 import { web3 } from "@coral-xyz/anchor";
-import ngeohash from "ngeohash";
-import { AnchorClient } from "../app/src/lib/anchorClient";
 import * as anchor from "@coral-xyz/anchor";
 import { cleanString, stringToUint8Array } from "../app/src/lib/utils";
 
@@ -9,13 +7,12 @@ import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 import { assert, expect } from "chai";
 import { PROGRAM_ID } from "../app/src/lib/anchorClient/defs";
+import { getRandomAnchorClient } from "./utils";
 
 describe("Test Unhappy", () => {
     // users
-    const sellerKeypair = web3.Keypair.generate();
-    const buyerKeypair = web3.Keypair.generate();
-    let sellerClient: AnchorClient;
-    let buyerClient: AnchorClient;
+    const [sellerKeypair, sellerClient] = getRandomAnchorClient();
+    const [buyerKeypair, buyerClient] = getRandomAnchorClient();
 
     // store
     let store: web3.PublicKey;
@@ -26,11 +23,7 @@ describe("Test Unhappy", () => {
     const geoSouth = Array.from(stringToUint8Array("w21z1x"));
     const geoEast = Array.from(stringToUint8Array("w21z6m"));
     const geoWest = Array.from(stringToUint8Array("w21z2u"));
-
     const region = Array.from(stringToUint8Array("SGP"));
-    const { latitude, longitude } = ngeohash.decode(
-        String.fromCharCode(...geoHere)
-    );
 
     // dates
     const today = new Date();
@@ -44,12 +37,6 @@ describe("Test Unhappy", () => {
     longBeforeToday.setMonth(longBeforeToday.getMonth() - 6);
 
     it("Initialize AnchorClient", async () => {
-        sellerClient = new AnchorClient({
-            keypair: sellerKeypair,
-        });
-        buyerClient = new AnchorClient({
-            keypair: buyerKeypair,
-        });
         expect(sellerClient.cluster).to.equal("http://127.0.0.1:8899");
         assert.ok(
             sellerClient.programId.equals(new web3.PublicKey(PROGRAM_ID))
@@ -157,7 +144,7 @@ describe("Test Unhappy", () => {
         );
 
         // mint out of valid period coupons
-        const mintedCoupons = await sellerClient.getMintedCoupons(store);
+        const mintedCoupons = await sellerClient.getMintedCoupons({ store });
 
         for (const [coupon, supply, balance] of mintedCoupons) {
             if (
@@ -207,7 +194,7 @@ describe("Test Unhappy", () => {
         }
 
         // mint coupons
-        const mintedCoupons = await sellerClient.getMintedCoupons(store);
+        const mintedCoupons = await sellerClient.getMintedCoupons({ store });
 
         for (const [coupon, supply, balance] of mintedCoupons) {
             if (
