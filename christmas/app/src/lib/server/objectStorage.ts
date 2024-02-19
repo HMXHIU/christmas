@@ -104,7 +104,7 @@ class ObjectStorage {
                 name,
                 data: JSON.stringify(data),
             },
-            metaData,
+            { "Content-Type": "application/json", ...metaData },
         );
     }
 

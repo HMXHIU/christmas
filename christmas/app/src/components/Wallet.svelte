@@ -2,7 +2,7 @@
     import { token } from "../store";
     import { getModalStore } from "@skeletonlabs/skeleton";
     import DownloadWallet from "./DownloadWallet.svelte";
-    import { logIn, logOut, refresh } from "$lib/community";
+    import { login, logout, refresh } from "$lib/community";
     import { onMount } from "svelte";
     import { PUBLIC_JWT_EXPIRES_IN } from "$env/static/public";
 
@@ -19,9 +19,9 @@
         // Connect & create anchorClient
         else if ($token == null) {
             try {
-                await logIn();
+                await login();
             } catch (error: any) {
-                await logOut();
+                await logout();
                 // Show login error
                 modalStore.trigger({
                     type: "alert",
@@ -33,7 +33,7 @@
         }
         // Disconnect
         else {
-            await logOut();
+            await logout();
         }
     }
 

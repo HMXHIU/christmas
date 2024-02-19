@@ -7,7 +7,7 @@ import type { PlayerMetadata } from "$lib/crossover/types";
 import type { UserMetadata } from "$lib/community/types";
 
 // Exports
-export { connectedUsers, getLoadedPlayer, getPlayerMetadataFromStorage };
+export { connectedUsers, getLoadedPlayer, getPlayerMetadata, getUserMetadata };
 
 // Record of connected users on this server instance
 let connectedUsers: Record<string, ConnectedUser> = {};
@@ -19,9 +19,9 @@ async function getLoadedPlayer(
     return player.player ? player : null;
 }
 
-async function getPlayerMetadataFromStorage(
+async function getUserMetadata(
     publicKey: string,
-): Promise<PlayerMetadata | null> {
+): Promise<UserMetadata | null> {
     const user = await serverAnchorClient.getUser(new PublicKey(publicKey));
 
     if (user == null) {
@@ -36,5 +36,11 @@ async function getPlayerMetadataFromStorage(
     let response = await fetch(user.uri);
     const userMetadata: UserMetadata = await response.json();
 
-    return userMetadata.crossover || null;
+    return userMetadata || null;
+}
+
+async function getPlayerMetadata(
+    publicKey: string,
+): Promise<PlayerMetadata | null> {
+    return (await getUserMetadata(publicKey))?.crossover || null;
 }

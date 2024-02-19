@@ -1017,7 +1017,6 @@ export class AnchorClient {
         try {
             return await this.program.account.user.fetch(pda);
         } catch (error) {
-            console.log(`User does not exist: ${pda}`);
             return null;
         }
     }

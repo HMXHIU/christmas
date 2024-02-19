@@ -193,19 +193,16 @@ export async function POST(event) {
                 description,
                 image: imageUrl,
             });
-            const couponMetadataUrl = await ObjectStorage.putJSONObject(
-                {
-                    owner: null,
-                    bucket: "coupon",
-                    name: hashObject([
-                        "coupon",
-                        user.publicKey,
-                        mint.publicKey.toBase58(),
-                    ]),
-                    data: metadata,
-                },
-                { "Content-Type": "application/json" },
-            );
+            const couponMetadataUrl = await ObjectStorage.putJSONObject({
+                owner: null,
+                bucket: "coupon",
+                name: hashObject([
+                    "coupon",
+                    user.publicKey,
+                    mint.publicKey.toBase58(),
+                ]),
+                data: metadata,
+            });
 
             const ix = await serverAnchorClient.createCouponIx({
                 mint,

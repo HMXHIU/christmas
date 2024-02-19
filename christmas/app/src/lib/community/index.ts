@@ -17,6 +17,7 @@ import {
     couponsMetadata,
     token,
     redeemedCoupons,
+    userMetadata,
 } from "../../store";
 import { get } from "svelte/store";
 import {
@@ -52,8 +53,8 @@ export {
     createUser,
     fetchUser,
     fetchUserMetadata,
-    logIn,
-    logOut,
+    login,
+    logout,
     refresh,
 };
 
@@ -502,7 +503,7 @@ async function fetchUserMetadata(
     user: User,
     headers: HeadersInit = {},
 ): Promise<UserMetadata> {
-    const userMetadata = await fetch(user.uri, { headers }).then(
+    const fetchedUserMetadata = await fetch(user.uri, { headers }).then(
         async (response) => {
             if (!response.ok) {
                 throw new Error(await response.text());
@@ -511,9 +512,10 @@ async function fetchUserMetadata(
         },
     );
 
-    // TODO: Update `$userMetadata`
+    // Update `$userMetadata`
+    userMetadata.set(fetchedUserMetadata);
 
-    return userMetadata;
+    return fetchedUserMetadata;
 }
 
 async function createUser(
@@ -545,7 +547,7 @@ async function createUser(
         });
 }
 
-async function logIn() {
+async function login() {
     const solanaSignInInput = await (
         await fetch(`${PUBLIC_HOST || ""}/api/auth/siws`)
     ).json();
@@ -577,7 +579,7 @@ async function logIn() {
     token.set(loginToken);
 }
 
-async function logOut() {
+async function logout() {
     await fetch(`${PUBLIC_HOST || ""}/api/auth/logout`, { method: "POST" });
     await (window as any).solana.disconnect();
     token.set(null);
