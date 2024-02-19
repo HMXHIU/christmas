@@ -3,7 +3,6 @@ import {
     type Account,
     type Coupon,
     type Store,
-    type TokenAccount,
     type TransactionResult,
     type User,
 } from "../anchorClient/types";

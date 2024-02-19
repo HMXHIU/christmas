@@ -543,16 +543,17 @@ export class AnchorClient {
 
                         return [xs[0], tokenAmount];
                     } else {
-                        throw new Error("Coupon expired");
+                        // return null if expired (still fulfilled)
+                        return null;
                     }
                 }),
             )
         )
             .filter((result) => {
                 if (result.status !== "fulfilled") {
-                    console.warn(result.reason);
+                    console.error(result.reason);
                 }
-                return result && result.status === "fulfilled";
+                return result.status === "fulfilled" && result.value != null;
             })
             .map(
                 (result) =>
