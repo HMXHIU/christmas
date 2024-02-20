@@ -104,8 +104,6 @@ export async function POST(event) {
             },
         });
 
-        console.log(JSON.stringify(userMetadata, null, 2));
-
         // Store new user metadata and get url
         const userMetadataUrl = await ObjectStorage.putJSONObject({
             bucket: "user",

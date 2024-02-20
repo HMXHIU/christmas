@@ -1,10 +1,8 @@
 import { Keypair } from "@solana/web3.js";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import { expect, test } from "vitest";
-import { createSignInMessage } from "@solana/wallet-standard-util";
-import nacl from "tweetnacl";
 import { getCookiesFromResponse, getRandomRegion } from "../utils";
-import { login } from "../auth.test";
+import { login } from "../utils";
 import {
     login as loginCrossover,
     logout as logoutCrossover,
@@ -17,7 +15,6 @@ test("Test Auth", async () => {
     const user = Keypair.generate();
     const userWallet = new NodeWallet(user);
     const name: string = "Gandalf";
-
     const region = getRandomRegion();
 
     // Login

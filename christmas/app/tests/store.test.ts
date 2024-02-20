@@ -1,7 +1,7 @@
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { expect, test } from "vitest";
 import ngeohash from "ngeohash";
-import { login } from "./auth.test";
+import { login } from "./utils";
 import { getCookiesFromResponse, readImageAsBuffer } from "./utils";
 import { createStore, fetchStoreMetadata, fetchStores } from "$lib/community";
 import { stringToUint8Array } from "$lib/utils";

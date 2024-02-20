@@ -1,36 +1,8 @@
 import { Keypair } from "@solana/web3.js";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import { expect, test } from "vitest";
-import { createSignInMessage } from "@solana/wallet-standard-util";
-import nacl from "tweetnacl";
+import { login } from "./utils";
 import { getCookiesFromResponse } from "./utils";
-
-/**
- * Login without a browser, without SIWS (required for tests)
- */
-export async function login(user: Keypair): Promise<Response> {
-    const solanaSignInInput = await (
-        await fetch("http://localhost:5173/api/auth/siws")
-    ).json();
-    const signInMessage = createSignInMessage(solanaSignInInput);
-    const solanaSignInOutput = {
-        address: user.publicKey.toBase58(),
-        signature: Buffer.from(
-            nacl.sign.detached(signInMessage, user.secretKey),
-        ),
-        signedMessage: Buffer.from(signInMessage),
-    };
-    return await fetch("http://localhost:5173/api/auth/login", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            solanaSignInInput,
-            solanaSignInOutput,
-        }),
-    });
-}
 
 test("Test Auth", async () => {
     const user = Keypair.generate();

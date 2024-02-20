@@ -3,7 +3,7 @@ import type { TransactionResult } from "$lib/anchorClient/types";
 import { signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
 
-export { signup, login, logout };
+export { signup, login, logout, stream };
 
 /**
  * All auth functions requires user to be logged in already via SIWS (use cookies in headers to login without a browser).
@@ -60,5 +60,76 @@ async function logout(headers: any = {}): Promise<Response> {
             throw new Error(await response.text());
         }
         return response.json();
+    });
+}
+
+async function stream(headers: any = {}): Promise<EventTarget> {
+    const eventTarget = new EventTarget();
+    const eventStream = makeWriteableEventStream(eventTarget);
+
+    fetch(`${PUBLIC_HOST}/api/crossover/stream`, {
+        method: "GET",
+        headers,
+    }).then(async (response) => {
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+        if (response.body == null) {
+            throw new Error("Missing body in stream response");
+        }
+        return response.body
+            .pipeThrough(new TextDecoderStream())
+            .pipeThrough(makeJsonDecoder())
+            .pipeTo(eventStream)
+            .catch((error) => {
+                console.error(error);
+                eventTarget.dispatchEvent(
+                    new CustomEvent("error", { detail: error }),
+                );
+            });
+    });
+    return eventTarget;
+}
+
+function makeJsonDecoder(): TransformStream<any, any> {
+    return new TransformStream({
+        transform(
+            chunk: any,
+            controller: TransformStreamDefaultController<any>,
+        ) {
+            try {
+                controller.enqueue(JSON.parse(chunk.trim()));
+            } catch (err: any) {
+                controller.enqueue({
+                    type: "system",
+                    data: { event: "error", message: err.message },
+                });
+            }
+        },
+    });
+}
+
+function makeWriteableEventStream(eventTarget: EventTarget) {
+    return new WritableStream({
+        start(controller) {
+            eventTarget.dispatchEvent(
+                new MessageEvent("system", { data: { event: "start" } }),
+            );
+        },
+        write(message, controller) {
+            eventTarget.dispatchEvent(
+                new MessageEvent(message.type, { data: message.data }),
+            );
+        },
+        close() {
+            eventTarget.dispatchEvent(
+                new MessageEvent("system", { data: { event: "close" } }),
+            );
+        },
+        abort(reason) {
+            eventTarget.dispatchEvent(
+                new MessageEvent("system", { data: { event: "abort" } }),
+            );
+        },
     });
 }

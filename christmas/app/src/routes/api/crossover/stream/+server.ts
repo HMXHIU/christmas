@@ -1,20 +1,29 @@
 import type { RequestHandler } from "./$types";
 import { redisClient, redisSubscribeClient } from "$lib/server/crossover/redis";
 import { connectedUsers } from "$lib/server/crossover";
+import { requireLogin } from "$lib/server";
 
-export const GET: RequestHandler = ({ url }) => {
-    // Authenticate user
-    const publicKey = "publicKey";
+export const GET: RequestHandler = (event) => {
+    const user = requireLogin(event);
 
-    // Get user stream
+    // Create a register user stream on this server instance
     const stream = new ReadableStream({
         start(controller) {
-            connectedUsers[publicKey] = { stream: controller, publicKey };
-            console.log(`Stream ${publicKey} started`);
+            connectedUsers[user.publicKey] = {
+                stream: controller,
+                publicKey: user.publicKey,
+            };
+            console.log(`Stream ${user.publicKey} started`);
+            controller.enqueue(
+                JSON.stringify({
+                    type: "system",
+                    data: { event: "stream", message: "started" },
+                }),
+            );
         },
         cancel() {
-            delete connectedUsers[publicKey];
-            console.log(`Stream ${publicKey} ended`);
+            delete connectedUsers[user.publicKey];
+            console.log(`Stream ${user.publicKey} ended`);
         },
     });
 
@@ -22,18 +31,18 @@ export const GET: RequestHandler = ({ url }) => {
         headers: {
             // Denotes the response as SSE
             "Content-Type": "text/event-stream",
-            // Optional. Request the GET request not to be cached.
+            // Dont cache SSE
             "Cache-Control": "no-cache",
         },
     });
 };
 
-// Subscribe to redis `message` channel
+// Forward messages from redis to connected users
 redisSubscribeClient.subscribe("message", (message) => {
     console.log(`Received message: ${message}`);
     // Send relevant messages to connected users
     for (const user of Object.values(connectedUsers)) {
-        user.stream.enqueue(`data: ${message}\n\n`);
+        user.stream.enqueue(JSON.stringify({ type: "message", data: message }));
     }
 });
 
