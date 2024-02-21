@@ -4,7 +4,7 @@
     import * as Dialog from "$lib/components/ui/dialog";
     import { Dialog as BitsDialog } from "bits-ui";
     import * as AlertDialog from "$lib/components/ui/alert-dialog";
-    import Wallet from "../components/Wallet.svelte";
+    import Wallet from "$lib/components/Wallet.svelte";
     import { userDeviceClient, token } from "../store";
     import { onMount } from "svelte";
     import {
@@ -109,6 +109,11 @@
                     ><a href="/crossover">Crossover</a></strong
                 >
             </div>
+            <div
+                class="flex flex-1 items-center justify-between space-x-2 md:justify-end"
+            >
+                <Wallet></Wallet>
+            </div>
         </div>
     </header>
 
@@ -156,11 +161,6 @@
 
         <!-- QR Scan Alert -->
         <AlertDialog.Root bind:open={qrAlertOpen}>
-            <AlertDialog.Trigger asChild let:builder>
-                <Button builders={[builder]} variant="outline"
-                    >Show Dialog</Button
-                >
-            </AlertDialog.Trigger>
             <AlertDialog.Content>
                 <AlertDialog.Header>
                     <AlertDialog.Title>Verifying Redemption</AlertDialog.Title>
@@ -172,14 +172,12 @@
                               )}`}
                     </AlertDialog.Description>
                 </AlertDialog.Header>
-
                 {#if !verifyRemdeptionParams.verifyRedemption.isVerified}
                     <img
                         src="https://i.imgur.com/WOgTG96.gif"
                         alt="redemption unverified"
                     />
                 {/if}
-
                 <AlertDialog.Footer>
                     <AlertDialog.Cancel>Close</AlertDialog.Cancel>
                 </AlertDialog.Footer>
