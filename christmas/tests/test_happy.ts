@@ -4,7 +4,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
 import { cleanString, stringToUint8Array } from "../app/src/lib/utils";
 import { getMint } from "@solana/spl-token";
-import { generateQRCodeURL, extractQueryParams } from "../app/src/lib/utils";
+import { generateURL, extractQueryParams } from "../app/src/lib/utils";
 import { getRandomAnchorClient, getRandomDate, getRandomRegion } from "./utils";
 import { COUNTRY_DETAILS } from "../app/src/lib/clients/user-device-client/defs";
 import { PROGRAM_ID } from "../app/src/lib/anchorClient/defs";
@@ -329,7 +329,7 @@ describe("Test client", () => {
         assert.equal(balanceAfter.value.amount, `0`);
 
         // test redemption QR code
-        const redemptionQRCodeURL = generateQRCodeURL({
+        const redemptionQRCodeURL = generateURL({
             signature: transactionResult.signature,
             wallet: buyerClient.wallet.publicKey.toString(),
             mint: coupon.account.mint.toString(),

@@ -11,7 +11,7 @@
         day: "numeric",
     }).format(new Date());
     if ($marketCoupons.length < 1) {
-        news.push(["text-success-400", `Community Billboard - ${today}`]);
+        news.push(["", `Community Billboard - ${today}`]);
         news.push(["", "Anything to give to your community?"]);
         news.push(["", "Start by creating a store"]);
     } else {
@@ -47,9 +47,9 @@
         </div>
     {/each}
     {#if $claimedCoupons.length < 1}
-        <p class="text-surface-300 my-auto mx-auto text-center">
+        <p class="my-auto mx-auto text-center">
             Your claimed coupons goes here<br /><br />
-            <span class="italic text-surface-400">
+            <span class="italic">
                 {haikus[Math.round(Math.random() * (haikus.length - 1))]}
             </span>
         </p>
@@ -57,9 +57,7 @@
 </div>
 
 <!-- Market News -->
-<header
-    class="text-scrolling-container bg-surface-200-700-token sticky top-0 z-10 mt-3"
->
+<header class="text-scrolling-container sticky top-0 z-10 mt-3">
     <div class="text-scrolling">
         {#each news as [style, text]}
             <li class={style}>{text}</li>
@@ -75,9 +73,9 @@
 </div>
 <div class="px-4 py-4 mt-2">
     {#if $marketCoupons.length < 1}
-        <p class="text-surface-300 mx-auto text-center">
+        <p class="mx-auto text-center">
             There are no community coupons in your area<br /><br />
-            <span class="italic text-surface-400">
+            <span class="italic">
                 {haikus[Math.round(Math.random() * haikus.length)]}
             </span>
         </p>
