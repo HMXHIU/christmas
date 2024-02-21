@@ -7,7 +7,7 @@ import {
     serverAnchorClient,
 } from "$lib/server";
 import { ObjectStorage } from "$lib/server/objectStorage.js";
-import { cleanString } from "$lib/utils/utils.js";
+import { cleanString } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
 import { error, json } from "@sveltejs/kit";
 import yup from "yup";
