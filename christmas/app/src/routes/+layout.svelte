@@ -1,12 +1,9 @@
 <script lang="ts">
     import "../app.postcss";
-    import {
-        AppShell,
-        AppBar,
-        Modal,
-        getModalStore,
-        initializeStores,
-    } from "@skeletonlabs/skeleton";
+    import { Button } from "$lib/components/ui/button";
+    import * as Dialog from "$lib/components/ui/dialog";
+    import { Dialog as BitsDialog } from "bits-ui";
+    import * as AlertDialog from "$lib/components/ui/alert-dialog";
     import Wallet from "../components/Wallet.svelte";
     import { userDeviceClient, token } from "../store";
     import { onMount } from "svelte";
@@ -17,13 +14,12 @@
         verifyRedemption,
     } from "$lib/community";
     import { UserDeviceClient } from "$lib/clients/user-device-client/userDeviceClient";
-    import type { ModalSettings } from "@skeletonlabs/skeleton";
-    import QrScanner from "../components/QRScanner.svelte";
+    import QrScanner from "$lib/components/QRScanner.svelte";
+    import { extractQueryParams, getErrorMessage } from "$lib/utils";
+    import QrSvg from "$lib/components/svg/QrSvg.svelte";
 
-    // Skeleton (Modals)
-    initializeStores();
-
-    const modalStore = getModalStore();
+    let qrAlertOpen: boolean = false;
+    let verifyRemdeptionParams: any = {};
 
     async function fetchUserContent() {
         // TODO: put in their respective pages for more efficiency
@@ -60,135 +56,141 @@
         userDeviceClient.set(client);
     });
 
-    function onQRScan() {
-        new Promise<any>((resolve) => {
-            const modal: ModalSettings = {
-                type: "component",
-                component: { ref: QrScanner },
-                meta: {},
-                response: async (result) => {
-                    resolve(result);
-                },
-            };
-            // Open modal
-            modalStore.trigger(modal);
-        })
-            .then(async (qrParams) => {
-                if (qrParams) {
-                    const { signature, mint, numTokens, wallet } = qrParams;
-                    return {
+    async function onScanSuccess(decodedText: string, decodedResult: any) {
+        const qrParams = extractQueryParams(decodedText);
+
+        if (qrParams) {
+            const { signature, mint, numTokens, wallet } = qrParams;
+
+            // Verify redemption
+            try {
+                verifyRemdeptionParams = {
+                    signature,
+                    mint,
+                    numTokens,
+                    wallet,
+                    verifyRedemption: await verifyRedemption({
                         signature,
                         mint,
                         numTokens,
                         wallet,
-                        verifyRedemption: await verifyRedemption({
-                            signature,
-                            mint,
-                            numTokens,
-                            wallet,
-                        }),
-                    };
-                }
-                // close without resolving
-                return null;
-            })
-            .then((result) => {
-                modalStore.close();
-                if (result) {
-                    const { verifyRedemption, mint } = result;
-                    const { isVerified, err } = verifyRedemption;
-                    // Trigger another modal to show the validation result
-                    modalStore.trigger({
-                        type: "alert",
-                        // Data
-                        title: mint,
-                        body: isVerified
-                            ? `✅ Redemption Verified`
-                            : `❌ ${err}`,
-                        image: "https://i.imgur.com/WOgTG96.gif",
-                    });
-                }
-            });
+                    }),
+                };
+            } catch (err: any) {
+                verifyRemdeptionParams = {
+                    signature,
+                    mint,
+                    numTokens,
+                    wallet,
+                    verifyRedemption: {
+                        isVerified: false,
+                        err: err.message,
+                    },
+                };
+            }
+
+            // Open alert dialog
+            qrAlertOpen = true;
+        }
     }
 </script>
 
-<!-- Modal -->
-<Modal />
-
 <!-- App Shell -->
-<AppShell slotFooter="">
-    <!-- pageHeader -->
-    <svelte:fragment slot="pageHeader">
-        <!-- App Bar -->
-        <AppBar>
-            <svelte:fragment slot="lead">
-                <strong class="text-xl uppercase"
-                    ><a href="/">Community</a></strong
-                >
-                <strong class="text-xl uppercase text-slate-400"
-                    >&nbsp///&nbsp</strong
-                >
-                <strong class="text-xl uppercase text-success-400"
+<div class="flex flex-col min-h-screen">
+    <!-- Page Header -->
+    <header
+        class="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+    >
+        <div class="container flex h-14 max-w-screen-2xl items-center">
+            <div class="mr-4 hidden md:flex">
+                <strong class="uppercase"><a href="/">Community</a></strong>
+                <strong class="uppercase">&nbsp///&nbsp</strong>
+                <strong class="uppercase"
                     ><a href="/crossover">Crossover</a></strong
                 >
-            </svelte:fragment>
-            <svelte:fragment slot="trail">
-                <Wallet />
-            </svelte:fragment>
-        </AppBar>
-    </svelte:fragment>
-
-    <!-- pageFooter -->
-    <svelte:fragment slot="footer">
-        <!-- QR Scanner -->
-        <div class="relative h-0">
-            <button
-                type="button"
-                class="btn-icon bg-surface-800 relative w-14 -top-5 right: -right-[calc(50%-2rem)]"
-                on:click={onQRScan}
-            >
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                    class="w-7 h-7 stroke-success-400"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z"
-                    />
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z"
-                    />
-                </svg>
-            </button>
+            </div>
         </div>
-        <AppBar
-            gridColumns="grid-cols-3"
-            slotLead="place-self-end"
-            slotTrail="place-self-start"
-            padding="p-3"
-        >
-            <!-- Coupons Page -->
-            <svelte:fragment slot="lead">
-                <a class="btn btn-sm variant-ghost-surface" href="/coupons">
-                    Coupons
-                </a>
-            </svelte:fragment>
-            <!-- Mint Page -->
-            <svelte:fragment slot="trail">
-                <a class="btn btn-sm variant-ghost-surface" href="/mint">
-                    Mint
-                </a>
-            </svelte:fragment>
-        </AppBar>
-    </svelte:fragment>
+    </header>
 
-    <!-- Page Route Content -->
-    <slot />
-</AppShell>
+    <!-- Page Content -->
+    <main class="flex-grow">
+        <!-- Your Page Content Goes Here -->
+        <div class="container mx-auto px-4 py-8">
+            <!-- Content Slot -->
+            <slot />
+        </div>
+    </main>
+
+    <!-- Page Footer -->
+    <footer class="py-4 px-6">
+        <!-- QR Scanner -->
+        <div class="relative h-0 flex justify-center">
+            <Dialog.Root>
+                <Dialog.Trigger>
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        class="relative w-14 h-14 -top-5 right: -right-[calc(50%-2rem)] rounded-full"
+                    >
+                        <QrSvg />
+                    </Button>
+                </Dialog.Trigger>
+                <Dialog.Content>
+                    <Dialog.Header>
+                        <Dialog.Title class="flex justify-center p-4"
+                            ><QrSvg /></Dialog.Title
+                        >
+                        <Dialog.Description>
+                            Scan any community /// crossover related QR Code
+                        </Dialog.Description>
+                    </Dialog.Header>
+                    <QrScanner {onScanSuccess} />
+                    <Dialog.Footer>
+                        <BitsDialog.Close class="w-full">
+                            Close
+                        </BitsDialog.Close>
+                    </Dialog.Footer>
+                </Dialog.Content>
+            </Dialog.Root>
+        </div>
+
+        <!-- QR Scan Alert -->
+        <AlertDialog.Root bind:open={qrAlertOpen}>
+            <AlertDialog.Trigger asChild let:builder>
+                <Button builders={[builder]} variant="outline"
+                    >Show Dialog</Button
+                >
+            </AlertDialog.Trigger>
+            <AlertDialog.Content>
+                <AlertDialog.Header>
+                    <AlertDialog.Title>Verifying Redemption</AlertDialog.Title>
+                    <AlertDialog.Description>
+                        {verifyRemdeptionParams.verifyRedemption.isVerified
+                            ? `✅ Redemption Verified`
+                            : `❌ ${getErrorMessage(
+                                  verifyRemdeptionParams.verifyRedemption.err,
+                              )}`}
+                    </AlertDialog.Description>
+                </AlertDialog.Header>
+
+                {#if !verifyRemdeptionParams.verifyRedemption.isVerified}
+                    <img
+                        src="https://i.imgur.com/WOgTG96.gif"
+                        alt="redemption unverified"
+                    />
+                {/if}
+
+                <AlertDialog.Footer>
+                    <AlertDialog.Cancel>Close</AlertDialog.Cancel>
+                </AlertDialog.Footer>
+            </AlertDialog.Content>
+        </AlertDialog.Root>
+
+        <!-- Coupons / Mint -->
+        <div class="grid grid-cols-3 justify-center">
+            <a href="/coupons" class="place-self-end">Coupons</a>
+            <div></div>
+            <a href="/mint" class="place-self-start">Mint</a>
+        </div>
+    </footer>
+</div>

@@ -3,7 +3,7 @@
     import { getModalStore } from "@skeletonlabs/skeleton";
     import BaseCouponCard from "./BaseCouponCard.svelte";
     import type { Account, Coupon } from "$lib/anchorClient/types";
-    import { generateQRCodeURL, timeStampToDate } from "$lib/utils";
+    import { generateURL, timeStampToDate } from "$lib/utils";
     import QrCode from "./QRCode.svelte";
     import { redeemCoupon } from "$lib/community";
     import type { CouponMetadata, StoreMetadata } from "$lib/community/types";
@@ -26,7 +26,7 @@
             const transactionResult = await redeemCoupon({ numTokens, coupon });
 
             // Generate redemptionQRCodeURL
-            redemptionQRCodeURL = generateQRCodeURL({
+            redemptionQRCodeURL = generateURL({
                 signature: transactionResult.signature,
                 wallet: (window as any).solana.publicKey.toString(),
                 mint: coupon.account.mint.toString(),

@@ -8,7 +8,7 @@ import {
 } from "@solana/web3.js";
 import BN from "bn.js";
 import bs58 from "bs58";
-import type { TransactionResult } from "./anchorClient/types";
+import type { TransactionResult } from "../anchorClient/types";
 import { PUBLIC_RPC_ENDPOINT } from "$env/static/public";
 
 export {
@@ -16,7 +16,7 @@ export {
     cleanString,
     calculateDistance,
     timeStampToDate,
-    generateQRCodeURL, // TODO: Use general URL functions and deprecate this
+    generateURL, // TODO: Use general URL functions and deprecate this
     extractQueryParams,
     fetchData, // TODO: Use general fetch and deprecate this
     storage_uri_to_url,
@@ -25,6 +25,7 @@ export {
     uploadImage,
     stringToUint8Array,
     stringToBase58,
+    getErrorMessage,
 };
 
 const connection = new Connection(PUBLIC_RPC_ENDPOINT, "processed");
@@ -71,10 +72,27 @@ function timeStampToDate(timeStamp: BN): Date {
     return new Date(timeStamp.toNumber());
 }
 
-function generateQRCodeURL(
-    kwargs: Record<string, string>,
-    uri?: string,
-): string {
+function getErrorMessage(error: any): string {
+    // Parse error if its a JSON string
+    try {
+        error = JSON.parse(error);
+    } catch (e) {}
+
+    // Drill down to find message string
+    if (error.message) {
+        if (typeof error.message === "string") {
+            return error.message;
+        } else if (typeof error.message.message === "string") {
+            return error.message.message;
+        }
+    } else if (typeof error === "string") {
+        return error;
+    }
+    // parse error to string
+    return JSON.stringify(error);
+}
+
+function generateURL(kwargs: Record<string, string>, uri?: string): string {
     const origin =
         (typeof window !== "undefined" ? window.location.origin : undefined) ||
         "https://${origin}";

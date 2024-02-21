@@ -4,10 +4,11 @@
   "tailwind": {
     "config": "tailwind.config.ts",
     "css": "src/app.postcss",
-    "baseColor": "neutral"
+    "baseColor": "slate"
   },
   "aliases": {
     "components": "$lib/components",
-    "utils": "$lib/utils"
-  }
+    "utils": "$lib/utils/shadcn"
+  },
+  "typescript": true
 }
