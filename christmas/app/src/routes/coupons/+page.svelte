@@ -1,7 +1,9 @@
 <script lang="ts">
-    import ClaimedCouponCard from "../../components/ClaimedCouponCard.svelte";
-    import MarketCouponCard from "../../components/MarketCouponCard.svelte";
+    import ClaimedCouponCard from "$lib/components/ClaimedCouponCard.svelte";
+    import MarketCouponCard from "$lib/components/MarketCouponCard.svelte";
     import { marketCoupons, claimedCoupons } from "../../store";
+    import type { ClaimCouponParams } from "$lib/components/types";
+    import { claimCoupon, fetchClaimedCoupons } from "$lib/community";
 
     // News
     let news = new Array();
@@ -35,6 +37,13 @@
         "Infinite void's gaze, Empty eyes reflect the void, Soulless, aching void",
         "Fallen autumn leaves, Whispers of the empty wind, Nature's void perceived",
     ];
+
+    async function onClaimCoupon(claimCouponParams: ClaimCouponParams) {
+        // Claim coupon
+        await claimCoupon(claimCouponParams);
+        // Refetch claimed coupons
+        await fetchClaimedCoupons();
+    }
 </script>
 
 <!-- Claimed coupons -->
@@ -68,7 +77,7 @@
 <!-- Market coupons -->
 <div class="grid grid-cols-2 gap-4 px-4 py-4 mt-2">
     {#each $marketCoupons as [coupon, balance] (coupon.publicKey)}
-        <MarketCouponCard {coupon} {balance}></MarketCouponCard>
+        <MarketCouponCard {coupon} {balance} {onClaimCoupon}></MarketCouponCard>
     {/each}
 </div>
 <div class="px-4 py-4 mt-2">
@@ -82,6 +91,7 @@
     {/if}
 </div>
 
+<!-- Styles -->
 <style>
     @keyframes scrollText {
         to {
