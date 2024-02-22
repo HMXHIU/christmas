@@ -102,16 +102,14 @@
         class="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
     >
         <div class="container flex h-14 max-w-screen-2xl items-center">
-            <div class="mr-4 hidden md:flex">
+            <div>
                 <strong class="uppercase"><a href="/">Community</a></strong>
-                <strong class="uppercase">&nbsp///&nbsp</strong>
+                <strong class="uppercase">///</strong>
                 <strong class="uppercase"
                     ><a href="/crossover">Crossover</a></strong
                 >
             </div>
-            <div
-                class="flex flex-1 items-center justify-between space-x-2 md:justify-end"
-            >
+            <div class="flex flex-1 items-center justify-end space-x-2">
                 <Wallet></Wallet>
             </div>
         </div>
@@ -127,7 +125,7 @@
     </main>
 
     <!-- Page Footer -->
-    <footer class="py-4 px-6">
+    <footer class="py-4 fixed w-full bottom-0 z-50 bg-background">
         <!-- QR Scanner -->
         <div class="relative h-0 flex justify-center">
             <Dialog.Root>
@@ -135,7 +133,7 @@
                     <Button
                         size="icon"
                         variant="ghost"
-                        class="relative w-14 h-14 -top-5 right: -right-[calc(50%-2rem)] rounded-full"
+                        class="relative w-14 h-14 -top-8 right: -right-[calc(50%-2rem)] rounded-full bg-background"
                     >
                         <QrSvg />
                     </Button>
