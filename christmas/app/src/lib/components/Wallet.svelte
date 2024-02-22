@@ -97,6 +97,6 @@
     </AlertDialog.Content>
 </AlertDialog.Root>
 
-<Button on:click={handleLoginLogout} variant="secondary">
+<Button on:click={handleLoginLogout} variant="outline">
     {$token ? "Logout" : "Login"}
 </Button>

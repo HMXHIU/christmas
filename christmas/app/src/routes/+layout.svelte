@@ -98,9 +98,7 @@
 <!-- App Shell -->
 <div class="flex flex-col min-h-screen">
     <!-- Page Header -->
-    <header
-        class="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
-    >
+    <header class="sticky top-0 z-50 w-full border-b bg-secondary">
         <div class="container flex h-14 max-w-screen-2xl items-center">
             <div>
                 <strong class="uppercase"><a href="/">Community</a></strong>
@@ -118,14 +116,14 @@
     <!-- Page Content -->
     <main class="flex-grow">
         <!-- Your Page Content Goes Here -->
-        <div class="container mx-auto px-4 py-8">
+        <div class="container mx-auto px-0 py-8">
             <!-- Content Slot -->
             <slot />
         </div>
     </main>
 
     <!-- Page Footer -->
-    <footer class="py-4 fixed w-full bottom-0 z-50 bg-background">
+    <footer class="py-3 fixed w-full bottom-0 z-50 bg-secondary">
         <!-- QR Scanner -->
         <div class="relative h-0 flex justify-center">
             <Dialog.Root>
@@ -133,7 +131,7 @@
                     <Button
                         size="icon"
                         variant="ghost"
-                        class="relative w-14 h-14 -top-8 right: -right-[calc(50%-2rem)] rounded-full bg-background"
+                        class="relative w-14 h-14 -top-8 right: -right-[calc(50%-2rem)] rounded-full bg-secondary"
                     >
                         <QrSvg />
                     </Button>

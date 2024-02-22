@@ -104,7 +104,9 @@
 </div>
 
 <!-- Market News -->
-<header class="text-scrolling-container sticky top-0 z-10 mt-3">
+<header
+    class="text-scrolling-container sticky top-0 z-10 mt-3 bg-secondary w-full"
+>
     <div class="text-scrolling">
         {#each news as [style, text]}
             <li class={style}>{text}</li>
