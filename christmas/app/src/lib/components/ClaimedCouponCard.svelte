@@ -26,6 +26,8 @@
             $userDeviceClient!.location!.geolocationCoordinates!.latitude!,
             $userDeviceClient!.location!.geolocationCoordinates!.longitude!,
         );
+
+        console.log(JSON.stringify(storeMetadata, null, 2));
         return { couponMetadata, storeMetadata, distance };
     }
 
@@ -52,10 +54,11 @@
                 {distance}
                 expiry={timeStampToDate(coupon.account.validTo)}
                 redemptionQRCodeURL={$redeemedCoupons[couponKey]}
-                ><p class="text-xs italic px-3 text-surface-400">
-                    {storeMetadata.name}
-                </p></BaseCouponCard
             >
+                <p class="text-xs px-3 pb-3 text-left">
+                    {storeMetadata.name}
+                </p>
+            </BaseCouponCard>
         </Dialog.Trigger>
         <Dialog.Content class="sm:max-w-[425px]">
             <Dialog.Header>

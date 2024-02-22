@@ -116,14 +116,14 @@
     <!-- Page Content -->
     <main class="flex-grow">
         <!-- Your Page Content Goes Here -->
-        <div class="container mx-auto px-0 py-8">
+        <div class="container mx-auto px-0 py-0">
             <!-- Content Slot -->
             <slot />
         </div>
     </main>
 
     <!-- Page Footer -->
-    <footer class="py-3 fixed w-full bottom-0 z-50 bg-secondary">
+    <footer class="py-3 fixed w-full bottom-0 z-50 bg-secondary pl-2">
         <!-- QR Scanner -->
         <div class="relative h-0 flex justify-center">
             <Dialog.Root>

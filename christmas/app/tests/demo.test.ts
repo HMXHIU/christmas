@@ -191,6 +191,10 @@ test(
 
             // Fetch stores
             const stores = await fetchStores({ Cookie: cookies });
+            const store = stores.find(
+                (store) => store.account.name === storeMetadata.name,
+            );
+            expect(store).toBeDefined();
 
             // Read coupon image
             const couponImageBuffer = readImageAsBuffer(couponMetadata.image);
@@ -209,7 +213,7 @@ test(
                     description: couponMetadata.description,
                     validFrom: beforeToday,
                     validTo: afterToday,
-                    store: stores[0],
+                    store: store!,
                 },
                 {
                     headers: { Cookie: cookies },

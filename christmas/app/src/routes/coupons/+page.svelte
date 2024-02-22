@@ -85,10 +85,10 @@
 
 <!-- Claimed coupons -->
 <div
-    class="snap-x scroll-px-4 snap-mandatory scroll-smooth flex gap-4 overflow-x-auto px-4 py-3 h-64"
+    class="scroll-container snap-x scroll-px-4 snap-mandatory scroll-smooth flex gap-4 overflow-x-auto px-4 py-3"
 >
     {#each $claimedCoupons as [coupon, balance] (coupon.publicKey)}
-        <div class="snap-start shrink-0 card w-40 md:w-80">
+        <div class="snap-start w-52 shrink-0 flex items-stretch">
             <ClaimedCouponCard {coupon} {balance} {onRedeemCoupon}
             ></ClaimedCouponCard>
         </div>
@@ -156,5 +156,15 @@
         flex-wrap: nowrap;
         white-space: nowrap; /* Prevent text from wrapping to the next line */
         animation: scrollText 10s linear infinite; /* Adjust the duration and timing function as needed */
+    }
+
+    /* Hide Scrollbar */
+    .scroll-container {
+        overflow-x: auto;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* Internet Explorer 10+ */
+    }
+    .scroll-container::-webkit-scrollbar {
+        display: none; /* WebKit */
     }
 </style>
