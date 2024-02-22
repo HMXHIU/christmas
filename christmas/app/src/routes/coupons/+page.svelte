@@ -1,9 +1,21 @@
 <script lang="ts">
     import ClaimedCouponCard from "$lib/components/ClaimedCouponCard.svelte";
     import MarketCouponCard from "$lib/components/MarketCouponCard.svelte";
-    import { marketCoupons, claimedCoupons } from "../../store";
-    import type { ClaimCouponParams } from "$lib/components/types";
-    import { claimCoupon, fetchClaimedCoupons } from "$lib/community";
+    import {
+        marketCoupons,
+        claimedCoupons,
+        redeemedCoupons,
+    } from "../../store";
+    import type {
+        ClaimCouponParams,
+        RedeemCouponParams,
+    } from "$lib/components/types";
+    import {
+        claimCoupon,
+        fetchClaimedCoupons,
+        redeemCoupon,
+    } from "$lib/community";
+    import { generateURL } from "$lib/utils";
 
     // News
     let news = new Array();
@@ -44,6 +56,31 @@
         // Refetch claimed coupons
         await fetchClaimedCoupons();
     }
+
+    async function onRedeemCoupon(redeemCouponParams: RedeemCouponParams) {
+        const { coupon, numTokens } = redeemCouponParams;
+
+        // Redeem coupon
+        const transactionResult = await redeemCoupon(redeemCouponParams);
+
+        if (transactionResult.result.err == null) {
+            // Generate redemptionQRCodeURL
+            const redemptionQRCodeURL = generateURL({
+                signature: transactionResult.signature,
+                wallet: (window as any).solana.publicKey.toString(),
+                mint: coupon.account.mint.toString(),
+                numTokens: String(numTokens),
+            });
+
+            // Update `redeemedCoupons` store
+            if (redemptionQRCodeURL) {
+                redeemedCoupons.update((r) => {
+                    r[coupon.publicKey.toString()] = redemptionQRCodeURL;
+                    return r;
+                });
+            }
+        }
+    }
 </script>
 
 <!-- Claimed coupons -->
@@ -52,7 +89,8 @@
 >
     {#each $claimedCoupons as [coupon, balance] (coupon.publicKey)}
         <div class="snap-start shrink-0 card w-40 md:w-80">
-            <ClaimedCouponCard {coupon} {balance}></ClaimedCouponCard>
+            <ClaimedCouponCard {coupon} {balance} {onRedeemCoupon}
+            ></ClaimedCouponCard>
         </div>
     {/each}
     {#if $claimedCoupons.length < 1}

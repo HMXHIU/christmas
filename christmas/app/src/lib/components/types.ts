@@ -4,3 +4,8 @@ export interface ClaimCouponParams {
     numTokens: number;
     coupon: Account<Coupon>;
 }
+
+export interface RedeemCouponParams {
+    numTokens: number;
+    coupon: Account<Coupon>;
+}

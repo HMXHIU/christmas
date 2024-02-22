@@ -150,7 +150,7 @@
                     <QrScanner {onScanSuccess} />
                     <Dialog.Footer>
                         <BitsDialog.Close class="w-full">
-                            Close
+                            <Button>Close</Button>
                         </BitsDialog.Close>
                     </Dialog.Footer>
                 </Dialog.Content>

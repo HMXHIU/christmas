@@ -81,7 +81,7 @@
             {/if}
         </div>
         <!-- Coupon Info (expiry, distance, balance) -->
-        <div class="p-3 gap-1">
+        <div class="px-3 gap-1">
             <!-- Expiry -->
             <p class="text-xs italic text-right">
                 Expires
