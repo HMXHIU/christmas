@@ -4,6 +4,7 @@
     import * as Card from "$lib/components/ui/card";
 
     export let couponName: string;
+    export let couponNameSuffix: string | null = null;
     export let expiry: Date;
     export let couponDescription: string | null = null;
     export let couponImageUrl: string | null = null;
@@ -83,7 +84,7 @@
         <!-- Coupon Info (expiry, distance, balance) -->
         <div class="px-3 gap-1">
             <!-- Expiry -->
-            <p class="text-xs italic text-right">
+            <p class="text-xs italic text-right text-muted-foreground">
                 Expires
                 {new Intl.DateTimeFormat("en-US", {
                     year: "numeric",
@@ -105,7 +106,7 @@
             {/if}
             <!-- Supply/Balance -->
             {#if supply != null && balance != null}
-                <p class="text-xs italic text-right text-success-400">
+                <p class="text-xs italic text-right">
                     {balance}/{supply} left
                 </p>
             {/if}
@@ -118,7 +119,16 @@
     <Card.Content class="flex flex-col p-3 gap-2">
         <div class="flex gap-2 flex-col place-self-start">
             <!-- Coupon Name -->
-            <p class="font-bold">{cleanString(couponName)}</p>
+            <p class="text-left leading-tight">
+                <span class="font-semibold">
+                    {cleanString(couponName)}
+                </span>
+                {#if couponNameSuffix}
+                    <span class="text-xs text-muted-foreground">
+                        {couponNameSuffix}
+                    </span>
+                {/if}
+            </p>
             <!-- Coupon Description -->
             {#if couponDescription}
                 <p class="font-light">
@@ -140,7 +150,9 @@
             <!-- Store Name, Address -->
             <div class="flex flex-col gap-1 overflow-hidden text-left my-auto">
                 <p class="text-sm font-bold">{storeName}</p>
-                <p class="text-xs text-ellipsis text-nowrap overflow-hidden">
+                <p
+                    class="text-xs text-ellipsis text-nowrap overflow-hidden text-muted-foreground"
+                >
                     {storeAddress}
                 </p>
             </div>

@@ -115,7 +115,9 @@
 </header>
 
 <!-- Market coupons -->
-<div class="grid grid-cols-2 gap-4 px-4 py-4 mt-2">
+<div
+    class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 px-4 py-4 mt-2"
+>
     {#each $marketCoupons as [coupon, balance] (coupon.publicKey)}
         <MarketCouponCard {coupon} {balance} {onClaimCoupon}></MarketCouponCard>
     {/each}

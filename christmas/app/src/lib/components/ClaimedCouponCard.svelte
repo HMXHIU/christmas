@@ -50,15 +50,12 @@
         <Dialog.Trigger>
             <BaseCouponCard
                 couponName={coupon.account.name}
+                couponNameSuffix={`by ${storeMetadata.name}`}
                 couponImageUrl={couponMetadata.image}
                 {distance}
                 expiry={timeStampToDate(coupon.account.validTo)}
                 redemptionQRCodeURL={$redeemedCoupons[couponKey]}
-            >
-                <p class="text-xs px-3 pb-3 text-left">
-                    {storeMetadata.name}
-                </p>
-            </BaseCouponCard>
+            ></BaseCouponCard>
         </Dialog.Trigger>
         <Dialog.Content class="sm:max-w-[425px]">
             <Dialog.Header>
