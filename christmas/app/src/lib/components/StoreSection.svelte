@@ -7,14 +7,18 @@
         fetchMintedCouponSupplyBalance,
         fetchStoreMetadata,
         createCoupon,
-        type CreateCouponParams,
     } from "$lib/community";
     import { getModalStore } from "@skeletonlabs/skeleton";
     import type { ModalSettings } from "@skeletonlabs/skeleton";
     import CreateCouponForm from "./CreateCouponForm.svelte";
-    import { mintedCoupons, storesMetadata, userDeviceClient } from "../store";
+    import {
+        mintedCoupons,
+        storesMetadata,
+        userDeviceClient,
+    } from "../../store";
     import MintedCouponCard from "./MintedCouponCard.svelte";
     import { PublicKey } from "@solana/web3.js";
+    import type { CreateCouponParams } from "$lib/community/types";
 
     const modalStore = getModalStore();
 

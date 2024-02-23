@@ -9,7 +9,7 @@
     import type {
         ClaimCouponParams,
         RedeemCouponParams,
-    } from "$lib/components/types";
+    } from "$lib/community/types";
     import {
         claimCoupon,
         fetchClaimedCoupons,

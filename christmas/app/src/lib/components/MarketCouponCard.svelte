@@ -4,7 +4,7 @@
     import { calculateDistance, timeStampToDate } from "$lib/utils";
     import BaseCouponCard from "./BaseCouponCard.svelte";
     import { userDeviceClient } from "../../store";
-    import type { ClaimCouponParams } from "./types";
+    import type { ClaimCouponParams } from "$lib/community/types";
     import { Button } from "$lib/components/ui/button";
     import * as Dialog from "$lib/components/ui/dialog";
     import { Dialog as BitsDialog } from "bits-ui";

@@ -1,3 +1,4 @@
+import type { Account, Coupon, Store } from "$lib/anchorClient/types";
 import { PlayerMetadataSchema } from "$lib/crossover/types";
 import yup from "yup";
 
@@ -26,3 +27,37 @@ export const StoreMetadataSchema = yup.object().shape({
 });
 
 export type StoreMetadata = yup.InferType<typeof StoreMetadataSchema>;
+
+export interface CreateStoreParams {
+    name: string;
+    description: string;
+    address: string;
+    region: string;
+    latitude: number;
+    longitude: number;
+    geohash: string;
+    logo: File | null; // TODO: change to image
+}
+
+export interface CreateCouponParams {
+    name: string;
+    description: string;
+    validFrom: Date;
+    validTo: Date;
+    image: File | null;
+    store: Account<Store>;
+}
+
+export interface CreateUserParams {
+    region: string;
+}
+
+export interface ClaimCouponParams {
+    numTokens: number;
+    coupon: Account<Coupon>;
+}
+
+export interface RedeemCouponParams {
+    numTokens: number;
+    coupon: Account<Coupon>;
+}

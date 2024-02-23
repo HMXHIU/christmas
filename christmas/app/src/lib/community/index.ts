@@ -26,7 +26,14 @@ import {
     STRING_PREFIX_SIZE,
 } from "../anchorClient/defs";
 import { stringToUint8Array } from "../utils";
-import type { CouponMetadata, StoreMetadata, UserMetadata } from "./types";
+import type {
+    CouponMetadata,
+    CreateCouponParams,
+    CreateStoreParams,
+    CreateUserParams,
+    StoreMetadata,
+    UserMetadata,
+} from "./types";
 import { signAndSendTransaction } from "$lib/utils";
 import { PUBLIC_HOST } from "$env/static/public";
 import {
@@ -57,30 +64,6 @@ export {
     logout,
     refresh,
 };
-
-export interface CreateStoreFormResult {
-    name: string;
-    description: string;
-    address: string;
-    region: string;
-    latitude: number;
-    longitude: number;
-    geohash: string;
-    logo: File | null;
-}
-
-export interface CreateCouponFormResult {
-    name: string;
-    description: string;
-    validFrom: Date;
-    validTo: Date;
-    image: File | null;
-    store: Account<Store>;
-}
-
-export interface CreateUserFormResult {
-    region: string;
-}
 
 async function fetchMarketCoupons(
     {
@@ -313,7 +296,7 @@ async function createStore(
         longitude,
         geohash,
         logo,
-    }: CreateStoreFormResult,
+    }: CreateStoreParams,
     options?: { headers?: HeadersInit; wallet?: any },
 ): Promise<TransactionResult> {
     // Create form data with metadata and image
@@ -356,14 +339,7 @@ async function createStore(
 }
 
 async function createCoupon(
-    {
-        image,
-        name,
-        description,
-        validFrom,
-        validTo,
-        store,
-    }: CreateCouponFormResult,
+    { image, name, description, validFrom, validTo, store }: CreateCouponParams,
     options?: { headers?: HeadersInit; wallet?: any },
 ): Promise<TransactionResult> {
     // Create form data with metadata and image
@@ -519,7 +495,7 @@ async function fetchUserMetadata(
 }
 
 async function createUser(
-    { region }: CreateUserFormResult,
+    { region }: CreateUserParams,
     options?: { headers?: HeadersInit; wallet?: any },
 ): Promise<TransactionResult> {
     return fetch(`${PUBLIC_HOST || ""}/api/community/user/create`, {
