@@ -6,7 +6,7 @@
     import { createStore, fetchStores } from "$lib/community";
     import type { CreateStoreParams } from "$lib/community/types";
     import { stores } from "../../store";
-    // import StoreSection from "$lib/components/StoreSection.svelte";
+    import StoreSection from "$lib/components/StoreSection.svelte";
 
     function createStoreModal() {
         // new Promise<{}>((resolve) => {
@@ -38,7 +38,7 @@
 <!-- Stores -->
 {#await fetchStores() then}
     {#each $stores as s (s.publicKey)}
-        <!-- <StoreSection store={s}></StoreSection> -->
+        <StoreSection store={s}></StoreSection>
     {/each}
 {/await}
 
