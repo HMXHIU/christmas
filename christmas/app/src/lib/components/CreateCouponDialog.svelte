@@ -94,7 +94,10 @@
                 { abortEarly: false }, // `abortEarly: false` to get all the errors
             );
             errors = {};
-            await onCreateCoupon(createCouponParams as CreateCouponParams);
+            await onCreateCoupon({
+                ...(createCouponParams as CreateCouponParams),
+                store,
+            });
             openDialog = false;
         } catch (err) {
             errors = extractErrors(err);

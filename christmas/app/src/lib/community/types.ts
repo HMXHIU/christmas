@@ -61,3 +61,8 @@ export interface RedeemCouponParams {
     numTokens: number;
     coupon: Account<Coupon>;
 }
+
+export interface MintCouponParams {
+    coupon: Account<Coupon>;
+    numTokens: number;
+}

@@ -6,9 +6,8 @@
         fetchMintedCouponSupplyBalance,
         fetchStoreMetadata,
         createCoupon,
+        mintCoupon,
     } from "$lib/community";
-    import { Button } from "$lib/components/ui/button";
-
     import {
         mintedCoupons,
         storesMetadata,
@@ -16,11 +15,11 @@
     } from "../../store";
     import MintedCouponCard from "./MintedCouponCard.svelte";
     import { PublicKey } from "@solana/web3.js";
-    import type { CreateCouponParams } from "$lib/community/types";
+    import type {
+        CreateCouponParams,
+        MintCouponParams,
+    } from "$lib/community/types";
     import * as Avatar from "$lib/components/ui/avatar";
-    import CouponSvg from "./svg/CouponSvg.svelte";
-    import PlusSvg from "./svg/PlusSvg.svelte";
-    import { Badge } from "$lib/components/ui/badge";
     import CreateCouponDialog from "./CreateCouponDialog.svelte";
 
     export let store: Account<Store>;
@@ -29,38 +28,6 @@
         store.publicKey instanceof PublicKey
             ? store.publicKey.toBase58()
             : store.publicKey;
-
-    function createCouponModal() {
-        // new Promise<CreateCouponParams>((resolve) => {
-        //     const modal: ModalSettings = {
-        //         type: "component",
-        //         component: { ref: CreateCouponForm },
-        //         meta: {},
-        //         response: (values) => {
-        //             resolve({ ...values, store });
-        //         },
-        //     };
-        //     // Open modal
-        //     modalStore.trigger(modal);
-        // }).then(async (values) => {
-        //     if (values) {
-        //         // Create coupon
-        //         await createCoupon(values);
-        //         // Refetch coupons
-        //         await fetchMintedCouponSupplyBalance(store.publicKey);
-        //         // Refetch market place coupons
-        //         if (
-        //             $userDeviceClient?.location?.country?.code &&
-        //             $userDeviceClient?.location?.geohash
-        //         ) {
-        //             await fetchMarketCoupons({
-        //                 region: $userDeviceClient?.location?.country?.code,
-        //                 geohash: $userDeviceClient?.location?.geohash,
-        //             });
-        //         }
-        //     }
-        // });
-    }
 
     async function fetchCoupons() {
         await fetchMintedCouponSupplyBalance(store.publicKey);
@@ -81,9 +48,9 @@
         await fetchCoupons();
     }
 
-    async function onMint(
-        event: CustomEvent<{ numTokens: string; coupon: Account<Coupon> }>,
-    ) {
+    async function onMintCoupon(mintCouponParams: MintCouponParams) {
+        // Mint coupon
+        await mintCoupon(mintCouponParams);
         // Refetch coupons
         await fetchCoupons();
     }
@@ -127,11 +94,7 @@
         <div class="grid grid-cols-2 gap-4 px-4 py-4 mt-2">
             {#await fetchMintedCouponSupplyBalance(store.publicKey) then}
                 {#each $mintedCoupons[store.publicKey.toString()] as [coupon, supply, balance]}
-                    <MintedCouponCard
-                        {coupon}
-                        {balance}
-                        {supply}
-                        on:mint={onMint}
+                    <MintedCouponCard {coupon} {balance} {supply} {onMintCoupon}
                     ></MintedCouponCard>
                 {/each}
             {/await}
