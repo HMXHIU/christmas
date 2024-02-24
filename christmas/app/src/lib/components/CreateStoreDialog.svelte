@@ -18,8 +18,9 @@
     import { COUNTRY_DETAILS } from "$lib/clients/user-device-client/defs";
     import * as yup from "yup";
     import type { CreateStoreParams } from "$lib/community/types";
+    import { Separator } from "$lib/components/ui/separator";
 
-    export let onCreateStore: (values: CreateStoreParams) => void;
+    export let onCreateStore: (values: CreateStoreParams) => Promise<void>;
 
     let openDialog: boolean = false;
 
@@ -150,6 +151,7 @@
                 stuff. Pay it forward.
             </Dialog.Description>
         </Dialog.Header>
+        <Separator />
 
         <div class="flex flex-col gap-4">
             <!-- Store name -->
@@ -189,8 +191,6 @@
                     <ImageInput message="150x150" bind:file={logo}></ImageInput>
                 </div>
             </div>
-
-            <hr />
 
             <!-- Address -->
             <div class="grid w-full gap-2">
@@ -272,7 +272,7 @@
             {/if}
         </div>
 
-        <Dialog.Footer>
+        <Dialog.Footer class="flex flex-row justify-end gap-4">
             <BitsDialog.Close>
                 <Button>Maybe Later</Button>
             </BitsDialog.Close>

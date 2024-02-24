@@ -38,7 +38,7 @@
     }
 
     onMount(async () => {
-        // fetch market coupons when userDeviceClient and anchorClient are ready
+        // fetch market coupons when userDeviceClient changes
         userDeviceClient.subscribe(async (dc) => {
             if (dc && $token) {
                 await fetchUserContent();

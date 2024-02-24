@@ -8,29 +8,8 @@
     import { stores } from "../../store";
     import StoreSection from "$lib/components/StoreSection.svelte";
 
-    function createStoreModal() {
-        // new Promise<{}>((resolve) => {
-        //     const modal: ModalSettings = {
-        //         type: "component",
-        //         component: { ref: CreateStoreForm },
-        //         meta: {},
-        //         response: (values) => {
-        //             resolve(values);
-        //         },
-        //     };
-        //     // Open modal
-        //     modalStore.trigger(modal);
-        // }).then(async (values) => {
-        //     if (values) {
-        //         // Create store
-        //         await createStore(values as CreateStoreParams);
-        //         await fetchStores();
-        //     }
-        // });
-    }
-
-    async function onCreateStore(values: CreateStoreParams) {
-        await createStore(values);
+    async function onCreateStore(createStoreParams: CreateStoreParams) {
+        await createStore(createStoreParams);
         await fetchStores();
     }
 </script>

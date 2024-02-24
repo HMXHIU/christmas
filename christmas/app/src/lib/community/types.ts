@@ -36,7 +36,7 @@ export interface CreateStoreParams {
     latitude: number;
     longitude: number;
     geohash: string;
-    logo: File | null; // TODO: change to image
+    logo: File | null;
 }
 
 export interface CreateCouponParams {

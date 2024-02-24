@@ -8,7 +8,9 @@
     import * as Dialog from "$lib/components/ui/dialog";
     import { Dialog as BitsDialog } from "bits-ui";
     import QrCode from "./QRCode.svelte";
-    import type { RedeemCouponParams } from "./types";
+
+    import { Separator } from "$lib/components/ui/separator";
+    import type { RedeemCouponParams } from "$lib/community/types";
 
     export let coupon: Account<Coupon>;
     export let balance: number;
@@ -73,6 +75,7 @@
                     {/if}
                 </Dialog.Title>
             </Dialog.Header>
+            <Separator />
 
             {#if balance > 0 && !$redeemedCoupons[couponKey]}
                 <BaseCouponCard

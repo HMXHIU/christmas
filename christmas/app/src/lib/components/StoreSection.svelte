@@ -9,7 +9,6 @@
     } from "$lib/community";
     import { Button } from "$lib/components/ui/button";
 
-    // import CreateCouponForm from "./CreateCouponForm.svelte";
     import {
         mintedCoupons,
         storesMetadata,
@@ -22,6 +21,7 @@
     import CouponSvg from "./svg/CouponSvg.svelte";
     import PlusSvg from "./svg/PlusSvg.svelte";
     import { Badge } from "$lib/components/ui/badge";
+    import CreateCouponDialog from "./CreateCouponDialog.svelte";
 
     export let store: Account<Store>;
 
@@ -62,12 +62,8 @@
         // });
     }
 
-    async function onMint(
-        event: CustomEvent<{ numTokens: string; coupon: Account<Coupon> }>,
-    ) {
-        // Refetch coupons
+    async function fetchCoupons() {
         await fetchMintedCouponSupplyBalance(store.publicKey);
-        // Refetch market place coupons
         if (
             $userDeviceClient?.location?.country?.code &&
             $userDeviceClient?.location?.geohash
@@ -77,6 +73,19 @@
                 geohash: $userDeviceClient?.location?.geohash,
             });
         }
+    }
+
+    async function onCreateCoupon(createCouponParams: CreateCouponParams) {
+        await createCoupon(createCouponParams);
+        // Refetch coupons
+        await fetchCoupons();
+    }
+
+    async function onMint(
+        event: CustomEvent<{ numTokens: string; coupon: Account<Coupon> }>,
+    ) {
+        // Refetch coupons
+        await fetchCoupons();
     }
 </script>
 
@@ -111,22 +120,7 @@
                 </div>
             </div>
             <!-- Create Coupon -->
-            <div class="my-auto relative">
-                <Button
-                    on:click={createCouponModal}
-                    variant="default"
-                    size="icon"
-                    class="h-10 w-10 rounded-full"
-                >
-                    <CouponSvg />
-                </Button>
-                <Badge
-                    variant="secondary"
-                    class="rounded-full p-0 absolute -right-1 z-10"
-                >
-                    <PlusSvg />
-                </Badge>
-            </div>
+            <CreateCouponDialog {onCreateCoupon} {store} />
         </header>
 
         <!-- Coupons -->
