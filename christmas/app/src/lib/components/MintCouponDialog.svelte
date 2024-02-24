@@ -55,7 +55,7 @@
 
 <Dialog.Root bind:open={openDialog}>
     <Dialog.Trigger>
-        <Button on:click={onSubmit}>Add Supply</Button>
+        <Button>Add Supply</Button>
     </Dialog.Trigger>
 
     <Dialog.Content class="sm:max-w-[425px]">

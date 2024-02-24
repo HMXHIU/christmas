@@ -8,6 +8,7 @@
     import { Button } from "$lib/components/ui/button";
     import * as Dialog from "$lib/components/ui/dialog";
     import { Dialog as BitsDialog } from "bits-ui";
+    import LoadingCoupon from "./LoadingCoupon.svelte";
 
     export let coupon: Account<Coupon>;
     export let balance: number;
@@ -17,6 +18,8 @@
     let fetchMetadataAsync = fetchMetadata();
 
     async function fetchMetadata() {
+        //sleep for 1 second
+        await new Promise((r) => setTimeout(r, 3000));
         const couponMetadata = await fetchCouponMetadata(coupon);
         const storeMetadata = await fetchStoreMetadata(coupon.account.store);
         const distance = calculateDistance(
@@ -38,7 +41,9 @@
     }
 </script>
 
-{#await fetchMetadataAsync then { couponMetadata, storeMetadata, distance }}
+{#await fetchMetadataAsync}
+    <LoadingCoupon />
+{:then { couponMetadata, storeMetadata, distance }}
     <!-- Claim Coupon Dialog -->
     <Dialog.Root bind:open={claimCouponOpen}>
         <Dialog.Trigger>

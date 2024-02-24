@@ -131,7 +131,7 @@
                     <Button
                         size="icon"
                         variant="ghost"
-                        class="relative w-14 h-14 -top-8 right: -right-[calc(50%-2rem)] rounded-full bg-secondary"
+                        class="relative w-14 h-14 -top-4 -right-[calc(50%-2rem)] rounded-full bg-transparent hover:bg-transparent"
                     >
                         <QrSvg />
                     </Button>

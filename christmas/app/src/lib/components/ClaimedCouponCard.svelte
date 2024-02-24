@@ -8,9 +8,10 @@
     import * as Dialog from "$lib/components/ui/dialog";
     import { Dialog as BitsDialog } from "bits-ui";
     import QrCode from "./QRCode.svelte";
-
+    import { Skeleton } from "$lib/components/ui/skeleton";
     import { Separator } from "$lib/components/ui/separator";
     import type { RedeemCouponParams } from "$lib/community/types";
+    import LoadingCoupon from "./LoadingCoupon.svelte";
 
     export let coupon: Account<Coupon>;
     export let balance: number;
@@ -20,6 +21,8 @@
     let redeemCouponOpen: boolean = false;
 
     async function fetchMetadata() {
+        //sleep for 1 second
+        await new Promise((r) => setTimeout(r, 3000));
         const couponMetadata = await fetchCouponMetadata(coupon);
         const storeMetadata = await fetchStoreMetadata(coupon.account.store);
         const distance = calculateDistance(
@@ -47,7 +50,9 @@
     }
 </script>
 
-{#await fetchMetadataAsync then { couponMetadata, storeMetadata, distance }}
+{#await fetchMetadataAsync}
+    <LoadingCoupon />
+{:then { couponMetadata, storeMetadata, distance }}
     <Dialog.Root bind:open={redeemCouponOpen}>
         <Dialog.Trigger>
             <BaseCouponCard

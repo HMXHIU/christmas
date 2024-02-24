@@ -131,7 +131,7 @@
             </p>
             <!-- Coupon Description -->
             {#if couponDescription}
-                <p class="font-light">
+                <p class="text-sm font-light">
                     {cleanString(couponDescription)}
                 </p>
             {/if}
