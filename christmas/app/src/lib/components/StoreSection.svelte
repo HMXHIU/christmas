@@ -91,7 +91,9 @@
         </header>
 
         <!-- Coupons -->
-        <div class="grid grid-cols-2 gap-4 px-4 py-4 mt-2">
+        <div
+            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 px-4 py-4 mt-2"
+        >
             {#await fetchMintedCouponSupplyBalance(store.publicKey) then}
                 {#each $mintedCoupons[store.publicKey.toString()] as [coupon, supply, balance]}
                     <MintedCouponCard {coupon} {balance} {supply} {onMintCoupon}

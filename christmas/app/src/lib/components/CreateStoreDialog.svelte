@@ -42,6 +42,7 @@
         longitude?: string;
         latitude?: string;
         geohash?: string;
+        logo?: string;
     } = {};
 
     // update geohash if user manually changes latitude or longitude
@@ -118,6 +119,7 @@
             openDialog = false;
         } catch (err) {
             errors = extractErrors(err);
+            console.error(err);
         }
     }
 
@@ -191,6 +193,9 @@
                 <div id="store-logo">
                     <ImageInput message="150x150" bind:file={logo}></ImageInput>
                 </div>
+                {#if errors.logo}
+                    <p class="text-xs text-destructive">{errors.logo}</p>
+                {/if}
             </div>
 
             <!-- Address -->
