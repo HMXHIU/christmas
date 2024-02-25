@@ -19,6 +19,7 @@
     import * as yup from "yup";
     import type { CreateStoreParams } from "$lib/community/types";
     import { Separator } from "$lib/components/ui/separator";
+    import { uniqWith } from "lodash";
 
     export let onCreateStore: (values: CreateStoreParams) => Promise<void>;
 
@@ -84,7 +85,7 @@
         );
         region = {
             value: regionCode,
-            label: regionCode,
+            label: COUNTRY_DETAILS[regionCode][1],
         };
         latitude =
             $userDeviceClient?.location?.geolocationCoordinates?.latitude ||
@@ -204,10 +205,10 @@
                         bind:geohash
                     ></LocationSearch>
                 </div>
+                {#if errors.address}
+                    <p class="text-xs text-destructive">{errors.address}</p>
+                {/if}
             </div>
-            {#if errors.address}
-                <p class="text-xs text-destructive">{errors.address}</p>
-            {/if}
 
             <!-- Country -->
             <div class="grid w-full gap-2">
@@ -217,10 +218,9 @@
                         <Select.Trigger class="w-[180px]">
                             <Select.Value placeholder="Country" />
                         </Select.Trigger>
-                        <Select.Content>
+                        <Select.Content class="max-h-[300px] overflow-y-auto">
                             <Select.Group>
-                                <Select.Label>Fruits</Select.Label>
-                                {#each Object.entries(COUNTRY_DETAILS) as [key, [code, name]] (key)}
+                                {#each uniqWith(Object.values(COUNTRY_DETAILS), (x, y) => x[0] === y[0]) as [code, name] (code)}
                                     <Select.Item value={code} label={name}
                                         >{name}</Select.Item
                                     >
@@ -229,10 +229,10 @@
                         </Select.Content>
                         <Select.Input name="favoriteFruit" />
                     </Select.Root>
-                    {#if errors.region}
-                        <p class="text-xs text-destructive">{errors.region}</p>
-                    {/if}
                 </div>
+                {#if errors.region}
+                    <p class="text-xs text-destructive">{errors.region}</p>
+                {/if}
             </div>
 
             <div class="flex flex-row gap-4">
