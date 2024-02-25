@@ -95,8 +95,8 @@
     {/each}
     {#if $claimedCoupons.length < 1}
         <p class="my-auto mx-auto text-center">
-            Your claimed coupons goes here<br /><br />
-            <span class="italic">
+            You have not claimed any coupons<br /><br />
+            <span class="italic text-muted-foreground">
                 {haikus[Math.round(Math.random() * (haikus.length - 1))]}
             </span>
         </p>
@@ -126,7 +126,7 @@
     {#if $marketCoupons.length < 1}
         <p class="mx-auto text-center">
             There are no community coupons in your area<br /><br />
-            <span class="italic">
+            <span class="italic text-muted-foreground">
                 {haikus[Math.round(Math.random() * haikus.length)]}
             </span>
         </p>

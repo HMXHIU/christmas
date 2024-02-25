@@ -6,8 +6,6 @@
     import { throttle } from "lodash";
     import { PUBLIC_GOOGLE_MAPS_API_KEY } from "$env/static/public";
     import * as Command from "$lib/components/ui/command";
-    import * as Popover from "$lib/components/ui/popover";
-    import { Button } from "$lib/components/ui/button";
 
     export let address: string = "";
     export let region: string | null = null;
@@ -23,13 +21,9 @@
         value: string;
         meta: { name: string; formatted_address: string; place_id: string };
     }
-
-    let open = false;
-
     export let addressOptions: AddressOption[] = [];
 
     let placesService: google.maps.places.PlacesService;
-
     const findPlaceFromQuery = throttle((query) => {
         placesService?.findPlaceFromQuery(
             {
@@ -55,10 +49,6 @@
                             };
                         },
                     );
-
-                    addressOptions = addressOptions;
-
-                    console.log(JSON.stringify(addressOptions, null, 2));
                 } else {
                     console.warn(status);
                 }
@@ -66,11 +56,7 @@
         );
     }, 1000);
 
-    // We want to refocus the trigger button when the user selects
-    // an item from the list so users can continue navigating the
-    // rest of the form with the keyboard.
-    function closeAndFocusTrigger(triggerId: string) {
-        open = false;
+    function focusOn(triggerId: string) {
         tick().then(() => {
             document.getElementById(triggerId)?.focus();
         });
@@ -131,36 +117,27 @@
     });
 </script>
 
-<Popover.Root bind:open let:ids>
-    <Popover.Trigger asChild let:builder>
-        <Button
-            builders={[builder]}
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            class="w-[300px] justify-between overflow-hidden"
-        >
-            {address || "Search Address..."}
-        </Button>
-    </Popover.Trigger>
-    <Popover.Content class="w-[300px] p-0">
-        <Command.Root onKeydown={searchAddress}>
-            <Command.Input placeholder="Search Address..." autocomplete="off" />
-            <Command.Group>
-                {#each addressOptions as option (option.value)}
-                    <Command.Item
-                        value={option.value}
-                        onSelect={() => {
-                            onSelectAddress(option.meta);
-                            closeAndFocusTrigger(ids.trigger);
-                        }}
-                    >
-                        {option.label}
-                    </Command.Item>
-                {/each}
-            </Command.Group>
-        </Command.Root>
-    </Popover.Content>
-</Popover.Root>
+<Command.Root shouldFilter={false} onKeydown={searchAddress}>
+    <Command.Input
+        bind:value={address}
+        placeholder="Search Address..."
+        autocomplete="off"
+        id="autocomplete-search"
+    />
+    <Command.Group>
+        {#each addressOptions as option (option.value)}
+            <Command.Item
+                value={option.value}
+                onSelect={() => {
+                    onSelectAddress(option.meta);
+                    focusOn("autocomplete-search");
+                    addressOptions = []; // close the dropdown
+                }}
+            >
+                {option.label}
+            </Command.Item>
+        {/each}
+    </Command.Group>
+</Command.Root>
 
 <div bind:this={map} class="hidden w-0 h-0"></div>
