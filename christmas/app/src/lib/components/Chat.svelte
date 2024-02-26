@@ -8,6 +8,7 @@
     import * as Popover from "$lib/components/ui/popover";
     import ChatCommand from "./crossover/ChatCommand.svelte";
     import { Button } from "$lib/components/ui/button";
+    import ChatWindow from "./ChatWindow.svelte";
 
     // Types
     interface Person {
@@ -81,12 +82,6 @@
     ];
     let currentMessage = "";
 
-    // For some reason, eslint thinks ScrollBehavior is undefined...
-    // eslint-disable-next-line no-undef
-    function scrollChatBottom(behavior?: ScrollBehavior): void {
-        elemChat.scrollTo({ top: elemChat.scrollHeight, behavior });
-    }
-
     function getCurrentTimestamp(): string {
         return new Date().toLocaleString("en-US", {
             hour: "numeric",
@@ -118,10 +113,6 @@
         messageFeed = [...messageFeed, newMessage];
         // Clear prompt
         currentMessage = "";
-        // Smooth scroll to bottom, Timeout prevents race condition
-        setTimeout(() => {
-            scrollChatBottom("smooth");
-        }, 0);
     }
 
     function onPromptKeydown(event: KeyboardEvent): void {
@@ -130,11 +121,6 @@
             addMessage();
         }
     }
-
-    // When DOM mounted, scroll to bottom
-    onMount(() => {
-        scrollChatBottom();
-    });
 </script>
 
 <section class="card">
@@ -176,55 +162,8 @@
         </div>
         <!-- Chat -->
         <div class="grid grid-row-[1fr_auto]">
-            <!-- Conversation -->
-            <section
-                bind:this={elemChat}
-                class="max-h-[500px] p-4 overflow-y-auto space-y-4"
-            >
-                {#each messageFeed as bubble}
-                    {#if bubble.host === true}
-                        <div class="grid grid-cols-[auto_1fr] gap-2">
-                            <Avatar
-                                src="https://i.pravatar.cc/?img={bubble.avatar}"
-                                width="w-12"
-                            />
-                            <div
-                                class="card p-4 variant-soft rounded-tl-none space-y-2"
-                            >
-                                <header
-                                    class="flex justify-between items-center"
-                                >
-                                    <p class="font-bold">{bubble.name}</p>
-                                    <small class="opacity-50"
-                                        >{bubble.timestamp}</small
-                                    >
-                                </header>
-                                <p>{bubble.message}</p>
-                            </div>
-                        </div>
-                    {:else}
-                        <div class="grid grid-cols-[1fr_auto] gap-2">
-                            <div
-                                class="card p-4 rounded-tr-none space-y-2 {bubble.color}"
-                            >
-                                <header
-                                    class="flex justify-between items-center"
-                                >
-                                    <p class="font-bold">{bubble.name}</p>
-                                    <small class="opacity-50"
-                                        >{bubble.timestamp}</small
-                                    >
-                                </header>
-                                <p>{bubble.message}</p>
-                            </div>
-                            <Avatar
-                                src="https://i.pravatar.cc/?img={bubble.avatar}"
-                                width="w-12"
-                            />
-                        </div>
-                    {/if}
-                {/each}
-            </section>
+            <ChatWindow {messageFeed}></ChatWindow>
+
             <!-- Prompt -->
             <section
                 class="flex flex-row border border-foreground-muted rounded-md m-4"
