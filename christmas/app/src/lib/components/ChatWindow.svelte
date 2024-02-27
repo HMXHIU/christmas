@@ -25,7 +25,7 @@
 
 <section
     bind:this={chatWindow}
-    class="max-h-[500px] p-4 overflow-y-auto space-y-2"
+    class="max-h-[500px] p-4 overflow-y-auto space-y-2 scroll-container"
 >
     {#each messageFeed as message}
         <div class="flex flex-row text-left">
@@ -39,3 +39,16 @@
         </div>
     {/each}
 </section>
+
+<!-- Styles -->
+<style>
+    /* Hide Scrollbar */
+    .scroll-container {
+        overflow-x: auto;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* Internet Explorer 10+ */
+    }
+    .scroll-container::-webkit-scrollbar {
+        display: none; /* WebKit */
+    }
+</style>

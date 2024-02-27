@@ -1,7 +1,6 @@
 <script lang="ts">
-    // Components
-    import Chat from "$lib/components/Chat.svelte";
+    import GameWindow from "$lib/components/crossover/GameWindow.svelte";
     import { onMount } from "svelte";
 </script>
 
-<Chat></Chat>
+<GameWindow />

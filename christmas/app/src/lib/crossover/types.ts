@@ -11,9 +11,27 @@ export type PlayerMetadata = yup.InferType<typeof PlayerMetadataSchema>;
 export interface MessageFeed {
     id: number;
     host: boolean;
-    avatar: number;
+    avatar: string | null;
     name: string;
     timestamp: string;
     message: string;
     color: string;
+}
+
+export interface Entity {
+    id: number;
+    avatar: string | null;
+    name: string;
+}
+
+export interface ChatCommandGroup {
+    key: string;
+    label: string;
+}
+
+export interface ChatCommand {
+    key: string;
+    label: string;
+    icon: any;
+    shortcut: string | null;
 }
