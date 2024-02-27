@@ -2,13 +2,14 @@
     import type { Entity } from "$lib/crossover/types";
     import { Button } from "$lib/components/ui/button";
     import * as Avatar from "$lib/components/ui/avatar";
+    import { cn } from "$lib/shadcn";
 
     export let showAvatar = false;
     export let entities: Entity[] = [];
 </script>
 
 <!-- Navigation -->
-<div class="grid grid-rows-[auto_1fr_auto] border-r">
+<div class={cn("grid grid-rows-[auto_1fr_auto] border-r", $$restProps.class)}>
     <!-- List -->
     <div class="p-4 space-y-4 overflow-y-auto">
         <small class="opacity-50">Contacts</small>

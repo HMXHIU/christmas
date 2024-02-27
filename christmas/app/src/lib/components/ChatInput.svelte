@@ -3,16 +3,18 @@
     import { Textarea } from "$lib/components/ui/textarea";
     import { Send } from "lucide-svelte";
     import { Button } from "$lib/components/ui/button";
-    import type { ChatCommand } from "$lib/crossover/types";
+    import type { ChatCommand, ChatCommandGroup } from "$lib/crossover/types";
     import ChatCommandSelect from "./crossover/ChatCommandSelect.svelte";
 
-    let command: ChatCommand | null = null;
-    let message: string = "";
-
+    export let defaultCommand: string;
+    export let commandGroups: [ChatCommandGroup, ChatCommand[]][];
     export let onChatMessage: (
         command: ChatCommand | null,
         message: string,
     ) => void;
+
+    let command: ChatCommand | null = null;
+    let message: string = "";
 
     function onPromptKeydown(event: KeyboardEvent): void {
         if (["Enter"].includes(event.code)) {
@@ -26,6 +28,8 @@
     <ChatCommandSelect
         bind:value={command}
         class="h-full border-0 text-muted-foreground"
+        {commandGroups}
+        {defaultCommand}
     />
     <Textarea
         bind:value={message}

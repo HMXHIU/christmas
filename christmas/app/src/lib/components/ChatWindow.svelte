@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import type { MessageFeed } from "$lib/crossover/types";
+    import { cn } from "$lib/shadcn";
 
     let chatWindow: HTMLElement;
 
@@ -25,7 +26,10 @@
 
 <section
     bind:this={chatWindow}
-    class="max-h-[500px] p-4 overflow-y-auto space-y-2 scroll-container"
+    class={cn(
+        "h-full w-full p-4 overflow-y-auto space-y-2 scroll-container",
+        $$restProps.class,
+    )}
 >
     {#each messageFeed as message}
         <div class="flex flex-row text-left">

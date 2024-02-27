@@ -96,7 +96,7 @@
 </script>
 
 <!-- App Shell -->
-<div class="flex flex-col min-h-screen">
+<div class="flex flex-col h-dvh">
     <!-- Page Header -->
     <header class="sticky top-0 z-50 w-full border-b bg-secondary">
         <div class="container flex h-14 max-w-screen-2xl items-center">
@@ -114,9 +114,9 @@
     </header>
 
     <!-- Page Content -->
-    <main class="flex-grow">
+    <main style="height: calc(100dvh - 7rem);">
         <!-- Your Page Content Goes Here -->
-        <div class="container mx-auto px-0 py-0">
+        <div class="container mx-auto px-0 py-0 h-full">
             <!-- Content Slot -->
             <slot />
         </div>

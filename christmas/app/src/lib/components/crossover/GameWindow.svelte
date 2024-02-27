@@ -1,14 +1,70 @@
 <script lang="ts">
     import type {
         ChatCommand,
+        ChatCommandGroup,
         Entity,
         MessageFeed,
     } from "$lib/crossover/types";
+    import {
+        MessageSquare,
+        Grab,
+        FlameKindling,
+        ArrowLeft,
+    } from "lucide-svelte";
     import Chat from "../Chat.svelte";
     import ContextSection from "./ContextSection.svelte";
+    import { cn } from "$lib/shadcn";
 
     const lorem =
         "Ab natus quis quia. Quae dolore deserunt at vitae beatae eligendi facilis nam. Quam error quis facere libero id necessitatibus.";
+
+    let defaultCommand = "say";
+    let commandGroups: [ChatCommandGroup, ChatCommand[]][] = [
+        // Speech
+        [
+            { key: "speech", label: "Speech" },
+            [
+                {
+                    key: "say",
+                    label: "Say",
+                    icon: MessageSquare,
+                    shortcut: "⌘S",
+                },
+                {
+                    key: "shout",
+                    label: "Shout",
+                    icon: MessageSquare,
+                    shortcut: null,
+                },
+                {
+                    key: "whisper",
+                    label: "Whisper",
+                    icon: MessageSquare,
+                    shortcut: null,
+                },
+            ],
+        ],
+        // Combat
+        [
+            { key: "combat", label: "Combat" },
+            [
+                { key: "punch", label: "Punch", icon: Grab, shortcut: "⌘P" },
+                { key: "flee", label: "Flee", icon: ArrowLeft, shortcut: "⌘F" },
+            ],
+        ],
+        // Out of Combat (OOC)
+        [
+            { key: "ooc", label: "Out of Combat (OOC)" },
+            [
+                {
+                    key: "rest",
+                    label: "Rest",
+                    icon: FlameKindling,
+                    shortcut: "⌘R",
+                },
+            ],
+        ],
+    ];
 
     let entities: Entity[] = [
         { id: 0, avatar: null, name: "Michael" },
@@ -94,7 +150,15 @@
     }
 </script>
 
-<!-- Chat -->
-<Chat {messageFeed} {onChatMessage}></Chat>
-<!-- Context -->
-<ContextSection {entities}></ContextSection>
+<div class={cn("flex flex-col", $$restProps.class)}>
+    <!-- Chat -->
+    <Chat
+        {messageFeed}
+        {onChatMessage}
+        {commandGroups}
+        {defaultCommand}
+        class="h-3/5"
+    ></Chat>
+    <!-- Context Section -->
+    <ContextSection {entities} class="h-2/5"></ContextSection>
+</div>

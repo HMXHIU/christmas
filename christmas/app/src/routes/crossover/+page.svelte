@@ -3,4 +3,4 @@
     import { onMount } from "svelte";
 </script>
 
-<GameWindow />
+<GameWindow class="h-full" />
