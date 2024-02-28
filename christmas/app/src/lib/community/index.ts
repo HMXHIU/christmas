@@ -527,9 +527,7 @@ async function login() {
     const solanaSignInInput = await (
         await fetch(`${PUBLIC_HOST || ""}/api/auth/siws`)
     ).json();
-    const solanaSignInOutput = await (window as any).phantom?.solana.signIn(
-        solanaSignInInput,
-    );
+    const solanaSignInOutput = await window.solana.signIn(solanaSignInInput);
     const loginResult = await fetch(`${PUBLIC_HOST || ""}/api/auth/login`, {
         method: "POST",
         headers: {
@@ -557,7 +555,7 @@ async function login() {
 
 async function logout() {
     await fetch(`${PUBLIC_HOST || ""}/api/auth/logout`, { method: "POST" });
-    await (window as any).solana.disconnect();
+    await window.solana.disconnect();
     token.set(null);
 
     // clear all stores

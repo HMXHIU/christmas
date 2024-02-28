@@ -16,8 +16,22 @@ import {
     OFFSET_TO_VALID_TO_HASH,
 } from "../app/src/lib/anchorClient/defs";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+import { generateURL } from "../app/src/lib/utils";
 
 describe("Test utils", () => {
+    describe("generateURL", () => {
+        it("should generate the url combining params and origin", () => {
+            assert.equal(
+                generateURL({ a: "1", b: "2" }, "https://example.com"),
+                "https://example.com/?a=1&b=2"
+            );
+            assert.equal(
+                generateURL({ a: "1", b: "2" }),
+                "https://${origin}/?a=1&b=2"
+            );
+        });
+    });
+
     describe("u8ToByteMask", () => {
         it("should return the correct byte mask", () => {
             assert.equal(u8ToByteMask(0), 0x00);

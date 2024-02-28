@@ -16,9 +16,8 @@ export {
     cleanString,
     calculateDistance,
     timeStampToDate,
-    generateURL, // TODO: Use general URL functions and deprecate this
+    generateURL,
     extractQueryParams,
-    fetchData, // TODO: Use general fetch and deprecate this
     storage_uri_to_url,
     signAndSendTransaction,
     confirmTransaction,
@@ -92,42 +91,27 @@ function getErrorMessage(error: any): string {
     return JSON.stringify(error);
 }
 
-function generateURL(kwargs: Record<string, string>, uri?: string): string {
+function generateURL(kwargs: Record<string, string>, uri?: string) {
     const origin =
         (typeof window !== "undefined" ? window.location.origin : undefined) ||
         "https://${origin}";
 
-    const queryParams: string[] = [];
+    const queryParams = new URLSearchParams();
 
     for (const key in kwargs) {
         if (kwargs.hasOwnProperty(key)) {
-            queryParams.push(`${key}=${encodeURIComponent(kwargs[key])}`);
+            queryParams.append(key, kwargs[key]);
         }
     }
-    const url = uri ? new URL(uri, origin) : origin;
 
-    return `${url}?${queryParams.sort().join("&")}`;
+    const url = uri ? new URL(uri, origin) : new URL(origin);
+    url.search = queryParams.toString();
+
+    return url.toString();
 }
 
 function extractQueryParams(url: string): Record<string, string> {
     return Object.fromEntries(new URL(url).searchParams.entries());
-}
-
-function fetchData(url: string, defaultValue: any = {}): Promise<any> {
-    if (url) {
-        return fetch(url)
-            .then((res) => {
-                if (!res.ok) {
-                    throw new Error(`HTTP error! Status: ${res.status}`);
-                }
-                return res.json();
-            })
-            .catch((error) => {
-                console.warn(`Could not fetch ${url}`);
-                return defaultValue; // Return the specified default value on error
-            });
-    }
-    return defaultValue;
 }
 
 function storage_uri_to_url(uri: string): string {

@@ -14,7 +14,7 @@
 
     async function handleLoginLogout() {
         // Ask user to download phantom wallet
-        if ((window as any).solana == null) {
+        if (window.solana == null) {
             showDownloadWalletAlert = true;
         }
         // Login solana
@@ -40,7 +40,7 @@
         // Auto connect if token is present
         if ($token != null) {
             // Token exists, user has connected before (domain should be whitelisted)
-            await (window as any).solana.connect();
+            await window.solana.connect();
 
             // Set up refresh token interval (Note: Make sure Wallet is a singleton component, otherwise multiple intervals will be created)
             setInterval(

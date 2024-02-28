@@ -1,8 +1,5 @@
+import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
 import { UserMetadataSchema } from "$lib/community/types.js";
-import {
-    PlayerMetadataSchema,
-    type PlayerMetadata,
-} from "$lib/crossover/types.js";
 import {
     getLoadedPlayer,
     getPlayerMetadata,
@@ -24,7 +21,7 @@ import { PublicKey } from "@solana/web3.js";
 import { error, json } from "@sveltejs/kit";
 
 export async function POST(event) {
-    const { request, params } = event;
+    const { request, params, cookies } = event;
     const { op } = params;
 
     // All auth methods require login
@@ -56,6 +53,15 @@ export async function POST(event) {
             })) as PlayerEntity;
         }
 
+        // Set player cookie (to know if user has signed up for crossover)
+        cookies.set("player", userSession.publicKey, {
+            path: "/",
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: parseInt(PUBLIC_REFRESH_JWT_EXPIRES_IN), // in seconds
+        });
+
         return json({ status: "success", player });
     }
 
@@ -67,6 +73,12 @@ export async function POST(event) {
         }
         player.loggedIn = false;
         await playerRepository.save(player.player, player);
+
+        // Remove player cookie
+        cookies.delete("player", {
+            path: "/",
+        });
+
         return json({ status: "success", player });
     }
 
@@ -112,7 +124,7 @@ export async function POST(event) {
             name: hashObject(["user", userSession.publicKey]),
         });
 
-        // Update Account with metadata uri
+        // Update account with metadata uri
         const updateUserIx = await serverAnchorClient.updateUserIx({
             region: user.region,
             uri: userMetadataUrl,
@@ -123,6 +135,15 @@ export async function POST(event) {
         // Create serialized transaction for user to sign
         const base64Transaction =
             await createSerializedTransaction(updateUserIx);
+
+        // Set player cookie (to know if user has signed up for crossover)
+        cookies.set("player", userSession.publicKey, {
+            path: "/",
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: parseInt(PUBLIC_REFRESH_JWT_EXPIRES_IN), // in seconds
+        });
 
         return json({
             transaction: base64Transaction,

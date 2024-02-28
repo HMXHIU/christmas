@@ -17,6 +17,20 @@ declare namespace App {
 declare global {
     interface Window {
         phantom: any;
-        solana: any;
+        solana: {
+            connect: any;
+            disconnect: any;
+            publicKey: any;
+        };
     }
+}
+
+interface Window {
+    phantom: any;
+    solana: {
+        signIn: any;
+        connect: any;
+        disconnect: any;
+        publicKey: any;
+    };
 }

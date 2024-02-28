@@ -15,8 +15,11 @@
     import ContextSection from "./ContextSection.svelte";
     import { cn } from "$lib/shadcn";
 
-    const lorem =
-        "Ab natus quis quia. Quae dolore deserunt at vitae beatae eligendi facilis nam. Quam error quis facere libero id necessitatibus.";
+    export let messageFeed: MessageFeed[] = [];
+    export let onChatMessage: (
+        command: ChatCommand | null,
+        message: string,
+    ) => void;
 
     let defaultCommand = "say";
     let commandGroups: [ChatCommandGroup, ChatCommand[]][] = [
@@ -74,80 +77,6 @@
         { id: 4, avatar: null, name: "Lara" },
         { id: 5, avatar: null, name: "Melissa" },
     ];
-
-    let messageFeed: MessageFeed[] = [
-        {
-            id: 0,
-            host: true,
-            avatar: null,
-            name: "Jane",
-            timestamp: "Yesterday @ 2:30pm",
-            message: lorem,
-            color: "variant-soft-primary",
-        },
-        {
-            id: 1,
-            host: false,
-            avatar: null,
-            name: "Michael",
-            timestamp: "Yesterday @ 2:45pm",
-            message: lorem,
-            color: "variant-soft-primary",
-        },
-        {
-            id: 2,
-            host: true,
-            avatar: null,
-            name: "Jane",
-            timestamp: "Yesterday @ 2:50pm",
-            message: lorem,
-            color: "variant-soft-primary",
-        },
-        {
-            id: 3,
-            host: false,
-            avatar: null,
-            name: "Michael",
-            timestamp: "Yesterday @ 2:52pm",
-            message: lorem,
-            color: "variant-soft-primary",
-        },
-    ];
-
-    async function onChatMessage(command: ChatCommand | null, message: string) {
-        console.log(command, message);
-
-        // Send the message to the server
-        const response = await fetch("/api/crossover/cmd/say", {
-            method: "POST",
-            body: JSON.stringify({ message: "hello" }),
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
-
-        console.log(await response.json());
-
-        const newMessage = {
-            id: messageFeed.length,
-            host: true,
-            avatar: null,
-            name: "Jane",
-            timestamp: `Today @ ${getCurrentTimestamp()}`,
-            message: message,
-            color: "variant-soft-primary",
-        };
-        // Update the message feed
-        messageFeed = [...messageFeed, newMessage];
-    }
-
-    function getCurrentTimestamp(): string {
-        return new Date().toLocaleString("en-US", {
-            hour: "numeric",
-            minute: "numeric",
-            hour12: true,
-        });
-    }
 </script>
 
 <div class={cn("flex flex-col", $$restProps.class)}>

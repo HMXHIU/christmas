@@ -1,26 +1,36 @@
 <script lang="ts">
     import GameWindow from "$lib/components/crossover/GameWindow.svelte";
-    import { onMount } from "svelte";
+    import Onboard from "$lib/components/crossover/Onboard.svelte";
+    import type { ChatCommand, MessageFeed } from "$lib/crossover/types";
     import { trpc } from "$lib/trpc/client";
-    import { page } from "$app/stores";
 
-    let greeting = "press the button to load data";
-    let loading = false;
+    let loggedIn: boolean = false;
 
-    const loadData = async () => {
-        loading = true;
-        greeting = await trpc().greeting.query();
-        loading = false;
-    };
+    let messageFeed: MessageFeed[] = [];
+
+    async function onChatMessage(command: ChatCommand | null, message: string) {
+        switch (command?.key) {
+            case "say":
+                await trpc().cmd.say.query({ message });
+                break;
+
+            default:
+                console.warn("Unknown command:", command?.key, message);
+                break;
+        }
+    }
+
+    function getCurrentTimestamp(): string {
+        return new Date().toLocaleString("en-US", {
+            hour: "numeric",
+            minute: "numeric",
+            hour12: true,
+        });
+    }
 </script>
 
-<a
-    href="#load"
-    role="button"
-    class="secondary"
-    aria-busy={loading}
-    on:click|preventDefault={loadData}>Load</a
->
-<p>{greeting}</p>
-
-<GameWindow class="h-full" />
+{#if !loggedIn}
+    <Onboard bind:loggedIn />
+{:else}
+    <GameWindow class="h-full" {onChatMessage} {messageFeed} />
+{/if}

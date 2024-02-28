@@ -1,8 +1,9 @@
-import yup from "yup";
+import * as yup from "yup";
 
 export const PlayerMetadataSchema = yup.object().shape({
     player: yup.string().required(),
-    name: yup.string().required(),
+    name: yup.string().min(1).max(100).required(),
+    description: yup.string().max(400).optional(),
     tile: yup.string().optional(),
 });
 

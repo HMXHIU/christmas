@@ -3,12 +3,26 @@ import type { TransactionResult } from "$lib/anchorClient/types";
 import { signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
 
-export { signup, login, logout, stream };
+export { player, signup, login, logout, stream, worldSeed };
+
+const worldSeed = "yggdrasil 01";
 
 /**
  * All auth functions requires user to be logged in already via SIWS (use cookies in headers to login without a browser).
  * Override the host if you are testing from a different environment.
  */
+
+async function player(headers: any = {}): Promise<Response> {
+    return await fetch(`${PUBLIC_HOST}/api/crossover/auth`, {
+        method: "GET",
+        headers,
+    }).then(async (response) => {
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+        return response.json();
+    });
+}
 
 async function signup(
     { name }: { name: string },
@@ -29,8 +43,6 @@ async function signup(
             return response.json();
         })
         .then(({ transaction }) => {
-            console.log("transaction", transaction);
-
             return signAndSendTransaction({
                 tx: Transaction.from(Buffer.from(transaction, "base64")),
                 wallet: options?.wallet,

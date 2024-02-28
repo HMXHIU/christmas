@@ -1,5 +1,5 @@
 import type { RequestHandler } from "./$types";
-import { redisClient, redisSubscribeClient } from "$lib/server/crossover/redis";
+import { redisSubscribeClient } from "$lib/server/crossover/redis";
 import { connectedUsers } from "$lib/server/crossover";
 import { requireLogin } from "$lib/server";
 
@@ -45,12 +45,3 @@ redisSubscribeClient.subscribe("message", (message) => {
         user.stream.enqueue(JSON.stringify({ type: "message", data: message }));
     }
 });
-
-// let counter = 0;
-
-// // TESTING create infinite loop with sleep of 1 second and publish message to redis
-// setInterval(() => {
-//     redisClient.publish("message", `Hello world: ${counter}`);
-//     console.log("Published message to Redis");
-//     counter++;
-// }, 1000);

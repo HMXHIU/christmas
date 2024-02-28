@@ -17,6 +17,7 @@
     import QrScanner from "$lib/components/QRScanner.svelte";
     import { extractQueryParams, getErrorMessage } from "$lib/utils";
     import QrSvg from "$lib/components/svg/QrSvg.svelte";
+    import { Toaster } from "$lib/components/ui/sonner";
 
     let qrAlertOpen: boolean = false;
     let verifyRemdeptionParams: any = {};
@@ -38,7 +39,7 @@
     }
 
     onMount(async () => {
-        // fetch market coupons when userDeviceClient changes
+        // Fetch market coupons when userDeviceClient changes
         userDeviceClient.subscribe(async (dc) => {
             if (dc && $token) {
                 await fetchUserContent();
@@ -50,7 +51,7 @@
             }
         });
 
-        // set userDeviceClient (Note: after subscribe)
+        // Set userDeviceClient (Note: after subscribe)
         const client = new UserDeviceClient();
         await client.initialize();
         userDeviceClient.set(client);
@@ -121,6 +122,9 @@
             <slot />
         </div>
     </main>
+
+    <!-- Toaster -->
+    <Toaster />
 
     <!-- Page Footer -->
     <footer class="py-3 fixed w-full bottom-0 z-50 bg-secondary pl-2">
