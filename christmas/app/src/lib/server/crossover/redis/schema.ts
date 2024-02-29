@@ -1,5 +1,4 @@
 import { Schema, type Entity } from "redis-om";
-import { Repository } from "redis-om";
 
 export { PlayerSchema, type PlayerEntity };
 

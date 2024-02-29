@@ -3,8 +3,7 @@
     import Onboard from "$lib/components/crossover/Onboard.svelte";
     import type { ChatCommand, MessageFeed } from "$lib/crossover/types";
     import { trpc } from "$lib/trpc/client";
-
-    let loggedIn: boolean = false;
+    import { player } from "../../store";
 
     let messageFeed: MessageFeed[] = [];
 
@@ -29,8 +28,8 @@
     }
 </script>
 
-{#if !loggedIn}
-    <Onboard bind:loggedIn />
+{#if !$player}
+    <Onboard />
 {:else}
     <GameWindow class="h-full" {onChatMessage} {messageFeed} />
 {/if}

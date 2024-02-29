@@ -1,10 +1,12 @@
 import * as yup from "yup";
 
+// Match PlayerEntity in redis-om
 export const PlayerMetadataSchema = yup.object().shape({
     player: yup.string().required(),
     name: yup.string().min(1).max(100).required(),
     description: yup.string().max(400).optional(),
     tile: yup.string().optional(),
+    loggedIn: yup.boolean().optional(),
 });
 
 export type PlayerMetadata = yup.InferType<typeof PlayerMetadataSchema>;

@@ -7,8 +7,10 @@ import type {
     StoreMetadata,
     UserMetadata,
 } from "$lib/community/types";
+import type { PlayerMetadata } from "$lib/crossover/types";
 
 export let token = writable<string | null>(null); // jwt access token (cookies fallback, null if logged out)
+export let player = writable<PlayerMetadata | null>(null);
 export let userDeviceClient = writable<UserDeviceClient | null>(null);
 export let marketCoupons = writable<[Account<Coupon>, number][]>([]);
 export let claimedCoupons = writable<[Account<Coupon>, number][]>([]);

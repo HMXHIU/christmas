@@ -2,8 +2,9 @@ import { PUBLIC_HOST } from "$env/static/public";
 import type { TransactionResult } from "$lib/anchorClient/types";
 import { signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
-
-export { player, signup, login, logout, stream, worldSeed };
+import type { PlayerMetadata } from "./types";
+import { player } from "../../store";
+export { getPlayer, signup, login, logout, stream, worldSeed };
 
 const worldSeed = "yggdrasil 01";
 
@@ -12,7 +13,7 @@ const worldSeed = "yggdrasil 01";
  * Override the host if you are testing from a different environment.
  */
 
-async function player(headers: any = {}): Promise<Response> {
+async function getPlayer(headers: any = {}): Promise<PlayerMetadata> {
     return await fetch(`${PUBLIC_HOST}/api/crossover/auth`, {
         method: "GET",
         headers,
@@ -51,8 +52,8 @@ async function signup(
         });
 }
 
-async function login(headers: any = {}): Promise<Response> {
-    return await fetch(`${PUBLIC_HOST}/api/crossover/auth/login`, {
+async function login(headers: any = {}) {
+    let response = await fetch(`${PUBLIC_HOST}/api/crossover/auth/login`, {
         method: "POST",
         headers,
     }).then(async (response) => {
@@ -61,10 +62,13 @@ async function login(headers: any = {}): Promise<Response> {
         }
         return response.json();
     });
+
+    // Update `$player`
+    player.set(response.player);
 }
 
-async function logout(headers: any = {}): Promise<Response> {
-    return await fetch(`${PUBLIC_HOST}/api/crossover/auth/logout`, {
+async function logout(headers: any = {}) {
+    await fetch(`${PUBLIC_HOST}/api/crossover/auth/logout`, {
         method: "POST",
         headers,
     }).then(async (response) => {
@@ -73,6 +77,9 @@ async function logout(headers: any = {}): Promise<Response> {
         }
         return response.json();
     });
+
+    // Update `$player`
+    player.set(null);
 }
 
 async function stream(headers: any = {}): Promise<EventTarget> {

@@ -2,7 +2,7 @@
     import { createUser } from "$lib/community";
     import { Button } from "$lib/components/ui/button";
     import { login, signup, worldSeed } from "$lib/crossover";
-    import { token, userDeviceClient } from "../../../store";
+    import { player, token, userDeviceClient } from "../../../store";
     import { toast } from "svelte-sonner";
     import Wallet from "../Wallet.svelte";
     import { Textarea } from "$lib/components/ui/textarea";
@@ -12,8 +12,6 @@
         PlayerMetadataSchema,
         type PlayerMetadata,
     } from "$lib/crossover/types";
-
-    export let loggedIn: boolean = false;
 
     let requireSignup = false;
 
@@ -26,7 +24,6 @@
         try {
             // Try login to crossover
             await login();
-            loggedIn = true;
         } catch (error) {
             // If login failed, player has not signed up
             requireSignup = true;
@@ -82,7 +79,6 @@
 
             // Login to crossover
             await login();
-            loggedIn = true;
         }
     }
 

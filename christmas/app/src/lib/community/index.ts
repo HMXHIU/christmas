@@ -18,6 +18,7 @@ import {
     token,
     redeemedCoupons,
     userMetadata,
+    player,
 } from "../../store";
 import { get } from "svelte/store";
 import {
@@ -42,6 +43,7 @@ import {
     cleanStoreAccount,
     cleanUser,
 } from "./utils";
+import { logout as logoutCrossoover } from "$lib/crossover";
 
 // Exports
 export {
@@ -554,6 +556,11 @@ async function login() {
 }
 
 async function logout() {
+    // Logout of crossover while we still have the token
+    if (get(player) != null) {
+        await logoutCrossoover();
+    }
+
     await fetch(`${PUBLIC_HOST || ""}/api/auth/logout`, { method: "POST" });
     await window.solana.disconnect();
     token.set(null);
