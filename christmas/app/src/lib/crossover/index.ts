@@ -52,7 +52,7 @@ async function signup(
         });
 }
 
-async function login(headers: any = {}) {
+async function login(headers: any = {}): Promise<Response> {
     let response = await fetch(`${PUBLIC_HOST}/api/crossover/auth/login`, {
         method: "POST",
         headers,
@@ -65,10 +65,12 @@ async function login(headers: any = {}) {
 
     // Update `$player`
     player.set(response.player);
+
+    return response;
 }
 
-async function logout(headers: any = {}) {
-    await fetch(`${PUBLIC_HOST}/api/crossover/auth/logout`, {
+async function logout(headers: any = {}): Promise<Response> {
+    let response = await fetch(`${PUBLIC_HOST}/api/crossover/auth/logout`, {
         method: "POST",
         headers,
     }).then(async (response) => {
@@ -80,6 +82,8 @@ async function logout(headers: any = {}) {
 
     // Update `$player`
     player.set(null);
+
+    return response;
 }
 
 async function stream(headers: any = {}): Promise<EventTarget> {

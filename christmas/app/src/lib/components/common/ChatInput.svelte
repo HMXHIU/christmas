@@ -4,7 +4,7 @@
     import { Send } from "lucide-svelte";
     import { Button } from "$lib/components/ui/button";
     import type { ChatCommand, ChatCommandGroup } from "$lib/crossover/types";
-    import ChatCommandSelect from "./crossover/ChatCommandSelect.svelte";
+    import ChatCommandSelect from "./ChatCommandSelect.svelte";
 
     export let defaultCommand: string;
     export let commandGroups: [ChatCommandGroup, ChatCommand[]][];

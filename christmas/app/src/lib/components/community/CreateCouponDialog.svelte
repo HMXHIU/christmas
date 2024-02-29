@@ -3,8 +3,8 @@
         COUPON_NAME_SIZE,
         STRING_PREFIX_SIZE,
     } from "$lib/anchorClient/defs";
-    import ImageInput from "./ImageInput.svelte";
-    import DateInput from "./DateInput.svelte";
+    import ImageInput from "$lib/components/common/ImageInput.svelte";
+    import DateInput from "$lib/components/common/DateInput.svelte";
     import { Button } from "$lib/components/ui/button";
     import { Textarea } from "$lib/components/ui/textarea";
     import * as Dialog from "$lib/components/ui/dialog";
@@ -15,8 +15,8 @@
 
     import * as yup from "yup";
     import { onMount } from "svelte";
-    import CouponSvg from "./svg/CouponSvg.svelte";
-    import PlusSvg from "./svg/PlusSvg.svelte";
+    import CouponSvg from "$lib/components/svg/CouponSvg.svelte";
+    import PlusSvg from "$lib/components/svg/PlusSvg.svelte";
     import type { CreateCouponParams } from "$lib/community/types";
     import type { Account, Store } from "$lib/anchorClient/types";
     import { Separator } from "$lib/components/ui/separator";

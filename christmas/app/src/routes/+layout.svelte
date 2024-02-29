@@ -4,7 +4,7 @@
     import * as Dialog from "$lib/components/ui/dialog";
     import { Dialog as BitsDialog } from "bits-ui";
     import * as AlertDialog from "$lib/components/ui/alert-dialog";
-    import Wallet from "$lib/components/Wallet.svelte";
+    import Wallet from "$lib/components/common/Wallet.svelte";
     import { userDeviceClient, token } from "../store";
     import { onMount } from "svelte";
     import {
@@ -13,8 +13,8 @@
         fetchStores,
         verifyRedemption,
     } from "$lib/community";
-    import { UserDeviceClient } from "$lib/clients/user-device-client/userDeviceClient";
-    import QrScanner from "$lib/components/QRScanner.svelte";
+    import { UserDeviceClient } from "$lib/userDeviceClient";
+    import QrScanner from "$lib/components/common/QRScanner.svelte";
     import { extractQueryParams, getErrorMessage } from "$lib/utils";
     import QrSvg from "$lib/components/svg/QrSvg.svelte";
     import { Toaster } from "$lib/components/ui/sonner";

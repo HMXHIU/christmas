@@ -3,7 +3,7 @@
 
     import type { Account, Coupon } from "$lib/anchorClient/types";
     import { timeStampToDate } from "$lib/utils";
-    import { couponsMetadata } from "../../store";
+    import { couponsMetadata } from "../../../store";
     import { fetchCouponMetadata } from "$lib/community";
 
     import type { MintCouponParams } from "$lib/community/types";

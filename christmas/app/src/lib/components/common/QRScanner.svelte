@@ -1,8 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { Html5Qrcode } from "html5-qrcode";
-    import { extractQueryParams } from "$lib/utils";
-    import { Button } from "$lib/components/ui/button";
     import * as Card from "$lib/components/ui/card";
 
     let html5QrCode: Html5Qrcode;

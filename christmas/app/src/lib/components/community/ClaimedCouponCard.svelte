@@ -2,12 +2,12 @@
     import { fetchCouponMetadata, fetchStoreMetadata } from "$lib/community";
     import { calculateDistance, timeStampToDate } from "$lib/utils";
     import BaseCouponCard from "./BaseCouponCard.svelte";
-    import { userDeviceClient, redeemedCoupons } from "../../store";
+    import { userDeviceClient, redeemedCoupons } from "../../../store";
     import type { Account, Coupon } from "$lib/anchorClient/types";
     import { Button } from "$lib/components/ui/button";
     import * as Dialog from "$lib/components/ui/dialog";
     import { Dialog as BitsDialog } from "bits-ui";
-    import QrCode from "./QRCode.svelte";
+    import QrCode from "$lib/components/common/QRCode.svelte";
     import { Skeleton } from "$lib/components/ui/skeleton";
     import { Separator } from "$lib/components/ui/separator";
     import type { RedeemCouponParams } from "$lib/community/types";
@@ -32,7 +32,6 @@
             $userDeviceClient!.location!.geolocationCoordinates!.longitude!,
         );
 
-        console.log(JSON.stringify(storeMetadata, null, 2));
         return { couponMetadata, storeMetadata, distance };
     }
 

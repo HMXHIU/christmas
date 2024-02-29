@@ -1,6 +1,6 @@
 <script lang="ts">
-    import ClaimedCouponCard from "$lib/components/ClaimedCouponCard.svelte";
-    import MarketCouponCard from "$lib/components/MarketCouponCard.svelte";
+    import ClaimedCouponCard from "$lib/components/community/ClaimedCouponCard.svelte";
+    import MarketCouponCard from "$lib/components/community/MarketCouponCard.svelte";
     import {
         marketCoupons,
         claimedCoupons,

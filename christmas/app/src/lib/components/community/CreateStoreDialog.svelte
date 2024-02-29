@@ -4,7 +4,7 @@
         STORE_NAME_SIZE,
         STRING_PREFIX_SIZE,
     } from "$lib/anchorClient/defs";
-    import ImageInput from "./ImageInput.svelte";
+    import ImageInput from "$lib/components/common/ImageInput.svelte";
     import { Textarea } from "$lib/components/ui/textarea";
     import { Input } from "$lib/components/ui/input";
     import * as Select from "$lib/components/ui/select";
@@ -12,10 +12,10 @@
     import * as Dialog from "$lib/components/ui/dialog";
     import { Dialog as BitsDialog } from "bits-ui";
     import { Label } from "$lib/components/ui/label";
-    import { stores, userDeviceClient } from "../../store";
+    import { stores, userDeviceClient } from "../../../store";
     import ngeohash from "ngeohash";
-    import LocationSearch from "./LocationSearch.svelte";
-    import { COUNTRY_DETAILS } from "$lib/clients/user-device-client/defs";
+    import LocationSearch from "$lib/components/common/LocationSearch.svelte";
+    import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
     import * as yup from "yup";
     import type { CreateStoreParams } from "$lib/community/types";
     import { Separator } from "$lib/components/ui/separator";
@@ -166,6 +166,7 @@
                     maxlength={STORE_NAME_SIZE - STRING_PREFIX_SIZE}
                     bind:value={name}
                     placeholder="Your community store"
+                    autocomplete="off"
                 />
                 {#if errors.name}
                     <p class="text-xs text-destructive">{errors.name}</p>
@@ -181,6 +182,7 @@
                     rows={4}
                     maxlength={400}
                     bind:value={description}
+                    autocomplete="off"
                 />
                 {#if errors.description}
                     <p class="text-xs text-destructive">{errors.description}</p>

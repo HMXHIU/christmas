@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount, tick } from "svelte";
-    import { COUNTRY_DETAILS } from "$lib/clients/user-device-client/defs";
+    import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
     import ngeohash from "ngeohash";
     import { Loader } from "@googlemaps/js-api-loader";
     import { throttle } from "lodash";

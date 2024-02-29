@@ -12,7 +12,7 @@
         mintedCoupons,
         storesMetadata,
         userDeviceClient,
-    } from "../../store";
+    } from "../../../store";
     import MintedCouponCard from "./MintedCouponCard.svelte";
     import { PublicKey } from "@solana/web3.js";
     import type {

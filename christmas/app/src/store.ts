@@ -1,7 +1,7 @@
 import { writable } from "svelte/store";
 import type { Coupon, Account, Store } from "$lib/anchorClient/types";
 
-import { UserDeviceClient } from "$lib/clients/user-device-client/userDeviceClient";
+import { UserDeviceClient } from "$lib/userDeviceClient";
 import type {
     CouponMetadata,
     StoreMetadata,

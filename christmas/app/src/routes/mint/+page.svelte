@@ -1,12 +1,9 @@
 <script lang="ts">
-    import CreateStoreDialog from "$lib/components/CreateStoreDialog.svelte";
-    import { Button } from "$lib/components/ui/button";
-    import * as Dialog from "$lib/components/ui/dialog";
-    import { Dialog as BitsDialog } from "bits-ui";
+    import CreateStoreDialog from "$lib/components/community/CreateStoreDialog.svelte";
     import { createStore, fetchStores } from "$lib/community";
     import type { CreateStoreParams } from "$lib/community/types";
     import { stores } from "../../store";
-    import StoreSection from "$lib/components/StoreSection.svelte";
+    import StoreSection from "$lib/components/community/StoreSection.svelte";
 
     async function onCreateStore(createStoreParams: CreateStoreParams) {
         await createStore(createStoreParams);

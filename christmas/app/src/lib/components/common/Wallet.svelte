@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { token } from "../../store";
+    import { token } from "../../../store";
     import { login, logout, refresh } from "$lib/community";
     import { onMount } from "svelte";
     import { PUBLIC_JWT_EXPIRES_IN } from "$env/static/public";
