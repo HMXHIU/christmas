@@ -15,7 +15,12 @@ function processCommandSay(
     // Get all users in the tile
 
     // Send message to all users in the tile
-    redisClient.publish("message", said);
-
-    return `${user.publicKey} said: ${data.message}!`;
+    redisClient.publish(
+        "message",
+        JSON.stringify({
+            origin: user.publicKey,
+            cmd: "say",
+            data,
+        }),
+    );
 }

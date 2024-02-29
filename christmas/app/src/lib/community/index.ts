@@ -556,20 +556,26 @@ async function login() {
 }
 
 async function logout() {
-    // Logout of crossover while we still have the token
-    if (get(player) != null) {
-        await logoutCrossoover();
+    try {
+        // Logout of crossover while we still have the token
+        if (get(player) != null) {
+            await logoutCrossoover();
+        }
+
+        await fetch(`${PUBLIC_HOST || ""}/api/auth/logout`, { method: "POST" });
+        await window.solana.disconnect();
+        token.set(null);
+
+        // clear all stores
+        marketCoupons.set([]);
+        claimedCoupons.set([]);
+        mintedCoupons.set({});
+        redeemedCoupons.set({});
+    } catch (error) {
+        // If logout fails, reload the page (window.solana.disconnect() might fail if user is not logged in)
+        console.error("Failed to log out", error);
+        location.reload();
     }
-
-    await fetch(`${PUBLIC_HOST || ""}/api/auth/logout`, { method: "POST" });
-    await window.solana.disconnect();
-    token.set(null);
-
-    // clear all stores
-    marketCoupons.set([]);
-    claimedCoupons.set([]);
-    mintedCoupons.set({});
-    redeemedCoupons.set({});
 }
 
 async function refresh() {

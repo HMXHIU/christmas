@@ -42,6 +42,8 @@ redisSubscribeClient.subscribe("message", (message) => {
     console.log(`Received message: ${message}`);
     // Send relevant messages to connected users
     for (const user of Object.values(connectedUsers)) {
-        user.stream.enqueue(JSON.stringify({ type: "message", data: message }));
+        user.stream.enqueue(
+            JSON.stringify({ type: "message", data: JSON.parse(message) }),
+        );
     }
 });
