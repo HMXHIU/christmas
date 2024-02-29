@@ -19,8 +19,13 @@
     function onPromptKeydown(event: KeyboardEvent): void {
         if (["Enter"].includes(event.code)) {
             event.preventDefault();
-            onChatMessage(command, message);
+            onSubmit();
         }
+    }
+
+    function onSubmit(): void {
+        onChatMessage(command, message);
+        message = "";
     }
 </script>
 
@@ -36,17 +41,11 @@
         class="bg-transparent ring-0 border-0 border-l border-r rounded-none"
         name="prompt"
         id="prompt"
-        placeholder="Write a message..."
+        placeholder={command?.description ?? "Speak friend..."}
         rows={1}
         on:keydown={onPromptKeydown}
     />
-    <Button
-        variant="ghost"
-        on:click={() => {
-            onChatMessage(command, message);
-        }}
-        class="my-auto h-full border-0"
-    >
+    <Button variant="ghost" on:click={onSubmit} class="my-auto h-full border-0">
         <Send />
     </Button>
 </section>

@@ -37,4 +37,5 @@ export interface ChatCommand {
     label: string;
     icon: any;
     shortcut: string | null;
+    description: string | null;
 }

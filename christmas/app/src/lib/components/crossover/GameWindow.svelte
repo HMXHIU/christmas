@@ -32,18 +32,21 @@
                     label: "Say",
                     icon: MessageSquare,
                     shortcut: "⌘S",
+                    description: "Say something to everyone in the room.",
                 },
                 {
                     key: "shout",
                     label: "Shout",
                     icon: MessageSquare,
                     shortcut: null,
+                    description: "Shout something to everyone in the area.",
                 },
                 {
                     key: "whisper",
                     label: "Whisper",
                     icon: MessageSquare,
                     shortcut: null,
+                    description: "Whisper something to someone.",
                 },
             ],
         ],
@@ -51,8 +54,20 @@
         [
             { key: "combat", label: "Combat" },
             [
-                { key: "punch", label: "Punch", icon: Grab, shortcut: "⌘P" },
-                { key: "flee", label: "Flee", icon: ArrowLeft, shortcut: "⌘F" },
+                {
+                    key: "punch",
+                    label: "Punch",
+                    icon: Grab,
+                    shortcut: "⌘P",
+                    description: "Punch someone.",
+                },
+                {
+                    key: "flee",
+                    label: "Flee",
+                    icon: ArrowLeft,
+                    shortcut: "⌘F",
+                    description: "Flee from combat.",
+                },
             ],
         ],
         // Out of Combat (OOC)
@@ -64,6 +79,7 @@
                     label: "Rest",
                     icon: FlameKindling,
                     shortcut: "⌘R",
+                    description: "Rest and recover.",
                 },
             ],
         ],
