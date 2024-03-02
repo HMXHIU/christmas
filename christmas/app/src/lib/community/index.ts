@@ -7,20 +7,24 @@ import {
     type User,
 } from "../anchorClient/types";
 
+import { PUBLIC_HOST } from "$env/static/public";
+import { logout as logoutCrossoover } from "$lib/crossover";
+import { trpc } from "$lib/trpcClient";
+import { signAndSendTransaction } from "$lib/utils";
+import { get } from "svelte/store";
 import {
-    userDeviceClient,
-    marketCoupons,
     claimedCoupons,
+    couponsMetadata,
+    marketCoupons,
     mintedCoupons,
+    player,
+    redeemedCoupons,
     stores,
     storesMetadata,
-    couponsMetadata,
     token,
-    redeemedCoupons,
+    userDeviceClient,
     userMetadata,
-    player,
 } from "../../store";
-import { get } from "svelte/store";
 import {
     COUPON_NAME_SIZE,
     STORE_NAME_SIZE,
@@ -35,36 +39,33 @@ import type {
     StoreMetadata,
     UserMetadata,
 } from "./types";
-import { signAndSendTransaction } from "$lib/utils";
-import { PUBLIC_HOST } from "$env/static/public";
 import {
     cleanCouponBalance,
     cleanCouponSupplyBalance,
     cleanStoreAccount,
     cleanUser,
 } from "./utils";
-import { logout as logoutCrossoover } from "$lib/crossover";
 
 // Exports
 export {
-    fetchMarketCoupons,
-    fetchStoreMetadata,
-    fetchCouponMetadata,
-    fetchMintedCouponSupplyBalance,
-    fetchClaimedCoupons,
-    fetchStores,
     claimCoupon,
-    redeemCoupon,
-    createStore,
     createCoupon,
-    mintCoupon,
-    verifyRedemption,
+    createStore,
     createUser,
+    fetchClaimedCoupons,
+    fetchCouponMetadata,
+    fetchMarketCoupons,
+    fetchMintedCouponSupplyBalance,
+    fetchStoreMetadata,
+    fetchStores,
     fetchUser,
     fetchUserMetadata,
     login,
     logout,
+    mintCoupon,
+    redeemCoupon,
     refresh,
+    verifyRedemption,
 };
 
 async function fetchMarketCoupons(
@@ -526,26 +527,35 @@ async function createUser(
 }
 
 async function login() {
-    const solanaSignInInput = await (
-        await fetch(`${PUBLIC_HOST || ""}/api/auth/siws`)
-    ).json();
+    const solanaSignInInput = await trpc().community.auth.siws.query();
+
+    // const solanaSignInInput = await (
+    //     await fetch(`${PUBLIC_HOST || ""}/api/auth/siws`)
+    // ).json();
     const solanaSignInOutput = await window.solana.signIn(solanaSignInInput);
-    const loginResult = await fetch(`${PUBLIC_HOST || ""}/api/auth/login`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+
+    const { status, token: loginToken } =
+        await trpc().community.auth.login.query({
             solanaSignInInput,
             solanaSignInOutput,
-        }),
-    });
+        });
 
-    if (!loginResult.ok) {
-        throw new Error(loginResult.statusText);
-    }
+    // const loginResult = await fetch(`${PUBLIC_HOST || ""}/api/auth/login`, {
+    //     method: "POST",
+    //     headers: {
+    //         "Content-Type": "application/json",
+    //     },
+    //     body: JSON.stringify({
+    //         solanaSignInInput,
+    //         solanaSignInOutput,
+    //     }),
+    // });
 
-    const { status, token: loginToken } = await loginResult.json();
+    // if (!loginResult.ok) {
+    //     throw new Error(loginResult.statusText);
+    // }
+
+    // const { status, token: loginToken } = await loginResult.json();
 
     if (status !== "success" || loginToken == null) {
         throw new Error("Failed to log in");
@@ -562,7 +572,9 @@ async function logout() {
             await logoutCrossoover();
         }
 
-        await fetch(`${PUBLIC_HOST || ""}/api/auth/logout`, { method: "POST" });
+        await trpc().community.auth.logout.query();
+
+        // await fetch(`${PUBLIC_HOST || ""}/api/auth/logout`, { method: "POST" });
         await window.solana.disconnect();
         token.set(null);
 
@@ -574,26 +586,37 @@ async function logout() {
     } catch (error) {
         // If logout fails, reload the page (window.solana.disconnect() might fail if user is not logged in)
         console.error("Failed to log out", error);
+        await window.solana.disconnect();
         location.reload();
     }
 }
 
 async function refresh() {
-    const refreshTokenResult = await fetch(
-        `${PUBLIC_HOST || ""}/api/auth/refresh`,
-        {
-            method: "POST",
-        },
-    );
-    if (refreshTokenResult.ok) {
-        const { token: loginToken } = await refreshTokenResult.json();
+    const { status, token: loginToken } =
+        await trpc().community.auth.refresh.query();
 
-        // Set token in store (fallback if cookies not allowed)
-        token.set(loginToken);
-        console.log("Refreshed token");
-    } else {
-        console.error(
-            `Failed to refresh token: ${refreshTokenResult.statusText}`,
-        );
+    if (status !== "success" || loginToken == null) {
+        throw new Error("Failed to refresh token");
     }
+
+    // Set token in store (fallback if cookies not allowed)
+    token.set(loginToken);
+
+    // const refreshTokenResult = await fetch(
+    //     `${PUBLIC_HOST || ""}/api/auth/refresh`,
+    //     {
+    //         method: "POST",
+    //     },
+    // );
+    // if (refreshTokenResult.ok) {
+    //     const { token: loginToken } = await refreshTokenResult.json();
+
+    //     // Set token in store (fallback if cookies not allowed)
+    //     token.set(loginToken);
+    //     console.log("Refreshed token");
+    // } else {
+    //     console.error(
+    //         `Failed to refresh token: ${refreshTokenResult.statusText}`,
+    //     );
+    // }
 }

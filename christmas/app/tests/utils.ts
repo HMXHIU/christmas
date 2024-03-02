@@ -1,8 +1,12 @@
 import { createUser } from "$lib/community";
+import { trpc } from "$lib/trpcClient";
 import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
 import { stringToUint8Array } from "$lib/utils";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
-import { createSignInMessage } from "@solana/wallet-standard-util";
+import {
+    createSignInMessage,
+    type SolanaSignInInputWithRequiredFields,
+} from "@solana/wallet-standard-util";
 import { Keypair } from "@solana/web3.js";
 import fs from "fs";
 import path from "path";
@@ -55,10 +59,10 @@ function getRandomRegion(): number[] {
  * Login without a browser, without SIWS (required for tests)
  */
 async function login(user: Keypair): Promise<Response> {
-    const solanaSignInInput = await (
-        await fetch("http://localhost:5173/api/auth/siws")
-    ).json();
-    const signInMessage = createSignInMessage(solanaSignInInput);
+    const solanaSignInInput = await trpc().community.auth.siws.query();
+    const signInMessage = createSignInMessage(
+        solanaSignInInput as SolanaSignInInputWithRequiredFields,
+    );
     const solanaSignInOutput = {
         address: user.publicKey.toBase58(),
         signature: Buffer.from(
@@ -66,7 +70,9 @@ async function login(user: Keypair): Promise<Response> {
         ),
         signedMessage: Buffer.from(signInMessage),
     };
-    return await fetch("http://localhost:5173/api/auth/login", {
+
+    // Don't use trpc here because we need to get the cookies from the response
+    return await fetch("http://localhost:5173/trpc/community.auth.login", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -85,7 +91,6 @@ async function createRandomUser({
 }): Promise<[NodeWallet, string]> {
     const user = Keypair.generate();
     const wallet = new NodeWallet(user);
-
     let response = await login(user);
     const cookies = getCookiesFromResponse(response);
 

@@ -5,6 +5,7 @@ export async function createContext(event: RequestEvent) {
     return {
         user: event.locals.user,
         cookies: event.cookies,
+        locals: event.locals,
     };
 }
 
