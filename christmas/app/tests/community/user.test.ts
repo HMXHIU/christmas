@@ -5,7 +5,7 @@ import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { Keypair } from "@solana/web3.js";
 import ngeohash from "ngeohash";
 import { expect, test } from "vitest";
-import { getCookiesFromResponse, login, readImageAsBuffer } from "./utils";
+import { getCookiesFromResponse, login, readImageAsBuffer } from "../utils";
 
 test("Test User", async () => {
     const user = Keypair.generate();

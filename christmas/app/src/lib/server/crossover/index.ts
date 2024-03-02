@@ -2,7 +2,6 @@ import type { UserMetadata } from "$lib/community/types";
 
 import { serverAnchorClient } from "$lib/server";
 import { PublicKey } from "@solana/web3.js";
-import type { Observer } from "@trpc/server/observable";
 import type { z } from "zod";
 import { playerRepository } from "./redis";
 import { type PlayerEntity } from "./redis/schema";
@@ -19,7 +18,7 @@ export {
 
 interface ConnectedUser {
     publicKey: string;
-    stream: ReadableStreamDefaultController<any> | Observer<any, unknown>;
+    stream: ReadableStreamDefaultController<any>;
 }
 
 // Record of connected users on this server instance

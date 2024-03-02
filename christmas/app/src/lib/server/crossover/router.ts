@@ -19,7 +19,7 @@ import { ObjectStorage } from "../objectStorage";
 import { authProcedure, t } from "../trpc";
 import type { PlayerEntity } from "./redis/schema";
 
-export { crossoverRouter, type PlayerMetadataSchema, type UserMetadataSchema };
+export { PlayerMetadataSchema, UserMetadataSchema, crossoverRouter };
 
 // Schemas
 const SayCommandSchema = z.object({

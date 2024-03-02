@@ -11,6 +11,7 @@ import { PUBLIC_HOST } from "$env/static/public";
 import { logout as logoutCrossoover } from "$lib/crossover";
 import { trpc } from "$lib/trpcClient";
 import { signAndSendTransaction } from "$lib/utils";
+import type { HTTPHeaders } from "@trpc/client";
 import { get } from "svelte/store";
 import {
     claimedCoupons,
@@ -35,7 +36,6 @@ import type {
     CouponMetadata,
     CreateCouponParams,
     CreateStoreParams,
-    CreateUserParams,
     StoreMetadata,
     UserMetadata,
 } from "./types";
@@ -467,15 +467,15 @@ async function verifyRedemption(
         });
 }
 
-async function fetchUser(headers: HeadersInit = {}): Promise<User | null> {
-    return fetch(`${PUBLIC_HOST || ""}/api/community/user`, {
-        headers,
-    }).then(async (response) => {
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
-        return cleanUser(await response.json());
-    });
+async function fetchUser(headers: HTTPHeaders = {}): Promise<User | null> {
+    return await trpc({ headers })
+        .community.user.user.query()
+        .then((user) => {
+            if (user == null) {
+                return null;
+            }
+            return cleanUser(user);
+        });
 }
 
 async function fetchUserMetadata(
@@ -498,24 +498,17 @@ async function fetchUserMetadata(
 }
 
 async function createUser(
-    { region }: CreateUserParams,
-    options?: { headers?: HeadersInit; wallet?: any },
+    { region }: { region: number[] | string },
+    options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
-    return fetch(`${PUBLIC_HOST || ""}/api/community/user/create`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...(options?.headers || {}),
-        },
-        body: JSON.stringify({
-            region: Array.from(stringToUint8Array(region)),
-        }),
-    })
-        .then(async (response) => {
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-            return response.json();
+    region =
+        typeof region === "string"
+            ? Array.from(stringToUint8Array(region))
+            : region;
+
+    return await trpc({ headers: options?.headers || {} })
+        .community.user.create.mutate({
+            region,
         })
         .then(({ transaction }) => {
             return signAndSendTransaction({
@@ -528,34 +521,13 @@ async function createUser(
 
 async function login() {
     const solanaSignInInput = await trpc().community.auth.siws.query();
-
-    // const solanaSignInInput = await (
-    //     await fetch(`${PUBLIC_HOST || ""}/api/auth/siws`)
-    // ).json();
     const solanaSignInOutput = await window.solana.signIn(solanaSignInInput);
 
     const { status, token: loginToken } =
-        await trpc().community.auth.login.query({
+        await trpc().community.auth.login.mutate({
             solanaSignInInput,
             solanaSignInOutput,
         });
-
-    // const loginResult = await fetch(`${PUBLIC_HOST || ""}/api/auth/login`, {
-    //     method: "POST",
-    //     headers: {
-    //         "Content-Type": "application/json",
-    //     },
-    //     body: JSON.stringify({
-    //         solanaSignInInput,
-    //         solanaSignInOutput,
-    //     }),
-    // });
-
-    // if (!loginResult.ok) {
-    //     throw new Error(loginResult.statusText);
-    // }
-
-    // const { status, token: loginToken } = await loginResult.json();
 
     if (status !== "success" || loginToken == null) {
         throw new Error("Failed to log in");
@@ -601,22 +573,4 @@ async function refresh() {
 
     // Set token in store (fallback if cookies not allowed)
     token.set(loginToken);
-
-    // const refreshTokenResult = await fetch(
-    //     `${PUBLIC_HOST || ""}/api/auth/refresh`,
-    //     {
-    //         method: "POST",
-    //     },
-    // );
-    // if (refreshTokenResult.ok) {
-    //     const { token: loginToken } = await refreshTokenResult.json();
-
-    //     // Set token in store (fallback if cookies not allowed)
-    //     token.set(loginToken);
-    //     console.log("Refreshed token");
-    // } else {
-    //     console.error(
-    //         `Failed to refresh token: ${refreshTokenResult.statusText}`,
-    //     );
-    // }
 }

@@ -1,4 +1,4 @@
-import { hashObject, requireLogin } from "$lib/server/index.js";
+import { requireLogin } from "$lib/server/index.js";
 import { BUCKETS, ObjectStorage } from "$lib/server/objectStorage.js";
 import { json } from "@sveltejs/kit";
 
