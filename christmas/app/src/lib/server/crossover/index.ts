@@ -1,13 +1,26 @@
-import type { ConnectedUser } from "./types";
-import { serverAnchorClient } from "$lib/server";
-import { PublicKey } from "@solana/web3.js";
-import { type PlayerEntity } from "./redis/schema";
-import { playerRepository } from "./redis";
-import type { PlayerMetadata } from "$lib/crossover/types";
 import type { UserMetadata } from "$lib/community/types";
 
+import { serverAnchorClient } from "$lib/server";
+import { PublicKey } from "@solana/web3.js";
+import type { Observer } from "@trpc/server/observable";
+import type { z } from "zod";
+import { playerRepository } from "./redis";
+import { type PlayerEntity } from "./redis/schema";
+import type { PlayerMetadataSchema } from "./router";
+
 // Exports
-export { connectedUsers, getLoadedPlayer, getPlayerMetadata, getUserMetadata };
+export {
+    connectedUsers,
+    getLoadedPlayer,
+    getPlayerMetadata,
+    getUserMetadata,
+    type ConnectedUser,
+};
+
+interface ConnectedUser {
+    publicKey: string;
+    stream: ReadableStreamDefaultController<any> | Observer<any, unknown>;
+}
 
 // Record of connected users on this server instance
 let connectedUsers: Record<string, ConnectedUser> = {};
@@ -41,6 +54,6 @@ async function getUserMetadata(
 
 async function getPlayerMetadata(
     publicKey: string,
-): Promise<PlayerMetadata | null> {
+): Promise<z.infer<typeof PlayerMetadataSchema> | null> {
     return (await getUserMetadata(publicKey))?.crossover || null;
 }

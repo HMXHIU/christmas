@@ -1,28 +1,17 @@
-import { Keypair, PublicKey } from "@solana/web3.js";
-import { expect, test } from "vitest";
-import ngeohash from "ngeohash";
-import { login } from "./utils";
-import { getCookiesFromResponse, readImageAsBuffer } from "./utils";
 import {
-    claimCoupon,
     createCoupon,
     createStore,
-    fetchClaimedCoupons,
-    fetchCouponMetadata,
-    fetchMarketCoupons,
     fetchMintedCouponSupplyBalance,
-    fetchStoreMetadata,
     fetchStores,
-    fetchUser,
-    fetchUserMetadata,
     mintCoupon,
-    redeemCoupon,
 } from "$lib/community";
-import { stringToUint8Array } from "$lib/utils";
-import { COUNTRY_DETAILS } from "$lib/clients/user-device-client/defs";
-import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
-import { BN } from "bn.js";
 import type { CouponMetadata, StoreMetadata } from "$lib/community/types";
+import { stringToUint8Array } from "$lib/utils";
+import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
+import { Keypair } from "@solana/web3.js";
+import ngeohash from "ngeohash";
+import { expect, test } from "vitest";
+import { getCookiesFromResponse, login, readImageAsBuffer } from "./utils";
 
 test(
     "Generate demo content",

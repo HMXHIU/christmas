@@ -1,11 +1,11 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import type { MessageFeed } from "$lib/crossover/types";
     import { cn } from "$lib/shadcn";
+    import { onMount } from "svelte";
+    import type { MessageFeedUI } from "./types";
 
     let chatWindow: HTMLElement;
 
-    export let messageFeed: MessageFeed[] = [];
+    export let messageFeed: MessageFeedUI[] = [];
 
     function scrollChatBottom(behavior?: ScrollBehavior): void {
         chatWindow?.scrollTo({ top: chatWindow.scrollHeight, behavior });
@@ -15,7 +15,7 @@
         scrollChatBottom();
     });
 
-    function onNewMessages(messages: MessageFeed[]): void {
+    function onNewMessages(messages: MessageFeedUI[]): void {
         setTimeout(() => {
             scrollChatBottom("smooth");
         }, 0);

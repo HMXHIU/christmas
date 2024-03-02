@@ -1,4 +1,3 @@
-import { COUNTRY_DETAILS } from "$lib/clients/user-device-client/defs";
 import { UserMetadataSchema } from "$lib/community/types.js";
 import {
     FEE_PAYER_PUBKEY,
@@ -8,6 +7,7 @@ import {
     serverAnchorClient,
 } from "$lib/server";
 import { ObjectStorage } from "$lib/server/objectStorage.js";
+import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
 import { PublicKey } from "@solana/web3.js";
 import { error, json } from "@sveltejs/kit";
 import yup from "yup";

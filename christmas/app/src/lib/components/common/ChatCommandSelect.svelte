@@ -1,19 +1,19 @@
 <script lang="ts">
-    import { onMount, tick } from "svelte";
+    import { Button } from "$lib/components/ui/button";
     import * as Command from "$lib/components/ui/command";
     import * as Popover from "$lib/components/ui/popover";
-    import { Button } from "$lib/components/ui/button";
     import { cn } from "$lib/shadcn";
-    import type { ChatCommand, ChatCommandGroup } from "$lib/crossover/types";
+    import { onMount, tick } from "svelte";
+    import type { ChatCommandGroupUI, ChatCommandUI } from "./types";
 
     export let defaultCommand: string;
-    export let value: ChatCommand | null | undefined =
+    export let value: ChatCommandUI | null | undefined =
         findCommand(defaultCommand);
-    export let commandGroups: [ChatCommandGroup, ChatCommand[]][] = [];
+    export let commandGroups: [ChatCommandGroupUI, ChatCommandUI[]][] = [];
 
     let open = false;
 
-    function findCommand(key: string): ChatCommand | null {
+    function findCommand(key: string): ChatCommandUI | null {
         for (const [group, commands] of commandGroups) {
             for (const command of commands) {
                 if (command.key === key) {

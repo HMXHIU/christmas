@@ -1,9 +1,9 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Connection, Keypair } from "@solana/web3.js";
-import { COUNTRY_DETAILS } from "../app/src/lib/clients/user-device-client/defs";
-import { stringToUint8Array } from "../app/src/lib/utils";
-import { AnchorClient } from "../app/src/lib/anchorClient";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
+import { Connection, Keypair } from "@solana/web3.js";
+import { AnchorClient } from "../app/src/lib/anchorClient";
+import { COUNTRY_DETAILS } from "../app/src/lib/userDeviceClient/defs";
+import { stringToUint8Array } from "../app/src/lib/utils";
 
 export async function requestAirdrop(
     publicKeys: anchor.web3.PublicKey[],

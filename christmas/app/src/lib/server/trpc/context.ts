@@ -4,6 +4,7 @@ import type { inferAsyncReturnType } from "@trpc/server";
 export async function createContext(event: RequestEvent) {
     return {
         user: event.locals.user,
+        cookies: event.cookies,
     };
 }
 

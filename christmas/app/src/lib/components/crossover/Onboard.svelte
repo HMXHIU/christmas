@@ -4,7 +4,7 @@
     import { login, signup, worldSeed } from "$lib/crossover";
     import { player, token, userDeviceClient } from "../../../store";
     import { toast } from "svelte-sonner";
-    import Wallet from "../Wallet.svelte";
+    import Wallet from "$lib/components/common/Wallet.svelte";
     import { Textarea } from "$lib/components/ui/textarea";
     import { Label } from "$lib/components/ui/label";
     import { Input } from "$lib/components/ui/input";

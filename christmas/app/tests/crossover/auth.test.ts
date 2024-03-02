@@ -1,15 +1,14 @@
-import { Keypair } from "@solana/web3.js";
-import jwt, { type JwtPayload } from "jsonwebtoken";
-import { expect, test } from "vitest";
-import { getCookiesFromResponse, getRandomRegion } from "../utils";
-import { login } from "../utils";
+import { createUser, fetchUser, fetchUserMetadata } from "$lib/community";
 import {
     login as loginCrossover,
     logout as logoutCrossover,
     signup,
 } from "$lib/crossover";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
-import { createUser, fetchUser, fetchUserMetadata } from "$lib/community";
+import { Keypair } from "@solana/web3.js";
+import jwt, { type JwtPayload } from "jsonwebtoken";
+import { expect, test } from "vitest";
+import { getCookiesFromResponse, getRandomRegion, login } from "../utils";
 
 test("Test Auth", async () => {
     const user = Keypair.generate();

@@ -9,15 +9,16 @@ declare namespace App {
     interface Locals {
         user: UserSession | null;
     }
-    // interface PageData {}
-    // interface Error {}
-    // interface Platform {}
+    interface PageData {}
+    interface Error {}
+    interface Platform {}
 }
 
 declare global {
     interface Window {
         phantom: any;
         solana: {
+            signIn: any;
             connect: any;
             disconnect: any;
             publicKey: any;

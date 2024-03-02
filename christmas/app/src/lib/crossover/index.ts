@@ -1,48 +1,35 @@
 import { PUBLIC_HOST } from "$env/static/public";
 import type { TransactionResult } from "$lib/anchorClient/types";
+import type { PlayerMetadataSchema } from "$lib/server/crossover/router";
+import { trpc } from "$lib/trpcClient";
 import { signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
-import type { PlayerMetadata } from "./types";
+import type { HTTPHeaders } from "@trpc/client";
+import type { z } from "zod";
 import { player } from "../../store";
-export { getPlayer, signup, login, logout, stream, worldSeed };
+export { getPlayer, login, logout, signup, stream, worldSeed };
 
 const worldSeed = "yggdrasil 01";
 
-/**
- * All auth functions requires user to be logged in already via SIWS (use cookies in headers to login without a browser).
- * Override the host if you are testing from a different environment.
- */
-
-async function getPlayer(headers: any = {}): Promise<PlayerMetadata> {
-    return await fetch(`${PUBLIC_HOST}/api/crossover/auth`, {
-        method: "GET",
+async function getPlayer(
+    headers: HTTPHeaders = {},
+): Promise<z.infer<typeof PlayerMetadataSchema>> {
+    return await trpc({
         headers,
-    }).then(async (response) => {
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
-        return response.json();
-    });
+    }).crossover.auth.player.query();
 }
 
 async function signup(
     { name }: { name: string },
-    options?: { headers?: HeadersInit; wallet?: any },
+    options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
-    return await fetch(`${PUBLIC_HOST || ""}/api/crossover/auth/signup`, {
-        method: "POST",
+    return await trpc({
         headers: {
             "Content-Type": "application/json",
             ...(options?.headers || {}),
         },
-        body: JSON.stringify({ name }),
     })
-        .then(async (response) => {
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-            return response.json();
-        })
+        .crossover.auth.signup.query({ name })
         .then(({ transaction }) => {
             return signAndSendTransaction({
                 tx: Transaction.from(Buffer.from(transaction, "base64")),
@@ -52,16 +39,12 @@ async function signup(
         });
 }
 
-async function login(headers: any = {}): Promise<Response> {
-    let response = await fetch(`${PUBLIC_HOST}/api/crossover/auth/login`, {
-        method: "POST",
+async function login(
+    headers: HTTPHeaders = {},
+): Promise<{ status: string; player: z.infer<typeof PlayerMetadataSchema> }> {
+    let response = await trpc({
         headers,
-    }).then(async (response) => {
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
-        return response.json();
-    });
+    }).crossover.auth.login.query();
 
     // Update `$player`
     player.set(response.player);
@@ -69,16 +52,12 @@ async function login(headers: any = {}): Promise<Response> {
     return response;
 }
 
-async function logout(headers: any = {}): Promise<Response> {
-    let response = await fetch(`${PUBLIC_HOST}/api/crossover/auth/logout`, {
-        method: "POST",
+async function logout(
+    headers: HTTPHeaders = {},
+): Promise<{ status: string; player: z.infer<typeof PlayerMetadataSchema> }> {
+    let response = await trpc({
         headers,
-    }).then(async (response) => {
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
-        return response.json();
-    });
+    }).crossover.auth.logout.query();
 
     // Update `$player`
     player.set(null);
@@ -86,6 +65,9 @@ async function logout(headers: any = {}): Promise<Response> {
     return response;
 }
 
+/**
+ * tRPC does not support SSE yet, so we use the api route directly
+ */
 async function stream(headers: any = {}): Promise<EventTarget> {
     const eventTarget = new EventTarget();
     const eventStream = makeWriteableEventStream(eventTarget);

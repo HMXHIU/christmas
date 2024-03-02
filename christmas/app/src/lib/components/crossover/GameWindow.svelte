@@ -1,28 +1,28 @@
 <script lang="ts">
+    import Chat from "$lib/components/common/Chat.svelte";
     import type {
-        ChatCommand,
-        ChatCommandGroup,
-        Entity,
-        MessageFeed,
-    } from "$lib/crossover/types";
-    import {
-        MessageSquare,
-        Grab,
-        FlameKindling,
-        ArrowLeft,
-    } from "lucide-svelte";
-    import Chat from "../Chat.svelte";
-    import ContextSection from "./ContextSection.svelte";
+        ChatCommandGroupUI,
+        ChatCommandUI,
+        MessageFeedUI,
+    } from "$lib/components/common/types";
     import { cn } from "$lib/shadcn";
+    import {
+        ArrowLeft,
+        FlameKindling,
+        Grab,
+        MessageSquare,
+    } from "lucide-svelte";
+    import ContextSection from "./ContextSection.svelte";
+    import type { AgentUI } from "./types";
 
-    export let messageFeed: MessageFeed[] = [];
+    export let messageFeed: MessageFeedUI[] = [];
     export let onChatMessage: (
-        command: ChatCommand | null,
+        command: ChatCommandUI | null,
         message: string,
     ) => void;
 
     let defaultCommand = "say";
-    let commandGroups: [ChatCommandGroup, ChatCommand[]][] = [
+    let commandGroups: [ChatCommandGroupUI, ChatCommandUI[]][] = [
         // Speech
         [
             { key: "speech", label: "Speech" },
@@ -85,7 +85,7 @@
         ],
     ];
 
-    let entities: Entity[] = [
+    let agents: AgentUI[] = [
         { id: 0, avatar: null, name: "Michael" },
         { id: 1, avatar: null, name: "Janet" },
         { id: 2, avatar: null, name: "Susan" },
@@ -105,5 +105,5 @@
         class="h-3/5"
     ></Chat>
     <!-- Context Section -->
-    <ContextSection {entities} class="h-2/5"></ContextSection>
+    <ContextSection {agents} class="h-2/5"></ContextSection>
 </div>

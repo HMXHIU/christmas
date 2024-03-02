@@ -1,15 +1,18 @@
 <script lang="ts">
     import GameWindow from "$lib/components/crossover/GameWindow.svelte";
     import Onboard from "$lib/components/crossover/Onboard.svelte";
-    import type { ChatCommand, MessageFeed } from "$lib/crossover/types";
+    import { stream } from "$lib/crossover";
+    import type { ChatCommandUI, MessageFeedUI } from "$lib/crossover/types";
     import { trpc } from "$lib/trpc/client";
     import { onMount } from "svelte";
     import { player } from "../../store";
-    import { stream } from "$lib/crossover";
 
-    let messageFeed: MessageFeed[] = [];
+    let MessageFeedUI: MessageFeedUI[] = [];
 
-    async function onChatMessage(command: ChatCommand | null, message: string) {
+    async function onChatMessage(
+        command: ChatCommandUI | null,
+        message: string,
+    ) {
         switch (command?.key) {
             case "say":
                 await trpc().cmd.say.query({ message });
@@ -33,10 +36,10 @@
         const { cmd, origin, data } = (event as MessageEvent).data;
         switch (cmd) {
             case "say":
-                messageFeed = [
-                    ...messageFeed,
+                MessageFeedUI = [
+                    ...MessageFeedUI,
                     {
-                        id: messageFeed.length,
+                        id: MessageFeedUI.length,
                         timestamp: getCurrentTimestamp(),
                         message: `${origin} says '${data.message}'`,
                         name: "",
@@ -70,5 +73,5 @@
 {#if !$player}
     <Onboard />
 {:else}
-    <GameWindow class="h-full" {onChatMessage} {messageFeed} />
+    <GameWindow class="h-full" {onChatMessage} {MessageFeedUI} />
 {/if}

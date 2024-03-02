@@ -1,6 +1,6 @@
+import { stream } from "$lib/crossover";
 import { expect, test } from "vitest";
 import { createRandomPlayer, waitForEventData } from "./utils";
-import { stream } from "$lib/crossover";
 
 test("Test Stream", async () => {
     // Create a player

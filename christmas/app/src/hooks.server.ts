@@ -1,10 +1,10 @@
 import { JWT_SECRET_KEY } from "$env/static/private";
 import { verifyJWT } from "$lib/server";
-import { createTRPCHandle } from "trpc-sveltekit";
-import { router } from "$lib/trpc/router";
-import { createContext } from "$lib/trpc/context";
-import { sequence } from "@sveltejs/kit/hooks";
+import { createContext } from "$lib/server/trpc/context";
+import { router } from "$lib/server/trpc/router";
 import type { Handle } from "@sveltejs/kit";
+import { sequence } from "@sveltejs/kit/hooks";
+import { createTRPCHandle } from "trpc-sveltekit";
 
 const handleBase: Handle = async ({ event, resolve }) => {
     const { locals, request, cookies, url } = event;

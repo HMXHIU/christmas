@@ -1,14 +1,17 @@
-import { web3 } from "@coral-xyz/anchor";
-import { assert, expect } from "chai";
 import * as anchor from "@coral-xyz/anchor";
-import { BN } from "@coral-xyz/anchor";
-import { cleanString, stringToUint8Array } from "../app/src/lib/utils";
+import { BN, web3 } from "@coral-xyz/anchor";
 import { getMint } from "@solana/spl-token";
-import { generateURL, extractQueryParams } from "../app/src/lib/utils";
-import { getRandomAnchorClient, getRandomDate, getRandomRegion } from "./utils";
-import { COUNTRY_DETAILS } from "../app/src/lib/clients/user-device-client/defs";
-import { PROGRAM_ID } from "../app/src/lib/anchorClient/defs";
 import { PublicKey } from "@solana/web3.js";
+import { assert, expect } from "chai";
+import { PROGRAM_ID } from "../app/src/lib/anchorClient/defs";
+import { COUNTRY_DETAILS } from "../app/src/lib/userDeviceClient/defs";
+import {
+    cleanString,
+    extractQueryParams,
+    generateURL,
+    stringToUint8Array,
+} from "../app/src/lib/utils";
+import { getRandomAnchorClient, getRandomDate, getRandomRegion } from "./utils";
 
 describe("Test client", () => {
     // locations

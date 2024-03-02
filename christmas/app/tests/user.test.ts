@@ -1,19 +1,11 @@
-import { Keypair, PublicKey } from "@solana/web3.js";
-import { expect, test } from "vitest";
-import ngeohash from "ngeohash";
-import { login } from "./utils";
-import { getCookiesFromResponse, readImageAsBuffer } from "./utils";
-import {
-    createStore,
-    createUser,
-    fetchStoreMetadata,
-    fetchStores,
-    fetchUser,
-    fetchUserMetadata,
-} from "$lib/community";
+import { createUser, fetchUser, fetchUserMetadata } from "$lib/community";
+import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
 import { stringToUint8Array } from "$lib/utils";
-import { COUNTRY_DETAILS } from "$lib/clients/user-device-client/defs";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
+import { Keypair } from "@solana/web3.js";
+import ngeohash from "ngeohash";
+import { expect, test } from "vitest";
+import { getCookiesFromResponse, login, readImageAsBuffer } from "./utils";
 
 test("Test User", async () => {
     const user = Keypair.generate();

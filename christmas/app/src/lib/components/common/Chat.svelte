@@ -1,18 +1,18 @@
 <script lang="ts">
+    import { cn } from "$lib/shadcn";
+    import ChatInput from "./ChatInput.svelte";
     import ChatWindow from "./ChatWindow.svelte";
     import type {
-        ChatCommand,
-        ChatCommandGroup,
-        MessageFeed,
-    } from "$lib/crossover/types";
-    import ChatInput from "./ChatInput.svelte";
-    import { cn } from "$lib/shadcn";
+        ChatCommandGroupUI,
+        ChatCommandUI,
+        MessageFeedUI,
+    } from "./types";
 
-    export let messageFeed: MessageFeed[] = [];
+    export let messageFeed: MessageFeedUI[] = [];
     export let defaultCommand: string;
-    export let commandGroups: [ChatCommandGroup, ChatCommand[]][];
+    export let commandGroups: [ChatCommandGroupUI, ChatCommandUI[]][];
     export let onChatMessage: (
-        command: ChatCommand | null,
+        command: ChatCommandUI | null,
         message: string,
     ) => void;
 </script>

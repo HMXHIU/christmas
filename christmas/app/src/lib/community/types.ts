@@ -1,10 +1,10 @@
 import type { Account, Coupon, Store } from "$lib/anchorClient/types";
-import { PlayerMetadataSchema } from "$lib/crossover/types";
+// import { PlayerMetadataSchema } from "$lib/crossover/types";
 import yup from "yup";
 
 export const UserMetadataSchema = yup.object().shape({
     publicKey: yup.string().required(),
-    crossover: PlayerMetadataSchema.optional().default(undefined), // yup casts to {} if undefined
+    // crossover: PlayerMetadataSchema.optional().default(undefined), // yup casts to {} if undefined
 });
 
 export type UserMetadata = yup.InferType<typeof UserMetadataSchema>;

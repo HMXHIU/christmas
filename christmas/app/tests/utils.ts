@@ -1,5 +1,5 @@
-import { COUNTRY_DETAILS } from "$lib/clients/user-device-client/defs";
 import { createUser } from "$lib/community";
+import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
 import { stringToUint8Array } from "$lib/utils";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { createSignInMessage } from "@solana/wallet-standard-util";
@@ -9,12 +9,12 @@ import path from "path";
 import nacl from "tweetnacl";
 
 export {
-    getCookiesFromResponse,
-    readImageAsBuffer,
-    getRandomRegion,
-    getRandomDate,
-    login,
     createRandomUser,
+    getCookiesFromResponse,
+    getRandomDate,
+    getRandomRegion,
+    login,
+    readImageAsBuffer,
 };
 
 function getCookiesFromResponse(response: Response): string {

@@ -1,9 +1,9 @@
 import type {
+    AccountInfo,
+    ParsedAccountData,
+    PublicKey,
     SignatureResult,
     TransactionSignature,
-    PublicKey,
-    ParsedAccountData,
-    AccountInfo,
 } from "@solana/web3.js";
 import BN from "bn.js";
 
