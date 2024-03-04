@@ -1,11 +1,16 @@
 import { createStore, fetchStoreMetadata, fetchStores } from "$lib/community";
-import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
 import { stringToUint8Array } from "$lib/utils";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import ngeohash from "ngeohash";
 import { expect, test } from "vitest";
-import { getCookiesFromResponse, login, readImageAsBuffer } from "./utils";
+import {
+    getCookiesFromResponse,
+    getRandomRegion,
+    login,
+    readImageAsBuffer,
+    readImageAsDataUrl,
+} from "../utils";
 
 test("Test Store", async () => {
     const user = Keypair.generate();
@@ -16,11 +21,9 @@ test("Test Store", async () => {
     const cookies = getCookiesFromResponse(response);
 
     // Read image from ../static/demo/assets/coupon_cat.jpeg
-    const imageBuffer = readImageAsBuffer(
-        "../static/demo/assets/coupon_cat.jpeg",
-    );
-    const image = new Blob([imageBuffer], { type: "image/jpeg" });
-    const imageFile = new File([image], "coupon_cat.jpeg", {
+    const imagePath = "../static/demo/assets/coupon_cat.jpeg";
+    const imageDataUrl = await readImageAsDataUrl(imagePath);
+    const imageBlob = new Blob([readImageAsBuffer(imagePath)], {
         type: "image/jpeg",
     });
 
@@ -33,13 +36,8 @@ test("Test Store", async () => {
 
     // Locations
     const geohash = "gbsuv7";
-    const regionIdx = Math.floor(
-        Math.random() * Object.values(COUNTRY_DETAILS).length,
-    );
-    const regionCode = Object.values(COUNTRY_DETAILS)[regionIdx][0];
-    const { latitude, longitude } = ngeohash.decode(
-        String.fromCharCode(...Array.from(stringToUint8Array(geohash))),
-    );
+    const { latitude, longitude } = ngeohash.decode(geohash);
+    const region = getRandomRegion();
 
     // Create store
     const tx = await createStore(
@@ -47,11 +45,11 @@ test("Test Store", async () => {
             name: "store",
             description: user.publicKey.toBase58(),
             address: user.publicKey.toBase58(),
-            region: regionCode,
+            region,
             latitude,
             longitude,
-            geohash,
-            logo: imageFile,
+            geohash: Array.from(stringToUint8Array(geohash)),
+            image: imageDataUrl,
         },
         {
             headers: { Cookie: cookies },
@@ -66,8 +64,8 @@ test("Test Store", async () => {
     expect(stores.length).toBe(1);
     expect(stores[0].account).toMatchObject({
         name: "store",
-        region: stringToUint8Array(regionCode),
-        geohash: stringToUint8Array(geohash),
+        region: region,
+        geohash: Array.from(stringToUint8Array(geohash)),
         owner: user.publicKey.toBase58(),
     });
 
@@ -89,5 +87,5 @@ test("Test Store", async () => {
 
     // Fetch Image
     response = await fetch(storeMetadata.image);
-    await expect(response.blob()).resolves.toEqual(image);
+    await expect(response.blob()).resolves.toEqual(imageBlob);
 });

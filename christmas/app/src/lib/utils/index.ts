@@ -1,30 +1,31 @@
+import { PUBLIC_RPC_ENDPOINT } from "$env/static/public";
 import {
     Connection,
     type Commitment,
+    type SendOptions,
     type SerializeConfig,
     type Transaction,
     type VersionedTransaction,
-    type SendOptions,
 } from "@solana/web3.js";
 import BN from "bn.js";
 import bs58 from "bs58";
 import type { TransactionResult } from "../anchorClient/types";
-import { PUBLIC_RPC_ENDPOINT } from "$env/static/public";
 
 export {
-    connection,
-    cleanString,
     calculateDistance,
-    timeStampToDate,
-    generateURL,
-    extractQueryParams,
-    storage_uri_to_url,
-    signAndSendTransaction,
+    cleanString,
     confirmTransaction,
-    uploadImage,
-    stringToUint8Array,
-    stringToBase58,
+    connection,
+    extractQueryParams,
+    generateURL,
     getErrorMessage,
+    imageDataUrlToFile,
+    imageUrlToDataURL,
+    signAndSendTransaction,
+    storage_uri_to_url,
+    stringToBase58,
+    stringToUint8Array,
+    timeStampToDate,
 };
 
 const connection = new Connection(PUBLIC_RPC_ENDPOINT, "processed");
@@ -178,22 +179,50 @@ async function confirmTransaction(
     return { result, signature };
 }
 
-async function uploadImage(imageFile: File) {
-    const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
+async function imageDataUrlToFile(
+    imageDataUrl: string,
+): Promise<{ mimeType: string; file: File }> {
+    // Split the data URL to extract MIME type and base64 data
+    const match = imageDataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
+    if (!match) {
+        throw new Error("Invalid Image Data URL");
+    }
+    const [, mimeType, base64Data] = match;
 
-    const response = await fetch(`/api/storage/image/public`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "image",
-        },
-        body: imageBuffer,
-    });
-
-    const { status, url } = await response.json();
-
-    if (status === "success") {
-        return url;
+    // Convert base64 to binary
+    const binaryData = atob(base64Data);
+    const dataArray = new Uint8Array(binaryData.length);
+    for (let i = 0; i < binaryData.length; i++) {
+        dataArray[i] = binaryData.charCodeAt(i);
     }
 
-    throw new Error("Failed to upload image");
+    // Create Blob from binary data
+    const blob = new Blob([dataArray], { type: mimeType });
+
+    // Create File from Blob
+    const file = new File([blob], `image.${mimeType.split("/")[1]}`, {
+        type: mimeType,
+    });
+
+    return { mimeType, file };
+}
+
+async function imageUrlToDataURL(url: string): Promise<string> {
+    const response = await fetch(url);
+    const blob = await response.blob();
+
+    return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            if (typeof reader.result === "string") {
+                resolve(reader.result);
+            } else {
+                reject(new Error("Failed to convert image to data URL."));
+            }
+        };
+        reader.onerror = () => {
+            reject(new Error("Failed to read the image."));
+        };
+        reader.readAsDataURL(blob);
+    });
 }

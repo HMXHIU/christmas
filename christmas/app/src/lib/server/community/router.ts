@@ -3,7 +3,9 @@ import {
     PUBLIC_JWT_EXPIRES_IN,
     PUBLIC_REFRESH_JWT_EXPIRES_IN,
 } from "$env/static/public";
+import { cleanStore, cleanStoreAccount } from "$lib/community/utils";
 import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
+import { imageDataUrlToFile } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -21,7 +23,7 @@ import { UserMetadataSchema } from "../crossover/router";
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, publicProcedure, t } from "../trpc";
 
-export { CreateUserSchema, LoginSchema, communityRouter };
+export { CreateStoreSchema, CreateUserSchema, LoginSchema, communityRouter };
 
 // Schema
 const LoginSchema = z.object({
@@ -31,19 +33,138 @@ const LoginSchema = z.object({
 const CreateUserSchema = z.object({
     region: z.array(z.number()),
 });
+const CreateStoreSchema = z.object({
+    name: z.string(),
+    description: z.string(),
+    region: z.array(z.number()),
+    geohash: z.array(z.number()),
+    latitude: z.number(),
+    longitude: z.number(),
+    address: z.string(),
+    image: z.string(),
+});
+export const StoreMetadataSchema = z.object({
+    name: z.string(),
+    description: z.string(),
+    image: z.string(),
+    address: z.string(),
+    latitude: z.number(),
+    longitude: z.number(),
+});
 
 // Router
 const communityRouter = {
+    // Coupon
+    coupon: t.router({}),
+
+    // Store
+    store: t.router({
+        // store.create
+        create: authProcedure
+            .input(CreateStoreSchema)
+            .mutation(async ({ ctx, input }) => {
+                const {
+                    geohash,
+                    region,
+                    name,
+                    description,
+                    latitude,
+                    longitude,
+                    address,
+                    image,
+                } = input;
+
+                const { mimeType, file: imageFile } =
+                    await imageDataUrlToFile(image);
+
+                // Get store id
+                const storeId = await serverAnchorClient.getAvailableStoreId();
+
+                // Store image
+                const imageUrl = await ObjectStorage.putObject(
+                    {
+                        owner: null,
+                        bucket: "image",
+                        name: hashObject([
+                            "image",
+                            ctx.user.publicKey,
+                            storeId.toNumber(),
+                        ]),
+                        data: Buffer.from(await imageFile.arrayBuffer()),
+                    },
+                    { "Content-Type": imageFile.type },
+                );
+
+                // Validate & upload store metadata
+                const storeMetadataUrl = await ObjectStorage.putJSONObject(
+                    {
+                        owner: null,
+                        bucket: "store",
+                        name: hashObject([
+                            "store",
+                            ctx.user.publicKey,
+                            storeId.toNumber(),
+                        ]),
+                        data: await StoreMetadataSchema.parse({
+                            name,
+                            description,
+                            address,
+                            latitude,
+                            longitude,
+                            image: imageUrl,
+                        }),
+                    },
+                    { "Content-Type": "application/json" },
+                );
+
+                const ix = await serverAnchorClient.createStoreIx({
+                    name,
+                    uri: storeMetadataUrl,
+                    region,
+                    geohash,
+                    storeId,
+                    payer: FEE_PAYER_PUBKEY,
+                    wallet: new PublicKey(ctx.user.publicKey),
+                });
+
+                const base64Transaction = await createSerializedTransaction(ix);
+                return {
+                    transaction: base64Transaction,
+                };
+            }),
+
+        // store.user
+        user: authProcedure.query(async ({ ctx }) => {
+            // Note that store.id BN is serialized as string and needs to be deserialized on client
+            return (
+                await serverAnchorClient.getStores(
+                    new PublicKey(ctx.user.publicKey),
+                )
+            ).map(cleanStoreAccount);
+        }),
+
+        // store.store
+        store: authProcedure
+            .input(z.object({ store: z.string() }))
+            .query(async ({ ctx, input }) => {
+                const { store: storePda } = input;
+
+                return cleanStore(
+                    await serverAnchorClient.getStoreByPda(
+                        new PublicKey(storePda),
+                    ),
+                );
+            }),
+    }),
+
     // User
     user: t.router({
-        // Create
+        // user.create
         create: authProcedure
             .input(CreateUserSchema)
             .mutation(async ({ ctx, input }) => {
                 const user = ctx.user;
                 const { region } = input;
-
-                console.log("region", region);
 
                 // Check valid region
                 try {
@@ -80,7 +201,7 @@ const communityRouter = {
                     transaction: base64Transaction,
                 };
             }),
-        // User
+        // user.user
         user: authProcedure.query(async ({ ctx }) => {
             return await serverAnchorClient.getUser(
                 new PublicKey(ctx.user.publicKey),
@@ -90,11 +211,11 @@ const communityRouter = {
 
     // Authentication
     auth: t.router({
-        // SIWS (public)
+        // auth.siws (public)
         siws: publicProcedure.query(async ({ ctx }) => {
             return await createSignInDataForSIWS();
         }),
-        // Login (public)
+        // auth.login (public)
         login: publicProcedure
             .input(LoginSchema)
             .mutation(async ({ ctx, input }) => {
@@ -158,7 +279,7 @@ const communityRouter = {
                 }
             }),
 
-        // Refresh
+        // auth.refresh
         refresh: authProcedure.query(async ({ ctx }) => {
             const refreshToken = ctx.cookies.get("refreshToken");
 
@@ -201,7 +322,7 @@ const communityRouter = {
             return { status: "success", token };
         }),
 
-        // Logout
+        // auth.logout
         logout: authProcedure.query(async ({ ctx }) => {
             ctx.locals.user = null;
             ctx.cookies.delete("token", {
@@ -214,7 +335,7 @@ const communityRouter = {
             return { status: "success" };
         }),
 
-        // User
+        // auth.user
         user: authProcedure.query(async ({ ctx }) => {
             const user = ctx.locals.user;
             if (user == null) {

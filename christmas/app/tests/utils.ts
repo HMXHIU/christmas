@@ -9,6 +9,7 @@ import {
 } from "@solana/wallet-standard-util";
 import { Keypair } from "@solana/web3.js";
 import fs from "fs";
+import mime from "mime-types";
 import path from "path";
 import nacl from "tweetnacl";
 
@@ -19,6 +20,7 @@ export {
     getRandomRegion,
     login,
     readImageAsBuffer,
+    readImageAsDataUrl,
 };
 
 function getCookiesFromResponse(response: Response): string {
@@ -37,6 +39,26 @@ function getCookiesFromResponse(response: Response): string {
 function readImageAsBuffer(imagePath: string): Buffer {
     const absolutePath = path.resolve(__dirname, imagePath);
     return fs.readFileSync(absolutePath);
+}
+
+async function readImageAsDataUrl(filePath: string): Promise<string> {
+    const absolutePath = path.resolve(__dirname, filePath);
+
+    return new Promise<string>((resolve, reject) => {
+        fs.readFile(absolutePath, (err, data) => {
+            if (err) {
+                reject(err);
+            } else {
+                const mimeType = mime.lookup(absolutePath);
+                if (!mimeType) {
+                    reject(new Error("Unknown file type"));
+                    return;
+                }
+                const dataURL = `data:${mimeType};base64,${data.toString("base64")}`;
+                resolve(dataURL);
+            }
+        });
+    });
 }
 
 function getRandomDate(startYear: number, endYear: number): Date {

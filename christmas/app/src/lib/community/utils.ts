@@ -1,22 +1,26 @@
-import type { Account, Store, User } from "$lib/anchorClient/types";
-import type { Coupon } from "$lib/anchorClient/types";
+import type { Account, Coupon, Store, User } from "$lib/anchorClient/types";
 import { cleanString } from "$lib/utils";
 import { BN } from "bn.js";
 
 export {
-    cleanStoreAccount,
     cleanCouponAccount,
-    cleanUser,
-    cleanCouponSupplyBalance,
     cleanCouponBalance,
+    cleanCouponSupplyBalance,
+    cleanStore,
+    cleanStoreAccount,
+    cleanUser,
+    deserializeStore,
+    deserializeStoreAccount,
 };
 
+function cleanStore(store: Store) {
+    store.name = cleanString(store.name);
+    store.uri = cleanString(store.uri);
+    return store;
+}
+
 function cleanStoreAccount(store: Account<Store>) {
-    store.account = {
-        ...store.account,
-        name: cleanString(store.account.name),
-        uri: cleanString(store.account.uri),
-    };
+    store.account = cleanStore(store.account);
     return store;
 }
 
@@ -46,4 +50,14 @@ function cleanCouponBalance(couponBalance: [Account<Coupon>, number]) {
 function cleanUser(user: User) {
     user.uri = cleanString(user.uri);
     return user;
+}
+
+function deserializeStore(store: any): Store {
+    store.id = new BN(store.id, "hex");
+    return store;
+}
+
+function deserializeStoreAccount(store: any): Account<Store> {
+    store.account = deserializeStore(store.account);
+    return store;
 }

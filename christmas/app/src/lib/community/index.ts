@@ -1,4 +1,4 @@
-import { PublicKey, Transaction } from "@solana/web3.js";
+import { PublicKey, Transaction, type HttpHeaders } from "@solana/web3.js";
 import {
     type Account,
     type Coupon,
@@ -9,10 +9,12 @@ import {
 
 import { PUBLIC_HOST } from "$env/static/public";
 import { logout as logoutCrossoover } from "$lib/crossover";
+import type { CreateStoreSchema } from "$lib/server/community/router";
 import { trpc } from "$lib/trpcClient";
 import { signAndSendTransaction } from "$lib/utils";
 import type { HTTPHeaders } from "@trpc/client";
 import { get } from "svelte/store";
+import type { z } from "zod";
 import {
     claimedCoupons,
     couponsMetadata,
@@ -26,24 +28,19 @@ import {
     userDeviceClient,
     userMetadata,
 } from "../../store";
-import {
-    COUPON_NAME_SIZE,
-    STORE_NAME_SIZE,
-    STRING_PREFIX_SIZE,
-} from "../anchorClient/defs";
+import { COUPON_NAME_SIZE, STRING_PREFIX_SIZE } from "../anchorClient/defs";
 import { stringToUint8Array } from "../utils";
 import type {
     CouponMetadata,
     CreateCouponParams,
-    CreateStoreParams,
     StoreMetadata,
     UserMetadata,
 } from "./types";
 import {
     cleanCouponBalance,
     cleanCouponSupplyBalance,
-    cleanStoreAccount,
     cleanUser,
+    deserializeStoreAccount,
 } from "./utils";
 
 // Exports
@@ -101,33 +98,6 @@ async function fetchMarketCoupons(
     // Update `$marketCoupons`
     marketCoupons.update(() => coupons);
     return coupons;
-}
-
-async function fetchStoreMetadata(
-    storePda: PublicKey | string,
-    headers: HeadersInit = {},
-): Promise<StoreMetadata> {
-    if (storePda instanceof PublicKey) {
-    }
-    storePda = storePda instanceof PublicKey ? storePda.toBase58() : storePda;
-
-    const storeMetadata = await fetch(
-        `${PUBLIC_HOST || ""}/api/community/store/metadata?store=${storePda}`,
-        { headers },
-    ).then(async (response) => {
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
-        return response.json();
-    });
-
-    // Update `$storeMetadata`
-    storesMetadata.update((d) => {
-        d[storePda as string] = storeMetadata;
-        return d;
-    });
-
-    return storeMetadata;
 }
 
 async function fetchCouponMetadata(
@@ -197,25 +167,6 @@ async function fetchClaimedCoupons(
     return coupons;
 }
 
-async function fetchStores(
-    headers: HeadersInit = {},
-): Promise<Account<Store>[]> {
-    const userStores = await fetch(
-        `${PUBLIC_HOST || ""}/api/community/store/user`,
-        { headers },
-    ).then(async (response) => {
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
-        return (await response.json()).map(cleanStoreAccount);
-    });
-
-    // Update `$stores`
-    stores.set(userStores);
-
-    return userStores;
-}
-
 async function claimCoupon(
     {
         coupon,
@@ -273,58 +224,6 @@ async function redeemCoupon(
             numTokens,
             mint: coupon.account.mint.toString(),
         }),
-    })
-        .then(async (response) => {
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-            return response.json();
-        })
-        .then(({ transaction }) => {
-            return signAndSendTransaction({
-                tx: Transaction.from(Buffer.from(transaction, "base64")),
-                wallet: options?.wallet,
-                commitment: "confirmed",
-            });
-        });
-}
-
-async function createStore(
-    {
-        name,
-        description,
-        address,
-        region,
-        latitude,
-        longitude,
-        geohash,
-        logo,
-    }: CreateStoreParams,
-    options?: { headers?: HeadersInit; wallet?: any },
-): Promise<TransactionResult> {
-    // Create form data with metadata and image
-    const formData = new FormData();
-    formData.set(
-        "body",
-        JSON.stringify({
-            name: name.slice(0, STORE_NAME_SIZE - STRING_PREFIX_SIZE), // also enforced in the form
-            geohash: Array.from(stringToUint8Array(geohash)),
-            region: Array.from(stringToUint8Array(region)),
-            description,
-            latitude,
-            longitude,
-            address,
-        }),
-    );
-    if (logo != null) {
-        formData.set("image", logo);
-    }
-
-    // Create store
-    return await fetch(`${PUBLIC_HOST || ""}/api/community/store/create`, {
-        method: "POST",
-        body: formData,
-        headers: options?.headers || {},
     })
         .then(async (response) => {
             if (!response.ok) {
@@ -467,6 +366,81 @@ async function verifyRedemption(
         });
 }
 
+/*
+ * Store
+ */
+
+async function fetchStores(
+    headers: HTTPHeaders = {},
+): Promise<Account<Store>[]> {
+    const userStores = (
+        await trpc({ headers }).community.store.user.query()
+    ).map(deserializeStoreAccount);
+
+    // Update `$stores`
+    stores.set(userStores);
+
+    return userStores;
+}
+
+async function fetchStoreMetadata(
+    storePda: PublicKey | string,
+    headers: HTTPHeaders = {},
+): Promise<StoreMetadata> {
+    if (storePda instanceof PublicKey) {
+    }
+    storePda = storePda instanceof PublicKey ? storePda.toBase58() : storePda;
+    const store = await trpc({ headers }).community.store.store.query({
+        store: storePda,
+    });
+    const storeMetadata = await (await fetch(store.uri)).json();
+
+    // Update `$storeMetadata`
+    storesMetadata.update((d) => {
+        d[storePda as string] = storeMetadata;
+        return d;
+    });
+
+    return storeMetadata;
+}
+
+async function createStore(
+    {
+        name,
+        description,
+        address,
+        region,
+        latitude,
+        longitude,
+        geohash,
+        image,
+    }: z.infer<typeof CreateStoreSchema>,
+    options?: { headers?: HttpHeaders; wallet?: any },
+): Promise<TransactionResult> {
+    return await trpc({ headers: options?.headers || {} })
+        .community.store.create.mutate({
+            name,
+            description,
+            address,
+            region,
+            latitude,
+            longitude,
+            geohash,
+            image,
+        })
+        .then(({ transaction }) => {
+            return signAndSendTransaction({
+                tx: Transaction.from(Buffer.from(transaction, "base64")),
+                wallet: options?.wallet,
+                commitment: "confirmed",
+            });
+        });
+}
+
+/*
+ * User
+ */
+
 async function fetchUser(headers: HTTPHeaders = {}): Promise<User | null> {
     return await trpc({ headers })
         .community.user.user.query()
@@ -518,6 +492,10 @@ async function createUser(
             });
         });
 }
+
+/*
+ * Auth
+ */
 
 async function login() {
     const solanaSignInInput = await trpc().community.auth.siws.query();
