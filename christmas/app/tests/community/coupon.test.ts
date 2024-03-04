@@ -10,15 +10,21 @@ import {
     fetchUser,
     mintCoupon,
     redeemCoupon,
+    verifyRedemption,
 } from "$lib/community";
-import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
 import { stringToUint8Array } from "$lib/utils";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { Keypair } from "@solana/web3.js";
 import { BN } from "bn.js";
 import ngeohash from "ngeohash";
 import { expect, test } from "vitest";
-import { getCookiesFromResponse, login, readImageAsBuffer } from "./utils";
+import {
+    getCookiesFromResponse,
+    getRandomRegion,
+    login,
+    readImageAsBuffer,
+    readImageAsDataUrl,
+} from "../utils";
 
 test("Test Coupon", async () => {
     const user = Keypair.generate();
@@ -29,11 +35,9 @@ test("Test Coupon", async () => {
     const cookies = getCookiesFromResponse(response);
 
     // Read image from ../static/demo/assets/coupon_cat.jpeg
-    const imageBuffer = readImageAsBuffer(
-        "../static/demo/assets/coupon_cat.jpeg",
-    );
-    const image = new Blob([imageBuffer], { type: "image/jpeg" });
-    const imageFile = new File([image], "coupon_cat.jpeg", {
+    const imagePath = "../static/demo/assets/coupon_cat.jpeg";
+    const imageDataUrl = await readImageAsDataUrl(imagePath);
+    const imageBlob = new Blob([readImageAsBuffer(imagePath)], {
         type: "image/jpeg",
     });
 
@@ -46,13 +50,8 @@ test("Test Coupon", async () => {
 
     // Locations
     const geohash = "gbsuv7";
-    const regionIdx = Math.floor(
-        Math.random() * Object.values(COUNTRY_DETAILS).length,
-    );
-    const regionCode = Object.values(COUNTRY_DETAILS)[regionIdx][0];
-    const { latitude, longitude } = ngeohash.decode(
-        String.fromCharCode(...Array.from(stringToUint8Array(geohash))),
-    );
+    const { latitude, longitude } = ngeohash.decode(geohash);
+    const region = getRandomRegion();
 
     // Create store
     let tx = await createStore(
@@ -60,11 +59,11 @@ test("Test Coupon", async () => {
             name: "store",
             description: user.publicKey.toBase58(),
             address: user.publicKey.toBase58(),
-            region: regionCode,
+            region,
             latitude,
             longitude,
-            geohash,
-            logo: imageFile,
+            geohash: Array.from(stringToUint8Array(geohash)),
+            image: imageDataUrl,
         },
         {
             headers: { Cookie: cookies },
@@ -78,15 +77,15 @@ test("Test Coupon", async () => {
     expect(stores.length).toBe(1);
     expect(stores[0].account).toMatchObject({
         name: "store",
-        region: stringToUint8Array(regionCode),
-        geohash: stringToUint8Array(geohash),
+        region,
+        geohash: Array.from(stringToUint8Array(geohash)),
         owner: user.publicKey.toBase58(),
     });
 
     // Create coupon
     tx = await createCoupon(
         {
-            image: imageFile,
+            image: imageDataUrl,
             name: "coupon",
             description: user.publicKey.toBase58(),
             validFrom: beforeToday,
@@ -111,9 +110,9 @@ test("Test Coupon", async () => {
     expect(coupon.account).toMatchObject({
         name: "coupon",
         updateAuthority: user.publicKey.toBase58(),
-        store: stores[0].publicKey,
-        region: stringToUint8Array(regionCode),
-        geohash: stringToUint8Array(geohash),
+        store: stores[0].publicKey.toString(),
+        region,
+        geohash: Array.from(stringToUint8Array(geohash)),
         validFrom: new BN(beforeToday.getTime()),
         validTo: new BN(afterToday.getTime()),
     });
@@ -127,9 +126,13 @@ test("Test Coupon", async () => {
         description: user.publicKey.toBase58(),
     });
 
+    // Fetch Image
+    response = await fetch(metadata.image);
+    await expect(response.blob()).resolves.toEqual(imageBlob);
+
     // Fetch coupon image
-    const imageBlob = await (await fetch(metadata.image)).blob();
-    expect(imageBlob).toMatchObject(image);
+    const blob = await (await fetch(metadata.image)).blob();
+    expect(blob).toMatchObject(imageBlob);
 
     // Mint coupon
     tx = await mintCoupon(
@@ -147,7 +150,7 @@ test("Test Coupon", async () => {
     // Fetch Market Coupons
     const marketCoupons = await fetchMarketCoupons(
         {
-            region: Array.from(stringToUint8Array(regionCode)),
+            region,
             geohash: Array.from(stringToUint8Array(geohash)),
         },
         { Cookie: cookies },
@@ -159,10 +162,10 @@ test("Test Coupon", async () => {
     expect(supply).toBe(2);
     expect(coupon.account).toMatchObject({
         name: "coupon",
-        updateAuthority: user.publicKey.toBase58(),
-        store: stores[0].publicKey,
-        region: stringToUint8Array(regionCode),
-        geohash: stringToUint8Array(geohash),
+        updateAuthority: user.publicKey.toString(),
+        store: stores[0].publicKey.toString(),
+        region,
+        geohash: Array.from(stringToUint8Array(geohash)),
         validFrom: new BN(beforeToday.getTime()),
         validTo: new BN(afterToday.getTime()),
     });
@@ -191,7 +194,7 @@ test("Test Coupon", async () => {
     // Check UserSession's UserAccount created
     const createdUser = await fetchUser({ Cookie: cookies });
     expect(createdUser).toMatchObject({
-        region: stringToUint8Array(regionCode),
+        region,
     });
 
     // Check coupon supply balance
@@ -222,6 +225,22 @@ test("Test Coupon", async () => {
         },
     );
     expect(tx.result.err).toBeNull();
+
+    // Verify redemption
+    const { isVerified, err } = await verifyRedemption(
+        {
+            signature: tx.signature,
+            mint: coupon.account.mint.toString(),
+            numTokens: 1,
+            wallet: userWallet.publicKey.toString(),
+        },
+        { Cookie: cookies },
+    );
+    console.log("isVerified", isVerified);
+    console.log("err", err);
+
+    expect(isVerified).toBe(true);
+    expect(err).toBeFalsy();
 
     // Check claimed coupons after redeeming
     claimedCoupons = await fetchClaimedCoupons({ Cookie: cookies });

@@ -7,9 +7,11 @@ import {
     type User,
 } from "../anchorClient/types";
 
-import { PUBLIC_HOST } from "$env/static/public";
 import { logout as logoutCrossoover } from "$lib/crossover";
-import type { CreateStoreSchema } from "$lib/server/community/router";
+import type {
+    CouponMetadataSchema,
+    CreateStoreSchema,
+} from "$lib/server/community/router";
 import { trpc } from "$lib/trpcClient";
 import { signAndSendTransaction } from "$lib/utils";
 import type { HTTPHeaders } from "@trpc/client";
@@ -25,21 +27,14 @@ import {
     stores,
     storesMetadata,
     token,
-    userDeviceClient,
     userMetadata,
 } from "../../store";
-import { COUPON_NAME_SIZE, STRING_PREFIX_SIZE } from "../anchorClient/defs";
 import { stringToUint8Array } from "../utils";
-import type {
-    CouponMetadata,
-    CreateCouponParams,
-    StoreMetadata,
-    UserMetadata,
-} from "./types";
+import type { StoreMetadata, UserMetadata } from "./types";
 import {
-    cleanCouponBalance,
-    cleanCouponSupplyBalance,
     cleanUser,
+    deserializeCouponBalance,
+    deserializeCouponSupplyBalance,
     deserializeStoreAccount,
 } from "./utils";
 
@@ -65,6 +60,10 @@ export {
     verifyRedemption,
 };
 
+/*
+ * Coupon
+ */
+
 async function fetchMarketCoupons(
     {
         region,
@@ -73,37 +72,31 @@ async function fetchMarketCoupons(
         region: number[] | string;
         geohash: number[] | string;
     },
-    headers: HeadersInit = {},
+    headers: HTTPHeaders = {},
 ): Promise<[Account<Coupon>, number][]> {
-    const dc = get(userDeviceClient);
-
-    region =
-        typeof region === "string" ? region : String.fromCharCode(...region);
-
-    geohash =
-        typeof geohash === "string" ? geohash : String.fromCharCode(...geohash);
-
     const coupons = (
-        await fetch(
-            `${PUBLIC_HOST || ""}/api/community/coupon/market?region=${region}&geohash=${geohash}`,
-            { headers },
-        ).then(async (response) => {
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-            return response.json();
+        await trpc({ headers }).community.coupon.market.query({
+            region:
+                typeof region === "string"
+                    ? Array.from(stringToUint8Array(region))
+                    : region,
+            geohash:
+                typeof geohash === "string"
+                    ? Array.from(stringToUint8Array(geohash))
+                    : geohash,
         })
-    ).map(cleanCouponBalance);
+    ).map(deserializeCouponBalance);
 
     // Update `$marketCoupons`
-    marketCoupons.update(() => coupons);
+    marketCoupons.set(coupons);
+
     return coupons;
 }
 
 async function fetchCouponMetadata(
     coupon: Account<Coupon>,
     headers: HeadersInit = {},
-): Promise<CouponMetadata> {
+): Promise<z.infer<typeof CouponMetadataSchema>> {
     const couponMetadata = await fetch(coupon.account.uri, { headers }).then(
         async (response) => {
             if (!response.ok) {
@@ -124,20 +117,17 @@ async function fetchCouponMetadata(
 
 async function fetchMintedCouponSupplyBalance(
     store: PublicKey | string,
-    headers: HeadersInit = {},
+    headers: HTTPHeaders = {},
 ): Promise<[Account<Coupon>, number, number][]> {
     store = store instanceof PublicKey ? store.toBase58() : store;
 
-    const couponsSupplyBalance = await fetch(
-        `${PUBLIC_HOST || ""}/api/community/coupon/minted?store=${store}`,
-        { headers },
-    ).then(async (response) => {
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
-
-        return (await response.json()).map(cleanCouponSupplyBalance);
-    });
+    const couponsSupplyBalance = await trpc({ headers })
+        .community.coupon.minted.query({
+            store: store,
+        })
+        .then((coupons) => {
+            return coupons.map(deserializeCouponSupplyBalance);
+        });
 
     // Update `$mintedCoupons`
     mintedCoupons.update((d) => {
@@ -149,17 +139,13 @@ async function fetchMintedCouponSupplyBalance(
 }
 
 async function fetchClaimedCoupons(
-    headers: HeadersInit = {},
+    headers: HTTPHeaders = {},
 ): Promise<[Account<Coupon>, number][]> {
-    const coupons = await fetch(
-        `${PUBLIC_HOST || ""}/api/community/coupon/claimed`,
-        { headers },
-    ).then(async (response) => {
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
-        return (await response.json()).map(cleanCouponBalance);
-    });
+    const coupons = await trpc({ headers })
+        .community.coupon.claimed.query()
+        .then((coupons) => {
+            return coupons.map(deserializeCouponBalance);
+        });
 
     // Update `$claimedCoupons`
     claimedCoupons.set(coupons);
@@ -175,24 +161,12 @@ async function claimCoupon(
         coupon: Account<Coupon>;
         numTokens: number;
     },
-    options?: { headers?: HeadersInit; wallet?: any },
+    options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
-    return await fetch(`${PUBLIC_HOST || ""}/api/community/coupon/claim`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...(options?.headers || {}),
-        },
-        body: JSON.stringify({
+    return await trpc({ headers: options?.headers || {} })
+        .community.coupon.claim.mutate({
             numTokens,
             mint: coupon.account.mint.toString(),
-        }),
-    })
-        .then(async (response) => {
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-            return response.json();
         })
         .then(({ transaction }) => {
             return signAndSendTransaction({
@@ -211,25 +185,13 @@ async function redeemCoupon(
         coupon: Account<Coupon>;
         numTokens: number;
     },
-    options?: { headers?: HeadersInit; wallet?: any },
+    options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
-    return await fetch(`${PUBLIC_HOST || ""}/api/community/coupon/redeem`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...(options?.headers || {}),
-        },
-        body: JSON.stringify({
+    return await trpc({ headers: options?.headers || {} })
+        .community.coupon.redeem.mutate({
             coupon: coupon.publicKey.toString(),
             numTokens,
             mint: coupon.account.mint.toString(),
-        }),
-    })
-        .then(async (response) => {
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-            return response.json();
         })
         .then(({ transaction }) => {
             return signAndSendTransaction({
@@ -241,40 +203,33 @@ async function redeemCoupon(
 }
 
 async function createCoupon(
-    { image, name, description, validFrom, validTo, store }: CreateCouponParams,
-    options?: { headers?: HeadersInit; wallet?: any },
+    {
+        image,
+        name,
+        description,
+        validFrom,
+        validTo,
+        store,
+    }: {
+        image: string;
+        name: string;
+        description: string;
+        validFrom: Date;
+        validTo: Date;
+        store: Account<Store>;
+    },
+    options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
-    // Create form data with metadata and image
-    const formData = new FormData();
-
-    formData.set(
-        "body",
-        JSON.stringify({
-            name: name.slice(0, COUPON_NAME_SIZE - STRING_PREFIX_SIZE), // also enforced in form
+    return await trpc({ headers: options?.headers || {} })
+        .community.coupon.create.mutate({
+            image,
+            name,
             description,
             validFrom,
             validTo,
             store: store.publicKey.toString(),
             geohash: store.account.geohash,
             region: store.account.region,
-        }),
-    );
-
-    if (image != null) {
-        formData.set("image", image);
-    }
-
-    // Create coupon
-    return await fetch(`${PUBLIC_HOST || ""}/api/community/coupon/create`, {
-        method: "POST",
-        headers: options?.headers || {},
-        body: formData,
-    })
-        .then(async (response) => {
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-            return response.json();
         })
         .then(({ transaction }) => {
             return signAndSendTransaction({
@@ -293,31 +248,17 @@ async function mintCoupon(
         coupon: Account<Coupon>;
         numTokens: number;
     },
-    options?: { headers?: HeadersInit; wallet?: any },
+    options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
-    const couponPda =
-        coupon.publicKey instanceof PublicKey
-            ? coupon.publicKey.toBase58()
-            : coupon.publicKey;
-
-    return await fetch(`${PUBLIC_HOST || ""}/api/community/coupon/mint`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...(options?.headers || {}),
-        },
-        body: JSON.stringify({
-            mint: coupon.account.mint,
+    return await trpc({ headers: options?.headers || {} })
+        .community.coupon.mint.mutate({
+            mint: coupon.account.mint.toBase58(),
             region: coupon.account.region,
-            coupon: couponPda,
+            coupon:
+                coupon.publicKey instanceof PublicKey
+                    ? coupon.publicKey.toBase58()
+                    : coupon.publicKey,
             numTokens,
-        }),
-    })
-        .then(async (response) => {
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-            return response.json();
         })
         .then(({ transaction }) => {
             return signAndSendTransaction({
@@ -337,33 +278,17 @@ async function verifyRedemption(
     }: {
         signature: string;
         mint: string;
-        numTokens: string;
+        numTokens: number;
         wallet: string;
     },
-    headers: HeadersInit = {},
+    headers: HTTPHeaders = {},
 ): Promise<{ isVerified: boolean; err: string }> {
-    return await fetch(`${PUBLIC_HOST || ""}/api/community/coupon/verify`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...headers,
-        },
-        body: JSON.stringify({
-            signature,
-            mint,
-            wallet,
-            numTokens,
-        }),
-    })
-        .then(async (response) => {
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-            return response.json();
-        })
-        .then(({ isVerified, err }) => {
-            return { isVerified, err };
-        });
+    return await trpc({ headers }).community.coupon.verify.query({
+        signature,
+        mint,
+        wallet,
+        numTokens,
+    });
 }
 
 /*

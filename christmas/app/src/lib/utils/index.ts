@@ -106,6 +106,7 @@ function generateURL(kwargs: Record<string, string>, uri?: string) {
     }
 
     const url = uri ? new URL(uri, origin) : new URL(origin);
+    queryParams.sort();
     url.search = queryParams.toString();
 
     return url.toString();

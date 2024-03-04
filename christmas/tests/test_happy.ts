@@ -338,9 +338,12 @@ describe("Test client", () => {
             mint: coupon.account.mint.toString(),
             numTokens: String(1),
         });
+
+        // compare 2 urls
+
         assert.equal(
             redemptionQRCodeURL,
-            `https://\${origin}?mint=${
+            `https://\${origin}/?mint=${
                 coupon.account.mint
             }&numTokens=${1}&signature=${
                 transactionResult.signature
