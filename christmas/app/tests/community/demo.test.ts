@@ -11,7 +11,7 @@ import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { Keypair } from "@solana/web3.js";
 import ngeohash from "ngeohash";
 import { expect, test } from "vitest";
-import { getCookiesFromResponse, login, readImageAsBuffer } from "./utils";
+import { getCookiesFromResponse, login, readImageAsDataUrl } from "../utils";
 
 test(
     "Generate demo content",
@@ -152,13 +152,7 @@ test(
 
         for (const { storeMetadata, couponMetadata } of demoStoresCoupons) {
             // Read store image
-            const storeImageBuffer = readImageAsBuffer(storeMetadata.image);
-            const storeImage = new Blob([storeImageBuffer], {
-                type: "image/jpeg",
-            });
-            const storeImageFile = new File([storeImage], "coupon_cat.jpeg", {
-                type: "image/jpeg",
-            });
+            var imageDataUrl = await readImageAsDataUrl(storeMetadata.image);
 
             // Create store
             let tx = await createStore(
@@ -166,11 +160,11 @@ test(
                     name: storeMetadata.name,
                     description: storeMetadata.description,
                     address: storeMetadata.address,
-                    region: regionCode,
+                    region,
                     latitude,
                     longitude,
-                    geohash: String.fromCharCode(...geoHere),
-                    logo: storeImageFile,
+                    geohash: geoHere,
+                    image: imageDataUrl,
                 },
                 {
                     headers: { Cookie: cookies },
@@ -186,18 +180,12 @@ test(
             expect(store).toBeDefined();
 
             // Read coupon image
-            const couponImageBuffer = readImageAsBuffer(couponMetadata.image);
-            const couponImage = new Blob([couponImageBuffer], {
-                type: "image/jpeg",
-            });
-            const couponImageFile = new File([couponImage], "coupon_cat.jpeg", {
-                type: "image/jpeg",
-            });
+            var imageDataUrl = await readImageAsDataUrl(couponMetadata.image);
 
             // Create coupon
             tx = await createCoupon(
                 {
-                    image: couponImageFile,
+                    image: imageDataUrl,
                     name: couponMetadata.name,
                     description: couponMetadata.description,
                     validFrom: beforeToday,
