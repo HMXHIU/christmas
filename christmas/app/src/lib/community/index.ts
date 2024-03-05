@@ -10,9 +10,9 @@ import {
 import { logout as logoutCrossoover } from "$lib/crossover";
 import type {
     CouponMetadataSchema,
-    CreateStoreSchema,
     StoreMetadataSchema,
 } from "$lib/server/community/router";
+import type { UserMetadataSchema } from "$lib/server/crossover/router";
 import { trpc } from "$lib/trpcClient";
 import { signAndSendTransaction } from "$lib/utils";
 import type { HTTPHeaders } from "@trpc/client";
@@ -31,8 +31,6 @@ import {
     userMetadata,
 } from "../../store";
 import { stringToUint8Array } from "../utils";
-// import type { StoreMetadata, UserMetadata } from "./types";
-import type { UserMetadataSchema } from "$lib/server/crossover/router";
 import {
     cleanUser,
     deserializeCouponBalance,
@@ -62,6 +60,7 @@ export {
     verifyRedemption,
     type ClaimCouponParams,
     type CreateCouponParams,
+    type CreateStoreParams,
     type MintCouponParams,
     type RedeemCouponParams,
 };
@@ -88,6 +87,17 @@ interface ClaimCouponParams {
 interface RedeemCouponParams {
     numTokens: number;
     coupon: Account<Coupon>;
+}
+
+interface CreateStoreParams {
+    name: string;
+    description: string;
+    region: number[];
+    geohash: number[];
+    latitude: number;
+    longitude: number;
+    address: string;
+    image: string;
 }
 
 /*
@@ -339,7 +349,7 @@ async function createStore(
         longitude,
         geohash,
         image,
-    }: z.infer<typeof CreateStoreSchema>,
+    }: CreateStoreParams,
     options?: { headers?: HttpHeaders; wallet?: any },
 ): Promise<TransactionResult> {
     return await trpc({ headers: options?.headers || {} })

@@ -1,9 +1,8 @@
 import { Schema, type Entity } from "redis-om";
 
-export { PlayerSchema, type PlayerEntity };
+export { PlayerEntitySchema, type Player, type PlayerEntity };
 
-// Should be a superset or PlayerMetadata (see anchor-client/types.ts)
-const PlayerSchema = new Schema("Player", {
+const PlayerEntitySchema = new Schema("Player", {
     player: { type: "string" },
     name: { type: "string" },
     description: { type: "string" },
@@ -11,10 +10,12 @@ const PlayerSchema = new Schema("Player", {
     loggedIn: { type: "boolean" },
 });
 
-interface PlayerEntity extends Entity {
+interface Player {
     player: string;
     name: string;
     description: string;
     tile: string;
     loggedIn: boolean;
 }
+
+type PlayerEntity = Player & Entity;

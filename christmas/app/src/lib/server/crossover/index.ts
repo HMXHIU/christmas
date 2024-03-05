@@ -1,16 +1,14 @@
-import type { UserMetadata } from "$lib/community/types";
-
 import { serverAnchorClient } from "$lib/server";
 import { PublicKey } from "@solana/web3.js";
 import type { z } from "zod";
 import { playerRepository } from "./redis";
-import { type PlayerEntity } from "./redis/schema";
-import type { PlayerMetadataSchema } from "./router";
+import { type PlayerEntity } from "./redis/entities";
+import type { PlayerMetadataSchema, UserMetadataSchema } from "./router";
 
 // Exports
 export {
     connectedUsers,
-    getLoadedPlayer,
+    getLoadedPlayerEntity,
     getPlayerMetadata,
     getUserMetadata,
     type ConnectedUser,
@@ -24,7 +22,7 @@ interface ConnectedUser {
 // Record of connected users on this server instance
 let connectedUsers: Record<string, ConnectedUser> = {};
 
-async function getLoadedPlayer(
+async function getLoadedPlayerEntity(
     publicKey: string,
 ): Promise<PlayerEntity | null> {
     const player = (await playerRepository.fetch(publicKey)) as PlayerEntity;
@@ -33,7 +31,7 @@ async function getLoadedPlayer(
 
 async function getUserMetadata(
     publicKey: string,
-): Promise<UserMetadata | null> {
+): Promise<z.infer<typeof UserMetadataSchema> | null> {
     const user = await serverAnchorClient.getUser(new PublicKey(publicKey));
 
     if (user == null) {
@@ -46,7 +44,8 @@ async function getUserMetadata(
 
     // Load metadata
     let response = await fetch(user.uri);
-    const userMetadata: UserMetadata = await response.json();
+    const userMetadata: z.infer<typeof UserMetadataSchema> =
+        await response.json();
 
     return userMetadata || null;
 }

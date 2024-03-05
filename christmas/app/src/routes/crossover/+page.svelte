@@ -11,7 +11,7 @@
     import { onMount } from "svelte";
     import { player } from "../../store";
 
-    let MessageFeedUI: MessageFeedUI[] = [];
+    let messageFeed: MessageFeedUI[] = [];
 
     async function onChatMessage(
         command: ChatCommandUI | null,
@@ -37,15 +37,16 @@
     }
 
     function processMessageEvent(event: Event) {
-        const { cmd, origin, data } = (event as MessageEvent).data;
+        const { cmd, origin, message } = (event as MessageEvent).data;
+
         switch (cmd) {
             case "say":
-                MessageFeedUI = [
-                    ...MessageFeedUI,
+                messageFeed = [
+                    ...messageFeed,
                     {
-                        id: MessageFeedUI.length,
+                        id: messageFeed.length,
                         timestamp: getCurrentTimestamp(),
-                        message: `${origin} says '${data.message}'`,
+                        message: `${origin} says '${message}'`,
                         name: "",
                     },
                 ];
@@ -77,5 +78,5 @@
 {#if !$player}
     <Onboard />
 {:else}
-    <GameWindow class="h-full" {onChatMessage} {MessageFeedUI} />
+    <GameWindow class="h-full" {onChatMessage} {messageFeed} />
 {/if}

@@ -5,7 +5,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
     connectedUsers,
-    getLoadedPlayer,
+    getLoadedPlayerEntity,
     getPlayerMetadata,
     getUserMetadata,
 } from ".";
@@ -17,9 +17,14 @@ import {
 } from "..";
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, t } from "../trpc";
-import type { PlayerEntity } from "./redis/schema";
+import type { Player, PlayerEntity } from "./redis/entities";
 
-export { PlayerMetadataSchema, UserMetadataSchema, crossoverRouter };
+export {
+    PlayerMetadataSchema,
+    SayCommandSchema,
+    UserMetadataSchema,
+    crossoverRouter,
+};
 
 // Schemas
 const SayCommandSchema = z.object({
@@ -28,6 +33,7 @@ const SayCommandSchema = z.object({
 const SignupAuthSchema = z.object({
     name: z.string(),
 });
+// PlayerMetadata (s3) is a less restrictive version of PlayerEntity (redis) only containing data that needs to be store long term
 const PlayerMetadataSchema = z.object({
     player: z.string(),
     name: z.string().min(1).max(100),
@@ -44,7 +50,7 @@ const UserMetadataSchema = z.object({
 const crossoverRouter = {
     // Commands
     cmd: t.router({
-        // Say
+        // cmd.say
         say: authProcedure
             .input(SayCommandSchema)
             .query(async ({ ctx, input }) => {
@@ -60,7 +66,7 @@ const crossoverRouter = {
                         JSON.stringify({
                             origin: ctx.user.publicKey,
                             cmd: "say",
-                            input,
+                            ...input,
                         }),
                     );
                 }
@@ -68,7 +74,7 @@ const crossoverRouter = {
     }),
     // Authentication
     auth: t.router({
-        // Signup
+        // auth.signup
         signup: authProcedure
             .input(SignupAuthSchema)
             .query(async ({ ctx, input }) => {
@@ -87,7 +93,7 @@ const crossoverRouter = {
                 const { name } = input;
 
                 // Check if player already exists
-                const player = await getLoadedPlayer(ctx.user.publicKey);
+                const player = await getLoadedPlayerEntity(ctx.user.publicKey);
                 if (player != null) {
                     throw new TRPCError({
                         code: "BAD_REQUEST",
@@ -149,10 +155,10 @@ const crossoverRouter = {
                 };
             }),
 
-        // Login
+        // auth.login
         login: authProcedure.query(async ({ ctx }) => {
             // Get player
-            let player = await getLoadedPlayer(ctx.user.publicKey);
+            let player = await getLoadedPlayerEntity(ctx.user.publicKey);
 
             // If player is not loaded, load it from storage
             if (player == null) {
@@ -182,13 +188,13 @@ const crossoverRouter = {
                 maxAge: parseInt(PUBLIC_REFRESH_JWT_EXPIRES_IN), // in seconds
             });
 
-            return { status: "success", player };
+            return { status: "success", player: player as Player };
         }),
 
-        // Logout
+        // auth.logout
         logout: authProcedure.query(async ({ ctx }) => {
             // Get player
-            let player = await getLoadedPlayer(ctx.user.publicKey);
+            let player = await getLoadedPlayerEntity(ctx.user.publicKey);
             if (player == null) {
                 throw new TRPCError({
                     code: "BAD_REQUEST",
@@ -203,16 +209,14 @@ const crossoverRouter = {
                 path: "/",
             });
 
-            return { status: "success", player };
+            return { status: "success", player: player as Player };
         }),
 
-        // Player
+        // auth.player
         player: authProcedure.query(async ({ ctx }) => {
             // Get loaded player (if loaded)
-            let p: PlayerEntity | null = await getLoadedPlayer(
-                ctx.user.publicKey,
-            );
-            if (p == null) {
+            let player = await getLoadedPlayerEntity(ctx.user.publicKey);
+            if (player == null) {
                 // Load player from storage
                 let playerMetadata = await getPlayerMetadata(
                     ctx.user.publicKey,
@@ -225,7 +229,7 @@ const crossoverRouter = {
                     });
                 }
 
-                p = (await playerRepository.save(playerMetadata.player, {
+                player = (await playerRepository.save(playerMetadata.player, {
                     ...playerMetadata,
                     loggedIn: false, // do not login user when creating for the first time from storage
                 })) as PlayerEntity;
@@ -240,7 +244,7 @@ const crossoverRouter = {
                 maxAge: parseInt(PUBLIC_REFRESH_JWT_EXPIRES_IN), // in seconds
             });
 
-            return p as z.infer<typeof PlayerMetadataSchema>;
+            return player as Player;
         }),
     }),
 };

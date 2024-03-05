@@ -560,8 +560,8 @@ const communityRouter = {
             return { status: "success", token };
         }),
 
-        // auth.logout
-        logout: authProcedure.query(async ({ ctx }) => {
+        // auth.logout (public)
+        logout: publicProcedure.query(async ({ ctx }) => {
             ctx.locals.user = null;
             ctx.cookies.delete("token", {
                 path: "/",

@@ -1,16 +1,16 @@
 import { createClient } from "redis";
 
 import {
-    REDIS_PASSWORD,
-    REDIS_USERNAME,
     REDIS_HOST,
+    REDIS_PASSWORD,
     REDIS_PORT,
+    REDIS_USERNAME,
 } from "$env/static/private";
-import { PlayerSchema } from "./schema";
 import { Repository } from "redis-om";
+import { PlayerEntitySchema } from "./entities";
 
 // Exports
-export { redisClient, redisSubscribeClient, playerRepository };
+export { playerRepository, redisClient, redisSubscribeClient };
 
 // Repositories
 let playerRepository: Repository;
@@ -41,5 +41,5 @@ if (!redisSubscribeClient.isOpen) {
 
 function registerSchemas() {
     console.log("Registering redis schemas");
-    playerRepository = new Repository(PlayerSchema, redisClient);
+    playerRepository = new Repository(PlayerEntitySchema, redisClient);
 }

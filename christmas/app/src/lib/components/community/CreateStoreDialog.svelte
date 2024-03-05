@@ -19,6 +19,7 @@
     import ngeohash from "ngeohash";
     import { onMount } from "svelte";
 
+    import type { CreateStoreParams } from "$lib/community";
     import { z } from "zod";
     import { stores, userDeviceClient } from "../../../store";
 
@@ -41,9 +42,7 @@
         }),
     });
 
-    export let onCreateStore: (
-        values: z.infer<typeof CreateStoreSchema>,
-    ) => Promise<void>;
+    export let onCreateStore: (values: CreateStoreParams) => Promise<void>;
 
     let openDialog: boolean = false;
 

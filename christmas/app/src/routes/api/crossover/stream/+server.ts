@@ -1,10 +1,21 @@
-import type { RequestHandler } from "./$types";
-import { redisSubscribeClient } from "$lib/server/crossover/redis";
-import { connectedUsers } from "$lib/server/crossover";
 import { requireLogin } from "$lib/server";
+import { connectedUsers } from "$lib/server/crossover";
+import { redisSubscribeClient } from "$lib/server/crossover/redis";
+import type { RequestHandler } from "./$types";
 
 export const GET: RequestHandler = (event) => {
     const user = requireLogin(event);
+
+    function onMessage(message: string) {
+        console.log(
+            "Received message: " + message,
+            connectedUsers[user.publicKey].stream,
+        );
+        connectedUsers[user.publicKey].stream.enqueue(
+            JSON.stringify({ type: "message", data: JSON.parse(message) }) +
+                "\n\n", // SSE messages are separated by two newlines
+        );
+    }
 
     // Create a register user stream on this server instance
     const stream = new ReadableStream({
@@ -13,15 +24,12 @@ export const GET: RequestHandler = (event) => {
                 stream: controller,
                 publicKey: user.publicKey,
             };
+
+            redisSubscribeClient.subscribe(user.publicKey, onMessage);
             console.log(`Stream ${user.publicKey} started`);
-            controller.enqueue(
-                JSON.stringify({
-                    type: "system",
-                    data: { event: "stream", message: "started" },
-                }),
-            );
         },
         cancel() {
+            redisSubscribeClient.unsubscribe(user.publicKey, onMessage);
             delete connectedUsers[user.publicKey];
             console.log(`Stream ${user.publicKey} ended`);
         },

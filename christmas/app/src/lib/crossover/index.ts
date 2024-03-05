@@ -102,13 +102,15 @@ function makeJsonDecoder(): TransformStream<any, any> {
             chunk: any,
             controller: TransformStreamDefaultController<any>,
         ) {
-            try {
-                controller.enqueue(JSON.parse(chunk.trim()));
-            } catch (err: any) {
-                controller.enqueue({
-                    type: "system",
-                    data: { event: "error", message: err.message },
-                });
+            for (const s of chunk.split("\n\n")) {
+                try {
+                    controller.enqueue(JSON.parse(s.trim()));
+                } catch (err: any) {
+                    controller.enqueue({
+                        type: "system",
+                        data: { event: "error", message: err.message },
+                    });
+                }
             }
         },
     });
