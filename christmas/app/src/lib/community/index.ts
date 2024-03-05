@@ -11,12 +11,13 @@ import { logout as logoutCrossoover } from "$lib/crossover";
 import type {
     CouponMetadataSchema,
     CreateStoreSchema,
+    StoreMetadataSchema,
 } from "$lib/server/community/router";
 import { trpc } from "$lib/trpcClient";
 import { signAndSendTransaction } from "$lib/utils";
 import type { HTTPHeaders } from "@trpc/client";
 import { get } from "svelte/store";
-import type { z } from "zod";
+import { z } from "zod";
 import {
     claimedCoupons,
     couponsMetadata,
@@ -30,7 +31,8 @@ import {
     userMetadata,
 } from "../../store";
 import { stringToUint8Array } from "../utils";
-import type { StoreMetadata, UserMetadata } from "./types";
+// import type { StoreMetadata, UserMetadata } from "./types";
+import type { UserMetadataSchema } from "$lib/server/crossover/router";
 import {
     cleanUser,
     deserializeCouponBalance,
@@ -311,7 +313,7 @@ async function fetchStores(
 async function fetchStoreMetadata(
     storePda: PublicKey | string,
     headers: HTTPHeaders = {},
-): Promise<StoreMetadata> {
+): Promise<z.infer<typeof StoreMetadataSchema>> {
     if (storePda instanceof PublicKey) {
     }
     storePda = storePda instanceof PublicKey ? storePda.toBase58() : storePda;
@@ -380,7 +382,7 @@ async function fetchUser(headers: HTTPHeaders = {}): Promise<User | null> {
 async function fetchUserMetadata(
     user: User,
     headers: HeadersInit = {},
-): Promise<UserMetadata> {
+): Promise<z.infer<typeof UserMetadataSchema>> {
     const fetchedUserMetadata = await fetch(user.uri, { headers }).then(
         async (response) => {
             if (!response.ok) {

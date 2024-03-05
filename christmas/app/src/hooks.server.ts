@@ -4,7 +4,7 @@ import { createContext } from "$lib/server/trpc/context";
 import { router } from "$lib/server/trpc/router";
 import type { Handle } from "@sveltejs/kit";
 import { sequence } from "@sveltejs/kit/hooks";
-import { createTRPCHandle } from "trpc-sveltekit";
+import { createTRPCHandle } from "trpc-sveltekit-monorepo/package/src/"; // TODO: fix this import after test
 
 const handleBase: Handle = async ({ event, resolve }) => {
     const { locals, request, cookies, url } = event;

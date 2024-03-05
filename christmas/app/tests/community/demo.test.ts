@@ -5,12 +5,17 @@ import {
     fetchStores,
     mintCoupon,
 } from "$lib/community";
-import type { CouponMetadata, StoreMetadata } from "$lib/community/types";
+// import type { CouponMetadata, StoreMetadata } from "$lib/community/types";
+import type {
+    CouponMetadataSchema,
+    StoreMetadataSchema,
+} from "$lib/server/community/router";
 import { stringToUint8Array } from "$lib/utils";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { Keypair } from "@solana/web3.js";
 import ngeohash from "ngeohash";
 import { expect, test } from "vitest";
+import { z } from "zod";
 import { getCookiesFromResponse, login, readImageAsDataUrl } from "../utils";
 
 test(
@@ -20,9 +25,9 @@ test(
         const userWallet = new NodeWallet(user);
 
         // Locations (https://geohash.softeng.co/w21z3w)
-        // const geoHere = Array.from(stringToUint8Array("w21z98")); // faber heights
+        const geoHere = Array.from(stringToUint8Array("w21z98")); // faber heights
         // const geoHere = Array.from(stringToUint8Array("w21z71")); // metacamp
-        const geoHere = Array.from(stringToUint8Array("w21z4w")); // harbour front
+        // const geoHere = Array.from(stringToUint8Array("w21z4w")); // harbour front
         // const geoHere = Array.from(stringToUint8Array("w21z3p")); // clementi mall
         const regionCode = "SGP";
         const region = Array.from(stringToUint8Array(regionCode));
@@ -39,8 +44,8 @@ test(
 
         // Stores and coupons
         const demoStoresCoupons: {
-            couponMetadata: CouponMetadata;
-            storeMetadata: StoreMetadata;
+            couponMetadata: z.infer<typeof CouponMetadataSchema>;
+            storeMetadata: z.infer<typeof StoreMetadataSchema>;
         }[] = [
             {
                 couponMetadata: {

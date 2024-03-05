@@ -517,8 +517,8 @@ const communityRouter = {
                 }
             }),
 
-        // auth.refresh
-        refresh: authProcedure.query(async ({ ctx }) => {
+        // auth.refresh (public)
+        refresh: publicProcedure.query(async ({ ctx }) => {
             const refreshToken = ctx.cookies.get("refreshToken");
 
             // Check refreshToken

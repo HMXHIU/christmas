@@ -1,7 +1,10 @@
 import { PUBLIC_HOST } from "$env/static/public";
 import type { Router } from "$lib/server/trpc/router";
 import type { HTTPHeaders } from "@trpc/client";
-import { createTRPCClient, type TRPCClientInit } from "trpc-sveltekit";
+import {
+    createTRPCClient,
+    type TRPCClientInit,
+} from "trpc-sveltekit-monorepo/package/src/"; // TODO: fix this import after test
 
 let browserClient: ReturnType<typeof createTRPCClient<Router>>;
 

@@ -35,14 +35,10 @@
     let fetchMetadataAsync = fetchMetadata();
 
     async function onClick() {
-        const numTokens = 1;
-
         await onRedeemCoupon({
-            numTokens,
+            numTokens: 1,
             coupon,
         });
-
-        redeemCouponOpen = false;
     }
 </script>
 
@@ -70,6 +66,7 @@
                             data={$redeemedCoupons[couponKey]}
                             height={300}
                             width={300}
+                            class="p-6 justify-center"
                         ></QrCode>
                     {:else}
                         {`Redeem ${coupon.account.name}?`}
@@ -92,9 +89,10 @@
                     redemptionQRCodeURL={$redeemedCoupons[couponKey]}
                 ></BaseCouponCard>
             {/if}
+
             <section class="p-4">
                 <p>
-                    This coupon will be only be valid for <span
+                    This coupon will only be valid for <span
                         class="text-success-400 font-bold">15mins</span
                     >. Make sure you are at the location before
                     <span class="underline font-bold">using</span> it.

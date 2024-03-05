@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { cn } from "$lib/shadcn";
     import { onMount } from "svelte";
 
     export let width: number;
@@ -35,6 +36,8 @@
     });
 </script>
 
-{#await qrUrl then qrUrl}
-    <img src={qrUrl} alt="verify redemption" />
-{/await}
+<div class={cn("flex", $$restProps.class)}>
+    {#await qrUrl then qrUrl}
+        <img src={qrUrl} alt="verify redemption" />
+    {/await}
+</div>

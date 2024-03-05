@@ -18,8 +18,9 @@ test("Test Auth", async () => {
 
     // Login
     let response = await login(user);
-    const loginResult = await response.json();
+    const loginResult = (await response.json()).result.data;
     const cookies = getCookiesFromResponse(response);
+
     expect(
         (
             jwt.decode(loginResult.token, { complete: true })
