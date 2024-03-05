@@ -6,6 +6,8 @@
         fetchMintedCouponSupplyBalance,
         fetchStoreMetadata,
         mintCoupon,
+        type CreateCouponParams,
+        type MintCouponParams,
     } from "$lib/community";
     import { cleanString } from "$lib/utils";
     import { PublicKey } from "@solana/web3.js";
@@ -18,7 +20,6 @@
 
     import * as Avatar from "$lib/components/ui/avatar";
     import CreateCouponDialog from "./CreateCouponDialog.svelte";
-    import type { CreateCouponParams, MintCouponParams } from "./types";
 
     export let store: Account<Store>;
 

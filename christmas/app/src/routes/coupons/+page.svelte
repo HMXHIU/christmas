@@ -3,13 +3,12 @@
         claimCoupon,
         fetchClaimedCoupons,
         redeemCoupon,
+        type ClaimCouponParams,
+        type RedeemCouponParams,
     } from "$lib/community";
     import ClaimedCouponCard from "$lib/components/community/ClaimedCouponCard.svelte";
     import MarketCouponCard from "$lib/components/community/MarketCouponCard.svelte";
-    import type {
-        ClaimCouponParams,
-        RedeemCouponParams,
-    } from "$lib/components/community/types";
+
     import { generateURL } from "$lib/utils";
     import {
         claimedCoupons,

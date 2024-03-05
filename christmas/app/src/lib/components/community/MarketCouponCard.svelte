@@ -1,6 +1,10 @@
 <script lang="ts">
     import type { Account, Coupon } from "$lib/anchorClient/types";
-    import { fetchCouponMetadata, fetchStoreMetadata } from "$lib/community";
+    import {
+        fetchCouponMetadata,
+        fetchStoreMetadata,
+        type ClaimCouponParams,
+    } from "$lib/community";
     import { Button } from "$lib/components/ui/button";
     import * as Dialog from "$lib/components/ui/dialog";
     import { calculateDistance, timeStampToDate } from "$lib/utils";
@@ -8,7 +12,6 @@
     import { userDeviceClient } from "../../../store";
     import BaseCouponCard from "./BaseCouponCard.svelte";
     import LoadingCoupon from "./LoadingCoupon.svelte";
-    import type { ClaimCouponParams } from "./types";
 
     export let coupon: Account<Coupon>;
     export let balance: number;

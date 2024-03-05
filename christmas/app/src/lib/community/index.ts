@@ -60,7 +60,35 @@ export {
     redeemCoupon,
     refresh,
     verifyRedemption,
+    type ClaimCouponParams,
+    type CreateCouponParams,
+    type MintCouponParams,
+    type RedeemCouponParams,
 };
+
+interface MintCouponParams {
+    coupon: Account<Coupon>;
+    numTokens: number;
+}
+
+interface CreateCouponParams {
+    name: string;
+    description: string;
+    validFrom: Date;
+    validTo: Date;
+    image: string;
+    store: Account<Store>;
+}
+
+interface ClaimCouponParams {
+    numTokens: number;
+    coupon: Account<Coupon>;
+}
+
+interface RedeemCouponParams {
+    numTokens: number;
+    coupon: Account<Coupon>;
+}
 
 /*
  * Coupon
@@ -156,13 +184,7 @@ async function fetchClaimedCoupons(
 }
 
 async function claimCoupon(
-    {
-        coupon,
-        numTokens,
-    }: {
-        coupon: Account<Coupon>;
-        numTokens: number;
-    },
+    { coupon, numTokens }: ClaimCouponParams,
     options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
     return await trpc({ headers: options?.headers || {} })
@@ -180,13 +202,7 @@ async function claimCoupon(
 }
 
 async function redeemCoupon(
-    {
-        coupon,
-        numTokens,
-    }: {
-        coupon: Account<Coupon>;
-        numTokens: number;
-    },
+    { coupon, numTokens }: RedeemCouponParams,
     options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
     return await trpc({ headers: options?.headers || {} })
@@ -205,21 +221,7 @@ async function redeemCoupon(
 }
 
 async function createCoupon(
-    {
-        image,
-        name,
-        description,
-        validFrom,
-        validTo,
-        store,
-    }: {
-        image: string;
-        name: string;
-        description: string;
-        validFrom: Date;
-        validTo: Date;
-        store: Account<Store>;
-    },
+    { image, name, description, validFrom, validTo, store }: CreateCouponParams,
     options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
     return await trpc({ headers: options?.headers || {} })
@@ -243,13 +245,7 @@ async function createCoupon(
 }
 
 async function mintCoupon(
-    {
-        coupon,
-        numTokens,
-    }: {
-        coupon: Account<Coupon>;
-        numTokens: number;
-    },
+    { coupon, numTokens }: MintCouponParams,
     options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
     return await trpc({ headers: options?.headers || {} })

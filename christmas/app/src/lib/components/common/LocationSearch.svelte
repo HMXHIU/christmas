@@ -1,11 +1,11 @@
 <script lang="ts">
-    import { onMount, tick } from "svelte";
-    import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
-    import ngeohash from "ngeohash";
-    import { Loader } from "@googlemaps/js-api-loader";
-    import { throttle } from "lodash";
     import { PUBLIC_GOOGLE_MAPS_API_KEY } from "$env/static/public";
     import * as Command from "$lib/components/ui/command";
+    import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
+    import { Loader } from "@googlemaps/js-api-loader";
+    import { throttle } from "lodash";
+    import ngeohash from "ngeohash";
+    import { onMount, tick } from "svelte";
 
     export let address: string = "";
     export let region: string | null = null;

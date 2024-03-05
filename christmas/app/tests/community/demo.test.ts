@@ -176,6 +176,7 @@ test(
                     wallet: userWallet,
                 },
             );
+            expect(tx.result.err).toBeNull();
 
             // Fetch stores
             const stores = await fetchStores({ Cookie: cookies });
@@ -202,6 +203,7 @@ test(
                     wallet: userWallet,
                 },
             );
+            expect(tx.result.err).toBeNull();
 
             // Mint Coupons
             let coupons = await fetchMintedCouponSupplyBalance(
@@ -223,6 +225,7 @@ test(
                         wallet: userWallet,
                     },
                 );
+                expect(tx.result.err).toBeNull();
             }
         }
     },

@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { Account, Coupon } from "$lib/anchorClient/types";
+    import type { MintCouponParams } from "$lib/community";
     import { Button } from "$lib/components/ui/button";
     import * as Dialog from "$lib/components/ui/dialog";
     import { Input } from "$lib/components/ui/input";
@@ -9,7 +10,6 @@
     import { Dialog as BitsDialog } from "bits-ui";
     import { onMount } from "svelte";
     import { z } from "zod";
-    import type { MintCouponParams } from "./types";
 
     export let coupon: Account<Coupon>;
     export let supply: number;

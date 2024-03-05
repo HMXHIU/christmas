@@ -14,10 +14,10 @@
     import { Dialog as BitsDialog } from "bits-ui";
 
     import type { Account, Store } from "$lib/anchorClient/types";
+    import type { CreateCouponParams } from "$lib/community";
     import CouponSvg from "$lib/components/svg/CouponSvg.svelte";
     import PlusSvg from "$lib/components/svg/PlusSvg.svelte";
     import { Separator } from "$lib/components/ui/separator";
-    // import { CreateCouponSchema } from "$lib/server/community/router";
     import { parseZodErrors } from "$lib/utils";
     import {
         getLocalTimeZone,
@@ -25,7 +25,6 @@
         type DateValue,
     } from "@internationalized/date";
     import { z } from "zod";
-    import type { CreateCouponParams } from "./types";
 
     export let store: Account<Store>;
     export let onCreateCoupon: (
@@ -33,14 +32,15 @@
     ) => Promise<void>;
 
     const CreateCouponSchema = z.object({
-        name: z.string(),
-        description: z.string(),
-        region: z.array(z.number()),
-        geohash: z.array(z.number()),
-        store: z.string(),
-        validFrom: z.coerce.date(),
-        validTo: z.coerce.date(),
-        image: z.string(),
+        name: z.string().min(1, "Coupon name is required"),
+        description: z.string().min(1, "Coupon description is required"),
+        validFrom: z.coerce.date({
+            required_error: "Coupon start date is required",
+        }),
+        validTo: z.coerce.date({
+            required_error: "Coupon expiry date is required",
+        }),
+        image: z.string().min(1, "Coupon image is required"),
     });
 
     let name: string = "";
@@ -77,6 +77,7 @@
             openDialog = false;
         } catch (err) {
             errors = parseZodErrors(err);
+            console.log(JSON.stringify(errors, null, 2));
         }
     }
 </script>

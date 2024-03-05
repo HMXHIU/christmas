@@ -13,25 +13,32 @@
     import { Separator } from "$lib/components/ui/separator";
     import { Textarea } from "$lib/components/ui/textarea";
     import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
+    import { parseZodErrors, stringToUint8Array } from "$lib/utils";
     import { Dialog as BitsDialog } from "bits-ui";
     import { uniqWith } from "lodash";
     import ngeohash from "ngeohash";
     import { onMount } from "svelte";
-    // import { CreateStoreSchema } from "$lib/server/community/router";
-    import { parseZodErrors, stringToUint8Array } from "$lib/utils";
 
     import { z } from "zod";
     import { stores, userDeviceClient } from "../../../store";
 
     const CreateStoreSchema = z.object({
-        name: z.string(),
-        description: z.string(),
-        region: z.array(z.number()),
-        geohash: z.array(z.number()),
-        latitude: z.number(),
-        longitude: z.number(),
-        address: z.string(),
-        image: z.string(),
+        name: z.string().min(1, "Store name is required"),
+        description: z.string().min(1, "Store description is required"),
+        region: z.array(z.number()).min(1, "Region is required"),
+        geohash: z.array(z.number()).min(1, "Geohash is required"),
+        latitude: z.number({ required_error: "Latitude is required" }),
+        longitude: z.number({ required_error: "Longitude is required" }),
+        address: z
+            .string({
+                required_error: "Store address is required",
+                invalid_type_error: "Store address is required",
+            })
+            .min(1, "Store address is required"),
+        image: z.string({
+            required_error: "Store image is required",
+            invalid_type_error: "Store image is required",
+        }),
     });
 
     export let onCreateStore: (
@@ -105,12 +112,6 @@
         } catch (err) {
             errors = parseZodErrors(err);
         }
-    }
-
-    function extractErrors(err: any) {
-        return err.inner.reduce((acc: any, err: any) => {
-            return { ...acc, [err.path]: err.message };
-        }, {});
     }
 
     function onManualLatLng(ev: Event) {
