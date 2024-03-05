@@ -2,8 +2,12 @@
     import GameWindow from "$lib/components/crossover/GameWindow.svelte";
     import Onboard from "$lib/components/crossover/Onboard.svelte";
     import { stream } from "$lib/crossover";
-    import type { ChatCommandUI, MessageFeedUI } from "$lib/crossover/types";
-    import { trpc } from "$lib/trpc/client";
+
+    import type {
+        ChatCommandUI,
+        MessageFeedUI,
+    } from "$lib/components/common/types";
+    import { trpc } from "$lib/trpcClient";
     import { onMount } from "svelte";
     import { player } from "../../store";
 
@@ -15,7 +19,7 @@
     ) {
         switch (command?.key) {
             case "say":
-                await trpc().cmd.say.query({ message });
+                await trpc().crossover.cmd.say.query({ message });
                 break;
 
             default:

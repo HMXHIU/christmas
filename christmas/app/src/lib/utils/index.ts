@@ -9,6 +9,7 @@ import {
 } from "@solana/web3.js";
 import BN from "bn.js";
 import bs58 from "bs58";
+import { z } from "zod";
 import type { TransactionResult } from "../anchorClient/types";
 
 export {
@@ -21,6 +22,7 @@ export {
     getErrorMessage,
     imageDataUrlToFile,
     imageUrlToDataURL,
+    parseZodErrors,
     signAndSendTransaction,
     storage_uri_to_url,
     stringToBase58,
@@ -226,4 +228,14 @@ async function imageUrlToDataURL(url: string): Promise<string> {
         };
         reader.readAsDataURL(blob);
     });
+}
+
+function parseZodErrors(err: any): Record<string, string> {
+    let errors: Record<string, string> = {};
+    if (err instanceof z.ZodError) {
+        for (const { path, message } of err.issues) {
+            errors[path[0]] = message;
+        }
+    }
+    return errors;
 }

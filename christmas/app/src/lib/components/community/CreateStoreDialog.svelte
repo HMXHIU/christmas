@@ -1,27 +1,42 @@
 <script lang="ts">
-    import { onMount } from "svelte";
     import {
         STORE_NAME_SIZE,
         STRING_PREFIX_SIZE,
     } from "$lib/anchorClient/defs";
     import ImageInput from "$lib/components/common/ImageInput.svelte";
-    import { Textarea } from "$lib/components/ui/textarea";
-    import { Input } from "$lib/components/ui/input";
-    import * as Select from "$lib/components/ui/select";
+    import LocationSearch from "$lib/components/common/LocationSearch.svelte";
     import { Button } from "$lib/components/ui/button";
     import * as Dialog from "$lib/components/ui/dialog";
-    import { Dialog as BitsDialog } from "bits-ui";
+    import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
-    import { stores, userDeviceClient } from "../../../store";
-    import ngeohash from "ngeohash";
-    import LocationSearch from "$lib/components/common/LocationSearch.svelte";
-    import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
-    import * as yup from "yup";
-    import type { CreateStoreParams } from "$lib/community/types";
+    import * as Select from "$lib/components/ui/select";
     import { Separator } from "$lib/components/ui/separator";
+    import { Textarea } from "$lib/components/ui/textarea";
+    import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
+    import { Dialog as BitsDialog } from "bits-ui";
     import { uniqWith } from "lodash";
+    import ngeohash from "ngeohash";
+    import { onMount } from "svelte";
+    // import { CreateStoreSchema } from "$lib/server/community/router";
+    import { parseZodErrors, stringToUint8Array } from "$lib/utils";
 
-    export let onCreateStore: (values: CreateStoreParams) => Promise<void>;
+    import { z } from "zod";
+    import { stores, userDeviceClient } from "../../../store";
+
+    const CreateStoreSchema = z.object({
+        name: z.string(),
+        description: z.string(),
+        region: z.array(z.number()),
+        geohash: z.array(z.number()),
+        latitude: z.number(),
+        longitude: z.number(),
+        address: z.string(),
+        image: z.string(),
+    });
+
+    export let onCreateStore: (
+        values: z.infer<typeof CreateStoreSchema>,
+    ) => Promise<void>;
 
     let openDialog: boolean = false;
 
@@ -32,7 +47,7 @@
     let latitude: number | null = null;
     let longitude: number | null = null;
     let geohash: string | null = null;
-    let logo: File | null = null;
+    let image: string | null = null;
 
     let errors: {
         name?: string;
@@ -42,42 +57,13 @@
         longitude?: string;
         latitude?: string;
         geohash?: string;
-        logo?: string;
+        image?: string;
     } = {};
 
     // update geohash if user manually changes latitude or longitude
     if (latitude != null && longitude != null) {
         geohash = ngeohash.encode(latitude, longitude, 6);
     }
-
-    const schema = yup.object().shape({
-        name: yup.string().required("Your store needs a name."),
-        description: yup.string().required("Your store needs a description."),
-        address: yup.string().required("Your store needs an address."),
-        region: yup
-            .string()
-            .required("Your store needs to belong to a region."),
-        latitude: yup.number().required("Your store needs coordinates."),
-        longitude: yup.number().required("Your store needs coordinates."),
-        geohash: yup.string().required("Your store needs a geohash."),
-        logo: yup
-            .mixed()
-            .test(
-                "fileSize",
-                "The file is too large",
-                (value: any) => value?.size <= 1000000,
-            )
-            .test(
-                "fileType",
-                "We only support .png, .jpg, .jpeg",
-                (value: any) =>
-                    value &&
-                    ["image/png", "image/jpg", "image/jpeg"].includes(
-                        value.type,
-                    ),
-            )
-            .required("Your store needs a logo."),
-    });
 
     onMount(async () => {
         // Use default location on initial load
@@ -101,25 +87,23 @@
 
     async function onSubmit() {
         try {
-            const createStoreParams = await schema.validate(
-                {
-                    name,
-                    description,
-                    address,
-                    region: region?.value,
-                    latitude,
-                    longitude,
-                    geohash,
-                    logo,
-                },
-                { abortEarly: false }, // `abortEarly: false` to get all the errors
-            );
+            const createStoreParams = await CreateStoreSchema.parse({
+                name,
+                description,
+                address,
+                latitude,
+                longitude,
+                image,
+                geohash: geohash && Array.from(stringToUint8Array(geohash)),
+                region:
+                    region?.value &&
+                    Array.from(stringToUint8Array(region.value)),
+            });
             errors = {};
-            await onCreateStore(createStoreParams as CreateStoreParams);
+            await onCreateStore(createStoreParams);
             openDialog = false;
         } catch (err) {
-            errors = extractErrors(err);
-            console.error(err);
+            errors = parseZodErrors(err);
         }
     }
 
@@ -189,14 +173,14 @@
                 {/if}
             </div>
 
-            <!-- Store logo -->
+            <!-- Store image -->
             <div class="grid w-full gap-2">
-                <Label for="store-logo">Store Logo</Label>
-                <div id="store-logo">
-                    <ImageInput message="150x150" bind:file={logo}></ImageInput>
+                <Label for="store-image">Store Logo</Label>
+                <div id="store-image">
+                    <ImageInput message="150x150" bind:image></ImageInput>
                 </div>
-                {#if errors.logo}
-                    <p class="text-xs text-destructive">{errors.logo}</p>
+                {#if errors.image}
+                    <p class="text-xs text-destructive">{errors.image}</p>
                 {/if}
             </div>
 

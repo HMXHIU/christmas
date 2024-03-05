@@ -83,7 +83,7 @@ const MintCouponSchema = z.object({
     region: z.array(z.number()),
     mint: z.string(),
     coupon: z.string(),
-    numTokens: z.number().int().positive(),
+    numTokens: z.number().int().min(1).positive(),
 });
 const ClaimCouponSchema = z.object({
     numTokens: z.number().positive().int(),

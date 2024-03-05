@@ -1,17 +1,16 @@
 <script lang="ts">
-    import { fetchCouponMetadata, fetchStoreMetadata } from "$lib/community";
-    import { calculateDistance, timeStampToDate } from "$lib/utils";
-    import BaseCouponCard from "./BaseCouponCard.svelte";
-    import { userDeviceClient, redeemedCoupons } from "../../../store";
     import type { Account, Coupon } from "$lib/anchorClient/types";
+    import { fetchCouponMetadata, fetchStoreMetadata } from "$lib/community";
+    import QrCode from "$lib/components/common/QRCode.svelte";
     import { Button } from "$lib/components/ui/button";
     import * as Dialog from "$lib/components/ui/dialog";
-    import { Dialog as BitsDialog } from "bits-ui";
-    import QrCode from "$lib/components/common/QRCode.svelte";
-    import { Skeleton } from "$lib/components/ui/skeleton";
     import { Separator } from "$lib/components/ui/separator";
-    import type { RedeemCouponParams } from "$lib/community/types";
+    import { calculateDistance, timeStampToDate } from "$lib/utils";
+    import { Dialog as BitsDialog } from "bits-ui";
+    import { redeemedCoupons, userDeviceClient } from "../../../store";
+    import BaseCouponCard from "./BaseCouponCard.svelte";
     import LoadingCoupon from "./LoadingCoupon.svelte";
+    import type { RedeemCouponParams } from "./types";
 
     export let coupon: Account<Coupon>;
     export let balance: number;
@@ -21,8 +20,6 @@
     let redeemCouponOpen: boolean = false;
 
     async function fetchMetadata() {
-        //sleep for 1 second
-        await new Promise((r) => setTimeout(r, 3000));
         const couponMetadata = await fetchCouponMetadata(coupon);
         const storeMetadata = await fetchStoreMetadata(coupon.account.store);
         const distance = calculateDistance(

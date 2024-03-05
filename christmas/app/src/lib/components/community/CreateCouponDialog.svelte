@@ -3,40 +3,51 @@
         COUPON_NAME_SIZE,
         STRING_PREFIX_SIZE,
     } from "$lib/anchorClient/defs";
-    import ImageInput from "$lib/components/common/ImageInput.svelte";
     import DateInput from "$lib/components/common/DateInput.svelte";
-    import { Button } from "$lib/components/ui/button";
-    import { Textarea } from "$lib/components/ui/textarea";
-    import * as Dialog from "$lib/components/ui/dialog";
-    import { Dialog as BitsDialog } from "bits-ui";
-    import { Label } from "$lib/components/ui/label";
-    import { Input } from "$lib/components/ui/input";
+    import ImageInput from "$lib/components/common/ImageInput.svelte";
     import { Badge } from "$lib/components/ui/badge";
+    import { Button } from "$lib/components/ui/button";
+    import * as Dialog from "$lib/components/ui/dialog";
+    import { Input } from "$lib/components/ui/input";
+    import { Label } from "$lib/components/ui/label";
+    import { Textarea } from "$lib/components/ui/textarea";
+    import { Dialog as BitsDialog } from "bits-ui";
 
-    import * as yup from "yup";
-    import { onMount } from "svelte";
+    import type { Account, Store } from "$lib/anchorClient/types";
     import CouponSvg from "$lib/components/svg/CouponSvg.svelte";
     import PlusSvg from "$lib/components/svg/PlusSvg.svelte";
-    import type { CreateCouponParams } from "$lib/community/types";
-    import type { Account, Store } from "$lib/anchorClient/types";
     import { Separator } from "$lib/components/ui/separator";
-
+    // import { CreateCouponSchema } from "$lib/server/community/router";
+    import { parseZodErrors } from "$lib/utils";
     import {
-        today,
         getLocalTimeZone,
+        today,
         type DateValue,
     } from "@internationalized/date";
+    import { z } from "zod";
+    import type { CreateCouponParams } from "./types";
 
     export let store: Account<Store>;
     export let onCreateCoupon: (
         createCouponParams: CreateCouponParams,
     ) => Promise<void>;
 
+    const CreateCouponSchema = z.object({
+        name: z.string(),
+        description: z.string(),
+        region: z.array(z.number()),
+        geohash: z.array(z.number()),
+        store: z.string(),
+        validFrom: z.coerce.date(),
+        validTo: z.coerce.date(),
+        image: z.string(),
+    });
+
     let name: string = "";
     let description: string = "";
     let validFrom: DateValue = today(getLocalTimeZone());
     let validTo: DateValue = today(getLocalTimeZone()).add({ months: 6 });
-    let image: File | null;
+    let image: string | null;
 
     let errors: {
         name?: string;
@@ -48,59 +59,24 @@
 
     let openDialog = false;
 
-    const schema = yup.object().shape({
-        name: yup.string().required("Your coupon needs a name."),
-        description: yup.string().required("Your coupon needs a description."),
-        validFrom: yup.date().required("Your coupon needs a validity period."),
-        validTo: yup.date().required("Your coupon needs a validity period."),
-        image: yup
-            .mixed()
-            .test(
-                "fileSize",
-                "The file is too large",
-                (value: any) => value?.size <= 1000000,
-            )
-            .test(
-                "fileType",
-                "We only support .png, .jpg, .jpeg",
-                (value: any) =>
-                    value &&
-                    ["image/png", "image/jpg", "image/jpeg"].includes(
-                        value.type,
-                    ),
-            )
-            .required("Your coupon needs a logo."),
-    });
-
-    onMount(() => {});
-
-    function extractErrors(err: any) {
-        return err.inner.reduce((acc: any, err: any) => {
-            return { ...acc, [err.path]: err.message };
-        }, {});
-    }
-
     async function onSubmit() {
         try {
-            const createCouponParams = await schema.validate(
-                {
-                    name,
-                    description,
-                    validFrom,
-                    validTo,
-                    image,
-                    store,
-                },
-                { abortEarly: false }, // `abortEarly: false` to get all the errors
-            );
+            const createCouponParams = await CreateCouponSchema.parse({
+                name,
+                description,
+                validFrom,
+                validTo,
+                image,
+                store,
+            });
             errors = {};
             await onCreateCoupon({
-                ...(createCouponParams as CreateCouponParams),
+                ...createCouponParams,
                 store,
             });
             openDialog = false;
         } catch (err) {
-            errors = extractErrors(err);
+            errors = parseZodErrors(err);
         }
     }
 </script>
@@ -172,8 +148,7 @@
             <div class="grid w-full gap-2">
                 <Label for="coupon-image">Coupon Image</Label>
                 <div id="coupon-image">
-                    <ImageInput message="150x150" bind:file={image}
-                    ></ImageInput>
+                    <ImageInput message="150x150" bind:image></ImageInput>
                 </div>
                 {#if errors.image}
                     <p class="text-xs text-destructive">

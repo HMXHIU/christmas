@@ -1,26 +1,24 @@
 <script lang="ts">
-    import type { Account, Coupon, Store } from "$lib/anchorClient/types";
-    import { cleanString } from "$lib/utils";
+    import type { Account, Store } from "$lib/anchorClient/types";
     import {
+        createCoupon,
         fetchMarketCoupons,
         fetchMintedCouponSupplyBalance,
         fetchStoreMetadata,
-        createCoupon,
         mintCoupon,
     } from "$lib/community";
+    import { cleanString } from "$lib/utils";
+    import { PublicKey } from "@solana/web3.js";
     import {
         mintedCoupons,
         storesMetadata,
         userDeviceClient,
     } from "../../../store";
     import MintedCouponCard from "./MintedCouponCard.svelte";
-    import { PublicKey } from "@solana/web3.js";
-    import type {
-        CreateCouponParams,
-        MintCouponParams,
-    } from "$lib/community/types";
+
     import * as Avatar from "$lib/components/ui/avatar";
     import CreateCouponDialog from "./CreateCouponDialog.svelte";
+    import type { CreateCouponParams, MintCouponParams } from "./types";
 
     export let store: Account<Store>;
 

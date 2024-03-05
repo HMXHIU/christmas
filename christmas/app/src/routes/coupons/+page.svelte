@@ -1,21 +1,21 @@
 <script lang="ts">
-    import ClaimedCouponCard from "$lib/components/community/ClaimedCouponCard.svelte";
-    import MarketCouponCard from "$lib/components/community/MarketCouponCard.svelte";
-    import {
-        marketCoupons,
-        claimedCoupons,
-        redeemedCoupons,
-    } from "../../store";
-    import type {
-        ClaimCouponParams,
-        RedeemCouponParams,
-    } from "$lib/community/types";
     import {
         claimCoupon,
         fetchClaimedCoupons,
         redeemCoupon,
     } from "$lib/community";
+    import ClaimedCouponCard from "$lib/components/community/ClaimedCouponCard.svelte";
+    import MarketCouponCard from "$lib/components/community/MarketCouponCard.svelte";
+    import type {
+        ClaimCouponParams,
+        RedeemCouponParams,
+    } from "$lib/components/community/types";
     import { generateURL } from "$lib/utils";
+    import {
+        claimedCoupons,
+        marketCoupons,
+        redeemedCoupons,
+    } from "../../store";
 
     // News
     let news = new Array();

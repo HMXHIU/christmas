@@ -1,11 +1,15 @@
 <script lang="ts">
-    import CreateStoreDialog from "$lib/components/community/CreateStoreDialog.svelte";
     import { createStore, fetchStores } from "$lib/community";
-    import type { CreateStoreParams } from "$lib/community/types";
-    import { stores } from "../../store";
-    import StoreSection from "$lib/components/community/StoreSection.svelte";
+    import CreateStoreDialog from "$lib/components/community/CreateStoreDialog.svelte";
 
-    async function onCreateStore(createStoreParams: CreateStoreParams) {
+    import StoreSection from "$lib/components/community/StoreSection.svelte";
+    import type { CreateStoreSchema } from "$lib/server/community/router";
+    import type { z } from "zod";
+    import { stores } from "../../store";
+
+    async function onCreateStore(
+        createStoreParams: z.infer<typeof CreateStoreSchema>,
+    ) {
         await createStore(createStoreParams);
         await fetchStores();
     }

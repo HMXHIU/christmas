@@ -14,6 +14,7 @@ test("Test Auth", async () => {
         token: string;
     };
     const cookies = getCookiesFromResponse(response);
+
     expect(
         (jwt.decode(token, { complete: true })?.payload as JwtPayload)
             .publicKey,

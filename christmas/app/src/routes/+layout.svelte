@@ -1,23 +1,23 @@
 <script lang="ts">
-    import "../app.postcss";
-    import { Button } from "$lib/components/ui/button";
-    import * as Dialog from "$lib/components/ui/dialog";
-    import { Dialog as BitsDialog } from "bits-ui";
-    import * as AlertDialog from "$lib/components/ui/alert-dialog";
-    import Wallet from "$lib/components/common/Wallet.svelte";
-    import { userDeviceClient, token } from "../store";
-    import { onMount } from "svelte";
     import {
         fetchClaimedCoupons,
         fetchMarketCoupons,
         fetchStores,
         verifyRedemption,
     } from "$lib/community";
-    import { UserDeviceClient } from "$lib/userDeviceClient";
     import QrScanner from "$lib/components/common/QRScanner.svelte";
-    import { extractQueryParams, getErrorMessage } from "$lib/utils";
+    import Wallet from "$lib/components/common/Wallet.svelte";
     import QrSvg from "$lib/components/svg/QrSvg.svelte";
+    import * as AlertDialog from "$lib/components/ui/alert-dialog";
+    import { Button } from "$lib/components/ui/button";
+    import * as Dialog from "$lib/components/ui/dialog";
     import { Toaster } from "$lib/components/ui/sonner";
+    import { UserDeviceClient } from "$lib/userDeviceClient";
+    import { extractQueryParams, getErrorMessage } from "$lib/utils";
+    import { Dialog as BitsDialog } from "bits-ui";
+    import { onMount } from "svelte";
+    import "../app.postcss";
+    import { token, userDeviceClient } from "../store";
 
     let qrAlertOpen: boolean = false;
     let verifyRemdeptionParams: any = {};
@@ -73,7 +73,7 @@
                     verifyRedemption: await verifyRedemption({
                         signature,
                         mint,
-                        numTokens,
+                        numTokens: parseInt(numTokens),
                         wallet,
                     }),
                 };

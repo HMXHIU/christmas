@@ -1,14 +1,15 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import * as Dialog from "$lib/components/ui/dialog";
-    import { Button } from "$lib/components/ui/button";
-    import { Dialog as BitsDialog } from "bits-ui";
-    import * as yup from "yup";
     import type { Account, Coupon } from "$lib/anchorClient/types";
-    import { Separator } from "$lib/components/ui/separator";
-    import { Label } from "$lib/components/ui/label";
+    import { Button } from "$lib/components/ui/button";
+    import * as Dialog from "$lib/components/ui/dialog";
     import { Input } from "$lib/components/ui/input";
-    import type { MintCouponParams } from "$lib/community/types";
+    import { Label } from "$lib/components/ui/label";
+    import { Separator } from "$lib/components/ui/separator";
+    import { parseZodErrors } from "$lib/utils";
+    import { Dialog as BitsDialog } from "bits-ui";
+    import { onMount } from "svelte";
+    import { z } from "zod";
+    import type { MintCouponParams } from "./types";
 
     export let coupon: Account<Coupon>;
     export let supply: number;
@@ -26,8 +27,8 @@
         numTokens?: number;
     } = {};
 
-    const schema = yup.object().shape({
-        numTokens: yup.number().required("Minimum of 1."),
+    const schema = z.object({
+        numTokens: z.number().int().min(1).positive(),
     });
 
     onMount(() => {});
@@ -40,15 +41,12 @@
 
     async function onSubmit() {
         try {
-            const mintCouponParams = await schema.validate(
-                { numTokens },
-                { abortEarly: false }, // `abortEarly: false` to get all the errors
-            );
+            const mintCouponParams = await schema.parse({ numTokens });
             errors = {};
             await onMintCoupon({ ...mintCouponParams, coupon });
             openDialog = false;
         } catch (err) {
-            errors = extractErrors(err);
+            errors = parseZodErrors(err);
         }
     }
 </script>

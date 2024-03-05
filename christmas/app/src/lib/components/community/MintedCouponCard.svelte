@@ -2,12 +2,12 @@
     import BaseCouponCard from "./BaseCouponCard.svelte";
 
     import type { Account, Coupon } from "$lib/anchorClient/types";
+    import { fetchCouponMetadata } from "$lib/community";
     import { timeStampToDate } from "$lib/utils";
     import { couponsMetadata } from "../../../store";
-    import { fetchCouponMetadata } from "$lib/community";
 
-    import type { MintCouponParams } from "$lib/community/types";
     import MintCouponDialog from "./MintCouponDialog.svelte";
+    import type { MintCouponParams } from "./types";
 
     export let coupon: Account<Coupon>;
     export let balance: number;

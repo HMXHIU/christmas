@@ -1,24 +1,30 @@
 <script lang="ts">
     import { createUser } from "$lib/community";
-    import { Button } from "$lib/components/ui/button";
-    import { login, signup, worldSeed } from "$lib/crossover";
-    import { player, token, userDeviceClient } from "../../../store";
-    import { toast } from "svelte-sonner";
     import Wallet from "$lib/components/common/Wallet.svelte";
-    import { Textarea } from "$lib/components/ui/textarea";
-    import { Label } from "$lib/components/ui/label";
+    import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
-    import {
-        PlayerMetadataSchema,
-        type PlayerMetadata,
-    } from "$lib/crossover/types";
+    import { Label } from "$lib/components/ui/label";
+    import { Textarea } from "$lib/components/ui/textarea";
+    import { login, signup, worldSeed } from "$lib/crossover";
+    import { parseZodErrors } from "$lib/utils";
+    import { toast } from "svelte-sonner";
+    import { z } from "zod";
+    import { token, userDeviceClient } from "../../../store";
+
+    const PlayerMetadataSchema = z.object({
+        player: z.string(),
+        name: z.string().min(1).max(100),
+        description: z.string().max(400).optional(),
+        tile: z.string().optional(),
+        loggedIn: z.boolean().optional(),
+    });
 
     let requireSignup = false;
 
     let name: string = "";
     let description: string = "";
 
-    let errors: { name?: string; description?: string } = {};
+    let errors: Record<string, string> = {};
 
     async function onEnter() {
         try {
@@ -33,18 +39,16 @@
     async function onCreateCharacter() {
         try {
             // Validate player metadata
-            let playerMetadata: PlayerMetadata | null = null;
+            let playerMetadata: z.infer<typeof PlayerMetadataSchema> | null =
+                null;
             try {
-                playerMetadata = await PlayerMetadataSchema.validate(
-                    {
-                        name,
-                        description,
-                        player: window.solana.publicKey.toString(),
-                    },
-                    { abortEarly: false }, // `abortEarly: false` to get all the errors
-                );
+                playerMetadata = await PlayerMetadataSchema.parse({
+                    name,
+                    description,
+                    player: window.solana.publicKey.toString(),
+                });
             } catch (err) {
-                errors = extractErrors(err);
+                errors = parseZodErrors(err);
             }
             // Try signup crossover player
             if (playerMetadata) {
@@ -80,12 +84,6 @@
             // Login to crossover
             await login();
         }
-    }
-
-    function extractErrors(err: any) {
-        return err.inner.reduce((acc: any, err: any) => {
-            return { ...acc, [err.path]: err.message };
-        }, {});
     }
 </script>
 
