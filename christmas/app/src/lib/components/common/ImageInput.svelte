@@ -2,6 +2,8 @@
     export let message = "";
     export let file: File | null = null;
     export let image: string | null = null;
+    export let maxHeight: number = 300;
+    export let maxWidth: number = 300;
 
     let fileInput: HTMLInputElement;
 
@@ -13,10 +15,33 @@
             // Set file
             file = selectedFile;
 
-            // Set image preview
+            // Scale down image & set image preview
             const reader = new FileReader();
             reader.onloadend = () => {
-                image = reader.result as string;
+                // Load dataurl to temp image
+                let img = new Image();
+                img.src = reader.result as string;
+
+                // Create canvas
+                let canvas = document.createElement("canvas");
+                let ctx = canvas.getContext("2d");
+
+                img.onload = function () {
+                    if (img.height > maxHeight) {
+                        img.width *= maxHeight / img.height;
+                        img.height = maxHeight;
+                    }
+                    if (img.width > maxWidth) {
+                        img.height *= maxWidth / img.width;
+                        img.width = maxWidth;
+                    }
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx!.drawImage(img, 0, 0, img.width, img.height);
+
+                    // Set image
+                    image = canvas.toDataURL("image/jpeg");
+                };
             };
             reader.readAsDataURL(selectedFile);
         }

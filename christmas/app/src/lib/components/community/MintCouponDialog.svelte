@@ -28,16 +28,10 @@
     } = {};
 
     const schema = z.object({
-        numTokens: z.number().int().min(1).positive(),
+        numTokens: z.coerce.number().int().min(1).positive(),
     });
 
     onMount(() => {});
-
-    function extractErrors(err: any) {
-        return err.inner.reduce((acc: any, err: any) => {
-            return { ...acc, [err.path]: err.message };
-        }, {});
-    }
 
     async function onSubmit() {
         try {

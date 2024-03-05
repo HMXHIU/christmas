@@ -77,7 +77,6 @@
             openDialog = false;
         } catch (err) {
             errors = parseZodErrors(err);
-            console.log(JSON.stringify(errors, null, 2));
         }
     }
 </script>
