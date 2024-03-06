@@ -16,7 +16,7 @@ export {
 
 interface ConnectedUser {
     publicKey: string;
-    stream: ReadableStreamDefaultController<any>;
+    controller: ReadableStreamDefaultController<any>;
 }
 
 // Record of connected users on this server instance

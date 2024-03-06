@@ -68,13 +68,15 @@ async function logout(
 /**
  * tRPC does not support SSE yet, so we use the api route directly
  */
-async function stream(headers: any = {}): Promise<EventTarget> {
+async function stream(headers: any = {}): Promise<[EventTarget, () => void]> {
     const eventTarget = new EventTarget();
     const eventStream = makeWriteableEventStream(eventTarget);
+    const abortController = new AbortController();
 
     fetch(`${PUBLIC_HOST}/api/crossover/stream`, {
         method: "GET",
         headers,
+        signal: abortController.signal,
     }).then(async (response) => {
         if (!response.ok) {
             throw new Error(await response.text());
@@ -93,18 +95,27 @@ async function stream(headers: any = {}): Promise<EventTarget> {
                 );
             });
     });
-    return eventTarget;
+
+    async function close() {
+        console.log("User closed stream");
+        abortController.abort();
+    }
+
+    return [eventTarget, close];
 }
 
 function makeJsonDecoder(): TransformStream<any, any> {
     return new TransformStream({
         transform(
-            chunk: any,
+            chunk: string,
             controller: TransformStreamDefaultController<any>,
         ) {
-            for (const s of chunk.split("\n\n")) {
+            for (let s of chunk.split(/\n\n/)) {
                 try {
-                    controller.enqueue(JSON.parse(s.trim()));
+                    s = s.trim();
+                    if (s.length > 0) {
+                        controller.enqueue(JSON.parse(s.trim()));
+                    }
                 } catch (err: any) {
                     controller.enqueue({
                         type: "system",

@@ -12,6 +12,8 @@
     import { player } from "../../store";
 
     let messageFeed: MessageFeedUI[] = [];
+    let eventStream: EventTarget | null = null;
+    let closeStream: (() => void) | null = null;
 
     async function onChatMessage(
         command: ChatCommandUI | null,
@@ -57,20 +59,34 @@
         }
     }
 
-    onMount(() => {
-        let eventStream: EventTarget | null = null;
+    async function startStream() {
+        [eventStream, closeStream] = await stream();
+        eventStream.addEventListener("message", processMessageEvent);
+    }
 
+    function stopStream() {
+        if (eventStream != null) {
+            eventStream.removeEventListener("message", processMessageEvent);
+        }
+        if (closeStream != null) {
+            closeStream();
+        }
+    }
+
+    onMount(() => {
         // Start streaming crossover server events on login
-        const unsubscribePlayer = player.subscribe(async (value) => {
-            eventStream = await stream();
-            eventStream.addEventListener("message", processMessageEvent);
+        const unsubscribe = player.subscribe(async (p) => {
+            if (p != null) {
+                stopStream();
+                await startStream();
+            } else {
+                stopStream();
+            }
         });
 
         return () => {
-            unsubscribePlayer();
-            if (eventStream != null) {
-                eventStream.removeEventListener("message", processMessageEvent);
-            }
+            stopStream();
+            unsubscribe();
         };
     });
 </script>

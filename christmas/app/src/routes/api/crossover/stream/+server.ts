@@ -3,33 +3,31 @@ import { connectedUsers } from "$lib/server/crossover";
 import { redisSubscribeClient } from "$lib/server/crossover/redis";
 import type { RequestHandler } from "./$types";
 
-export const GET: RequestHandler = (event) => {
+function onMessage(message: string, channel: string) {
+    connectedUsers[channel].controller.enqueue(
+        JSON.stringify({ type: "message", data: JSON.parse(message) }) + "\n\n", // SSE messages are separated by two newlines
+    );
+}
+
+export const GET: RequestHandler = async (event) => {
     const user = requireLogin(event);
 
-    function onMessage(message: string) {
-        console.log(
-            "Received message: " + message,
-            connectedUsers[user.publicKey].stream,
-        );
-        connectedUsers[user.publicKey].stream.enqueue(
-            JSON.stringify({ type: "message", data: JSON.parse(message) }) +
-                "\n\n", // SSE messages are separated by two newlines
-        );
-    }
+    // Unsubscribe from any previous streams
+    await redisSubscribeClient.unsubscribe(user.publicKey);
+    connectedUsers[user.publicKey]?.controller?.close();
 
     // Create a register user stream on this server instance
     const stream = new ReadableStream({
         start(controller) {
             connectedUsers[user.publicKey] = {
-                stream: controller,
+                controller,
                 publicKey: user.publicKey,
             };
-
             redisSubscribeClient.subscribe(user.publicKey, onMessage);
             console.log(`Stream ${user.publicKey} started`);
         },
         cancel() {
-            redisSubscribeClient.unsubscribe(user.publicKey, onMessage);
+            redisSubscribeClient.unsubscribe(user.publicKey);
             delete connectedUsers[user.publicKey];
             console.log(`Stream ${user.publicKey} ended`);
         },
@@ -44,14 +42,3 @@ export const GET: RequestHandler = (event) => {
         },
     });
 };
-
-// Forward messages from redis to connected users
-redisSubscribeClient.subscribe("message", (message) => {
-    console.log(`Received message: ${message}`);
-    // Send relevant messages to connected users
-    for (const user of Object.values(connectedUsers)) {
-        user.stream.enqueue(
-            JSON.stringify({ type: "message", data: JSON.parse(message) }),
-        );
-    }
-});
