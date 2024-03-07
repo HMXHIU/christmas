@@ -1,49 +1,89 @@
-import { createUser } from "$lib/community";
-import { login as loginCrossover, signup } from "$lib/crossover";
-import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
-import { Keypair } from "@solana/web3.js";
+import { commandSay, stream } from "$lib/crossover";
 import { expect, test } from "vitest";
-import { getCookiesFromResponse, getRandomRegion, login } from "../utils";
+import { getRandomRegion } from "../utils";
+import { createRandomPlayer, waitForEventData } from "./utils";
 
 test("Test Player", async () => {
-    const user = Keypair.generate();
-    const userWallet = new NodeWallet(user);
-    const name: string = "Gandalf";
     const region = String.fromCharCode(...getRandomRegion());
-    const geohash = "gbsuv7";
 
-    // Login
-    let response = await login(user);
-    const loginResult = (await response.json()).result.data;
-    const cookies = getCookiesFromResponse(response);
-
-    // Create User Account
-    let tx = await createUser(
-        { region },
-        {
-            headers: { Cookie: cookies },
-            wallet: userWallet,
-        },
-    );
-    expect(tx.result.err).toBe(null);
-
-    // Signup Crossover
-    tx = await signup(
-        { name },
-        { headers: { Cookie: cookies }, wallet: userWallet },
-    );
-    expect(tx.result.err).toBe(null);
-
-    // Login Crossover
-    await expect(
-        loginCrossover({ geohash, region }, { Cookie: cookies }),
-    ).resolves.toEqual({
-        status: "success",
-        player: {
-            player: user.publicKey.toBase58(),
-            name: name,
-            loggedIn: true,
-            tile: geohash, // tile should be initialized to geohash the first time
-        },
+    // Player one
+    const playerOneName = "Gandalf";
+    const playerOneGeohash = "gbsuv7";
+    let [playerOneWallet, playerOneCookies] = await createRandomPlayer({
+        region,
+        geohash: playerOneGeohash,
+        name: playerOneName,
     });
+
+    // Player two
+    const playerTwoName = "Saruman";
+    const playerTwoGeohash = "gbsuv8";
+    let [playerTwoWallet, playerTwoCookies] = await createRandomPlayer({
+        region,
+        geohash: playerTwoGeohash,
+        name: playerTwoName,
+    });
+
+    // Player three
+    const playerThreeName = "Sauron";
+    const playerThreeGeohash = "gbsuv7";
+    let [playerThreeWallet, playerThreeCookies] = await createRandomPlayer({
+        region,
+        geohash: playerThreeGeohash,
+        name: playerThreeName,
+    });
+
+    // Stream endpoint
+    const [playerOneEventStream, playerOneCloseStream] = await stream({
+        Cookie: playerOneCookies,
+    });
+    await expect(
+        waitForEventData(playerOneEventStream, "system"),
+    ).resolves.toMatchObject({
+        event: "stream",
+        message: "started",
+    });
+    const [playerTwoEventStream, playerTwoCloseStream] = await stream({
+        Cookie: playerTwoCookies,
+    });
+    await expect(
+        waitForEventData(playerTwoEventStream, "system"),
+    ).resolves.toMatchObject({
+        event: "stream",
+        message: "started",
+    });
+    const [playerThreeEventStream, playerThreeCloseStream] = await stream({
+        Cookie: playerThreeCookies,
+    });
+    await expect(
+        waitForEventData(playerThreeEventStream, "system"),
+    ).resolves.toMatchObject({
+        event: "stream",
+        message: "started",
+    });
+
+    // Say
+    await commandSay(
+        { message: "Hello, world!" },
+        { Cookie: playerOneCookies },
+    );
+    await expect(
+        waitForEventData(playerOneEventStream, "message"),
+    ).resolves.toMatchObject({
+        origin: playerOneWallet.publicKey.toBase58(),
+        cmd: "say",
+        message: "Hello, world!",
+    });
+    // Say - player three should receive message (same tile)
+    await expect(
+        waitForEventData(playerThreeEventStream, "message"),
+    ).resolves.toMatchObject({
+        origin: playerOneWallet.publicKey.toBase58(),
+        cmd: "say",
+        message: "Hello, world!",
+    });
+    // Say - player two should not receive the message (different tile)
+    await expect(
+        waitForEventData(playerTwoEventStream, "message"),
+    ).rejects.toThrowError("Timeout occurred while waiting for event");
 });

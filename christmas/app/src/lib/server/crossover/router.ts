@@ -1,14 +1,18 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
-import { playerRepository, redisClient } from "$lib/server/crossover/redis";
+import {
+    initializeClients,
+    playerRepository,
+    redisClient,
+} from "$lib/server/crossover/redis";
 import { PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
-    connectedUsers,
     getLoadedPlayerEntity,
     getPlayerMetadata,
     getUserMetadata,
     initPlayerEntity,
+    playersInTile,
 } from ".";
 import {
     FEE_PAYER_PUBKEY,
@@ -26,6 +30,9 @@ export {
     UserMetadataSchema,
     crossoverRouter,
 };
+
+// Initialize redis clients, repositiories, indexes
+initializeClients();
 
 // Schemas
 const SayCommandSchema = z.object({
@@ -60,12 +67,19 @@ const crossoverRouter = {
             .input(SayCommandSchema)
             .query(async ({ ctx, input }) => {
                 // Get user's tile
+                const player = await getLoadedPlayerEntity(ctx.user.publicKey);
+                if (player == null) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `Player ${ctx.user.publicKey} not found`,
+                    });
+                }
 
-                // TODO: Get all users in the tile
-                const users = Object.values(connectedUsers);
+                // Get logged in players in tile
+                const users = await playersInTile(player.tile);
 
                 // Send message to all users in the tile
-                for (const { publicKey } of users) {
+                for (const publicKey of users) {
                     redisClient.publish(
                         publicKey,
                         JSON.stringify({

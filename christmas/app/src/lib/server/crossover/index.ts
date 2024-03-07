@@ -12,6 +12,7 @@ export {
     getPlayerMetadata,
     getUserMetadata,
     initPlayerEntity,
+    playersInTile,
     type ConnectedUser,
 };
 
@@ -83,4 +84,14 @@ async function initPlayerEntity({
     }
 
     return player;
+}
+
+async function playersInTile(tile: string): Promise<string[]> {
+    return playerRepository
+        .search()
+        .where("loggedIn")
+        .equal(true)
+        .and("tile")
+        .equal(tile)
+        .return.allIds();
 }

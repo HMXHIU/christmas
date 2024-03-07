@@ -10,7 +10,12 @@ import { Repository } from "redis-om";
 import { PlayerEntitySchema } from "./entities";
 
 // Exports
-export { playerRepository, redisClient, redisSubscribeClient };
+export {
+    initializeClients,
+    playerRepository,
+    redisClient,
+    redisSubscribeClient,
+};
 
 // Repositories
 let playerRepository: Repository;
@@ -26,20 +31,29 @@ const redisClient = createClient({
 });
 const redisSubscribeClient = redisClient.duplicate();
 
-// Connect clients
-if (!redisClient.isOpen) {
-    await redisClient.connect();
-    console.log("Connected to Redis[pub]");
+async function initializeClients() {
+    if (!redisClient.isOpen) {
+        await redisClient.connect();
+        console.log("Connected to Redis[pub]");
 
-    // Register Schemas
-    registerSchemas();
-}
-if (!redisSubscribeClient.isOpen) {
-    await redisSubscribeClient.connect();
-    console.log("Connected to Redis[sub]");
+        // Register Schemas
+        registerSchemas();
+
+        // Create Indexes
+        createIndexes();
+    }
+    if (!redisSubscribeClient.isOpen) {
+        await redisSubscribeClient.connect();
+        console.log("Connected to Redis[sub]");
+    }
 }
 
 function registerSchemas() {
     console.log("Registering redis schemas");
     playerRepository = new Repository(PlayerEntitySchema, redisClient);
+}
+
+function createIndexes() {
+    console.log("Creating indexes for redis schemas");
+    playerRepository.createIndex();
 }

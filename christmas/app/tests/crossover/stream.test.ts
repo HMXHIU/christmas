@@ -15,7 +15,6 @@ test("Test Stream", async () => {
     // Stream endpoint
     const [eventStream, closeStream] = await stream({ Cookie: playerCookie });
     const eventData = await waitForEventData(eventStream, "system");
-
     expect(eventData).toMatchObject({
         event: "stream",
         message: "started",

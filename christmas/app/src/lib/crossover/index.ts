@@ -7,7 +7,8 @@ import { Transaction } from "@solana/web3.js";
 import type { HTTPHeaders } from "@trpc/client";
 import type { z } from "zod";
 import { player } from "../../store";
-export { getPlayer, login, logout, signup, stream, worldSeed };
+
+export { commandSay, getPlayer, login, logout, signup, stream, worldSeed };
 
 const worldSeed = "yggdrasil 01";
 
@@ -159,4 +160,12 @@ function makeWriteableEventStream(eventTarget: EventTarget) {
             );
         },
     });
+}
+
+function commandSay(
+    input: { message: string },
+    headers: HTTPHeaders = {},
+): Promise<void> {
+    const { message } = input;
+    return trpc({ headers }).crossover.cmd.say.query({ message });
 }
