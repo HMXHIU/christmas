@@ -25,6 +25,17 @@ export const GET: RequestHandler = async (event) => {
             };
             redisSubscribeClient.subscribe(user.publicKey, onMessage);
             console.log(`Stream ${user.publicKey} started`);
+
+            // Send start event
+            controller.enqueue(
+                JSON.stringify({
+                    type: "system",
+                    data: {
+                        event: "stream",
+                        message: "started",
+                    },
+                }) + "\n\n",
+            );
         },
         cancel() {
             redisSubscribeClient.unsubscribe(user.publicKey);

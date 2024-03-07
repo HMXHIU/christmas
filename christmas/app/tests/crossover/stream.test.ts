@@ -4,14 +4,16 @@ import { createRandomPlayer, waitForEventData } from "./utils";
 
 test("Test Stream", async () => {
     // Create a player
-    const playerRegion = "SGP";
+    const region = "SGP";
+    const geohash = "gbsuv7";
     const [playerWallet, playerCookie] = await createRandomPlayer({
-        region: playerRegion,
+        region,
+        geohash,
         name: "player",
     });
 
     // Stream endpoint
-    const eventStream = await stream({ Cookie: playerCookie });
+    const [eventStream, closeStream] = await stream({ Cookie: playerCookie });
     const eventData = await waitForEventData(eventStream, "system");
 
     expect(eventData).toMatchObject({

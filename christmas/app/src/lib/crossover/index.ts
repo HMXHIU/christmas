@@ -40,11 +40,20 @@ async function signup(
 }
 
 async function login(
+    {
+        region,
+        geohash,
+    }: { region: string | number[]; geohash: string | number[] },
     headers: HTTPHeaders = {},
 ): Promise<{ status: string; player: z.infer<typeof PlayerMetadataSchema> }> {
+    region =
+        typeof region === "string" ? region : String.fromCharCode(...region);
+    geohash =
+        typeof geohash === "string" ? geohash : String.fromCharCode(...geohash);
+
     let response = await trpc({
         headers,
-    }).crossover.auth.login.query();
+    }).crossover.auth.login.query({ region, geohash });
 
     // Update `$player`
     player.set(response.player);

@@ -8,6 +8,7 @@ import {
     getLoadedPlayerEntity,
     getPlayerMetadata,
     getUserMetadata,
+    initPlayerEntity,
 } from ".";
 import {
     FEE_PAYER_PUBKEY,
@@ -44,6 +45,10 @@ const PlayerMetadataSchema = z.object({
 const UserMetadataSchema = z.object({
     publicKey: z.string(),
     crossover: PlayerMetadataSchema.optional(),
+});
+const LoginSchema = z.object({
+    geohash: z.string(),
+    region: z.string(),
 });
 
 // Router
@@ -156,40 +161,55 @@ const crossoverRouter = {
             }),
 
         // auth.login
-        login: authProcedure.query(async ({ ctx }) => {
-            // Get player
-            let player = await getLoadedPlayerEntity(ctx.user.publicKey);
+        login: authProcedure
+            .input(LoginSchema)
+            .query(async ({ ctx, input }) => {
+                const { geohash, region } = input;
 
-            // If player is not loaded, load it from storage
-            if (player == null) {
-                let playerMetadata = await getPlayerMetadata(
-                    ctx.user.publicKey,
-                );
+                // Get player from redis
+                let player = await getLoadedPlayerEntity(ctx.user.publicKey);
 
-                if (playerMetadata == null) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
-                        message: `Player ${ctx.user.publicKey} not found`,
-                    });
+                // If player is not loaded, load it from storage
+                if (player == null) {
+                    let playerMetadata = await getPlayerMetadata(
+                        ctx.user.publicKey,
+                    );
+
+                    if (playerMetadata == null) {
+                        throw new TRPCError({
+                            code: "BAD_REQUEST",
+                            message: `Player ${ctx.user.publicKey} not found`,
+                        });
+                    }
+
+                    // Set login status
+                    player = (await playerRepository.save(
+                        playerMetadata.player,
+                        {
+                            ...playerMetadata,
+                            loggedIn: true,
+                        },
+                    )) as PlayerEntity;
+                } else {
+                    // Set login status
+                    player.loggedIn = true;
+                    await playerRepository.save(player.player, player);
                 }
 
-                player = (await playerRepository.save(playerMetadata.player, {
-                    ...playerMetadata,
-                    loggedIn: true,
-                })) as PlayerEntity;
-            }
+                // Init player (tile, etc...)
+                player = await initPlayerEntity({ player, geohash, region });
 
-            // Set player cookie (to know if user has signed up for crossover)
-            ctx.cookies.set("player", ctx.user.publicKey, {
-                path: "/",
-                httpOnly: true,
-                secure: true,
-                sameSite: "strict",
-                maxAge: parseInt(PUBLIC_REFRESH_JWT_EXPIRES_IN), // in seconds
-            });
+                // Set player cookie (to know if user has signed up for crossover)
+                ctx.cookies.set("player", ctx.user.publicKey, {
+                    path: "/",
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: "strict",
+                    maxAge: parseInt(PUBLIC_REFRESH_JWT_EXPIRES_IN), // in seconds
+                });
 
-            return { status: "success", player: player as Player };
-        }),
+                return { status: "success", player: player as Player };
+            }),
 
         // auth.logout
         logout: authProcedure.query(async ({ ctx }) => {

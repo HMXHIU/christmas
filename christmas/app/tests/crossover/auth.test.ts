@@ -15,6 +15,7 @@ test("Test Auth", async () => {
     const userWallet = new NodeWallet(user);
     const name: string = "Gandalf";
     const region = getRandomRegion();
+    const geohash = "gbsuv7";
 
     // Login
     let response = await login(user);
@@ -30,7 +31,9 @@ test("Test Auth", async () => {
     expect(loginResult.status).toBe("success");
 
     // Login Crossover (Can't login withou user account)
-    await expect(loginCrossover({ Cookie: cookies })).rejects.toThrow(
+    await expect(
+        loginCrossover({ geohash, region }, { Cookie: cookies }),
+    ).rejects.toThrow(
         `User account ${user.publicKey.toBase58()} does not exist`,
     );
 
@@ -43,7 +46,7 @@ test("Test Auth", async () => {
 
     // Create User Account
     let tx = await createUser(
-        { region: String.fromCharCode(...region) },
+        { region },
         {
             headers: { Cookie: cookies },
             wallet: userWallet,
@@ -75,12 +78,15 @@ test("Test Auth", async () => {
     });
 
     // Login Crossover
-    await expect(loginCrossover({ Cookie: cookies })).resolves.toEqual({
+    await expect(
+        loginCrossover({ region, geohash }, { Cookie: cookies }),
+    ).resolves.toEqual({
         status: "success",
         player: {
             player: user.publicKey.toBase58(),
             name: name,
             loggedIn: true,
+            tile: geohash, // tile should be initialized to geohash the first time
         },
     });
 
@@ -91,6 +97,7 @@ test("Test Auth", async () => {
             player: user.publicKey.toBase58(),
             name: name,
             loggedIn: false,
+            tile: geohash, // tile should be initialized to geohash the first time
         },
     });
 });

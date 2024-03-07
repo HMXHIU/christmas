@@ -1,20 +1,22 @@
+import { login as loginCrossover, signup } from "$lib/crossover";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { createRandomUser } from "../utils";
-import { signup, login as loginCrossover } from "$lib/crossover";
 
 export { createRandomPlayer, waitForEventData };
 
 async function createRandomPlayer({
     region,
+    geohash,
     name,
 }: {
+    geohash: string;
     region: string;
     name: string;
 }): Promise<[NodeWallet, string]> {
     const [wallet, cookies] = await createRandomUser({ region });
 
     await signup({ name }, { headers: { Cookie: cookies }, wallet });
-    await loginCrossover({ Cookie: cookies });
+    await loginCrossover({ geohash, region }, { Cookie: cookies });
 
     return [wallet, cookies];
 }

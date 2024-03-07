@@ -11,6 +11,7 @@ export {
     getLoadedPlayerEntity,
     getPlayerMetadata,
     getUserMetadata,
+    initPlayerEntity,
     type ConnectedUser,
 };
 
@@ -54,4 +55,32 @@ async function getPlayerMetadata(
     publicKey: string,
 ): Promise<z.infer<typeof PlayerMetadataSchema> | null> {
     return (await getUserMetadata(publicKey))?.crossover || null;
+}
+
+async function initPlayerEntity({
+    player,
+    region,
+    geohash,
+}: {
+    player: PlayerEntity;
+    region: string;
+    geohash: string;
+}): Promise<PlayerEntity> {
+    let changed = false;
+
+    // Initialize tile
+    if (!player.tile) {
+        player.tile = geohash;
+        changed = true;
+    }
+
+    // Save if changed
+    if (changed) {
+        player = (await playerRepository.save(
+            player.player,
+            player,
+        )) as PlayerEntity;
+    }
+
+    return player;
 }
