@@ -27,9 +27,27 @@
     let errors: Record<string, string> = {};
 
     async function onEnter() {
+        const region = $userDeviceClient?.location?.country?.code;
+        const geohash = $userDeviceClient?.location?.geohash;
+
+        // Require location services
+        if (!region || !geohash) {
+            const err =
+                "Location not found. Please enable location services and try again.";
+            toast.error(err, {
+                action: {
+                    label: "Enable location services",
+                    onClick: () => {
+                        $userDeviceClient?.initialize();
+                    },
+                },
+            });
+            throw new Error(err);
+        }
+
         try {
             // Try login to crossover
-            await login();
+            await login({ region, geohash });
         } catch (error) {
             // If login failed, player has not signed up
             requireSignup = true;
@@ -82,7 +100,24 @@
             await signup({ name: "Player" });
 
             // Login to crossover
-            await login();
+            const region = $userDeviceClient?.location?.country?.code;
+            const geohash = $userDeviceClient?.location?.geohash;
+
+            // Require location services
+            if (!region || !geohash) {
+                const err =
+                    "Location not found. Please enable location services and try again.";
+                toast.error(err, {
+                    action: {
+                        label: "Enable location services",
+                        onClick: () => {
+                            $userDeviceClient?.initialize();
+                        },
+                    },
+                });
+                throw new Error(err);
+            }
+            await login({ region, geohash });
         }
     }
 </script>
