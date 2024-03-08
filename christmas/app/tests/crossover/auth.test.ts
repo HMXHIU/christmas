@@ -4,6 +4,7 @@ import {
     logout as logoutCrossover,
     signup,
 } from "$lib/crossover";
+import { ObjectStorage } from "$lib/server/objectStorage";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { Keypair } from "@solana/web3.js";
 import jwt, { type JwtPayload } from "jsonwebtoken";
@@ -90,7 +91,19 @@ test("Test Auth", async () => {
         },
     });
 
-    // Check player loaded in repository
+    // Check player state
+    await expect(
+        ObjectStorage.getJSONObject({
+            owner: user.publicKey.toBase58(),
+            bucket: "player",
+            name: user.publicKey.toBase58(),
+        }),
+    ).resolves.toMatchObject({
+        loggedIn: true,
+        tile: geohash,
+    });
+
+    // Logout Crossover
     await expect(logoutCrossover({ Cookie: cookies })).resolves.toEqual({
         status: "success",
         player: {
@@ -99,5 +112,17 @@ test("Test Auth", async () => {
             loggedIn: false,
             tile: geohash, // tile should be initialized to geohash the first time
         },
+    });
+
+    // Check player state
+    await expect(
+        ObjectStorage.getJSONObject({
+            owner: user.publicKey.toBase58(),
+            bucket: "player",
+            name: user.publicKey.toBase58(),
+        }),
+    ).resolves.toMatchObject({
+        loggedIn: false,
+        tile: geohash,
     });
 });

@@ -38,6 +38,7 @@ export async function GET(event) {
                 BUCKETS.store,
                 BUCKETS.user,
                 BUCKETS.image,
+                BUCKETS.player,
             ].includes(bucket)
         ) {
             const redirectUrl = await ObjectStorage.redirectObjectUrl({

@@ -1,11 +1,11 @@
 import { Client } from "minio";
 
 import {
+    MINIO_ACCESS_KEY,
     MINIO_ENDPOINT,
     MINIO_PORT,
-    MINIO_USE_SSL,
-    MINIO_ACCESS_KEY,
     MINIO_SECRET_KEY,
+    MINIO_USE_SSL,
 } from "$env/static/private";
 import { PUBLIC_HOST } from "$env/static/public";
 import type { Readable } from "stream";
@@ -31,6 +31,7 @@ const BUCKETS = {
     coupon: "coupon",
     store: "store",
     image: "image",
+    player: "player",
 };
 
 // Initialize buckets

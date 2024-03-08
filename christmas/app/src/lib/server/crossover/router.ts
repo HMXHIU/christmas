@@ -9,10 +9,11 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
     getLoadedPlayerEntity,
-    getPlayerMetadata,
     getUserMetadata,
     initPlayerEntity,
+    loadPlayerEntity,
     playersInTile,
+    savePlayerEntityState,
 } from ".";
 import {
     FEE_PAYER_PUBKEY,
@@ -22,10 +23,11 @@ import {
 } from "..";
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, t } from "../trpc";
-import type { Player, PlayerEntity } from "./redis/entities";
+import type { Player } from "./redis/entities";
 
 export {
     PlayerMetadataSchema,
+    PlayerStateSchema,
     SayCommandSchema,
     UserMetadataSchema,
     crossoverRouter,
@@ -41,13 +43,16 @@ const SayCommandSchema = z.object({
 const SignupAuthSchema = z.object({
     name: z.string(),
 });
-// PlayerMetadata (s3) is a less restrictive version of PlayerEntity (redis) only containing data that needs to be store long term
+// PlayerState stores data owned by the game (does not require player permission to modify)
+const PlayerStateSchema = z.object({
+    tile: z.string().optional(),
+    loggedIn: z.boolean().optional(),
+});
+// PlayerMetadata stores data owned by the player (requires player to sign transactions to modify)
 const PlayerMetadataSchema = z.object({
     player: z.string(),
     name: z.string().min(1).max(100),
     description: z.string().max(400).optional(),
-    tile: z.string().optional(),
-    loggedIn: z.boolean().optional(),
 });
 const UserMetadataSchema = z.object({
     publicKey: z.string(),
@@ -180,38 +185,20 @@ const crossoverRouter = {
             .query(async ({ ctx, input }) => {
                 const { geohash, region } = input;
 
-                // Get player from redis
-                let player = await getLoadedPlayerEntity(ctx.user.publicKey);
-
-                // If player is not loaded, load it from storage
-                if (player == null) {
-                    let playerMetadata = await getPlayerMetadata(
-                        ctx.user.publicKey,
-                    );
-
-                    if (playerMetadata == null) {
-                        throw new TRPCError({
-                            code: "BAD_REQUEST",
-                            message: `Player ${ctx.user.publicKey} not found`,
-                        });
-                    }
-
-                    // Set login status
-                    player = (await playerRepository.save(
-                        playerMetadata.player,
-                        {
-                            ...playerMetadata,
-                            loggedIn: true,
-                        },
-                    )) as PlayerEntity;
-                } else {
-                    // Set login status
-                    player.loggedIn = true;
-                    await playerRepository.save(player.player, player);
-                }
+                // Get or load player
+                let player =
+                    (await getLoadedPlayerEntity(ctx.user.publicKey)) ||
+                    (await loadPlayerEntity(ctx.user.publicKey));
 
                 // Init player (tile, etc...)
-                player = await initPlayerEntity({ player, geohash, region });
+                player.loggedIn = true;
+                player = await initPlayerEntity(
+                    { player, geohash, region },
+                    { forceSave: true },
+                );
+
+                // Save player state
+                await savePlayerEntityState(ctx.user.publicKey);
 
                 // Set player cookie (to know if user has signed up for crossover)
                 ctx.cookies.set("player", ctx.user.publicKey, {
@@ -235,8 +222,10 @@ const crossoverRouter = {
                     message: `Player ${ctx.user.publicKey} not loaded`,
                 });
             }
+            // Set `loggedIn=false` & save player state
             player.loggedIn = false;
             await playerRepository.save(player.player, player);
+            await savePlayerEntityState(ctx.user.publicKey);
 
             // Remove player cookie
             ctx.cookies.delete("player", {
@@ -248,26 +237,10 @@ const crossoverRouter = {
 
         // auth.player
         player: authProcedure.query(async ({ ctx }) => {
-            // Get loaded player (if loaded)
-            let player = await getLoadedPlayerEntity(ctx.user.publicKey);
-            if (player == null) {
-                // Load player from storage
-                let playerMetadata = await getPlayerMetadata(
-                    ctx.user.publicKey,
-                );
-
-                if (playerMetadata == null) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
-                        message: `Player ${ctx.user.publicKey} not found`,
-                    });
-                }
-
-                player = (await playerRepository.save(playerMetadata.player, {
-                    ...playerMetadata,
-                    loggedIn: false, // do not login user when creating for the first time from storage
-                })) as PlayerEntity;
-            }
+            // Get or load player
+            let player =
+                (await getLoadedPlayerEntity(ctx.user.publicKey)) ||
+                (await loadPlayerEntity(ctx.user.publicKey));
 
             // Set player cookie (to know if user has signed up for crossover)
             ctx.cookies.set("player", ctx.user.publicKey, {

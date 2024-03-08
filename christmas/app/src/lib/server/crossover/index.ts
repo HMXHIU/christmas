@@ -1,9 +1,15 @@
 import { serverAnchorClient } from "$lib/server";
+import { parseZodErrors } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
-import type { z } from "zod";
+import { z } from "zod";
+import { ObjectStorage } from "../objectStorage";
 import { playerRepository } from "./redis";
 import { type PlayerEntity } from "./redis/entities";
-import type { PlayerMetadataSchema, UserMetadataSchema } from "./router";
+import {
+    PlayerStateSchema,
+    type PlayerMetadataSchema,
+    type UserMetadataSchema,
+} from "./router";
 
 // Exports
 export {
@@ -12,7 +18,9 @@ export {
     getPlayerMetadata,
     getUserMetadata,
     initPlayerEntity,
+    loadPlayerEntity,
     playersInTile,
+    savePlayerEntityState,
     type ConnectedUser,
 };
 
@@ -23,13 +31,6 @@ interface ConnectedUser {
 
 // Record of connected users on this server instance
 let connectedUsers: Record<string, ConnectedUser> = {};
-
-async function getLoadedPlayerEntity(
-    publicKey: string,
-): Promise<PlayerEntity | null> {
-    const player = (await playerRepository.fetch(publicKey)) as PlayerEntity;
-    return player.player ? player : null;
-}
 
 async function getUserMetadata(
     publicKey: string,
@@ -58,15 +59,82 @@ async function getPlayerMetadata(
     return (await getUserMetadata(publicKey))?.crossover || null;
 }
 
-async function initPlayerEntity({
-    player,
-    region,
-    geohash,
-}: {
-    player: PlayerEntity;
-    region: string;
-    geohash: string;
-}): Promise<PlayerEntity> {
+async function getPlayerState(
+    publicKey: string,
+): Promise<z.infer<typeof PlayerStateSchema> | null> {
+    try {
+        return await ObjectStorage.getJSONObject({
+            owner: publicKey,
+            bucket: "player",
+            name: publicKey,
+        });
+    } catch (error: any) {
+        return null;
+    }
+}
+
+async function setPlayerState(
+    publicKey: string,
+    state: z.infer<typeof PlayerStateSchema>,
+): Promise<string> {
+    try {
+        return await ObjectStorage.putJSONObject({
+            owner: publicKey,
+            bucket: "player",
+            name: publicKey,
+            data: PlayerStateSchema.parse(state),
+        });
+    } catch (error: any) {
+        if (error instanceof z.ZodError) {
+            throw new Error(JSON.stringify(parseZodErrors(error)));
+        } else {
+            throw error;
+        }
+    }
+}
+
+async function getLoadedPlayerEntity(
+    publicKey: string,
+): Promise<PlayerEntity | null> {
+    const player = (await playerRepository.fetch(publicKey)) as PlayerEntity;
+    return player.player ? player : null;
+}
+
+async function loadPlayerEntity(
+    publicKey: string,
+    playerState: any = {},
+): Promise<PlayerEntity> {
+    // Get player metadata
+    const playerMetadata = await getPlayerMetadata(publicKey);
+    if (playerMetadata == null) {
+        throw new Error(`Player ${publicKey} not found`);
+    }
+
+    // Get & update player state
+    const newPlayerState = {
+        ...((await getPlayerState(publicKey)) || {}),
+        ...playerState,
+    };
+    await setPlayerState(publicKey, newPlayerState);
+
+    return (await playerRepository.save(publicKey, {
+        ...playerMetadata,
+        ...newPlayerState,
+    })) as PlayerEntity;
+}
+
+async function initPlayerEntity(
+    {
+        player,
+        region,
+        geohash,
+    }: {
+        player: PlayerEntity;
+        region: string;
+        geohash: string;
+    },
+    { forceSave }: { forceSave: boolean } = { forceSave: false },
+): Promise<PlayerEntity> {
     let changed = false;
 
     // Initialize tile
@@ -75,8 +143,8 @@ async function initPlayerEntity({
         changed = true;
     }
 
-    // Save if changed
-    if (changed) {
+    // Save if changed or `forceSave`
+    if (changed || forceSave) {
         player = (await playerRepository.save(
             player.player,
             player,
@@ -84,6 +152,13 @@ async function initPlayerEntity({
     }
 
     return player;
+}
+
+async function savePlayerEntityState(publicKey: string): Promise<string> {
+    return await setPlayerState(
+        publicKey,
+        (await playerRepository.fetch(publicKey)) as PlayerEntity,
+    );
 }
 
 async function playersInTile(tile: string): Promise<string[]> {

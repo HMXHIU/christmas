@@ -236,8 +236,6 @@ test("Test Coupon", async () => {
         },
         { Cookie: cookies },
     );
-    console.log("isVerified", isVerified);
-    console.log("err", err);
 
     expect(isVerified).toBe(true);
     expect(err).toBeFalsy();

@@ -15,8 +15,6 @@
         player: z.string(),
         name: z.string().min(1).max(100),
         description: z.string().max(400).optional(),
-        tile: z.string().optional(),
-        loggedIn: z.boolean().optional(),
     });
 
     let requireSignup = false;
