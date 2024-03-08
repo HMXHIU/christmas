@@ -1,5 +1,6 @@
 import { login as loginCrossover, signup } from "$lib/crossover";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
+import type { StreamEventData } from "../../src/routes/api/crossover/stream/+server";
 import { createRandomUser } from "../utils";
 
 export { createRandomPlayer, waitForEventData };
@@ -23,19 +24,19 @@ async function createRandomPlayer({
 
 function waitForEventData(
     eventTarget: EventTarget,
-    eventName: string,
+    streamType: string,
     timeout = 1000, // default timeout 1 second
-): Promise<Event> {
+): Promise<StreamEventData> {
     return new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
             reject(new Error("Timeout occurred while waiting for event"));
         }, timeout);
 
         eventTarget.addEventListener(
-            eventName,
+            streamType,
             (event: Event) => {
                 clearTimeout(timer);
-                resolve((event as MessageEvent).data);
+                resolve((event as MessageEvent).data as StreamEventData);
             },
             { once: true },
         );

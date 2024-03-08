@@ -1,5 +1,6 @@
 import { stream } from "$lib/crossover";
 import { expect, test } from "vitest";
+import type { StreamEventData } from "../../src/routes/api/crossover/stream/+server";
 import { createRandomPlayer, waitForEventData } from "./utils";
 
 test("Test Stream", async () => {
@@ -14,9 +15,12 @@ test("Test Stream", async () => {
 
     // Stream endpoint
     const [eventStream, closeStream] = await stream({ Cookie: playerCookie });
-    const eventData = await waitForEventData(eventStream, "system");
+    const eventData: StreamEventData = await waitForEventData(
+        eventStream,
+        "system",
+    );
     expect(eventData).toMatchObject({
-        event: "stream",
+        eventType: "stream",
         message: "started",
     });
 });

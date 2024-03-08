@@ -8,6 +8,8 @@ import type { HTTPHeaders } from "@trpc/client";
 import type { z } from "zod";
 import { player } from "../../store";
 
+import type { StreamEvent } from "../../routes/api/crossover/stream/+server";
+
 export { commandSay, getPlayer, login, logout, signup, stream, worldSeed };
 
 const worldSeed = "yggdrasil 01";
@@ -124,7 +126,7 @@ function makeJsonDecoder(): TransformStream<any, any> {
                 try {
                     s = s.trim();
                     if (s.length > 0) {
-                        controller.enqueue(JSON.parse(s.trim()));
+                        controller.enqueue(JSON.parse(s));
                     }
                 } catch (err: any) {
                     controller.enqueue({
@@ -139,24 +141,9 @@ function makeJsonDecoder(): TransformStream<any, any> {
 
 function makeWriteableEventStream(eventTarget: EventTarget) {
     return new WritableStream({
-        start(controller) {
+        write(message: StreamEvent, controller) {
             eventTarget.dispatchEvent(
-                new MessageEvent("system", { data: { event: "start" } }),
-            );
-        },
-        write(message, controller) {
-            eventTarget.dispatchEvent(
-                new MessageEvent(message.type, { data: message.data }),
-            );
-        },
-        close() {
-            eventTarget.dispatchEvent(
-                new MessageEvent("system", { data: { event: "close" } }),
-            );
-        },
-        abort(reason) {
-            eventTarget.dispatchEvent(
-                new MessageEvent("system", { data: { event: "abort" } }),
+                new MessageEvent(message.streamType, { data: message.data }),
             );
         },
     });

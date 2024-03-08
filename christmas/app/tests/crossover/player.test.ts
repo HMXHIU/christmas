@@ -40,7 +40,7 @@ test("Test Player", async () => {
     await expect(
         waitForEventData(playerOneEventStream, "system"),
     ).resolves.toMatchObject({
-        event: "stream",
+        eventType: "stream",
         message: "started",
     });
     const [playerTwoEventStream, playerTwoCloseStream] = await stream({
@@ -49,7 +49,7 @@ test("Test Player", async () => {
     await expect(
         waitForEventData(playerTwoEventStream, "system"),
     ).resolves.toMatchObject({
-        event: "stream",
+        eventType: "stream",
         message: "started",
     });
     const [playerThreeEventStream, playerThreeCloseStream] = await stream({
@@ -58,7 +58,7 @@ test("Test Player", async () => {
     await expect(
         waitForEventData(playerThreeEventStream, "system"),
     ).resolves.toMatchObject({
-        event: "stream",
+        eventType: "stream",
         message: "started",
     });
 
@@ -70,17 +70,25 @@ test("Test Player", async () => {
     await expect(
         waitForEventData(playerOneEventStream, "message"),
     ).resolves.toMatchObject({
-        origin: playerOneWallet.publicKey.toBase58(),
-        cmd: "say",
-        message: "Hello, world!",
+        eventType: "cmd",
+        message: "${origin} says ${message}",
+        variables: {
+            origin: playerOneWallet.publicKey.toBase58(),
+            cmd: "say",
+            message: "Hello, world!",
+        },
     });
     // Say - player three should receive message (same tile)
     await expect(
         waitForEventData(playerThreeEventStream, "message"),
     ).resolves.toMatchObject({
-        origin: playerOneWallet.publicKey.toBase58(),
-        cmd: "say",
-        message: "Hello, world!",
+        eventType: "cmd",
+        message: "${origin} says ${message}",
+        variables: {
+            origin: playerOneWallet.publicKey.toBase58(),
+            cmd: "say",
+            message: "Hello, world!",
+        },
     });
     // Say - player two should not receive the message (different tile)
     await expect(

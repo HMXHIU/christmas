@@ -21,6 +21,7 @@ import {
     hashObject,
     serverAnchorClient,
 } from "..";
+import type { MessageEventData } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, t } from "../trpc";
 import type { Player } from "./redis/entities";
@@ -83,16 +84,21 @@ const crossoverRouter = {
                 // Get logged in players in tile
                 const users = await playersInTile(player.tile);
 
+                // Create message data
+                const messageData: MessageEventData = {
+                    eventType: "cmd",
+                    message: "${origin} says ${message}",
+                    variables: {
+                        cmd: "say",
+                        origin: ctx.user.publicKey,
+                        message: input.message,
+                    },
+                };
+                const message = JSON.stringify(messageData);
+
                 // Send message to all users in the tile
                 for (const publicKey of users) {
-                    redisClient.publish(
-                        publicKey,
-                        JSON.stringify({
-                            origin: ctx.user.publicKey,
-                            cmd: "say",
-                            ...input,
-                        }),
-                    );
+                    redisClient.publish(publicKey, message);
                 }
             }),
     }),

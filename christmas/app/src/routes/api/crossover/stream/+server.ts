@@ -3,10 +3,38 @@ import { connectedUsers } from "$lib/server/crossover";
 import { redisSubscribeClient } from "$lib/server/crossover/redis";
 import type { RequestHandler } from "./$types";
 
+export interface StreamEvent {
+    streamType: "message" | "system";
+    data: StreamEventData;
+}
+
+export type StreamEventData = SystemEventData | MessageEventData;
+
+export interface SystemEventData {
+    eventType: "stream";
+    message: string;
+}
+
+export interface MessageEventData {
+    eventType: "cmd";
+    message: string;
+    variables: Record<string, string | number | boolean>;
+}
+
 function onMessage(message: string, channel: string) {
-    connectedUsers[channel].controller.enqueue(
-        JSON.stringify({ type: "message", data: JSON.parse(message) }) + "\n\n", // SSE messages are separated by two newlines
-    );
+    const messageData: MessageEventData = JSON.parse(message);
+    const streamData: StreamEvent = {
+        streamType: "message",
+        data: messageData,
+    };
+
+    try {
+        connectedUsers[channel].controller.enqueue(
+            JSON.stringify(streamData) + "\n\n", // SSE messages are separated by two newlines
+        );
+    } catch (error: any) {
+        console.error(error.message);
+    }
 }
 
 export const GET: RequestHandler = async (event) => {
@@ -24,23 +52,22 @@ export const GET: RequestHandler = async (event) => {
                 publicKey: user.publicKey,
             };
             redisSubscribeClient.subscribe(user.publicKey, onMessage);
-            console.log(`Stream ${user.publicKey} started`);
 
             // Send start event
-            controller.enqueue(
-                JSON.stringify({
-                    type: "system",
-                    data: {
-                        event: "stream",
-                        message: "started",
-                    },
-                }) + "\n\n",
-            );
+            const streamData: StreamEvent = {
+                streamType: "system",
+                data: {
+                    eventType: "stream",
+                    message: "started",
+                },
+            };
+            controller.enqueue(JSON.stringify(streamData) + "\n\n");
+            console.log(`Stream ${user.publicKey} started`);
         },
         cancel() {
             redisSubscribeClient.unsubscribe(user.publicKey);
             delete connectedUsers[user.publicKey];
-            console.log(`Stream ${user.publicKey} ended`);
+            console.log(`Stream ${user.publicKey} stopped`);
         },
     });
 
