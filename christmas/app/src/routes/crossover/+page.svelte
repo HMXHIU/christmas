@@ -7,8 +7,10 @@
         ChatCommandUI,
         MessageFeedUI,
     } from "$lib/components/common/types";
+    import { substituteVariables } from "$lib/utils";
     import { onMount } from "svelte";
     import { player } from "../../store";
+    import type { MessageEventData } from "../api/crossover/stream/+server";
 
     let messageFeed: MessageFeedUI[] = [];
     let eventStream: EventTarget | null = null;
@@ -38,16 +40,17 @@
     }
 
     function processMessageEvent(event: Event) {
-        const { cmd, origin, message } = (event as MessageEvent).data;
+        const { message, variables } = (event as MessageEvent)
+            .data as MessageEventData;
 
-        switch (cmd) {
+        switch (variables.cmd) {
             case "say":
                 messageFeed = [
                     ...messageFeed,
                     {
                         id: messageFeed.length,
                         timestamp: getCurrentTimestamp(),
-                        message: `${origin} says '${message}'`,
+                        message: substituteVariables(message, variables),
                         name: "",
                     },
                 ];

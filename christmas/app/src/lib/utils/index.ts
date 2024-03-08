@@ -27,10 +27,17 @@ export {
     storage_uri_to_url,
     stringToBase58,
     stringToUint8Array,
+    substituteVariables,
     timeStampToDate,
 };
 
 const connection = new Connection(PUBLIC_RPC_ENDPOINT, "processed");
+
+function substituteVariables(template: string, variables: Record<string, any>) {
+    return template.replace(/\${(.*?)}/g, (match, v) => {
+        return variables[v.trim()];
+    });
+}
 
 function cleanString(s: string) {
     return s.replace(/\u0000+$/, "");
