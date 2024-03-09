@@ -1,20 +1,29 @@
 <script lang="ts">
     import GameWindow from "$lib/components/crossover/GameWindow.svelte";
     import Onboard from "$lib/components/crossover/Onboard.svelte";
-    import { commandSay, stream } from "$lib/crossover";
+    import { commandLook, commandSay, stream } from "$lib/crossover";
 
     import type {
         ChatCommandUI,
         MessageFeedUI,
     } from "$lib/components/common/types";
+    import type { Player } from "$lib/server/crossover/redis/entities";
+    import type { TileSchema } from "$lib/server/crossover/router";
     import { substituteVariables } from "$lib/utils";
     import { onMount } from "svelte";
+    import type { z } from "zod";
     import { player } from "../../store";
     import type { MessageEventData } from "../api/crossover/stream/+server";
 
     let messageFeed: MessageFeedUI[] = [];
     let eventStream: EventTarget | null = null;
     let closeStream: (() => void) | null = null;
+
+    let tile: z.infer<typeof TileSchema> = {
+        tile: "The Abyss",
+        description: "You are nowhere to be found.",
+    };
+    let players: Player[] = [];
 
     async function onChatMessage(
         command: ChatCommandUI | null,
@@ -23,6 +32,13 @@
         switch (command?.key) {
             case "say":
                 await commandSay({ message });
+                break;
+
+            case "look":
+                const lookResult = await commandLook({});
+                players = lookResult.players;
+                tile = lookResult.tile;
+                console.log(JSON.stringify(players, null, 2));
                 break;
 
             default:
@@ -96,5 +112,11 @@
 {#if !$player}
     <Onboard />
 {:else}
-    <GameWindow class="h-full" {onChatMessage} {messageFeed} />
+    <GameWindow
+        class="h-full p-3"
+        {onChatMessage}
+        {messageFeed}
+        {tile}
+        {players}
+    />
 {/if}

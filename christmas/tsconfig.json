@@ -10,6 +10,7 @@
     // "strict": true,
     "esModuleInterop": true,
     "resolveJsonModule": true, // import .json files
-    "skipLibCheck": true // skip type checking all .d.ts files
+    "skipLibCheck": true, // skip type checking all .d.ts files
+    "exclude": ["test-ledger"]
   }
 }

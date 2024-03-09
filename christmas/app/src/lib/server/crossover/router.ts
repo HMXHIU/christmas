@@ -12,7 +12,7 @@ import {
     getUserMetadata,
     initPlayerEntity,
     loadPlayerEntity,
-    playersInTile,
+    playersInTileQuerySet,
     savePlayerEntityState,
 } from ".";
 import {
@@ -24,12 +24,13 @@ import {
 import type { MessageEventData } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, t } from "../trpc";
-import type { Player } from "./redis/entities";
+import type { Player, PlayerEntity } from "./redis/entities";
 
 export {
     PlayerMetadataSchema,
     PlayerStateSchema,
     SayCommandSchema,
+    TileSchema,
     UserMetadataSchema,
     crossoverRouter,
 };
@@ -41,9 +42,18 @@ initializeClients();
 const SayCommandSchema = z.object({
     message: z.string(),
 });
+const LookCommandSchema = z.object({
+    target: z.string().optional(),
+});
 const SignupAuthSchema = z.object({
     name: z.string(),
 });
+
+const TileSchema = z.object({
+    tile: z.string(),
+    description: z.string(),
+});
+
 // PlayerState stores data owned by the game (does not require player permission to modify)
 const PlayerStateSchema = z.object({
     tile: z.string().optional(),
@@ -64,6 +74,8 @@ const LoginSchema = z.object({
     region: z.string(),
 });
 
+const LOOK_PAGE_SIZE = 20;
+
 // Router
 const crossoverRouter = {
     // Commands
@@ -72,7 +84,7 @@ const crossoverRouter = {
         say: authProcedure
             .input(SayCommandSchema)
             .query(async ({ ctx, input }) => {
-                // Get user's tile
+                // Get player
                 const player = await getLoadedPlayerEntity(ctx.user.publicKey);
                 if (player == null) {
                     throw new TRPCError({
@@ -82,7 +94,7 @@ const crossoverRouter = {
                 }
 
                 // Get logged in players in tile
-                const users = await playersInTile(player.tile);
+                const users = await playersInTileQuerySet(player.tile).allIds();
 
                 // Create message data
                 const messageData: MessageEventData = {
@@ -100,6 +112,33 @@ const crossoverRouter = {
                 for (const publicKey of users) {
                     redisClient.publish(publicKey, message);
                 }
+            }),
+        // cmd.look
+        look: authProcedure
+            .input(LookCommandSchema)
+            .query(async ({ ctx, input }) => {
+                // Get player
+                const player = await getLoadedPlayerEntity(ctx.user.publicKey);
+                if (player == null) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `Player ${ctx.user.publicKey} not found`,
+                    });
+                }
+
+                // Get logged in players in tile
+                const players = (await playersInTileQuerySet(player.tile).all({
+                    pageSize: LOOK_PAGE_SIZE,
+                })) as PlayerEntity[];
+
+                return {
+                    tile: {
+                        tile: player.tile,
+                        description:
+                            "A timber-framed inn, its thatched roof sloping gently over leaded windows. Lantern light flickers within, casting shadows on worn wooden tables and tapestried walls. The scent of ale mingles with hearth smoke, welcoming weary travelers to rest amidst rustic charm.",
+                    },
+                    players: players as Player[],
+                };
             }),
     }),
     // Authentication

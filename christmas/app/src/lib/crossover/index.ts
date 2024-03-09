@@ -1,6 +1,9 @@
 import { PUBLIC_HOST } from "$env/static/public";
 import type { TransactionResult } from "$lib/anchorClient/types";
-import type { PlayerMetadataSchema } from "$lib/server/crossover/router";
+import type {
+    PlayerMetadataSchema,
+    TileSchema,
+} from "$lib/server/crossover/router";
 import { trpc } from "$lib/trpcClient";
 import { signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
@@ -8,9 +11,19 @@ import type { HTTPHeaders } from "@trpc/client";
 import type { z } from "zod";
 import { player } from "../../store";
 
+import type { Player } from "$lib/server/crossover/redis/entities";
 import type { StreamEvent } from "../../routes/api/crossover/stream/+server";
 
-export { commandSay, getPlayer, login, logout, signup, stream, worldSeed };
+export {
+    commandLook,
+    commandSay,
+    getPlayer,
+    login,
+    logout,
+    signup,
+    stream,
+    worldSeed,
+};
 
 const worldSeed = "yggdrasil 01";
 
@@ -155,4 +168,12 @@ function commandSay(
 ): Promise<void> {
     const { message } = input;
     return trpc({ headers }).crossover.cmd.say.query({ message });
+}
+
+function commandLook(
+    input: { target?: string },
+    headers: HTTPHeaders = {},
+): Promise<{ players: Player[]; tile: z.infer<typeof TileSchema> }> {
+    const { target } = input;
+    return trpc({ headers }).crossover.cmd.look.query({ target });
 }

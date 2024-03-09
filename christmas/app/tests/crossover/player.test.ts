@@ -1,4 +1,5 @@
-import { commandSay, stream } from "$lib/crossover";
+import { commandLook, commandSay, stream } from "$lib/crossover";
+import { groupBy } from "lodash";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer, waitForEventData } from "./utils";
@@ -94,4 +95,14 @@ test("Test Player", async () => {
     await expect(
         waitForEventData(playerTwoEventStream, "message"),
     ).rejects.toThrowError("Timeout occurred while waiting for event");
+
+    // Look - no target (tile)
+    let lookAtResult = await commandLook({}, { Cookie: playerOneCookies });
+    expect(lookAtResult.tile).toMatchObject({
+        tile: playerOneGeohash,
+    });
+    expect(groupBy(lookAtResult.players, "player")).contains.keys([
+        playerOneWallet.publicKey.toBase58(),
+        playerThreeWallet.publicKey.toBase58(),
+    ]);
 });

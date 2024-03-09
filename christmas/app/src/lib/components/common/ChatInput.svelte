@@ -2,6 +2,7 @@
     // Components
     import { Button } from "$lib/components/ui/button";
     import { Textarea } from "$lib/components/ui/textarea";
+    import { cn } from "$lib/shadcn";
     import { Send } from "lucide-svelte";
     import ChatCommandSelect from "./ChatCommandSelect.svelte";
     import type { ChatCommandGroupUI, ChatCommandUI } from "./types";
@@ -29,7 +30,12 @@
     }
 </script>
 
-<section class="flex flex-row border border-foreground-muted rounded-md m-4">
+<section
+    class={cn(
+        "flex flex-row border border-foreground-muted rounded-md",
+        $$restProps.class,
+    )}
+>
     <ChatCommandSelect
         bind:value={command}
         class="h-full border-0 text-muted-foreground"

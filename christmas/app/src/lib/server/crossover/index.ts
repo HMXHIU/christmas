@@ -1,6 +1,7 @@
 import { serverAnchorClient } from "$lib/server";
 import { parseZodErrors } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
+import type { AbstractSearch } from "redis-om";
 import { z } from "zod";
 import { ObjectStorage } from "../objectStorage";
 import { playerRepository } from "./redis";
@@ -19,7 +20,7 @@ export {
     getUserMetadata,
     initPlayerEntity,
     loadPlayerEntity,
-    playersInTile,
+    playersInTileQuerySet,
     savePlayerEntityState,
     type ConnectedUser,
 };
@@ -161,12 +162,11 @@ async function savePlayerEntityState(publicKey: string): Promise<string> {
     );
 }
 
-async function playersInTile(tile: string): Promise<string[]> {
+function playersInTileQuerySet(tile: string): AbstractSearch {
     return playerRepository
         .search()
         .where("loggedIn")
         .equal(true)
         .and("tile")
-        .equal(tile)
-        .return.allIds();
+        .equal(tile).return;
 }

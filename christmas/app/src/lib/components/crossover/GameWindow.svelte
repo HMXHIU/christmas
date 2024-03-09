@@ -5,15 +5,24 @@
         ChatCommandUI,
         MessageFeedUI,
     } from "$lib/components/common/types";
+    import type { Player } from "$lib/server/crossover/redis/entities";
+    import type { TileSchema } from "$lib/server/crossover/router";
     import { cn } from "$lib/shadcn";
     import {
         ArrowLeft,
+        Eye,
         FlameKindling,
         Grab,
         MessageSquare,
     } from "lucide-svelte";
+    import { z } from "zod";
     import ContextSection from "./ContextSection.svelte";
-    import type { AgentUI } from "./types";
+
+    export let players: Player[] = [];
+    export let tile: z.infer<typeof TileSchema> = {
+        tile: "The Abyss",
+        description: "You are nowhere to be found.",
+    };
 
     export let messageFeed: MessageFeedUI[] = [];
     export let onChatMessage: (
@@ -75,6 +84,13 @@
             { key: "ooc", label: "Out of Combat (OOC)" },
             [
                 {
+                    key: "look",
+                    label: "Look",
+                    icon: Eye,
+                    shortcut: "⌘L",
+                    description: "Look at something.",
+                },
+                {
                     key: "rest",
                     label: "Rest",
                     icon: FlameKindling,
@@ -84,18 +100,9 @@
             ],
         ],
     ];
-
-    let agents: AgentUI[] = [
-        { id: 0, avatar: null, name: "Michael" },
-        { id: 1, avatar: null, name: "Janet" },
-        { id: 2, avatar: null, name: "Susan" },
-        { id: 3, avatar: null, name: "Joey" },
-        { id: 4, avatar: null, name: "Lara" },
-        { id: 5, avatar: null, name: "Melissa" },
-    ];
 </script>
 
-<div class={cn("flex flex-col", $$restProps.class)}>
+<div class={cn("w-full flex flex-col", $$restProps.class)}>
     <!-- Chat -->
     <Chat
         {messageFeed}
@@ -105,5 +112,5 @@
         class="h-3/5"
     ></Chat>
     <!-- Context Section -->
-    <ContextSection {agents} class="h-2/5"></ContextSection>
+    <ContextSection {players} {tile} class="h-2/5 pt-2"></ContextSection>
 </div>
