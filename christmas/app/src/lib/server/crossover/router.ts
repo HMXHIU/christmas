@@ -1,4 +1,5 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
+import { biomesAtTile } from "$lib/crossover/world";
 import {
     initializeClients,
     playerRepository,
@@ -78,6 +79,16 @@ const LOOK_PAGE_SIZE = 20;
 
 // Router
 const crossoverRouter = {
+    // World
+    world: t.router({
+        // wordl.biomesAtTile (can be generated on client side)
+        biomesAtTile: authProcedure
+            .input(z.object({ tile: z.string() }))
+            .query(async ({ input }) => {
+                const { tile } = input;
+                return biomesAtTile(tile);
+            }),
+    }),
     // Commands
     cmd: t.router({
         // cmd.say

@@ -5,7 +5,8 @@
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
     import { Textarea } from "$lib/components/ui/textarea";
-    import { login, signup, worldSeed } from "$lib/crossover";
+    import { login, signup } from "$lib/crossover";
+    import { worldSeed } from "$lib/crossover/world";
     import { parseZodErrors } from "$lib/utils";
     import { toast } from "svelte-sonner";
     import { z } from "zod";
@@ -128,7 +129,7 @@
             <Wallet />
         {:else if !requireSignup}
             <!-- Sign up player -->
-            <p>{`Initiate current world seed [${worldSeed}]`}</p>
+            <p>{`Initiate current world seed [${worldSeed.name}]`}</p>
             <Button on:click={onEnter}>Enter</Button>
         {:else}
             <p>

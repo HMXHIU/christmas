@@ -14,18 +14,7 @@ import { player } from "../../store";
 import type { Player } from "$lib/server/crossover/redis/entities";
 import type { StreamEvent } from "../../routes/api/crossover/stream/+server";
 
-export {
-    commandLook,
-    commandSay,
-    getPlayer,
-    login,
-    logout,
-    signup,
-    stream,
-    worldSeed,
-};
-
-const worldSeed = "yggdrasil 01";
+export { commandLook, commandSay, getPlayer, login, logout, signup, stream };
 
 async function getPlayer(
     headers: HTTPHeaders = {},
@@ -177,3 +166,5 @@ function commandLook(
     const { target } = input;
     return trpc({ headers }).crossover.cmd.look.query({ target });
 }
+
+function biomeAtTile(tile: string) {}
