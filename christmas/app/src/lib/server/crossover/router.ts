@@ -52,6 +52,7 @@ const SignupAuthSchema = z.object({
 
 const TileSchema = z.object({
     tile: z.string(),
+    name: z.string(),
     description: z.string(),
 });
 
@@ -143,8 +144,10 @@ const crossoverRouter = {
                 })) as PlayerEntity[];
 
                 return {
+                    // TODO: actually get tile data
                     tile: {
                         tile: player.tile,
+                        name: "The Inn",
                         description:
                             "A timber-framed inn, its thatched roof sloping gently over leaded windows. Lantern light flickers within, casting shadows on worn wooden tables and tapestried walls. The scent of ale mingles with hearth smoke, welcoming weary travelers to rest amidst rustic charm.",
                     },

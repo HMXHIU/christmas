@@ -7,6 +7,7 @@
         ChatCommandUI,
         MessageFeedUI,
     } from "$lib/components/common/types";
+    import { abyssTile } from "$lib/crossover/world/resources";
     import type { Player } from "$lib/server/crossover/redis/entities";
     import type { TileSchema } from "$lib/server/crossover/router";
     import { substituteVariables } from "$lib/utils";
@@ -19,10 +20,7 @@
     let eventStream: EventTarget | null = null;
     let closeStream: (() => void) | null = null;
 
-    let tile: z.infer<typeof TileSchema> = {
-        tile: "The Abyss",
-        description: "You are nowhere to be found.",
-    };
+    let tile: z.infer<typeof TileSchema> = abyssTile;
     let players: Player[] = [];
 
     async function onChatMessage(

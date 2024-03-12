@@ -166,5 +166,3 @@ function commandLook(
     const { target } = input;
     return trpc({ headers }).crossover.cmd.look.query({ target });
 }
-
-function biomeAtTile(tile: string) {}

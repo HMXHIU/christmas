@@ -1,6 +1,19 @@
-import { bboxes, decode_bbox } from "ngeohash";
+import ngeohash from "ngeohash";
+import { biomes } from "./resources";
 
-export { biomeAtTile, biomesAtTile, worldSeed, type WorldSeed };
+export {
+    biomeAtTile,
+    biomes,
+    biomesAtTile,
+    getCellFromTile,
+    updateBiomesGrid,
+    worldSeed,
+    type Grid,
+    type WorldSeed,
+};
+
+// eg. grid[precision][row][col]: "forest"
+type Grid = Record<number, Record<number, Record<number, string>>>;
 
 interface WorldSeed {
     name: string;
@@ -97,17 +110,22 @@ const worldSeed: WorldSeed = {
     },
 };
 
-const biomes = {
-    desert: { name: "desert" },
-    forest: { name: "forest" },
-    grassland: { name: "grassland" },
-    hills: { name: "hills" },
-    mountains: { name: "mountains" },
-    plains: { name: "plains" },
-    swamp: { name: "swamp" },
-    tundra: { name: "tundra" },
-    water: { name: "water" },
-    wetlands: { name: "wetlands" },
+const gridSizeAtPrecision: Record<number, { rows: number; cols: number }> = {
+    1: { rows: 4, cols: 8 },
+    2: { rows: 4 * 8, cols: 8 * 4 },
+    3: { rows: 4 * 8 * 4, cols: 8 * 4 * 8 },
+    4: { rows: 4 * 8 * 4 * 8, cols: 8 * 4 * 8 * 4 },
+    5: { rows: 4 * 8 * 4 * 8 * 4, cols: 8 * 4 * 8 * 4 * 8 },
+    6: { rows: 4 * 8 * 4 * 8 * 4 * 8, cols: 8 * 4 * 8 * 4 * 8 * 4 },
+    7: { rows: 4 * 8 * 4 * 8 * 4 * 8 * 4, cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 },
+    8: {
+        rows: 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8,
+        cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4,
+    },
+    9: {
+        rows: 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4,
+        cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8,
+    },
 };
 
 function stringToRandomNumber(str: string): number {
@@ -136,7 +154,7 @@ function biomeAtTile(tile: string, seed?: WorldSeed): string {
     // Use the tile as the random seed (must be reproducible)
     const rv = seededRandom(stringToRandomNumber(tile)) * totalProb;
 
-    // select biome
+    // Select biome
     if (rv < probBio) {
         return biomes.forest.name;
     }
@@ -149,12 +167,61 @@ function biomeAtTile(tile: string, seed?: WorldSeed): string {
 function biomesAtTile(tile: string, seed?: WorldSeed): Record<string, string> {
     seed = seed || worldSeed;
 
-    const [minlat, minlon, maxlat, maxlon] = decode_bbox(tile);
-    // get all the geohashes 1 precision level above the tile
-    const geohashes = bboxes(minlat, minlon, maxlat, maxlon, tile.length + 1);
+    const [minlat, minlon, maxlat, maxlon] = ngeohash.decode_bbox(tile);
+    // Get all the geohashes 1 precision level above the tile
+    const geohashes = ngeohash.bboxes(
+        minlat,
+        minlon,
+        maxlat,
+        maxlon,
+        tile.length + 1,
+    );
 
     return geohashes.reduce((obj: any, tile) => {
         obj[tile] = biomeAtTile(tile, seed);
         return obj;
     }, {});
+}
+
+function updateBiomesGrid(grid: Grid, biomes: Record<string, string>) {
+    for (const [tile, biome] of Object.entries(biomes)) {
+        const precision = tile.length;
+        const { latitude, longitude } = ngeohash.decode(tile);
+
+        const row = Math.floor(
+            ((latitude + 90) / 180) * gridSizeAtPrecision[precision].rows,
+        );
+        const col = Math.floor(
+            ((longitude + 180) / 360) * gridSizeAtPrecision[precision].cols,
+        );
+
+        // Initialize grid cell if not present
+        if (!grid[precision]) {
+            grid[precision] = {};
+        }
+        if (!grid[precision][row]) {
+            grid[precision][row] = {};
+        }
+
+        grid[precision][row][col] = biome;
+    }
+    return grid;
+}
+
+function getCellFromTile(tile: string): {
+    precision: number;
+    row: number;
+    col: number;
+} {
+    const precision = tile.length;
+    const { latitude, longitude } = ngeohash.decode(tile);
+
+    const row = Math.floor(
+        ((latitude + 90) / 180) * gridSizeAtPrecision[precision].rows,
+    );
+    const col = Math.floor(
+        ((longitude + 180) / 360) * gridSizeAtPrecision[precision].cols,
+    );
+
+    return { precision, row, col };
 }

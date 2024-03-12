@@ -5,6 +5,9 @@
         ChatCommandUI,
         MessageFeedUI,
     } from "$lib/components/common/types";
+    import { Button } from "$lib/components/ui/button/index.js";
+    import * as Collapsible from "$lib/components/ui/collapsible/index.js";
+    import { abyssTile } from "$lib/crossover/world/resources";
     import type { Player } from "$lib/server/crossover/redis/entities";
     import type { TileSchema } from "$lib/server/crossover/router";
     import { cn } from "$lib/shadcn";
@@ -15,14 +18,13 @@
         Grab,
         MessageSquare,
     } from "lucide-svelte";
+    import ChevronsUpDown from "lucide-svelte/icons/chevrons-up-down";
     import { z } from "zod";
     import ContextSection from "./ContextSection.svelte";
+    import Map from "./Map.svelte";
 
     export let players: Player[] = [];
-    export let tile: z.infer<typeof TileSchema> = {
-        tile: "The Abyss",
-        description: "You are nowhere to be found.",
-    };
+    export let tile: z.infer<typeof TileSchema> = abyssTile;
 
     export let messageFeed: MessageFeedUI[] = [];
     export let onChatMessage: (
@@ -113,4 +115,22 @@
     ></Chat>
     <!-- Context Section -->
     <ContextSection {players} {tile} class="h-2/5 pt-2"></ContextSection>
+    <!-- Map -->
+    <div class="fixed top-20 right-0">
+        <Collapsible.Root class="w-[200px] space-y-2">
+            <div
+                class="flex items-center justify-end text-right space-x-4 px-4"
+            >
+                <Collapsible.Trigger asChild let:builder>
+                    <Button builders={[builder]} variant="ghost" size="sm">
+                        {tile.name}
+                        <ChevronsUpDown class="h-4 w-4 ml-2" />
+                    </Button>
+                </Collapsible.Trigger>
+            </div>
+            <Collapsible.Content>
+                <Map {tile}></Map>
+            </Collapsible.Content>
+        </Collapsible.Root>
+    </div>
 </div>

@@ -24,12 +24,10 @@
     import { Input } from "$lib/components/ui/input/index.js";
     import { Label } from "$lib/components/ui/label/index.js";
     import * as Tabs from "$lib/components/ui/tabs/index.js";
+    import { abyssTile } from "$lib/crossover/world/resources";
     import { cn } from "$lib/shadcn";
 
-    export let tile: z.infer<typeof TileSchema> = {
-        tile: "The Abyss",
-        description: "You are nowhere to be found.",
-    };
+    export let tile: z.infer<typeof TileSchema> = abyssTile;
     export let players: Player[] = [];
 </script>
 
