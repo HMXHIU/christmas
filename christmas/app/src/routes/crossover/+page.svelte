@@ -7,6 +7,11 @@
         ChatCommandUI,
         MessageFeedUI,
     } from "$lib/components/common/types";
+
+    import {
+        moveToTileInDirection,
+        type Direction,
+    } from "$lib/crossover/world";
     import { abyssTile } from "$lib/crossover/world/resources";
     import type { Player } from "$lib/server/crossover/redis/entities";
     import type { TileSchema } from "$lib/server/crossover/router";
@@ -43,6 +48,13 @@
                 console.warn("Unknown command:", command?.key, message);
                 break;
         }
+    }
+
+    async function onMove(direction: Direction) {
+        console.log("Move", direction);
+        // Calculate new tile (TODO: get other metadata like description, etc.)
+        tile.tile = moveToTileInDirection(tile.tile, direction);
+        tile = tile;
     }
 
     function getCurrentTimestamp(): string {
@@ -113,6 +125,7 @@
     <GameWindow
         class="h-full p-3"
         {onChatMessage}
+        {onMove}
         {messageFeed}
         {tile}
         {players}

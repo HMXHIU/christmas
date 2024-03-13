@@ -30,14 +30,18 @@
     let biomesGrid: Grid = {};
     const parentTile = tile.tile.slice(0, tile.tile.length - 1);
     const neighbourTiles = ngeohash.neighbors(parentTile);
+
+    // TODO: this should load everything even POI at different zoom levels
     biomesGrid = updateBiomesGrid(biomesGrid, biomesAtTile(parentTile));
     for (const t of neighbourTiles) {
         biomesGrid = updateBiomesGrid(biomesGrid, biomesAtTile(t));
     }
 
-    let cell = getCellFromTile(tile.tile);
+    $: draw(tile);
 
-    function draw() {
+    function draw(tile: z.infer<typeof TileSchema>) {
+        const cell = getCellFromTile(tile.tile);
+
         if (ctx && resources) {
             const { width, height } = canvas;
             const cellHeight = height / GRID_ROWS;
@@ -81,9 +85,9 @@
 
     onMount(async () => {
         ctx = canvas.getContext("2d")!;
+        // TODO: optimize this, keeps reloading when map expands
         resources = await loadResources();
-
-        draw();
+        draw(tile);
     });
 </script>
 

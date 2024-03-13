@@ -22,9 +22,11 @@
     import { z } from "zod";
     import ContextSection from "./ContextSection.svelte";
     import Map from "./Map.svelte";
+    import type { Direction } from "./types";
 
     export let players: Player[] = [];
     export let tile: z.infer<typeof TileSchema> = abyssTile;
+    export let onMove: (direction: Direction) => void;
 
     export let messageFeed: MessageFeedUI[] = [];
     export let onChatMessage: (
@@ -114,7 +116,8 @@
         class="h-3/5"
     ></Chat>
     <!-- Context Section -->
-    <ContextSection {players} {tile} class="h-2/5 pt-2"></ContextSection>
+    <ContextSection {players} {tile} {onMove} class="h-2/5 pt-2"
+    ></ContextSection>
     <!-- Map -->
     <div class="fixed top-20 right-0">
         <Collapsible.Root class="w-[200px] space-y-2">

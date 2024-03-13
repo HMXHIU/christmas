@@ -6,11 +6,15 @@ export {
     biomes,
     biomesAtTile,
     getCellFromTile,
+    moveToTileInDirection,
     updateBiomesGrid,
     worldSeed,
+    type Direction,
     type Grid,
     type WorldSeed,
 };
+
+type Direction = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw" | "u" | "d";
 
 // eg. grid[precision][row][col]: "forest"
 type Grid = Record<number, Record<number, Record<number, string>>>;
@@ -224,4 +228,25 @@ function getCellFromTile(tile: string): {
     );
 
     return { precision, row, col };
+}
+
+function moveToTileInDirection(tile: string, direction: Direction): string {
+    if (direction === "n") {
+        return ngeohash.neighbor(tile, [1, 0]);
+    } else if (direction === "s") {
+        return ngeohash.neighbor(tile, [-1, 0]);
+    } else if (direction === "e") {
+        return ngeohash.neighbor(tile, [0, 1]);
+    } else if (direction === "w") {
+        return ngeohash.neighbor(tile, [0, -1]);
+    } else if (direction === "ne") {
+        return ngeohash.neighbor(tile, [1, 1]);
+    } else if (direction === "nw") {
+        return ngeohash.neighbor(tile, [1, -1]);
+    } else if (direction === "se") {
+        return ngeohash.neighbor(tile, [-1, 1]);
+    } else if (direction === "sw") {
+        return ngeohash.neighbor(tile, [-1, -1]);
+    }
+    return tile;
 }

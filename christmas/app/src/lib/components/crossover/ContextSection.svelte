@@ -24,11 +24,14 @@
     import { Input } from "$lib/components/ui/input/index.js";
     import { Label } from "$lib/components/ui/label/index.js";
     import * as Tabs from "$lib/components/ui/tabs/index.js";
+    import type { Direction } from "$lib/crossover/world";
     import { abyssTile } from "$lib/crossover/world/resources";
     import { cn } from "$lib/shadcn";
 
     export let tile: z.infer<typeof TileSchema> = abyssTile;
     export let players: Player[] = [];
+
+    export let onMove: (direction: Direction) => void;
 </script>
 
 <div class={cn("w-full", $$restProps.class)}>
@@ -71,35 +74,65 @@
                         <div class="flex-shrink-0">
                             <div></div>
                             <div class="grid grid-cols-3 gap-2">
-                                <Button variant="outline" class="w-14 h-14"
+                                <Button
+                                    variant="outline"
+                                    class="w-14 h-14"
+                                    on:click={() => onMove("nw")}
                                     ><ArrowUpLeft size={20} /></Button
                                 >
-                                <Button variant="outline" class="w-14 h-14"
+                                <Button
+                                    variant="outline"
+                                    class="w-14 h-14"
+                                    on:click={() => onMove("n")}
                                     ><ArrowUp size={20} /></Button
                                 >
-                                <Button variant="outline" class="w-14 h-14"
+                                <Button
+                                    variant="outline"
+                                    class="w-14 h-14"
+                                    on:click={() => onMove("ne")}
                                     ><ArrowUpRight size={20} /></Button
                                 >
-                                <Button variant="outline" class="w-14 h-14"
+                                <Button
+                                    variant="outline"
+                                    class="w-14 h-14"
+                                    on:click={() => onMove("w")}
                                     ><ArrowLeft size={20} /></Button
                                 >
                                 <div></div>
-                                <Button variant="outline" class="w-14 h-14"
+                                <Button
+                                    variant="outline"
+                                    class="w-14 h-14"
+                                    on:click={() => onMove("e")}
                                     ><ArrowRight size={20} /></Button
                                 >
-                                <Button variant="outline" class="w-14 h-14"
+                                <Button
+                                    variant="outline"
+                                    class="w-14 h-14"
+                                    on:click={() => onMove("sw")}
                                     ><ArrowDownLeft size={20} /></Button
                                 >
-                                <Button variant="outline" class="w-14 h-14"
+                                <Button
+                                    variant="outline"
+                                    class="w-14 h-14"
+                                    on:click={() => onMove("s")}
                                     ><ArrowDown size={20} /></Button
                                 >
-                                <Button variant="outline" class="w-14 h-14"
+                                <Button
+                                    variant="outline"
+                                    class="w-14 h-14"
+                                    on:click={() => onMove("se")}
                                     ><ArrowDownRight size={20} /></Button
                                 >
-                                <Button variant="outline" class="w-14 h-14"
+                                <Button
+                                    variant="outline"
+                                    class="w-14 h-14"
+                                    on:click={() => onMove("d")}
                                     ><ArrowDownSquare size={20} /></Button
                                 >
-                                <Button variant="outline" class="w-14 h-14"
+                                <Button
+                                    variant="outline"
+                                    class="w-14 h-14"
+                                    on:click={() => onMove("u")}
                                     ><ArrowUpSquare size={20} /></Button
                                 >
                             </div>
