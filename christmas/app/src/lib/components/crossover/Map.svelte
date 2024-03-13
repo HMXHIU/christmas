@@ -47,6 +47,9 @@
             const cellHeight = height / GRID_ROWS;
             const cellWidth = width / GRID_COLS;
 
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+
             // Draw biome
             for (let row = 0; row < GRID_ROWS; row++) {
                 for (let col = 0; col < GRID_COLS; col++) {
@@ -59,8 +62,8 @@
                         ctx.drawImage(
                             resource.image,
                             ...resource.bbox,
-                            row * cellHeight,
                             col * cellWidth,
+                            row * cellHeight,
                             cellWidth,
                             cellHeight,
                         );
@@ -74,8 +77,8 @@
                 ctx.drawImage(
                     resource.image,
                     ...resource.bbox,
-                    GRID_MID_ROW * cellHeight,
                     GRID_MID_COL * cellWidth,
+                    GRID_MID_ROW * cellHeight,
                     cellWidth,
                     cellHeight,
                 );

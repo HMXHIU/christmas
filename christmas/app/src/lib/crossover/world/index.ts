@@ -190,10 +190,11 @@ function biomesAtTile(tile: string, seed?: WorldSeed): Record<string, string> {
 function updateBiomesGrid(grid: Grid, biomes: Record<string, string>) {
     for (const [tile, biome] of Object.entries(biomes)) {
         const precision = tile.length;
+        // latitude (-90 at south, 90 at north) and longitude (-180 at west, 180 at east)
         const { latitude, longitude } = ngeohash.decode(tile);
-
+        // -latitude because we want top left to be (0, 0)
         const row = Math.floor(
-            ((latitude + 90) / 180) * gridSizeAtPrecision[precision].rows,
+            ((-latitude + 90) / 180) * gridSizeAtPrecision[precision].rows,
         );
         const col = Math.floor(
             ((longitude + 180) / 360) * gridSizeAtPrecision[precision].cols,
@@ -220,8 +221,9 @@ function getCellFromTile(tile: string): {
     const precision = tile.length;
     const { latitude, longitude } = ngeohash.decode(tile);
 
+    // -latitude because we want top left to be (0, 0)
     const row = Math.floor(
-        ((latitude + 90) / 180) * gridSizeAtPrecision[precision].rows,
+        ((-latitude + 90) / 180) * gridSizeAtPrecision[precision].rows,
     );
     const col = Math.floor(
         ((longitude + 180) / 360) * gridSizeAtPrecision[precision].cols,

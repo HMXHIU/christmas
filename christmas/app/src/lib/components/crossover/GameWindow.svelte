@@ -7,6 +7,7 @@
     } from "$lib/components/common/types";
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Collapsible from "$lib/components/ui/collapsible/index.js";
+    import type { Direction } from "$lib/crossover/world";
     import { abyssTile } from "$lib/crossover/world/resources";
     import type { Player } from "$lib/server/crossover/redis/entities";
     import type { TileSchema } from "$lib/server/crossover/router";
@@ -22,7 +23,6 @@
     import { z } from "zod";
     import ContextSection from "./ContextSection.svelte";
     import Map from "./Map.svelte";
-    import type { Direction } from "./types";
 
     export let players: Player[] = [];
     export let tile: z.infer<typeof TileSchema> = abyssTile;
