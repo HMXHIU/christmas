@@ -1,5 +1,10 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
-import { biomesAtTile } from "$lib/crossover/world";
+import {
+    biomeAtGeohash,
+    geohashNeighbour,
+    tileAtGeohash,
+} from "$lib/crossover/world";
+import { biomes } from "$lib/crossover/world/resources";
 import {
     initializeClients,
     playerRepository,
@@ -13,7 +18,7 @@ import {
     getUserMetadata,
     initPlayerEntity,
     loadPlayerEntity,
-    playersInTileQuerySet,
+    playersInGeohashQuerySet,
     savePlayerEntityState,
 } from ".";
 import {
@@ -49,16 +54,18 @@ const LookCommandSchema = z.object({
 const SignupAuthSchema = z.object({
     name: z.string(),
 });
-
 const TileSchema = z.object({
-    tile: z.string(),
+    geohash: z.string(),
     name: z.string(),
     description: z.string(),
+});
+const MoveSchema = z.object({
+    direction: z.enum(["n", "s", "e", "w", "ne", "nw", "se", "sw", "u", "d"]),
 });
 
 // PlayerState stores data owned by the game (does not require player permission to modify)
 const PlayerStateSchema = z.object({
-    tile: z.string().optional(),
+    geohash: z.string().optional(),
     loggedIn: z.boolean().optional(),
 });
 // PlayerMetadata stores data owned by the player (requires player to sign transactions to modify)
@@ -81,15 +88,7 @@ const LOOK_PAGE_SIZE = 20;
 // Router
 const crossoverRouter = {
     // World
-    world: t.router({
-        // wordl.biomesAtTile (can be generated on client side)
-        biomesAtTile: authProcedure
-            .input(z.object({ tile: z.string() }))
-            .query(async ({ input }) => {
-                const { tile } = input;
-                return biomesAtTile(tile);
-            }),
-    }),
+    world: t.router({}),
     // Commands
     cmd: t.router({
         // cmd.say
@@ -97,16 +96,12 @@ const crossoverRouter = {
             .input(SayCommandSchema)
             .query(async ({ ctx, input }) => {
                 // Get player
-                const player = await getLoadedPlayerEntity(ctx.user.publicKey);
-                if (player == null) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
-                        message: `Player ${ctx.user.publicKey} not found`,
-                    });
-                }
+                const player = await getPlayer(ctx.user.publicKey);
 
-                // Get logged in players in tile
-                const users = await playersInTileQuerySet(player.tile).allIds();
+                // Get logged in players in geohash
+                const users = await playersInGeohashQuerySet(
+                    player.geohash,
+                ).allIds();
 
                 // Create message data
                 const messageData: MessageEventData = {
@@ -120,7 +115,7 @@ const crossoverRouter = {
                 };
                 const message = JSON.stringify(messageData);
 
-                // Send message to all users in the tile
+                // Send message to all users in the geohash
                 for (const publicKey of users) {
                     redisClient.publish(publicKey, message);
                 }
@@ -130,30 +125,43 @@ const crossoverRouter = {
             .input(LookCommandSchema)
             .query(async ({ ctx, input }) => {
                 // Get player
-                const player = await getLoadedPlayerEntity(ctx.user.publicKey);
-                if (player == null) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
-                        message: `Player ${ctx.user.publicKey} not found`,
-                    });
-                }
+                const player = await getPlayer(ctx.user.publicKey);
 
-                // Get logged in players in tile
-                const players = (await playersInTileQuerySet(player.tile).all({
+                // Get logged in players in geohash
+                const players = (await playersInGeohashQuerySet(
+                    player.geohash,
+                ).all({
                     pageSize: LOOK_PAGE_SIZE,
                 })) as PlayerEntity[];
 
+                const biome = biomeAtGeohash(player.geohash);
+
                 return {
-                    // TODO: actually get tile data
-                    tile: {
-                        tile: player.tile,
-                        name: "The Inn",
-                        description:
-                            "A timber-framed inn, its thatched roof sloping gently over leaded windows. Lantern light flickers within, casting shadows on worn wooden tables and tapestried walls. The scent of ale mingles with hearth smoke, welcoming weary travelers to rest amidst rustic charm.",
-                    },
+                    tile: tileAtGeohash(player.geohash, biome), // TODO: inclue POI when generating tile
                     players: players as Player[],
                 };
             }),
+        // cmd.move
+        move: authProcedure.input(MoveSchema).query(async ({ ctx, input }) => {
+            const { direction } = input;
+
+            // Get player
+            const player = await getPlayer(ctx.user.publicKey);
+
+            // Check if next geohash is travasable
+            const nextGeohash = geohashNeighbour(player.geohash, direction);
+            const biome = biomeAtGeohash(nextGeohash);
+            const traversable = biomes[biome]?.metadata?.traversable;
+
+            if (traversable) {
+                // Update player geohash
+                player.geohash = nextGeohash;
+                await playerRepository.save(player.player, player);
+                return nextGeohash;
+            }
+
+            return player.geohash;
+        }),
     }),
     // Authentication
     auth: t.router({
@@ -249,7 +257,7 @@ const crossoverRouter = {
                     (await getLoadedPlayerEntity(ctx.user.publicKey)) ||
                     (await loadPlayerEntity(ctx.user.publicKey));
 
-                // Init player (tile, etc...)
+                // Init player
                 player.loggedIn = true;
                 player = await initPlayerEntity(
                     { player, geohash, region },
@@ -274,13 +282,8 @@ const crossoverRouter = {
         // auth.logout
         logout: authProcedure.query(async ({ ctx }) => {
             // Get player
-            let player = await getLoadedPlayerEntity(ctx.user.publicKey);
-            if (player == null) {
-                throw new TRPCError({
-                    code: "BAD_REQUEST",
-                    message: `Player ${ctx.user.publicKey} not loaded`,
-                });
-            }
+            const player = await getPlayer(ctx.user.publicKey);
+
             // Set `loggedIn=false` & save player state
             player.loggedIn = false;
             await playerRepository.save(player.player, player);
@@ -314,3 +317,15 @@ const crossoverRouter = {
         }),
     }),
 };
+
+async function getPlayer(publicKey: string): Promise<PlayerEntity> {
+    // Get player
+    const player = await getLoadedPlayerEntity(publicKey);
+    if (player == null) {
+        throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Player ${publicKey} not found`,
+        });
+    }
+    return player;
+}

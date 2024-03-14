@@ -9,7 +9,7 @@ export { abyssTile, biomes, loadResources, type Resources };
 
 const abyssTile: z.infer<typeof TileSchema> = {
     name: "The Abyss",
-    tile: "59ke577h",
+    geohash: "59ke577h",
     description: "You are nowhere to be found.",
 };
 
@@ -19,6 +19,7 @@ interface ResourceEntry {
     image?: HTMLImageElement;
     isLoaded?: boolean;
     bbox?: [number, number, number, number];
+    metadata?: Record<string, boolean | number | string>;
 }
 
 type Resource = Record<string, ResourceEntry>;
@@ -28,25 +29,32 @@ interface Resources {
     avatars: Resource;
 }
 
+// Metadata for biomes
 let biomes: Resource = {
-    desert: { name: "desert", src: "" },
+    desert: { name: "desert", src: "", metadata: { traversable: true } },
     forest: {
         name: "forest",
         src: tree,
         bbox: [0, 0, 200, 200],
+        metadata: { traversable: true },
     },
-    grassland: { name: "grassland", src: "" },
-    hills: { name: "hills", src: "" },
-    mountains: { name: "mountains", src: "" },
-    plains: { name: "plains", src: "" },
-    swamp: { name: "swamp", src: "" },
-    tundra: { name: "tundra", src: "" },
+    grassland: { name: "grassland", src: "", metadata: { traversable: true } },
+    hills: {
+        name: "hills",
+        src: "",
+        metadata: { traversable: true, speed: 0.5 },
+    },
+    mountains: { name: "mountains", src: "", metadata: { traversable: false } },
+    plains: { name: "plains", src: "", metadata: { traversable: true } },
+    swamp: { name: "swamp", src: "", metadata: { traversable: 0.7 } },
+    tundra: { name: "tundra", src: "", metadata: { traversable: true } },
     water: {
         name: "water",
         src: water,
         bbox: [0, 0, 64, 64],
+        metadata: { traversable: false },
     },
-    wetlands: { name: "wetlands", src: "" },
+    wetlands: { name: "wetlands", src: "", metadata: { traversable: 9 } },
 };
 
 let avatars: Resource = {

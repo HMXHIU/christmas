@@ -87,7 +87,7 @@ test("Test Auth", async () => {
             player: user.publicKey.toBase58(),
             name: name,
             loggedIn: true,
-            tile: geohash, // tile should be initialized to geohash the first time
+            geohash, // initialized to geohash the first time
         },
     });
 
@@ -100,7 +100,7 @@ test("Test Auth", async () => {
         }),
     ).resolves.toMatchObject({
         loggedIn: true,
-        tile: geohash,
+        geohash,
     });
 
     // Logout Crossover
@@ -110,7 +110,7 @@ test("Test Auth", async () => {
             player: user.publicKey.toBase58(),
             name: name,
             loggedIn: false,
-            tile: geohash, // tile should be initialized to geohash the first time
+            geohash, // initialized to geohash the first time
         },
     });
 
@@ -123,6 +123,6 @@ test("Test Auth", async () => {
         }),
     ).resolves.toMatchObject({
         loggedIn: false,
-        tile: geohash,
+        geohash,
     });
 });

@@ -13,8 +13,18 @@ import { player } from "../../store";
 
 import type { Player } from "$lib/server/crossover/redis/entities";
 import type { StreamEvent } from "../../routes/api/crossover/stream/+server";
+import type { Direction } from "./world";
 
-export { commandLook, commandSay, getPlayer, login, logout, signup, stream };
+export {
+    commandLook,
+    commandMove,
+    commandSay,
+    getPlayer,
+    login,
+    logout,
+    signup,
+    stream,
+};
 
 async function getPlayer(
     headers: HTTPHeaders = {},
@@ -165,4 +175,12 @@ function commandLook(
 ): Promise<{ players: Player[]; tile: z.infer<typeof TileSchema> }> {
     const { target } = input;
     return trpc({ headers }).crossover.cmd.look.query({ target });
+}
+
+function commandMove(
+    input: { direction: Direction },
+    headers: HTTPHeaders = {},
+): Promise<string> {
+    const { direction } = input;
+    return trpc({ headers }).crossover.cmd.move.query({ direction });
 }

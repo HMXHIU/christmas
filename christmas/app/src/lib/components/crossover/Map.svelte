@@ -1,8 +1,8 @@
 <script lang="ts">
     import {
-        biomesAtTile,
-        getCellFromTile,
-        updateBiomesGrid,
+        biomesAtGeohash,
+        geohashToCell,
+        updateGrid,
         type Grid,
     } from "$lib/crossover/world";
     import {
@@ -27,20 +27,20 @@
     let resources: Resources;
 
     // TODO: optimize updating the grid + load more data as player moves
-    let biomesGrid: Grid = {};
-    const parentTile = tile.tile.slice(0, tile.tile.length - 1);
-    const neighbourTiles = ngeohash.neighbors(parentTile);
+    let grid: Grid = {};
+    const parentGeohash = tile.geohash.slice(0, tile.geohash.length - 1);
+    const neighbourTiles = ngeohash.neighbors(parentGeohash);
 
     // TODO: this should load everything even POI at different zoom levels
-    biomesGrid = updateBiomesGrid(biomesGrid, biomesAtTile(parentTile));
+    grid = updateGrid(grid, biomesAtGeohash(parentGeohash));
     for (const t of neighbourTiles) {
-        biomesGrid = updateBiomesGrid(biomesGrid, biomesAtTile(t));
+        grid = updateGrid(grid, biomesAtGeohash(t));
     }
 
     $: draw(tile);
 
     function draw(tile: z.infer<typeof TileSchema>) {
-        const cell = getCellFromTile(tile.tile);
+        const cell = geohashToCell(tile.geohash);
 
         if (ctx && resources) {
             const { width, height } = canvas;
@@ -54,10 +54,11 @@
             for (let row = 0; row < GRID_ROWS; row++) {
                 for (let col = 0; col < GRID_COLS; col++) {
                     const biome =
-                        biomesGrid?.[cell.precision]?.[
+                        grid?.[cell.precision]?.[
                             cell.row - GRID_MID_ROW + row
-                        ]?.[cell.col - GRID_MID_COL + col];
-                    const resource = resources.biomes?.[biome];
+                        ]?.[cell.col - GRID_MID_COL + col]?.biome;
+
+                    const resource = resources.biomes?.[biome!];
                     if (resource?.image && resource.isLoaded && resource.bbox) {
                         ctx.drawImage(
                             resource.image,

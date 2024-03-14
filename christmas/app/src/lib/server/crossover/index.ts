@@ -12,7 +12,6 @@ import {
     type UserMetadataSchema,
 } from "./router";
 
-// Exports
 export {
     connectedUsers,
     getLoadedPlayerEntity,
@@ -20,7 +19,7 @@ export {
     getUserMetadata,
     initPlayerEntity,
     loadPlayerEntity,
-    playersInTileQuerySet,
+    playersInGeohashQuerySet,
     savePlayerEntityState,
     type ConnectedUser,
 };
@@ -138,9 +137,9 @@ async function initPlayerEntity(
 ): Promise<PlayerEntity> {
     let changed = false;
 
-    // Initialize tile
-    if (!player.tile) {
-        player.tile = geohash;
+    // Initialize geohash
+    if (!player.geohash) {
+        player.geohash = geohash;
         changed = true;
     }
 
@@ -162,11 +161,11 @@ async function savePlayerEntityState(publicKey: string): Promise<string> {
     );
 }
 
-function playersInTileQuerySet(tile: string): AbstractSearch {
+function playersInGeohashQuerySet(geohash: string): AbstractSearch {
     return playerRepository
         .search()
         .where("loggedIn")
         .equal(true)
-        .and("tile")
-        .equal(tile).return;
+        .and("geohash")
+        .equal(geohash).return;
 }

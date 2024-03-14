@@ -9,7 +9,7 @@ const PlayerEntitySchema = new Schema("Player", {
     name: { type: "string" },
     description: { type: "string" },
     // Player state
-    tile: { type: "string" },
+    geohash: { type: "string" },
     loggedIn: { type: "boolean" },
 });
 
@@ -19,7 +19,7 @@ interface Player {
     name: string;
     description: string;
     // Player state
-    tile: string;
+    geohash: string;
     loggedIn: boolean;
 }
 

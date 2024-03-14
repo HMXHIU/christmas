@@ -1,13 +1,16 @@
+import type { TileSchema } from "$lib/server/crossover/router";
 import ngeohash from "ngeohash";
+import type { z } from "zod";
 import { biomes } from "./resources";
 
 export {
-    biomeAtTile,
-    biomes,
-    biomesAtTile,
-    getCellFromTile,
-    moveToTileInDirection,
-    updateBiomesGrid,
+    biomeAtGeohash,
+    biomesAtGeohash,
+    directionToVector,
+    geohashNeighbour,
+    geohashToCell,
+    tileAtGeohash,
+    updateGrid,
     worldSeed,
     type Direction,
     type Grid,
@@ -17,7 +20,10 @@ export {
 type Direction = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw" | "u" | "d";
 
 // eg. grid[precision][row][col]: "forest"
-type Grid = Record<number, Record<number, Record<number, string>>>;
+interface GridEntry {
+    biome?: string;
+}
+type Grid = Record<number, Record<number, Record<number, GridEntry>>>;
 
 interface WorldSeed {
     name: string;
@@ -148,15 +154,64 @@ function seededRandom(seed: number): number {
     return x - Math.floor(x);
 }
 
-function biomeAtTile(tile: string, seed?: WorldSeed): string {
+function tileAtGeohash(
+    geohash: string,
+    biome: string,
+): z.infer<typeof TileSchema> {
+    let description = "";
+
+    switch (biome) {
+        case "forest":
+            description =
+                "A dense collection of trees and vegetation, home to a variety of wildlife.";
+            break;
+        case "desert":
+            description =
+                "A dry, arid region with extreme temperatures, sparse vegetation, and limited wildlife.";
+            break;
+        case "tundra":
+            description =
+                "A cold, treeless area with a frozen subsoil, limited vegetation, and adapted wildlife.";
+            break;
+        case "grassland":
+            description =
+                "A region dominated by grasses, with few trees and a diverse range of wildlife.";
+            break;
+        case "wetland":
+            description =
+                "An area saturated with water, supporting aquatic plants and a rich biodiversity.";
+            break;
+        case "mountain":
+            description =
+                "A high elevation region with steep terrain, diverse ecosystems, and unique wildlife.";
+            break;
+        default:
+            description = "Unknown biome";
+            break;
+    }
+    return {
+        geohash,
+        name: geohash, // TODO: get name from POI
+        description: description,
+    };
+}
+
+/**
+ * Determines the biome name at the given geohash based on probabilities configured in the world seed.
+ *
+ * @param geohash - The geohash coordinate string
+ * @param seed - Optional world seed to use. Defaults to globally set seed.
+ * @returns The name of the biome determined for that geohash.
+ */
+function biomeAtGeohash(geohash: string, seed?: WorldSeed): string {
     seed = seed || worldSeed;
-    const continent = tile.charAt(0);
+    const continent = geohash.charAt(0);
     const probBio = seed.seeds.continent[continent].bio;
     const probWater = seed.seeds.continent[continent].water;
     const totalProb = probBio + probWater;
 
-    // Use the tile as the random seed (must be reproducible)
-    const rv = seededRandom(stringToRandomNumber(tile)) * totalProb;
+    // Use the geohash as the random seed (must be reproducible)
+    const rv = seededRandom(stringToRandomNumber(geohash)) * totalProb;
 
     // Select biome
     if (rv < probBio) {
@@ -168,30 +223,53 @@ function biomeAtTile(tile: string, seed?: WorldSeed): string {
     return biomes.plains.name;
 }
 
-function biomesAtTile(tile: string, seed?: WorldSeed): Record<string, string> {
+/**
+ * Generates biomes for all geohash at one precision higher than the provided geohash,
+ * using the biomeAtGeohash() function.
+ *
+ * @param geohash - The geohash geohash to generate biomes for.
+ * @param seed - Optional world seed.
+ * @returns A record of geohashd to biomes generated with biomeAtGeohash().
+ */
+function biomesAtGeohash(
+    geohash: string,
+    seed?: WorldSeed,
+): Record<string, string> {
     seed = seed || worldSeed;
 
-    const [minlat, minlon, maxlat, maxlon] = ngeohash.decode_bbox(tile);
-    // Get all the geohashes 1 precision level above the tile
+    const [minlat, minlon, maxlat, maxlon] = ngeohash.decode_bbox(geohash);
+
+    // Get all the geohashes 1 precision higher than the geohash
     const geohashes = ngeohash.bboxes(
         minlat,
         minlon,
         maxlat,
         maxlon,
-        tile.length + 1,
+        geohash.length + 1,
     );
 
-    return geohashes.reduce((obj: any, tile) => {
-        obj[tile] = biomeAtTile(tile, seed);
+    return geohashes.reduce((obj: any, geohash) => {
+        obj[geohash] = biomeAtGeohash(geohash, seed);
         return obj;
     }, {});
 }
 
-function updateBiomesGrid(grid: Grid, biomes: Record<string, string>) {
-    for (const [tile, biome] of Object.entries(biomes)) {
-        const precision = tile.length;
+/**
+ * Updates the provided grid with biomes from the biomes record.
+ * Iterates through the biomes record entries, gets the latitude/longitude for each geohash,
+ * calculates the row/col in the grid based on the geohash precision, and sets the biome value.
+ * Initializes grid cells if they don't already exist.
+ *
+ * @param grid - The grid to update with biomes.
+ * @param biomes - Record of geohash strings to biome names.
+ * @returns The updated grid.
+ */
+function updateGrid(grid: Grid, biomes: Record<string, string>) {
+    // Update grid with biomes
+    for (const [geohash, biome] of Object.entries(biomes)) {
+        const precision = geohash.length;
         // latitude (-90 at south, 90 at north) and longitude (-180 at west, 180 at east)
-        const { latitude, longitude } = ngeohash.decode(tile);
+        const { latitude, longitude } = ngeohash.decode(geohash);
         // -latitude because we want top left to be (0, 0)
         const row = Math.floor(
             ((-latitude + 90) / 180) * gridSizeAtPrecision[precision].rows,
@@ -200,26 +278,33 @@ function updateBiomesGrid(grid: Grid, biomes: Record<string, string>) {
             ((longitude + 180) / 360) * gridSizeAtPrecision[precision].cols,
         );
 
-        // Initialize grid cell if not present
-        if (!grid[precision]) {
-            grid[precision] = {};
-        }
-        if (!grid[precision][row]) {
-            grid[precision][row] = {};
-        }
+        // Initialize row/col if they don't exist yet.
+        grid[precision] ??= {};
+        grid[precision][row] ??= {};
+        grid[precision][row][col] ??= {};
 
-        grid[precision][row][col] = biome;
+        // Update biome
+        grid[precision][row][col].biome = biome;
     }
+
+    // TODO: Update grid with POIs
+
     return grid;
 }
 
-function getCellFromTile(tile: string): {
+/**
+ * Gets the grid cell coordinates for a given geohash.
+ *
+ * @param geohash - The geohash string.
+ * @returns An object with the precision, row and column for the geohash in the grid.
+ */
+function geohashToCell(geohash: string): {
     precision: number;
     row: number;
     col: number;
 } {
-    const precision = tile.length;
-    const { latitude, longitude } = ngeohash.decode(tile);
+    const precision = geohash.length;
+    const { latitude, longitude } = ngeohash.decode(geohash);
 
     // -latitude because we want top left to be (0, 0)
     const row = Math.floor(
@@ -232,23 +317,34 @@ function getCellFromTile(tile: string): {
     return { precision, row, col };
 }
 
-function moveToTileInDirection(tile: string, direction: Direction): string {
+/**
+ * Gets the geohash neighbor in the given direction.
+ *
+ * @param geohash - The current geohash.
+ * @param direction - The direction to get the neighbor geohash.
+ * @returns The neighbor geohash in the given direction.
+ */
+function geohashNeighbour(geohash: string, direction: Direction): string {
+    return ngeohash.neighbor(geohash, directionToVector(direction));
+}
+
+function directionToVector(direction: Direction): [number, number] {
     if (direction === "n") {
-        return ngeohash.neighbor(tile, [1, 0]);
+        return [1, 0];
     } else if (direction === "s") {
-        return ngeohash.neighbor(tile, [-1, 0]);
+        return [-1, 0];
     } else if (direction === "e") {
-        return ngeohash.neighbor(tile, [0, 1]);
+        return [0, 1];
     } else if (direction === "w") {
-        return ngeohash.neighbor(tile, [0, -1]);
+        return [0, -1];
     } else if (direction === "ne") {
-        return ngeohash.neighbor(tile, [1, 1]);
+        return [1, 1];
     } else if (direction === "nw") {
-        return ngeohash.neighbor(tile, [1, -1]);
+        return [1, -1];
     } else if (direction === "se") {
-        return ngeohash.neighbor(tile, [-1, 1]);
+        return [-1, 1];
     } else if (direction === "sw") {
-        return ngeohash.neighbor(tile, [-1, -1]);
+        return [-1, -1];
     }
-    return tile;
+    throw new Error(`Invalid direction: ${direction}`);
 }

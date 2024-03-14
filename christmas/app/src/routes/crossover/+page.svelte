@@ -1,17 +1,19 @@
 <script lang="ts">
     import GameWindow from "$lib/components/crossover/GameWindow.svelte";
     import Onboard from "$lib/components/crossover/Onboard.svelte";
-    import { commandLook, commandSay, stream } from "$lib/crossover";
+    import {
+        commandLook,
+        commandMove,
+        commandSay,
+        stream,
+    } from "$lib/crossover";
 
     import type {
         ChatCommandUI,
         MessageFeedUI,
     } from "$lib/components/common/types";
 
-    import {
-        moveToTileInDirection,
-        type Direction,
-    } from "$lib/crossover/world";
+    import { type Direction } from "$lib/crossover/world";
     import { abyssTile } from "$lib/crossover/world/resources";
     import type { Player } from "$lib/server/crossover/redis/entities";
     import type { TileSchema } from "$lib/server/crossover/router";
@@ -24,7 +26,6 @@
     let messageFeed: MessageFeedUI[] = [];
     let eventStream: EventTarget | null = null;
     let closeStream: (() => void) | null = null;
-
     let tile: z.infer<typeof TileSchema> = abyssTile;
     let players: Player[] = [];
 
@@ -38,10 +39,7 @@
                 break;
 
             case "look":
-                const lookResult = await commandLook({});
-                players = lookResult.players;
-                tile = lookResult.tile;
-                console.log(JSON.stringify(players, null, 2));
+                await look();
                 break;
 
             default:
@@ -51,9 +49,11 @@
     }
 
     async function onMove(direction: Direction) {
-        console.log("Move", direction);
         // Calculate new tile (TODO: get other metadata like description, etc.)
-        tile.tile = moveToTileInDirection(tile.tile, direction);
+        const nextTile = await commandMove({ direction });
+
+        // tile.geohash = geohashNeighbour(tile.geohash, direction);
+        tile.geohash = nextTile;
         tile = tile;
     }
 
@@ -101,12 +101,21 @@
         }
     }
 
+    async function look() {
+        const lookResult = await commandLook({});
+        players = lookResult.players;
+        tile = lookResult.tile;
+    }
+
     onMount(() => {
         // Start streaming crossover server events on login
         const unsubscribe = player.subscribe(async (p) => {
             if (p != null) {
                 stopStream();
                 await startStream();
+
+                // Look at surroundings
+                await look();
             } else {
                 stopStream();
             }

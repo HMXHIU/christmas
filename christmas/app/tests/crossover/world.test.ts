@@ -1,8 +1,8 @@
 import {
-    biomeAtTile,
-    biomesAtTile,
-    getCellFromTile,
-    updateBiomesGrid,
+    biomeAtGeohash,
+    biomesAtGeohash,
+    geohashToCell,
+    updateGrid,
     type WorldSeed,
 } from "$lib/crossover/world";
 import { expect } from "chai";
@@ -70,12 +70,12 @@ const worldSeed: WorldSeed = {
 };
 
 test("Test World", async () => {
-    // Test biomeAtTile
-    expect(biomeAtTile("w21z3m6k", worldSeed)).to.equal("forest");
-    expect(biomeAtTile("w61z4m6h", worldSeed)).to.equal("water");
+    // Test biomeAtGeohash
+    expect(biomeAtGeohash("w21z3m6k", worldSeed)).to.equal("forest");
+    expect(biomeAtGeohash("w61z4m6h", worldSeed)).to.equal("water");
 
-    // Test biomesAtTile - 7 digits of precision returns tiles with 8 digits of precision
-    expect(biomesAtTile("w61z4m6", worldSeed)).to.deep.equal({
+    // Test biomesAtGeohash - 7 digits of precision returns tiles with 8 digits of precision
+    expect(biomesAtGeohash("w61z4m6", worldSeed)).to.deep.equal({
         w61z4m1z: "forest",
         w61z4m4p: "forest",
         w61z4m4r: "forest",
@@ -123,81 +123,172 @@ test("Test World", async () => {
         w61z4m6z: "forest",
     });
 
-    // Test updateBiomesGrid
+    // Test updateGrid
     let grid = {};
-    grid = updateBiomesGrid(grid, biomesAtTile("w61z4m6", worldSeed));
+    grid = updateGrid(grid, biomesAtGeohash("w61z4m6", worldSeed));
+
     expect(grid).to.deep.equal({
         "8": {
-            "597159": {
-                "826663": "forest",
-                "826664": "forest",
-                "826665": "forest",
-                "826666": "forest",
-                "826667": "forest",
+            "451408": {
+                "826663": {
+                    biome: "forest",
+                },
+                "826664": {
+                    biome: "forest",
+                },
+                "826665": {
+                    biome: "forest",
+                },
+                "826666": {
+                    biome: "forest",
+                },
+                "826667": {
+                    biome: "forest",
+                },
             },
-            "597160": {
-                "826663": "forest",
-                "826664": "forest",
-                "826665": "forest",
-                "826666": "forest",
-                "826667": "forest",
+            "451409": {
+                "826663": {
+                    biome: "forest",
+                },
+                "826664": {
+                    biome: "water",
+                },
+                "826665": {
+                    biome: "forest",
+                },
+                "826666": {
+                    biome: "forest",
+                },
+                "826667": {
+                    biome: "forest",
+                },
             },
-            "597161": {
-                "826663": "forest",
-                "826664": "forest",
-                "826665": "forest",
-                "826666": "forest",
-                "826667": "forest",
+            "451410": {
+                "826663": {
+                    biome: "forest",
+                },
+                "826664": {
+                    biome: "water",
+                },
+                "826665": {
+                    biome: "forest",
+                },
+                "826666": {
+                    biome: "forest",
+                },
+                "826667": {
+                    biome: "water",
+                },
             },
-            "597162": {
-                "826663": "forest",
-                "826664": "forest",
-                "826665": "water",
-                "826666": "forest",
-                "826667": "forest",
+            "451411": {
+                "826663": {
+                    biome: "forest",
+                },
+                "826664": {
+                    biome: "water",
+                },
+                "826665": {
+                    biome: "forest",
+                },
+                "826666": {
+                    biome: "forest",
+                },
+                "826667": {
+                    biome: "forest",
+                },
             },
-            "597163": {
-                "826663": "forest",
-                "826664": "forest",
-                "826665": "forest",
-                "826666": "water",
-                "826667": "forest",
+            "451412": {
+                "826663": {
+                    biome: "forest",
+                },
+                "826664": {
+                    biome: "forest",
+                },
+                "826665": {
+                    biome: "forest",
+                },
+                "826666": {
+                    biome: "water",
+                },
+                "826667": {
+                    biome: "forest",
+                },
             },
-            "597164": {
-                "826663": "forest",
-                "826664": "water",
-                "826665": "forest",
-                "826666": "forest",
-                "826667": "forest",
+            "451413": {
+                "826663": {
+                    biome: "forest",
+                },
+                "826664": {
+                    biome: "forest",
+                },
+                "826665": {
+                    biome: "water",
+                },
+                "826666": {
+                    biome: "forest",
+                },
+                "826667": {
+                    biome: "forest",
+                },
             },
-            "597165": {
-                "826663": "forest",
-                "826664": "water",
-                "826665": "forest",
-                "826666": "forest",
-                "826667": "water",
+            "451414": {
+                "826663": {
+                    biome: "forest",
+                },
+                "826664": {
+                    biome: "forest",
+                },
+                "826665": {
+                    biome: "forest",
+                },
+                "826666": {
+                    biome: "forest",
+                },
+                "826667": {
+                    biome: "forest",
+                },
             },
-            "597166": {
-                "826663": "forest",
-                "826664": "water",
-                "826665": "forest",
-                "826666": "forest",
-                "826667": "forest",
+            "451415": {
+                "826663": {
+                    biome: "forest",
+                },
+                "826664": {
+                    biome: "forest",
+                },
+                "826665": {
+                    biome: "forest",
+                },
+                "826666": {
+                    biome: "forest",
+                },
+                "826667": {
+                    biome: "forest",
+                },
             },
-            "597167": {
-                "826663": "forest",
-                "826664": "forest",
-                "826665": "forest",
-                "826666": "forest",
-                "826667": "forest",
+            "451416": {
+                "826663": {
+                    biome: "forest",
+                },
+                "826664": {
+                    biome: "forest",
+                },
+                "826665": {
+                    biome: "forest",
+                },
+                "826666": {
+                    biome: "forest",
+                },
+                "826667": {
+                    biome: "forest",
+                },
             },
         },
     });
 
     // Test cells in grid
-    expect(getCellFromTile("w61z4m6f")).to.deep.equal({
+    expect(geohashToCell("w61z4m6f")).to.deep.equal({
         precision: 8,
-        row: 597162,
+        row: 451413,
         col: 826667,
     });
 });

@@ -1,5 +1,6 @@
-import { commandLook, commandSay, stream } from "$lib/crossover";
+import { commandLook, commandMove, commandSay, stream } from "$lib/crossover";
 import { groupBy } from "lodash";
+import ngeohash from "ngeohash";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer, waitForEventData } from "./utils";
@@ -99,10 +100,18 @@ test("Test Player", async () => {
     // Look - no target (tile)
     let lookAtResult = await commandLook({}, { Cookie: playerOneCookies });
     expect(lookAtResult.tile).toMatchObject({
-        tile: playerOneGeohash,
+        geohash: playerOneGeohash,
     });
     expect(groupBy(lookAtResult.players, "player")).contains.keys([
         playerOneWallet.publicKey.toBase58(),
         playerThreeWallet.publicKey.toBase58(),
     ]);
+
+    // Move
+    const nextTile = await commandMove(
+        { direction: "n" },
+        { Cookie: playerOneCookies },
+    );
+    const northTile = ngeohash.neighbor(playerOneGeohash, [1, 0]);
+    expect(nextTile).toEqual(northTile);
 });
