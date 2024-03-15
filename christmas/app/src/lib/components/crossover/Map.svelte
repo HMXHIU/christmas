@@ -1,19 +1,14 @@
 <script lang="ts">
-    import {
-        biomesAtGeohash,
-        geohashToCell,
-        updateGrid,
-        type Grid,
-    } from "$lib/crossover/world";
+    import { geohashToCell } from "$lib/crossover/world";
     import {
         abyssTile,
         loadResources,
         type Resources,
     } from "$lib/crossover/world/resources";
     import type { TileSchema } from "$lib/server/crossover/router";
-    import ngeohash from "ngeohash";
     import { onMount } from "svelte";
     import type { z } from "zod";
+    import { grid } from "../../../store";
 
     const GRID_ROWS = 9;
     const GRID_COLS = 9;
@@ -26,16 +21,16 @@
     let ctx: CanvasRenderingContext2D;
     let resources: Resources;
 
-    // TODO: optimize updating the grid + load more data as player moves
-    let grid: Grid = {};
-    const parentGeohash = tile.geohash.slice(0, tile.geohash.length - 1);
-    const neighbourTiles = ngeohash.neighbors(parentGeohash);
+    // // TODO: optimize updating the grid + load more data as player moves
+    // let grid: Grid = {};
+    // const parentGeohash = tile.geohash.slice(0, -1);
+    // const neighbourTiles = ngeohash.neighbors(parentGeohash);
 
-    // TODO: this should load everything even POI at different zoom levels
-    grid = updateGrid(grid, biomesAtGeohash(parentGeohash));
-    for (const t of neighbourTiles) {
-        grid = updateGrid(grid, biomesAtGeohash(t));
-    }
+    // // TODO: this should load everything even POI at different zoom levels
+    // grid = updateGrid(grid, biomesAtGeohash(parentGeohash));
+    // for (const t of neighbourTiles) {
+    //     grid = updateGrid(grid, biomesAtGeohash(t));
+    // }
 
     $: draw(tile);
 
@@ -54,7 +49,7 @@
             for (let row = 0; row < GRID_ROWS; row++) {
                 for (let col = 0; col < GRID_COLS; col++) {
                     const biome =
-                        grid?.[cell.precision]?.[
+                        $grid?.[cell.precision]?.[
                             cell.row - GRID_MID_ROW + row
                         ]?.[cell.col - GRID_MID_COL + col]?.biome;
 

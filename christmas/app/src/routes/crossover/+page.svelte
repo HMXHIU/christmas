@@ -13,14 +13,14 @@
         MessageFeedUI,
     } from "$lib/components/common/types";
 
-    import { type Direction } from "$lib/crossover/world";
+    import { loadMoreGrid, type Direction } from "$lib/crossover/world";
     import { abyssTile } from "$lib/crossover/world/resources";
     import type { Player } from "$lib/server/crossover/redis/entities";
     import type { TileSchema } from "$lib/server/crossover/router";
     import { substituteVariables } from "$lib/utils";
     import { onMount } from "svelte";
     import type { z } from "zod";
-    import { player } from "../../store";
+    import { grid, player } from "../../store";
     import type { MessageEventData } from "../api/crossover/stream/+server";
 
     let messageFeed: MessageFeedUI[] = [];
@@ -50,11 +50,17 @@
 
     async function onMove(direction: Direction) {
         // Calculate new tile (TODO: get other metadata like description, etc.)
-        const nextTile = await commandMove({ direction });
+        const nextGeohash = await commandMove({ direction });
 
-        // tile.geohash = geohashNeighbour(tile.geohash, direction);
-        tile.geohash = nextTile;
-        tile = tile;
+        // Load more grid data if parent geohash changes
+        if (nextGeohash.slice(0, -1) !== tile.geohash.slice(0, -1)) {
+            grid.set(await loadMoreGrid(nextGeohash, $grid));
+        }
+
+        if (nextGeohash !== tile.geohash) {
+            tile.geohash = nextGeohash;
+            tile = tile;
+        }
     }
 
     function getCurrentTimestamp(): string {
@@ -113,6 +119,9 @@
             if (p != null) {
                 stopStream();
                 await startStream();
+
+                // Load grid
+                grid.set(await loadMoreGrid(p.geohash, $grid));
 
                 // Look at surroundings
                 await look();

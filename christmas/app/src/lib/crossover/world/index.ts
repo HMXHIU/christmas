@@ -9,6 +9,7 @@ export {
     directionToVector,
     geohashNeighbour,
     geohashToCell,
+    loadMoreGrid,
     tileAtGeohash,
     updateGrid,
     worldSeed,
@@ -202,6 +203,9 @@ function tileAtGeohash(
  * @param geohash - The geohash coordinate string
  * @param seed - Optional world seed to use. Defaults to globally set seed.
  * @returns The name of the biome determined for that geohash.
+ *
+ * TODO: Add caching to avoid redundant calls to biomeAtGeohash().
+ *
  */
 function biomeAtGeohash(geohash: string, seed?: WorldSeed): string {
     seed = seed || worldSeed;
@@ -226,6 +230,8 @@ function biomeAtGeohash(geohash: string, seed?: WorldSeed): string {
 /**
  * Generates biomes for all geohash at one precision higher than the provided geohash,
  * using the biomeAtGeohash() function.
+ *
+ * TODO: Add caching to avoid redundant calls to biomeAtGeohash().
  *
  * @param geohash - The geohash geohash to generate biomes for.
  * @param seed - Optional world seed.
@@ -347,4 +353,25 @@ function directionToVector(direction: Direction): [number, number] {
         return [-1, -1];
     }
     throw new Error(`Invalid direction: ${direction}`);
+}
+
+/**
+ * Loads more grid data based on the given geohash and grid.
+ * @param geohash - The current geohash to load more grid data for.
+ * @param grid - The current grid data.
+ * @returns The updated grid data.
+ */
+function loadMoreGrid(geohash: string, grid: Grid): Grid {
+    const parentGeohash = geohash.slice(0, -1);
+    const biomes = biomesAtGeohash(parentGeohash);
+    grid = updateGrid(grid, biomes);
+
+    // Get neighbor geohashes of parent
+    ngeohash.neighbors(parentGeohash).forEach((neighborGeohash) => {
+        // Update grid with biomes if not previously loaded
+        const biomes = biomesAtGeohash(neighborGeohash);
+        grid = updateGrid(grid, biomes);
+    });
+
+    return grid;
 }

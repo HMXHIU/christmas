@@ -51,6 +51,8 @@
             }
         });
 
+        console.log("ON MOUNT RESETTING UserDeviceClient");
+
         // Set userDeviceClient (Note: after subscribe)
         const client = new UserDeviceClient();
         await client.initialize();
