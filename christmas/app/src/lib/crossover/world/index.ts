@@ -334,27 +334,6 @@ function geohashNeighbour(geohash: string, direction: Direction): string {
     return ngeohash.neighbor(geohash, directionToVector(direction));
 }
 
-function directionToVector(direction: Direction): [number, number] {
-    if (direction === "n") {
-        return [1, 0];
-    } else if (direction === "s") {
-        return [-1, 0];
-    } else if (direction === "e") {
-        return [0, 1];
-    } else if (direction === "w") {
-        return [0, -1];
-    } else if (direction === "ne") {
-        return [1, 1];
-    } else if (direction === "nw") {
-        return [1, -1];
-    } else if (direction === "se") {
-        return [-1, 1];
-    } else if (direction === "sw") {
-        return [-1, -1];
-    }
-    throw new Error(`Invalid direction: ${direction}`);
-}
-
 /**
  * Loads more grid data based on the given geohash and grid.
  * @param geohash - The current geohash to load more grid data for.
@@ -374,4 +353,25 @@ function loadMoreGrid(geohash: string, grid: Grid): Grid {
     });
 
     return grid;
+}
+
+function directionToVector(direction: Direction): [number, number] {
+    if (direction === "n") {
+        return [1, 0];
+    } else if (direction === "s") {
+        return [-1, 0];
+    } else if (direction === "e") {
+        return [0, 1];
+    } else if (direction === "w") {
+        return [0, -1];
+    } else if (direction === "ne") {
+        return [1, 1];
+    } else if (direction === "nw") {
+        return [1, -1];
+    } else if (direction === "se") {
+        return [-1, 1];
+    } else if (direction === "sw") {
+        return [-1, -1];
+    }
+    throw new Error(`Invalid direction: ${direction}`);
 }
