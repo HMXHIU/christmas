@@ -1,63 +1,58 @@
 import {
-    Program,
-    type Provider,
     AnchorProvider,
-    utils,
     Wallet as AnchorWallet,
-} from "@coral-xyz/anchor";
-import bs58 from "bs58";
-import BN from "bn.js";
+    Program,
+    utils,
+    type Provider,
+} from "@coral-xyz/anchor/dist/cjs";
+import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import {
-    Transaction,
-    type Signer,
-    TransactionInstruction,
-    PublicKey,
-    Connection,
-    type ParsedAccountData,
-    Keypair,
-    SystemProgram,
-    type SendOptions,
-    type TransactionSignature,
-    type Commitment,
-    type SerializeConfig,
-    VersionedTransaction,
-} from "@solana/web3.js";
-import idl from "../../../../target/idl/christmas.json";
-import { type Christmas } from "../../../../target/types/christmas";
-import {
-    TOKEN_PROGRAM_ID,
     ASSOCIATED_TOKEN_PROGRAM_ID,
+    TOKEN_PROGRAM_ID,
     getAssociatedTokenAddress,
 } from "@solana/spl-token";
 import {
+    Connection,
+    Keypair,
+    PublicKey,
+    SystemProgram,
+    Transaction,
+    TransactionInstruction,
+    VersionedTransaction,
+    type Commitment,
+    type ParsedAccountData,
+    type SendOptions,
+    type SerializeConfig,
+    type Signer,
+    type TransactionSignature,
+} from "@solana/web3.js";
+import BN from "bn.js";
+import bs58 from "bs58";
+import idl from "../../../../target/idl/christmas.json";
+import { type Christmas } from "../../../../target/types/christmas";
+import { timeStampToDate } from "../utils";
+import {
     DISCRIMINATOR_SIZE,
-    PUBKEY_SIZE,
-    U64_SIZE,
-    STORE_NAME_SIZE,
-    REGION_SIZE,
     GEOHASH_SIZE,
-    URI_SIZE,
-    STRING_PREFIX_SIZE,
     OFFSET_TO_GEO,
     OFFSET_TO_STORE,
     PROGRAM_ID,
+    PUBKEY_SIZE,
+    REGION_SIZE,
+    STORE_NAME_SIZE,
+    STRING_PREFIX_SIZE,
+    U64_SIZE,
+    URI_SIZE,
 } from "./defs";
-
 import type {
     Account,
+    Coupon,
+    ProgramState,
+    Store,
     TransactionResult,
     User,
-    Coupon,
-    Store,
-    TokenAccount,
-    ProgramState,
 } from "./types";
-import { timeStampToDate } from "../utils";
-import {
-    getDateWithinRangeFilterCombinations,
-    getMarketCouponsFilterCombinations,
-} from "./utils";
-import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
+import { getMarketCouponsFilterCombinations } from "./utils";
 
 /**
  * Do not instantiate this on the client side, only on the server side.

@@ -1,8 +1,15 @@
 import { Schema, type Entity } from "redis-om";
 
-export { PlayerEntitySchema, type Player, type PlayerEntity };
+export {
+    MonsterEntitySchema,
+    PlayerEntitySchema,
+    type Monster,
+    type MonsterEntity,
+    type Player,
+    type PlayerEntity,
+};
 
-// combines both `PlayerState` and `PlayerMetadata`
+// Combines both `PlayerState` and `PlayerMetadata`
 const PlayerEntitySchema = new Schema("Player", {
     // Player metadata
     player: { type: "string" },
@@ -24,3 +31,25 @@ interface Player {
 }
 
 type PlayerEntity = Player & Entity;
+
+const MonsterEntitySchema = new Schema("Monster", {
+    // Monster metadata
+    monster: { type: "string" },
+    name: { type: "string" },
+    type: { type: "string" },
+    // Monster state
+    geohash: { type: "string" },
+    health: { type: "number" },
+});
+
+interface Monster {
+    // Monster metadata
+    monster: string;
+    name: string;
+    type: string;
+    // Monster state
+    geohash: string;
+    health: number;
+}
+
+type MonsterEntity = Monster & Entity;

@@ -1,6 +1,7 @@
 import {
     biomeAtGeohash,
     biomesAtGeohash,
+    childrenGeohashes,
     geohashToCell,
     updateGrid,
     type WorldSeed,
@@ -291,4 +292,42 @@ test("Test World", async () => {
         row: 451413,
         col: 826667,
     });
+
+    // Test childrenGeohashes
+    expect(childrenGeohashes("w61z4m6").sort()).to.deep.equal(
+        [
+            "w61z4m6p",
+            "w61z4m6r",
+            "w61z4m6x",
+            "w61z4m6z",
+            "w61z4m6n",
+            "w61z4m6q",
+            "w61z4m6w",
+            "w61z4m6y",
+            "w61z4m6j",
+            "w61z4m6m",
+            "w61z4m6t",
+            "w61z4m6v",
+            "w61z4m6h",
+            "w61z4m6k",
+            "w61z4m6s",
+            "w61z4m6u",
+            "w61z4m65",
+            "w61z4m67",
+            "w61z4m6e",
+            "w61z4m6g",
+            "w61z4m64",
+            "w61z4m66",
+            "w61z4m6d",
+            "w61z4m6f",
+            "w61z4m61",
+            "w61z4m63",
+            "w61z4m69",
+            "w61z4m6c",
+            "w61z4m60",
+            "w61z4m62",
+            "w61z4m68",
+            "w61z4m6b",
+        ].sort(),
+    );
 });

@@ -101,7 +101,7 @@ const crossoverRouter = {
                 // Get logged in players in geohash
                 const users = await playersInGeohashQuerySet(
                     player.geohash,
-                ).allIds();
+                ).return.allIds();
 
                 // Create message data
                 const messageData: MessageEventData = {
@@ -130,7 +130,7 @@ const crossoverRouter = {
                 // Get logged in players in geohash
                 const players = (await playersInGeohashQuerySet(
                     player.geohash,
-                ).all({
+                ).return.all({
                     pageSize: LOOK_PAGE_SIZE,
                 })) as PlayerEntity[];
 

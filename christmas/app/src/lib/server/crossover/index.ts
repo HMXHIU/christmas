@@ -1,11 +1,11 @@
 import { serverAnchorClient } from "$lib/server";
 import { parseZodErrors } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
-import type { AbstractSearch } from "redis-om";
+import type { Search } from "redis-om";
 import { z } from "zod";
 import { ObjectStorage } from "../objectStorage";
-import { playerRepository } from "./redis";
-import { type PlayerEntity } from "./redis/entities";
+import { monsterRepository, playerRepository } from "./redis";
+import { type MonsterEntity, type PlayerEntity } from "./redis/entities";
 import {
     PlayerStateSchema,
     type PlayerMetadataSchema,
@@ -19,8 +19,11 @@ export {
     getUserMetadata,
     initPlayerEntity,
     loadPlayerEntity,
+    loggedInPlayersQuerySet,
+    monstersInGeohashQuerySet,
     playersInGeohashQuerySet,
     savePlayerEntityState,
+    spawnMonster,
     type ConnectedUser,
 };
 
@@ -161,11 +164,37 @@ async function savePlayerEntityState(publicKey: string): Promise<string> {
     );
 }
 
-function playersInGeohashQuerySet(geohash: string): AbstractSearch {
-    return playerRepository
-        .search()
-        .where("loggedIn")
-        .equal(true)
-        .and("geohash")
-        .equal(geohash).return;
+function loggedInPlayersQuerySet(): Search {
+    return playerRepository.search().where("loggedIn").equal(true);
+}
+
+function playersInGeohashQuerySet(geohash: string): Search {
+    // TODO: this should include all children geohashes
+    return loggedInPlayersQuerySet().and("geohash").equal(geohash);
+}
+
+function monstersInGeohashQuerySet(geohash: string): Search {
+    return monsterRepository.search().where("geohash").eq(`${geohash}*`);
+}
+
+async function spawnMonster({
+    geohash,
+    type,
+}: {
+    geohash: string;
+    type: string;
+}): Promise<MonsterEntity> {
+    // Get monster count
+    const count = await monsterRepository.search().count();
+    const monster: MonsterEntity = {
+        monster: `${type}${count}`, // Unique monster id
+        name: type,
+        type,
+        geohash,
+        health: 100,
+    };
+    return (await monsterRepository.save(
+        `${type}${count}`,
+        monster,
+    )) as MonsterEntity;
 }

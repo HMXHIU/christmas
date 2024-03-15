@@ -6,17 +6,22 @@ import { biomes } from "./resources";
 export {
     biomeAtGeohash,
     biomesAtGeohash,
+    childrenGeohashes,
     directionToVector,
     geohashNeighbour,
     geohashToCell,
     loadMoreGrid,
+    monsterLimitAtGeohash,
     tileAtGeohash,
+    uninhabitedNeighbouringGeohashes,
     updateGrid,
     worldSeed,
     type Direction,
     type Grid,
     type WorldSeed,
 };
+
+const MAX_MONSTERS_PER_CONTINENT = 1000000000000; // 1000 billion
 
 type Direction = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw" | "u" | "d";
 
@@ -29,6 +34,9 @@ type Grid = Record<number, Record<number, Record<number, GridEntry>>>;
 interface WorldSeed {
     name: string;
     description: string;
+    constants: {
+        maxMonstersPerContinent: number;
+    };
     spatial: {
         continent: {
             precision: number;
@@ -82,6 +90,9 @@ const worldSeed: WorldSeed = {
         unit: {
             precision: 8,
         },
+    },
+    constants: {
+        maxMonstersPerContinent: 10000000000, // 10 billion
     },
     seeds: {
         continent: {
@@ -139,6 +150,12 @@ const gridSizeAtPrecision: Record<number, { rows: number; cols: number }> = {
     },
 };
 
+/**
+ * Converts a string (seed) to a random number.
+ *
+ * @param str - The string to convert.
+ * @returns The random number generated from the string (seed).
+ */
 function stringToRandomNumber(str: string): number {
     var hash = 0;
     if (str.length === 0) return hash;
@@ -150,11 +167,23 @@ function stringToRandomNumber(str: string): number {
     return Math.abs(hash); // Ensure positive number
 }
 
+/**
+ * Generates a seeded random number between 0 and 1.
+ *
+ * @param seed - The seed value used to generate the random number.
+ * @returns A random number between 0 (inclusive) and 1 (exclusive).
+ */
 function seededRandom(seed: number): number {
     var x = Math.sin(seed) * 10000; // how many decimal places
     return x - Math.floor(x);
 }
 
+/**
+ * Retrieves the tile information based on the given geohash and biome.
+ * @param geohash - The geohash representing the location of the tile.
+ * @param biome - The biome of the tile.
+ * @returns The tile information including geohash, name, and description.
+ */
 function tileAtGeohash(
     geohash: string,
     biome: string,
@@ -355,6 +384,12 @@ function loadMoreGrid(geohash: string, grid: Grid): Grid {
     return grid;
 }
 
+/**
+ * Converts a direction to a vector.
+ * @param direction - The direction to convert.
+ * @returns The vector representation of the direction.
+ * @throws {Error} If the direction is invalid.
+ */
 function directionToVector(direction: Direction): [number, number] {
     if (direction === "n") {
         return [1, 0];
@@ -374,4 +409,69 @@ function directionToVector(direction: Direction): [number, number] {
         return [-1, -1];
     }
     throw new Error(`Invalid direction: ${direction}`);
+}
+
+/**
+ * Retrieves the uninhabited neighboring geohashes for the given geohashes.
+ * An uninhabited neighboring geohash is a geohash that is adjacent to the given geohashes
+ * and does not exist in the set of given geohashes.
+ *
+ * @param geohashes - An array of geohashes.
+ * @returns A promise that resolves to an array of uninhabited neighboring geohashes.
+ */
+async function uninhabitedNeighbouringGeohashes(
+    geohashes: string[],
+): Promise<string[]> {
+    // Get all parent geohashes
+    const parentGeohashes = new Set(geohashes);
+
+    // Get all neighboring geohashes where there are no players
+    const neighboringGeohashes = new Set<string>();
+    for (const geohash of parentGeohashes) {
+        for (const neighborGeohash of ngeohash.neighbors(geohash)) {
+            if (!parentGeohashes.has(neighborGeohash)) {
+                neighboringGeohashes.add(neighborGeohash);
+            }
+        }
+    }
+    return Array.from(neighboringGeohashes);
+}
+
+/**
+ * Calculates the monster limit at a given geohash location based on the world seed.
+ *
+ * @param geohash - The geohash location.
+ * @param seed - The world seed (optional). If not provided, the default world seed will be used.
+ * @returns The calculated monster limit at the geohash location.
+ */
+function monsterLimitAtGeohash(geohash: string, seed?: WorldSeed): number {
+    seed = seed || worldSeed;
+    const continent = geohash.charAt(0);
+    const probHostile = seed.seeds.continent[continent].bio;
+
+    // Every precision down divides by 32 the number of monsters
+    const maxMonsters =
+        (seed.constants.maxMonstersPerContinent * probHostile) /
+        32 ** (geohash.length - 1);
+
+    // Use the geohash as the random seed (must be reproducible)
+    const rv = seededRandom(stringToRandomNumber(geohash));
+
+    return Math.ceil(rv * maxMonsters);
+}
+
+function childrenGeohashes(geohash: string): string[] {
+    if (geohash.length < 1) {
+        throw new Error("Geohash must be at least length 1");
+    }
+
+    if (geohash.length % 2 === 0) {
+        return "bcfguvyz89destwx2367kmqr0145hjnp".split("").map((c) => {
+            return geohash + c;
+        });
+    } else {
+        return "prxznqwyjmtvhksu57eg46df139c028b".split("").map((c) => {
+            return geohash + c;
+        });
+    }
 }
