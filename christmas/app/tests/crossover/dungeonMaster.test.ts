@@ -1,11 +1,11 @@
+import { INTERNAL_SERVICE_KEY } from "$env/static/private";
 import {
     monsterLimitAtGeohash,
     uninhabitedNeighbouringGeohashes,
 } from "$lib/crossover/world";
 import { monstersInGeohashQuerySet } from "$lib/server/crossover";
 import { spawnMonsters } from "$lib/server/crossover/dungeonMaster";
-import { expect } from "chai";
-import { test } from "vitest";
+import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer } from "./utils";
 
@@ -83,6 +83,39 @@ test("Test DungeonMaster", async () => {
     ).then((monsterCounts) => {
         return monsterCounts.reduce((acc, current) => acc + current, 0);
     });
-
     expect(numMonstersInArea).to.equal(maxMonstersInArea);
+
+    // Test world.tickDungeonMaster
+    await expect(
+        fetch("http://localhost:5173/trpc/crossover.world.tickDungeonMaster", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${INTERNAL_SERVICE_KEY}`,
+            },
+        }).then((res) => res.json()),
+    ).resolves.toMatchObject({
+        result: {
+            data: {
+                status: "success",
+                time: expect.any(Number),
+            },
+        },
+    });
+
+    // Test world.tickDungeonMaster unauthorized
+    const res = await fetch(
+        "http://localhost:5173/trpc/crossover.world.tickDungeonMaster",
+        {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer invalidtoken`,
+            },
+        },
+    );
+    expect(res.status).to.equal(401);
+    await expect(res.json()).resolves.toMatchObject({
+        error: {
+            message: "UNAUTHORIZED",
+        },
+    });
 });

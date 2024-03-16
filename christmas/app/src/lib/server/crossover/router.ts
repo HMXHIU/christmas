@@ -12,6 +12,7 @@ import {
 } from "$lib/server/crossover/redis";
 import { PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
+import { performance } from "perf_hooks";
 import { z } from "zod";
 import {
     getLoadedPlayerEntity,
@@ -29,7 +30,8 @@ import {
 } from "..";
 import type { MessageEventData } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
-import { authProcedure, t } from "../trpc";
+import { authProcedure, internalServiceProcedure, t } from "../trpc";
+import { tick } from "./dungeonMaster";
 import type { Player, PlayerEntity } from "./redis/entities";
 
 export {
@@ -88,7 +90,15 @@ const LOOK_PAGE_SIZE = 20;
 // Router
 const crossoverRouter = {
     // World
-    world: t.router({}),
+    world: t.router({
+        // world.tickDungeonMaster
+        tickDungeonMaster: internalServiceProcedure.mutation(async () => {
+            const start = performance.now();
+            await tick();
+            const end = performance.now();
+            return { status: "success", time: end - start };
+        }),
+    }),
     // Commands
     cmd: t.router({
         // cmd.say

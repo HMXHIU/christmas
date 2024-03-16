@@ -32,6 +32,9 @@ const worldSeed: WorldSeed = {
             precision: 8,
         },
     },
+    constants: {
+        maxMonstersPerContinent: 10000000000, // 10 billion
+    },
     seeds: {
         continent: {
             b: { bio: 0.5, hostile: 0.2, water: 0.1 },

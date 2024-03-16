@@ -1,3 +1,4 @@
+import { INTERNAL_SERVICE_KEY } from "$env/static/private";
 import { TRPCError, initTRPC } from "@trpc/server";
 import type { Context } from "./context";
 
@@ -17,3 +18,12 @@ export const authProcedure = t.procedure.use(async function isAuthed(opts) {
         },
     });
 });
+export const internalServiceProcedure = t.procedure.use(
+    async function isInternalService(opts) {
+        const { ctx } = opts;
+        if (ctx.locals.authToken !== INTERNAL_SERVICE_KEY) {
+            throw new TRPCError({ code: "UNAUTHORIZED" });
+        }
+        return opts.next();
+    },
+);

@@ -8,6 +8,7 @@ declare namespace App {
     }
     interface Locals {
         user: UserSession | null;
+        authToken: string | null;
     }
     interface PageData {}
     interface Error {}

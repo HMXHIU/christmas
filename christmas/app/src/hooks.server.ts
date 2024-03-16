@@ -1,4 +1,4 @@
-import { JWT_SECRET_KEY } from "$env/static/private";
+import { INTERNAL_SERVICE_KEY, JWT_SECRET_KEY } from "$env/static/private";
 import { verifyJWT } from "$lib/server";
 import { createContext } from "$lib/server/trpc/context";
 import { router } from "$lib/server/trpc/router";
@@ -19,6 +19,12 @@ const handleBase: Handle = async ({ event, resolve }) => {
     ) {
         authToken =
             request.headers.get("Authorization")?.split("Bearer ")[1] || null;
+    }
+
+    // Internal Service
+    if (authToken === INTERNAL_SERVICE_KEY) {
+        locals.authToken = authToken;
+        return await resolve(event);
     }
 
     // Set locals.user if token is valid (locals.user != null determines if user is logged in)
