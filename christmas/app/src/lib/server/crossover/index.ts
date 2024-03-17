@@ -1,3 +1,4 @@
+import { bestiary } from "$lib/crossover/world/bestiary";
 import { serverAnchorClient } from "$lib/server";
 import { parseZodErrors } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
@@ -27,14 +28,25 @@ export {
     type ConnectedUser,
 };
 
+/**
+ * Interface representing a connected user.
+ */
 interface ConnectedUser {
     publicKey: string;
     controller: ReadableStreamDefaultController<any>;
 }
 
-// Record of connected users on this server instance
+/**
+ * Record of connected users on this server instance.
+ */
 let connectedUsers: Record<string, ConnectedUser> = {};
 
+/**
+ * Retrieves the user metadata for a given public key.
+ * @param publicKey The public key of the user.
+ * @returns A promise that resolves to the user metadata or null if not found.
+ * @throws Error if the user account does not exist or is missing metadata URI.
+ */
 async function getUserMetadata(
     publicKey: string,
 ): Promise<z.infer<typeof UserMetadataSchema> | null> {
@@ -56,12 +68,22 @@ async function getUserMetadata(
     return userMetadata || null;
 }
 
+/**
+ * Retrieves the player metadata for a given public key.
+ * @param publicKey The public key of the player.
+ * @returns A promise that resolves to the player metadata or null if not found.
+ */
 async function getPlayerMetadata(
     publicKey: string,
 ): Promise<z.infer<typeof PlayerMetadataSchema> | null> {
     return (await getUserMetadata(publicKey))?.crossover || null;
 }
 
+/**
+ * Retrieves the player state for a given public key.
+ * @param publicKey The public key of the player.
+ * @returns A promise that resolves to the player state or null if not found.
+ */
 async function getPlayerState(
     publicKey: string,
 ): Promise<z.infer<typeof PlayerStateSchema> | null> {
@@ -76,6 +98,13 @@ async function getPlayerState(
     }
 }
 
+/**
+ * Sets the player state for a given public key.
+ * @param publicKey The public key of the player.
+ * @param state The player state to set.
+ * @returns A promise that resolves to a string indicating the success of the operation.
+ * @throws Error if there is an error parsing the player state.
+ */
 async function setPlayerState(
     publicKey: string,
     state: z.infer<typeof PlayerStateSchema>,
@@ -96,6 +125,11 @@ async function setPlayerState(
     }
 }
 
+/**
+ * Retrieves the loaded player entity for a given public key.
+ * @param publicKey The public key of the player.
+ * @returns A promise that resolves to the loaded player entity or null if not found.
+ */
 async function getLoadedPlayerEntity(
     publicKey: string,
 ): Promise<PlayerEntity | null> {
@@ -103,6 +137,13 @@ async function getLoadedPlayerEntity(
     return player.player ? player : null;
 }
 
+/**
+ * Loads the player entity for a given public key.
+ * @param publicKey The public key of the player.
+ * @param playerState The initial player state.
+ * @returns A promise that resolves to the loaded player entity.
+ * @throws Error if the player is not found.
+ */
 async function loadPlayerEntity(
     publicKey: string,
     playerState: any = {},
@@ -126,6 +167,14 @@ async function loadPlayerEntity(
     })) as PlayerEntity;
 }
 
+/**
+ * Initializes the player entity.
+ * @param player The player entity.
+ * @param region The region of the player.
+ * @param geohash The geohash of the player.
+ * @param forceSave Indicates whether to force save the player entity.
+ * @returns A promise that resolves to the initialized player entity.
+ */
 async function initPlayerEntity(
     {
         player,
@@ -157,6 +206,11 @@ async function initPlayerEntity(
     return player;
 }
 
+/**
+ * Saves the player entity state for a given public key.
+ * @param publicKey The public key of the player.
+ * @returns A promise that resolves to a string indicating the success of the operation.
+ */
 async function savePlayerEntityState(publicKey: string): Promise<string> {
     return await setPlayerState(
         publicKey,
@@ -164,37 +218,65 @@ async function savePlayerEntityState(publicKey: string): Promise<string> {
     );
 }
 
+/**
+ * Returns a search query set for logged in players.
+ * @returns A search query set for logged in players.
+ */
 function loggedInPlayersQuerySet(): Search {
     return playerRepository.search().where("loggedIn").equal(true);
 }
 
+/**
+ * Returns a search query set for players in a specific geohash.
+ * @param geohash The geohash to filter players by.
+ * @returns A search query set for players in the specified geohash.
+ */
 function playersInGeohashQuerySet(geohash: string): Search {
     // TODO: this should include all children geohashes
     return loggedInPlayersQuerySet().and("geohash").equal(geohash);
 }
 
+/**
+ * Returns a search query set for monsters in a specific geohash.
+ * @param geohash The geohash to filter monsters by.
+ * @returns A search query set for monsters in the specified geohash.
+ */
 function monstersInGeohashQuerySet(geohash: string): Search {
     return monsterRepository.search().where("geohash").eq(`${geohash}*`);
 }
 
+/**
+ * Spawns a monster in a specific geohash.
+ * @param geohash The geohash where the monster will be spawned.
+ * @param beast The type of monster to spawn.
+ * @returns A promise that resolves to the spawned monster entity.
+ * @throws Error if the specified beast is not found in the bestiary.
+ */
 async function spawnMonster({
     geohash,
-    type,
+    beast,
 }: {
     geohash: string;
-    type: string;
+    beast: string;
 }): Promise<MonsterEntity> {
     // Get monster count
     const count = await monsterRepository.search().count();
+
+    // Get beast template
+    const beastTemplate = bestiary[beast];
+    if (!beastTemplate) {
+        throw new Error(`Beast ${beast} not found in bestiary`);
+    }
+
     const monster: MonsterEntity = {
-        monster: `${type}${count}`, // Unique monster id
-        name: type,
-        type,
+        monster: `${beast}${count}`, // Unique monster id
+        name: beast,
+        beast,
         geohash,
-        health: 100,
+        health: beastTemplate.health * 10, // TODO: derive more stats with random variance
     };
     return (await monsterRepository.save(
-        `${type}${count}`,
+        `${beast}${count}`,
         monster,
     )) as MonsterEntity;
 }

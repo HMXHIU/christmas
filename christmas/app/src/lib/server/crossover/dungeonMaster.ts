@@ -2,7 +2,9 @@ import {
     childrenGeohashes,
     monsterLimitAtGeohash,
     uninhabitedNeighbouringGeohashes,
+    worldSeed,
 } from "$lib/crossover/world";
+import { bestiary } from "$lib/crossover/world/bestiary";
 import {
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
@@ -22,10 +24,15 @@ async function spawnMonsters() {
     const players =
         (await loggedInPlayersQuerySet().return.all()) as PlayerEntity[];
 
-    // Get all parent geohashes
-    const parentGeohashes = players.map(({ geohash }) => {
-        return geohash.slice(0, -1);
-    });
+    // Get all parent geohashes (only interested with geohashes 1 level above unit precision)
+    const parentGeohashes = players
+        .map(({ geohash }) => {
+            return geohash.slice(0, -1);
+        })
+        .filter(
+            (geohash) =>
+                geohash.length === worldSeed.spatial.unit.precision - 1,
+        );
 
     // Get all neighboring geohashes where there are no players
     const uninhabitedGeohashes =
@@ -57,12 +64,8 @@ async function spawnMonsters() {
 
             const monster = await spawnMonster({
                 geohash: childGeohash,
-                type: "goblin",
+                beast: bestiary.goblin.beast, // TODO: use PG to get random beast
             });
-
-            console.log(
-                `Spawned monster ${monster.monster} at ${monster.geohash}`,
-            );
         }
     }
 }

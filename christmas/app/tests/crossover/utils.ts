@@ -3,11 +3,16 @@ import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import type { StreamEventData } from "../../src/routes/api/crossover/stream/+server";
 import { createRandomUser } from "../utils";
 
-export { createRandomPlayer, waitForEventData };
-
-async function createRandomPlayer({
-    region,
+/**
+ * Creates a random player with the specified geohash, region, and name.
+ * @param geohash The geohash of the player.
+ * @param region The region of the player.
+ * @param name The name of the player.
+ * @returns A promise that resolves to an array containing the NodeWallet and cookies of the player.
+ */
+export async function createRandomPlayer({
     geohash,
+    region,
     name,
 }: {
     geohash: string;
@@ -22,7 +27,14 @@ async function createRandomPlayer({
     return [wallet, cookies];
 }
 
-function waitForEventData(
+/**
+ * Waits for a specific event data to be emitted from an event target.
+ * @param eventTarget The event target to listen for events on.
+ * @param streamType The type of event to listen for.
+ * @param timeout The timeout value in milliseconds (default: 1000).
+ * @returns A promise that resolves to the emitted event data.
+ */
+export function waitForEventData(
     eventTarget: EventTarget,
     streamType: string,
     timeout = 1000, // default timeout 1 second

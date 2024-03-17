@@ -246,8 +246,6 @@ async function createCoupon(
             region: store.account.region,
         })
         .then(({ transaction }) => {
-            console.log(transaction);
-
             return signAndSendTransaction({
                 tx: Transaction.from(Buffer.from(transaction, "base64")),
                 wallet: options?.wallet,

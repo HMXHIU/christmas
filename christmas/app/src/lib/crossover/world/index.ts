@@ -21,8 +21,6 @@ export {
     type WorldSeed,
 };
 
-const MAX_MONSTERS_PER_CONTINENT = 1000000000000; // 1000 billion
-
 type Direction = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw" | "u" | "d";
 
 // eg. grid[precision][row][col]: "forest"

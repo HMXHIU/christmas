@@ -9,6 +9,10 @@ export {
     type PlayerEntity,
 };
 
+/*
+ * Player
+ */
+
 // Combines both `PlayerState` and `PlayerMetadata`
 const PlayerEntitySchema = new Schema("Player", {
     // Player metadata
@@ -32,11 +36,17 @@ interface Player {
 
 type PlayerEntity = Player & Entity;
 
+/*
+ * Monster
+ *
+ * A monster is the actual instance spawned using a `Beast` template in the bestiary.
+ */
+
 const MonsterEntitySchema = new Schema("Monster", {
     // Monster metadata
     monster: { type: "string" },
     name: { type: "string" },
-    type: { type: "string" },
+    beast: { type: "string" },
     // Monster state
     geohash: { type: "string" },
     health: { type: "number" },
@@ -44,9 +54,9 @@ const MonsterEntitySchema = new Schema("Monster", {
 
 interface Monster {
     // Monster metadata
-    monster: string;
+    monster: string; // unique instance id
     name: string;
-    type: string;
+    beast: string;
     // Monster state
     geohash: string;
     health: number;
