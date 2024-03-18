@@ -47,7 +47,6 @@ async function spawnMonsters() {
 
         // Number of monsters to spawn
         const numMonstersToSpawn = monsterLimit - numMonsters;
-
         if (numMonstersToSpawn <= 0) {
             continue;
         }
