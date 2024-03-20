@@ -1,3 +1,5 @@
+import type { AssetMetadata } from ".";
+
 export { bestiary, type Beast };
 
 /**
@@ -16,6 +18,7 @@ interface Beast {
     spawnRate: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
     spawnBiomes: string[];
     spawnHostileThreshold: number;
+    asset: AssetMetadata;
 }
 
 /**
@@ -36,6 +39,10 @@ const bestiary: Record<string, Beast> = {
         spawnRate: 1,
         spawnBiomes: [],
         spawnHostileThreshold: 0.1,
+        asset: {
+            bundle: "bestiary",
+            name: "goblin",
+        },
     },
     giantSpider: {
         beast: "giantSpider",
@@ -50,6 +57,10 @@ const bestiary: Record<string, Beast> = {
         spawnRate: 1,
         spawnBiomes: [],
         spawnHostileThreshold: 0.1,
+        asset: {
+            bundle: "bestiary",
+            name: "goblin",
+        },
     },
     dragon: {
         beast: "dragon",
@@ -64,5 +75,9 @@ const bestiary: Record<string, Beast> = {
         spawnRate: 10,
         spawnBiomes: [],
         spawnHostileThreshold: 0.5,
+        asset: {
+            bundle: "bestiary",
+            name: "goblin",
+        },
     },
 };

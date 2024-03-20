@@ -474,13 +474,15 @@ async function logout() {
     }
 }
 
-async function refresh() {
-    const { status, token: loginToken } =
-        await trpc().community.auth.refresh.query();
+async function refresh(headers: HTTPHeaders = {}) {
+    const { status, token: loginToken } = await trpc({
+        headers,
+    }).community.auth.refresh.query();
 
     if (status !== "success" || loginToken == null) {
         throw new Error("Failed to refresh token");
     }
+    console.log("Refreshed token");
 
     // Set token in store (fallback if cookies not allowed)
     token.set(loginToken);

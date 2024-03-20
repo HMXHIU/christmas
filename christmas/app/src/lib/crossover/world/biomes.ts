@@ -1,3 +1,5 @@
+import type { AssetMetadata } from ".";
+
 export { biomes, type Biome };
 
 interface Biome {
@@ -5,6 +7,7 @@ interface Biome {
     name: string;
     description: string;
     traversable: number; // 0.0 - 1.0
+    asset?: AssetMetadata;
 }
 
 let biomes: Record<string, Biome> = {
@@ -14,6 +17,21 @@ let biomes: Record<string, Biome> = {
         description:
             "A dense collection of trees and vegetation, home to a variety of wildlife.",
         traversable: 0.8,
+        asset: {
+            bundle: "biomes",
+            name: "tree",
+            animations: {
+                sway: "sway",
+            },
+            variants: {
+                default: "sway/0",
+                1: "sway/1",
+                2: "sway/2",
+                3: "sway/3",
+                4: "sway/4",
+                dead: "stump",
+            },
+        },
     },
     desert: {
         biome: "desert",
@@ -75,5 +93,12 @@ let biomes: Record<string, Biome> = {
         name: "Water",
         description: "A large body of water, with a variety of aquatic life.",
         traversable: 0,
+        asset: {
+            bundle: "biomes",
+            name: "water",
+            variants: {
+                default: "Water",
+            },
+        },
     },
 };

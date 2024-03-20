@@ -16,10 +16,18 @@ export {
     uninhabitedNeighbouringGeohashes,
     updateGrid,
     worldSeed,
+    type AssetMetadata,
     type Direction,
     type Grid,
     type WorldSeed,
 };
+
+interface AssetMetadata {
+    bundle: string;
+    name: string;
+    animations?: Record<string, string>;
+    variants?: Record<string, string>;
+}
 
 type Direction = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw" | "u" | "d";
 

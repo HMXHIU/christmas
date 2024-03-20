@@ -23,6 +23,7 @@ export {
     imageDataUrlToFile,
     imageUrlToDataURL,
     parseZodErrors,
+    retry,
     signAndSendTransaction,
     storage_uri_to_url,
     stringToBase58,
@@ -245,4 +246,48 @@ function parseZodErrors(err: any): Record<string, string> {
         }
     }
     return errors;
+}
+
+/**
+ * Retries the provided asynchronous function with a specified number of attempts and delay between each attempt.
+ * If an error occurs during any attempt, it will retry the function until the maximum number of attempts is reached.
+ * An optional remedy function can be provided to perform a specific action before the second attempt.
+ *
+ * @param fn - The asynchronous function to retry.
+ * @param maxAttempts - The maximum number of attempts to make.
+ * @param delay - The delay in milliseconds between each attempt.
+ * @param remedyFn - An optional function to perform a specific action before the second attempt.
+ * @returns A promise that resolves to the result of the successful attempt.
+ * @throws If the maximum number of attempts is reached without a successful attempt.
+ */
+async function retry<T>({
+    fn,
+    maxAttempts,
+    delay,
+    remedyFn,
+}: {
+    fn: () => Promise<T>;
+    maxAttempts?: number;
+    delay?: number;
+    remedyFn?: () => Promise<void>;
+}): Promise<T> {
+    maxAttempts = maxAttempts ?? 2;
+    delay = delay ?? 100;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+            return await fn();
+        } catch (error) {
+            if (attempt === maxAttempts) {
+                throw new Error("Max retry attempts.");
+            }
+            if (remedyFn && attempt === 0) {
+                console.log("Retrying with remedy function...");
+                await remedyFn();
+            }
+            await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+    }
+
+    throw new Error("Max retry attempts.");
 }

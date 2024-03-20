@@ -1,0 +1,35 @@
+{
+    "bundles": [
+        {
+            "name": "player",
+            "assets": [
+                {
+                    "alias": "player",
+                    "src": "/sprites/knight/sprite.json"
+                }
+            ]
+        },
+        {
+            "name": "biomes",
+            "assets": [
+                {
+                    "alias": "tree",
+                    "src": "/sprites/tree/sprite.json"
+                },
+                {
+                    "alias": "water",
+                    "src": "/sprites/water/sprite.json"
+                }
+            ]
+        },
+        {
+            "name": "bestiary",
+            "assets": [
+                {
+                    "alias": "goblin",
+                    "src": "/sprites/goblin/sprite.json"
+                }
+            ]
+        }
+    ]
+}

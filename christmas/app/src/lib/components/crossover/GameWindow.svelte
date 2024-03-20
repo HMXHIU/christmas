@@ -20,6 +20,8 @@
         MessageSquare,
     } from "lucide-svelte";
     import ChevronsUpDown from "lucide-svelte/icons/chevrons-up-down";
+    import { Assets } from "pixi.js";
+    import { onMount } from "svelte";
     import { z } from "zod";
     import ContextSection from "./ContextSection.svelte";
     import Map from "./Map.svelte";
@@ -104,6 +106,13 @@
             ],
         ],
     ];
+
+    onMount(async () => {
+        // Load assets in background
+        // Load assets
+        await Assets.init({ manifest: "/sprites/manifest.json" });
+        Assets.backgroundLoadBundle(["player", "biomes", "bestiary"]);
+    });
 </script>
 
 <div class={cn("w-full flex flex-col", $$restProps.class)}>

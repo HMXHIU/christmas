@@ -5,12 +5,13 @@ import type {
     TileSchema,
 } from "$lib/server/crossover/router";
 import { trpc } from "$lib/trpcClient";
-import { signAndSendTransaction } from "$lib/utils";
+import { retry, signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
 import type { HTTPHeaders } from "@trpc/client";
 import type { z } from "zod";
 import { player } from "../../store";
 
+import { refresh } from "$lib/community";
 import type { Player } from "$lib/server/crossover/redis/entities";
 import type { StreamEvent } from "../../routes/api/crossover/stream/+server";
 import type { Direction } from "./world";
@@ -23,7 +24,7 @@ export {
     login,
     logout,
     signup,
-    stream,
+    stream
 };
 
 async function getPlayer(
@@ -66,9 +67,20 @@ async function login(
     geohash =
         typeof geohash === "string" ? geohash : String.fromCharCode(...geohash);
 
-    let response = await trpc({
-        headers,
-    }).crossover.auth.login.query({ region, geohash });
+    // Try to login, and if it fails, refresh the session and try again
+    const response = await retry({
+        fn: async () => {
+            return await trpc({
+                headers,
+            }).crossover.auth.login.query({
+                region: region as string,
+                geohash: geohash as string,
+            });
+        },
+        remedyFn: async () => {
+            await refresh(headers);
+        },
+    });
 
     // Update `$player`
     player.set(response.player);

@@ -80,6 +80,7 @@
     "minio": "^7.1.3",
     "mode-watcher": "^0.2.1",
     "nft.storage": "^7.1.1",
+    "pixi.js": "^8.0.2",
     "redis-om": "^0.4.3",
     "solana-connect": "^0.1.10",
     "svelte-sonner": "^0.3.19",
