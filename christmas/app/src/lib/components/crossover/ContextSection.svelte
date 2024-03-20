@@ -25,7 +25,7 @@
     import { Label } from "$lib/components/ui/label/index.js";
     import * as Tabs from "$lib/components/ui/tabs/index.js";
     import type { Direction } from "$lib/crossover/world";
-    import { abyssTile } from "$lib/crossover/world/resources";
+    import { abyssTile } from "$lib/crossover/world";
     import { cn } from "$lib/shadcn";
 
     export let tile: z.infer<typeof TileSchema> = abyssTile;
@@ -48,7 +48,7 @@
                         <ScrollArea class="h-[250px]">
                             <!-- Tile -->
                             <p class="text-sm text-primary-background">
-                                {tile.tile}
+                                {tile.name || tile.geohash}
                             </p>
                             <p class="text-sm text-muted-foreground">
                                 {tile.description}

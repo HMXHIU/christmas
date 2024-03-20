@@ -4,7 +4,7 @@ import {
     geohashNeighbour,
     tileAtGeohash,
 } from "$lib/crossover/world";
-import { biomes } from "$lib/crossover/world/resources";
+import { biomes } from "$lib/crossover/world/biomes";
 import {
     initializeClients,
     playerRepository,
@@ -161,9 +161,9 @@ const crossoverRouter = {
             // Check if next geohash is travasable
             const nextGeohash = geohashNeighbour(player.geohash, direction);
             const biome = biomeAtGeohash(nextGeohash);
-            const traversable = biomes[biome]?.metadata?.traversable;
 
-            if (traversable) {
+            // TODO: account for speed
+            if (biomes[biome].traversable > 0) {
                 // Update player geohash
                 player.geohash = nextGeohash;
                 await playerRepository.save(player.player, player);

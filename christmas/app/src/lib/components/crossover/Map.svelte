@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { geohashToCell } from "$lib/crossover/world";
-    import { abyssTile } from "$lib/crossover/world/resources";
+    import { abyssTile, geohashToCell } from "$lib/crossover/world";
     import type { TileSchema } from "$lib/server/crossover/router";
     import { onMount } from "svelte";
     import type { z } from "zod";

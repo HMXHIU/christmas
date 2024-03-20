@@ -46,7 +46,7 @@
 
         try {
             // Try login to crossover
-            await login({ region, geohash });
+            await login({ region, geohash, retryWithRefresh: true });
         } catch (error) {
             // If login failed, player has not signed up
             requireSignup = true;
@@ -116,7 +116,7 @@
                 });
                 throw new Error(err);
             }
-            await login({ region, geohash });
+            await login({ region, geohash, retryWithRefresh: true });
         }
     }
 </script>

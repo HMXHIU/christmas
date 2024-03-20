@@ -8,7 +8,7 @@
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Collapsible from "$lib/components/ui/collapsible/index.js";
     import type { Direction } from "$lib/crossover/world";
-    import { abyssTile } from "$lib/crossover/world/resources";
+    import { abyssTile } from "$lib/crossover/world";
     import type { Player } from "$lib/server/crossover/redis/entities";
     import type { TileSchema } from "$lib/server/crossover/router";
     import { cn } from "$lib/shadcn";

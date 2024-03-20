@@ -1,9 +1,10 @@
 import type { TileSchema } from "$lib/server/crossover/router";
 import ngeohash from "ngeohash";
 import type { z } from "zod";
-import { biomes } from "./resources";
+import { biomes } from "./biomes";
 
 export {
+    abyssTile,
     biomeAtGeohash,
     biomesAtGeohash,
     childrenGeohashes,
@@ -20,6 +21,12 @@ export {
     type Direction,
     type Grid,
     type WorldSeed,
+};
+
+const abyssTile: z.infer<typeof TileSchema> = {
+    name: "The Abyss",
+    geohash: "59ke577h",
+    description: "You are nowhere to be found.",
 };
 
 interface AssetMetadata {
@@ -254,12 +261,12 @@ function biomeAtGeohash(geohash: string, seed?: WorldSeed): string {
 
     // Select biome
     if (rv < probBio) {
-        return biomes.forest.name;
+        return biomes.forest.biome;
     }
     if (rv < probBio + probWater) {
-        return biomes.water.name;
+        return biomes.water.biome;
     }
-    return biomes.plains.name;
+    return biomes.plains.biome;
 }
 
 /**

@@ -13,8 +13,11 @@
         MessageFeedUI,
     } from "$lib/components/common/types";
 
-    import { loadMoreGrid, type Direction } from "$lib/crossover/world";
-    import { abyssTile } from "$lib/crossover/world/resources";
+    import {
+        abyssTile,
+        loadMoreGrid,
+        type Direction,
+    } from "$lib/crossover/world";
     import type { Player } from "$lib/server/crossover/redis/entities";
     import type { TileSchema } from "$lib/server/crossover/router";
     import { substituteVariables } from "$lib/utils";

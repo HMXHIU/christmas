@@ -24,7 +24,7 @@ export {
     login,
     logout,
     signup,
-    stream
+    stream,
 };
 
 async function getPlayer(
@@ -59,28 +59,44 @@ async function login(
     {
         region,
         geohash,
-    }: { region: string | number[]; geohash: string | number[] },
+        retryWithRefresh,
+    }: {
+        region: string | number[];
+        geohash: string | number[];
+        retryWithRefresh?: boolean;
+    },
     headers: HTTPHeaders = {},
 ): Promise<{ status: string; player: z.infer<typeof PlayerMetadataSchema> }> {
+    retryWithRefresh ??= false;
     region =
         typeof region === "string" ? region : String.fromCharCode(...region);
     geohash =
         typeof geohash === "string" ? geohash : String.fromCharCode(...geohash);
 
-    // Try to login, and if it fails, refresh the session and try again
-    const response = await retry({
-        fn: async () => {
-            return await trpc({
-                headers,
-            }).crossover.auth.login.query({
-                region: region as string,
-                geohash: geohash as string,
-            });
-        },
-        remedyFn: async () => {
-            await refresh(headers);
-        },
-    });
+    let response;
+    if (!retryWithRefresh) {
+        response = await trpc({
+            headers,
+        }).crossover.auth.login.query({
+            region: region as string,
+            geohash: geohash as string,
+        });
+    } else {
+        // Try to login, and if it fails, refresh the session and try again
+        response = await retry({
+            fn: async () => {
+                return await trpc({
+                    headers,
+                }).crossover.auth.login.query({
+                    region: region as string,
+                    geohash: geohash as string,
+                });
+            },
+            remedyFn: async () => {
+                await refresh(headers);
+            },
+        });
+    }
 
     // Update `$player`
     player.set(response.player);
