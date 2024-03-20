@@ -24,6 +24,8 @@ async function spawnMonsters() {
     const players =
         (await loggedInPlayersQuerySet().return.all()) as PlayerEntity[];
 
+    console.log("players", players);
+
     // Get all parent geohashes (only interested with geohashes 1 level above unit precision)
     const parentGeohashes = players
         .map(({ geohash }) => {
@@ -34,9 +36,13 @@ async function spawnMonsters() {
                 geohash.length === worldSeed.spatial.unit.precision - 1,
         );
 
+    console.log("parentGeohashes", parentGeohashes);
+
     // Get all neighboring geohashes where there are no players
     const uninhabitedGeohashes =
         await uninhabitedNeighbouringGeohashes(parentGeohashes);
+
+    console.log(uninhabitedGeohashes);
 
     for (const geohash of uninhabitedGeohashes) {
         // Get monster limit for each uninhabited geohash
@@ -44,6 +50,8 @@ async function spawnMonsters() {
 
         // Get number of monsters in geohash
         const numMonsters = await monstersInGeohashQuerySet(geohash).count();
+
+        console.log("monsterLimit", monsterLimit, "numMonsters", numMonsters);
 
         // Number of monsters to spawn
         const numMonstersToSpawn = monsterLimit - numMonsters;
@@ -65,6 +73,8 @@ async function spawnMonsters() {
                 geohash: childGeohash,
                 beast: bestiary.goblin.beast, // TODO: use PG to get random beast
             });
+
+            console.log("spawned", monster.monster, "in", childGeohash);
         }
     }
 }

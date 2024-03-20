@@ -1,3 +1,4 @@
+import type { Monster } from "$lib/server/crossover/redis/entities";
 import type { TileSchema } from "$lib/server/crossover/router";
 import ngeohash from "ngeohash";
 import type { z } from "zod";
@@ -38,9 +39,9 @@ interface AssetMetadata {
 
 type Direction = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw" | "u" | "d";
 
-// eg. grid[precision][row][col]: "forest"
 interface GridEntry {
-    biome?: string;
+    biome?: string; // can be procedurally generated at client
+    monsters?: Record<string, Monster>; // needs to be fetched from server (spawned by dungeon master)
 }
 type Grid = Record<number, Record<number, Record<number, GridEntry>>>;
 

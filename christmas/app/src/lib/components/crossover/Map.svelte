@@ -265,7 +265,6 @@
             cell: geohashToCell(tile.geohash),
             colStart: 0,
             colEnd: GRID_COLS,
-            alpha: 0.5,
         });
 
         // Ticker

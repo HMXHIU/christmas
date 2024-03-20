@@ -1,3 +1,4 @@
+import { childrenGeohashes, worldSeed } from "$lib/crossover/world";
 import { bestiary } from "$lib/crossover/world/bestiary";
 import { serverAnchorClient } from "$lib/server";
 import { parseZodErrors } from "$lib/utils";
@@ -191,8 +192,24 @@ async function initPlayerEntity(
 
     // Initialize geohash
     if (!player.geohash) {
+        // TODO: Spawn player in region's city center spawn point
         player.geohash = geohash;
         changed = true;
+    }
+
+    // Auto correct player's geohash precision
+    if (player.geohash.length !== worldSeed.spatial.unit.precision) {
+        const delta = worldSeed.spatial.unit.precision - player.geohash.length;
+        let geohash = player.geohash;
+        if (delta > 0) {
+            for (let i = 0; i < delta; i++) {
+                geohash = childrenGeohashes(geohash)[0];
+            }
+        } else if (delta < 0) {
+            geohash = geohash.slice(0, worldSeed.spatial.unit.precision);
+        }
+        player.geohash = geohash;
+        console.log("Auto corrected player's geohash", player.geohash);
     }
 
     // Save if changed or `forceSave`

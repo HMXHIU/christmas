@@ -19,6 +19,7 @@ import {
     getUserMetadata,
     initPlayerEntity,
     loadPlayerEntity,
+    monstersInGeohashQuerySet,
     playersInGeohashQuerySet,
     savePlayerEntityState,
 } from ".";
@@ -32,7 +33,12 @@ import type { MessageEventData } from "../../../routes/api/crossover/stream/+ser
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, internalServiceProcedure, t } from "../trpc";
 import { tick } from "./dungeonMaster";
-import type { Player, PlayerEntity } from "./redis/entities";
+import type {
+    Monster,
+    MonsterEntity,
+    Player,
+    PlayerEntity,
+} from "./redis/entities";
 
 export {
     PlayerMetadataSchema,
@@ -91,7 +97,7 @@ const LOOK_PAGE_SIZE = 20;
 const crossoverRouter = {
     // World
     world: t.router({
-        // world.tickDungeonMaster
+        // world.tickDungeonMaster (internalServiceProcedure - allow an external cron to trigger tick)
         tickDungeonMaster: internalServiceProcedure.mutation(async () => {
             const start = performance.now();
             await tick();
@@ -144,11 +150,20 @@ const crossoverRouter = {
                     pageSize: LOOK_PAGE_SIZE,
                 })) as PlayerEntity[];
 
+                // Get monsters in surrounding (don't use page size for monsters)
+                const monsters = (await monstersInGeohashQuerySet(
+                    player.geohash.slice(0, -1),
+                ).return.all()) as MonsterEntity[];
+
+                // Get tile
                 const biome = biomeAtGeohash(player.geohash);
 
+                // TODO: inclue POI when generating tile
+
                 return {
-                    tile: tileAtGeohash(player.geohash, biome), // TODO: inclue POI when generating tile
+                    tile: tileAtGeohash(player.geohash, biome),
                     players: players as Player[],
+                    monsters: monsters as Monster[],
                 };
             }),
         // cmd.move

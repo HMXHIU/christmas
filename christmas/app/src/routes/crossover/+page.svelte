@@ -114,6 +114,8 @@
         const lookResult = await commandLook({});
         players = lookResult.players;
         tile = lookResult.tile;
+
+        console.log(JSON.stringify(lookResult, null, 2));
     }
 
     onMount(() => {
