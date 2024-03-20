@@ -42,6 +42,12 @@ const bestiary: Record<string, Beast> = {
         asset: {
             bundle: "bestiary",
             name: "goblin",
+            animations: {
+                stand: "stand",
+            },
+            variants: {
+                default: "stand/0",
+            },
         },
     },
     giantSpider: {
@@ -60,6 +66,12 @@ const bestiary: Record<string, Beast> = {
         asset: {
             bundle: "bestiary",
             name: "goblin",
+            animations: {
+                stand: "stand",
+            },
+            variants: {
+                default: "stand/0",
+            },
         },
     },
     dragon: {
@@ -78,6 +90,12 @@ const bestiary: Record<string, Beast> = {
         asset: {
             bundle: "bestiary",
             name: "goblin",
+            animations: {
+                stand: "stand",
+            },
+            variants: {
+                default: "stand/0",
+            },
         },
     },
 };

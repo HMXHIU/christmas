@@ -5,6 +5,7 @@
     import type { z } from "zod";
     import { grid } from "../../../store";
 
+    import { bestiary } from "$lib/crossover/world/bestiary";
     import { biomes } from "$lib/crossover/world/biomes";
     import {
         AnimatedSprite,
@@ -137,9 +138,9 @@
             for (let col: number = colStart; col < colEnd; col++) {
                 const gridCol = cell.col - GRID_MID_COL + col;
 
+                // Fill in biome
                 const biome =
                     $grid?.[cell.precision]?.[gridRow]?.[gridCol]?.biome;
-
                 if (!biome) continue;
                 const asset = biomes[biome].asset;
                 if (!asset) continue;
@@ -160,6 +161,33 @@
                     x: sprite.x,
                     y: sprite.y,
                 });
+
+                // Fill in monsters
+                const monsters =
+                    $grid?.[cell.precision]?.[gridRow]?.[gridCol]?.monsters;
+                if (!monsters) continue;
+                for (const monster of Object.values(monsters)) {
+                    const asset = bestiary[monster.beast]?.asset;
+                    if (!asset) continue;
+                    const bundle = await Assets.loadBundle(asset.bundle);
+
+                    const frame =
+                        bundle[asset.name].textures[asset.variants!.default];
+                    if (!frame) continue;
+
+                    const sprite = new Sprite(frame);
+                    sprite.x = col * CELL_WIDTH;
+                    sprite.y = row * CELL_HEIGHT;
+                    sprite.width = CELL_WIDTH;
+                    sprite.height = CELL_HEIGHT;
+                    sprite.alpha = alpha;
+
+                    setGridSprite(gridRow, gridCol, {
+                        sprite: world.addChild(sprite),
+                        x: sprite.x,
+                        y: sprite.y,
+                    });
+                }
             }
         }
     }
