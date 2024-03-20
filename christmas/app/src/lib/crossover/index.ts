@@ -9,12 +9,12 @@ import { retry, signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
 import type { HTTPHeaders } from "@trpc/client";
 import type { z } from "zod";
-import { player } from "../../store";
+import { grid, player } from "../../store";
 
 import { refresh } from "$lib/community";
 import type { Player } from "$lib/server/crossover/redis/entities";
 import type { StreamEvent } from "../../routes/api/crossover/stream/+server";
-import type { Direction } from "./world";
+import { updateGrid, type Direction } from "./world";
 
 export {
     commandLook,
@@ -197,12 +197,20 @@ function commandSay(
     return trpc({ headers }).crossover.cmd.say.query({ message });
 }
 
-function commandLook(
+async function commandLook(
     input: { target?: string },
     headers: HTTPHeaders = {},
 ): Promise<{ players: Player[]; tile: z.infer<typeof TileSchema> }> {
     const { target } = input;
-    return trpc({ headers }).crossover.cmd.look.query({ target });
+    const result = await trpc({ headers }).crossover.cmd.look.query({ target });
+    const { monsters, players, tile } = result;
+
+    // Update grid
+    grid.update((g) => {
+        return updateGrid({ grid: g, monsters });
+    });
+
+    return result;
 }
 
 function commandMove(

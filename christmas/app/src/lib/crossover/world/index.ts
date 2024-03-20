@@ -1,8 +1,11 @@
 import type { Monster } from "$lib/server/crossover/redis/entities";
 import type { TileSchema } from "$lib/server/crossover/router";
+
+import lodash from "lodash";
 import ngeohash from "ngeohash";
 import type { z } from "zod";
 import { biomes } from "./biomes";
+const { groupBy } = lodash;
 
 export {
     abyssTile,
@@ -17,6 +20,7 @@ export {
     tileAtGeohash,
     uninhabitedNeighbouringGeohashes,
     updateGrid,
+    updateGridEntry,
     worldSeed,
     type AssetMetadata,
     type Direction,
@@ -311,34 +315,84 @@ function biomesAtGeohash(
  *
  * @param grid - The grid to update with biomes.
  * @param biomes - Record of geohash strings to biome names.
+ * @param monsters - Array of monsters to add to the grid.
  * @returns The updated grid.
  */
-function updateGrid(grid: Grid, biomes: Record<string, string>) {
-    // Update grid with biomes
-    for (const [geohash, biome] of Object.entries(biomes)) {
-        const precision = geohash.length;
-        // latitude (-90 at south, 90 at north) and longitude (-180 at west, 180 at east)
-        const { latitude, longitude } = ngeohash.decode(geohash);
-        // -latitude because we want top left to be (0, 0)
-        const row = Math.floor(
-            ((-latitude + 90) / 180) * gridSizeAtPrecision[precision].rows,
-        );
-        const col = Math.floor(
-            ((longitude + 180) / 360) * gridSizeAtPrecision[precision].cols,
-        );
+function updateGrid({
+    grid,
+    biomes,
+    monsters,
+}: {
+    grid: Grid;
+    biomes?: Record<string, string>;
+    monsters?: Monster[];
+}) {
+    // Update biomes
+    if (biomes) {
+        for (const [geohash, biome] of Object.entries(biomes)) {
+            const { precision, row, col } = geohashToCell(geohash);
+            updateGridEntry({
+                grid,
+                precision,
+                row,
+                col,
+                biome,
+            });
+        }
+    }
 
-        // Initialize row/col if they don't exist yet.
-        grid[precision] ??= {};
-        grid[precision][row] ??= {};
-        grid[precision][row][col] ??= {};
-
-        // Update biome
-        grid[precision][row][col].biome = biome;
+    // Update monsters
+    if (monsters && monsters.length > 0) {
+        for (const [geohash, mxs] of Object.entries(
+            groupBy(monsters, (monster) => monster.geohash),
+        )) {
+            const { precision, row, col } = geohashToCell(geohash);
+            updateGridEntry({
+                grid,
+                precision,
+                row,
+                col,
+                monsters: mxs.reduce(
+                    (acc, mx) => {
+                        acc[mx.monster] = mx;
+                        return acc;
+                    },
+                    {} as Record<string, Monster>,
+                ),
+            });
+        }
     }
 
     // TODO: Update grid with POIs
 
     return grid;
+}
+
+function updateGridEntry({
+    grid,
+    precision,
+    row,
+    col,
+    monsters,
+    biome,
+}: {
+    grid: Grid;
+    precision: number;
+    row: number;
+    col: number;
+    monsters?: Record<string, Monster>;
+    biome?: string;
+}) {
+    grid[precision] ??= {};
+    grid[precision][row] ??= {};
+    grid[precision][row][col] ??= {};
+
+    if (monsters != null) {
+        grid[precision][row][col].monsters = monsters;
+    }
+    if (biome != null) {
+        grid[precision][row][col].biome = biome;
+    }
 }
 
 /**
@@ -386,13 +440,13 @@ function geohashNeighbour(geohash: string, direction: Direction): string {
 function loadMoreGrid(geohash: string, grid: Grid): Grid {
     const parentGeohash = geohash.slice(0, -1);
     const biomes = biomesAtGeohash(parentGeohash);
-    grid = updateGrid(grid, biomes);
+    grid = updateGrid({ grid, biomes });
 
     // Get neighbor geohashes of parent
     ngeohash.neighbors(parentGeohash).forEach((neighborGeohash) => {
         // Update grid with biomes if not previously loaded
         const biomes = biomesAtGeohash(neighborGeohash);
-        grid = updateGrid(grid, biomes);
+        grid = updateGrid({ grid, biomes });
     });
 
     return grid;
