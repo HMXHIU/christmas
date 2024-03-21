@@ -1,8 +1,8 @@
-import { getCountriesForTimezone } from "countries-and-timezones";
-import { COUNTRY_DETAILS, DEFAULT_GEOHASH_PRECISION } from "./defs";
-import geohash from "ngeohash";
-import type { Location } from "./types";
 import { stringToUint8Array } from "$lib/utils";
+import { getCountriesForTimezone } from "countries-and-timezones";
+import geohash from "ngeohash";
+import { COUNTRY_DETAILS, DEFAULT_GEOHASH_PRECISION } from "./defs";
+import type { Location } from "./types";
 
 export async function getLocation(
     geoHashPrecision?: number,
@@ -56,10 +56,12 @@ export function getGeolocationCoordinates(): Promise<GeolocationCoordinates> {
                     resolve(position.coords);
                 },
                 (error) => {
+                    console.error("Failed to retrieve geolocation.", error);
                     reject(new Error("Failed to retrieve geolocation."));
                 },
             );
         } else {
+            console.error("Geolocation is not supported by this browser.");
             reject(new Error("Geolocation is not supported by this browser."));
         }
     });

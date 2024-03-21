@@ -1,5 +1,5 @@
-import { getLocation } from "./utils";
 import type { Location } from "./types";
+import { getLocation } from "./utils";
 
 export class UserDeviceClient {
     location: Location | null;
@@ -14,7 +14,7 @@ export class UserDeviceClient {
         this.location = await getLocation();
         this.isInitialized = true;
 
-        // log location for debug
+        // Log location for debug
         console.log(JSON.stringify(this.location, null, 2));
     }
 }

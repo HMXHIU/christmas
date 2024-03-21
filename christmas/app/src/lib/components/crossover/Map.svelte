@@ -45,23 +45,27 @@
     const world = new Container();
 
     interface GridSprite {
+        id: string;
         sprite: Sprite;
         x: number;
         y: number;
     }
 
-    let gridSprites: Record<number, Record<number, GridSprite>> = {};
+    // Example: gridSprites[row][col][monster|biome] = {sprite, x, y}, [monster|biome] is a unique identifier (w.r.t the grid cell to allow update)
+    let gridSprites: Record<
+        number,
+        Record<number, Record<string, GridSprite>>
+    > = {};
 
     $: updateWorld(tile);
 
     function setGridSprite(row: number, col: number, gridSprite: GridSprite) {
-        if (!gridSprites[row]) {
-            gridSprites[row] = {};
-        }
-        gridSprites[row][col] = gridSprite;
+        gridSprites[row] ??= {};
+        gridSprites[row][col] ??= {};
+        gridSprites[row][col][gridSprite.id] = gridSprite;
     }
 
-    async function drawPlayer(tile: z.infer<typeof TileSchema>) {
+    async function drawPlayer() {
         const { player } = await Assets.loadBundle("player");
         const playerSprite = new AnimatedSprite(player.animations["stand"]);
         playerSprite.x = CANVAS_MID_COL * CELL_WIDTH;
@@ -101,7 +105,11 @@
                     continue;
                 }
 
-                gridSprites[row][col].sprite.destroy();
+                // Destroy all sprites in this grid cell
+                for (const [id, gs] of Object.entries(gridSprites[row][col])) {
+                    gs.sprite.destroy();
+                    delete gridSprites[row][col][id];
+                }
                 delete gridSprites[row][col];
             }
 
@@ -109,6 +117,31 @@
                 delete gridSprites[row];
             }
         }
+    }
+
+    async function loadSprite({
+        asset,
+        col,
+        row,
+        alpha,
+    }: {
+        asset: any;
+        col: number;
+        row: number;
+        alpha: number;
+    }) {
+        const bundle = await Assets.loadBundle(asset.bundle);
+        const frame = bundle[asset.name].textures[asset.variants!.default];
+        if (!frame) return null;
+
+        const sprite = new Sprite(frame);
+        sprite.x = col * CELL_WIDTH;
+        sprite.y = row * CELL_HEIGHT;
+        sprite.width = CELL_WIDTH;
+        sprite.height = CELL_HEIGHT;
+        sprite.alpha = alpha;
+
+        return sprite;
     }
 
     async function fillInGrid({
@@ -141,52 +174,49 @@
                 // Fill in biome
                 const biome =
                     $grid?.[cell.precision]?.[gridRow]?.[gridCol]?.biome;
-                if (!biome) continue;
-                const asset = biomes[biome].asset;
-                if (!asset) continue;
-                const bundle = await Assets.loadBundle(asset.bundle);
-                const frame =
-                    bundle[asset.name].textures[asset.variants!.default];
-                if (!frame) continue;
-
-                const sprite = new Sprite(frame);
-                sprite.x = col * CELL_WIDTH;
-                sprite.y = row * CELL_HEIGHT;
-                sprite.width = CELL_WIDTH;
-                sprite.height = CELL_HEIGHT;
-                sprite.alpha = alpha;
-
-                setGridSprite(gridRow, gridCol, {
-                    sprite: world.addChild(sprite),
-                    x: sprite.x,
-                    y: sprite.y,
-                });
+                if (biome) {
+                    const asset = biomes[biome].asset;
+                    if (asset) {
+                        const sprite = await loadSprite({
+                            asset,
+                            col,
+                            row,
+                            alpha,
+                        });
+                        if (sprite) {
+                            setGridSprite(gridRow, gridCol, {
+                                id: "biome",
+                                sprite: world.addChild(sprite),
+                                x: sprite.x,
+                                y: sprite.y,
+                            });
+                        }
+                    }
+                }
 
                 // Fill in monsters
                 const monsters =
                     $grid?.[cell.precision]?.[gridRow]?.[gridCol]?.monsters;
-                if (!monsters) continue;
-                for (const monster of Object.values(monsters)) {
-                    const asset = bestiary[monster.beast]?.asset;
-                    if (!asset) continue;
-                    const bundle = await Assets.loadBundle(asset.bundle);
-
-                    const frame =
-                        bundle[asset.name].textures[asset.variants!.default];
-                    if (!frame) continue;
-
-                    const sprite = new Sprite(frame);
-                    sprite.x = col * CELL_WIDTH;
-                    sprite.y = row * CELL_HEIGHT;
-                    sprite.width = CELL_WIDTH;
-                    sprite.height = CELL_HEIGHT;
-                    sprite.alpha = alpha;
-
-                    setGridSprite(gridRow, gridCol, {
-                        sprite: world.addChild(sprite),
-                        x: sprite.x,
-                        y: sprite.y,
-                    });
+                if (monsters) {
+                    for (const monster of Object.values(monsters)) {
+                        const asset = bestiary[monster.beast]?.asset;
+                        if (asset) {
+                            const sprite = await loadSprite({
+                                asset,
+                                col,
+                                row,
+                                alpha,
+                            });
+                            if (sprite) {
+                                setGridSprite(gridRow, gridCol, {
+                                    id: monster.monster,
+                                    sprite: world.addChild(sprite),
+                                    x: sprite.x,
+                                    y: sprite.y,
+                                });
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -265,12 +295,14 @@
 
                 // Update sprite target positions
                 if (deltaCol !== 0 || deltaRow !== 0) {
-                    Object.values(gridSprites).forEach((row) => {
-                        Object.values(row).forEach((gridSprite) => {
-                            gridSprite.x -= deltaCol * CELL_WIDTH;
-                            gridSprite.y -= deltaRow * CELL_HEIGHT;
-                        });
-                    });
+                    for (const row of Object.values(gridSprites)) {
+                        for (const gridSprite of Object.values(row)) {
+                            for (const gs of Object.values(gridSprite)) {
+                                gs.x -= deltaCol * CELL_WIDTH;
+                                gs.y -= deltaRow * CELL_HEIGHT;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -288,7 +320,7 @@
         world.pivot.y = WORLD_PIVOT_Y;
         app.stage.addChild(world);
 
-        await drawPlayer(tile);
+        await drawPlayer();
         await fillInGrid({
             cell: geohashToCell(tile.geohash),
             colStart: 0,
@@ -298,18 +330,16 @@
         // Ticker
         app.ticker.add((deltaTime) => {
             // Move sprites to their target positions
-            Object.values(gridSprites).forEach((row) => {
-                Object.values(row).forEach((gridSprite) => {
-                    gridSprite.sprite.x +=
-                        ((gridSprite.x - gridSprite.sprite.x) *
-                            deltaTime.elapsedMS) /
-                        100;
-                    gridSprite.sprite.y +=
-                        ((gridSprite.y - gridSprite.sprite.y) *
-                            deltaTime.elapsedMS) /
-                        100;
-                });
-            });
+            for (const row of Object.values(gridSprites)) {
+                for (const gss of Object.values(row)) {
+                    for (const gs of Object.values(gss)) {
+                        gs.sprite.x +=
+                            ((gs.x - gs.sprite.x) * deltaTime.elapsedMS) / 100;
+                        gs.sprite.y +=
+                            ((gs.y - gs.sprite.y) * deltaTime.elapsedMS) / 100;
+                    }
+                }
+            }
         });
 
         // Add the canvas to the DOM
