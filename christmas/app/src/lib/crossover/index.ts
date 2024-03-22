@@ -66,7 +66,7 @@ async function login(
         retryWithRefresh?: boolean;
     },
     headers: HTTPHeaders = {},
-): Promise<{ status: string; player: z.infer<typeof PlayerMetadataSchema> }> {
+): Promise<{ status: string; player: Player }> {
     retryWithRefresh ??= false;
     region =
         typeof region === "string" ? region : String.fromCharCode(...region);

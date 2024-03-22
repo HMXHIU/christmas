@@ -1,4 +1,6 @@
 import { commandLook, commandMove, commandSay, stream } from "$lib/crossover";
+import { worldSeed } from "$lib/crossover/world";
+import { playerStats } from "$lib/crossover/world/player";
 import { groupBy } from "lodash";
 import ngeohash from "ngeohash";
 import { expect, test } from "vitest";
@@ -11,29 +13,38 @@ test("Test Player", async () => {
     // Player one
     const playerOneName = "Gandalf";
     const playerOneGeohash = "gbsuv7";
-    let [playerOneWallet, playerOneCookies] = await createRandomPlayer({
-        region,
-        geohash: playerOneGeohash,
-        name: playerOneName,
-    });
+    let [playerOneWallet, playerOneCookies, playerOne] =
+        await createRandomPlayer({
+            region,
+            geohash: playerOneGeohash,
+            name: playerOneName,
+        });
+    expect(playerOne.geohash.length).toBe(worldSeed.spatial.unit.precision);
+    expect(playerOne.geohash.startsWith(playerOneGeohash)).toBe(true);
 
     // Player two
     const playerTwoName = "Saruman";
     const playerTwoGeohash = "gbsuv8";
-    let [playerTwoWallet, playerTwoCookies] = await createRandomPlayer({
-        region,
-        geohash: playerTwoGeohash,
-        name: playerTwoName,
-    });
+    let [playerTwoWallet, playerTwoCookies, playerTwo] =
+        await createRandomPlayer({
+            region,
+            geohash: playerTwoGeohash,
+            name: playerTwoName,
+        });
+    expect(playerTwo.geohash.length).toBe(worldSeed.spatial.unit.precision);
+    expect(playerTwo.geohash.startsWith(playerTwoGeohash)).toBe(true);
 
     // Player three
     const playerThreeName = "Sauron";
     const playerThreeGeohash = "gbsuv7";
-    let [playerThreeWallet, playerThreeCookies] = await createRandomPlayer({
-        region,
-        geohash: playerThreeGeohash,
-        name: playerThreeName,
-    });
+    let [playerThreeWallet, playerThreeCookies, playerThree] =
+        await createRandomPlayer({
+            region,
+            geohash: playerThreeGeohash,
+            name: playerThreeName,
+        });
+    expect(playerThree.geohash.length).toBe(worldSeed.spatial.unit.precision);
+    expect(playerThree.geohash.startsWith(playerThreeGeohash)).toBe(true);
 
     // Stream endpoint
     const [playerOneEventStream, playerOneCloseStream] = await stream({
@@ -80,6 +91,7 @@ test("Test Player", async () => {
             message: "Hello, world!",
         },
     });
+
     // Say - player three should receive message (same tile)
     await expect(
         waitForEventData(playerThreeEventStream, "message"),
@@ -92,6 +104,7 @@ test("Test Player", async () => {
             message: "Hello, world!",
         },
     });
+
     // Say - player two should not receive the message (different tile)
     await expect(
         waitForEventData(playerTwoEventStream, "message"),
@@ -100,7 +113,7 @@ test("Test Player", async () => {
     // Look - no target (tile)
     let lookAtResult = await commandLook({}, { Cookie: playerOneCookies });
     expect(lookAtResult.tile).toMatchObject({
-        geohash: playerOneGeohash,
+        geohash: playerOne.geohash,
     });
     expect(groupBy(lookAtResult.players, "player")).contains.keys([
         playerOneWallet.publicKey.toBase58(),
@@ -112,6 +125,20 @@ test("Test Player", async () => {
         { direction: "n" },
         { Cookie: playerOneCookies },
     );
-    const northTile = ngeohash.neighbor(playerOneGeohash, [1, 0]);
+    const northTile = ngeohash.neighbor(playerOne.geohash, [1, 0]);
     expect(nextTile).toEqual(northTile);
+
+    // Stats
+    expect(playerStats({ level: 1 })).toMatchObject({
+        hp: 10,
+        mp: 10,
+        st: 10,
+        ap: 10,
+    });
+    expect(playerStats({ level: 2 })).toMatchObject({
+        hp: 20,
+        mp: 20,
+        st: 20,
+        ap: 20,
+    });
 });

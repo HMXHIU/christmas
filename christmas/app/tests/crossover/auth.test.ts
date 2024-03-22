@@ -4,6 +4,7 @@ import {
     logout as logoutCrossover,
     signup,
 } from "$lib/crossover";
+import { worldSeed } from "$lib/crossover/world";
 import { ObjectStorage } from "$lib/server/objectStorage";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { Keypair } from "@solana/web3.js";
@@ -79,17 +80,23 @@ test("Test Auth", async () => {
     });
 
     // Login Crossover
-    await expect(
-        loginCrossover({ region, geohash }, { Cookie: cookies }),
-    ).resolves.toEqual({
-        status: "success",
-        player: {
-            player: user.publicKey.toBase58(),
-            name: name,
-            loggedIn: true,
-            geohash, // initialized to geohash the first time
-        },
+    var { status, player } = await loginCrossover(
+        { region, geohash },
+        { Cookie: cookies },
+    );
+    expect(status).toBe("success");
+    expect(player).toMatchObject({
+        player: user.publicKey.toBase58(),
+        name: name,
+        loggedIn: true,
+        ap: 10,
+        hp: 10,
+        level: 1,
+        mp: 10,
+        st: 10,
     });
+    expect(player.geohash.length).toBe(worldSeed.spatial.unit.precision); // test auto correct geohash precision
+    expect(player.geohash.startsWith(geohash)).toBe(true); // should be contained in the user's geohash
 
     // Check player state
     await expect(
@@ -100,7 +107,12 @@ test("Test Auth", async () => {
         }),
     ).resolves.toMatchObject({
         loggedIn: true,
-        geohash,
+        geohash: player.geohash,
+        ap: 10,
+        hp: 10,
+        level: 1,
+        mp: 10,
+        st: 10,
     });
 
     // Logout Crossover
@@ -110,7 +122,12 @@ test("Test Auth", async () => {
             player: user.publicKey.toBase58(),
             name: name,
             loggedIn: false,
-            geohash, // initialized to geohash the first time
+            geohash: player.geohash,
+            ap: 10,
+            hp: 10,
+            level: 1,
+            mp: 10,
+            st: 10,
         },
     });
 
@@ -123,6 +140,11 @@ test("Test Auth", async () => {
         }),
     ).resolves.toMatchObject({
         loggedIn: false,
-        geohash,
+        geohash: player.geohash,
+        ap: 10,
+        hp: 10,
+        level: 1,
+        mp: 10,
+        st: 10,
     });
 });

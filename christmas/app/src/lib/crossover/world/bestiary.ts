@@ -1,6 +1,7 @@
 import type { AssetMetadata } from ".";
+import { abilities, type AbilityType } from "./abilities";
 
-export { bestiary, type Beast };
+export { bestiary, monsterStats, type Beast };
 
 /**
  * `Beast` is a template used to spawn a `Monster` with derived stats from the template.
@@ -11,9 +12,11 @@ interface Beast {
     attack: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
     defense: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
     health: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+    magic: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+    endurance: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
     speed: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
     rarity: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-    abilities: string[];
+    abilities: Record<AbilityType, string[]>;
     behaviours: string[];
     spawnRate: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
     spawnBiomes: string[];
@@ -33,8 +36,14 @@ const bestiary: Record<string, Beast> = {
         defense: 1,
         health: 1,
         speed: 1,
+        magic: 1,
+        endurance: 1,
         rarity: 1,
-        abilities: ["steal"],
+        abilities: {
+            offensive: [abilities.scratch.ability],
+            defensive: [],
+            neutral: [],
+        },
         behaviours: [],
         spawnRate: 1,
         spawnBiomes: [],
@@ -57,8 +66,14 @@ const bestiary: Record<string, Beast> = {
         defense: 1,
         health: 1,
         speed: 2,
+        magic: 2,
+        endurance: 1,
         rarity: 1,
-        abilities: ["paralyze"],
+        abilities: {
+            offensive: [abilities.bite.ability, abilities.paralyze.ability],
+            defensive: [],
+            neutral: [],
+        },
         behaviours: [],
         spawnRate: 1,
         spawnBiomes: [],
@@ -81,8 +96,14 @@ const bestiary: Record<string, Beast> = {
         defense: 10,
         health: 10,
         speed: 10,
+        magic: 8,
+        endurance: 8,
         rarity: 10,
-        abilities: ["breathFire"],
+        abilities: {
+            offensive: [abilities.bite.ability, abilities.breathFire.ability],
+            defensive: [abilities.blind.ability],
+            neutral: [],
+        },
         behaviours: [],
         spawnRate: 10,
         spawnBiomes: [],
@@ -99,3 +120,19 @@ const bestiary: Record<string, Beast> = {
         },
     },
 };
+
+function monsterStats({ level, beast }: { level: number; beast: string }): {
+    hp: number;
+    mp: number;
+    st: number;
+    ap: number;
+} {
+    const beastTemplate = bestiary[beast];
+    const multiplier = 1 + Math.log(level) + level; // make monsters stronger than players
+    return {
+        hp: beastTemplate.health * 10 * multiplier,
+        mp: beastTemplate.magic * 10 * multiplier,
+        st: beastTemplate.endurance * 10 * multiplier,
+        ap: 10 + multiplier * beastTemplate.speed,
+    };
+}

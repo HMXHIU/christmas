@@ -22,6 +22,13 @@ const PlayerEntitySchema = new Schema("Player", {
     // Player state
     geohash: { type: "string" },
     loggedIn: { type: "boolean" },
+    level: { type: "number" },
+    ap: { type: "number" }, // action points (require to perform abilities)
+    hp: { type: "number" }, // health points
+    mp: { type: "number" }, // mana points
+    st: { type: "number" }, // stamina points
+    debuffs: { type: "string[]" },
+    buffs: { type: "string[]" },
 });
 
 interface Player {
@@ -32,6 +39,13 @@ interface Player {
     // Player state
     geohash: string;
     loggedIn: boolean;
+    level: number;
+    ap: number; // action points (require to perform abilities)
+    hp: number; // health points
+    mp: number; // mana points
+    st: number; // stamina points
+    debuffs: string[];
+    buffs: string[];
 }
 
 type PlayerEntity = Player & Entity;
@@ -49,7 +63,13 @@ const MonsterEntitySchema = new Schema("Monster", {
     beast: { type: "string" },
     // Monster state
     geohash: { type: "string" },
-    health: { type: "number" },
+    level: { type: "number" },
+    ap: { type: "number" }, // action points (require to perform abilities)
+    hp: { type: "number" }, // health points
+    mp: { type: "number" }, // mana points
+    st: { type: "number" }, // stamina points
+    debuffs: { type: "string[]" },
+    buffs: { type: "string[]" },
 });
 
 interface Monster {
@@ -59,7 +79,13 @@ interface Monster {
     beast: string;
     // Monster state
     geohash: string;
-    health: number;
+    level: number;
+    ap: number; // action points (require to perform abilities)
+    hp: number; // health points
+    mp: number; // mana points
+    st: number; // stamina points
+    debuffs: string[];
+    buffs: string[];
 }
 
 type MonsterEntity = Monster & Entity;

@@ -5,6 +5,7 @@ import {
 } from "$lib/crossover/world";
 import { monstersInGeohashQuerySet } from "$lib/server/crossover";
 import { spawnMonsters } from "$lib/server/crossover/dungeonMaster";
+import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer } from "./utils";
@@ -15,29 +16,32 @@ test("Test DungeonMaster", async () => {
     // Player one
     const playerOneName = "Gandalf";
     const playerOneGeohash = "w21z3tss";
-    let [playerOneWallet, playerOneCookies] = await createRandomPlayer({
-        region,
-        geohash: playerOneGeohash,
-        name: playerOneName,
-    });
+    let [playerOneWallet, playerOneCookies, playerOne] =
+        await createRandomPlayer({
+            region,
+            geohash: playerOneGeohash,
+            name: playerOneName,
+        });
 
     // Player two
     const playerTwoName = "Saruman";
     const playerTwoGeohash = "w21z3ttk";
-    let [playerTwoWallet, playerTwoCookies] = await createRandomPlayer({
-        region,
-        geohash: playerTwoGeohash,
-        name: playerTwoName,
-    });
+    let [playerTwoWallet, playerTwoCookies, playerTwo] =
+        await createRandomPlayer({
+            region,
+            geohash: playerTwoGeohash,
+            name: playerTwoName,
+        });
 
     // Player three
     const playerThreeName = "Sauron";
     const playerThreeGeohash = "w21z3tk8";
-    let [playerThreeWallet, playerThreeCookies] = await createRandomPlayer({
-        region,
-        geohash: playerThreeGeohash,
-        name: playerThreeName,
-    });
+    let [playerThreeWallet, playerThreeCookies, playerThree] =
+        await createRandomPlayer({
+            region,
+            geohash: playerThreeGeohash,
+            name: playerThreeName,
+        });
 
     // Test get all uninhabited neighbouring geohashes
     const uninhabitedGeohashes = await uninhabitedNeighbouringGeohashes([
@@ -72,9 +76,9 @@ test("Test DungeonMaster", async () => {
     expect(maxMonstersInArea).to.equal(41);
 
     // Test spawn monsters cannot exceed monster limit
-    await spawnMonsters();
-    await spawnMonsters();
-    await spawnMonsters();
+    await spawnMonsters([playerOne, playerTwo, playerThree] as PlayerEntity[]);
+    await spawnMonsters([playerOne, playerTwo, playerThree] as PlayerEntity[]);
+    await spawnMonsters([playerOne, playerTwo, playerThree] as PlayerEntity[]);
 
     const numMonstersInArea = await Promise.all(
         uninhabitedGeohashes.map((geohash) =>

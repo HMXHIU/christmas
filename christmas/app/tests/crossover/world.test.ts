@@ -129,7 +129,7 @@ test("Test World", async () => {
 
     // Test updateGrid
     let grid = {};
-    grid = updateGrid(grid, biomesAtGeohash("w61z4m6", worldSeed));
+    grid = updateGrid({ grid, biomes: biomesAtGeohash("w61z4m6", worldSeed) });
 
     expect(grid).to.deep.equal({
         "8": {

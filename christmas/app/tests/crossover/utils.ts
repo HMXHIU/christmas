@@ -1,4 +1,5 @@
 import { login as loginCrossover, signup } from "$lib/crossover";
+import type { Player } from "$lib/server/crossover/redis/entities";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import type { StreamEventData } from "../../src/routes/api/crossover/stream/+server";
 import { createRandomUser } from "../utils";
@@ -18,13 +19,16 @@ export async function createRandomPlayer({
     geohash: string;
     region: string;
     name: string;
-}): Promise<[NodeWallet, string]> {
+}): Promise<[NodeWallet, string, Player]> {
     const [wallet, cookies] = await createRandomUser({ region });
 
     await signup({ name }, { headers: { Cookie: cookies }, wallet });
-    await loginCrossover({ geohash, region }, { Cookie: cookies });
+    const { status, player } = await loginCrossover(
+        { geohash, region },
+        { Cookie: cookies },
+    );
 
-    return [wallet, cookies];
+    return [wallet, cookies, player];
 }
 
 /**

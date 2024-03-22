@@ -1,5 +1,6 @@
 import { childrenGeohashes, worldSeed } from "$lib/crossover/world";
-import { bestiary } from "$lib/crossover/world/bestiary";
+import { monsterStats } from "$lib/crossover/world/bestiary";
+import { playerStats } from "$lib/crossover/world/player";
 import { serverAnchorClient } from "$lib/server";
 import { parseZodErrors } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
@@ -139,9 +140,9 @@ async function getLoadedPlayerEntity(
 }
 
 /**
- * Loads the player entity for a given public key.
+ * Loads the player entity (PlayerMetadata + PlayerState) for a given public key.
  * @param publicKey The public key of the player.
- * @param playerState The initial player state.
+ * @param playerState Upsert player state if provided.
  * @returns A promise that resolves to the loaded player entity.
  * @throws Error if the player is not found.
  */
@@ -194,6 +195,17 @@ async function initPlayerEntity(
     if (!player.geohash) {
         // TODO: Spawn player in region's city center spawn point
         player.geohash = geohash;
+        changed = true;
+    }
+
+    // Initialize level and stats
+    if (!player.level) {
+        player.level = 1;
+        const { hp, mp, st, ap } = playerStats({ level: player.level });
+        player.hp = hp;
+        player.mp = mp;
+        player.st = st;
+        player.ap = ap;
         changed = true;
     }
 
@@ -279,18 +291,19 @@ async function spawnMonster({
     // Get monster count
     const count = await monsterRepository.search().count();
 
-    // Get beast template
-    const beastTemplate = bestiary[beast];
-    if (!beastTemplate) {
-        throw new Error(`Beast ${beast} not found in bestiary`);
-    }
-
+    // Get monster stats
+    const level = 1; // TODO: Calculate level based on geohash and player level in area
+    const { hp, mp, st, ap } = monsterStats({ level, beast });
     const monster: MonsterEntity = {
-        monster: `${beast}${count}`, // Unique monster id
+        monster: `${beast}${count}`, // unique monster id
         name: beast,
         beast,
         geohash,
-        health: beastTemplate.health * 10, // TODO: derive more stats with random variance
+        level,
+        hp,
+        mp,
+        st,
+        ap,
     };
     return (await monsterRepository.save(
         `${beast}${count}`,

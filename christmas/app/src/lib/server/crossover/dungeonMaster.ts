@@ -4,28 +4,56 @@ import {
     uninhabitedNeighbouringGeohashes,
     worldSeed,
 } from "$lib/crossover/world";
-import { bestiary } from "$lib/crossover/world/bestiary";
+import { performAbility } from "$lib/crossover/world/abilities";
+import { bestiary, type Beast } from "$lib/crossover/world/bestiary";
 import {
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
     spawnMonster,
 } from ".";
-import type { PlayerEntity } from "./redis/entities";
+import type { MonsterEntity, PlayerEntity } from "./redis/entities";
 
 export { spawnMonsters, tick };
 
 async function tick() {
-    console.log("Spawning monsters ...");
-    await spawnMonsters();
-}
-
-async function spawnMonsters() {
     // Get all logged in players
     const players =
         (await loggedInPlayersQuerySet().return.all()) as PlayerEntity[];
 
-    console.log("players", players);
+    console.log("Spawning monsters ...");
+    await spawnMonsters(players);
 
+    console.log("Monster actions ...");
+    await performMonsterActions(players);
+}
+
+function decideMonsterAbility(
+    monster: MonsterEntity,
+    player: PlayerEntity,
+): string {
+    const beast: Beast = bestiary[monster.beast];
+    return Object.keys(beast.abilities.offensive)[0];
+}
+
+async function performMonsterActions(players: PlayerEntity[]) {
+    for (const player of players) {
+        // Get monsters in player's geohash
+        const monsters = (await monstersInGeohashQuerySet(
+            player.geohash,
+        ).return.all()) as MonsterEntity[];
+
+        // Perform monster actions
+        for (const monster of monsters) {
+            performAbility({
+                self: monster,
+                target: player,
+                ability: decideMonsterAbility(monster, player),
+            });
+        }
+    }
+}
+
+async function spawnMonsters(players: PlayerEntity[]) {
     // Get all parent geohashes (only interested with geohashes 1 level above unit precision)
     const parentGeohashes = players
         .map(({ geohash }) => {
@@ -36,13 +64,9 @@ async function spawnMonsters() {
                 geohash.length === worldSeed.spatial.unit.precision - 1,
         );
 
-    console.log("parentGeohashes", parentGeohashes);
-
     // Get all neighboring geohashes where there are no players
     const uninhabitedGeohashes =
         await uninhabitedNeighbouringGeohashes(parentGeohashes);
-
-    console.log(uninhabitedGeohashes);
 
     for (const geohash of uninhabitedGeohashes) {
         // Get monster limit for each uninhabited geohash
@@ -50,8 +74,6 @@ async function spawnMonsters() {
 
         // Get number of monsters in geohash
         const numMonsters = await monstersInGeohashQuerySet(geohash).count();
-
-        console.log("monsterLimit", monsterLimit, "numMonsters", numMonsters);
 
         // Number of monsters to spawn
         const numMonstersToSpawn = monsterLimit - numMonsters;
@@ -73,8 +95,6 @@ async function spawnMonsters() {
                 geohash: childGeohash,
                 beast: bestiary.goblin.beast, // TODO: use PG to get random beast
             });
-
-            console.log("spawned", monster.monster, "in", childGeohash);
         }
     }
 }

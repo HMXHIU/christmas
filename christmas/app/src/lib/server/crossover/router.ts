@@ -75,6 +75,11 @@ const MoveSchema = z.object({
 const PlayerStateSchema = z.object({
     geohash: z.string().optional(),
     loggedIn: z.boolean().optional(),
+    hp: z.number().optional(),
+    mp: z.number().optional(),
+    st: z.number().optional(),
+    ap: z.number().optional(),
+    level: z.number().optional(),
 });
 // PlayerMetadata stores data owned by the player (requires player to sign transactions to modify)
 const PlayerMetadataSchema = z.object({
@@ -129,11 +134,10 @@ const crossoverRouter = {
                         message: input.message,
                     },
                 };
-                const message = JSON.stringify(messageData);
 
                 // Send message to all users in the geohash
                 for (const publicKey of users) {
-                    redisClient.publish(publicKey, message);
+                    redisClient.publish(publicKey, JSON.stringify(messageData));
                 }
             }),
         // cmd.look
