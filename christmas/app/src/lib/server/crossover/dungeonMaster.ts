@@ -4,8 +4,16 @@ import {
     uninhabitedNeighbouringGeohashes,
     worldSeed,
 } from "$lib/crossover/world";
-import { performAbility } from "$lib/crossover/world/abilities";
-import { bestiary, type Beast } from "$lib/crossover/world/bestiary";
+import {
+    abilities,
+    canPerformAbility,
+    performAbility,
+} from "$lib/crossover/world/abilities";
+import {
+    bestiary,
+    monsterStats,
+    type Beast,
+} from "$lib/crossover/world/bestiary";
 import {
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
@@ -13,7 +21,7 @@ import {
 } from ".";
 import type { MonsterEntity, PlayerEntity } from "./redis/entities";
 
-export { spawnMonsters, tick };
+export { selectMonsterAbility, spawnMonsters, tick };
 
 async function tick() {
     // Get all logged in players
@@ -27,12 +35,76 @@ async function tick() {
     await performMonsterActions(players);
 }
 
-function decideMonsterAbility(
+function selectMonsterAbility(
     monster: MonsterEntity,
-    player: PlayerEntity,
-): string {
+    player: PlayerEntity, // TODO: add more intelligence based on player stats
+): string | null {
     const beast: Beast = bestiary[monster.beast];
-    return Object.keys(beast.abilities.offensive)[0];
+
+    // TODO: cache this using lru-cache
+    const { hp: maxHp } = monsterStats({
+        level: monster.level,
+        beast: monster.beast,
+    });
+
+    // Use the highest ap healing ability if monster's hp is less than half
+    if (beast.abilities.healing.length > 0 && monster.hp < maxHp / 2) {
+        const healingAbilities = beast.abilities.healing
+            .sort((a, b) => {
+                return abilities[b].ap - abilities[a].ap;
+            })
+            .filter((ability) => {
+                return canPerformAbility(monster, ability);
+            });
+        if (healingAbilities.length > 0) {
+            return healingAbilities[0];
+        }
+    }
+
+    // Use the highest ap offensive ability
+    if (beast.abilities.offensive.length > 0) {
+        const offensiveAbilities = beast.abilities.offensive
+            .sort((a, b) => {
+                return abilities[b].ap - abilities[a].ap;
+            })
+            .filter((ability) => {
+                return canPerformAbility(monster, ability);
+            });
+        if (offensiveAbilities.length > 0) {
+            return offensiveAbilities[0];
+        }
+    }
+
+    // Use the highest ap defensive ability
+    if (beast.abilities.defensive.length > 0) {
+        const defensiveAbilities = beast.abilities.defensive
+            .sort((a, b) => {
+                return abilities[b].ap - abilities[a].ap;
+            })
+            .filter((ability) => {
+                return canPerformAbility(monster, ability);
+            });
+        if (defensiveAbilities.length > 0) {
+            return defensiveAbilities[0];
+        }
+    }
+
+    // Use the highest ap neutral ability
+    if (beast.abilities.neutral.length > 0) {
+        const neutralAbilities = beast.abilities.neutral
+            .sort((a, b) => {
+                return abilities[b].ap - abilities[a].ap;
+            })
+            .filter((ability) => {
+                return canPerformAbility(monster, ability);
+            });
+        if (neutralAbilities.length > 0) {
+            return neutralAbilities[0];
+        }
+    }
+
+    // Do nothing
+    return null;
 }
 
 async function performMonsterActions(players: PlayerEntity[]) {
@@ -44,11 +116,14 @@ async function performMonsterActions(players: PlayerEntity[]) {
 
         // Perform monster actions
         for (const monster of monsters) {
-            performAbility({
-                self: monster,
-                target: player,
-                ability: decideMonsterAbility(monster, player),
-            });
+            const ability = selectMonsterAbility(monster, player);
+            if (ability != null) {
+                performAbility({
+                    self: monster,
+                    target: player,
+                    ability,
+                });
+            }
         }
     }
 }

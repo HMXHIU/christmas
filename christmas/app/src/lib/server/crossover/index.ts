@@ -206,6 +206,8 @@ async function initPlayerEntity(
         player.mp = mp;
         player.st = st;
         player.ap = ap;
+        player.debuffs = [];
+        player.buffs = [];
         changed = true;
     }
 
@@ -284,15 +286,19 @@ function monstersInGeohashQuerySet(geohash: string): Search {
 async function spawnMonster({
     geohash,
     beast,
+    level,
 }: {
     geohash: string;
     beast: string;
+    level?: number;
 }): Promise<MonsterEntity> {
+    // TODO: Calculate level based on geohash and player level in area if not provided
+    level ??= 1;
+
     // Get monster count
     const count = await monsterRepository.search().count();
 
     // Get monster stats
-    const level = 1; // TODO: Calculate level based on geohash and player level in area
     const { hp, mp, st, ap } = monsterStats({ level, beast });
     const monster: MonsterEntity = {
         monster: `${beast}${count}`, // unique monster id
@@ -304,6 +310,8 @@ async function spawnMonster({
         mp,
         st,
         ap,
+        buffs: [],
+        debuffs: [],
     };
     return (await monsterRepository.save(
         `${beast}${count}`,

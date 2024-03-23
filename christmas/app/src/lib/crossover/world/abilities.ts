@@ -6,6 +6,7 @@ import { geohashToCell } from ".";
 
 export {
     abilities,
+    canPerformAbility,
     performAbility,
     type Ability,
     type AbilityType,
@@ -16,7 +17,7 @@ export {
     type ProcedureEffect,
 };
 
-type AbilityType = "offensive" | "defensive" | "neutral"; // to allow AI to choose abilities based on the situation
+type AbilityType = "offensive" | "defensive" | "healing" | "neutral"; // to allow AI to choose abilities based on the situation
 type DamageType =
     | "slashing"
     | "blunt"
@@ -26,7 +27,8 @@ type DamageType =
     | "lightning"
     | "poison"
     | "necrotic"
-    | "radiant";
+    | "radiant"
+    | "healing";
 type Debuff =
     | "paralyzed"
     | "blinded"
@@ -75,6 +77,26 @@ interface ProcedureEffect {
 }
 
 const abilities: Record<string, Ability> = {
+    bandage: {
+        ability: "bandage",
+        type: "healing",
+        description: "Bandages the player's wounds.",
+        procedures: [
+            [
+                "action",
+                {
+                    target: "self",
+                    damage: { amount: -5, damageType: "healing" },
+                },
+            ],
+        ],
+        ap: 2,
+        st: 1,
+        hp: 0,
+        mp: 0,
+        range: 0,
+        aoe: 0,
+    },
     scratch: {
         ability: "scratch",
         type: "offensive",
@@ -323,7 +345,7 @@ function performAbility({
     status: "success" | "failure";
     message: string;
 } {
-    const { procedures, ap, range } = abilities[ability];
+    const { procedures, ap, mp, st, hp, range } = abilities[ability];
 
     // Check if self has enough AP
     if (self.ap < ap) {
@@ -338,6 +360,12 @@ function performAbility({
     if (!inRange) {
         return { self, target, status: "failure", message: "Out of range" };
     }
+
+    // Expend ability costs
+    self.ap -= ap;
+    self.mp -= mp;
+    self.st -= st;
+    self.hp -= hp;
 
     for (const [type, effect] of procedures) {
         if (type === "action") {
@@ -355,4 +383,12 @@ function performAbility({
         }
     }
     return { self, target, status: "success", message: "" };
+}
+
+function canPerformAbility(
+    self: PlayerEntity | MonsterEntity,
+    ability: string,
+) {
+    const { ap, mp, st, hp } = abilities[ability];
+    return self.ap >= ap && self.mp >= mp && self.st >= st && self.hp >= hp;
 }

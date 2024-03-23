@@ -41,6 +41,7 @@ const bestiary: Record<string, Beast> = {
         rarity: 1,
         abilities: {
             offensive: [abilities.scratch.ability],
+            healing: [abilities.bandage.ability],
             defensive: [],
             neutral: [],
         },
@@ -71,6 +72,7 @@ const bestiary: Record<string, Beast> = {
         rarity: 1,
         abilities: {
             offensive: [abilities.bite.ability, abilities.paralyze.ability],
+            healing: [],
             defensive: [],
             neutral: [],
         },
@@ -101,6 +103,7 @@ const bestiary: Record<string, Beast> = {
         rarity: 10,
         abilities: {
             offensive: [abilities.bite.ability, abilities.breathFire.ability],
+            healing: [],
             defensive: [abilities.blind.ability],
             neutral: [],
         },
@@ -130,9 +133,9 @@ function monsterStats({ level, beast }: { level: number; beast: string }): {
     const beastTemplate = bestiary[beast];
     const multiplier = 1 + Math.log(level) + level; // make monsters stronger than players
     return {
-        hp: beastTemplate.health * 10 * multiplier,
-        mp: beastTemplate.magic * 10 * multiplier,
-        st: beastTemplate.endurance * 10 * multiplier,
-        ap: 10 + multiplier * beastTemplate.speed,
+        hp: Math.ceil(beastTemplate.health * 10 * multiplier),
+        mp: Math.ceil(beastTemplate.magic * 10 * multiplier),
+        st: Math.ceil(beastTemplate.endurance * 10 * multiplier),
+        ap: Math.ceil(beastTemplate.speed + 10),
     };
 }

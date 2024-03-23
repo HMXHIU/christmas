@@ -3,6 +3,7 @@ import {
     biomeAtGeohash,
     geohashNeighbour,
     tileAtGeohash,
+    worldSeed,
 } from "$lib/crossover/world";
 import { biomes } from "$lib/crossover/world/biomes";
 import {
@@ -22,6 +23,7 @@ import {
     monstersInGeohashQuerySet,
     playersInGeohashQuerySet,
     savePlayerEntityState,
+    spawnMonster,
 } from ".";
 import {
     FEE_PAYER_PUBKEY,
@@ -70,6 +72,11 @@ const TileSchema = z.object({
 const MoveSchema = z.object({
     direction: z.enum(["n", "s", "e", "w", "ne", "nw", "se", "sw", "u", "d"]),
 });
+const SpawnMonsterSchema = z.object({
+    geohash: z.string(),
+    level: z.number(),
+    beast: z.string(),
+});
 
 // PlayerState stores data owned by the game (does not require player permission to modify)
 const PlayerStateSchema = z.object({
@@ -109,6 +116,22 @@ const crossoverRouter = {
             const end = performance.now();
             return { status: "success", time: end - start };
         }),
+        spawnMonster: internalServiceProcedure
+            .input(SpawnMonsterSchema)
+            .mutation(async ({ input }) => {
+                const { geohash, level, beast } = input;
+
+                // Check geohash is unit precision
+                if (geohash.length !== worldSeed.spatial.unit.precision) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `Geohash must be unit precision`,
+                    });
+                }
+
+                const monster = await spawnMonster({ geohash, level, beast });
+                return monster;
+            }),
     }),
     // Commands
     cmd: t.router({
