@@ -209,6 +209,7 @@ async function initPlayerEntity(
         player.debuffs = [];
         player.buffs = [];
         changed = true;
+        console.log("Initialized player's level and stats", player.player);
     }
 
     // Auto correct player's geohash precision

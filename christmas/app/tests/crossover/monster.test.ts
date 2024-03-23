@@ -1,7 +1,10 @@
 import { abilities } from "$lib/crossover/world/abilities";
 import { monsterStats } from "$lib/crossover/world/bestiary";
 import { spawnMonster } from "$lib/server/crossover";
-import { selectMonsterAbility } from "$lib/server/crossover/dungeonMaster";
+import {
+    performMonsterActions,
+    selectMonsterAbility,
+} from "$lib/server/crossover/dungeonMaster";
 import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
@@ -13,7 +16,7 @@ test("Test Monster", async () => {
 
     // Player one
     const playerOneName = "Gandalf";
-    const playerOneGeohash = "gbsuv7";
+    const playerOneGeohash = geohash;
     let [playerOneWallet, playerOneCookies, playerOne] =
         await createRandomPlayer({
             region,
@@ -65,4 +68,13 @@ test("Test Monster", async () => {
         playerOne as PlayerEntity,
     );
     expect(healingAbility).toBe(abilities.bandage.ability);
+
+    // Test do nothing when not enough ap
+    goblin.ap = 0;
+    const noAbility = selectMonsterAbility(goblin, playerOne as PlayerEntity);
+    expect(noAbility).toBe(null);
+
+    // Test monster attacking player
+    goblin.ap = 10;
+    await performMonsterActions([playerOne as PlayerEntity], [goblin]);
 });

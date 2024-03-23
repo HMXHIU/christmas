@@ -94,6 +94,8 @@ test("Test Auth", async () => {
         level: 1,
         mp: 10,
         st: 10,
+        buffs: [],
+        debuffs: [],
     });
     expect(player.geohash.length).toBe(worldSeed.spatial.unit.precision); // test auto correct geohash precision
     expect(player.geohash.startsWith(geohash)).toBe(true); // should be contained in the user's geohash
@@ -113,6 +115,8 @@ test("Test Auth", async () => {
         level: 1,
         mp: 10,
         st: 10,
+        buffs: [],
+        debuffs: [],
     });
 
     // Logout Crossover
@@ -128,6 +132,8 @@ test("Test Auth", async () => {
             level: 1,
             mp: 10,
             st: 10,
+            buffs: [],
+            debuffs: [],
         },
     });
 
@@ -146,5 +152,7 @@ test("Test Auth", async () => {
         level: 1,
         mp: 10,
         st: 10,
+        buffs: [],
+        debuffs: [],
     });
 });

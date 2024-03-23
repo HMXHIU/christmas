@@ -13,6 +13,7 @@ export {
     type Buff,
     type DamageType,
     type Debuff,
+    type OnProcedure,
     type Procedure,
     type ProcedureEffect,
 };
@@ -281,7 +282,7 @@ function performAction({
     entity: PlayerEntity | MonsterEntity;
     effect: ProcedureEffect;
 }): PlayerEntity | MonsterEntity {
-    const { damage, debuffs } = effect;
+    // TODO: return success of fail if resisted
 
     if (effect.damage) {
         entity.hp = Math.max(0, entity.hp - effect.damage.amount);
@@ -331,15 +332,26 @@ function performCheck({
     return false;
 }
 
-function performAbility({
-    self,
+type OnProcedure = ({
     target,
-    ability,
+    effect,
 }: {
-    self: PlayerEntity | MonsterEntity;
     target: PlayerEntity | MonsterEntity;
-    ability: string;
-}): {
+    effect: ProcedureEffect;
+}) => void;
+
+function performAbility(
+    {
+        self,
+        target,
+        ability,
+    }: {
+        self: PlayerEntity | MonsterEntity;
+        target: PlayerEntity | MonsterEntity;
+        ability: string;
+    },
+    onProcedure?: OnProcedure,
+): {
     self: PlayerEntity | MonsterEntity;
     target: PlayerEntity | MonsterEntity;
     status: "success" | "failure";
@@ -371,8 +383,21 @@ function performAbility({
         if (type === "action") {
             if (effect.target === "self") {
                 self = performAction({ entity: self, effect });
+                // TODO: only call onProcedure if the effect was successful
+                if (onProcedure) {
+                    onProcedure({
+                        target: self,
+                        effect,
+                    });
+                }
             } else if (effect.target === "target") {
                 target = performAction({ entity: target, effect });
+                if (onProcedure) {
+                    onProcedure({
+                        target,
+                        effect,
+                    });
+                }
             }
         } else if (type === "check") {
             if (effect.target === "self") {

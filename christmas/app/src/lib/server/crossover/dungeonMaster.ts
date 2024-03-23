@@ -8,6 +8,7 @@ import {
     abilities,
     canPerformAbility,
     performAbility,
+    type OnProcedure,
 } from "$lib/crossover/world/abilities";
 import {
     bestiary,
@@ -19,9 +20,10 @@ import {
     monstersInGeohashQuerySet,
     spawnMonster,
 } from ".";
+import { monsterRepository, playerRepository } from "./redis";
 import type { MonsterEntity, PlayerEntity } from "./redis/entities";
 
-export { selectMonsterAbility, spawnMonsters, tick };
+export { performMonsterActions, selectMonsterAbility, spawnMonsters, tick };
 
 async function tick() {
     // Get all logged in players
@@ -47,9 +49,11 @@ function selectMonsterAbility(
         beast: monster.beast,
     });
 
+    const { offensive, defensive, neutral, healing } = beast.abilities;
+
     // Use the highest ap healing ability if monster's hp is less than half
-    if (beast.abilities.healing.length > 0 && monster.hp < maxHp / 2) {
-        const healingAbilities = beast.abilities.healing
+    if (healing.length > 0 && monster.hp < maxHp / 2) {
+        const healingAbilities = healing
             .sort((a, b) => {
                 return abilities[b].ap - abilities[a].ap;
             })
@@ -62,8 +66,8 @@ function selectMonsterAbility(
     }
 
     // Use the highest ap offensive ability
-    if (beast.abilities.offensive.length > 0) {
-        const offensiveAbilities = beast.abilities.offensive
+    if (offensive.length > 0) {
+        const offensiveAbilities = offensive
             .sort((a, b) => {
                 return abilities[b].ap - abilities[a].ap;
             })
@@ -76,8 +80,8 @@ function selectMonsterAbility(
     }
 
     // Use the highest ap defensive ability
-    if (beast.abilities.defensive.length > 0) {
-        const defensiveAbilities = beast.abilities.defensive
+    if (defensive.length > 0) {
+        const defensiveAbilities = defensive
             .sort((a, b) => {
                 return abilities[b].ap - abilities[a].ap;
             })
@@ -90,8 +94,8 @@ function selectMonsterAbility(
     }
 
     // Use the highest ap neutral ability
-    if (beast.abilities.neutral.length > 0) {
-        const neutralAbilities = beast.abilities.neutral
+    if (neutral.length > 0) {
+        const neutralAbilities = neutral
             .sort((a, b) => {
                 return abilities[b].ap - abilities[a].ap;
             })
@@ -107,22 +111,54 @@ function selectMonsterAbility(
     return null;
 }
 
-async function performMonsterActions(players: PlayerEntity[]) {
+const onProcedure: OnProcedure = async ({
+    target,
+    effect,
+}): Promise<PlayerEntity | MonsterEntity> => {
+    if (target.player) {
+        console.log("onProcedure", target, effect); // TODO: publish to player
+
+        // Save player
+        return (await playerRepository.save(
+            (target as PlayerEntity).player,
+            target as PlayerEntity,
+        )) as PlayerEntity;
+    } else if (target.monster) {
+        console.log("onProcedure", target, effect);
+
+        // Save monster
+        return (await monsterRepository.save(
+            (target as MonsterEntity).monster,
+            target as MonsterEntity,
+        )) as MonsterEntity;
+    }
+    throw new Error("Invalid target, must be player or monster");
+};
+
+async function performMonsterActions(
+    players: PlayerEntity[],
+    monsters?: MonsterEntity[],
+) {
     for (const player of players) {
         // Get monsters in player's geohash
-        const monsters = (await monstersInGeohashQuerySet(
-            player.geohash,
-        ).return.all()) as MonsterEntity[];
+        const monstersNearPlayer =
+            monsters ||
+            ((await monstersInGeohashQuerySet(
+                player.geohash,
+            ).return.all()) as MonsterEntity[]);
 
         // Perform monster actions
-        for (const monster of monsters) {
+        for (const monster of monstersNearPlayer) {
             const ability = selectMonsterAbility(monster, player);
             if (ability != null) {
-                performAbility({
-                    self: monster,
-                    target: player,
-                    ability,
-                });
+                performAbility(
+                    {
+                        self: monster,
+                        target: player,
+                        ability,
+                    },
+                    onProcedure,
+                );
             }
         }
     }
