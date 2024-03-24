@@ -25,6 +25,7 @@ export {
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
     playersInGeohashQuerySet,
+    saveEntity,
     savePlayerEntityState,
     spawnMonster,
     type ConnectedUser,
@@ -318,4 +319,21 @@ async function spawnMonster({
         `${beast}${count}`,
         monster,
     )) as MonsterEntity;
+}
+
+async function saveEntity(
+    entity: PlayerEntity | MonsterEntity,
+): Promise<PlayerEntity | MonsterEntity> {
+    if (entity.player) {
+        return (await playerRepository.save(
+            (entity as PlayerEntity).player,
+            entity,
+        )) as PlayerEntity;
+    } else if (entity.monster) {
+        return (await monsterRepository.save(
+            (entity as MonsterEntity).monster,
+            entity,
+        )) as MonsterEntity;
+    }
+    throw new Error("Invalid entity");
 }

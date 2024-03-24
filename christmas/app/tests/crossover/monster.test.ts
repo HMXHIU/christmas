@@ -5,7 +5,14 @@ import {
     performMonsterActions,
     selectMonsterAbility,
 } from "$lib/server/crossover/dungeonMaster";
-import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
+import {
+    monsterRepository,
+    playerRepository,
+} from "$lib/server/crossover/redis";
+import type {
+    MonsterEntity,
+    PlayerEntity,
+} from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer } from "./utils";
@@ -39,7 +46,7 @@ test("Test Monster", async () => {
     });
 
     // Test spawn monster
-    const goblin = await spawnMonster({
+    let goblin = await spawnMonster({
         geohash: geohash,
         beast: "goblin",
         level: 1,
@@ -76,5 +83,22 @@ test("Test Monster", async () => {
 
     // Test monster attacking player
     goblin.ap = 10;
+    goblin.hp = 20;
+    goblin = (await monsterRepository.save(
+        goblin.monster,
+        goblin,
+    )) as MonsterEntity;
+    playerOne.hp = 20;
+    playerOne = (await playerRepository.save(
+        playerOne.player,
+        playerOne as PlayerEntity,
+    )) as PlayerEntity;
     await performMonsterActions([playerOne as PlayerEntity], [goblin]);
+    playerOne = (await playerRepository.fetch(
+        playerOne.player,
+    )) as PlayerEntity;
+    goblin = (await monsterRepository.fetch(goblin.monster)) as MonsterEntity;
+
+    expect(playerOne.hp).toBe(20 - 1); // test player hp reduced by scatch damage
+    expect(goblin.ap).toBe(10 - abilities.scratch.ap); // test monster ap reduced by scratch ap
 });

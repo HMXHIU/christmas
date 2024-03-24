@@ -10,6 +10,8 @@ export {
     performAbility,
     type Ability,
     type AbilityType,
+    type AfterProcedures,
+    type BeforeProcedures,
     type Buff,
     type DamageType,
     type Debuff,
@@ -340,6 +342,26 @@ type OnProcedure = ({
     effect: ProcedureEffect;
 }) => void;
 
+type BeforeProcedures = ({
+    self,
+    target,
+    ability,
+}: {
+    self: PlayerEntity | MonsterEntity;
+    target: PlayerEntity | MonsterEntity;
+    ability: string;
+}) => void;
+
+type AfterProcedures = ({
+    self,
+    target,
+    ability,
+}: {
+    self: PlayerEntity | MonsterEntity;
+    target: PlayerEntity | MonsterEntity;
+    ability: string;
+}) => void;
+
 function performAbility(
     {
         self,
@@ -350,7 +372,15 @@ function performAbility(
         target: PlayerEntity | MonsterEntity;
         ability: string;
     },
-    onProcedure?: OnProcedure,
+    {
+        onProcedure,
+        beforeProcedures,
+        afterProcedures,
+    }: {
+        onProcedure?: OnProcedure;
+        beforeProcedures?: BeforeProcedures;
+        afterProcedures?: AfterProcedures;
+    },
 ): {
     self: PlayerEntity | MonsterEntity;
     target: PlayerEntity | MonsterEntity;
@@ -378,6 +408,10 @@ function performAbility(
     self.mp -= mp;
     self.st -= st;
     self.hp -= hp;
+
+    if (beforeProcedures) {
+        beforeProcedures({ self, target, ability });
+    }
 
     for (const [type, effect] of procedures) {
         if (type === "action") {
@@ -407,6 +441,11 @@ function performAbility(
             }
         }
     }
+
+    if (afterProcedures) {
+        afterProcedures({ self, target, ability });
+    }
+
     return { self, target, status: "success", message: "" };
 }
 

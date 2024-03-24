@@ -8,6 +8,8 @@ import {
     abilities,
     canPerformAbility,
     performAbility,
+    type AfterProcedures,
+    type BeforeProcedures,
     type OnProcedure,
 } from "$lib/crossover/world/abilities";
 import {
@@ -15,12 +17,17 @@ import {
     monsterStats,
     type Beast,
 } from "$lib/crossover/world/bestiary";
-import { monstersInGeohashQuerySet, spawnMonster } from ".";
-import { monsterRepository, playerRepository } from "./redis";
+import { monstersInGeohashQuerySet, saveEntity, spawnMonster } from ".";
 import type { MonsterEntity, PlayerEntity } from "./redis/entities";
 
 export { performMonsterActions, selectMonsterAbility, spawnMonsters };
 
+/**
+ * Selects the best ability for a monster to use against a player.
+ * @param monster - The monster entity.
+ * @param player - The player entity.
+ * @returns The selected ability as a string, or null if no ability is selected.
+ */
 function selectMonsterAbility(
     monster: MonsterEntity,
     player: PlayerEntity, // TODO: add more intelligence based on player stats
@@ -95,30 +102,45 @@ function selectMonsterAbility(
     return null;
 }
 
-const onProcedure: OnProcedure = async ({
-    target,
-    effect,
-}): Promise<PlayerEntity | MonsterEntity> => {
+/**
+ * Callback function to handle successful execution of procedure of an ability.
+ * @param target - The target entity.
+ * @param effect - The effect of the ability.
+ */
+const onProcedure: OnProcedure = async ({ target, effect }) => {
     if (target.player) {
-        console.log("onProcedure", target, effect); // TODO: publish to player
-
-        // Save player
-        return (await playerRepository.save(
-            (target as PlayerEntity).player,
-            target as PlayerEntity,
-        )) as PlayerEntity;
     } else if (target.monster) {
-        console.log("onProcedure", target, effect);
-
-        // Save monster
-        return (await monsterRepository.save(
-            (target as MonsterEntity).monster,
-            target as MonsterEntity,
-        )) as MonsterEntity;
     }
-    throw new Error("Invalid target, must be player or monster");
+
+    // Save target entity
+    await saveEntity(target);
 };
 
+/**
+ * Callback function before executing procedures of an ability.
+ * @param self - The self entity.
+ * @param target - The target entity.
+ * @param ability - The ability being performed.
+ */
+const beforeProcedures: BeforeProcedures = async ({
+    self,
+    target,
+    ability,
+}) => {
+    // Save self entity
+    await saveEntity(self);
+};
+
+const afterProcedures: AfterProcedures = async ({ self, target, ability }) => {
+    // Do nothing
+};
+
+/**
+ * Performs monster actions on players.
+ *
+ * @param players - An array of PlayerEntity objects representing the players.
+ * @param monsters - An optional array of MonsterEntity objects representing the monsters. If not provided, monsters will be fetched based on the player's geohash.
+ */
 async function performMonsterActions(
     players: PlayerEntity[],
     monsters?: MonsterEntity[],
@@ -141,13 +163,18 @@ async function performMonsterActions(
                         target: player,
                         ability,
                     },
-                    onProcedure,
+                    { onProcedure, beforeProcedures, afterProcedures },
                 );
             }
         }
     }
 }
 
+/**
+ * Spawns monsters in the game world based on the given players' locations.
+ * @param players - An array of PlayerEntity objects representing the players' locations.
+ * @returns A Promise that resolves when all the monsters have been spawned.
+ */
 async function spawnMonsters(players: PlayerEntity[]) {
     // Get all parent geohashes (only interested with geohashes 1 level above unit precision)
     const parentGeohashes = players
