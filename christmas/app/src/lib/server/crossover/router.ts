@@ -20,6 +20,7 @@ import {
     getUserMetadata,
     initPlayerEntity,
     loadPlayerEntity,
+    loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
     playersInGeohashQuerySet,
     savePlayerEntityState,
@@ -34,7 +35,7 @@ import {
 import type { MessageEventData } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, internalServiceProcedure, t } from "../trpc";
-import { tick } from "./dungeonMaster";
+import { performMonsterActions, spawnMonsters } from "./dungeonMaster";
 import type {
     Monster,
     MonsterEntity,
@@ -109,10 +110,21 @@ const LOOK_PAGE_SIZE = 20;
 const crossoverRouter = {
     // World
     world: t.router({
-        // world.tickDungeonMaster (internalServiceProcedure - allow an external cron to trigger tick)
-        tickDungeonMaster: internalServiceProcedure.mutation(async () => {
+        respawnMonsters: internalServiceProcedure.mutation(async () => {
             const start = performance.now();
-            await tick();
+            // Get all logged in players
+            const players =
+                (await loggedInPlayersQuerySet().return.all()) as PlayerEntity[];
+            await spawnMonsters(players);
+            const end = performance.now();
+            return { status: "success", time: end - start };
+        }),
+        animateMonsters: internalServiceProcedure.mutation(async () => {
+            const start = performance.now();
+            // Get all logged in players
+            const players =
+                (await loggedInPlayersQuerySet().return.all()) as PlayerEntity[];
+            await performMonsterActions(players);
             const end = performance.now();
             return { status: "success", time: end - start };
         }),

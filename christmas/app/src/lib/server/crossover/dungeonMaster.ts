@@ -15,27 +15,11 @@ import {
     monsterStats,
     type Beast,
 } from "$lib/crossover/world/bestiary";
-import {
-    loggedInPlayersQuerySet,
-    monstersInGeohashQuerySet,
-    spawnMonster,
-} from ".";
+import { monstersInGeohashQuerySet, spawnMonster } from ".";
 import { monsterRepository, playerRepository } from "./redis";
 import type { MonsterEntity, PlayerEntity } from "./redis/entities";
 
-export { performMonsterActions, selectMonsterAbility, spawnMonsters, tick };
-
-async function tick() {
-    // Get all logged in players
-    const players =
-        (await loggedInPlayersQuerySet().return.all()) as PlayerEntity[];
-
-    console.log("Spawning monsters ...");
-    await spawnMonsters(players);
-
-    console.log("Monster actions ...");
-    await performMonsterActions(players);
-}
+export { performMonsterActions, selectMonsterAbility, spawnMonsters };
 
 function selectMonsterAbility(
     monster: MonsterEntity,
