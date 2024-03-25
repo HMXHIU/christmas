@@ -1,13 +1,18 @@
 import type {
+    ItemEntity,
     MonsterEntity,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
+import { substituteVariables } from "$lib/utils";
+import lodash from "lodash";
 import { geohashToCell } from ".";
+const { cloneDeep } = lodash;
 
 export {
     abilities,
     canPerformAbility,
     performAbility,
+    substituteProcedureEffectVariables,
     type Ability,
     type AbilityType,
     type AfterProcedures,
@@ -49,6 +54,8 @@ type Debuff =
     | "diseased";
 type Buff = "haste" | "regeneration" | "shield" | "invisibility" | "berserk";
 
+type State = "geohash" | "ap" | "hp" | "mp" | "st";
+
 interface Ability {
     ability: string;
     type: AbilityType;
@@ -65,6 +72,7 @@ interface Ability {
 type Procedure = ["action" | "check", ProcedureEffect];
 interface ProcedureEffect {
     target: "self" | "target";
+    variableSubstitute?: boolean;
     damage?: {
         amount: number;
         damageType: DamageType;
@@ -76,6 +84,11 @@ interface ProcedureEffect {
     buffs?: {
         buff: Buff;
         op: "push" | "pop" | "contains" | "doesNotContain";
+    };
+    states?: {
+        state: State;
+        op: "change" | "subtract" | "add";
+        value: number | string | boolean;
     };
 }
 
@@ -275,19 +288,56 @@ const abilities: Record<string, Ability> = {
         range: 0,
         aoe: 0,
     },
+    teleport: {
+        ability: "teleport",
+        type: "neutral",
+        description: "Teleport to the target location.",
+        procedures: [
+            [
+                "action",
+                {
+                    target: "self",
+                    states: {
+                        state: "geohash",
+                        value: "${target.geohash}",
+                        op: "change",
+                    },
+                    variableSubstitute: true,
+                },
+            ],
+        ],
+        ap: 10,
+        st: 0,
+        hp: 0,
+        mp: 20,
+        range: -1,
+        aoe: 0,
+    },
 };
 
 function performAction({
     entity,
     effect,
 }: {
-    entity: PlayerEntity | MonsterEntity;
+    entity: PlayerEntity | MonsterEntity | ItemEntity;
     effect: ProcedureEffect;
-}): PlayerEntity | MonsterEntity {
+}): PlayerEntity | MonsterEntity | ItemEntity {
     // TODO: return success of fail if resisted
 
     if (effect.damage) {
-        entity.hp = Math.max(0, entity.hp - effect.damage.amount);
+        if (entity.player || entity.monster) {
+            entity.hp = Math.max(
+                0,
+                (entity as PlayerEntity | MonsterEntity).hp -
+                    effect.damage.amount,
+            );
+        } else if (entity.item) {
+            // Items use durability instead of HP
+            entity.durability = Math.max(
+                0,
+                (entity as ItemEntity).durability - effect.damage.amount,
+            );
+        }
     }
 
     if (effect.debuffs) {
@@ -301,6 +351,19 @@ function performAction({
         }
     }
 
+    if (effect.states) {
+        const { state, op, value } = effect.states;
+        if (entity.hasOwnProperty(state)) {
+            if (op === "change") {
+                (entity as any)[state] = value;
+            } else if (op === "subtract" && state) {
+                (entity as any)[state] -= value as number;
+            } else if (op === "add") {
+                (entity as any)[state] += value as number;
+            }
+        }
+    }
+
     return entity;
 }
 
@@ -308,7 +371,7 @@ function performCheck({
     entity,
     effect,
 }: {
-    entity: PlayerEntity | MonsterEntity;
+    entity: PlayerEntity | MonsterEntity | ItemEntity;
     effect: ProcedureEffect;
 }): boolean {
     const { debuffs, buffs } = effect;
@@ -338,7 +401,7 @@ type OnProcedure = ({
     target,
     effect,
 }: {
-    target: PlayerEntity | MonsterEntity;
+    target: PlayerEntity | MonsterEntity | ItemEntity;
     effect: ProcedureEffect;
 }) => void;
 
@@ -347,8 +410,8 @@ type BeforeProcedures = ({
     target,
     ability,
 }: {
-    self: PlayerEntity | MonsterEntity;
-    target: PlayerEntity | MonsterEntity;
+    self: PlayerEntity | MonsterEntity | ItemEntity;
+    target: PlayerEntity | MonsterEntity | ItemEntity;
     ability: string;
 }) => void;
 
@@ -357,10 +420,16 @@ type AfterProcedures = ({
     target,
     ability,
 }: {
-    self: PlayerEntity | MonsterEntity;
-    target: PlayerEntity | MonsterEntity;
+    self: PlayerEntity | MonsterEntity | ItemEntity;
+    target: PlayerEntity | MonsterEntity | ItemEntity;
     ability: string;
 }) => void;
+
+interface PerformAbilityOptions {
+    onProcedure?: OnProcedure;
+    beforeProcedures?: BeforeProcedures;
+    afterProcedures?: AfterProcedures;
+}
 
 function performAbility(
     {
@@ -368,46 +437,50 @@ function performAbility(
         target,
         ability,
     }: {
-        self: PlayerEntity | MonsterEntity;
-        target: PlayerEntity | MonsterEntity;
+        self: PlayerEntity | MonsterEntity | ItemEntity;
+        target: PlayerEntity | MonsterEntity | ItemEntity;
         ability: string;
     },
-    {
-        onProcedure,
-        beforeProcedures,
-        afterProcedures,
-    }: {
-        onProcedure?: OnProcedure;
-        beforeProcedures?: BeforeProcedures;
-        afterProcedures?: AfterProcedures;
-    },
+    options: PerformAbilityOptions = {},
 ): {
-    self: PlayerEntity | MonsterEntity;
-    target: PlayerEntity | MonsterEntity;
+    self: PlayerEntity | MonsterEntity | ItemEntity;
+    target: PlayerEntity | MonsterEntity | ItemEntity;
     status: "success" | "failure";
     message: string;
 } {
     const { procedures, ap, mp, st, hp, range } = abilities[ability];
+    const { onProcedure, beforeProcedures, afterProcedures } = options;
 
-    // Check if self has enough AP
-    if (self.ap < ap) {
-        return { self, target, status: "failure", message: "Not enough AP" };
+    // Check if self has enough AP (items use charges instead of AP, see `useItem`)
+    if (
+        (self.monster || self.player) &&
+        (self as PlayerEntity | MonsterEntity).ap < ap
+    ) {
+        return {
+            self,
+            target,
+            status: "failure",
+            message: "Not enough AP",
+        };
     }
 
     // Check within range
     const { row: r1, col: c1 } = geohashToCell(self.geohash);
     const { row: r2, col: c2 } = geohashToCell(target.geohash);
     const inRange =
+        range < 0 ||
         Math.ceil(Math.sqrt((r1 - r2) ** 2 + (c1 - c2) ** 2)) <= range;
     if (!inRange) {
         return { self, target, status: "failure", message: "Out of range" };
     }
 
-    // Expend ability costs
-    self.ap -= ap;
-    self.mp -= mp;
-    self.st -= st;
-    self.hp -= hp;
+    // Expend ability costs (items use charges instead of AP, see `useItem`)
+    if (self.monster || self.player) {
+        (self as PlayerEntity | MonsterEntity).ap -= ap;
+        (self as PlayerEntity | MonsterEntity).mp -= mp;
+        (self as PlayerEntity | MonsterEntity).st -= st;
+        (self as PlayerEntity | MonsterEntity).hp -= hp;
+    }
 
     if (beforeProcedures) {
         beforeProcedures({ self, target, ability });
@@ -415,21 +488,29 @@ function performAbility(
 
     for (const [type, effect] of procedures) {
         if (type === "action") {
+            const actualEffect = substituteProcedureEffectVariables({
+                effect,
+                self,
+                target,
+            });
             if (effect.target === "self") {
-                self = performAction({ entity: self, effect });
+                self = performAction({ entity: self, effect: actualEffect });
                 // TODO: only call onProcedure if the effect was successful
                 if (onProcedure) {
                     onProcedure({
                         target: self,
-                        effect,
+                        effect: actualEffect,
                     });
                 }
             } else if (effect.target === "target") {
-                target = performAction({ entity: target, effect });
+                target = performAction({
+                    entity: target,
+                    effect: actualEffect,
+                });
                 if (onProcedure) {
                     onProcedure({
                         target,
-                        effect,
+                        effect: actualEffect,
                     });
                 }
             }
@@ -447,6 +528,45 @@ function performAbility(
     }
 
     return { self, target, status: "success", message: "" };
+}
+
+function substituteProcedureEffectVariables({
+    effect,
+    self,
+    target,
+}: {
+    effect: ProcedureEffect;
+    self: PlayerEntity | MonsterEntity | ItemEntity;
+    target: PlayerEntity | MonsterEntity | ItemEntity;
+}): ProcedureEffect {
+    if (!effect.variableSubstitute) return effect;
+
+    const effectClone = cloneDeep(effect); // don't modify the template
+
+    // Sub damage amount
+    if (typeof effectClone.damage?.amount === "string") {
+        effectClone.damage.amount = parseInt(
+            substituteVariables(effectClone.damage.amount, {
+                self,
+                target,
+            }),
+        );
+    }
+
+    // Sub state value
+    if (typeof effectClone.states?.value === "string") {
+        const value = substituteVariables(effectClone.states.value, {
+            self,
+            target,
+        });
+        if (effectClone.states.state === "geohash") {
+            effectClone.states.value = value;
+        } else {
+            effectClone.states.value = parseInt(value);
+        }
+    }
+
+    return effectClone;
 }
 
 function canPerformAbility(

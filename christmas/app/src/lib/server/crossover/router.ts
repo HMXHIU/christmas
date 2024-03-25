@@ -88,6 +88,8 @@ const PlayerStateSchema = z.object({
     st: z.number().optional(),
     ap: z.number().optional(),
     level: z.number().optional(),
+    buffs: z.array(z.string()).optional(),
+    debuffs: z.array(z.string()).optional(),
 });
 // PlayerMetadata stores data owned by the player (requires player to sign transactions to modify)
 const PlayerMetadataSchema = z.object({

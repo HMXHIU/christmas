@@ -89,9 +89,9 @@ test("Test DungeonMaster", async () => {
     });
     expect(numMonstersInArea).to.equal(maxMonstersInArea);
 
-    // Test world.tickDungeonMaster
+    // Test world.respawnMonsters
     await expect(
-        fetch("http://localhost:5173/trpc/crossover.world.tickDungeonMaster", {
+        fetch("http://localhost:5173/trpc/crossover.world.respawnMonsters", {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${INTERNAL_SERVICE_KEY}`,
@@ -106,9 +106,9 @@ test("Test DungeonMaster", async () => {
         },
     });
 
-    // Test world.tickDungeonMaster unauthorized
+    // Test world.respawnMonsters unauthorized
     const res = await fetch(
-        "http://localhost:5173/trpc/crossover.world.tickDungeonMaster",
+        "http://localhost:5173/trpc/crossover.world.respawnMonsters",
         {
             method: "POST",
             headers: {

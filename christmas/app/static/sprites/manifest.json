@@ -30,6 +30,15 @@
                     "src": "/sprites/goblin/sprite.json"
                 }
             ]
+        },
+        {
+            "name": "props",
+            "assets": [
+                {
+                    "alias": "gothic",
+                    "src": "/sprites/props/gothic/sprite.json"
+                }
+            ]
         }
     ]
 }

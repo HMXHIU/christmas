@@ -1,5 +1,7 @@
 import { childrenGeohashes, worldSeed } from "$lib/crossover/world";
+import { performAbility } from "$lib/crossover/world/abilities";
 import { monsterStats } from "$lib/crossover/world/bestiary";
+import { compendium } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
 import { serverAnchorClient } from "$lib/server";
 import { parseZodErrors } from "$lib/utils";
@@ -7,8 +9,12 @@ import { PublicKey } from "@solana/web3.js";
 import type { Search } from "redis-om";
 import { z } from "zod";
 import { ObjectStorage } from "../objectStorage";
-import { monsterRepository, playerRepository } from "./redis";
-import { type MonsterEntity, type PlayerEntity } from "./redis/entities";
+import { itemRepository, monsterRepository, playerRepository } from "./redis";
+import {
+    type ItemEntity,
+    type MonsterEntity,
+    type PlayerEntity,
+} from "./redis/entities";
 import {
     PlayerStateSchema,
     type PlayerMetadataSchema,
@@ -27,7 +33,10 @@ export {
     playersInGeohashQuerySet,
     saveEntity,
     savePlayerEntityState,
+    setPlayerState,
+    spawnItem,
     spawnMonster,
+    useItem,
     type ConnectedUser,
 };
 
@@ -240,7 +249,7 @@ async function initPlayerEntity(
 }
 
 /**
- * Saves the player entity state for a given public key.
+ * Saves the player entity state (into s3) for a given public key.
  * @param publicKey The public key of the player.
  * @returns A promise that resolves to a string indicating the success of the operation.
  */
@@ -321,9 +330,52 @@ async function spawnMonster({
     )) as MonsterEntity;
 }
 
+/**
+ * Spawns an item with the given geohash and prop.
+ *
+ * @param geohash - The geohash for the item.
+ * @param prop - The prop in the compendium for the item.
+ * @returns A promise that resolves to the spawned item entity.
+ */
+async function spawnItem({
+    geohash,
+    prop,
+    variables,
+}: {
+    geohash: string;
+    prop: string;
+    variables?: Record<string, any>;
+}): Promise<ItemEntity> {
+    // Get item count
+    const count = await itemRepository.search().count();
+    const item = `${prop}${count}`;
+
+    const entity: ItemEntity = {
+        item,
+        name: compendium[prop].defaultName,
+        prop,
+        geohash,
+        durability: compendium[prop].durability,
+        charges: compendium[prop].charges,
+        state: compendium[prop].defaultState,
+        variables: JSON.stringify(variables || {}),
+        debuffs: [],
+        buffs: [],
+    };
+
+    return (await itemRepository.save(item, entity)) as ItemEntity;
+}
+
+/**
+ * Saves the given entity to the appropriate repository.
+ *
+ * @param entity - The entity to be saved.
+ * @returns A promise that resolves to the saved entity.
+ * @throws {Error} If the entity is invalid.
+ */
 async function saveEntity(
-    entity: PlayerEntity | MonsterEntity,
-): Promise<PlayerEntity | MonsterEntity> {
+    entity: PlayerEntity | MonsterEntity | ItemEntity,
+): Promise<PlayerEntity | MonsterEntity | ItemEntity> {
     if (entity.player) {
         return (await playerRepository.save(
             (entity as PlayerEntity).player,
@@ -334,6 +386,101 @@ async function saveEntity(
             (entity as MonsterEntity).monster,
             entity,
         )) as MonsterEntity;
+    } else if (entity.item) {
+        return (await itemRepository.save(
+            (entity as ItemEntity).item,
+            entity,
+        )) as ItemEntity;
     }
     throw new Error("Invalid entity");
+}
+
+async function useItem({
+    item,
+    action,
+    self,
+    target,
+}: {
+    item: ItemEntity;
+    action: string;
+    self: PlayerEntity | MonsterEntity;
+    target?: PlayerEntity | MonsterEntity | ItemEntity;
+}): Promise<ItemEntity> {
+    // Check if can use item
+    const { canUse, message } = canUseItem(self, item, action);
+    if (!canUse) {
+        // TODO: publish to player message
+        console.log(message);
+        return item;
+    }
+
+    const prop = compendium[item.prop];
+    const propAction = prop.actions![action];
+    const propAbility = propAction.ability;
+
+    // Set item start state (TODO: publish to clients)
+    item.state = propAction.state.start;
+    item = (await itemRepository.save(item.item, item)) as ItemEntity;
+
+    // Perform ability
+    if (propAbility && target) {
+        const { self: itemAfterAbility } = performAbility({
+            self: item, // self is the item
+            target,
+            ability: propAbility,
+        });
+        item = itemAfterAbility as ItemEntity;
+    }
+
+    // Set item end state (TODO: publish to clients)
+    item.state = propAction.state.end;
+    item = (await itemRepository.save(item.item, item)) as ItemEntity;
+
+    return item;
+}
+
+function canUseItem(
+    self: PlayerEntity | MonsterEntity,
+    item: ItemEntity,
+    action: string,
+): { canUse: boolean; message: string } {
+    // Check valid prop
+    if (!compendium.hasOwnProperty(item.prop)) {
+        return {
+            canUse: false,
+            message: `Prop ${item.prop} not found in compendium`,
+        };
+    }
+    const prop = compendium[item.prop];
+
+    // Check valid action
+    if (!(prop.actions && prop.actions[action])) {
+        return {
+            canUse: false,
+            message: `Invalid action ${action} for item ${item.item}`,
+        };
+    }
+
+    // TODO: Check self owns item or item is public use
+
+    // Check has enough charges or durability
+    const propAction = prop.actions[action];
+    const propAbility = propAction.ability;
+    if (item.charges < propAction.cost.charges) {
+        return {
+            canUse: false,
+            message: `${item.item} has not enough charges to perform ${action}`,
+        };
+    }
+    if (item.durability < propAction.cost.durability) {
+        return {
+            canUse: false,
+            message: `${item.item} has not enough durability to perform ${action}`,
+        };
+    }
+
+    return {
+        canUse: true,
+        message: "",
+    };
 }
