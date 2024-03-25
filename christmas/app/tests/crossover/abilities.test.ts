@@ -1,4 +1,8 @@
-import { abilities, performAbility } from "$lib/crossover/world/abilities";
+import {
+    abilities,
+    performAbility,
+    substituteProcedureEffectVariables,
+} from "$lib/crossover/world/abilities";
 import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
@@ -144,5 +148,47 @@ test("Test Abilities", async () => {
         },
         status: "failure",
         message: "Not enough AP",
+    });
+
+    // Test substituteProcedureEffectVariables
+    const teleportEffect = abilities.teleport.procedures[0][1];
+    const actualEffect = substituteProcedureEffectVariables({
+        self: playerOne as PlayerEntity,
+        target: playerTwo as PlayerEntity,
+        effect: teleportEffect,
+    });
+    expect(actualEffect).toMatchObject({
+        target: "self",
+        states: {
+            state: "geohash",
+            value: playerTwo.geohash,
+            op: "change",
+        },
+        variableSubstitute: true,
+    });
+
+    // Test teleport
+    playerOne.ap = 20;
+    playerOne.mp = 20;
+    playerOne.geohash = "gbsuv77w";
+    expect(
+        performAbility({
+            self: playerOne as PlayerEntity,
+            target: playerTwo as PlayerEntity,
+            ability: abilities.teleport.ability,
+        }),
+    ).toMatchObject({
+        self: {
+            player: playerOneWallet.publicKey.toBase58(),
+            name: "Gandalf",
+            geohash: playerTwo.geohash,
+        },
+        target: {
+            player: playerTwoWallet.publicKey.toBase58(),
+            name: "Saruman",
+            geohash: playerTwo.geohash,
+        },
+        status: "success",
+        message: "",
     });
 });

@@ -17,7 +17,11 @@
         ArrowUpRight,
         ArrowUpSquare,
         Box,
+        BrickWall,
+        Hammer,
+        Landmark,
         Map,
+        Trees,
     } from "lucide-svelte";
 
     import * as Card from "$lib/components/ui/card/index.js";
@@ -36,9 +40,10 @@
 
 <div class={cn("w-full", $$restProps.class)}>
     <Tabs.Root value="location" class="w-full">
-        <Tabs.List class="grid w-full grid-cols-2">
+        <Tabs.List class="grid w-full grid-cols-3">
             <Tabs.Trigger value="location"><Map size={20} /></Tabs.Trigger>
             <Tabs.Trigger value="inventory"><Box size={20} /></Tabs.Trigger>
+            <Tabs.Trigger value="build"><Hammer size={20} /></Tabs.Trigger>
         </Tabs.List>
         <!-- Location -->
         <Tabs.Content value="location">
@@ -141,6 +146,7 @@
                 </Card.Content>
             </Card.Root>
         </Tabs.Content>
+        <!-- Inventory -->
         <Tabs.Content value="inventory">
             <Card.Root>
                 <Card.Header>
@@ -164,6 +170,28 @@
                     <Button>Save password</Button>
                 </Card.Footer>
             </Card.Root>
+        </Tabs.Content>
+        <!-- Build -->
+        <Tabs.Content value="build">
+            <Tabs.Root value="build-options" class="w-full p-2">
+                <Tabs.List class="grid w-full grid-cols-3">
+                    <Tabs.Trigger value="basic"
+                        ><BrickWall size={20} /></Tabs.Trigger
+                    >
+                    <Tabs.Trigger value="functional"
+                        ><Landmark size={20} /></Tabs.Trigger
+                    >
+                    <Tabs.Trigger value="biome"
+                        ><Trees size={20} /></Tabs.Trigger
+                    >
+                </Tabs.List>
+                <!-- Location -->
+                <Tabs.Content value="basic"></Tabs.Content>
+                <!-- Inventory -->
+                <Tabs.Content value="functional"></Tabs.Content>
+                <!-- Build -->
+                <Tabs.Content value="biome"></Tabs.Content>
+            </Tabs.Root>
         </Tabs.Content>
     </Tabs.Root>
 </div>

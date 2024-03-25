@@ -36,7 +36,16 @@ const connection = new Connection(PUBLIC_RPC_ENDPOINT, "processed");
 
 function substituteVariables(template: string, variables: Record<string, any>) {
     return template.replace(/\${(.*?)}/g, (match, v) => {
-        return variables[v.trim()];
+        const parts = v.trim().split(".");
+        let value = variables;
+        for (const part of parts) {
+            if (value && typeof value === "object" && part in value) {
+                value = value[part];
+            } else {
+                return match;
+            }
+        }
+        return String(value);
     });
 }
 

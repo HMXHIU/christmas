@@ -109,9 +109,8 @@
 
     onMount(async () => {
         // Load assets in background
-        // Load assets
         await Assets.init({ manifest: "/sprites/manifest.json" });
-        Assets.backgroundLoadBundle(["player", "biomes", "bestiary"]);
+        Assets.backgroundLoadBundle(["player", "biomes", "bestiary", "props"]);
     });
 </script>
 

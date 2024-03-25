@@ -1,13 +1,27 @@
 import { Schema, type Entity } from "redis-om";
 
 export {
+    ItemEntitySchema,
     MonsterEntitySchema,
     PlayerEntitySchema,
+    type EntityState,
+    type ItemEntity,
     type Monster,
     type MonsterEntity,
     type Player,
     type PlayerEntity,
 };
+
+interface EntityState {
+    geohash: string;
+    level: number;
+    ap: number; // action points (require to perform abilities)
+    hp: number; // health points
+    mp: number; // mana points
+    st: number; // stamina points
+    debuffs: string[];
+    buffs: string[];
+}
 
 /*
  * Player
@@ -31,21 +45,13 @@ const PlayerEntitySchema = new Schema("Player", {
     buffs: { type: "string[]" },
 });
 
-interface Player {
+interface Player extends EntityState {
     // Player metadata
     player: string;
     name: string;
     description: string;
     // Player state
-    geohash: string;
     loggedIn: boolean;
-    level: number;
-    ap: number; // action points (require to perform abilities)
-    hp: number; // health points
-    mp: number; // mana points
-    st: number; // stamina points
-    debuffs: string[];
-    buffs: string[];
 }
 
 type PlayerEntity = Player & Entity;
@@ -72,20 +78,42 @@ const MonsterEntitySchema = new Schema("Monster", {
     buffs: { type: "string[]" },
 });
 
-interface Monster {
+interface Monster extends EntityState {
     // Monster metadata
     monster: string; // unique instance id
     name: string;
     beast: string;
-    // Monster state
-    geohash: string;
-    level: number;
-    ap: number; // action points (require to perform abilities)
-    hp: number; // health points
-    mp: number; // mana points
-    st: number; // stamina points
-    debuffs: string[];
-    buffs: string[];
 }
 
 type MonsterEntity = Monster & Entity;
+
+interface PropState {
+    geohash: string;
+    durability: number;
+    charges: number;
+}
+
+/*
+ * Item
+ *
+ * An item is the actual created instance using a `Prop` template in the compendium.
+ */
+const ItemEntitySchema = new Schema("Item", {
+    // Item metadata
+    item: { type: "string" },
+    name: { type: "string" },
+    prop: { type: "string" },
+    // Item state
+    geohash: { type: "string" },
+    durability: { type: "number" },
+    charges: { type: "number" },
+});
+
+interface Item extends PropState {
+    // Item metadata
+    item: string; // unique instance id
+    name: string;
+    prop: string;
+}
+
+type ItemEntity = Item & Entity;

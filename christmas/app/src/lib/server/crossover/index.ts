@@ -1,5 +1,6 @@
 import { childrenGeohashes, worldSeed } from "$lib/crossover/world";
 import { monsterStats } from "$lib/crossover/world/bestiary";
+import { compendium } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
 import { serverAnchorClient } from "$lib/server";
 import { parseZodErrors } from "$lib/utils";
@@ -7,8 +8,12 @@ import { PublicKey } from "@solana/web3.js";
 import type { Search } from "redis-om";
 import { z } from "zod";
 import { ObjectStorage } from "../objectStorage";
-import { monsterRepository, playerRepository } from "./redis";
-import { type MonsterEntity, type PlayerEntity } from "./redis/entities";
+import { itemRepository, monsterRepository, playerRepository } from "./redis";
+import {
+    type ItemEntity,
+    type MonsterEntity,
+    type PlayerEntity,
+} from "./redis/entities";
 import {
     PlayerStateSchema,
     type PlayerMetadataSchema,
@@ -27,6 +32,7 @@ export {
     playersInGeohashQuerySet,
     saveEntity,
     savePlayerEntityState,
+    spawnItem,
     spawnMonster,
     type ConnectedUser,
 };
@@ -321,9 +327,46 @@ async function spawnMonster({
     )) as MonsterEntity;
 }
 
+/**
+ * Spawns an item with the given geohash and prop.
+ *
+ * @param geohash - The geohash for the item.
+ * @param prop - The prop in the compendium for the item.
+ * @returns A promise that resolves to the spawned item entity.
+ */
+async function spawnItem({
+    geohash,
+    prop,
+}: {
+    geohash: string;
+    prop: string;
+}): Promise<ItemEntity> {
+    // Get item count
+    const count = await itemRepository.search().count();
+    const item = `${prop}${count}`;
+
+    const entity: ItemEntity = {
+        item,
+        name: compendium[prop].defaultName,
+        prop,
+        geohash,
+        durability: compendium[prop].durability,
+        charges: compendium[prop].charges,
+    };
+
+    return (await itemRepository.save(item, entity)) as ItemEntity;
+}
+
+/**
+ * Saves the given entity to the appropriate repository.
+ *
+ * @param entity - The entity to be saved.
+ * @returns A promise that resolves to the saved entity.
+ * @throws {Error} If the entity is invalid.
+ */
 async function saveEntity(
-    entity: PlayerEntity | MonsterEntity,
-): Promise<PlayerEntity | MonsterEntity> {
+    entity: PlayerEntity | MonsterEntity | ItemEntity,
+): Promise<PlayerEntity | MonsterEntity | ItemEntity> {
     if (entity.player) {
         return (await playerRepository.save(
             (entity as PlayerEntity).player,
@@ -334,6 +377,11 @@ async function saveEntity(
             (entity as MonsterEntity).monster,
             entity,
         )) as MonsterEntity;
+    } else if (entity.item) {
+        return (await itemRepository.save(
+            (entity as ItemEntity).item,
+            entity,
+        )) as ItemEntity;
     }
     throw new Error("Invalid entity");
 }

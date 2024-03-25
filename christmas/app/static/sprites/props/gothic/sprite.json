@@ -1,0 +1,408 @@
+{"frames": {
+
+"debris-0":
+{
+	"frame": {"x":0,"y":159,"w":33,"h":21},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":33,"h":21},
+	"sourceSize": {"w":33,"h":21},
+	"anchor": {"x":0,"y":0}
+},
+"debris-1":
+{
+	"frame": {"x":39,"y":159,"w":21,"h":18},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":21,"h":18},
+	"sourceSize": {"w":21,"h":18},
+	"anchor": {"x":0,"y":0}
+},
+"debris-2":
+{
+	"frame": {"x":199,"y":219,"w":29,"h":29},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":29,"h":29},
+	"sourceSize": {"w":29,"h":29},
+	"anchor": {"x":0,"y":0}
+},
+"debris-3":
+{
+	"frame": {"x":209,"y":195,"w":29,"h":24},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":29,"h":24},
+	"sourceSize": {"w":29,"h":24},
+	"anchor": {"x":0,"y":0}
+},
+"debris-4":
+{
+	"frame": {"x":178,"y":233,"w":26,"h":21},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":26,"h":21},
+	"sourceSize": {"w":26,"h":21},
+	"anchor": {"x":0,"y":0}
+},
+"debris-5":
+{
+	"frame": {"x":230,"y":48,"w":20,"h":18},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":20,"h":18},
+	"sourceSize": {"w":20,"h":18},
+	"anchor": {"x":0,"y":0}
+},
+"debris-6":
+{
+	"frame": {"x":238,"y":195,"w":26,"h":21},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":26,"h":21},
+	"sourceSize": {"w":26,"h":21},
+	"anchor": {"x":0,"y":0}
+},
+"debris-7":
+{
+	"frame": {"x":40,"y":180,"w":18,"h":16},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":18,"h":16},
+	"sourceSize": {"w":18,"h":16},
+	"anchor": {"x":0,"y":0}
+},
+"debris-8":
+{
+	"frame": {"x":218,"y":86,"w":13,"h":12},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":13,"h":12},
+	"sourceSize": {"w":13,"h":12},
+	"anchor": {"x":0,"y":0}
+},
+"debris-9":
+{
+	"frame": {"x":159,"y":86,"w":59,"h":46},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":59,"h":46},
+	"sourceSize": {"w":59,"h":46},
+	"anchor": {"x":0,"y":0}
+},
+"pot-1":
+{
+	"frame": {"x":144,"y":236,"w":23,"h":34},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":23,"h":34},
+	"sourceSize": {"w":23,"h":34},
+	"anchor": {"x":0,"y":0}
+},
+"pot-2":
+{
+	"frame": {"x":228,"y":221,"w":27,"h":29},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":27,"h":29},
+	"sourceSize": {"w":27,"h":29},
+	"anchor": {"x":0,"y":0}
+},
+"pot-3":
+{
+	"frame": {"x":59,"y":82,"w":23,"h":36},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":23,"h":36},
+	"sourceSize": {"w":23,"h":36},
+	"anchor": {"x":0,"y":0}
+},
+"ritual-circle":
+{
+	"frame": {"x":0,"y":0,"w":96,"h":82},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":96,"h":82},
+	"sourceSize": {"w":96,"h":82},
+	"anchor": {"x":0,"y":0}
+},
+"ruins-1":
+{
+	"frame": {"x":93,"y":125,"w":57,"h":51},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":57,"h":51},
+	"sourceSize": {"w":57,"h":51},
+	"anchor": {"x":0,"y":0}
+},
+"rune-1":
+{
+	"frame": {"x":175,"y":219,"w":14,"h":14},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":14,"h":14},
+	"sourceSize": {"w":14,"h":14},
+	"anchor": {"x":0,"y":0}
+},
+"rune-2":
+{
+	"frame": {"x":164,"y":34,"w":7,"h":14},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":7,"h":14},
+	"sourceSize": {"w":7,"h":14},
+	"anchor": {"x":0,"y":0}
+},
+"rune-3":
+{
+	"frame": {"x":250,"y":0,"w":7,"h":42},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":7,"h":42},
+	"sourceSize": {"w":7,"h":42},
+	"anchor": {"x":0,"y":0}
+},
+"rune-4":
+{
+	"frame": {"x":250,"y":42,"w":7,"h":28},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":7,"h":28},
+	"sourceSize": {"w":7,"h":28},
+	"anchor": {"x":0,"y":0}
+},
+"rune-pillar-1":
+{
+	"frame": {"x":182,"y":132,"w":28,"h":40},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":28,"h":40},
+	"sourceSize": {"w":28,"h":40},
+	"anchor": {"x":0,"y":0}
+},
+"rune-pillar-2":
+{
+	"frame": {"x":96,"y":34,"w":28,"h":68},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":28,"h":68},
+	"sourceSize": {"w":28,"h":68},
+	"anchor": {"x":0,"y":0}
+},
+"rune-pillar-3":
+{
+	"frame": {"x":39,"y":204,"w":28,"h":54},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":28,"h":54},
+	"sourceSize": {"w":28,"h":54},
+	"anchor": {"x":0,"y":0}
+},
+"sign-east":
+{
+	"frame": {"x":220,"y":166,"w":29,"h":34},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":29,"h":34},
+	"sourceSize": {"w":29,"h":34},
+	"anchor": {"x":0,"y":0}
+},
+"sign-west":
+{
+	"frame": {"x":175,"y":190,"w":29,"h":34},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":29,"h":34},
+	"sourceSize": {"w":29,"h":34},
+	"anchor": {"x":0,"y":0}
+},
+"stone-bench-1":
+{
+	"frame": {"x":230,"y":70,"w":29,"h":63},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":29,"h":63},
+	"sourceSize": {"w":29,"h":63},
+	"anchor": {"x":0,"y":0}
+},
+"stone-bench-2":
+{
+	"frame": {"x":0,"y":116,"w":58,"h":43},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":58,"h":43},
+	"sourceSize": {"w":58,"h":43},
+	"anchor": {"x":0,"y":0}
+},
+"stone-bench-3":
+{
+	"frame": {"x":96,"y":62,"w":29,"h":63},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":29,"h":63},
+	"sourceSize": {"w":29,"h":63},
+	"anchor": {"x":0,"y":0}
+},
+"stone-coffin-1":
+{
+	"frame": {"x":0,"y":82,"w":34,"h":59},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":34,"h":59},
+	"sourceSize": {"w":34,"h":59},
+	"anchor": {"x":0,"y":0}
+},
+"stone-coffin-2":
+{
+	"frame": {"x":164,"y":48,"w":66,"h":38},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":66,"h":38},
+	"sourceSize": {"w":66,"h":38},
+	"anchor": {"x":0,"y":0}
+},
+"stone-cross":
+{
+	"frame": {"x":92,"y":176,"w":28,"h":42},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":28,"h":42},
+	"sourceSize": {"w":28,"h":42},
+	"anchor": {"x":0,"y":0}
+},
+"stone-cube":
+{
+	"frame": {"x":58,"y":156,"w":34,"h":48},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":34,"h":48},
+	"sourceSize": {"w":34,"h":48},
+	"anchor": {"x":0,"y":0}
+},
+"stone-monument":
+{
+	"frame": {"x":0,"y":180,"w":24,"h":40},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":24,"h":40},
+	"sourceSize": {"w":24,"h":40},
+	"anchor": {"x":0,"y":0}
+},
+"stone-pillar-1":
+{
+	"frame": {"x":95,"y":91,"w":34,"h":59},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":34,"h":59},
+	"sourceSize": {"w":34,"h":59},
+	"anchor": {"x":0,"y":0}
+},
+"stone-pillar-2":
+{
+	"frame": {"x":96,"y":0,"w":34,"h":79},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":34,"h":79},
+	"sourceSize": {"w":34,"h":79},
+	"anchor": {"x":0,"y":0}
+},
+"stone-statue-1":
+{
+	"frame": {"x":175,"y":0,"w":48,"h":75},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":48,"h":75},
+	"sourceSize": {"w":48,"h":75},
+	"anchor": {"x":0,"y":0}
+},
+"tombstone-2":
+{
+	"frame": {"x":150,"y":133,"w":32,"h":43},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":32,"h":43},
+	"sourceSize": {"w":32,"h":43},
+	"anchor": {"x":0,"y":0}
+},
+"tombstone":
+{
+	"frame": {"x":144,"y":204,"w":32,"h":31},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":32,"h":31},
+	"sourceSize": {"w":32,"h":31},
+	"anchor": {"x":0,"y":0}
+},
+"wood-barrel":
+{
+	"frame": {"x":182,"y":160,"w":30,"h":38},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":30,"h":38},
+	"sourceSize": {"w":30,"h":38},
+	"anchor": {"x":0,"y":0}
+},
+"wood-box-1":
+{
+	"frame": {"x":110,"y":204,"w":34,"h":48},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":34,"h":48},
+	"sourceSize": {"w":34,"h":48},
+	"anchor": {"x":0,"y":0}
+},
+"wood-box-2":
+{
+	"frame": {"x":134,"y":176,"w":28,"h":41},
+	"rotated": true,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":28,"h":41},
+	"sourceSize": {"w":28,"h":41},
+	"anchor": {"x":0,"y":0}
+},
+"wood-chest-1":
+{
+	"frame": {"x":222,"y":133,"w":34,"h":33},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":34,"h":33},
+	"sourceSize": {"w":34,"h":33},
+	"anchor": {"x":0,"y":0}
+},
+"wood-chest-2":
+{
+	"frame": {"x":59,"y":105,"w":34,"h":51},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":34,"h":51},
+	"sourceSize": {"w":34,"h":51},
+	"anchor": {"x":0,"y":0}
+},
+"wood-door-1":
+{
+	"frame": {"x":67,"y":204,"w":43,"h":52},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":43,"h":52},
+	"sourceSize": {"w":43,"h":52},
+	"anchor": {"x":0,"y":0}
+},
+"wood-door-2":
+{
+	"frame": {"x":0,"y":204,"w":39,"h":55},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":39,"h":55},
+	"sourceSize": {"w":39,"h":55},
+	"anchor": {"x":0,"y":0}
+}},
+"meta": {
+	"app": "https://www.codeandweb.com/texturepacker",
+	"version": "1.1",
+	"image": "sprite.png",
+	"format": "RGBA8888",
+	"size": {"w":259,"h":259},
+	"scale": "1",
+	"smartupdate": "$TexturePacker:SmartUpdate:4dae95d5e367b79d154d8e05a9ea530a:263c1062d9bb8fddb15adfe1c2ab3e2f:68d88b3cf7eafc9b5accfffdfb2fda91$"
+}
+}

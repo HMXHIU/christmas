@@ -7,11 +7,16 @@ import {
     REDIS_USERNAME,
 } from "$env/static/private";
 import { Repository } from "redis-om";
-import { MonsterEntitySchema, PlayerEntitySchema } from "./entities";
+import {
+    ItemEntitySchema,
+    MonsterEntitySchema,
+    PlayerEntitySchema,
+} from "./entities";
 
 // Exports
 export {
     initializeClients,
+    itemRepository,
     monsterRepository,
     playerRepository,
     redisClient,
@@ -21,6 +26,7 @@ export {
 // Repositories
 let playerRepository: Repository;
 let monsterRepository: Repository;
+let itemRepository: Repository;
 
 // Create clients
 const redisClient = createClient({
@@ -54,10 +60,12 @@ function registerSchemas() {
     console.log("Registering redis schemas");
     playerRepository = new Repository(PlayerEntitySchema, redisClient);
     monsterRepository = new Repository(MonsterEntitySchema, redisClient);
+    itemRepository = new Repository(ItemEntitySchema, redisClient);
 }
 
 function createIndexes() {
     console.log("Creating indexes for redis schemas");
     playerRepository.createIndex();
     monsterRepository.createIndex();
+    itemRepository.createIndex();
 }

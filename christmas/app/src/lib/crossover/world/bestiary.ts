@@ -25,7 +25,7 @@ interface Beast {
 }
 
 /**
- * `bestiary` is a collection of `Beast` templates used th spawn `Monster` instances.
+ * `bestiary` is a collection of `Beast` templates used to spawn `Monster` instances.
  */
 const bestiary: Record<string, Beast> = {
     goblin: {
