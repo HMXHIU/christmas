@@ -17,6 +17,7 @@ import type { StreamEvent } from "../../routes/api/crossover/stream/+server";
 import { updateGrid, type Direction } from "./world";
 
 export {
+    commandConfigureItem,
     commandLook,
     commandMove,
     commandPerformAbility,
@@ -243,5 +244,16 @@ function commandUseItem(
         target,
         item,
         action,
+    });
+}
+
+function commandConfigureItem(
+    input: { item: string; variables: Record<string, any> },
+    headers: HTTPHeaders = {},
+) {
+    const { item, variables } = input;
+    return trpc({ headers }).crossover.cmd.configureItem.query({
+        item,
+        variables,
     });
 }

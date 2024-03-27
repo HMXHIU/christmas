@@ -1,5 +1,6 @@
 import { INTERNAL_SERVICE_KEY } from "$env/static/private";
 import {
+    commandConfigureItem,
     commandLook,
     commandMove,
     commandPerformAbility,
@@ -8,7 +9,10 @@ import {
 } from "$lib/crossover";
 import { worldSeed } from "$lib/crossover/world";
 import { abilities } from "$lib/crossover/world/abilities";
+import { compendium } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
+import { spawnItem } from "$lib/server/crossover";
+import type { ItemEntity } from "$lib/server/crossover/redis/entities";
 import { groupBy } from "lodash";
 import ngeohash from "ngeohash";
 import { expect, test } from "vitest";
@@ -230,6 +234,40 @@ test("Test Player", async () => {
         },
         status: "success",
         message: "",
+    });
+
+    /*
+     * Test commandConfigureItem
+     */
+
+    let woodenDoor = (await spawnItem({
+        geohash: playerOne.geohash,
+        prop: compendium.woodenDoor.prop,
+        variables: {
+            [compendium.woodenDoor.variables!.doorSign.variable]:
+                "A custom door sign",
+        },
+    })) as ItemEntity;
+    expect(woodenDoor).toMatchObject({
+        state: "closed",
+        variables: '{"doorSign":"A custom door sign"}',
+    });
+
+    woodenDoor = (
+        await commandConfigureItem(
+            {
+                item: woodenDoor.item,
+                variables: {
+                    [compendium.woodenDoor.variables!.doorSign.variable]:
+                        "A new door sign",
+                },
+            },
+            { Cookie: playerOneCookies },
+        )
+    ).item;
+    expect(woodenDoor).toMatchObject({
+        state: "closed",
+        variables: '{"doorSign":"A new door sign"}',
     });
 
     /*

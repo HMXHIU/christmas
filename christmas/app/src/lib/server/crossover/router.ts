@@ -18,6 +18,7 @@ import { TRPCError } from "@trpc/server";
 import { performance } from "perf_hooks";
 import { z } from "zod";
 import {
+    configureItem,
     getUserMetadata,
     initPlayerEntity,
     loadPlayerEntity,
@@ -92,6 +93,11 @@ const UseItemSchema = z.object({
     action: z.string(),
     target: z.string(),
 });
+const ConfigureItemSchema = z.object({
+    item: z.string(),
+    variables: z.record(z.string()),
+});
+
 const BuffEntitySchema = z.object({
     entity: z.string(),
     hp: z.number().optional(),
@@ -338,6 +344,31 @@ const crossoverRouter = {
                     target: result.target as Player | Monster | Item,
                     status: result.status,
                     message: result.message,
+                };
+            }),
+        // cmd.configureItem
+        configureItem: authProcedure
+            .input(ConfigureItemSchema)
+            .query(async ({ ctx, input }) => {
+                const { item, variables } = input;
+
+                // Get player
+                const player = (await tryFetchEntity(
+                    ctx.user.publicKey,
+                )) as PlayerEntity;
+
+                // Get & configure item
+                let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
+                itemEntity = await configureItem({
+                    self: player,
+                    item: itemEntity,
+                    variables,
+                });
+
+                // Save item
+                return {
+                    item: itemEntity as Item,
+                    self: player as Player,
                 };
             }),
     }),
