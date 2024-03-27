@@ -1,6 +1,9 @@
 import { childrenGeohashes, worldSeed } from "$lib/crossover/world";
 import {
     performAbility,
+    type AfterProcedures,
+    type BeforeProcedures,
+    type OnProcedure,
     type PerformAbilityCallbacks,
 } from "$lib/crossover/world/abilities";
 import { monsterStats } from "$lib/crossover/world/bestiary";
@@ -25,15 +28,17 @@ import {
 } from "./router";
 
 export {
+    afterProcedures,
+    beforeProcedures,
     configureItem,
     connectedUsers,
-    getLoadedPlayerEntity,
     getPlayerMetadata,
     getUserMetadata,
     initPlayerEntity,
     loadPlayerEntity,
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
+    onProcedure,
     playersInGeohashQuerySet,
     saveEntity,
     savePlayerEntityState,
@@ -139,18 +144,6 @@ async function setPlayerState(
             throw error;
         }
     }
-}
-
-/**
- * Retrieves the loaded player entity for a given public key.
- * @param publicKey The public key of the player.
- * @returns A promise that resolves to the loaded player entity or null if not found.
- */
-async function getLoadedPlayerEntity(
-    publicKey: string,
-): Promise<PlayerEntity | null> {
-    const player = (await playerRepository.fetch(publicKey)) as PlayerEntity;
-    return player.player ? player : null;
 }
 
 /**
@@ -312,11 +305,12 @@ async function spawnMonster({
 
     // Get monster count
     const count = await monsterRepository.search().count();
+    const monsterId = `monster_${beast}${count}`; // must start with monster
 
     // Get monster stats
     const { hp, mp, st, ap } = monsterStats({ level, beast });
     const monster: MonsterEntity = {
-        monster: `${beast}${count}`, // unique monster id
+        monster: monsterId, // unique monster id
         name: beast,
         beast,
         geohash,
@@ -328,10 +322,7 @@ async function spawnMonster({
         buffs: [],
         debuffs: [],
     };
-    return (await monsterRepository.save(
-        `${beast}${count}`,
-        monster,
-    )) as MonsterEntity;
+    return (await monsterRepository.save(monsterId, monster)) as MonsterEntity;
 }
 
 /**
@@ -352,7 +343,7 @@ async function spawnItem({
 }): Promise<ItemEntity> {
     // Get item count
     const count = await itemRepository.search().count();
-    const item = `${prop}${count}`;
+    const item = `item_${prop}${count}`;
 
     const entity: ItemEntity = {
         item,
@@ -468,13 +459,25 @@ async function useItem(
         target?: PlayerEntity | MonsterEntity | ItemEntity; // target can be an `item`
     },
     options: PerformAbilityCallbacks = {},
-): Promise<ItemEntity> {
+): Promise<{
+    self: PlayerEntity | MonsterEntity;
+    target: PlayerEntity | MonsterEntity | ItemEntity | undefined;
+    item: ItemEntity;
+    status: "success" | "failure";
+    message: string;
+}> {
     // Check if can use item
     const { canUse, message } = canUseItem(self, item, action);
     if (!canUse) {
         // TODO: publish to player message
         console.log(message);
-        return item;
+        return {
+            item,
+            self,
+            target,
+            status: "failure",
+            message,
+        };
     }
 
     const prop = compendium[item.prop];
@@ -533,14 +536,17 @@ async function useItem(
 
     // Perform ability
     if (propAbility && target) {
-        performAbility(
-            {
-                self,
-                target,
-                ability: propAbility,
-            },
-            { ignoreCost: true, ...options },
-        );
+        const { self: modifiedSelf, target: modifiedTarget } =
+            await performAbility(
+                {
+                    self,
+                    target,
+                    ability: propAbility,
+                },
+                { ignoreCost: true, ...options },
+            );
+        target = modifiedTarget;
+        self = modifiedSelf;
     }
 
     // Set item end state
@@ -549,7 +555,13 @@ async function useItem(
 
     // TODO: publish to clients
 
-    return item;
+    return {
+        item,
+        target,
+        self,
+        status: "success",
+        message: "",
+    };
 }
 
 function canConfigureItem(
@@ -618,3 +630,36 @@ function canUseItem(
         message: "",
     };
 }
+
+/**
+ * Callback function to handle successful execution of procedure of an ability.
+ * @param target - The target entity.
+ * @param effect - The effect of the ability.
+ */
+const onProcedure: OnProcedure = async ({ target, effect }) => {
+    if (target.player) {
+    } else if (target.monster) {
+    }
+
+    // Save target entity
+    await saveEntity(target);
+};
+
+/**
+ * Callback function before executing procedures of an ability.
+ * @param self - The self entity.
+ * @param target - The target entity.
+ * @param ability - The ability being performed.
+ */
+const beforeProcedures: BeforeProcedures = async ({
+    self,
+    target,
+    ability,
+}) => {
+    // Save self entity
+    await saveEntity(self);
+};
+
+const afterProcedures: AfterProcedures = async ({ self, target, ability }) => {
+    // Do nothing
+};

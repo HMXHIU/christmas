@@ -5,8 +5,10 @@ import {
     tileAtGeohash,
     worldSeed,
 } from "$lib/crossover/world";
+import { performAbility } from "$lib/crossover/world/abilities";
 import { biomes } from "$lib/crossover/world/biomes";
 import {
+    fetchEntity,
     initializeClients,
     playerRepository,
     redisClient,
@@ -16,15 +18,16 @@ import { TRPCError } from "@trpc/server";
 import { performance } from "perf_hooks";
 import { z } from "zod";
 import {
-    getLoadedPlayerEntity,
     getUserMetadata,
     initPlayerEntity,
     loadPlayerEntity,
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
     playersInGeohashQuerySet,
+    saveEntity,
     savePlayerEntityState,
     spawnMonster,
+    useItem,
 } from ".";
 import {
     FEE_PAYER_PUBKEY,
@@ -37,6 +40,8 @@ import { ObjectStorage } from "../objectStorage";
 import { authProcedure, internalServiceProcedure, t } from "../trpc";
 import { performMonsterActions, spawnMonsters } from "./dungeonMaster";
 import type {
+    Item,
+    ItemEntity,
     Monster,
     MonsterEntity,
     Player,
@@ -77,6 +82,24 @@ const SpawnMonsterSchema = z.object({
     geohash: z.string(),
     level: z.number(),
     beast: z.string(),
+});
+const PerformAbilitySchema = z.object({
+    ability: z.string(),
+    target: z.string(),
+});
+const UseItemSchema = z.object({
+    item: z.string(),
+    action: z.string(),
+    target: z.string(),
+});
+const BuffEntitySchema = z.object({
+    entity: z.string(),
+    hp: z.number().optional(),
+    mp: z.number().optional(),
+    st: z.number().optional(),
+    ap: z.number().optional(),
+    buffs: z.array(z.string()).optional(),
+    debuffs: z.array(z.string()).optional(),
 });
 
 // PlayerState stores data owned by the game (does not require player permission to modify)
@@ -146,6 +169,32 @@ const crossoverRouter = {
                 const monster = await spawnMonster({ geohash, level, beast });
                 return monster;
             }),
+        buffEntity: internalServiceProcedure
+            .input(BuffEntitySchema)
+            .mutation(async ({ input }) => {
+                const { entity, hp, mp, st, ap, buffs, debuffs } = input;
+
+                // Get `player` or `monster` enity
+                let fetchedEntity = await tryFetchEntity(entity);
+
+                if (!fetchedEntity.player && !fetchedEntity.monster) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `${entity} is not a player or monster`,
+                    });
+                }
+
+                // Buff entity
+                fetchedEntity.hp = hp ?? fetchedEntity.hp;
+                fetchedEntity.mp = mp ?? fetchedEntity.mp;
+                fetchedEntity.st = st ?? fetchedEntity.st;
+                fetchedEntity.ap = ap ?? fetchedEntity.ap;
+                fetchedEntity.buffs = buffs ?? fetchedEntity.buffs;
+                fetchedEntity.debuffs = debuffs ?? fetchedEntity.debuffs;
+
+                // Save entity
+                return await saveEntity(fetchedEntity);
+            }),
     }),
     // Commands
     cmd: t.router({
@@ -154,7 +203,7 @@ const crossoverRouter = {
             .input(SayCommandSchema)
             .query(async ({ ctx, input }) => {
                 // Get player
-                const player = await getPlayer(ctx.user.publicKey);
+                const player = await tryFetchEntity(ctx.user.publicKey);
 
                 // Get logged in players in geohash
                 const users = await playersInGeohashQuerySet(
@@ -182,7 +231,7 @@ const crossoverRouter = {
             .input(LookCommandSchema)
             .query(async ({ ctx, input }) => {
                 // Get player
-                const player = await getPlayer(ctx.user.publicKey);
+                const player = await tryFetchEntity(ctx.user.publicKey);
 
                 // Get logged in players in geohash
                 const players = (await playersInGeohashQuerySet(
@@ -212,7 +261,9 @@ const crossoverRouter = {
             const { direction } = input;
 
             // Get player
-            const player = await getPlayer(ctx.user.publicKey);
+            const player = (await tryFetchEntity(
+                ctx.user.publicKey,
+            )) as PlayerEntity;
 
             // Check if next geohash is travasable
             const nextGeohash = geohashNeighbour(player.geohash, direction);
@@ -228,6 +279,67 @@ const crossoverRouter = {
 
             return player.geohash;
         }),
+        // cmd.performAbility
+        performAbility: authProcedure
+            .input(PerformAbilitySchema)
+            .query(async ({ ctx, input }) => {
+                const { ability, target } = input;
+
+                // Get player
+                const player = (await tryFetchEntity(
+                    ctx.user.publicKey,
+                )) as PlayerEntity;
+
+                // Get target player
+                const targetEntity = await tryFetchEntity(target);
+
+                // Perform ability
+                const result = await performAbility({
+                    self: player,
+                    target: targetEntity,
+                    ability,
+                });
+
+                return {
+                    self: result.self as Player,
+                    target: result.target as Player | Monster | Item,
+                    status: result.status,
+                    message: result.message,
+                };
+            }),
+        // cmd.useItem
+        useItem: authProcedure
+            .input(UseItemSchema)
+            .query(async ({ ctx, input }) => {
+                const { item, action, target } = input;
+
+                // Get player
+                const player = (await tryFetchEntity(
+                    ctx.user.publicKey,
+                )) as PlayerEntity;
+
+                // Get item
+                const itemEntity = (await tryFetchEntity(item)) as ItemEntity;
+
+                // Get target
+                const targetEntity = await tryFetchEntity(target);
+
+                // Use Item
+                const result = await useItem({
+                    self: player,
+                    item: itemEntity,
+                    target: targetEntity,
+                    action,
+                });
+
+                return {
+                    item: result.item as Item,
+                    self: result.self as Player,
+                    target: result.target as Player | Monster | Item,
+                    status: result.status,
+                    message: result.message,
+                };
+            }),
     }),
     // Authentication
     auth: t.router({
@@ -250,7 +362,7 @@ const crossoverRouter = {
                 const { name } = input;
 
                 // Check if player already exists
-                const player = await getLoadedPlayerEntity(ctx.user.publicKey);
+                const player = await fetchEntity(ctx.user.publicKey);
                 if (player != null) {
                     throw new TRPCError({
                         code: "BAD_REQUEST",
@@ -320,7 +432,7 @@ const crossoverRouter = {
 
                 // Get or load player
                 let player =
-                    (await getLoadedPlayerEntity(ctx.user.publicKey)) ||
+                    ((await fetchEntity(ctx.user.publicKey)) as PlayerEntity) ||
                     (await loadPlayerEntity(ctx.user.publicKey));
 
                 // Init player
@@ -348,7 +460,9 @@ const crossoverRouter = {
         // auth.logout
         logout: authProcedure.query(async ({ ctx }) => {
             // Get player
-            const player = await getPlayer(ctx.user.publicKey);
+            const player = (await tryFetchEntity(
+                ctx.user.publicKey,
+            )) as PlayerEntity;
 
             // Set `loggedIn=false` & save player state
             player.loggedIn = false;
@@ -367,7 +481,7 @@ const crossoverRouter = {
         player: authProcedure.query(async ({ ctx }) => {
             // Get or load player
             let player =
-                (await getLoadedPlayerEntity(ctx.user.publicKey)) ||
+                (await fetchEntity(ctx.user.publicKey)) ||
                 (await loadPlayerEntity(ctx.user.publicKey));
 
             // Set player cookie (to know if user has signed up for crossover)
@@ -384,14 +498,16 @@ const crossoverRouter = {
     }),
 };
 
-async function getPlayer(publicKey: string): Promise<PlayerEntity> {
-    // Get player
-    const player = await getLoadedPlayerEntity(publicKey);
-    if (player == null) {
+async function tryFetchEntity(
+    entity: string,
+): Promise<PlayerEntity | MonsterEntity | ItemEntity> {
+    const fetchedEntity = await fetchEntity(entity);
+
+    if (fetchedEntity == null) {
         throw new TRPCError({
             code: "BAD_REQUEST",
-            message: `Player ${publicKey} not found`,
+            message: `Entity ${entity} not found`,
         });
     }
-    return player;
+    return fetchedEntity;
 }

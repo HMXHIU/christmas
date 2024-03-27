@@ -1,5 +1,13 @@
-import { commandLook, commandMove, commandSay, stream } from "$lib/crossover";
+import { INTERNAL_SERVICE_KEY } from "$env/static/private";
+import {
+    commandLook,
+    commandMove,
+    commandPerformAbility,
+    commandSay,
+    stream,
+} from "$lib/crossover";
 import { worldSeed } from "$lib/crossover/world";
+import { abilities } from "$lib/crossover/world/abilities";
 import { playerStats } from "$lib/crossover/world/player";
 import { groupBy } from "lodash";
 import ngeohash from "ngeohash";
@@ -141,4 +149,90 @@ test("Test Player", async () => {
         st: 20,
         ap: 20,
     });
+
+    /*
+     * Test commandPerformAbility
+     */
+
+    // Test out of range
+    var { status, message } = await commandPerformAbility(
+        {
+            target: playerTwo.player,
+            ability: abilities.scratch.ability,
+        },
+        { Cookie: playerOneCookies },
+    );
+    expect(status).toBe("failure");
+    expect(message).toBe("Target out of range");
+
+    // Test out of resources
+    var { status, message } = await commandPerformAbility(
+        {
+            target: playerTwo.player,
+            ability: abilities.teleport.ability,
+        },
+        { Cookie: playerOneCookies },
+    );
+    expect(status).toBe("failure");
+    expect(message).toBe("Not enough resources to perform ability");
+
+    // Buff entity with enough resources to teleport
+    let res = await fetch(
+        "http://localhost:5173/trpc/crossover.world.buffEntity",
+        {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${INTERNAL_SERVICE_KEY}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                entity: playerOne.player,
+                hp: 100,
+                mp: 100,
+                st: 100,
+                ap: 100,
+            }),
+        },
+    );
+    expect(res.status).toBe(200);
+
+    // Test ability success
+    await expect(
+        commandPerformAbility(
+            {
+                target: playerTwo.player,
+                ability: abilities.teleport.ability,
+            },
+            { Cookie: playerOneCookies },
+        ),
+    ).resolves.toMatchObject({
+        self: {
+            player: playerOne.player,
+            name: "Gandalf",
+            loggedIn: true,
+            geohash: playerTwo.geohash, // teleported to playerTwo geohash
+            level: 1,
+            hp: 100,
+            mp: 80,
+            st: 100,
+            ap: 90,
+        },
+        target: {
+            player: playerTwo.player,
+            name: "Saruman",
+            loggedIn: true,
+            geohash: playerTwo.geohash,
+            level: 1,
+            hp: 10,
+            mp: 10,
+            st: 10,
+            ap: 10,
+        },
+        status: "success",
+        message: "",
+    });
+
+    /*
+     * Test commandUseItem
+     */
 });

@@ -107,7 +107,7 @@ test("Test DungeonMaster", async () => {
     });
 
     // Test world.respawnMonsters unauthorized
-    const res = await fetch(
+    let res = await fetch(
         "http://localhost:5173/trpc/crossover.world.respawnMonsters",
         {
             method: "POST",
@@ -120,6 +120,41 @@ test("Test DungeonMaster", async () => {
     await expect(res.json()).resolves.toMatchObject({
         error: {
             message: "UNAUTHORIZED",
+        },
+    });
+
+    // Test world.buffEntity
+    res = await fetch("http://localhost:5173/trpc/crossover.world.buffEntity", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${INTERNAL_SERVICE_KEY}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            entity: playerOne.player,
+            hp: 100,
+            mp: 100,
+            st: 100,
+            ap: 100,
+            buffs: ["haste"],
+            debuffs: ["poisoned"],
+        }),
+    });
+    await expect(res.json()).resolves.toMatchObject({
+        result: {
+            data: {
+                player: playerOne.player,
+                name: "Gandalf",
+                loggedIn: true,
+                geohash: "w21z3tss",
+                level: 1,
+                hp: 100,
+                mp: 100,
+                st: 100,
+                ap: 100,
+                debuffs: ["poisoned"],
+                buffs: ["haste"],
+            },
         },
     });
 });

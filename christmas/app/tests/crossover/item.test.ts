@@ -73,7 +73,7 @@ test("Test Items", async () => {
      * Test `useItem`
      */
     const woodenDoorProp = compendium[woodenDoor.prop];
-    const openedWoodenDoor = await useItem({
+    const { item: openedWoodenDoor } = await useItem({
         item: woodenDoor,
         action: woodenDoorProp.actions!.open.action,
         self: playerOne as PlayerEntity,
@@ -83,7 +83,7 @@ test("Test Items", async () => {
     expect(openedWoodenDoor).toMatchObject({
         state: "open",
     });
-    const closedWoodenDoor = await useItem({
+    const { item: closedWoodenDoor } = await useItem({
         item: openedWoodenDoor,
         action: woodenDoorProp.actions!.close.action,
         self: playerOne as PlayerEntity,
@@ -162,12 +162,14 @@ test("Test Items", async () => {
     const beforeCharges = portalOne.charges;
     const beforeDurability = portalOne.durability;
     expect(playerOne.geohash === portalTwo.geohash).toBe(false);
-    portalOne = await useItem({
-        item: portalOne,
-        action: compendium.portal.actions!.teleport.action,
-        self: playerOne as PlayerEntity,
-        target: playerOne as PlayerEntity,
-    });
+    portalOne = (
+        await useItem({
+            item: portalOne,
+            action: compendium.portal.actions!.teleport.action,
+            self: playerOne as PlayerEntity,
+            target: playerOne as PlayerEntity,
+        })
+    ).item;
     expect(portalOne.charges).toBe(
         beforeCharges - compendium.portal.actions!.teleport.cost.charges,
     );

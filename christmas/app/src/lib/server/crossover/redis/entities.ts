@@ -6,6 +6,7 @@ export {
     PlayerEntitySchema,
     type EntityState,
     type EntityType,
+    type Item,
     type ItemEntity,
     type Monster,
     type MonsterEntity,

@@ -8,16 +8,19 @@ import {
     abilities,
     canPerformAbility,
     performAbility,
-    type AfterProcedures,
-    type BeforeProcedures,
-    type OnProcedure,
 } from "$lib/crossover/world/abilities";
 import {
     bestiary,
     monsterStats,
     type Beast,
 } from "$lib/crossover/world/bestiary";
-import { monstersInGeohashQuerySet, saveEntity, spawnMonster } from ".";
+import {
+    afterProcedures,
+    beforeProcedures,
+    monstersInGeohashQuerySet,
+    onProcedure,
+    spawnMonster,
+} from ".";
 import type { MonsterEntity, PlayerEntity } from "./redis/entities";
 
 export { performMonsterActions, selectMonsterAbility, spawnMonsters };
@@ -103,39 +106,6 @@ function selectMonsterAbility(
 }
 
 /**
- * Callback function to handle successful execution of procedure of an ability.
- * @param target - The target entity.
- * @param effect - The effect of the ability.
- */
-const onProcedure: OnProcedure = async ({ target, effect }) => {
-    if (target.player) {
-    } else if (target.monster) {
-    }
-
-    // Save target entity
-    await saveEntity(target);
-};
-
-/**
- * Callback function before executing procedures of an ability.
- * @param self - The self entity.
- * @param target - The target entity.
- * @param ability - The ability being performed.
- */
-const beforeProcedures: BeforeProcedures = async ({
-    self,
-    target,
-    ability,
-}) => {
-    // Save self entity
-    await saveEntity(self);
-};
-
-const afterProcedures: AfterProcedures = async ({ self, target, ability }) => {
-    // Do nothing
-};
-
-/**
  * Performs monster actions on players.
  *
  * @param players - An array of PlayerEntity objects representing the players.
@@ -157,13 +127,17 @@ async function performMonsterActions(
         for (const monster of monstersNearPlayer) {
             const ability = selectMonsterAbility(monster, player);
             if (ability != null) {
-                performAbility(
+                await performAbility(
                     {
                         self: monster,
                         target: player,
                         ability,
                     },
-                    { onProcedure, beforeProcedures, afterProcedures },
+                    {
+                        onProcedure,
+                        beforeProcedures,
+                        afterProcedures,
+                    },
                 );
             }
         }

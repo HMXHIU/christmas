@@ -19,7 +19,9 @@ import { updateGrid, type Direction } from "./world";
 export {
     commandLook,
     commandMove,
+    commandPerformAbility,
     commandSay,
+    commandUseItem,
     getPlayer,
     login,
     logout,
@@ -219,4 +221,27 @@ function commandMove(
 ): Promise<string> {
     const { direction } = input;
     return trpc({ headers }).crossover.cmd.move.query({ direction });
+}
+
+function commandPerformAbility(
+    input: { target: string; ability: string },
+    headers: HTTPHeaders = {},
+) {
+    const { target, ability } = input;
+    return trpc({ headers }).crossover.cmd.performAbility.query({
+        target,
+        ability,
+    });
+}
+
+function commandUseItem(
+    input: { target: string; item: string; action: string },
+    headers: HTTPHeaders = {},
+) {
+    const { target, item, action } = input;
+    return trpc({ headers }).crossover.cmd.useItem.query({
+        target,
+        item,
+        action,
+    });
 }

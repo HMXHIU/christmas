@@ -407,7 +407,7 @@ type OnProcedure = ({
 }: {
     target: PlayerEntity | MonsterEntity | ItemEntity;
     effect: ProcedureEffect;
-}) => void;
+}) => Promise<void>;
 
 type BeforeProcedures = ({
     self,
@@ -417,7 +417,7 @@ type BeforeProcedures = ({
     self: PlayerEntity | MonsterEntity | ItemEntity;
     target: PlayerEntity | MonsterEntity | ItemEntity;
     ability: string;
-}) => void;
+}) => Promise<void>;
 
 type AfterProcedures = ({
     self,
@@ -427,7 +427,7 @@ type AfterProcedures = ({
     self: PlayerEntity | MonsterEntity | ItemEntity;
     target: PlayerEntity | MonsterEntity | ItemEntity;
     ability: string;
-}) => void;
+}) => Promise<void>;
 
 interface PerformAbilityCallbacks {
     onProcedure?: OnProcedure;
@@ -439,7 +439,7 @@ interface PerformAbilityOptions extends PerformAbilityCallbacks {
     ignoreCost?: boolean;
 }
 
-function performAbility(
+async function performAbility(
     {
         self,
         target,
@@ -450,12 +450,12 @@ function performAbility(
         ability: string;
     },
     options: PerformAbilityOptions = {},
-): {
+): Promise<{
     self: PlayerEntity | MonsterEntity;
     target: PlayerEntity | MonsterEntity | ItemEntity;
     status: "success" | "failure";
     message: string;
-} {
+}> {
     const { procedures, ap, mp, st, hp, range } = abilities[ability];
     const { onProcedure, beforeProcedures, afterProcedures, ignoreCost } =
         options;
@@ -489,7 +489,7 @@ function performAbility(
     }
 
     if (beforeProcedures) {
-        beforeProcedures({ self, target, ability });
+        await beforeProcedures({ self, target, ability });
     }
 
     for (const [type, effect] of procedures) {
@@ -506,7 +506,7 @@ function performAbility(
                     | MonsterEntity;
                 // TODO: only call onProcedure if the effect was successful
                 if (onProcedure) {
-                    onProcedure({
+                    await onProcedure({
                         target: self,
                         effect: actualEffect,
                     });
@@ -517,7 +517,7 @@ function performAbility(
                     effect: actualEffect,
                 });
                 if (onProcedure) {
-                    onProcedure({
+                    await onProcedure({
                         target,
                         effect: actualEffect,
                     });
@@ -533,7 +533,7 @@ function performAbility(
     }
 
     if (afterProcedures) {
-        afterProcedures({ self, target, ability });
+        await afterProcedures({ self, target, ability });
     }
 
     return { self, target, status: "success", message: "" };

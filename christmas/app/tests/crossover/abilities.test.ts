@@ -33,7 +33,7 @@ test("Test Abilities", async () => {
 
     // Test ability out of range (scratch has 0 range)
     expect(
-        performAbility({
+        await performAbility({
             self: playerOne as PlayerEntity,
             target: playerTwo as PlayerEntity,
             ability: abilities.scratch.ability,
@@ -74,13 +74,13 @@ test("Test Abilities", async () => {
     const playerTwoHp = playerTwo.hp;
     const playerOneSt = playerOne.st;
     const playerOneAp = playerOne.ap;
-    expect(
+    await expect(
         performAbility({
             self: playerOne as PlayerEntity,
             target: playerTwo as PlayerEntity,
             ability: abilities.scratch.ability,
         }),
-    ).toMatchObject({
+    ).resolves.toMatchObject({
         self: {
             player: playerOneWallet.publicKey.toBase58(),
             name: "Gandalf",
@@ -113,13 +113,13 @@ test("Test Abilities", async () => {
 
     // Test not enough action points
     playerOne.ap = 0;
-    expect(
+    await expect(
         performAbility({
             self: playerOne as PlayerEntity,
             target: playerTwo as PlayerEntity,
             ability: abilities.scratch.ability,
         }),
-    ).toMatchObject({
+    ).resolves.toMatchObject({
         self: {
             player: playerOneWallet.publicKey.toBase58(),
             name: "Gandalf",
@@ -171,13 +171,13 @@ test("Test Abilities", async () => {
     playerOne.ap = 20;
     playerOne.mp = 20;
     playerOne.geohash = "gbsuv77w";
-    expect(
+    await expect(
         performAbility({
             self: playerOne as PlayerEntity,
             target: playerTwo as PlayerEntity,
             ability: abilities.teleport.ability,
         }),
-    ).toMatchObject({
+    ).resolves.toMatchObject({
         self: {
             player: playerOneWallet.publicKey.toBase58(),
             name: "Gandalf",
