@@ -1,5 +1,8 @@
 import { childrenGeohashes, worldSeed } from "$lib/crossover/world";
-import { performAbility } from "$lib/crossover/world/abilities";
+import {
+    performAbility,
+    type PerformAbilityCallbacks,
+} from "$lib/crossover/world/abilities";
 import { monsterStats } from "$lib/crossover/world/bestiary";
 import { compendium } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
@@ -22,6 +25,7 @@ import {
 } from "./router";
 
 export {
+    configureItem,
     connectedUsers,
     getLoadedPlayerEntity,
     getPlayerMetadata,
@@ -367,11 +371,58 @@ async function spawnItem({
 }
 
 /**
+ * Configures an item by updating its variables based on the provided values.
+ *
+ * @param self - The entity that is configuring the item.
+ * @param item - The item to be configured.
+ * @param variables - The new values for the item's variables.
+ * @returns A promise that resolves to the configured item entity.
+ */
+async function configureItem({
+    self,
+    item,
+    variables,
+}: {
+    self: PlayerEntity | MonsterEntity;
+    item: ItemEntity;
+    variables: Record<string, any>;
+}): Promise<ItemEntity> {
+    // Check if can configure item
+    const { canConfigure, message } = canConfigureItem(self, item);
+    if (!canConfigure) {
+        // TODO: publish to player message
+        console.log(message);
+        return item;
+    }
+    const prop = compendium[item.prop];
+
+    // Update item variables
+    let itemVariables = JSON.parse(item.variables);
+    for (const [key, value] of Object.entries(variables)) {
+        if (prop.variables?.hasOwnProperty(key)) {
+            const { type } = prop.variables[key];
+            if (["string", "item", "monster", "player"].includes(type)) {
+                itemVariables[key] = String(value);
+            } else if (type === "number") {
+                itemVariables[key] = Number(value);
+            } else if (type === "boolean") {
+                itemVariables[key] = Boolean(value);
+            }
+        }
+    }
+
+    // Save item with updated variables
+    item.variables = JSON.stringify(itemVariables);
+    item = (await itemRepository.save(item.item, item)) as ItemEntity;
+
+    return item;
+}
+
+/**
  * Saves the given entity to the appropriate repository.
  *
  * @param entity - The entity to be saved.
  * @returns A promise that resolves to the saved entity.
- * @throws {Error} If the entity is invalid.
  */
 async function saveEntity(
     entity: PlayerEntity | MonsterEntity | ItemEntity,
@@ -395,17 +446,29 @@ async function saveEntity(
     throw new Error("Invalid entity");
 }
 
-async function useItem({
-    item,
-    action,
-    self,
-    target,
-}: {
-    item: ItemEntity;
-    action: string;
-    self: PlayerEntity | MonsterEntity;
-    target?: PlayerEntity | MonsterEntity | ItemEntity;
-}): Promise<ItemEntity> {
+/**
+ * Uses an item by performing the specified action on the target entity.
+ *
+ * @param params.item - The item to be used.
+ * @param params.action - The action to perform on the item.
+ * @param params.self - The entity using the item.
+ * @param params.target - The target entity for the action (optional).
+ * @returns A promise that resolves to the updated item entity.
+ */
+async function useItem(
+    {
+        item,
+        action,
+        self,
+        target,
+    }: {
+        item: ItemEntity;
+        action: string;
+        self: PlayerEntity | MonsterEntity; // sell can only be `player` or `monster`
+        target?: PlayerEntity | MonsterEntity | ItemEntity; // target can be an `item`
+    },
+    options: PerformAbilityCallbacks = {},
+): Promise<ItemEntity> {
     // Check if can use item
     const { canUse, message } = canUseItem(self, item, action);
     if (!canUse) {
@@ -418,25 +481,96 @@ async function useItem({
     const propAction = prop.actions![action];
     const propAbility = propAction.ability;
 
-    // Set item start state (TODO: publish to clients)
+    // Set item start state
     item.state = propAction.state.start;
+
+    // Consume charges and durability
+    item.charges -= propAction.cost.charges;
+    item.durability -= propAction.cost.durability;
+
+    // Save item with updated state, charges, and durability
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
+
+    // TODO: publish to clients
+
+    // Overwrite target specified in item variables
+    if (prop.variables?.target) {
+        const itemVariables = JSON.parse(item.variables);
+        if (itemVariables.target) {
+            const { type } = prop.variables.target;
+            if (type === "item") {
+                target = (await itemRepository.fetch(
+                    itemVariables.target,
+                )) as ItemEntity;
+            } else if (type === "player") {
+                target = (await playerRepository.fetch(
+                    itemVariables.target,
+                )) as PlayerEntity;
+            } else if (type === "monster") {
+                target = (await monsterRepository.fetch(
+                    itemVariables.target,
+                )) as MonsterEntity;
+            }
+        }
+    }
+
+    // Overwrite self specified in item variables (can only be `player` or `monster`)
+    if (prop.variables?.self) {
+        const itemVariables = JSON.parse(item.variables);
+        if (itemVariables.self) {
+            const { type } = prop.variables.self;
+            if (type === "player") {
+                self = (await playerRepository.fetch(
+                    itemVariables.self,
+                )) as PlayerEntity;
+            } else if (type === "monster") {
+                self = (await monsterRepository.fetch(
+                    itemVariables.self,
+                )) as MonsterEntity;
+            }
+        }
+    }
 
     // Perform ability
     if (propAbility && target) {
-        const { self: itemAfterAbility } = performAbility({
-            self: item, // self is the item
-            target,
-            ability: propAbility,
-        });
-        item = itemAfterAbility as ItemEntity;
+        performAbility(
+            {
+                self,
+                target,
+                ability: propAbility,
+            },
+            { ignoreCost: true, ...options },
+        );
     }
 
-    // Set item end state (TODO: publish to clients)
+    // Set item end state
     item.state = propAction.state.end;
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
 
+    // TODO: publish to clients
+
     return item;
+}
+
+function canConfigureItem(
+    self: PlayerEntity | MonsterEntity,
+    item: ItemEntity,
+): { canConfigure: boolean; message: string } {
+    // Check valid prop
+    if (!compendium.hasOwnProperty(item.prop)) {
+        return {
+            canConfigure: false,
+            message: `${item.prop} not found in compendium`,
+        };
+    }
+    const prop = compendium[item.prop];
+
+    // TODO: Check self owns item
+
+    return {
+        canConfigure: true,
+        message: "",
+    };
 }
 
 function canUseItem(
@@ -448,7 +582,7 @@ function canUseItem(
     if (!compendium.hasOwnProperty(item.prop)) {
         return {
             canUse: false,
-            message: `Prop ${item.prop} not found in compendium`,
+            message: `${item.prop} not found in compendium`,
         };
     }
     const prop = compendium[item.prop];

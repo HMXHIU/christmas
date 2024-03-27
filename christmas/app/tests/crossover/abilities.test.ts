@@ -1,7 +1,7 @@
 import {
     abilities,
+    fillInEffectVariables,
     performAbility,
-    substituteProcedureEffectVariables,
 } from "$lib/crossover/world/abilities";
 import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
@@ -150,9 +150,9 @@ test("Test Abilities", async () => {
         message: "Not enough AP",
     });
 
-    // Test substituteProcedureEffectVariables
+    // Test fillInEffectVariables
     const teleportEffect = abilities.teleport.procedures[0][1];
-    const actualEffect = substituteProcedureEffectVariables({
+    const actualEffect = fillInEffectVariables({
         self: playerOne as PlayerEntity,
         target: playerTwo as PlayerEntity,
         effect: teleportEffect,

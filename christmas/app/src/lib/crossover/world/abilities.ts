@@ -11,8 +11,8 @@ const { cloneDeep } = lodash;
 export {
     abilities,
     canPerformAbility,
+    fillInEffectVariables,
     performAbility,
-    substituteProcedureEffectVariables,
     type Ability,
     type AbilityType,
     type AfterProcedures,
@@ -21,6 +21,7 @@ export {
     type DamageType,
     type Debuff,
     type OnProcedure,
+    type PerformAbilityCallbacks,
     type Procedure,
     type ProcedureEffect,
 };
@@ -72,7 +73,6 @@ interface Ability {
 type Procedure = ["action" | "check", ProcedureEffect];
 interface ProcedureEffect {
     target: "self" | "target";
-    variableSubstitute?: boolean;
     damage?: {
         amount: number;
         damageType: DamageType;
@@ -302,7 +302,6 @@ const abilities: Record<string, Ability> = {
                         value: "${target.geohash}",
                         op: "change",
                     },
-                    variableSubstitute: true,
                 },
             ],
         ],
@@ -315,24 +314,27 @@ const abilities: Record<string, Ability> = {
     },
 };
 
-function performAction({
+function performEffect({
     entity,
     effect,
 }: {
     entity: PlayerEntity | MonsterEntity | ItemEntity;
     effect: ProcedureEffect;
 }): PlayerEntity | MonsterEntity | ItemEntity {
-    // TODO: return success of fail if resisted
+    // TODO: return success or fail if resisted
 
+    // Damage
     if (effect.damage) {
+        // Player or monster
         if (entity.player || entity.monster) {
             entity.hp = Math.max(
                 0,
                 (entity as PlayerEntity | MonsterEntity).hp -
                     effect.damage.amount,
             );
-        } else if (entity.item) {
-            // Items use durability instead of HP
+        }
+        // Item
+        else if (entity.item) {
             entity.durability = Math.max(
                 0,
                 (entity as ItemEntity).durability - effect.damage.amount,
@@ -340,6 +342,7 @@ function performAction({
         }
     }
 
+    // Debuff
     if (effect.debuffs) {
         const { debuff, op } = effect.debuffs;
         if (op === "push") {
@@ -351,6 +354,7 @@ function performAction({
         }
     }
 
+    // State
     if (effect.states) {
         const { state, op, value } = effect.states;
         if (entity.hasOwnProperty(state)) {
@@ -425,10 +429,14 @@ type AfterProcedures = ({
     ability: string;
 }) => void;
 
-interface PerformAbilityOptions {
+interface PerformAbilityCallbacks {
     onProcedure?: OnProcedure;
     beforeProcedures?: BeforeProcedures;
     afterProcedures?: AfterProcedures;
+}
+
+interface PerformAbilityOptions extends PerformAbilityCallbacks {
+    ignoreCost?: boolean;
 }
 
 function performAbility(
@@ -437,49 +445,47 @@ function performAbility(
         target,
         ability,
     }: {
-        self: PlayerEntity | MonsterEntity | ItemEntity;
-        target: PlayerEntity | MonsterEntity | ItemEntity;
+        self: PlayerEntity | MonsterEntity; // self can only be a `player` or `monster`
+        target: PlayerEntity | MonsterEntity | ItemEntity; // target can be an `item`
         ability: string;
     },
     options: PerformAbilityOptions = {},
 ): {
-    self: PlayerEntity | MonsterEntity | ItemEntity;
+    self: PlayerEntity | MonsterEntity;
     target: PlayerEntity | MonsterEntity | ItemEntity;
     status: "success" | "failure";
     message: string;
 } {
     const { procedures, ap, mp, st, hp, range } = abilities[ability];
-    const { onProcedure, beforeProcedures, afterProcedures } = options;
+    const { onProcedure, beforeProcedures, afterProcedures, ignoreCost } =
+        options;
 
-    // Check if self has enough AP (items use charges instead of AP, see `useItem`)
-    if (
-        (self.monster || self.player) &&
-        (self as PlayerEntity | MonsterEntity).ap < ap
-    ) {
+    // Check if self has enough resources to perform ability
+    if (!ignoreCost && !canPerformAbility(self, ability)) {
         return {
             self,
             target,
             status: "failure",
-            message: "Not enough AP",
+            message: "Not enough resources to perform ability",
         };
     }
 
-    // Check within range
-    const { row: r1, col: c1 } = geohashToCell(self.geohash);
-    const { row: r2, col: c2 } = geohashToCell(target.geohash);
-    const inRange =
-        range < 0 ||
-        Math.ceil(Math.sqrt((r1 - r2) ** 2 + (c1 - c2) ** 2)) <= range;
-    if (!inRange) {
-        return { self, target, status: "failure", message: "Out of range" };
+    // Check if target is in range
+    if (!checkInRange(self, target, range)) {
+        return {
+            self,
+            target,
+            status: "failure",
+            message: "Target out of range",
+        };
     }
 
-    // Expend ability costs (items use charges instead of AP, see `useItem`)
-    if (self.monster || self.player) {
-        (self as PlayerEntity | MonsterEntity).ap -= ap;
-        (self as PlayerEntity | MonsterEntity).mp -= mp;
-        (self as PlayerEntity | MonsterEntity).st -= st;
-        (self as PlayerEntity | MonsterEntity).hp -= hp;
+    // Expend ability costs
+    if (!ignoreCost) {
+        self.ap -= ap;
+        self.mp -= mp;
+        self.st -= st;
+        self.hp -= hp;
     }
 
     if (beforeProcedures) {
@@ -488,13 +494,16 @@ function performAbility(
 
     for (const [type, effect] of procedures) {
         if (type === "action") {
-            const actualEffect = substituteProcedureEffectVariables({
+            const actualEffect = fillInEffectVariables({
                 effect,
                 self,
                 target,
             });
+
             if (effect.target === "self") {
-                self = performAction({ entity: self, effect: actualEffect });
+                self = performEffect({ entity: self, effect: actualEffect }) as
+                    | PlayerEntity
+                    | MonsterEntity;
                 // TODO: only call onProcedure if the effect was successful
                 if (onProcedure) {
                     onProcedure({
@@ -503,7 +512,7 @@ function performAbility(
                     });
                 }
             } else if (effect.target === "target") {
-                target = performAction({
+                target = performEffect({
                     entity: target,
                     effect: actualEffect,
                 });
@@ -530,7 +539,15 @@ function performAbility(
     return { self, target, status: "success", message: "" };
 }
 
-function substituteProcedureEffectVariables({
+/**
+ * Fills in effect variables in the given `effect` object using the `self` and `target` entities.
+ *
+ * @param params.effect - The effect object to be modified.
+ * @param params.self - The entity representing the source of the effect.
+ * @param params.target - The entity representing the target of the effect.
+ * @returns  The modified effect object with filled in variables.
+ */
+function fillInEffectVariables({
     effect,
     self,
     target,
@@ -539,11 +556,9 @@ function substituteProcedureEffectVariables({
     self: PlayerEntity | MonsterEntity | ItemEntity;
     target: PlayerEntity | MonsterEntity | ItemEntity;
 }): ProcedureEffect {
-    if (!effect.variableSubstitute) return effect;
-
     const effectClone = cloneDeep(effect); // don't modify the template
 
-    // Sub damage amount
+    // Damage
     if (typeof effectClone.damage?.amount === "string") {
         effectClone.damage.amount = parseInt(
             substituteVariables(effectClone.damage.amount, {
@@ -553,7 +568,7 @@ function substituteProcedureEffectVariables({
         );
     }
 
-    // Sub state value
+    // States
     if (typeof effectClone.states?.value === "string") {
         const value = substituteVariables(effectClone.states.value, {
             self,
@@ -572,7 +587,20 @@ function substituteProcedureEffectVariables({
 function canPerformAbility(
     self: PlayerEntity | MonsterEntity,
     ability: string,
-) {
+): boolean {
     const { ap, mp, st, hp } = abilities[ability];
     return self.ap >= ap && self.mp >= mp && self.st >= st && self.hp >= hp;
+}
+
+function checkInRange(
+    self: PlayerEntity | MonsterEntity,
+    target: PlayerEntity | MonsterEntity | ItemEntity,
+    range: number,
+): boolean {
+    const { row: r1, col: c1 } = geohashToCell(self.geohash);
+    const { row: r2, col: c2 } = geohashToCell(target.geohash);
+    const inRange =
+        range < 0 ||
+        Math.ceil(Math.sqrt((r1 - r2) ** 2 + (c1 - c2) ** 2)) <= range;
+    return inRange;
 }

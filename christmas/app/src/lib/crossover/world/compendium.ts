@@ -3,8 +3,10 @@ import type {
     ItemEntity,
 } from "$lib/server/crossover/redis/entities";
 import { substituteVariables } from "$lib/utils";
+import lodash from "lodash";
 import type { AssetMetadata } from ".";
 import { abilities } from "./abilities";
+const { cloneDeep } = lodash;
 
 export { compendium, itemAttibutes, type Prop };
 
@@ -182,7 +184,7 @@ let compendium: Record<string, Prop> = {
  * @returns The attributes of the item after variable substitution.
  */
 function itemAttibutes(item: ItemEntity): PropAttributes {
-    const state = compendium[item.prop].states[item.state];
+    const state = cloneDeep(compendium[item.prop].states[item.state]);
     const variables = JSON.parse(item.variables);
     // Replace variables in description
     state.description = substituteVariables(state.description, variables);
