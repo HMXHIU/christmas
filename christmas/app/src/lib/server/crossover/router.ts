@@ -18,12 +18,15 @@ import { TRPCError } from "@trpc/server";
 import { performance } from "perf_hooks";
 import { z } from "zod";
 import {
+    afterProcedures,
+    beforeProcedures,
     configureItem,
     getUserMetadata,
     initPlayerEntity,
     loadPlayerEntity,
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
+    onProcedure,
     playersInGeohashQuerySet,
     saveEntity,
     savePlayerEntityState,
@@ -307,11 +310,18 @@ const crossoverRouter = {
                 const targetEntity = await tryFetchEntity(target);
 
                 // Perform ability
-                const result = await performAbility({
-                    self: player,
-                    target: targetEntity,
-                    ability,
-                });
+                const result = await performAbility(
+                    {
+                        self: player,
+                        target: targetEntity,
+                        ability,
+                    },
+                    {
+                        onProcedure,
+                        beforeProcedures,
+                        afterProcedures,
+                    },
+                );
 
                 return {
                     self: result.self as Player,
@@ -361,12 +371,15 @@ const crossoverRouter = {
                     ctx.user.publicKey,
                 )) as PlayerEntity;
 
-                // TODO: set owner
-
                 // Create item
-                return (await spawnItem({ geohash, prop, variables })) as Item;
+                return (await spawnItem({
+                    geohash,
+                    prop,
+                    variables,
+                    owner: player.player, // owner is player
+                    configOwner: player.player,
+                })) as Item;
             }),
-
         // cmd.configureItem
         configureItem: authProcedure
             .input(ConfigureItemSchema)
@@ -379,12 +392,16 @@ const crossoverRouter = {
                 )) as PlayerEntity;
 
                 // Get & configure item
-                let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
-                return await configureItem({
+                const result = await configureItem({
                     self: player,
-                    item: itemEntity,
+                    item: (await tryFetchEntity(item)) as ItemEntity,
                     variables,
                 });
+                return {
+                    item: result.item as Item,
+                    status: result.status,
+                    message: result.message,
+                };
             }),
     }),
     // Authentication

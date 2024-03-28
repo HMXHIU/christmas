@@ -374,9 +374,38 @@ test("Test Player", async () => {
         geohash: playerOne.geohash,
         durability: 100,
         charges: 0,
+        owner: playerOne.player, // playerOne owns the woodenClub
+        configOwner: playerOne.player, // playerOne can configure the woodenClub
         state: "default",
         variables: "{}",
         debuffs: [],
         buffs: [],
+    });
+
+    /*
+     * Test `useItem` permissions
+     */
+    var { status, message, self, target, item } = await commandUseItem(
+        {
+            item: woodenClub.item,
+            action: compendium.woodenClub.actions.swing.action,
+            target: playerTwo.player,
+        },
+        { Cookie: playerOneCookies },
+    );
+    expect(status).toBe("success");
+    expect(target).toMatchObject({
+        player: playerTwo.player,
+        hp: 9,
+    });
+    expect(self).toMatchObject({
+        player: playerOne.player,
+        st: 100, // uses item charge not player's resources
+        ap: 90, // uses item charge not player's resources
+    });
+    expect(item).toMatchObject({
+        item: woodenClub.item,
+        durability: 99, // -1 durability
+        charges: 0,
     });
 });
