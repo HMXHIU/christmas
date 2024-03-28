@@ -41,7 +41,7 @@ test("Test Items", async () => {
     /*
      * Test spawn item
      */
-    const woodenDoor = (await spawnItem({
+    let woodenDoor = (await spawnItem({
         geohash,
         prop: compendium.woodenDoor.prop,
         variables: {
@@ -135,20 +135,24 @@ test("Test Items", async () => {
     });
 
     // Test changing variables
-    portalOne = await configureItem({
-        self: playerOne as PlayerEntity,
-        item: portalOne,
-        variables: {
-            [compendium.portal.variables!.target.variable]: portalTwo.item,
-        },
-    });
-    portalTwo = await configureItem({
-        self: playerTwo as PlayerEntity,
-        item: portalTwo,
-        variables: {
-            [compendium.portal.variables!.target.variable]: portalOne.item,
-        },
-    });
+    portalOne = (
+        await configureItem({
+            self: playerOne as PlayerEntity,
+            item: portalOne,
+            variables: {
+                [compendium.portal.variables!.target.variable]: portalTwo.item,
+            },
+        })
+    ).item;
+    portalTwo = (
+        await configureItem({
+            self: playerTwo as PlayerEntity,
+            item: portalTwo,
+            variables: {
+                [compendium.portal.variables!.target.variable]: portalOne.item,
+            },
+        })
+    ).item;
     portalOneAttributes = itemAttibutes(portalOne);
     portalTwoAttributes = itemAttibutes(portalTwo);
     expect(portalOneAttributes).toMatchObject({
@@ -195,4 +199,114 @@ test("Test Items", async () => {
         beforeDurability - compendium.portal.actions!.teleport.cost.durability,
     );
     expect(playerOne.geohash === portalTwo.geohash).toBe(true);
+
+    /*
+     * Test item permissions
+     */
+
+    // Test owner permissions
+    let playerOneWoodenClub = await spawnItem({
+        geohash: playerOne.geohash,
+        prop: compendium.woodenClub.prop,
+        owner: playerOne.player,
+        configOwner: playerOne.player,
+    });
+
+    // Test target out of range
+    var { status, message } = await useItem({
+        item: playerOneWoodenClub,
+        action: compendium.woodenClub.actions.swing.action,
+        self: playerOne as PlayerEntity,
+        target: playerTwo as PlayerEntity,
+    });
+    expect(status).toBe("failure");
+    expect(message).toBe("Target out of range");
+
+    // Test in range and have permissions
+    playerTwo.geohash = playerOne.geohash;
+    await expect(
+        useItem({
+            item: playerOneWoodenClub,
+            action: compendium.woodenClub.actions.swing.action,
+            self: playerOne as PlayerEntity,
+            target: playerTwo as PlayerEntity,
+        }),
+    ).resolves.toMatchObject({
+        item: {
+            owner: playerOne.player,
+            configOwner: playerOne.player,
+            durability: 99,
+            charges: 0,
+        },
+        target: {
+            player: playerTwo.player,
+            hp: 9, // take one damage
+        },
+        self: {
+            player: playerOne.player,
+            ap: 10, // item uses charges instead of user's resources
+            st: 10, // item uses charges instead of user's resources
+        },
+        status: "success",
+        message: "",
+    });
+
+    // Test negative permissions
+    var { status, message } = await useItem({
+        item: playerOneWoodenClub,
+        action: compendium.woodenClub.actions.swing.action,
+        self: playerTwo as PlayerEntity,
+        target: playerOne as PlayerEntity,
+    });
+    expect(status).toBe("failure");
+    expect(message).toBe(
+        `${playerTwo.player} does not own ${playerOneWoodenClub.item}`,
+    );
+
+    // Test config permissions
+    playerOneWoodenClub = (
+        await configureItem({
+            self: playerOne as PlayerEntity,
+            item: playerOneWoodenClub,
+            variables: {
+                [compendium.woodenClub.variables.etching.variable]:
+                    "An etching",
+            },
+        })
+    ).item;
+    expect(itemAttibutes(playerOneWoodenClub)).toMatchObject({
+        traversable: 1,
+        destructible: true,
+        description: "A simple wooden club An etching.",
+        variant: "default",
+    });
+
+    // Test negative config permissions
+    var { status, message } = await configureItem({
+        self: playerTwo as PlayerEntity,
+        item: playerOneWoodenClub,
+        variables: {
+            [compendium.woodenClub.variables.etching.variable]:
+                "playerTwo's etching",
+        },
+    });
+    expect(status).toBe("failure");
+    expect(message).toBe(
+        `${playerTwo.player} does not own ${playerOneWoodenClub.item}`,
+    );
+
+    // Test config public item
+    woodenDoor = (
+        await configureItem({
+            self: playerOne as PlayerEntity,
+            item: woodenDoor,
+            variables: {
+                [compendium.woodenDoor.variables!.doorSign.variable]:
+                    "A public door sign",
+            },
+        })
+    ).item;
+    expect(woodenDoor).toMatchObject({
+        variables: '{"doorSign":"A public door sign"}',
+    });
 });

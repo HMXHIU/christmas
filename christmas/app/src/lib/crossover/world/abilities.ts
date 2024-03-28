@@ -342,7 +342,6 @@ function performEffect({
     effect: ProcedureEffect;
 }): PlayerEntity | MonsterEntity | ItemEntity {
     // TODO: return success or fail if resisted
-
     // Damage
     if (effect.damage) {
         // Player or monster

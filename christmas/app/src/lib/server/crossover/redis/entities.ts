@@ -112,6 +112,8 @@ const ItemEntitySchema = new Schema("Item", {
     name: { type: "string" },
     prop: { type: "string" },
     variables: { type: "string" }, // JSON string non searchable
+    owner: { type: "string" }, // who owns or can use the item (player | monster | public (empty) | dm)
+    configOwner: { type: "string" }, // who can configure the item (player | monster | public (empty) | dm)
     // Item state
     geohash: { type: "string" },
     durability: { type: "number" },

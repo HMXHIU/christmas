@@ -380,17 +380,11 @@ const crossoverRouter = {
 
                 // Get & configure item
                 let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
-                itemEntity = await configureItem({
+                return await configureItem({
                     self: player,
                     item: itemEntity,
                     variables,
                 });
-
-                // Save item
-                return {
-                    item: itemEntity as Item,
-                    self: player as Player,
-                };
             }),
     }),
     // Authentication

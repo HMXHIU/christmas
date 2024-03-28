@@ -23,7 +23,14 @@ import {
 } from ".";
 import type { MonsterEntity, PlayerEntity } from "./redis/entities";
 
-export { performMonsterActions, selectMonsterAbility, spawnMonsters };
+export {
+    dungeonMaster,
+    performMonsterActions,
+    selectMonsterAbility,
+    spawnMonsters,
+};
+
+const dungeonMaster = `dungeonMaster_benjamin`; // used as owner for items, etc owned by the game
 
 /**
  * Selects the best ability for a monster to use against a player.

@@ -85,7 +85,7 @@ let compendium: Record<string, Prop> = {
             default: {
                 traversable: 1.0,
                 destructible: true,
-                description: "A simple wooden club.",
+                description: "A simple wooden club ${etching}.",
                 variant: "default",
             },
         },
@@ -101,9 +101,16 @@ let compendium: Record<string, Prop> = {
                     start: "default",
                     end: "default",
                 },
+                ability: abilities.swing.ability,
             },
         },
-        variables: {},
+        variables: {
+            etching: {
+                variable: "etching",
+                type: "string",
+                value: "Nothing etched on the club",
+            },
+        },
     },
     woodenDoor: {
         prop: "woodenDoor",

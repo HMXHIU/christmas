@@ -335,17 +335,28 @@ async function spawnMonster({
  *
  * @param geohash - The geohash for the item.
  * @param prop - The prop in the compendium for the item.
+ * @param owner - Who owns or can use the item (player | monster | public (default="") | dm).
+ * @param configOwner - Who can configure the item (player | monster | public (default="") | dm).
+ * @param variables - The variables for the item.
  * @returns A promise that resolves to the spawned item entity.
  */
 async function spawnItem({
     geohash,
     prop,
     variables,
+    owner,
+    configOwner,
 }: {
     geohash: string;
     prop: string;
+    owner?: string;
+    configOwner?: string;
     variables?: Record<string, any>;
 }): Promise<ItemEntity> {
+    // Owner defaults to public
+    owner ??= "";
+    configOwner ??= "";
+
     // Get item count
     const count = await itemRepository.search().count();
     const item = `item_${prop}${count}`;
@@ -355,6 +366,8 @@ async function spawnItem({
         name: compendium[prop].defaultName,
         prop,
         geohash,
+        owner,
+        configOwner,
         durability: compendium[prop].durability,
         charges: compendium[prop].charges,
         state: compendium[prop].defaultState,
@@ -372,7 +385,7 @@ async function spawnItem({
  * @param self - The entity that is configuring the item.
  * @param item - The item to be configured.
  * @param variables - The new values for the item's variables.
- * @returns A promise that resolves to the configured item entity.
+ * @returns A promise that resolves to the updated item entity.
  */
 async function configureItem({
     self,
@@ -382,20 +395,32 @@ async function configureItem({
     self: PlayerEntity | MonsterEntity;
     item: ItemEntity;
     variables: Record<string, any>;
-}): Promise<ItemEntity> {
+}): Promise<{
+    item: ItemEntity;
+    status: "success" | "failure";
+    message: string;
+}> {
     // Check if can configure item
     const { canConfigure, message } = canConfigureItem(self, item);
     if (!canConfigure) {
         // TODO: publish to player message
         console.log(message);
-        return item;
+        return {
+            item,
+            status: "failure",
+            message,
+        };
     }
 
     // Save item with updated variables
     item.variables = updatedItemVariables(item, variables);
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
 
-    return item;
+    return {
+        item,
+        status: "success",
+        message: "",
+    };
 }
 
 /**
@@ -475,12 +500,6 @@ async function useItem(
 
     // Set item start state
     item.state = propAction.state.start;
-
-    // Consume charges and durability
-    item.charges -= propAction.cost.charges;
-    item.durability -= propAction.cost.durability;
-
-    // Save item with updated state, charges, and durability
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
 
     // TODO: publish to clients
@@ -502,21 +521,41 @@ async function useItem(
 
     // Perform ability
     if (propAbility && target) {
-        const { self: modifiedSelf, target: modifiedTarget } =
-            await performAbility(
-                {
-                    self,
-                    target,
-                    ability: propAbility,
-                },
-                { ignoreCost: true, ...options },
-            );
+        const {
+            self: modifiedSelf,
+            target: modifiedTarget,
+            status,
+            message,
+        } = await performAbility(
+            {
+                self,
+                target,
+                ability: propAbility,
+            },
+            { ignoreCost: true, ...options },
+        );
+
+        if (status !== "success") {
+            // Reset item state
+            item.state = propAction.state.start;
+            item = (await itemRepository.save(item.item, item)) as ItemEntity;
+            return {
+                item,
+                self,
+                target,
+                status: "failure",
+                message,
+            };
+        }
+
         target = modifiedTarget;
         self = modifiedSelf;
     }
 
-    // Set item end state
+    // Set item end state, consume charges and durability
     item.state = propAction.state.end;
+    item.charges -= propAction.cost.charges;
+    item.durability -= propAction.cost.durability;
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
 
     // TODO: publish to clients
@@ -541,9 +580,14 @@ function canConfigureItem(
             message: `${item.prop} not found in compendium`,
         };
     }
-    const prop = compendium[item.prop];
 
-    // TODO: Check self owns item
+    // Check if have permissions to configure item
+    if (!hasItemConfigOwnerPermissions(item, self)) {
+        return {
+            canConfigure: false,
+            message: `${self.player || self.monster} does not own ${item.item}`,
+        };
+    }
 
     return {
         canConfigure: true,
@@ -573,11 +617,16 @@ function canUseItem(
         };
     }
 
-    // TODO: Check self owns item or item is public use
+    // Check if have permissions to use item
+    if (!hasItemOwnerPermissions(item, self)) {
+        return {
+            canUse: false,
+            message: `${self.player || self.monster} does not own ${item.item}`,
+        };
+    }
 
     // Check has enough charges or durability
     const propAction = prop.actions[action];
-    const propAbility = propAction.ability;
     if (item.charges < propAction.cost.charges) {
         return {
             canUse: false,
@@ -595,6 +644,28 @@ function canUseItem(
         canUse: true,
         message: "",
     };
+}
+
+function hasItemOwnerPermissions(
+    item: ItemEntity,
+    self: PlayerEntity | MonsterEntity,
+) {
+    return (
+        item.owner === "" ||
+        item.owner === self.player ||
+        item.owner === self.monster
+    );
+}
+
+function hasItemConfigOwnerPermissions(
+    item: ItemEntity,
+    self: PlayerEntity | MonsterEntity,
+) {
+    return (
+        item.configOwner === "" ||
+        item.configOwner === self.player ||
+        item.configOwner === self.monster
+    );
 }
 
 function parseItemVariables(
