@@ -5,14 +5,18 @@ import {
     commandMove,
     commandPerformAbility,
     commandSay,
+    commandUseItem,
     stream,
 } from "$lib/crossover";
 import { worldSeed } from "$lib/crossover/world";
 import { abilities } from "$lib/crossover/world/abilities";
-import { compendium } from "$lib/crossover/world/compendium";
+import { compendium, itemAttibutes } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
-import { spawnItem } from "$lib/server/crossover";
-import type { ItemEntity } from "$lib/server/crossover/redis/entities";
+import { configureItem, spawnItem } from "$lib/server/crossover";
+import type {
+    ItemEntity,
+    PlayerEntity,
+} from "$lib/server/crossover/redis/entities";
 import { groupBy } from "lodash";
 import ngeohash from "ngeohash";
 import { expect, test } from "vitest";
@@ -240,11 +244,12 @@ test("Test Player", async () => {
      * Test commandConfigureItem
      */
 
+    // Spawn woodenDoor
     let woodenDoor = (await spawnItem({
         geohash: playerOne.geohash,
         prop: compendium.woodenDoor.prop,
         variables: {
-            [compendium.woodenDoor.variables!.doorSign.variable]:
+            [compendium.woodenDoor.variables.doorSign.variable]:
                 "A custom door sign",
         },
     })) as ItemEntity;
@@ -253,12 +258,13 @@ test("Test Player", async () => {
         variables: '{"doorSign":"A custom door sign"}',
     });
 
+    // Configure woodenDoor
     woodenDoor = (
         await commandConfigureItem(
             {
                 item: woodenDoor.item,
                 variables: {
-                    [compendium.woodenDoor.variables!.doorSign.variable]:
+                    [compendium.woodenDoor.variables.doorSign.variable]:
                         "A new door sign",
                 },
             },
@@ -273,4 +279,80 @@ test("Test Player", async () => {
     /*
      * Test commandUseItem
      */
+
+    // Use woodenDoor (open)
+    var { item, status } = await commandUseItem(
+        {
+            item: woodenDoor.item,
+            action: compendium.woodenDoor.actions.open.action,
+        },
+        { Cookie: playerOneCookies },
+    );
+    expect(status).toBe("success");
+    expect(item).toMatchObject({
+        item: woodenDoor.item,
+        name: "Wooden Door",
+        prop: "woodenDoor",
+        geohash: woodenDoor.geohash,
+        state: "open",
+        variables: '{"doorSign":"A new door sign"}',
+    });
+    woodenDoor = item as ItemEntity;
+    expect(itemAttibutes(woodenDoor)).toMatchObject({
+        traversable: 1,
+        desctructible: false,
+        description: "A new door sign. The door is open.",
+        variant: "default",
+    });
+
+    // Spawn portals (dm)
+    const portalOne = (await spawnItem({
+        geohash: playerOne.geohash, // spawn at playerOne
+        prop: compendium.portal.prop,
+    })) as ItemEntity;
+    const somwhereGeohash = "w21z3muk";
+    const portalTwo = (await spawnItem({
+        geohash: somwhereGeohash, // spawn at somwhere
+        prop: compendium.portal.prop,
+    })) as ItemEntity;
+
+    // Configure portals (dm)
+    await configureItem({
+        self: playerOne as PlayerEntity,
+        item: portalOne,
+        variables: {
+            target: portalTwo.item,
+        },
+    });
+    await configureItem({
+        self: playerOne as PlayerEntity,
+        item: portalTwo,
+        variables: {
+            target: portalOne.item,
+        },
+    });
+
+    // Use portals (player)
+    playerOne = (
+        await commandUseItem(
+            {
+                item: portalOne.item,
+                action: compendium.portal.actions.teleport.action,
+            },
+            { Cookie: playerOneCookies },
+        )
+    ).self;
+    // Teleport to portalTwo
+    expect(playerOne.geohash).toBe(portalTwo.geohash);
+    playerOne = (
+        await commandUseItem(
+            {
+                item: portalTwo.item,
+                action: compendium.portal.actions.teleport.action,
+            },
+            { Cookie: playerOneCookies },
+        )
+    ).self;
+    // Teleport back to portalOne
+    expect(playerOne.geohash).toBe(portalOne.geohash);
 });

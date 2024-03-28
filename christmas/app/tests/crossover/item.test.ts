@@ -167,7 +167,6 @@ test("Test Items", async () => {
             item: portalOne,
             action: compendium.portal.actions!.teleport.action,
             self: playerOne as PlayerEntity,
-            target: playerOne as PlayerEntity,
         })
     ).item;
     expect(portalOne.charges).toBe(

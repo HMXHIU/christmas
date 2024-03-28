@@ -91,7 +91,7 @@ const PerformAbilitySchema = z.object({
 const UseItemSchema = z.object({
     item: z.string(),
     action: z.string(),
-    target: z.string(),
+    target: z.string().optional(),
 });
 const ConfigureItemSchema = z.object({
     item: z.string(),
@@ -327,14 +327,11 @@ const crossoverRouter = {
                 // Get item
                 const itemEntity = (await tryFetchEntity(item)) as ItemEntity;
 
-                // Get target
-                const targetEntity = await tryFetchEntity(target);
-
                 // Use Item
                 const result = await useItem({
                     self: player,
                     item: itemEntity,
-                    target: targetEntity,
+                    target: target ? await tryFetchEntity(target) : undefined, // get target if provided
                     action,
                 });
 

@@ -236,7 +236,7 @@ function commandPerformAbility(
 }
 
 function commandUseItem(
-    input: { target: string; item: string; action: string },
+    input: { target?: string; item: string; action: string },
     headers: HTTPHeaders = {},
 ) {
     const { target, item, action } = input;

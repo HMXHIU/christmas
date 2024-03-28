@@ -19,8 +19,8 @@ interface Prop extends PropStats {
     defaultState: string;
     asset: AssetMetadata;
     states: Record<string, PropAttributes>;
-    actions?: Record<string, PropAction>;
-    variables?: PropVariables; // configurable variables to alter prop behavior & descriptions
+    actions: Record<string, PropAction>;
+    variables: PropVariables; // configurable variables to alter prop behavior & descriptions
 }
 
 interface PropStats {

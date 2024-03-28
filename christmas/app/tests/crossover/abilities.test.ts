@@ -66,7 +66,7 @@ test("Test Abilities", async () => {
             buffs: [],
         },
         status: "failure",
-        message: "Out of range",
+        message: "Target out of range",
     });
 
     // Test ability in range
@@ -147,7 +147,7 @@ test("Test Abilities", async () => {
             buffs: [],
         },
         status: "failure",
-        message: "Not enough AP",
+        message: "Not enough resources to perform ability",
     });
 
     // Test fillInEffectVariables
@@ -164,7 +164,6 @@ test("Test Abilities", async () => {
             value: playerTwo.geohash,
             op: "change",
         },
-        variableSubstitute: true,
     });
 
     // Test teleport
