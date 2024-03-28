@@ -133,6 +133,26 @@ const abilities: Record<string, Ability> = {
         range: 0,
         aoe: 0,
     },
+    swing: {
+        ability: "swing",
+        type: "offensive",
+        description: "Swing at the player.",
+        procedures: [
+            [
+                "action",
+                {
+                    target: "target",
+                    damage: { amount: 1, damageType: "blunt" },
+                },
+            ],
+        ],
+        ap: 1,
+        st: 1,
+        hp: 0,
+        mp: 0,
+        range: 0,
+        aoe: 0,
+    },
     doubleSlash: {
         ability: "doubleSlash",
         type: "offensive",

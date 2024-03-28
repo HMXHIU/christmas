@@ -27,6 +27,7 @@ import {
     playersInGeohashQuerySet,
     saveEntity,
     savePlayerEntityState,
+    spawnItem,
     spawnMonster,
     useItem,
 } from ".";
@@ -95,9 +96,15 @@ const UseItemSchema = z.object({
 });
 const ConfigureItemSchema = z.object({
     item: z.string(),
-    variables: z.record(z.string()),
+    variables: z.record(z.union([z.string(), z.number(), z.boolean()])),
 });
-
+const CreateItemSchema = z.object({
+    geohash: z.string(), // TODO: if not provided, item is created in player inventory
+    prop: z.string(),
+    variables: z
+        .record(z.union([z.string(), z.number(), z.boolean()]))
+        .optional(),
+});
 const BuffEntitySchema = z.object({
     entity: z.string(),
     hp: z.number().optional(),
@@ -343,6 +350,23 @@ const crossoverRouter = {
                     message: result.message,
                 };
             }),
+        // cmd.createItem
+        createItem: authProcedure
+            .input(CreateItemSchema)
+            .query(async ({ ctx, input }) => {
+                const { geohash, prop, variables } = input;
+
+                // Get player
+                const player = (await tryFetchEntity(
+                    ctx.user.publicKey,
+                )) as PlayerEntity;
+
+                // TODO: set owner
+
+                // Create item
+                return (await spawnItem({ geohash, prop, variables })) as Item;
+            }),
+
         // cmd.configureItem
         configureItem: authProcedure
             .input(ConfigureItemSchema)

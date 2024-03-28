@@ -1,6 +1,7 @@
 import { INTERNAL_SERVICE_KEY } from "$env/static/private";
 import {
     commandConfigureItem,
+    commandCreateItem,
     commandLook,
     commandMove,
     commandPerformAbility,
@@ -300,7 +301,7 @@ test("Test Player", async () => {
     woodenDoor = item as ItemEntity;
     expect(itemAttibutes(woodenDoor)).toMatchObject({
         traversable: 1,
-        desctructible: false,
+        destructible: false,
         description: "A new door sign. The door is open.",
         variant: "default",
     });
@@ -355,4 +356,27 @@ test("Test Player", async () => {
     ).self;
     // Teleport back to portalOne
     expect(playerOne.geohash).toBe(portalOne.geohash);
+
+    /*
+     * Test commandCreateItem
+     */
+
+    const woodenClub = await commandCreateItem(
+        {
+            geohash: playerOne.geohash,
+            prop: compendium.woodenClub.prop,
+        },
+        { Cookie: playerOneCookies },
+    );
+    expect(woodenClub).toMatchObject({
+        name: "Wooden Club",
+        prop: "woodenClub",
+        geohash: playerOne.geohash,
+        durability: 100,
+        charges: 0,
+        state: "default",
+        variables: "{}",
+        debuffs: [],
+        buffs: [],
+    });
 });

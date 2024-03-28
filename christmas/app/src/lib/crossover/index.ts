@@ -15,9 +15,11 @@ import { refresh } from "$lib/community";
 import type { Player } from "$lib/server/crossover/redis/entities";
 import type { StreamEvent } from "../../routes/api/crossover/stream/+server";
 import { updateGrid, type Direction } from "./world";
+import type { ItemVariables } from "./world/compendium";
 
 export {
     commandConfigureItem,
+    commandCreateItem,
     commandLook,
     commandMove,
     commandPerformAbility,
@@ -247,8 +249,20 @@ function commandUseItem(
     });
 }
 
+function commandCreateItem(
+    input: { geohash: string; prop: string; variables?: ItemVariables },
+    headers: HTTPHeaders = {},
+) {
+    const { geohash, prop, variables } = input;
+    return trpc({ headers }).crossover.cmd.createItem.query({
+        prop,
+        geohash,
+        variables,
+    });
+}
+
 function commandConfigureItem(
-    input: { item: string; variables: Record<string, any> },
+    input: { item: string; variables: ItemVariables },
     headers: HTTPHeaders = {},
 ) {
     const { item, variables } = input;

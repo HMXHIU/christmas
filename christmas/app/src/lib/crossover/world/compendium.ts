@@ -8,7 +8,7 @@ import type { AssetMetadata } from ".";
 import { abilities } from "./abilities";
 const { cloneDeep } = lodash;
 
-export { compendium, itemAttibutes, type Prop };
+export { compendium, itemAttibutes, type ItemVariables, type Prop };
 
 /**
  * `Prop` is a template used to create an `item` instance
@@ -31,7 +31,7 @@ interface PropStats {
 interface PropAttributes {
     description: string;
     traversable: number;
-    desctructible: boolean;
+    destructible: boolean;
     variant: string;
 }
 
@@ -58,10 +58,53 @@ interface PropVariables {
     };
 }
 
+type ItemVariables = Record<string, string | number | boolean>;
+
+// interface ItemVariables {
+//     [key: string]: string | number | boolean;
+// }
+
 /**
  * `compendium` is a collection of `Prop` templates used  to create `item` instances.
  */
 let compendium: Record<string, Prop> = {
+    woodenClub: {
+        prop: "woodenClub",
+        defaultName: "Wooden Club",
+        asset: {
+            bundle: "props",
+            name: "weapons",
+            variants: {
+                default: "wooden-club",
+            },
+        },
+        durability: 100,
+        charges: 0,
+        defaultState: "default",
+        states: {
+            default: {
+                traversable: 1.0,
+                destructible: true,
+                description: "A simple wooden club.",
+                variant: "default",
+            },
+        },
+        actions: {
+            swing: {
+                action: "swing",
+                description: "Swing the club at a target.",
+                cost: {
+                    charges: 0,
+                    durability: 1,
+                },
+                state: {
+                    start: "default",
+                    end: "default",
+                },
+            },
+        },
+        variables: {},
+    },
     woodenDoor: {
         prop: "woodenDoor",
         defaultName: "Wooden Door",
@@ -79,13 +122,13 @@ let compendium: Record<string, Prop> = {
         states: {
             open: {
                 traversable: 1.0,
-                desctructible: false,
+                destructible: false,
                 description: "${doorSign}. The door is open.",
                 variant: "default",
             },
             closed: {
                 traversable: 0,
-                desctructible: false,
+                destructible: false,
                 description: "${doorSign}. The door is closed.",
                 variant: "closed",
             },
@@ -140,7 +183,7 @@ let compendium: Record<string, Prop> = {
         states: {
             default: {
                 traversable: 1.0,
-                desctructible: false,
+                destructible: false,
                 description:
                     "${description}. It is tuned to teleport to ${target}.",
                 variant: "default",

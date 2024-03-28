@@ -7,7 +7,10 @@ import {
     type PerformAbilityCallbacks,
 } from "$lib/crossover/world/abilities";
 import { monsterStats } from "$lib/crossover/world/bestiary";
-import { compendium } from "$lib/crossover/world/compendium";
+import {
+    compendium,
+    type ItemVariables,
+} from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
 import { serverAnchorClient } from "$lib/server";
 import { parseZodErrors } from "$lib/utils";
@@ -35,6 +38,7 @@ export {
     getPlayerMetadata,
     getUserMetadata,
     initPlayerEntity,
+    itemVariableValue,
     loadPlayerEntity,
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
@@ -45,6 +49,7 @@ export {
     setPlayerState,
     spawnItem,
     spawnMonster,
+    updatedItemVariables,
     useItem,
     type ConnectedUser,
 };
@@ -353,7 +358,7 @@ async function spawnItem({
         durability: compendium[prop].durability,
         charges: compendium[prop].charges,
         state: compendium[prop].defaultState,
-        variables: JSON.stringify(variables || {}),
+        variables: JSON.stringify(parseItemVariables(variables || {}, prop)),
         debuffs: [],
         buffs: [],
     };
@@ -385,25 +390,9 @@ async function configureItem({
         console.log(message);
         return item;
     }
-    const prop = compendium[item.prop];
-
-    // Update item variables
-    let itemVariables = JSON.parse(item.variables);
-    for (const [key, value] of Object.entries(variables)) {
-        if (prop.variables?.hasOwnProperty(key)) {
-            const { type } = prop.variables[key];
-            if (["string", "item", "monster", "player"].includes(type)) {
-                itemVariables[key] = String(value);
-            } else if (type === "number") {
-                itemVariables[key] = Number(value);
-            } else if (type === "boolean") {
-                itemVariables[key] = Boolean(value);
-            }
-        }
-    }
 
     // Save item with updated variables
-    item.variables = JSON.stringify(itemVariables);
+    item.variables = updatedItemVariables(item, variables);
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
 
     return item;
@@ -497,41 +486,18 @@ async function useItem(
     // TODO: publish to clients
 
     // Overwrite target specified in item variables
-    if (prop.variables?.target) {
-        const itemVariables = JSON.parse(item.variables);
-        if (itemVariables.target) {
-            const { type } = prop.variables.target;
-            if (type === "item") {
-                target = (await itemRepository.fetch(
-                    itemVariables.target,
-                )) as ItemEntity;
-            } else if (type === "player") {
-                target = (await playerRepository.fetch(
-                    itemVariables.target,
-                )) as PlayerEntity;
-            } else if (type === "monster") {
-                target = (await monsterRepository.fetch(
-                    itemVariables.target,
-                )) as MonsterEntity;
-            }
-        }
+    if (prop.variables.target) {
+        target = (await itemVariableValue(item, "target")) as
+            | PlayerEntity
+            | MonsterEntity
+            | ItemEntity;
     }
 
     // Overwrite self specified in item variables (can only be `player` or `monster`)
-    if (prop.variables?.self) {
-        const itemVariables = JSON.parse(item.variables);
-        if (itemVariables.self) {
-            const { type } = prop.variables.self;
-            if (type === "player") {
-                self = (await playerRepository.fetch(
-                    itemVariables.self,
-                )) as PlayerEntity;
-            } else if (type === "monster") {
-                self = (await monsterRepository.fetch(
-                    itemVariables.self,
-                )) as MonsterEntity;
-            }
-        }
+    if (prop.variables.self) {
+        self = (await itemVariableValue(item, "self")) as
+            | PlayerEntity
+            | MonsterEntity;
     }
 
     // Perform ability
@@ -629,6 +595,69 @@ function canUseItem(
         canUse: true,
         message: "",
     };
+}
+
+function parseItemVariables(
+    variables: ItemVariables,
+    prop: string,
+): ItemVariables {
+    const propVariables = compendium[prop].variables;
+
+    let itemVariables: ItemVariables = {};
+
+    for (const [key, value] of Object.entries(variables)) {
+        if (propVariables.hasOwnProperty(key)) {
+            const { type } = propVariables[key];
+            if (["string", "item", "monster", "player"].includes(type)) {
+                itemVariables[key] = String(value);
+            } else if (type === "number") {
+                itemVariables[key] = Number(value);
+            } else if (type === "boolean") {
+                itemVariables[key] = Boolean(value);
+            }
+        }
+    }
+
+    return itemVariables;
+}
+
+function updatedItemVariables(
+    item: ItemEntity,
+    variables: ItemVariables,
+): string {
+    return JSON.stringify({
+        ...JSON.parse(item.variables),
+        ...parseItemVariables(variables, item.prop),
+    });
+}
+
+async function itemVariableValue(
+    item: ItemEntity,
+    key: string,
+): Promise<
+    string | number | boolean | PlayerEntity | MonsterEntity | ItemEntity
+> {
+    const itemVariables = JSON.parse(item.variables);
+    const propVariables = compendium[item.prop].variables;
+
+    const { type } = propVariables[key];
+    const variable = itemVariables[key];
+
+    if (type === "item") {
+        return (await itemRepository.fetch(variable)) as ItemEntity;
+    } else if (type === "player") {
+        return (await playerRepository.fetch(variable)) as PlayerEntity;
+    } else if (type === "monster") {
+        return (await monsterRepository.fetch(variable)) as MonsterEntity;
+    } else if (type === "string") {
+        return String(variable);
+    } else if (type === "number") {
+        return Number(variable);
+    } else if (type === "boolean") {
+        return Boolean(variable);
+    }
+
+    throw new Error(`Invalid variable type ${type} for item ${item.item}`);
 }
 
 /**

@@ -1,5 +1,11 @@
 import { compendium, itemAttibutes } from "$lib/crossover/world/compendium";
-import { configureItem, spawnItem, useItem } from "$lib/server/crossover";
+import {
+    configureItem,
+    itemVariableValue,
+    spawnItem,
+    updatedItemVariables,
+    useItem,
+} from "$lib/server/crossover";
 import type {
     ItemEntity,
     PlayerEntity,
@@ -64,7 +70,7 @@ test("Test Items", async () => {
     const attributes = itemAttibutes(woodenDoor);
     expect(attributes).toMatchObject({
         traversable: 0,
-        desctructible: false,
+        destructible: false,
         description: "A custom door sign. The door is closed.",
         variant: "closed",
     });
@@ -117,13 +123,13 @@ test("Test Items", async () => {
     let portalTwoAttributes = itemAttibutes(portalTwo);
     expect(portalOneAttributes).toMatchObject({
         traversable: 1,
-        desctructible: false,
+        destructible: false,
         description: "Portal One. It is tuned to teleport to ${target}.",
         variant: "default",
     });
     expect(portalTwoAttributes).toMatchObject({
         traversable: 1,
-        desctructible: false,
+        destructible: false,
         description: "Portal Two. It is tuned to teleport to ${target}.",
         variant: "default",
     });
@@ -147,15 +153,28 @@ test("Test Items", async () => {
     portalTwoAttributes = itemAttibutes(portalTwo);
     expect(portalOneAttributes).toMatchObject({
         traversable: 1,
-        desctructible: false,
+        destructible: false,
         description: `Portal One. It is tuned to teleport to ${portalTwo.item}.`,
         variant: "default",
     });
     expect(portalTwoAttributes).toMatchObject({
         traversable: 1,
-        desctructible: false,
+        destructible: false,
         description: `Portal Two. It is tuned to teleport to ${portalOne.item}.`,
         variant: "default",
+    });
+
+    // Test `itemVariableValue`
+    const portalOneTarget = await itemVariableValue(portalOne, "target");
+    expect(portalOneTarget).toMatchObject(portalTwo);
+
+    // Test `updatedItemVariables`
+    const newVariables = updatedItemVariables(portalOne, {
+        description: `Portal One updated description.`,
+    });
+    expect(JSON.parse(newVariables)).toMatchObject({
+        description: "Portal One updated description.",
+        target: portalTwo.item,
     });
 
     // Test using item ability
