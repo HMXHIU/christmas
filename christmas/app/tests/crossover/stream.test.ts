@@ -1,26 +1,80 @@
-import { stream } from "$lib/crossover";
+import { commandPerformAbility, stream } from "$lib/crossover";
+import { abilities } from "$lib/crossover/world/abilities";
 import { expect, test } from "vitest";
-import type { StreamEvent } from "../../src/routes/api/crossover/stream/+server";
 import { createRandomPlayer, waitForEventData } from "./utils";
 
 test("Test Stream", async () => {
-    // Create a player
+    // Create players
     const region = "SGP";
-    const geohash = "gbsuv7";
-    const [playerWallet, playerCookie] = await createRandomPlayer({
-        region,
-        geohash,
-        name: "player",
-    });
+    const geohash = "gbsuv7bp";
 
-    // Stream endpoint
-    const [eventStream, closeStream] = await stream({ Cookie: playerCookie });
-    const eventData: StreamEvent = await waitForEventData(
-        eventStream,
-        "system",
-    );
-    expect(eventData).toMatchObject({
+    const [playerOneWallet, playerOneCookie, playerOne] =
+        await createRandomPlayer({
+            region,
+            geohash,
+            name: "player",
+        });
+
+    const [playerTwoWallet, playerTwoCookie, playerTwo] =
+        await createRandomPlayer({
+            region,
+            geohash,
+            name: "player",
+        });
+
+    // Create streams
+    const [eventStreamOne, closeStreamOne] = await stream({
+        Cookie: playerOneCookie,
+    });
+    await expect(
+        waitForEventData(eventStreamOne, "system"),
+    ).resolves.toMatchObject({
         type: "system",
         message: "started",
+    });
+    const [eventStreamTwo, closeStreamTwo] = await stream({
+        Cookie: playerTwoCookie,
+    });
+    await expect(
+        waitForEventData(eventStreamTwo, "system"),
+    ).resolves.toMatchObject({
+        type: "system",
+        message: "started",
+    });
+
+    // `playerOne` attacks player `playerTwo`
+    setTimeout(async () => {
+        await commandPerformAbility(
+            {
+                ability: abilities.scratch.ability,
+                target: playerTwo.player,
+            },
+            { Cookie: playerOneCookie },
+        );
+    }, 0);
+    await expect(
+        waitForEventData(eventStreamTwo, "message"),
+    ).resolves.toMatchObject({
+        type: "message",
+        message: "You took 1 damage",
+        variables: {},
+    });
+
+    // `playerTwo` heals itself
+    setTimeout(async () => {
+        await commandPerformAbility(
+            {
+                ability: abilities.bandage.ability,
+                target: playerTwo.player,
+            },
+            { Cookie: playerTwoCookie },
+        );
+    }, 0);
+    await expect(
+        waitForEventData(eventStreamTwo, "message"),
+    ).resolves.toMatchObject({
+        type: "message",
+        message: "You healed for 5",
+        variables: {},
     });
 });

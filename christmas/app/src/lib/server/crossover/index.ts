@@ -21,7 +21,6 @@ import { parseZodErrors, sleep } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
 import type { Search } from "redis-om";
 import { z } from "zod";
-import type { MessageFeed } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import {
     isEntityBusy,
@@ -933,13 +932,38 @@ function performEffectCheck({
 
 async function publishEffectToPlayer(player: string, effect: ProcedureEffect) {
     const { buffs, debuffs, damage } = effect;
+    let message = "";
 
-    // Create message data
-    const messageFeed: MessageFeed = {
-        type: "message",
-        message: "TODO",
-        variables: {},
-    };
+    if (damage && damage.amount > 0) {
+        message = `You took ${damage.amount} damage`;
+    } else if (damage && damage.amount < 0) {
+        message = `You healed for ${-damage.amount}`;
+    }
 
-    await redisClient.publish(player, JSON.stringify(messageFeed));
+    if (debuffs) {
+        const { debuff, op } = debuffs;
+        if (op === "push") {
+            message += `You gained ${debuff}`;
+        } else if (op === "pop") {
+            message += `You lost ${debuff}`;
+        }
+    }
+
+    if (buffs) {
+        const { buff, op } = buffs;
+        if (op === "push") {
+            message += `You gained ${buff}`;
+        } else if (op === "pop") {
+            message += `You lost ${buff}`;
+        }
+    }
+
+    await redisClient.publish(
+        player,
+        JSON.stringify({
+            type: "message",
+            message: message,
+            variables: {},
+        }),
+    );
 }
