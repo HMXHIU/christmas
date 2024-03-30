@@ -1,6 +1,7 @@
 import type { Monster } from "$lib/server/crossover/redis/entities";
 import type { TileSchema } from "$lib/server/crossover/router";
 
+import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 import lodash from "lodash";
 import ngeohash from "ngeohash";
 import type { z } from "zod";
@@ -8,6 +9,8 @@ import { biomes } from "./biomes";
 const { groupBy } = lodash;
 
 export {
+    MS_PER_TICK,
+    TICKS_PER_TURN,
     abyssTile,
     biomeAtGeohash,
     biomesAtGeohash,
@@ -27,6 +30,9 @@ export {
     type Grid,
     type WorldSeed,
 };
+
+const TICKS_PER_TURN = 4;
+const MS_PER_TICK = PUBLIC_ENVIRONMENT === "development" ? 10 : 2000;
 
 const abyssTile: z.infer<typeof TileSchema> = {
     name: "The Abyss",

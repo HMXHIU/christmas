@@ -4,23 +4,13 @@ import {
     uninhabitedNeighbouringGeohashes,
     worldSeed,
 } from "$lib/crossover/world";
-import {
-    abilities,
-    canPerformAbility,
-    performAbility,
-} from "$lib/crossover/world/abilities";
+import { abilities, canPerformAbility } from "$lib/crossover/world/abilities";
 import {
     bestiary,
     monsterStats,
     type Beast,
 } from "$lib/crossover/world/bestiary";
-import {
-    afterProcedures,
-    beforeProcedures,
-    monstersInGeohashQuerySet,
-    onProcedure,
-    spawnMonster,
-} from ".";
+import { monstersInGeohashQuerySet, performAbility, spawnMonster } from ".";
 import type { MonsterEntity, PlayerEntity } from "./redis/entities";
 
 export {
@@ -134,18 +124,11 @@ async function performMonsterActions(
         for (const monster of monstersNearPlayer) {
             const ability = selectMonsterAbility(monster, player);
             if (ability != null) {
-                await performAbility(
-                    {
-                        self: monster,
-                        target: player,
-                        ability,
-                    },
-                    {
-                        onProcedure,
-                        beforeProcedures,
-                        afterProcedures,
-                    },
-                );
+                await performAbility({
+                    self: monster,
+                    target: player,
+                    ability,
+                });
             }
         }
     }

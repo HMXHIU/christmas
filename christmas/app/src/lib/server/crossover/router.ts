@@ -5,7 +5,6 @@ import {
     tileAtGeohash,
     worldSeed,
 } from "$lib/crossover/world";
-import { performAbility } from "$lib/crossover/world/abilities";
 import { biomes } from "$lib/crossover/world/biomes";
 import {
     fetchEntity,
@@ -18,15 +17,13 @@ import { TRPCError } from "@trpc/server";
 import { performance } from "perf_hooks";
 import { z } from "zod";
 import {
-    afterProcedures,
-    beforeProcedures,
     configureItem,
     getUserMetadata,
     initPlayerEntity,
     loadPlayerEntity,
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
-    onProcedure,
+    performAbility,
     playersInGeohashQuerySet,
     saveEntity,
     savePlayerEntityState,
@@ -40,7 +37,7 @@ import {
     hashObject,
     serverAnchorClient,
 } from "..";
-import type { MessageEventData } from "../../../routes/api/crossover/stream/+server";
+import type { MessageFeed } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, internalServiceProcedure, t } from "../trpc";
 import { performMonsterActions, spawnMonsters } from "./dungeonMaster";
@@ -226,9 +223,9 @@ const crossoverRouter = {
                     player.geohash,
                 ).return.allIds();
 
-                // Create message data
-                const messageData: MessageEventData = {
-                    eventType: "cmd",
+                // Create message feed
+                const messageFeed: MessageFeed = {
+                    type: "message",
                     message: "${origin} says ${message}",
                     variables: {
                         cmd: "say",
@@ -239,7 +236,7 @@ const crossoverRouter = {
 
                 // Send message to all users in the geohash
                 for (const publicKey of users) {
-                    redisClient.publish(publicKey, JSON.stringify(messageData));
+                    redisClient.publish(publicKey, JSON.stringify(messageFeed));
                 }
             }),
         // cmd.look
@@ -310,18 +307,11 @@ const crossoverRouter = {
                 const targetEntity = await tryFetchEntity(target);
 
                 // Perform ability
-                const result = await performAbility(
-                    {
-                        self: player,
-                        target: targetEntity,
-                        ability,
-                    },
-                    {
-                        onProcedure,
-                        beforeProcedures,
-                        afterProcedures,
-                    },
-                );
+                const result = await performAbility({
+                    self: player,
+                    target: targetEntity,
+                    ability,
+                });
 
                 return {
                     self: result.self as Player,

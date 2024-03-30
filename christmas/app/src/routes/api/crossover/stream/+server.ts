@@ -1,37 +1,38 @@
 import { requireLogin } from "$lib/server";
 import { connectedUsers } from "$lib/server/crossover";
 import { redisSubscribeClient } from "$lib/server/crossover/redis";
+import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
 import type { RequestHandler } from "./$types";
 
-export interface StreamEvent {
-    streamType: "message" | "system";
-    data: StreamEventData;
-}
+export type StreamEvent = MessageFeed | SystemFeed | PlayerUpdate;
 
-export type StreamEventData = SystemEventData | MessageEventData;
-
-export interface SystemEventData {
-    eventType: "stream";
-    message: string;
-}
-
-export interface MessageEventData {
-    eventType: "cmd";
+export type MessageFeed = {
+    type: "message";
     message: string;
     variables: Record<string, string | number | boolean>;
+};
+
+export type SystemFeed = {
+    type: "system";
+    message: string;
+};
+
+export type PlayerUpdate = {
+    type: "player";
+    player: PlayerEntity;
+};
+
+function sendStreamEvent(
+    controller: ReadableStreamDefaultController<any>,
+    event: StreamEvent,
+) {
+    controller.enqueue(JSON.stringify(event) + "\n\n");
 }
 
 function onMessage(message: string, channel: string) {
-    const messageData: MessageEventData = JSON.parse(message);
-    const streamData: StreamEvent = {
-        streamType: "message",
-        data: messageData,
-    };
-
+    // `message` is stringified StreamEvent
     try {
-        connectedUsers[channel].controller.enqueue(
-            JSON.stringify(streamData) + "\n\n", // SSE messages are separated by two newlines
-        );
+        connectedUsers[channel].controller.enqueue(message + "\n\n");
     } catch (error: any) {
         console.error(error.message);
     }
@@ -54,14 +55,10 @@ export const GET: RequestHandler = async (event) => {
             redisSubscribeClient.subscribe(user.publicKey, onMessage);
 
             // Send start event
-            const streamData: StreamEvent = {
-                streamType: "system",
-                data: {
-                    eventType: "stream",
-                    message: "started",
-                },
-            };
-            controller.enqueue(JSON.stringify(streamData) + "\n\n");
+            sendStreamEvent(controller, {
+                type: "system",
+                message: "started",
+            });
             console.log(`Stream ${user.publicKey} started`);
         },
         cancel() {

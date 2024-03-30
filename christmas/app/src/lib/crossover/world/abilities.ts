@@ -5,14 +5,14 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import { substituteVariables } from "$lib/utils";
 import lodash from "lodash";
-import { geohashToCell } from ".";
+import { TICKS_PER_TURN, geohashToCell } from ".";
 const { cloneDeep } = lodash;
 
 export {
     abilities,
     canPerformAbility,
+    checkInRange,
     fillInEffectVariables,
-    performAbility,
     type Ability,
     type AbilityType,
     type AfterProcedures,
@@ -21,7 +21,6 @@ export {
     type DamageType,
     type Debuff,
     type OnProcedure,
-    type PerformAbilityCallbacks,
     type Procedure,
     type ProcedureEffect,
 };
@@ -73,6 +72,7 @@ interface Ability {
 type Procedure = ["action" | "check", ProcedureEffect];
 interface ProcedureEffect {
     target: "self" | "target";
+    ticks: number;
     damage?: {
         amount: number;
         damageType: DamageType;
@@ -103,6 +103,7 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "self",
                     damage: { amount: -5, damageType: "healing" },
+                    ticks: TICKS_PER_TURN,
                 },
             ],
         ],
@@ -123,6 +124,7 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "target",
                     damage: { amount: 1, damageType: "slashing" },
+                    ticks: TICKS_PER_TURN / 2,
                 },
             ],
         ],
@@ -143,6 +145,7 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "target",
                     damage: { amount: 1, damageType: "blunt" },
+                    ticks: TICKS_PER_TURN / 2,
                 },
             ],
         ],
@@ -163,6 +166,7 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "target",
                     damage: { amount: 1, damageType: "slashing" },
+                    ticks: TICKS_PER_TURN / 3,
                 },
             ],
             [
@@ -170,6 +174,7 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "target",
                     damage: { amount: 1, damageType: "slashing" },
+                    ticks: TICKS_PER_TURN / 3,
                 },
             ],
         ],
@@ -190,6 +195,7 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "target",
                     debuffs: { debuff: "blinded", op: "push" },
+                    ticks: TICKS_PER_TURN / 2,
                 },
             ],
             [
@@ -197,6 +203,7 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "target",
                     debuffs: { debuff: "blinded", op: "contains" },
+                    ticks: 0,
                 },
             ],
             [
@@ -204,6 +211,7 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "target",
                     damage: { amount: 1, damageType: "piercing" },
+                    ticks: TICKS_PER_TURN / 2,
                 },
             ],
         ],
@@ -224,6 +232,7 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "target",
                     damage: { amount: 1, damageType: "piercing" },
+                    ticks: TICKS_PER_TURN / 2,
                 },
             ],
         ],
@@ -244,6 +253,7 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "target",
                     damage: { amount: 3, damageType: "fire" },
+                    ticks: TICKS_PER_TURN / 2,
                 },
             ],
             [
@@ -251,6 +261,7 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "target",
                     debuffs: { debuff: "wet", op: "doesNotContain" },
+                    ticks: 0,
                 },
             ],
             [
@@ -258,6 +269,7 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "target",
                     debuffs: { debuff: "burning", op: "push" },
+                    ticks: 0,
                 },
             ],
         ],
@@ -278,6 +290,7 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "target",
                     debuffs: { debuff: "paralyzed", op: "push" },
+                    ticks: TICKS_PER_TURN / 2,
                 },
             ],
         ],
@@ -298,6 +311,7 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "target",
                     debuffs: { debuff: "blinded", op: "push" },
+                    ticks: TICKS_PER_TURN / 2,
                 },
             ],
         ],
@@ -322,6 +336,7 @@ const abilities: Record<string, Ability> = {
                         value: "${target.geohash}",
                         op: "change",
                     },
+                    ticks: TICKS_PER_TURN,
                 },
             ],
         ],
@@ -333,92 +348,6 @@ const abilities: Record<string, Ability> = {
         aoe: 0,
     },
 };
-
-function performEffect({
-    entity,
-    effect,
-}: {
-    entity: PlayerEntity | MonsterEntity | ItemEntity;
-    effect: ProcedureEffect;
-}): PlayerEntity | MonsterEntity | ItemEntity {
-    // TODO: return success or fail if resisted
-    // Damage
-    if (effect.damage) {
-        // Player or monster
-        if (entity.player || entity.monster) {
-            entity.hp = Math.max(
-                0,
-                (entity as PlayerEntity | MonsterEntity).hp -
-                    effect.damage.amount,
-            );
-        }
-        // Item
-        else if (entity.item) {
-            entity.durability = Math.max(
-                0,
-                (entity as ItemEntity).durability - effect.damage.amount,
-            );
-        }
-    }
-
-    // Debuff
-    if (effect.debuffs) {
-        const { debuff, op } = effect.debuffs;
-        if (op === "push") {
-            if (!entity.debuffs.includes(debuff)) {
-                entity.debuffs.push(debuff);
-            }
-        } else if (op === "pop") {
-            entity.debuffs = entity.debuffs.filter((d) => d !== debuff);
-        }
-    }
-
-    // State
-    if (effect.states) {
-        const { state, op, value } = effect.states;
-        if (entity.hasOwnProperty(state)) {
-            if (op === "change") {
-                (entity as any)[state] = value;
-            } else if (op === "subtract" && state) {
-                (entity as any)[state] -= value as number;
-            } else if (op === "add") {
-                (entity as any)[state] += value as number;
-            }
-        }
-    }
-
-    return entity;
-}
-
-function performCheck({
-    entity,
-    effect,
-}: {
-    entity: PlayerEntity | MonsterEntity | ItemEntity;
-    effect: ProcedureEffect;
-}): boolean {
-    const { debuffs, buffs } = effect;
-
-    if (debuffs) {
-        const { debuff, op } = debuffs;
-        if (op === "contains") {
-            return entity.debuffs.includes(debuff);
-        } else if (op === "doesNotContain") {
-            return !entity.debuffs.includes(debuff);
-        }
-    }
-
-    if (buffs) {
-        const { buff, op } = buffs;
-        if (op === "contains") {
-            return entity.buffs.includes(buff);
-        } else if (op === "doesNotContain") {
-            return !entity.buffs.includes(buff);
-        }
-    }
-
-    return false;
-}
 
 type OnProcedure = ({
     target,
@@ -447,116 +376,6 @@ type AfterProcedures = ({
     target: PlayerEntity | MonsterEntity | ItemEntity;
     ability: string;
 }) => Promise<void>;
-
-interface PerformAbilityCallbacks {
-    onProcedure?: OnProcedure;
-    beforeProcedures?: BeforeProcedures;
-    afterProcedures?: AfterProcedures;
-}
-
-interface PerformAbilityOptions extends PerformAbilityCallbacks {
-    ignoreCost?: boolean;
-}
-
-async function performAbility(
-    {
-        self,
-        target,
-        ability,
-    }: {
-        self: PlayerEntity | MonsterEntity; // self can only be a `player` or `monster`
-        target: PlayerEntity | MonsterEntity | ItemEntity; // target can be an `item`
-        ability: string;
-    },
-    options: PerformAbilityOptions = {},
-): Promise<{
-    self: PlayerEntity | MonsterEntity;
-    target: PlayerEntity | MonsterEntity | ItemEntity;
-    status: "success" | "failure";
-    message: string;
-}> {
-    const { procedures, ap, mp, st, hp, range } = abilities[ability];
-    const { onProcedure, beforeProcedures, afterProcedures, ignoreCost } =
-        options;
-
-    // Check if self has enough resources to perform ability
-    if (!ignoreCost && !canPerformAbility(self, ability)) {
-        return {
-            self,
-            target,
-            status: "failure",
-            message: "Not enough resources to perform ability",
-        };
-    }
-
-    // Check if target is in range
-    if (!checkInRange(self, target, range)) {
-        return {
-            self,
-            target,
-            status: "failure",
-            message: "Target out of range",
-        };
-    }
-
-    // Expend ability costs
-    if (!ignoreCost) {
-        self.ap -= ap;
-        self.mp -= mp;
-        self.st -= st;
-        self.hp -= hp;
-    }
-
-    if (beforeProcedures) {
-        await beforeProcedures({ self, target, ability });
-    }
-
-    for (const [type, effect] of procedures) {
-        if (type === "action") {
-            const actualEffect = fillInEffectVariables({
-                effect,
-                self,
-                target,
-            });
-
-            if (effect.target === "self") {
-                self = performEffect({ entity: self, effect: actualEffect }) as
-                    | PlayerEntity
-                    | MonsterEntity;
-                // TODO: only call onProcedure if the effect was successful
-                if (onProcedure) {
-                    await onProcedure({
-                        target: self,
-                        effect: actualEffect,
-                    });
-                }
-            } else if (effect.target === "target") {
-                target = performEffect({
-                    entity: target,
-                    effect: actualEffect,
-                });
-                if (onProcedure) {
-                    await onProcedure({
-                        target,
-                        effect: actualEffect,
-                    });
-                }
-            }
-        } else if (type === "check") {
-            if (effect.target === "self") {
-                if (!performCheck({ entity: self, effect })) break;
-            } else if (effect.target === "target") {
-                if (!performCheck({ entity: target, effect })) break;
-            }
-        }
-    }
-
-    if (afterProcedures) {
-        await afterProcedures({ self, target, ability });
-    }
-
-    return { self, target, status: "success", message: "" };
-}
 
 /**
  * Fills in effect variables in the given `effect` object using the `self` and `target` entities.

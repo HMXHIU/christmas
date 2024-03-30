@@ -24,7 +24,7 @@
     import { onMount } from "svelte";
     import type { z } from "zod";
     import { grid, player } from "../../store";
-    import type { MessageEventData } from "../api/crossover/stream/+server";
+    import type { MessageFeed } from "../api/crossover/stream/+server";
 
     let messageFeed: MessageFeedUI[] = [];
     let eventStream: EventTarget | null = null;
@@ -76,7 +76,7 @@
 
     function processMessageEvent(event: Event) {
         const { message, variables } = (event as MessageEvent)
-            .data as MessageEventData;
+            .data as MessageFeed;
 
         switch (variables.cmd) {
             case "say":

@@ -20,12 +20,14 @@ import {
 export {
     fetchEntity,
     initializeClients,
+    isEntityBusy,
     itemRepository,
     monsterRepository,
     playerRepository,
     redisClient,
     redisSubscribeClient,
     saveEntity,
+    setEnityBusy,
 };
 
 // Repositories
@@ -114,4 +116,14 @@ async function saveEntity(
     }
 
     throw new Error("Invalid entity");
+}
+
+async function setEnityBusy(entity: string, ms: number) {
+    await redisClient.set(`${entity}:busy`, "true", {
+        PX: ms,
+    });
+}
+
+async function isEntityBusy(entity: string): Promise<boolean> {
+    return (await redisClient.get(`${entity}:busy`)) === "true";
 }

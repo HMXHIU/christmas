@@ -1,12 +1,16 @@
 import {
     abilities,
     fillInEffectVariables,
-    performAbility,
 } from "$lib/crossover/world/abilities";
+import { performAbility } from "$lib/server/crossover";
 import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer } from "./utils";
+
+vi.mock("$lib/crossover/world", async (module) => {
+    return { ...((await module()) as object), MS_PER_TICK: 10 };
+});
 
 test("Test Abilities", async () => {
     const region = String.fromCharCode(...getRandomRegion());

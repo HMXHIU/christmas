@@ -188,7 +188,7 @@ function makeWriteableEventStream(eventTarget: EventTarget) {
     return new WritableStream({
         write(message: StreamEvent, controller) {
             eventTarget.dispatchEvent(
-                new MessageEvent(message.streamType, { data: message.data }),
+                new MessageEvent(message.type, { data: message }),
             );
         },
     });

@@ -25,6 +25,7 @@ export {
     parseZodErrors,
     retry,
     signAndSendTransaction,
+    sleep,
     storage_uri_to_url,
     stringToBase58,
     stringToUint8Array,
@@ -299,4 +300,8 @@ async function retry<T>({
     }
 
     throw new Error("Max retry attempts.");
+}
+
+async function sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }

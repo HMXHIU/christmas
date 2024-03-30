@@ -1,10 +1,14 @@
-import { childrenGeohashes, worldSeed } from "$lib/crossover/world";
 import {
-    performAbility,
-    type AfterProcedures,
-    type BeforeProcedures,
-    type OnProcedure,
-    type PerformAbilityCallbacks,
+    MS_PER_TICK,
+    childrenGeohashes,
+    worldSeed,
+} from "$lib/crossover/world";
+import {
+    abilities,
+    canPerformAbility,
+    checkInRange,
+    fillInEffectVariables,
+    type ProcedureEffect,
 } from "$lib/crossover/world/abilities";
 import { monsterStats } from "$lib/crossover/world/bestiary";
 import {
@@ -13,12 +17,20 @@ import {
 } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
 import { serverAnchorClient } from "$lib/server";
-import { parseZodErrors } from "$lib/utils";
+import { parseZodErrors, sleep } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
 import type { Search } from "redis-om";
 import { z } from "zod";
+import type { MessageFeed } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
-import { itemRepository, monsterRepository, playerRepository } from "./redis";
+import {
+    isEntityBusy,
+    itemRepository,
+    monsterRepository,
+    playerRepository,
+    redisClient,
+    setEnityBusy,
+} from "./redis";
 import {
     type ItemEntity,
     type MonsterEntity,
@@ -31,8 +43,6 @@ import {
 } from "./router";
 
 export {
-    afterProcedures,
-    beforeProcedures,
     configureItem,
     connectedUsers,
     getPlayerMetadata,
@@ -42,7 +52,7 @@ export {
     loadPlayerEntity,
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
-    onProcedure,
+    performAbility,
     playersInGeohashQuerySet,
     saveEntity,
     savePlayerEntityState,
@@ -460,20 +470,17 @@ async function saveEntity(
  * @param params.target - The target entity for the action (optional).
  * @returns A promise that resolves to the updated item entity.
  */
-async function useItem(
-    {
-        item,
-        action,
-        self,
-        target,
-    }: {
-        item: ItemEntity;
-        action: string;
-        self: PlayerEntity | MonsterEntity; // sell can only be `player` or `monster`
-        target?: PlayerEntity | MonsterEntity | ItemEntity; // target can be an `item`
-    },
-    options: PerformAbilityCallbacks = {},
-): Promise<{
+async function useItem({
+    item,
+    action,
+    self,
+    target,
+}: {
+    item: ItemEntity;
+    action: string;
+    self: PlayerEntity | MonsterEntity; // sell can only be `player` or `monster`
+    target?: PlayerEntity | MonsterEntity | ItemEntity; // target can be an `item`
+}): Promise<{
     self: PlayerEntity | MonsterEntity;
     target: PlayerEntity | MonsterEntity | ItemEntity | undefined;
     item: ItemEntity;
@@ -526,14 +533,12 @@ async function useItem(
             target: modifiedTarget,
             status,
             message,
-        } = await performAbility(
-            {
-                self,
-                target,
-                ability: propAbility,
-            },
-            { ignoreCost: true, ...options },
-        );
+        } = await performAbility({
+            self,
+            target,
+            ability: propAbility,
+            ignoreCost: true, // ignore cost when using items
+        });
 
         if (status !== "success") {
             // Reset item state
@@ -731,35 +736,210 @@ async function itemVariableValue(
     throw new Error(`Invalid variable type ${type} for item ${item.item}`);
 }
 
-/**
- * Callback function to handle successful execution of procedure of an ability.
- * @param target - The target entity.
- * @param effect - The effect of the ability.
- */
-const onProcedure: OnProcedure = async ({ target, effect }) => {
-    if (target.player) {
-    } else if (target.monster) {
-    }
-
-    // Save target entity
-    await saveEntity(target);
-};
-
-/**
- * Callback function before executing procedures of an ability.
- * @param self - The self entity.
- * @param target - The target entity.
- * @param ability - The ability being performed.
- */
-const beforeProcedures: BeforeProcedures = async ({
+async function performAbility({
     self,
     target,
     ability,
-}) => {
-    // Save self entity
-    await saveEntity(self);
-};
+    ignoreCost,
+}: {
+    self: PlayerEntity | MonsterEntity; // self can only be a `player` or `monster`
+    target: PlayerEntity | MonsterEntity | ItemEntity; // target can be an `item`
+    ability: string;
+    ignoreCost?: boolean;
+}): Promise<{
+    self: PlayerEntity | MonsterEntity;
+    target: PlayerEntity | MonsterEntity | ItemEntity;
+    status: "success" | "failure";
+    message: string;
+}> {
+    const { procedures, ap, mp, st, hp, range } = abilities[ability];
 
-const afterProcedures: AfterProcedures = async ({ self, target, ability }) => {
-    // Do nothing
-};
+    // Check if player is busy
+    if (self.player && (await isEntityBusy((self as PlayerEntity).player))) {
+        return {
+            self,
+            target,
+            status: "failure",
+            message: "Player is busy",
+        };
+    }
+
+    // Check if self has enough resources to perform ability
+    if (!ignoreCost && !canPerformAbility(self, ability)) {
+        return {
+            self,
+            target,
+            status: "failure",
+            message: "Not enough resources to perform ability",
+        };
+    }
+
+    // Check if target is in range
+    if (!checkInRange(self, target, range)) {
+        return {
+            self,
+            target,
+            status: "failure",
+            message: "Target out of range",
+        };
+    }
+
+    // Set player busy state (only for player entities)
+    if (self.player) {
+        const ticks = procedures.reduce(
+            (acc, [type, effect]) => acc + effect.ticks,
+            0,
+        );
+        setEnityBusy((self as PlayerEntity).player, ticks * MS_PER_TICK);
+    }
+
+    // Expend ability costs
+    if (!ignoreCost) {
+        self.ap -= ap;
+        self.mp -= mp;
+        self.st -= st;
+        self.hp -= hp;
+    }
+    self = (await saveEntity(self)) as PlayerEntity | MonsterEntity;
+
+    // Perform procedures
+    for (const [type, effect] of procedures) {
+        let entity = effect.target === "self" ? self : target;
+
+        if (type === "action") {
+            // Fill in effect variables
+            const actualEffect = fillInEffectVariables({
+                effect,
+                self,
+                target,
+            });
+
+            // Perform effect action
+            entity = await performEffectAction({
+                entity,
+                effect: actualEffect,
+            });
+            await saveEntity(entity);
+
+            // Update self or target
+            if (effect.target === "self") {
+                self = entity as PlayerEntity | MonsterEntity;
+            } else {
+                target = entity as PlayerEntity | MonsterEntity | ItemEntity;
+            }
+
+            // Publish effect to player
+            if (entity.player) {
+                await publishEffectToPlayer(
+                    (entity as PlayerEntity).player,
+                    actualEffect,
+                );
+            }
+        } else if (type === "check") {
+            if (!performEffectCheck({ entity, effect })) break;
+        }
+    }
+
+    return { self, target, status: "success", message: "" };
+}
+
+async function performEffectAction({
+    entity,
+    effect,
+}: {
+    entity: PlayerEntity | MonsterEntity | ItemEntity;
+    effect: ProcedureEffect;
+}): Promise<PlayerEntity | MonsterEntity | ItemEntity> {
+    // Sleep for the duration of the effect
+    await sleep(effect.ticks * MS_PER_TICK);
+
+    // Damage
+    if (effect.damage) {
+        // Player or monster
+        if (entity.player || entity.monster) {
+            entity.hp = Math.max(
+                0,
+                (entity as PlayerEntity | MonsterEntity).hp -
+                    effect.damage.amount,
+            );
+        }
+        // Item
+        else if (entity.item) {
+            entity.durability = Math.max(
+                0,
+                (entity as ItemEntity).durability - effect.damage.amount,
+            );
+        }
+    }
+
+    // Debuff
+    if (effect.debuffs) {
+        const { debuff, op } = effect.debuffs;
+        if (op === "push") {
+            if (!entity.debuffs.includes(debuff)) {
+                entity.debuffs.push(debuff);
+            }
+        } else if (op === "pop") {
+            entity.debuffs = entity.debuffs.filter((d) => d !== debuff);
+        }
+    }
+
+    // State
+    if (effect.states) {
+        const { state, op, value } = effect.states;
+        if (entity.hasOwnProperty(state)) {
+            if (op === "change") {
+                (entity as any)[state] = value;
+            } else if (op === "subtract" && state) {
+                (entity as any)[state] -= value as number;
+            } else if (op === "add") {
+                (entity as any)[state] += value as number;
+            }
+        }
+    }
+
+    return entity;
+}
+
+function performEffectCheck({
+    entity,
+    effect,
+}: {
+    entity: PlayerEntity | MonsterEntity | ItemEntity;
+    effect: ProcedureEffect;
+}): boolean {
+    const { debuffs, buffs } = effect;
+
+    if (debuffs) {
+        const { debuff, op } = debuffs;
+        if (op === "contains") {
+            return entity.debuffs.includes(debuff);
+        } else if (op === "doesNotContain") {
+            return !entity.debuffs.includes(debuff);
+        }
+    }
+
+    if (buffs) {
+        const { buff, op } = buffs;
+        if (op === "contains") {
+            return entity.buffs.includes(buff);
+        } else if (op === "doesNotContain") {
+            return !entity.buffs.includes(buff);
+        }
+    }
+
+    return false;
+}
+
+async function publishEffectToPlayer(player: string, effect: ProcedureEffect) {
+    const { buffs, debuffs, damage } = effect;
+
+    // Create message data
+    const messageFeed: MessageFeed = {
+        type: "message",
+        message: "TODO",
+        variables: {},
+    };
+
+    await redisClient.publish(player, JSON.stringify(messageFeed));
+}

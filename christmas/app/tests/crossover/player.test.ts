@@ -20,9 +20,13 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import { groupBy } from "lodash";
 import ngeohash from "ngeohash";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer, waitForEventData } from "./utils";
+
+vi.mock("$lib/crossover/world", async (module) => {
+    return { ...((await module()) as object), MS_PER_TICK: 10 };
+});
 
 test("Test Player", async () => {
     const region = String.fromCharCode(...getRandomRegion());
@@ -70,7 +74,7 @@ test("Test Player", async () => {
     await expect(
         waitForEventData(playerOneEventStream, "system"),
     ).resolves.toMatchObject({
-        eventType: "stream",
+        type: "system",
         message: "started",
     });
     const [playerTwoEventStream, playerTwoCloseStream] = await stream({
@@ -79,7 +83,7 @@ test("Test Player", async () => {
     await expect(
         waitForEventData(playerTwoEventStream, "system"),
     ).resolves.toMatchObject({
-        eventType: "stream",
+        type: "system",
         message: "started",
     });
     const [playerThreeEventStream, playerThreeCloseStream] = await stream({
@@ -88,7 +92,7 @@ test("Test Player", async () => {
     await expect(
         waitForEventData(playerThreeEventStream, "system"),
     ).resolves.toMatchObject({
-        eventType: "stream",
+        type: "system",
         message: "started",
     });
 
@@ -100,7 +104,7 @@ test("Test Player", async () => {
     await expect(
         waitForEventData(playerOneEventStream, "message"),
     ).resolves.toMatchObject({
-        eventType: "cmd",
+        type: "message",
         message: "${origin} says ${message}",
         variables: {
             origin: playerOneWallet.publicKey.toBase58(),
@@ -113,7 +117,7 @@ test("Test Player", async () => {
     await expect(
         waitForEventData(playerThreeEventStream, "message"),
     ).resolves.toMatchObject({
-        eventType: "cmd",
+        type: "message",
         message: "${origin} says ${message}",
         variables: {
             origin: playerOneWallet.publicKey.toBase58(),
@@ -206,15 +210,15 @@ test("Test Player", async () => {
     expect(res.status).toBe(200);
 
     // Test ability success
-    await expect(
-        commandPerformAbility(
-            {
-                target: playerTwo.player,
-                ability: abilities.teleport.ability,
-            },
-            { Cookie: playerOneCookies },
-        ),
-    ).resolves.toMatchObject({
+    let abilityResult = await commandPerformAbility(
+        {
+            target: playerTwo.player,
+            ability: abilities.teleport.ability,
+        },
+        { Cookie: playerOneCookies },
+    );
+    playerOne = abilityResult.self;
+    expect(abilityResult).toMatchObject({
         self: {
             player: playerOne.player,
             name: "Gandalf",
@@ -343,6 +347,7 @@ test("Test Player", async () => {
             { Cookie: playerOneCookies },
         )
     ).self;
+
     // Teleport to portalTwo
     expect(playerOne.geohash).toBe(portalTwo.geohash);
     playerOne = (
@@ -354,6 +359,7 @@ test("Test Player", async () => {
             { Cookie: playerOneCookies },
         )
     ).self;
+
     // Teleport back to portalOne
     expect(playerOne.geohash).toBe(portalOne.geohash);
 
@@ -385,6 +391,8 @@ test("Test Player", async () => {
     /*
      * Test `useItem` permissions
      */
+    let stBefore = playerOne.st;
+    let apBefore = playerOne.ap;
     var { status, message, self, target, item } = await commandUseItem(
         {
             item: woodenClub.item,
@@ -393,6 +401,7 @@ test("Test Player", async () => {
         },
         { Cookie: playerOneCookies },
     );
+
     expect(status).toBe("success");
     expect(target).toMatchObject({
         player: playerTwo.player,
@@ -400,8 +409,8 @@ test("Test Player", async () => {
     });
     expect(self).toMatchObject({
         player: playerOne.player,
-        st: 100, // uses item charge not player's resources
-        ap: 90, // uses item charge not player's resources
+        st: stBefore, // uses item charge not player's resources
+        ap: apBefore, // uses item charge not player's resources
     });
     expect(item).toMatchObject({
         item: woodenClub.item,
