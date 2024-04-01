@@ -54,7 +54,7 @@ test("Test Monster", async () => {
     expect(goblin).toMatchObject({
         name: "goblin",
         beast: "goblin",
-        geohash: geohash,
+        location: [geohash],
         level: 1,
         hp: 20,
         mp: 20,

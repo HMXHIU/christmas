@@ -47,7 +47,7 @@ test("Test Abilities", async () => {
             player: playerOneWallet.publicKey.toBase58(),
             name: "Gandalf",
             loggedIn: true,
-            geohash: playerOne.geohash,
+            location: playerOne.location,
             level: playerOne.level,
             hp: playerOne.hp,
             mp: playerOne.mp,
@@ -60,7 +60,7 @@ test("Test Abilities", async () => {
             player: playerTwoWallet.publicKey.toBase58(),
             name: "Saruman",
             loggedIn: true,
-            geohash: playerTwo.geohash,
+            location: playerTwo.location,
             level: playerOne.level,
             hp: playerOne.hp,
             mp: playerOne.mp,
@@ -74,7 +74,7 @@ test("Test Abilities", async () => {
     });
 
     // Test ability in range
-    playerTwo.geohash = playerOne.geohash;
+    playerTwo.location = playerOne.location;
     const playerTwoHp = playerTwo.hp;
     const playerOneSt = playerOne.st;
     const playerOneAp = playerOne.ap;
@@ -89,7 +89,7 @@ test("Test Abilities", async () => {
             player: playerOneWallet.publicKey.toBase58(),
             name: "Gandalf",
             loggedIn: true,
-            geohash: playerOne.geohash,
+            location: playerOne.location,
             level: playerOne.level,
             hp: playerOne.hp,
             mp: playerOne.mp,
@@ -102,7 +102,7 @@ test("Test Abilities", async () => {
             player: playerTwoWallet.publicKey.toBase58(),
             name: "Saruman",
             loggedIn: true,
-            geohash: playerTwo.geohash,
+            location: playerTwo.location,
             level: playerTwo.level,
             hp: playerTwoHp - 1, // scratch does 1 damage
             mp: playerTwo.mp,
@@ -128,7 +128,7 @@ test("Test Abilities", async () => {
             player: playerOneWallet.publicKey.toBase58(),
             name: "Gandalf",
             loggedIn: true,
-            geohash: playerOne.geohash,
+            location: playerOne.location,
             level: playerOne.level,
             hp: playerOne.hp,
             mp: playerOne.mp,
@@ -141,7 +141,7 @@ test("Test Abilities", async () => {
             player: playerTwoWallet.publicKey.toBase58(),
             name: "Saruman",
             loggedIn: true,
-            geohash: playerTwo.geohash,
+            location: playerTwo.location,
             level: playerTwo.level,
             hp: playerTwo.hp,
             mp: playerTwo.mp,
@@ -164,8 +164,8 @@ test("Test Abilities", async () => {
     expect(actualEffect).toMatchObject({
         target: "self",
         states: {
-            state: "geohash",
-            value: playerTwo.geohash,
+            state: "location",
+            value: playerTwo.location,
             op: "change",
         },
     });
@@ -173,7 +173,7 @@ test("Test Abilities", async () => {
     // Test teleport
     playerOne.ap = 20;
     playerOne.mp = 20;
-    playerOne.geohash = "gbsuv77w";
+    playerOne.location = ["gbsuv77w"];
     await expect(
         performAbility({
             self: playerOne as PlayerEntity,
@@ -184,12 +184,12 @@ test("Test Abilities", async () => {
         self: {
             player: playerOneWallet.publicKey.toBase58(),
             name: "Gandalf",
-            geohash: playerTwo.geohash,
+            location: playerTwo.location,
         },
         target: {
             player: playerTwoWallet.publicKey.toBase58(),
             name: "Saruman",
-            geohash: playerTwo.geohash,
+            location: playerTwo.location,
         },
         status: "success",
         message: "",

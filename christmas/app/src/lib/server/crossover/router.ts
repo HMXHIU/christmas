@@ -117,7 +117,8 @@ const BuffEntitySchema = z.object({
 
 // PlayerState stores data owned by the game (does not require player permission to modify)
 const PlayerStateSchema = z.object({
-    geohash: z.string().optional(),
+    location: z.array(z.string()).optional(),
+    locationType: z.string().optional(),
     loggedIn: z.boolean().optional(),
     hp: z.number().optional(),
     mp: z.number().optional(),
@@ -153,7 +154,9 @@ const crossoverRouter = {
             // Get all logged in players
             const players =
                 (await loggedInPlayersQuerySet().return.all()) as PlayerEntity[];
+
             await spawnMonsters(players);
+
             const end = performance.now();
             return { status: "success", time: end - start };
         }),
@@ -220,7 +223,7 @@ const crossoverRouter = {
 
                 // Get logged in players in geohash
                 const users = await playersInGeohashQuerySet(
-                    player.geohash,
+                    player.location[0],
                 ).return.allIds();
 
                 // Create message feed
@@ -248,23 +251,23 @@ const crossoverRouter = {
 
                 // Get logged in players in geohash
                 const players = (await playersInGeohashQuerySet(
-                    player.geohash,
+                    player.location[0],
                 ).return.all({
                     pageSize: LOOK_PAGE_SIZE,
                 })) as PlayerEntity[];
 
                 // Get monsters in surrounding (don't use page size for monsters)
                 const monsters = (await monstersInGeohashQuerySet(
-                    player.geohash.slice(0, -1),
+                    player.location[0].slice(0, -1),
                 ).return.all()) as MonsterEntity[];
 
                 // Get tile
-                const biome = biomeAtGeohash(player.geohash);
+                const biome = biomeAtGeohash(player.location[0]);
 
                 // TODO: inclue POI when generating tile
 
                 return {
-                    tile: tileAtGeohash(player.geohash, biome),
+                    tile: tileAtGeohash(player.location[0], biome),
                     players: players as Player[],
                     monsters: monsters as Monster[],
                 };
@@ -279,7 +282,7 @@ const crossoverRouter = {
             )) as PlayerEntity;
 
             // Check if next geohash is travasable
-            const nextGeohash = geohashNeighbour(player.geohash, direction);
+            const nextGeohash = geohashNeighbour(player.location[0], direction);
             const biome = biomeAtGeohash(nextGeohash);
 
             // TODO: account for speed

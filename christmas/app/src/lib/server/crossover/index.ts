@@ -42,6 +42,7 @@ import {
 } from "./router";
 
 export {
+    autoCorrectGeohashPrecision,
     configureItem,
     connectedUsers,
     getPlayerMetadata,
@@ -194,7 +195,7 @@ async function loadPlayerEntity(
  * Initializes the player entity.
  * @param player The player entity.
  * @param region The region of the player.
- * @param geohash The geohash of the player.
+ * @param geohash The geohash of the user (community).
  * @param forceSave Indicates whether to force save the player entity.
  * @returns A promise that resolves to the initialized player entity.
  */
@@ -213,9 +214,10 @@ async function initPlayerEntity(
     let changed = false;
 
     // Initialize geohash
-    if (!player.geohash) {
+    if (!player.location) {
         // TODO: Spawn player in region's city center spawn point
-        player.geohash = geohash;
+        player.location = [geohash];
+        player.locationType = "geohash";
         changed = true;
     }
 
@@ -234,18 +236,15 @@ async function initPlayerEntity(
     }
 
     // Auto correct player's geohash precision
-    if (player.geohash.length !== worldSeed.spatial.unit.precision) {
-        const delta = worldSeed.spatial.unit.precision - player.geohash.length;
-        let geohash = player.geohash;
-        if (delta > 0) {
-            for (let i = 0; i < delta; i++) {
-                geohash = childrenGeohashes(geohash)[0];
-            }
-        } else if (delta < 0) {
-            geohash = geohash.slice(0, worldSeed.spatial.unit.precision);
-        }
-        player.geohash = geohash;
-        console.log("Auto corrected player's geohash", player.geohash);
+    if (player.location[0].length !== worldSeed.spatial.unit.precision) {
+        player.location = [
+            autoCorrectGeohashPrecision(
+                player.location[0],
+                worldSeed.spatial.unit.precision,
+            ),
+        ];
+        player.locationType = "geohash";
+        console.log("Auto corrected player's location", player.location);
     }
 
     // Save if changed or `forceSave`
@@ -257,6 +256,29 @@ async function initPlayerEntity(
     }
 
     return player;
+}
+
+/**
+ * Auto-corrects the precision of a geohash by either truncating or extending it.
+ * @param geohash - The geohash to be corrected.
+ * @param precision - The desired precision of the geohash.
+ * @returns The corrected geohash with the specified precision.
+ */
+function autoCorrectGeohashPrecision(
+    geohash: string,
+    precision: number,
+): string {
+    if (geohash.length !== precision) {
+        const delta = precision - geohash.length;
+        if (delta > 0) {
+            for (let i = 0; i < delta; i++) {
+                geohash = childrenGeohashes(geohash)[0];
+            }
+        } else if (delta < 0) {
+            geohash = geohash.slice(0, precision);
+        }
+    }
+    return geohash;
 }
 
 /**
@@ -286,7 +308,11 @@ function loggedInPlayersQuerySet(): Search {
  */
 function playersInGeohashQuerySet(geohash: string): Search {
     // TODO: this should include all children geohashes
-    return loggedInPlayersQuerySet().and("geohash").equal(geohash);
+    return loggedInPlayersQuerySet()
+        .and("location")
+        .contains(`${geohash}*`)
+        .and("locationType")
+        .equal("geohash");
 }
 
 /**
@@ -295,7 +321,12 @@ function playersInGeohashQuerySet(geohash: string): Search {
  * @returns A search query set for monsters in the specified geohash.
  */
 function monstersInGeohashQuerySet(geohash: string): Search {
-    return monsterRepository.search().where("geohash").eq(`${geohash}*`);
+    return monsterRepository
+        .search()
+        .and("location")
+        .contains(`${geohash}*`)
+        .and("locationType")
+        .equal("geohash");
 }
 
 /**
@@ -327,7 +358,8 @@ async function spawnMonster({
         monster: monsterId, // unique monster id
         name: beast,
         beast,
-        geohash,
+        location: [geohash],
+        locationType: "geohash",
         level,
         hp,
         mp,
@@ -374,7 +406,8 @@ async function spawnItem({
         item,
         name: compendium[prop].defaultName,
         prop,
-        geohash,
+        location: [geohash],
+        locationType: "geohash",
         owner,
         configOwner,
         durability: compendium[prop].durability,
@@ -886,6 +919,7 @@ async function performEffectAction({
     // State
     if (effect.states) {
         const { state, op, value } = effect.states;
+
         if (entity.hasOwnProperty(state)) {
             if (op === "change") {
                 (entity as any)[state] = value;

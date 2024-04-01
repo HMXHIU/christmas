@@ -350,7 +350,7 @@ function updateGrid({
     // Update monsters
     if (monsters && monsters.length > 0) {
         for (const [geohash, mxs] of Object.entries(
-            groupBy(monsters, (monster) => monster.geohash),
+            groupBy(monsters, (monster) => monster.location[0]),
         )) {
             const { precision, row, col } = geohashToCell(geohash);
             updateGridEntry({

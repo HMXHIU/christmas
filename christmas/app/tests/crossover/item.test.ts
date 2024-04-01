@@ -52,7 +52,7 @@ test("Test Items", async () => {
     expect(woodenDoor).toMatchObject({
         name: compendium.woodenDoor.defaultName,
         prop: compendium.woodenDoor.prop,
-        geohash: geohash,
+        location: [geohash],
         durability: compendium.woodenDoor.durability,
         charges: compendium.woodenDoor.charges,
         state: compendium.woodenDoor.defaultState,
@@ -184,7 +184,7 @@ test("Test Items", async () => {
     // Test using item ability
     const beforeCharges = portalOne.charges;
     const beforeDurability = portalOne.durability;
-    expect(playerOne.geohash === portalTwo.geohash).toBe(false);
+    expect(playerOne.location[0] === portalTwo.location[0]).toBe(false);
     let itemResult = await useItem({
         item: portalOne,
         action: compendium.portal.actions.teleport.action,
@@ -199,7 +199,7 @@ test("Test Items", async () => {
     expect(portalOne.durability).toBe(
         beforeDurability - compendium.portal.actions.teleport.cost.durability,
     );
-    expect(playerOne.geohash === portalTwo.geohash).toBe(true);
+    expect(playerOne.location[0] === portalTwo.location[0]).toBe(true);
 
     /*
      * Test item permissions
@@ -207,7 +207,7 @@ test("Test Items", async () => {
 
     // Test owner permissions
     let playerOneWoodenClub = await spawnItem({
-        geohash: playerOne.geohash,
+        geohash: playerOne.location[0],
         prop: compendium.woodenClub.prop,
         owner: playerOne.player,
         configOwner: playerOne.player,
@@ -224,7 +224,7 @@ test("Test Items", async () => {
     expect(message).toBe("Target out of range");
 
     // Test in range and have permissions
-    playerTwo.geohash = playerOne.geohash;
+    playerTwo.location[0] = playerOne.location[0];
     await expect(
         useItem({
             item: playerOneWoodenClub,

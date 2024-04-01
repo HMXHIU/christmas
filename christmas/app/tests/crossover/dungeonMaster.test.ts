@@ -146,7 +146,7 @@ test("Test DungeonMaster", async () => {
                 player: playerOne.player,
                 name: "Gandalf",
                 loggedIn: true,
-                geohash: "w21z3tss",
+                location: ["w21z3tss"],
                 level: 1,
                 hp: 100,
                 mp: 100,

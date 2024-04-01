@@ -117,7 +117,7 @@ async function performMonsterActions(
         const monstersNearPlayer =
             monsters ||
             ((await monstersInGeohashQuerySet(
-                player.geohash,
+                player.location[0],
             ).return.all()) as MonsterEntity[]);
 
         // Perform monster actions
@@ -141,9 +141,10 @@ async function performMonsterActions(
  */
 async function spawnMonsters(players: PlayerEntity[]) {
     // Get all parent geohashes (only interested with geohashes 1 level above unit precision)
+
     const parentGeohashes = players
-        .map(({ geohash }) => {
-            return geohash.slice(0, -1);
+        .map(({ location }) => {
+            return location[0].slice(0, -1);
         })
         .filter(
             (geohash) =>
@@ -163,6 +164,7 @@ async function spawnMonsters(players: PlayerEntity[]) {
 
         // Number of monsters to spawn
         const numMonstersToSpawn = monsterLimit - numMonsters;
+
         if (numMonstersToSpawn <= 0) {
             continue;
         }

@@ -97,8 +97,8 @@ test("Test Auth", async () => {
         buffs: [],
         debuffs: [],
     });
-    expect(player.geohash.length).toBe(worldSeed.spatial.unit.precision); // test auto correct geohash precision
-    expect(player.geohash.startsWith(geohash)).toBe(true); // should be contained in the user's geohash
+    expect(player.location[0].length).toBe(worldSeed.spatial.unit.precision); // test auto correct geohash precision
+    expect(player.location[0].startsWith(geohash)).toBe(true); // should be contained in the user's geohash
 
     // Check player state
     await expect(
@@ -109,7 +109,8 @@ test("Test Auth", async () => {
         }),
     ).resolves.toMatchObject({
         loggedIn: true,
-        geohash: player.geohash,
+        location: player.location,
+        locationType: "geohash",
         ap: 10,
         hp: 10,
         level: 1,
@@ -126,7 +127,8 @@ test("Test Auth", async () => {
             player: user.publicKey.toBase58(),
             name: name,
             loggedIn: false,
-            geohash: player.geohash,
+            location: player.location,
+            locationType: "geohash",
             ap: 10,
             hp: 10,
             level: 1,
@@ -146,7 +148,8 @@ test("Test Auth", async () => {
         }),
     ).resolves.toMatchObject({
         loggedIn: false,
-        geohash: player.geohash,
+        location: player.location,
+        locationType: "geohash",
         ap: 10,
         hp: 10,
         level: 1,

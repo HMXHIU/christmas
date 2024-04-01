@@ -16,8 +16,23 @@ export {
 
 type EntityType = "player" | "monster" | "item";
 
+type LocationType =
+    | "geohash"
+    | "item"
+    | "inv" // inventory
+    | "rh" // right hand
+    | "lh" // left hand
+    | "ft" // feet
+    | "hd" // head
+    | "nk" // neck
+    | "ch" // chest
+    | "lg" // legs
+    | "r1" // ring 1
+    | "r2"; // ring 2
+
 interface EntityState {
-    geohash: string;
+    location: string[];
+    locationType: LocationType;
     level: number;
     ap: number; // action points (require to perform abilities)
     hp: number; // health points
@@ -38,7 +53,8 @@ const PlayerEntitySchema = new Schema("Player", {
     name: { type: "string" },
     description: { type: "string" },
     // Player state
-    geohash: { type: "string" },
+    location: { type: "string[]" },
+    locationType: { type: "string" },
     loggedIn: { type: "boolean" },
     level: { type: "number" },
     ap: { type: "number" }, // action points (require to perform abilities)
@@ -72,7 +88,8 @@ const MonsterEntitySchema = new Schema("Monster", {
     name: { type: "string" },
     beast: { type: "string" },
     // Monster state
-    geohash: { type: "string" },
+    location: { type: "string[]" },
+    locationType: { type: "string" },
     level: { type: "number" },
     ap: { type: "number" }, // action points (require to perform abilities)
     hp: { type: "number" }, // health points
@@ -98,7 +115,8 @@ type MonsterEntity = Monster & Entity;
  */
 
 interface ItemState {
-    geohash: string;
+    location: string[];
+    locationType: LocationType;
     durability: number;
     charges: number;
     state: string;
@@ -115,7 +133,8 @@ const ItemEntitySchema = new Schema("Item", {
     owner: { type: "string" }, // who owns or can use the item (player | monster | public (empty) | dm)
     configOwner: { type: "string" }, // who can configure the item (player | monster | public (empty) | dm)
     // Item state
-    geohash: { type: "string" },
+    location: { type: "string[]" },
+    locationType: { type: "string" },
     durability: { type: "number" },
     charges: { type: "number" },
     debuffs: { type: "string[]" },

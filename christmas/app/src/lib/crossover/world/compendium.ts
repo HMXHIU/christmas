@@ -85,7 +85,7 @@ let compendium: Record<string, Prop> = {
             default: {
                 traversable: 1.0,
                 destructible: true,
-                description: "A simple wooden club ${etching}.",
+                description: "A simple wooden club ${etching}.", // ${} for string substitution
                 variant: "default",
             },
         },

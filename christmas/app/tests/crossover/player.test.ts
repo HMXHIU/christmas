@@ -40,8 +40,8 @@ test("Test Player", async () => {
             geohash: playerOneGeohash,
             name: playerOneName,
         });
-    expect(playerOne.geohash.length).toBe(worldSeed.spatial.unit.precision);
-    expect(playerOne.geohash.startsWith(playerOneGeohash)).toBe(true);
+    expect(playerOne.location[0].length).toBe(worldSeed.spatial.unit.precision);
+    expect(playerOne.location[0].startsWith(playerOneGeohash)).toBe(true);
 
     // Player two
     const playerTwoName = "Saruman";
@@ -52,8 +52,8 @@ test("Test Player", async () => {
             geohash: playerTwoGeohash,
             name: playerTwoName,
         });
-    expect(playerTwo.geohash.length).toBe(worldSeed.spatial.unit.precision);
-    expect(playerTwo.geohash.startsWith(playerTwoGeohash)).toBe(true);
+    expect(playerTwo.location[0].length).toBe(worldSeed.spatial.unit.precision);
+    expect(playerTwo.location[0].startsWith(playerTwoGeohash)).toBe(true);
 
     // Player three
     const playerThreeName = "Sauron";
@@ -64,8 +64,10 @@ test("Test Player", async () => {
             geohash: playerThreeGeohash,
             name: playerThreeName,
         });
-    expect(playerThree.geohash.length).toBe(worldSeed.spatial.unit.precision);
-    expect(playerThree.geohash.startsWith(playerThreeGeohash)).toBe(true);
+    expect(playerThree.location[0].length).toBe(
+        worldSeed.spatial.unit.precision,
+    );
+    expect(playerThree.location[0].startsWith(playerThreeGeohash)).toBe(true);
 
     // Stream endpoint
     const [playerOneEventStream, playerOneCloseStream] = await stream({
@@ -134,7 +136,7 @@ test("Test Player", async () => {
     // Look - no target (tile)
     let lookAtResult = await commandLook({}, { Cookie: playerOneCookies });
     expect(lookAtResult.tile).toMatchObject({
-        geohash: playerOne.geohash,
+        geohash: playerOne.location[0],
     });
     expect(groupBy(lookAtResult.players, "player")).contains.keys([
         playerOneWallet.publicKey.toBase58(),
@@ -146,7 +148,7 @@ test("Test Player", async () => {
         { direction: "n" },
         { Cookie: playerOneCookies },
     );
-    const northTile = ngeohash.neighbor(playerOne.geohash, [1, 0]);
+    const northTile = ngeohash.neighbor(playerOne.location[0], [1, 0]);
     expect(nextTile).toEqual(northTile);
 
     // Stats
@@ -223,7 +225,7 @@ test("Test Player", async () => {
             player: playerOne.player,
             name: "Gandalf",
             loggedIn: true,
-            geohash: playerTwo.geohash, // teleported to playerTwo geohash
+            location: playerTwo.location, // teleported to playerTwo location
             level: 1,
             hp: 100,
             mp: 80,
@@ -234,7 +236,7 @@ test("Test Player", async () => {
             player: playerTwo.player,
             name: "Saruman",
             loggedIn: true,
-            geohash: playerTwo.geohash,
+            location: playerTwo.location,
             level: 1,
             hp: 10,
             mp: 10,
@@ -251,7 +253,7 @@ test("Test Player", async () => {
 
     // Spawn woodenDoor
     let woodenDoor = (await spawnItem({
-        geohash: playerOne.geohash,
+        geohash: playerOne.location[0],
         prop: compendium.woodenDoor.prop,
         variables: {
             [compendium.woodenDoor.variables.doorSign.variable]:
@@ -298,7 +300,7 @@ test("Test Player", async () => {
         item: woodenDoor.item,
         name: "Wooden Door",
         prop: "woodenDoor",
-        geohash: woodenDoor.geohash,
+        location: woodenDoor.location,
         state: "open",
         variables: '{"doorSign":"A new door sign"}',
     });
@@ -312,7 +314,7 @@ test("Test Player", async () => {
 
     // Spawn portals (dm)
     const portalOne = (await spawnItem({
-        geohash: playerOne.geohash, // spawn at playerOne
+        geohash: playerOne.location[0], // spawn at playerOne
         prop: compendium.portal.prop,
     })) as ItemEntity;
     const somwhereGeohash = "w21z3muk";
@@ -349,7 +351,7 @@ test("Test Player", async () => {
     ).self;
 
     // Teleport to portalTwo
-    expect(playerOne.geohash).toBe(portalTwo.geohash);
+    expect(playerOne.location[0]).toBe(portalTwo.location[0]);
     playerOne = (
         await commandUseItem(
             {
@@ -361,7 +363,7 @@ test("Test Player", async () => {
     ).self;
 
     // Teleport back to portalOne
-    expect(playerOne.geohash).toBe(portalOne.geohash);
+    expect(playerOne.location[0]).toBe(portalOne.location[0]);
 
     /*
      * Test commandCreateItem
@@ -369,7 +371,7 @@ test("Test Player", async () => {
 
     const woodenClub = await commandCreateItem(
         {
-            geohash: playerOne.geohash,
+            geohash: playerOne.location[0],
             prop: compendium.woodenClub.prop,
         },
         { Cookie: playerOneCookies },
@@ -377,7 +379,7 @@ test("Test Player", async () => {
     expect(woodenClub).toMatchObject({
         name: "Wooden Club",
         prop: "woodenClub",
-        geohash: playerOne.geohash,
+        location: playerOne.location,
         durability: 100,
         charges: 0,
         owner: playerOne.player, // playerOne owns the woodenClub

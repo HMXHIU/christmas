@@ -54,7 +54,7 @@ type Debuff =
     | "diseased";
 type Buff = "haste" | "regeneration" | "shield" | "invisibility" | "berserk";
 
-type State = "geohash" | "ap" | "hp" | "mp" | "st";
+type State = "location" | "ap" | "hp" | "mp" | "st";
 
 interface Ability {
     ability: string;
@@ -88,7 +88,7 @@ interface ProcedureEffect {
     states?: {
         state: State;
         op: "change" | "subtract" | "add";
-        value: number | string | boolean;
+        value: number | string | boolean | string[];
     };
 }
 
@@ -332,8 +332,8 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "self",
                     states: {
-                        state: "geohash",
-                        value: "${target.geohash}",
+                        state: "location",
+                        value: "{{target.location}}", // {{}} for variable access
                         op: "change",
                     },
                     ticks: TICKS_PER_TURN,
@@ -398,12 +398,17 @@ function fillInEffectVariables({
 
     // Damage
     if (typeof effectClone.damage?.amount === "string") {
-        effectClone.damage.amount = parseInt(
-            substituteVariables(effectClone.damage.amount, {
-                self,
-                target,
-            }),
-        );
+        const value = substituteVariables(effectClone.damage.amount, {
+            self,
+            target,
+        });
+
+        // Check that value is a string else throw error
+        if (typeof value !== "string") {
+            throw new Error("Variable is not a string");
+        }
+
+        effectClone.damage.amount = parseInt(value);
     }
 
     // States
@@ -412,9 +417,18 @@ function fillInEffectVariables({
             self,
             target,
         });
-        if (effectClone.states.state === "geohash") {
+        if (effectClone.states.state === "location") {
+            // Check that value is a location (string[])
+            if (!Array.isArray(value)) {
+                throw new Error("Variable is not a location string[]");
+            }
+
             effectClone.states.value = value;
         } else {
+            // Check that value is a string else throw error
+            if (typeof value !== "string") {
+                throw new Error("Variable is not a string");
+            }
             effectClone.states.value = parseInt(value);
         }
     }
@@ -435,8 +449,9 @@ function checkInRange(
     target: PlayerEntity | MonsterEntity | ItemEntity,
     range: number,
 ): boolean {
-    const { row: r1, col: c1 } = geohashToCell(self.geohash);
-    const { row: r2, col: c2 } = geohashToCell(target.geohash);
+    // Use only the first geohash in the location
+    const { row: r1, col: c1 } = geohashToCell(self.location[0]);
+    const { row: r2, col: c2 } = geohashToCell(target.location[0]);
     const inRange =
         range < 0 ||
         Math.ceil(Math.sqrt((r1 - r2) ** 2 + (c1 - c2) ** 2)) <= range;
