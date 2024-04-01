@@ -53,6 +53,7 @@ export {
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
     performAbility,
+    playerInventoryQuerySet,
     playersInGeohashQuerySet,
     saveEntity,
     savePlayerEntityState,
@@ -327,6 +328,16 @@ function monstersInGeohashQuerySet(geohash: string): Search {
         .contains(`${geohash}*`)
         .and("locationType")
         .equal("geohash");
+}
+
+/**
+ * Retrieves the inventory items for a specific player.
+ *
+ * @param player - The name of the player.
+ * @returns A Search object representing the query for player inventory items.
+ */
+function playerInventoryQuerySet(player: string): Search {
+    return itemRepository.search().where("location").contains(player);
 }
 
 /**

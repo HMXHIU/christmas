@@ -12,7 +12,10 @@ import type { z } from "zod";
 import { grid, player } from "../../store";
 
 import { refresh } from "$lib/community";
-import type { Player } from "$lib/server/crossover/redis/entities";
+import type {
+    EquipmentSlot,
+    Player,
+} from "$lib/server/crossover/redis/entities";
 import type { StreamEvent } from "../../routes/api/crossover/stream/+server";
 import { updateGrid, type Direction } from "./world";
 import type { ItemVariables } from "./world/compendium";
@@ -24,12 +27,16 @@ export {
     commandMove,
     commandPerformAbility,
     commandSay,
+    commandTakeItem,
     commandUseItem,
+    equipItem,
     getPlayer,
     login,
     logout,
+    playerInventory,
     signup,
     stream,
+    unequipItem,
 };
 
 async function getPlayer(
@@ -247,6 +254,28 @@ function commandUseItem(
         item,
         action,
     });
+}
+
+function commandTakeItem(input: { item: string }, headers: HTTPHeaders = {}) {
+    const { item } = input;
+    return trpc({ headers }).crossover.cmd.take.query({ item });
+}
+
+function equipItem(
+    input: { item: string; slot: EquipmentSlot },
+    headers: HTTPHeaders = {},
+) {
+    const { item, slot } = input;
+    return trpc({ headers }).crossover.player.equip.query({ item, slot });
+}
+
+function unequipItem(input: { item: string }, headers: HTTPHeaders = {}) {
+    const { item } = input;
+    return trpc({ headers }).crossover.player.unequip.query({ item });
+}
+
+function playerInventory(headers: HTTPHeaders = {}) {
+    return trpc({ headers }).crossover.player.inventory.query();
 }
 
 function commandCreateItem(

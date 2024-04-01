@@ -9,6 +9,7 @@ import { biomes } from "$lib/crossover/world/biomes";
 import {
     fetchEntity,
     initializeClients,
+    itemRepository,
     playerRepository,
     redisClient,
 } from "$lib/server/crossover/redis";
@@ -24,6 +25,7 @@ import {
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
     performAbility,
+    playerInventoryQuerySet,
     playersInGeohashQuerySet,
     saveEntity,
     savePlayerEntityState,
@@ -105,6 +107,11 @@ const CreateItemSchema = z.object({
         .record(z.union([z.string(), z.number(), z.boolean()]))
         .optional(),
 });
+const EquipItemSchema = z.object({
+    item: z.string(),
+    slot: z.enum(["rh", "lh", "ft", "hd", "nk", "ch", "lg", "r1", "r2"]),
+});
+
 const BuffEntitySchema = z.object({
     entity: z.string(),
     hp: z.number().optional(),
@@ -212,8 +219,108 @@ const crossoverRouter = {
                 return await saveEntity(fetchedEntity);
             }),
     }),
+    // Player
+    player: t.router({
+        // player.inventory
+        inventory: authProcedure.query(async ({ ctx }) => {
+            // Get player
+            const player = (await tryFetchEntity(
+                ctx.user.publicKey,
+            )) as PlayerEntity;
+
+            const inventoryItems = (await playerInventoryQuerySet(
+                player.player,
+            ).return.all()) as ItemEntity[];
+
+            return inventoryItems as Item[];
+        }),
+        // player.equip
+        equip: authProcedure
+            .input(EquipItemSchema)
+            .query(async ({ ctx, input }) => {
+                const { item, slot } = input;
+
+                // Get player
+                const player = (await tryFetchEntity(
+                    ctx.user.publicKey,
+                )) as PlayerEntity;
+
+                // Unequip existing item in slot
+                const exitingItemsInSlot = (await playerInventoryQuerySet(
+                    player.player,
+                )
+                    .and("locationType")
+                    .equal(slot)
+                    .return.all()) as ItemEntity[];
+                for (const itemEntity of exitingItemsInSlot) {
+                    itemEntity.location = [player.player];
+                    itemEntity.locationType = "inv";
+                    await itemRepository.save(itemEntity.item, itemEntity);
+                }
+
+                // Equip item in slot
+                let itemToEquip = (await tryFetchEntity(item)) as ItemEntity;
+                itemToEquip.location = [player.player];
+                itemToEquip.locationType = slot;
+
+                itemToEquip = (await itemRepository.save(
+                    itemToEquip.item,
+                    itemToEquip,
+                )) as ItemEntity;
+
+                return itemToEquip as Item;
+            }),
+        // player.unequip
+        unequip: authProcedure
+            .input(
+                z.object({
+                    item: z.string(),
+                }),
+            )
+            .query(async ({ ctx, input }) => {
+                const { item } = input;
+
+                // Get player
+                const player = (await tryFetchEntity(
+                    ctx.user.publicKey,
+                )) as PlayerEntity;
+
+                // Unequip item
+                const itemEntity = (await tryFetchEntity(item)) as ItemEntity;
+                itemEntity.location = [player.player];
+                itemEntity.locationType = "inv";
+                await itemRepository.save(itemEntity.item, itemEntity);
+
+                return itemEntity as Item;
+            }),
+    }),
     // Commands
     cmd: t.router({
+        // cmd.take
+        take: authProcedure
+            .input(
+                z.object({
+                    item: z.string(),
+                }),
+            )
+            .query(async ({ ctx, input }) => {
+                const { item } = input;
+
+                // Get player
+                const player = (await tryFetchEntity(
+                    ctx.user.publicKey,
+                )) as PlayerEntity;
+
+                // Get item
+                const itemEntity = (await tryFetchEntity(item)) as ItemEntity;
+
+                // Take item
+                itemEntity.location = [player.player];
+                itemEntity.locationType = "inv";
+                await itemRepository.save(itemEntity.item, itemEntity);
+
+                return itemEntity as Item;
+            }),
         // cmd.say
         say: authProcedure
             .input(SayCommandSchema)
@@ -533,7 +640,7 @@ const crossoverRouter = {
             return { status: "success", player: player as Player };
         }),
 
-        // auth.player
+        // auth.player (TODO: move to player.player)
         player: authProcedure.query(async ({ ctx }) => {
             // Get or load player
             let player =
