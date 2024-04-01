@@ -85,7 +85,10 @@
                     {
                         id: messageFeed.length,
                         timestamp: getCurrentTimestamp(),
-                        message: substituteVariables(message, variables),
+                        message: substituteVariables(
+                            message,
+                            variables,
+                        ) as string,
                         name: "",
                     },
                 ];
@@ -124,7 +127,7 @@
                 await startStream();
 
                 // Load grid
-                grid.set(await loadMoreGrid(p.geohash, $grid));
+                grid.set(await loadMoreGrid(p.location[0], $grid));
 
                 // Look at surroundings
                 await look();

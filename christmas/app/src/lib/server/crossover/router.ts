@@ -288,12 +288,12 @@ const crossoverRouter = {
             // TODO: account for speed
             if (biomes[biome].traversable > 0) {
                 // Update player geohash
-                player.geohash = nextGeohash;
+                player.location = [nextGeohash];
                 await playerRepository.save(player.player, player);
                 return nextGeohash;
             }
 
-            return player.geohash;
+            return player.location[0];
         }),
         // cmd.performAbility
         performAbility: authProcedure

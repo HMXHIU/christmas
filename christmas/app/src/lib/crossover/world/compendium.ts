@@ -237,6 +237,9 @@ function itemAttibutes(item: ItemEntity): PropAttributes {
     const state = cloneDeep(compendium[item.prop].states[item.state]);
     const variables = JSON.parse(item.variables);
     // Replace variables in description
-    state.description = substituteVariables(state.description, variables);
+    state.description = substituteVariables(
+        state.description,
+        variables,
+    ) as string;
     return state;
 }
