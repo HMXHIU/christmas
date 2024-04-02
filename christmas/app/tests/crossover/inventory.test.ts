@@ -24,7 +24,7 @@ test("Test Inventory", async () => {
             name: playerOneName,
         });
 
-    // Spawn item at player one
+    // Spawn woodenClub
     let playerOneWoodenClub = await spawnItem({
         geohash: playerOne.location[0],
         prop: compendium.woodenClub.prop,
@@ -37,6 +37,22 @@ test("Test Inventory", async () => {
         owner: playerOne.player,
         configOwner: playerOne.player,
     });
+
+    /*
+     * Test unable to equip item if not on player
+     */
+
+    // Equip item
+    await expect(
+        equipItem(
+            { item: playerOneWoodenClub.item, slot: "rh" },
+            { Cookie: playerOneCookies },
+        ),
+    ).rejects.toThrow(`${playerOneWoodenClub.item} is not in inventory`);
+
+    /*
+     * Test `commandTakeItem` and `playerInventory`
+     */
 
     // Check empty inventory
     let inventory = await playerInventory({ Cookie: playerOneCookies });
@@ -61,6 +77,18 @@ test("Test Inventory", async () => {
             locationType: "inv",
         },
     ]);
+
+    /*
+     * Test `equipItem`
+     */
+
+    // Try to equip item in the wrong slot
+    await expect(
+        equipItem(
+            { item: playerOneWoodenClub.item, slot: "hd" },
+            { Cookie: playerOneCookies },
+        ),
+    ).rejects.toThrow(`${playerOneWoodenClub.item} cannot be equipped in hd`);
 
     // Equip item - rh
     playerOneWoodenClub = await equipItem(
@@ -102,6 +130,10 @@ test("Test Inventory", async () => {
         },
     ]);
 
+    /*
+     * Test `unequipItem`
+     */
+
     // Unequip item
     playerOneWoodenClub = await unequipItem(
         { item: playerOneWoodenClub.item },
@@ -121,4 +153,32 @@ test("Test Inventory", async () => {
             locationType: "inv",
         },
     ]);
+
+    /*
+     * Test unable to equip unequipable item
+     */
+
+    // Spawn potion of health
+    let potionOfHealth = await spawnItem({
+        geohash: playerOne.location[0],
+        prop: compendium.potionOfHealth.prop,
+    });
+
+    // Take item
+    potionOfHealth = await commandTakeItem(
+        { item: potionOfHealth.item },
+        { Cookie: playerOneCookies },
+    );
+    expect(potionOfHealth).toMatchObject({
+        location: [playerOne.player],
+        locationType: "inv",
+    });
+
+    // Equip potion of health
+    await expect(
+        equipItem(
+            { item: potionOfHealth.item, slot: "lh" },
+            { Cookie: playerOneCookies },
+        ),
+    ).rejects.toThrow(`${potionOfHealth.item} is not equippable`);
 });

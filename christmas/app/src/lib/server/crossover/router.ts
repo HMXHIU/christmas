@@ -6,6 +6,7 @@ import {
     worldSeed,
 } from "$lib/crossover/world";
 import { biomes } from "$lib/crossover/world/biomes";
+import { compendium } from "$lib/crossover/world/compendium";
 import {
     fetchEntity,
     initializeClients,
@@ -245,6 +246,31 @@ const crossoverRouter = {
                     ctx.user.publicKey,
                 )) as PlayerEntity;
 
+                let itemToEquip = (await tryFetchEntity(item)) as ItemEntity;
+
+                // Check if item is in player inventory (can be inventory or equipment slot)
+                if (itemToEquip.location[0] !== player.player) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `${item} is not in inventory`,
+                    });
+                }
+
+                // Check equipment slot
+                const slots = compendium[itemToEquip.prop].equipmentSlot;
+                if (!slots) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `${item} is not equippable`,
+                    });
+                }
+                if (!slots.includes(slot)) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `${item} cannot be equipped in ${slot}`,
+                    });
+                }
+
                 // Unequip existing item in slot
                 const exitingItemsInSlot = (await playerInventoryQuerySet(
                     player.player,
@@ -259,7 +285,6 @@ const crossoverRouter = {
                 }
 
                 // Equip item in slot
-                let itemToEquip = (await tryFetchEntity(item)) as ItemEntity;
                 itemToEquip.location = [player.player];
                 itemToEquip.locationType = slot;
 

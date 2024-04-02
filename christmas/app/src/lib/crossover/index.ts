@@ -12,13 +12,10 @@ import type { z } from "zod";
 import { grid, player } from "../../store";
 
 import { refresh } from "$lib/community";
-import type {
-    EquipmentSlot,
-    Player,
-} from "$lib/server/crossover/redis/entities";
+import type { Player } from "$lib/server/crossover/redis/entities";
 import type { StreamEvent } from "../../routes/api/crossover/stream/+server";
 import { updateGrid, type Direction } from "./world";
-import type { ItemVariables } from "./world/compendium";
+import type { EquipmentSlot, ItemVariables } from "./world/compendium";
 
 export {
     commandConfigureItem,

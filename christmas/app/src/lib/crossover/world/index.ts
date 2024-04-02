@@ -6,6 +6,7 @@ import lodash from "lodash";
 import ngeohash from "ngeohash";
 import type { z } from "zod";
 import { biomes } from "./biomes";
+import type { EquipmentSlot } from "./compendium";
 const { groupBy } = lodash;
 
 export {
@@ -28,6 +29,7 @@ export {
     type AssetMetadata,
     type Direction,
     type Grid,
+    type LocationType,
     type WorldSeed,
 };
 
@@ -48,6 +50,12 @@ interface AssetMetadata {
 }
 
 type Direction = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw" | "u" | "d";
+
+type LocationType =
+    | "geohash"
+    | "item"
+    | "inv" // inventory
+    | EquipmentSlot;
 
 interface GridEntry {
     biome?: string; // can be procedurally generated at client

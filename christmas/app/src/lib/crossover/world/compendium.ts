@@ -8,7 +8,24 @@ import type { AssetMetadata } from ".";
 import { abilities } from "./abilities";
 const { cloneDeep } = lodash;
 
-export { compendium, itemAttibutes, type ItemVariables, type Prop };
+export {
+    compendium,
+    itemAttibutes,
+    type EquipmentSlot,
+    type ItemVariables,
+    type Prop,
+};
+
+type EquipmentSlot =
+    | "rh" // right hand
+    | "lh" // left hand
+    | "ft" // feet
+    | "hd" // head
+    | "nk" // neck
+    | "ch" // chest
+    | "lg" // legs
+    | "r1" // ring 1
+    | "r2"; // ring 2
 
 /**
  * `Prop` is a template used to create an `item` instance
@@ -21,6 +38,7 @@ interface Prop extends PropStats {
     states: Record<string, PropAttributes>;
     actions: Record<string, PropAction>;
     variables: PropVariables; // configurable variables to alter prop behavior & descriptions
+    equipmentSlot?: EquipmentSlot[];
 }
 
 interface PropStats {
@@ -80,6 +98,7 @@ let compendium: Record<string, Prop> = {
         },
         durability: 100,
         charges: 0,
+        equipmentSlot: ["rh", "lh"],
         defaultState: "default",
         states: {
             default: {
@@ -111,6 +130,46 @@ let compendium: Record<string, Prop> = {
                 value: "Nothing etched on the club",
             },
         },
+    },
+    potionOfHealth: {
+        prop: "potionOfHealth",
+        defaultName: "Potion of Health",
+        // TODO: Add potion asset
+        asset: {
+            bundle: "props",
+            name: "potions",
+            variants: {
+                default: "red-potion",
+            },
+        },
+        durability: 100,
+        charges: 5,
+        defaultState: "default",
+        states: {
+            default: {
+                traversable: 1.0,
+                destructible: true,
+                description:
+                    "A bottle of clear crystal glass. You see a faint glowing red liquid inside.",
+                variant: "default",
+            },
+        },
+        actions: {
+            sip: {
+                action: "sip",
+                description: "Sip the potion to restore health.",
+                cost: {
+                    charges: 1,
+                    durability: 0,
+                },
+                state: {
+                    start: "default",
+                    end: "default",
+                },
+                ability: abilities.bandage.ability,
+            },
+        },
+        variables: {},
     },
     woodenDoor: {
         prop: "woodenDoor",

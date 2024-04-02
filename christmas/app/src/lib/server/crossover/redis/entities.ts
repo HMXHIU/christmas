@@ -1,3 +1,4 @@
+import type { LocationType } from "$lib/crossover/world";
 import { Schema, type Entity } from "redis-om";
 
 export {
@@ -6,10 +7,8 @@ export {
     PlayerEntitySchema,
     type EntityState,
     type EntityType,
-    type EquipmentSlot,
     type Item,
     type ItemEntity,
-    type LocationType,
     type Monster,
     type MonsterEntity,
     type Player,
@@ -17,23 +16,6 @@ export {
 };
 
 type EntityType = "player" | "monster" | "item";
-
-type EquipmentSlot =
-    | "rh" // right hand
-    | "lh" // left hand
-    | "ft" // feet
-    | "hd" // head
-    | "nk" // neck
-    | "ch" // chest
-    | "lg" // legs
-    | "r1" // ring 1
-    | "r2"; // ring 2
-
-type LocationType =
-    | "geohash"
-    | "item"
-    | "inv" // inventory
-    | EquipmentSlot;
 
 interface EntityState {
     location: string[];
