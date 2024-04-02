@@ -4,8 +4,9 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import { substituteVariables } from "$lib/utils";
 import lodash from "lodash";
-import type { AssetMetadata } from ".";
+import { type AssetMetadata } from ".";
 import { abilities } from "./abilities";
+import { worldSeed } from "./seed";
 const { cloneDeep } = lodash;
 
 export {
@@ -80,10 +81,6 @@ interface PropVariables {
 
 type ItemVariables = Record<string, string | number | boolean>;
 
-// interface ItemVariables {
-//     [key: string]: string | number | boolean;
-// }
-
 /**
  * `compendium` is a collection of `Prop` templates used  to create `item` instances.
  */
@@ -97,6 +94,9 @@ let compendium: Record<string, Prop> = {
             variants: {
                 default: "wooden-club",
             },
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
         },
         durability: 100,
         charges: 0,
@@ -145,6 +145,9 @@ let compendium: Record<string, Prop> = {
             variants: {
                 default: "red-potion",
             },
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
         },
         durability: 100,
         charges: 5,
@@ -186,6 +189,9 @@ let compendium: Record<string, Prop> = {
                 default: "wood-door-1",
                 closed: "wood-door-2",
             },
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
         },
         defaultState: "closed",
         durability: 100,
@@ -248,6 +254,9 @@ let compendium: Record<string, Prop> = {
             variants: {
                 default: "ritual-circle",
             },
+            width: 2,
+            height: 2,
+            precision: worldSeed.spatial.unit.precision,
         },
         durability: 100,
         charges: 100,

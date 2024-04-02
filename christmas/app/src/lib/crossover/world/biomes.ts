@@ -1,5 +1,5 @@
-import type { AssetMetadata } from ".";
-
+import { type AssetMetadata } from ".";
+import { worldSeed } from "./seed";
 export { biomes, type Biome };
 
 interface Biome {
@@ -31,6 +31,9 @@ let biomes: Record<string, Biome> = {
                 4: "sway/4",
                 dead: "stump",
             },
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
         },
     },
     desert: {
@@ -99,6 +102,9 @@ let biomes: Record<string, Biome> = {
             variants: {
                 default: "Water",
             },
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
         },
     },
 };

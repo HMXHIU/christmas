@@ -9,10 +9,10 @@ import {
     commandUseItem,
     stream,
 } from "$lib/crossover";
-import { worldSeed } from "$lib/crossover/world";
 import { abilities } from "$lib/crossover/world/abilities";
 import { compendium, itemAttibutes } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
+import { worldSeed } from "$lib/crossover/world/seed";
 import { configureItem, spawnItem } from "$lib/server/crossover";
 import type {
     ItemEntity,

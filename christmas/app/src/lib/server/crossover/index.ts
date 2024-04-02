@@ -1,7 +1,7 @@
 import {
     MS_PER_TICK,
+    calculateLocation,
     childrenGeohashes,
-    worldSeed,
 } from "$lib/crossover/world";
 import {
     abilities,
@@ -10,13 +10,14 @@ import {
     fillInEffectVariables,
     type ProcedureEffect,
 } from "$lib/crossover/world/abilities";
-import { monsterStats } from "$lib/crossover/world/bestiary";
+import { bestiary, monsterStats } from "$lib/crossover/world/bestiary";
 import {
     compendium,
     type EquipmentSlot,
     type ItemVariables,
 } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
+import { worldSeed } from "$lib/crossover/world/seed";
 import { serverAnchorClient } from "$lib/server";
 import { parseZodErrors, sleep } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
@@ -364,13 +365,23 @@ async function spawnMonster({
     const count = await monsterRepository.search().count();
     const monsterId = `monster_${beast}${count}`; // must start with monster
 
+    // Calculate location
+    const { width, height, precision } = bestiary[beast].asset;
+
+    // Auto correct geohash precision
+    if (geohash.length !== precision) {
+        geohash = autoCorrectGeohashPrecision(geohash, precision);
+    }
+
+    const location = calculateLocation(geohash, width, height);
+
     // Get monster stats
     const { hp, mp, st, ap } = monsterStats({ level, beast });
     const monster: MonsterEntity = {
         monster: monsterId, // unique monster id
         name: beast,
         beast,
-        location: [geohash],
+        location,
         locationType: "geohash",
         level,
         hp,
@@ -414,17 +425,28 @@ async function spawnItem({
     const count = await itemRepository.search().count();
     const item = `item_${prop}${count}`;
 
+    // Calculate location cells
+    const { defaultName, defaultState, durability, charges } = compendium[prop];
+    const { width, height, precision } = compendium[prop].asset;
+
+    // Auto correct geohash precision
+    if (geohash.length !== precision) {
+        geohash = autoCorrectGeohashPrecision(geohash, precision);
+    }
+
+    const location = calculateLocation(geohash, width, height);
+
     const entity: ItemEntity = {
         item,
-        name: compendium[prop].defaultName,
+        name: defaultName,
         prop,
-        location: [geohash],
+        location,
         locationType: "geohash",
         owner,
         configOwner,
-        durability: compendium[prop].durability,
-        charges: compendium[prop].charges,
-        state: compendium[prop].defaultState,
+        durability: durability,
+        charges: charges,
+        state: defaultState,
         variables: JSON.stringify(parseItemVariables(variables || {}, prop)),
         debuffs: [],
         buffs: [],

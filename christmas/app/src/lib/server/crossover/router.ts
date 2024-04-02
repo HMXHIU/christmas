@@ -3,10 +3,10 @@ import {
     biomeAtGeohash,
     geohashNeighbour,
     tileAtGeohash,
-    worldSeed,
 } from "$lib/crossover/world";
 import { biomes } from "$lib/crossover/world/biomes";
 import { compendium } from "$lib/crossover/world/compendium";
+import { worldSeed } from "$lib/crossover/world/seed";
 import {
     fetchEntity,
     initializeClients,

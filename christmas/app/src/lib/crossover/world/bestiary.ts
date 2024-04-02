@@ -1,6 +1,6 @@
-import type { AssetMetadata } from ".";
+import { type AssetMetadata } from ".";
 import { abilities, type AbilityType } from "./abilities";
-
+import { worldSeed } from "./seed";
 export { bestiary, monsterStats, type Beast };
 
 /**
@@ -58,6 +58,9 @@ const bestiary: Record<string, Beast> = {
             variants: {
                 default: "stand/0",
             },
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
         },
     },
     giantSpider: {
@@ -89,6 +92,9 @@ const bestiary: Record<string, Beast> = {
             variants: {
                 default: "stand/0",
             },
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
         },
     },
     dragon: {
@@ -120,6 +126,9 @@ const bestiary: Record<string, Beast> = {
             variants: {
                 default: "stand/0",
             },
+            width: 3,
+            height: 3,
+            precision: worldSeed.spatial.unit.precision,
         },
     },
 };

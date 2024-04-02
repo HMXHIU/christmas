@@ -7,6 +7,7 @@ import ngeohash from "ngeohash";
 import type { z } from "zod";
 import { biomes } from "./biomes";
 import type { EquipmentSlot } from "./compendium";
+import { worldSeed } from "./seed";
 const { groupBy } = lodash;
 
 export {
@@ -15,6 +16,7 @@ export {
     abyssTile,
     biomeAtGeohash,
     biomesAtGeohash,
+    calculateLocation,
     childrenGeohashes,
     directionToVector,
     geohashNeighbour,
@@ -25,7 +27,6 @@ export {
     uninhabitedNeighbouringGeohashes,
     updateGrid,
     updateGridEntry,
-    worldSeed,
     type AssetMetadata,
     type Direction,
     type Grid,
@@ -45,8 +46,11 @@ const abyssTile: z.infer<typeof TileSchema> = {
 interface AssetMetadata {
     bundle: string;
     name: string;
-    animations?: Record<string, string>;
-    variants?: Record<string, string>;
+    animations?: Record<string, string>; // create an animation pointing to an in the sprite.json
+    variants?: Record<string, string>; // create a variant pointing to a frame in the sprite.json
+    width: number; // number of horizontal cells at the geohash precision
+    height: number; // number of vertical cells at the geohash precision
+    precision: number; // geohash precision
 }
 
 type Direction = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw" | "u" | "d";
@@ -99,70 +103,6 @@ interface WorldSeed {
         };
     };
 }
-
-const worldSeed: WorldSeed = {
-    name: "yggdrasil 01",
-    description: "The beginning",
-    spatial: {
-        continent: {
-            precision: 1, // geohash precision
-        },
-        territory: {
-            precision: 2,
-        },
-        guild: {
-            precision: 3,
-        },
-        city: {
-            precision: 4,
-        },
-        town: {
-            precision: 5,
-        },
-        unit: {
-            precision: 8,
-        },
-    },
-    constants: {
-        maxMonstersPerContinent: 10000000000, // 10 billion
-    },
-    seeds: {
-        continent: {
-            b: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            c: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            f: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            g: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            u: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            v: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            y: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            z: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "8": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "9": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            d: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            e: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            s: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            t: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            w: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            x: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "2": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "3": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "6": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "7": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            k: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            m: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            q: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            r: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "0": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "1": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "4": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "5": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            h: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            j: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            n: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            p: { bio: 0.5, hostile: 0.2, water: 0.1 },
-        },
-    },
-};
 
 const gridSizeAtPrecision: Record<number, { rows: number; cols: number }> = {
     1: { rows: 4, cols: 8 },
@@ -443,6 +383,38 @@ function geohashToCell(geohash: string): {
  */
 function geohashNeighbour(geohash: string, direction: Direction): string {
     return ngeohash.neighbor(geohash, directionToVector(direction));
+}
+
+/**
+ * Calculates the location based on the given geohash, width, and height.
+ *
+ * @param geohash - The geohash string.
+ * @param width - The width of the location.
+ * @param height - The height of the location.
+ * @returns An array of strings representing the calculated location.
+ */
+function calculateLocation(
+    geohash: string,
+    width: number,
+    height: number,
+): string[] {
+    let location: string[] = [];
+    let rowPivot = geohash;
+    for (let i = 0; i < height; i++) {
+        let colPivot = rowPivot;
+        for (let j = 0; j < width; j++) {
+            location.push(colPivot);
+            if (j === width - 1) {
+                break; // early break no need to get next `geohashNeighbour`
+            }
+            colPivot = geohashNeighbour(colPivot, "e");
+        }
+        if (i === height - 1) {
+            break; // early break no need to get next `geohashNeighbour`
+        }
+        rowPivot = geohashNeighbour(rowPivot, "s");
+    }
+    return location;
 }
 
 /**

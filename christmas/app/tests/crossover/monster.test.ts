@@ -45,6 +45,28 @@ test("Test Monster", async () => {
         st: 296,
     });
 
+    // Test monster location with more than 1 cell
+    let dragon = await spawnMonster({
+        geohash: geohash,
+        beast: "dragon",
+        level: 1,
+    });
+
+    expect(dragon).toMatchObject({
+        location: [
+            "w21z3we7",
+            "w21z3wee",
+            "w21z3weg",
+            "w21z3we6",
+            "w21z3wed",
+            "w21z3wef",
+            "w21z3we3",
+            "w21z3we9",
+            "w21z3wec",
+        ],
+        locationType: "geohash",
+    });
+
     // Test spawn monster
     let goblin = await spawnMonster({
         geohash: geohash,

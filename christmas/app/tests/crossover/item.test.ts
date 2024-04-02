@@ -54,6 +54,7 @@ test("Test Items", async () => {
         name: compendium.woodenDoor.defaultName,
         prop: compendium.woodenDoor.prop,
         location: [geohash],
+        locationType: "geohash",
         durability: compendium.woodenDoor.durability,
         charges: compendium.woodenDoor.charges,
         state: compendium.woodenDoor.defaultState,
@@ -119,6 +120,14 @@ test("Test Items", async () => {
             [compendium.portal.variables!.description.variable]: "Portal Two",
         },
     })) as ItemEntity;
+
+    // Test item location (more than 1 cell)
+    expect(portalTwo.location).toMatchObject([
+        "gbsuv77w",
+        "gbsuv77y",
+        "gbsuv77t",
+        "gbsuv77v",
+    ]);
 
     // Test initial attributes
     let portalOneAttributes = itemAttibutes(portalOne);
