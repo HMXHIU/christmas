@@ -102,6 +102,7 @@ test("Test Items", async () => {
     /*
      * Test `configureItem`
      */
+
     const portalOneGeohash = geohash;
     const portalTwoGeohash = "gbsuv77w"; // somwhere far away
     let portalOne = (await spawnItem({
@@ -182,7 +183,10 @@ test("Test Items", async () => {
         target: portalTwo.item,
     });
 
-    // Test using item ability
+    /*
+     * Test using item ability
+     */
+
     const beforeCharges = portalOne.charges;
     const beforeDurability = portalOne.durability;
     expect(playerOne.location[0] === portalTwo.location[0]).toBe(false);
@@ -201,6 +205,14 @@ test("Test Items", async () => {
         beforeDurability - compendium.portal.actions.teleport.cost.durability,
     );
     expect(playerOne.location[0] === portalTwo.location[0]).toBe(true);
+
+    /*
+     * Test taking item which is untakeable
+     */
+
+    await expect(
+        commandTakeItem({ item: portalTwo.item }, { Cookie: playerOneCookies }),
+    ).rejects.toThrowError(`${portalTwo.item} cannot be taken`);
 
     /*
      * Test item permissions

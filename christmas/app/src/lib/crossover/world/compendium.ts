@@ -39,6 +39,7 @@ interface Prop extends PropStats {
     actions: Record<string, PropAction>;
     variables: PropVariables; // configurable variables to alter prop behavior & descriptions
     equipmentSlot?: EquipmentSlot[];
+    weight: number; // -1 means it cannot be taken
 }
 
 interface PropStats {
@@ -99,6 +100,7 @@ let compendium: Record<string, Prop> = {
         },
         durability: 100,
         charges: 0,
+        weight: 3,
         equipmentSlot: ["rh", "lh"],
         defaultState: "default",
         states: {
@@ -146,6 +148,7 @@ let compendium: Record<string, Prop> = {
         },
         durability: 100,
         charges: 5,
+        weight: 1,
         defaultState: "default",
         states: {
             default: {
@@ -187,6 +190,7 @@ let compendium: Record<string, Prop> = {
         defaultState: "closed",
         durability: 100,
         charges: 0,
+        weight: -1,
         states: {
             open: {
                 traversable: 1.0,
@@ -247,6 +251,7 @@ let compendium: Record<string, Prop> = {
         },
         durability: 100,
         charges: 100,
+        weight: -1,
         defaultState: "default",
         states: {
             default: {

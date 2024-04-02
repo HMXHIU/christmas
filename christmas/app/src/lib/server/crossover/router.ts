@@ -358,6 +358,14 @@ const crossoverRouter = {
                     });
                 }
 
+                // Check if item is takeable
+                if (compendium[itemEntity.prop].weight < 0) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `${item} cannot be taken`,
+                    });
+                }
+
                 // Take item
                 itemEntity.location = [player.player];
                 itemEntity.locationType = "inv";
