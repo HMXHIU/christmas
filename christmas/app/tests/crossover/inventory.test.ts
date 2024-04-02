@@ -235,4 +235,22 @@ test("Test Inventory", async () => {
             { Cookie: playerOneCookies },
         ),
     ).rejects.toThrow(`${potionOfHealth.item} is not equippable`);
+
+    /*
+     * Test unable to take item belonging to another player
+     */
+
+    let unpickablePotion = await spawnItem({
+        geohash: playerOne.location[0],
+        prop: compendium.potionOfHealth.prop,
+        owner: "anotherPlayer",
+    });
+
+    // Try take item
+    await expect(
+        commandTakeItem(
+            { item: unpickablePotion.item },
+            { Cookie: playerOneCookies },
+        ),
+    ).rejects.toThrow(`${unpickablePotion.item} is owned by someone else`);
 });

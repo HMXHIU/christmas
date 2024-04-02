@@ -342,6 +342,14 @@ const crossoverRouter = {
                 // Get item
                 let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
 
+                // Check item owner is player or public
+                if (itemEntity.owner !== player.player && itemEntity.owner) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `${item} is owned by someone else`,
+                    });
+                }
+
                 // Check if in range
                 if (itemEntity.location[0] !== player.location[0]) {
                     throw new TRPCError({
