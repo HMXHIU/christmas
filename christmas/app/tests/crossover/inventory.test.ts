@@ -1,4 +1,6 @@
 import {
+    commandDropItem,
+    commandMove,
     commandTakeItem,
     equipItem,
     playerInventory,
@@ -77,6 +79,58 @@ test("Test Inventory", async () => {
             locationType: "inv",
         },
     ]);
+
+    /*
+     * Test `commandDropItem`
+     */
+
+    // Drop item
+    playerOneWoodenClub = await commandDropItem(
+        { item: playerOneWoodenClub.item },
+        { Cookie: playerOneCookies },
+    );
+    expect(playerOneWoodenClub).toMatchObject({
+        location: playerOne.location,
+        locationType: "geohash",
+        owner: playerOne.player,
+        configOwner: playerOne.player,
+    });
+
+    /*
+     * Test cannot take item if not in geohash
+     */
+
+    // Move player to a different geohash
+    playerOne.location = await commandMove(
+        { direction: "s" },
+        { Cookie: playerOneCookies },
+    );
+    expect(playerOne.location[0]).not.equal(playerOneWoodenClub.location[0]);
+
+    // Try take item
+    await expect(
+        commandTakeItem(
+            { item: playerOneWoodenClub.item },
+            { Cookie: playerOneCookies },
+        ),
+    ).rejects.toThrow(`${playerOneWoodenClub.item} is not in range`);
+
+    // Move to item
+    playerOne.location = await commandMove(
+        { direction: "n" },
+        { Cookie: playerOneCookies },
+    );
+    expect(playerOne.location[0]).equal(playerOneWoodenClub.location[0]);
+
+    // Take item
+    playerOneWoodenClub = await commandTakeItem(
+        { item: playerOneWoodenClub.item },
+        { Cookie: playerOneCookies },
+    );
+    expect(playerOneWoodenClub).toMatchObject({
+        location: [playerOne.player],
+        locationType: "inv",
+    });
 
     /*
      * Test `equipItem`

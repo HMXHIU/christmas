@@ -311,10 +311,13 @@ const crossoverRouter = {
                 )) as PlayerEntity;
 
                 // Unequip item
-                const itemEntity = (await tryFetchEntity(item)) as ItemEntity;
+                let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
                 itemEntity.location = [player.player];
                 itemEntity.locationType = "inv";
-                await itemRepository.save(itemEntity.item, itemEntity);
+                itemEntity = (await itemRepository.save(
+                    itemEntity.item,
+                    itemEntity,
+                )) as ItemEntity;
 
                 return itemEntity as Item;
             }),
@@ -337,12 +340,57 @@ const crossoverRouter = {
                 )) as PlayerEntity;
 
                 // Get item
-                const itemEntity = (await tryFetchEntity(item)) as ItemEntity;
+                let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
+
+                // Check if in range
+                if (itemEntity.location[0] !== player.location[0]) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `${item} is not in range`,
+                    });
+                }
 
                 // Take item
                 itemEntity.location = [player.player];
                 itemEntity.locationType = "inv";
-                await itemRepository.save(itemEntity.item, itemEntity);
+                itemEntity = (await itemRepository.save(
+                    itemEntity.item,
+                    itemEntity,
+                )) as ItemEntity;
+
+                return itemEntity as Item;
+            }),
+        // cmd.drop
+        drop: authProcedure
+            .input(
+                z.object({
+                    item: z.string(),
+                }),
+            )
+            .query(async ({ ctx, input }) => {
+                const { item } = input;
+
+                // Get player
+                const player = (await tryFetchEntity(
+                    ctx.user.publicKey,
+                )) as PlayerEntity;
+
+                // Check item is in player inventory
+                let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
+                if (itemEntity.location[0] !== player.player) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `${item} is not in inventory`,
+                    });
+                }
+
+                // Drop item
+                itemEntity.location = player.location;
+                itemEntity.locationType = "geohash";
+                itemEntity = (await itemRepository.save(
+                    itemEntity.item,
+                    itemEntity,
+                )) as ItemEntity;
 
                 return itemEntity as Item;
             }),
@@ -351,7 +399,9 @@ const crossoverRouter = {
             .input(SayCommandSchema)
             .query(async ({ ctx, input }) => {
                 // Get player
-                const player = await tryFetchEntity(ctx.user.publicKey);
+                const player = (await tryFetchEntity(
+                    ctx.user.publicKey,
+                )) as PlayerEntity;
 
                 // Get logged in players in geohash
                 const users = await playersInGeohashQuerySet(
@@ -422,10 +472,10 @@ const crossoverRouter = {
                 // Update player geohash
                 player.location = [nextGeohash];
                 await playerRepository.save(player.player, player);
-                return nextGeohash;
+                return player.location;
             }
 
-            return player.location[0];
+            return player.location;
         }),
         // cmd.performAbility
         performAbility: authProcedure

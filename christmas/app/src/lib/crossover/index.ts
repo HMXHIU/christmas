@@ -20,6 +20,7 @@ import type { EquipmentSlot, ItemVariables } from "./world/compendium";
 export {
     commandConfigureItem,
     commandCreateItem,
+    commandDropItem,
     commandLook,
     commandMove,
     commandPerformAbility,
@@ -225,7 +226,7 @@ async function commandLook(
 function commandMove(
     input: { direction: Direction },
     headers: HTTPHeaders = {},
-): Promise<string> {
+): Promise<string[]> {
     const { direction } = input;
     return trpc({ headers }).crossover.cmd.move.query({ direction });
 }
@@ -256,6 +257,11 @@ function commandUseItem(
 function commandTakeItem(input: { item: string }, headers: HTTPHeaders = {}) {
     const { item } = input;
     return trpc({ headers }).crossover.cmd.take.query({ item });
+}
+
+function commandDropItem(input: { item: string }, headers: HTTPHeaders = {}) {
+    const { item } = input;
+    return trpc({ headers }).crossover.cmd.drop.query({ item });
 }
 
 function equipItem(
