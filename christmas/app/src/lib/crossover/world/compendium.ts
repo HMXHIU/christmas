@@ -66,6 +66,7 @@ interface PropAction {
     };
     // abilities[ability] `self` and `target` will be provided when `useItem` is called but can be overwritten via `variables`
     ability?: string;
+    requireEquipped?: boolean; // defaults to false
 }
 
 interface PropVariables {
@@ -121,6 +122,7 @@ let compendium: Record<string, Prop> = {
                     end: "default",
                 },
                 ability: abilities.swing.ability,
+                requireEquipped: true,
             },
         },
         variables: {

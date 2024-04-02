@@ -1,3 +1,4 @@
+import { commandTakeItem, equipItem } from "$lib/crossover";
 import { compendium, itemAttibutes } from "$lib/crossover/world/compendium";
 import {
     configureItem,
@@ -212,6 +213,33 @@ test("Test Items", async () => {
         owner: playerOne.player,
         configOwner: playerOne.player,
     });
+
+    // Take item
+    playerOneWoodenClub = await commandTakeItem(
+        { item: playerOneWoodenClub.item },
+        { Cookie: playerOneCookies },
+    );
+
+    // Test cannot use item without equipping
+    var { status, message } = await useItem({
+        item: playerOneWoodenClub,
+        action: compendium.woodenClub.actions.swing.action,
+        self: playerOne as PlayerEntity,
+        target: playerTwo as PlayerEntity,
+    });
+    expect(status).toBe("failure");
+    expect(message).toBe(
+        `${playerOneWoodenClub.item} is not equipped in the required slot`,
+    );
+
+    // Equip item
+    playerOneWoodenClub = await equipItem(
+        {
+            item: playerOneWoodenClub.item,
+            slot: "rh",
+        },
+        { Cookie: playerOneCookies },
+    );
 
     // Test target out of range
     var { status, message } = await useItem({

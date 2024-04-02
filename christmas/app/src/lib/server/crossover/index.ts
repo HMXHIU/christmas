@@ -13,6 +13,7 @@ import {
 import { monsterStats } from "$lib/crossover/world/bestiary";
 import {
     compendium,
+    type EquipmentSlot,
     type ItemVariables,
 } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
@@ -670,6 +671,19 @@ function canUseItem(
         return {
             canUse: false,
             message: `${self.player || self.monster} does not own ${item.item}`,
+        };
+    }
+
+    // Check if action requires item to be equipped and is equipped in the correct slot
+    if (
+        prop.actions[action].requireEquipped &&
+        !compendium[item.prop].equipmentSlot!.includes(
+            item.locationType as EquipmentSlot,
+        )
+    ) {
+        return {
+            canUse: false,
+            message: `${item.item} is not equipped in the required slot`,
         };
     }
 
