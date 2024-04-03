@@ -101,16 +101,6 @@ type MonsterEntity = Monster & Entity;
  * An item is the actual created instance using a `Prop` template in the compendium.
  */
 
-interface ItemState {
-    location: string[];
-    locationType: LocationType;
-    durability: number;
-    charges: number;
-    state: string;
-    debuffs: string[];
-    buffs: string[];
-}
-
 const ItemEntitySchema = new Schema("Item", {
     // Item metadata
     item: { type: "string" },
@@ -119,6 +109,7 @@ const ItemEntitySchema = new Schema("Item", {
     variables: { type: "string" }, // JSON string non searchable
     owner: { type: "string" }, // who owns or can use the item (player | monster | public (empty) | dm)
     configOwner: { type: "string" }, // who can configure the item (player | monster | public (empty) | dm)
+    collider: { type: "boolean" },
     // Item state
     location: { type: "string[]" },
     locationType: { type: "string" },
@@ -128,12 +119,23 @@ const ItemEntitySchema = new Schema("Item", {
     buffs: { type: "string[]" },
 });
 
-interface Item extends ItemState {
+interface Item {
     // Item metadata
-    item: string; // unique instance id
+    item: string;
     name: string;
     prop: string;
     variables: string;
+    owner: string;
+    configOwner: string;
+    collider: boolean;
+    // Item state
+    location: string[];
+    locationType: LocationType;
+    durability: number;
+    charges: number;
+    state: string;
+    debuffs: string[];
+    buffs: string[];
 }
 
 type ItemEntity = Item & Entity;

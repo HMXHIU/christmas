@@ -18,6 +18,9 @@ export {
 const TICKS_PER_TURN = 4;
 const MS_PER_TICK = PUBLIC_ENVIRONMENT === "development" ? 10 : 2000;
 
+/**
+ * `worldSeed` is a template used to generate a `World` instance.
+ */
 const worldSeed: WorldSeed = {
     name: "yggdrasil 01",
     description: "The beginning",
@@ -82,6 +85,9 @@ const worldSeed: WorldSeed = {
     },
 };
 
+/**
+ * `abilities` is a collection of all the `Ability` available in the game.
+ */
 const abilities: Record<string, Ability> = {
     bandage: {
         ability: "bandage",
@@ -339,13 +345,16 @@ const abilities: Record<string, Ability> = {
     },
 };
 
+/**
+ * `biomes` is a collection of all the `Biome` available in the game.
+ */
 let biomes: Record<string, Biome> = {
     forest: {
         biome: "forest",
         name: "Forest",
         description:
             "A dense collection of trees and vegetation, home to a variety of wildlife.",
-        traversable: 0.8,
+        traversableSpeed: 0.8,
         asset: {
             bundle: "biomes",
             name: "tree",
@@ -370,61 +379,61 @@ let biomes: Record<string, Biome> = {
         name: "Desert",
         description:
             "A dry, arid region with extreme temperatures, sparse vegetation, and limited wildlife.",
-        traversable: 1.0,
+        traversableSpeed: 1.0,
     },
     tundra: {
         biome: "tundra",
         name: "Tundra",
         description:
             "A cold, treeless area with a frozen subsoil, limited vegetation, and adapted wildlife.",
-        traversable: 1.0,
+        traversableSpeed: 1.0,
     },
     grassland: {
         biome: "grassland",
         name: "Grassland",
         description:
             "A region dominated by grasses, with few trees and a diverse range of wildlife.",
-        traversable: 1.0,
+        traversableSpeed: 1.0,
     },
     wetland: {
         biome: "wetland",
         name: "Wetland",
         description:
             "An area saturated with water, supporting aquatic plants and a rich biodiversity.",
-        traversable: 0.5,
+        traversableSpeed: 0.5,
     },
     mountain: {
         biome: "mountain",
         name: "Mountain",
         description:
             "A high elevation region with steep terrain, diverse ecosystems, and unique wildlife.",
-        traversable: 0,
+        traversableSpeed: 0,
     },
     hills: {
         biome: "hills",
         name: "Hills",
         description:
             "A region of elevated terrain, with a variety of wildlife.",
-        traversable: 0.5,
+        traversableSpeed: 0.5,
     },
     plains: {
         biome: "plains",
         name: "Plains",
         description: "A large area of flat land, with a variety of wildlife.",
-        traversable: 1.0,
+        traversableSpeed: 1.0,
     },
     swamp: {
         biome: "swamp",
         name: "Swamp",
         description:
             "A wetland area with a variety of vegetation, supporting a diverse range of wildlife.",
-        traversable: 0.7,
+        traversableSpeed: 0.7,
     },
     water: {
         biome: "water",
         name: "Water",
         description: "A large body of water, with a variety of aquatic life.",
-        traversable: 0,
+        traversableSpeed: 0,
         asset: {
             bundle: "biomes",
             name: "water",
@@ -567,11 +576,11 @@ let compendium: Record<string, Prop> = {
         durability: 100,
         charges: 0,
         weight: 3,
+        collider: false,
         equipmentSlot: ["rh", "lh"],
         defaultState: "default",
         states: {
             default: {
-                traversable: 1.0,
                 destructible: true,
                 description: "A simple wooden club ${etching}.", // ${} for string substitution
                 variant: "default",
@@ -618,10 +627,10 @@ let compendium: Record<string, Prop> = {
         durability: 100,
         charges: 5,
         weight: 1,
+        collider: false,
         defaultState: "default",
         states: {
             default: {
-                traversable: 1.0,
                 destructible: true,
                 description:
                     "A bottle of clear crystal glass. You see a faint glowing red liquid inside.",
@@ -663,15 +672,14 @@ let compendium: Record<string, Prop> = {
         durability: 100,
         charges: 0,
         weight: -1,
+        collider: true,
         states: {
             open: {
-                traversable: 1.0,
                 destructible: false,
                 description: "${doorSign}. The door is open.",
                 variant: "default",
             },
             closed: {
-                traversable: 0,
                 destructible: false,
                 description: "${doorSign}. The door is closed.",
                 variant: "closed",
@@ -729,9 +737,9 @@ let compendium: Record<string, Prop> = {
         durability: 100,
         charges: 0,
         weight: -1, // cannot be taken
+        collider: true,
         states: {
             default: {
-                traversable: -1, // not traversable
                 destructible: false,
                 description: "A humble tavern. ${description}",
                 variant: "default",
@@ -762,10 +770,10 @@ let compendium: Record<string, Prop> = {
         durability: 100,
         charges: 100,
         weight: -1,
+        collider: false,
         defaultState: "default",
         states: {
             default: {
-                traversable: 1.0,
                 destructible: false,
                 description:
                     "${description}. It is tuned to teleport to ${target}.",

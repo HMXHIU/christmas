@@ -27,7 +27,11 @@ import { groupBy } from "lodash";
 import ngeohash from "ngeohash";
 import { expect, test, vi } from "vitest";
 import { getRandomRegion } from "../utils";
-import { createRandomPlayer, waitForEventData } from "./utils";
+import {
+    createRandomPlayer,
+    generateRandomGeohash,
+    waitForEventData,
+} from "./utils";
 
 vi.mock("$lib/crossover/world", async (module) => {
     return { ...((await module()) as object), MS_PER_TICK: 10 };
@@ -38,7 +42,7 @@ test("Test Player", async () => {
 
     // Player one
     const playerOneName = "Gandalf";
-    const playerOneGeohash = "gbsuv7";
+    const playerOneGeohash = generateRandomGeohash(6);
     let [playerOneWallet, playerOneCookies, playerOne] =
         await createRandomPlayer({
             region,
@@ -50,7 +54,7 @@ test("Test Player", async () => {
 
     // Player two
     const playerTwoName = "Saruman";
-    const playerTwoGeohash = "gbsuv8";
+    const playerTwoGeohash = generateRandomGeohash(6);
     let [playerTwoWallet, playerTwoCookies, playerTwo] =
         await createRandomPlayer({
             region,
@@ -62,7 +66,7 @@ test("Test Player", async () => {
 
     // Player three
     const playerThreeName = "Sauron";
-    const playerThreeGeohash = "gbsuv7";
+    const playerThreeGeohash = playerOneGeohash;
     let [playerThreeWallet, playerThreeCookies, playerThree] =
         await createRandomPlayer({
             region,
@@ -256,7 +260,7 @@ test("Test Player", async () => {
      * Test commandConfigureItem
      */
 
-    // Spawn woodenDoor
+    // Spawn woodenDoor at playerOne location
     let woodenDoor = (await spawnItem({
         geohash: playerOne.location[0],
         prop: compendium.woodenDoor.prop,
@@ -311,20 +315,24 @@ test("Test Player", async () => {
     });
     woodenDoor = item as ItemEntity;
     expect(itemAttibutes(woodenDoor)).toMatchObject({
-        traversable: 1,
         destructible: false,
         description: "A new door sign. The door is open.",
         variant: "default",
     });
+
+    // Move playerOne south (to spawn portal without colliding with woodenDoor)
+    playerOne.location = await commandMove(
+        { direction: "s" },
+        { Cookie: playerOneCookies },
+    );
 
     // Spawn portals (dm)
     const portalOne = (await spawnItem({
         geohash: playerOne.location[0], // spawn at playerOne
         prop: compendium.portal.prop,
     })) as ItemEntity;
-    const somwhereGeohash = "w21z3muk";
     const portalTwo = (await spawnItem({
-        geohash: somwhereGeohash, // spawn at somwhere
+        geohash: generateRandomGeohash(8), // spawn portalTwo somewhere else
         prop: compendium.portal.prop,
     })) as ItemEntity;
 
@@ -410,6 +418,17 @@ test("Test Player", async () => {
         { Cookie: playerOneCookies },
     );
 
+    // Teleport to playerTwo's location to be in range
+    playerOne = (
+        await commandPerformAbility(
+            {
+                target: playerTwo.player,
+                ability: abilities.teleport.ability,
+            },
+            { Cookie: playerOneCookies },
+        )
+    ).self;
+
     // Use woodenClub (swing)
     let stBefore = playerOne.st;
     let apBefore = playerOne.ap;
@@ -421,6 +440,7 @@ test("Test Player", async () => {
         },
         { Cookie: playerOneCookies },
     );
+    console.log(message);
 
     expect(status).toBe("success");
     expect(target).toMatchObject({

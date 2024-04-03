@@ -19,6 +19,7 @@ import {
 
 // Exports
 export {
+    collidersInGeohashQuerySet,
     fetchEntity,
     initializeClients,
     isEntityBusy,
@@ -191,4 +192,13 @@ function itemsInGeohashQuerySet(geohash: string): Search {
         .contains(`${geohash}*`)
         .and("locationType")
         .equal("geohash");
+}
+
+/**
+ * Retrieves a search query for finding colliders in a geohash.
+ * @param geohash - The geohash to search for colliders in.
+ * @returns A search query for finding colliders in the specified geohash.
+ */
+function collidersInGeohashQuerySet(geohash: string): Search {
+    return itemsInGeohashQuerySet(geohash).and("collider").equal(true);
 }

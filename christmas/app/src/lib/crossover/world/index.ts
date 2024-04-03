@@ -10,7 +10,7 @@ import type { TileSchema } from "$lib/server/crossover/router";
 import lodash from "lodash";
 import ngeohash from "ngeohash";
 import type { z } from "zod";
-import { itemAttibutes, type EquipmentSlot } from "./compendium";
+import { type EquipmentSlot } from "./compendium";
 import { bestiary, biomes, compendium, worldSeed } from "./settings";
 const { groupBy } = lodash;
 
@@ -538,14 +538,14 @@ async function isGeohashTraversable(
     // Check if next geohash is traversable
     const biome = biomeAtGeohash(geohash);
 
-    // Check any untraversable items
+    // Check any items with collider
     for (const itemEntity of items) {
-        if (itemAttibutes(itemEntity).traversable <= 0) {
+        if (itemEntity.collider) {
             return false;
         }
     }
 
-    return biomes[biome].traversable > 0;
+    return biomes[biome].traversableSpeed > 0;
 }
 
 function entityDimensions(entity: PlayerEntity | MonsterEntity | ItemEntity) {

@@ -21,26 +21,23 @@ type EquipmentSlot =
 /**
  * `Prop` is a template used to create an `item` instance
  */
-interface Prop extends PropStats {
+interface Prop {
     prop: string;
     defaultName: string;
     defaultState: string;
     asset: AssetMetadata;
-    states: Record<string, PropAttributes>;
+    durability: number;
+    charges: number;
+    states: Record<string, PropAttributes>; // map item.state to prop attributes
     actions: Record<string, PropAction>;
     variables: PropVariables; // configurable variables to alter prop behavior & descriptions
     equipmentSlot?: EquipmentSlot[];
     weight: number; // -1 means it cannot be taken
-}
-
-interface PropStats {
-    durability: number;
-    charges: number; // needs to be recharged (every day or via item)
+    collider: boolean; // cannot have more than 1 collidable item in the same location, cannot walk through collidable items
 }
 
 interface PropAttributes {
     description: string;
-    traversable: number;
     destructible: boolean;
     variant: string;
 }
@@ -72,7 +69,7 @@ interface PropVariables {
 type ItemVariables = Record<string, string | number | boolean>;
 
 /**
- * Retrieves the attributes of an item from its prop and performs variable substitution.
+ * Retrieves the attributes of an item in its current state from its prop and performs variable substitution.
  *
  * @param item - The item entity for which to retrieve the attributes.
  * @returns The attributes of the item after variable substitution.

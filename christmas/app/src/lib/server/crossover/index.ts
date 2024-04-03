@@ -3,7 +3,6 @@ import {
     childrenGeohashes,
     entityDimensions,
     geohashNeighbour,
-    isGeohashTraversable,
     type Direction,
 } from "$lib/crossover/world";
 import {
@@ -31,9 +30,9 @@ import { PublicKey } from "@solana/web3.js";
 import { z } from "zod";
 import { ObjectStorage } from "../objectStorage";
 import {
+    collidersInGeohashQuerySet,
     isEntityBusy,
     itemRepository,
-    itemsInGeohashQuerySet,
     monsterRepository,
     playerRepository,
     redisClient,
@@ -384,7 +383,8 @@ async function spawnItem({
     const item = `item_${prop}${count}`;
 
     // Get prop
-    const { defaultName, defaultState, durability, charges } = compendium[prop];
+    const { defaultName, defaultState, durability, charges, collider } =
+        compendium[prop];
     const { width, height, precision } = compendium[prop].asset;
 
     // Auto correct geohash precision
@@ -397,12 +397,8 @@ async function spawnItem({
 
     // Check location for traversability
     for (const loc of location) {
-        const items = (await itemsInGeohashQuerySet(
-            loc,
-        ).return.all()) as ItemEntity[];
-
-        if (!isGeohashTraversable(loc, items)) {
-            throw new Error(`Cannot spawn item in untraversable location`);
+        if ((await collidersInGeohashQuerySet(loc).return.count()) > 0) {
+            throw new Error(`Cannot spawn item in location with colliders`);
         }
     }
 
@@ -414,6 +410,7 @@ async function spawnItem({
         locationType: "geohash",
         owner,
         configOwner,
+        collider,
         durability: durability,
         charges: charges,
         state: defaultState,
@@ -1047,12 +1044,10 @@ async function isDirectionTraversable(
             location.push(nextGeohash);
             continue;
         }
-        // Get items in next geohash
-        const items = (await itemsInGeohashQuerySet(
-            nextGeohash,
-        ).return.all()) as ItemEntity[];
-
-        if (!(await isGeohashTraversable(nextGeohash, items))) {
+        // Get colliders in next geohash
+        if (
+            (await collidersInGeohashQuerySet(nextGeohash).return.count()) > 0
+        ) {
             return [false, entity.location];
         } else {
             location.push(nextGeohash);

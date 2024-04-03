@@ -1,4 +1,5 @@
 import { commandTakeItem, equipItem } from "$lib/crossover";
+import { geohashNeighbour } from "$lib/crossover/world";
 import { itemAttibutes } from "$lib/crossover/world/compendium";
 import { compendium } from "$lib/crossover/world/settings";
 import {
@@ -14,15 +15,14 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
-import { createRandomPlayer } from "./utils";
+import { createRandomPlayer, generateRandomGeohash } from "./utils";
 
 test("Test Items", async () => {
-    const geohash = "w21z3we7";
     const region = String.fromCharCode(...getRandomRegion());
 
     // Player one
     const playerOneName = "Gandalf";
-    const playerOneGeohash = "gbsuv7";
+    const playerOneGeohash = generateRandomGeohash(8);
     let [playerOneWallet, playerOneCookies, playerOne] =
         await createRandomPlayer({
             region,
@@ -32,7 +32,7 @@ test("Test Items", async () => {
 
     // Player two
     const playerTwoName = "Saruman";
-    const playerTwoGeohash = "gbsuv8";
+    const playerTwoGeohash = generateRandomGeohash(8);
     let [playerTwoWallet, playerTwoCookies, playerTwo] =
         await createRandomPlayer({
             region,
@@ -43,8 +43,11 @@ test("Test Items", async () => {
     /*
      * Test spawn item
      */
+
+    // Spawn wooden door at random location
+    const woodenDoorGeohash = generateRandomGeohash(8);
     let woodenDoor = (await spawnItem({
-        geohash,
+        geohash: woodenDoorGeohash,
         prop: compendium.woodenDoor.prop,
         variables: {
             [compendium.woodenDoor.variables!.doorSign.variable]:
@@ -54,7 +57,7 @@ test("Test Items", async () => {
     expect(woodenDoor).toMatchObject({
         name: compendium.woodenDoor.defaultName,
         prop: compendium.woodenDoor.prop,
-        location: [geohash],
+        location: [woodenDoorGeohash],
         locationType: "geohash",
         durability: compendium.woodenDoor.durability,
         charges: compendium.woodenDoor.charges,
@@ -72,7 +75,6 @@ test("Test Items", async () => {
      */
     const attributes = itemAttibutes(woodenDoor);
     expect(attributes).toMatchObject({
-        traversable: 0,
         destructible: false,
         description: "A custom door sign. The door is closed.",
         variant: "closed",
@@ -105,17 +107,19 @@ test("Test Items", async () => {
      * Test `configureItem`
      */
 
-    const portalOneGeohash = geohash;
-    const portalTwoGeohash = "gbsuv77w"; // somwhere far away
+    // Spawn portalOne at playerOne location
     let portalOne = (await spawnItem({
-        geohash: portalOneGeohash,
+        geohash: playerOneGeohash,
         prop: compendium.portal.prop,
         variables: {
             [compendium.portal.variables!.description.variable]: "Portal One",
         },
     })) as ItemEntity;
+
+    // Spawn portalTwo at random location
+    const portalTwoGeohash = generateRandomGeohash(8);
     let portalTwo = (await spawnItem({
-        geohash: portalTwoGeohash,
+        geohash: portalTwoGeohash, // somwhere else
         prop: compendium.portal.prop,
         variables: {
             [compendium.portal.variables!.description.variable]: "Portal Two",
@@ -124,23 +128,21 @@ test("Test Items", async () => {
 
     // Test item location (more than 1 cell)
     expect(portalTwo.location).toMatchObject([
-        "gbsuv77w",
-        "gbsuv77y",
-        "gbsuv77t",
-        "gbsuv77v",
+        portalTwoGeohash,
+        geohashNeighbour(portalTwoGeohash, "e"),
+        geohashNeighbour(portalTwoGeohash, "s"),
+        geohashNeighbour(portalTwoGeohash, "se"),
     ]);
 
     // Test initial attributes
     let portalOneAttributes = itemAttibutes(portalOne);
     let portalTwoAttributes = itemAttibutes(portalTwo);
     expect(portalOneAttributes).toMatchObject({
-        traversable: 1,
         destructible: false,
         description: "Portal One. It is tuned to teleport to ${target}.",
         variant: "default",
     });
     expect(portalTwoAttributes).toMatchObject({
-        traversable: 1,
         destructible: false,
         description: "Portal Two. It is tuned to teleport to ${target}.",
         variant: "default",
@@ -168,13 +170,11 @@ test("Test Items", async () => {
     portalOneAttributes = itemAttibutes(portalOne);
     portalTwoAttributes = itemAttibutes(portalTwo);
     expect(portalOneAttributes).toMatchObject({
-        traversable: 1,
         destructible: false,
         description: `Portal One. It is tuned to teleport to ${portalTwo.item}.`,
         variant: "default",
     });
     expect(portalTwoAttributes).toMatchObject({
-        traversable: 1,
         destructible: false,
         description: `Portal Two. It is tuned to teleport to ${portalOne.item}.`,
         variant: "default",
@@ -326,7 +326,6 @@ test("Test Items", async () => {
         })
     ).item;
     expect(itemAttibutes(playerOneWoodenClub)).toMatchObject({
-        traversable: 1,
         destructible: true,
         description: "A simple wooden club An etching.",
         variant: "default",

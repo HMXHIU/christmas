@@ -5,12 +5,12 @@ import { spawnItem } from "$lib/server/crossover";
 import type { ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
-import { createRandomPlayer } from "./utils";
+import { createRandomPlayer, generateRandomGeohash } from "./utils";
 
 test("Test Movement", async () => {
     // Player one
     const playerOneName = "Gandalf";
-    let playerOneGeohash = "w21zgssq";
+    let playerOneGeohash = generateRandomGeohash(8);
     let [playerOneWallet, playerOneCookies, playerOne] =
         await createRandomPlayer({
             region: String.fromCharCode(...getRandomRegion()),
@@ -54,7 +54,7 @@ test("Test Movement", async () => {
         { Cookie: playerOneCookies },
     );
     const biome = biomeAtGeohash(geohashNeighbour(playerOneGeohash, "e"));
-    expect(biomes[biome].traversable).toBeGreaterThan(0);
+    expect(biomes[biome].traversableSpeed).toBeGreaterThan(0);
     expect(playerOne.location[0]).toBe(geohashNeighbour(playerOneGeohash, "e"));
 
     // PlayerOne tries to move south (obstructed by tavern)
