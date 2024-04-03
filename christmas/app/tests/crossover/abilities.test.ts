@@ -1,7 +1,5 @@
-import {
-    abilities,
-    fillInEffectVariables,
-} from "$lib/crossover/world/abilities";
+import { fillInEffectVariables } from "$lib/crossover/world/abilities";
+import { abilities } from "$lib/crossover/world/settings";
 import { performAbility } from "$lib/server/crossover";
 import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test, vi } from "vitest";

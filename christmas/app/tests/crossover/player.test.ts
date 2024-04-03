@@ -6,13 +6,18 @@ import {
     commandMove,
     commandPerformAbility,
     commandSay,
+    commandTakeItem,
     commandUseItem,
+    equipItem,
     stream,
 } from "$lib/crossover";
-import { abilities } from "$lib/crossover/world/abilities";
-import { compendium, itemAttibutes } from "$lib/crossover/world/compendium";
+import { itemAttibutes } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
-import { worldSeed } from "$lib/crossover/world/seed";
+import {
+    abilities,
+    compendium,
+    worldSeed,
+} from "$lib/crossover/world/settings";
 import { configureItem, spawnItem } from "$lib/server/crossover";
 import type {
     ItemEntity,
@@ -144,12 +149,12 @@ test("Test Player", async () => {
     ]);
 
     // Move
-    const nextTile = await commandMove(
+    const nextLocation = await commandMove(
         { direction: "n" },
         { Cookie: playerOneCookies },
     );
     const northTile = ngeohash.neighbor(playerOne.location[0], [1, 0]);
-    expect(nextTile).toEqual(northTile);
+    expect(nextLocation[0]).toEqual(northTile);
 
     // Stats
     expect(playerStats({ level: 1 })).toMatchObject({
@@ -376,6 +381,7 @@ test("Test Player", async () => {
         },
         { Cookie: playerOneCookies },
     );
+
     expect(woodenClub).toMatchObject({
         name: "Wooden Club",
         prop: "woodenClub",
@@ -393,6 +399,18 @@ test("Test Player", async () => {
     /*
      * Test `useItem` permissions
      */
+
+    // Take & Equip woodenClub
+    await commandTakeItem(
+        { item: woodenClub.item },
+        { Cookie: playerOneCookies },
+    );
+    await equipItem(
+        { item: woodenClub.item, slot: "rh" },
+        { Cookie: playerOneCookies },
+    );
+
+    // Use woodenClub (swing)
     let stBefore = playerOne.st;
     let apBefore = playerOne.ap;
     var { status, message, self, target, item } = await commandUseItem(

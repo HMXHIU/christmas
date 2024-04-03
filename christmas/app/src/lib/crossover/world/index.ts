@@ -1,24 +1,27 @@
-import type { Item, Monster } from "$lib/server/crossover/redis/entities";
+import type {
+    Item,
+    ItemEntity,
+    Monster,
+    MonsterEntity,
+    PlayerEntity,
+} from "$lib/server/crossover/redis/entities";
 import type { TileSchema } from "$lib/server/crossover/router";
 
-import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 import lodash from "lodash";
 import ngeohash from "ngeohash";
 import type { z } from "zod";
-import { biomes } from "./biomes";
 import { itemAttibutes, type EquipmentSlot } from "./compendium";
-import { worldSeed } from "./seed";
+import { bestiary, biomes, compendium, worldSeed } from "./settings";
 const { groupBy } = lodash;
 
 export {
-    MS_PER_TICK,
-    TICKS_PER_TURN,
     abyssTile,
     biomeAtGeohash,
     biomesAtGeohash,
     calculateLocation,
     childrenGeohashes,
     directionToVector,
+    entityDimensions,
     geohashNeighbour,
     geohashToCell,
     isGeohashTraversable,
@@ -34,9 +37,6 @@ export {
     type LocationType,
     type WorldSeed,
 };
-
-const TICKS_PER_TURN = 4;
-const MS_PER_TICK = PUBLIC_ENVIRONMENT === "development" ? 10 : 2000;
 
 const abyssTile: z.infer<typeof TileSchema> = {
     name: "The Abyss",
@@ -541,12 +541,29 @@ async function isGeohashTraversable(
     // Check any untraversable items
     for (const itemEntity of items) {
         if (itemAttibutes(itemEntity).traversable <= 0) {
-            console.log("Item is untraversable", itemEntity);
             return false;
         }
     }
 
-    console.log(`Biome is ${biomes[biome].traversable}`);
-
     return biomes[biome].traversable > 0;
+}
+
+function entityDimensions(entity: PlayerEntity | MonsterEntity | ItemEntity) {
+    if (entity.player) {
+        return {
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
+        };
+    } else if (entity.item) {
+        const { width, height, precision } =
+            compendium[(entity as ItemEntity).prop].asset;
+        return { width, height, precision };
+    } else if (entity.monster) {
+        const { width, height, precision } =
+            bestiary[(entity as MonsterEntity).beast].asset;
+        return { width, height, precision };
+    }
+
+    throw new Error("Invalid entity");
 }

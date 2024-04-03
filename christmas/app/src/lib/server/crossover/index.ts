@@ -1,26 +1,30 @@
 import {
-    MS_PER_TICK,
     calculateLocation,
     childrenGeohashes,
+    entityDimensions,
     geohashNeighbour,
     isGeohashTraversable,
     type Direction,
 } from "$lib/crossover/world";
 import {
-    abilities,
     canPerformAbility,
     checkInRange,
     fillInEffectVariables,
     type ProcedureEffect,
 } from "$lib/crossover/world/abilities";
-import { bestiary, monsterStats } from "$lib/crossover/world/bestiary";
+import { monsterStats } from "$lib/crossover/world/bestiary";
 import {
-    compendium,
     type EquipmentSlot,
     type ItemVariables,
 } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
-import { worldSeed } from "$lib/crossover/world/seed";
+import {
+    MS_PER_TICK,
+    abilities,
+    bestiary,
+    compendium,
+    worldSeed,
+} from "$lib/crossover/world/settings";
 import { serverAnchorClient } from "$lib/server";
 import { parseZodErrors, sleep } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
@@ -379,7 +383,7 @@ async function spawnItem({
     const count = await itemRepository.search().count();
     const item = `item_${prop}${count}`;
 
-    // Calculate location cells
+    // Get prop
     const { defaultName, defaultState, durability, charges } = compendium[prop];
     const { width, height, precision } = compendium[prop].asset;
 
@@ -388,7 +392,19 @@ async function spawnItem({
         geohash = autoCorrectGeohashPrecision(geohash, precision);
     }
 
+    // Calculate location
     const location = calculateLocation(geohash, width, height);
+
+    // Check location for traversability
+    for (const loc of location) {
+        const items = (await itemsInGeohashQuerySet(
+            loc,
+        ).return.all()) as ItemEntity[];
+
+        if (!isGeohashTraversable(loc, items)) {
+            throw new Error(`Cannot spawn item in untraversable location`);
+        }
+    }
 
     const entity: ItemEntity = {
         item,
@@ -478,6 +494,7 @@ async function saveEntity(
             entity,
         )) as ItemEntity;
     }
+
     throw new Error("Invalid entity");
 }
 
@@ -848,10 +865,12 @@ async function performAbility({
             });
 
             // Perform effect action
+
             entity = await performEffectAction({
                 entity,
                 effect: actualEffect,
             });
+
             await saveEntity(entity);
 
             // Update self or target
@@ -920,7 +939,6 @@ async function performEffectAction({
     // State
     if (effect.states) {
         const { state, op, value } = effect.states;
-
         if (entity.hasOwnProperty(state)) {
             if (op === "change") {
                 (entity as any)[state] = value;
@@ -928,6 +946,18 @@ async function performEffectAction({
                 (entity as any)[state] -= value as number;
             } else if (op === "add") {
                 (entity as any)[state] += value as number;
+            }
+
+            // Patch location (if the location dimensions have changed beyond the asset's dimensions)
+            if (state === "location") {
+                const { width, height, precision } = entityDimensions(entity);
+                if (entity[state].length !== width * height) {
+                    entity[state] = calculateLocation(
+                        entity[state][0],
+                        width,
+                        height,
+                    );
+                }
             }
         }
     }

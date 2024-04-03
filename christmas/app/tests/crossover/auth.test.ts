@@ -4,7 +4,7 @@ import {
     logout as logoutCrossover,
     signup,
 } from "$lib/crossover";
-import { worldSeed } from "$lib/crossover/world/seed";
+import { worldSeed } from "$lib/crossover/world/settings";
 import { ObjectStorage } from "$lib/server/objectStorage";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { Keypair } from "@solana/web3.js";

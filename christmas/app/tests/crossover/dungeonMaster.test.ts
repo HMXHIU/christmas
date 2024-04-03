@@ -3,8 +3,8 @@ import {
     monsterLimitAtGeohash,
     uninhabitedNeighbouringGeohashes,
 } from "$lib/crossover/world";
-import { monstersInGeohashQuerySet } from "$lib/server/crossover";
 import { spawnMonsters } from "$lib/server/crossover/dungeonMaster";
+import { monstersInGeohashQuerySet } from "$lib/server/crossover/redis";
 import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";

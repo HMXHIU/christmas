@@ -6,7 +6,7 @@
     import { Label } from "$lib/components/ui/label";
     import { Textarea } from "$lib/components/ui/textarea";
     import { login, signup } from "$lib/crossover";
-    import { worldSeed } from "$lib/crossover/world/seed";
+    import { worldSeed } from "$lib/crossover/world/settings";
     import { parseZodErrors } from "$lib/utils";
     import { toast } from "svelte-sonner";
     import { z } from "zod";

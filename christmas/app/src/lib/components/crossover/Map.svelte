@@ -1,12 +1,7 @@
 <script lang="ts">
     import { abyssTile, geohashToCell } from "$lib/crossover/world";
+    import { bestiary, biomes } from "$lib/crossover/world/settings";
     import type { TileSchema } from "$lib/server/crossover/router";
-    import { onMount } from "svelte";
-    import type { z } from "zod";
-    import { grid } from "../../../store";
-
-    import { bestiary } from "$lib/crossover/world/bestiary";
-    import { biomes } from "$lib/crossover/world/biomes";
     import {
         AnimatedSprite,
         Application,
@@ -14,6 +9,9 @@
         Container,
         Sprite,
     } from "pixi.js";
+    import { onMount } from "svelte";
+    import type { z } from "zod";
+    import { grid } from "../../../store";
 
     const CANVAS_WIDTH = 200;
     const CANVAS_HEIGHT = 200;

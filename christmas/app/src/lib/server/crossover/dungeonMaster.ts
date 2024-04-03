@@ -3,13 +3,9 @@ import {
     monsterLimitAtGeohash,
     uninhabitedNeighbouringGeohashes,
 } from "$lib/crossover/world";
-import { abilities, canPerformAbility } from "$lib/crossover/world/abilities";
-import {
-    bestiary,
-    monsterStats,
-    type Beast,
-} from "$lib/crossover/world/bestiary";
-import { worldSeed } from "$lib/crossover/world/seed";
+import { canPerformAbility } from "$lib/crossover/world/abilities";
+import { monsterStats, type Beast } from "$lib/crossover/world/bestiary";
+import { abilities, bestiary, worldSeed } from "$lib/crossover/world/settings";
 import { performAbility, spawnMonster } from ".";
 import { monstersInGeohashQuerySet } from "./redis";
 import type { MonsterEntity, PlayerEntity } from "./redis/entities";

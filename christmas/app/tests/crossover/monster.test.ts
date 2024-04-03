@@ -1,5 +1,5 @@
-import { abilities } from "$lib/crossover/world/abilities";
 import { monsterStats } from "$lib/crossover/world/bestiary";
+import { abilities } from "$lib/crossover/world/settings";
 import { spawnMonster } from "$lib/server/crossover";
 import {
     performMonsterActions,

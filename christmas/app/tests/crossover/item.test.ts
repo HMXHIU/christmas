@@ -1,5 +1,6 @@
 import { commandTakeItem, equipItem } from "$lib/crossover";
-import { compendium, itemAttibutes } from "$lib/crossover/world/compendium";
+import { itemAttibutes } from "$lib/crossover/world/compendium";
+import { compendium } from "$lib/crossover/world/settings";
 import {
     configureItem,
     itemVariableValue,

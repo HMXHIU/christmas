@@ -1,7 +1,6 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
 import { biomeAtGeohash, tileAtGeohash } from "$lib/crossover/world";
-import { compendium } from "$lib/crossover/world/compendium";
-import { worldSeed } from "$lib/crossover/world/seed";
+import { compendium, worldSeed } from "$lib/crossover/world/settings";
 import {
     fetchEntity,
     initializeClients,

@@ -6,14 +6,14 @@ import {
     playerInventory,
     unequipItem,
 } from "$lib/crossover";
-import { compendium } from "$lib/crossover/world/compendium";
+import { compendium } from "$lib/crossover/world/settings";
 import { spawnItem } from "$lib/server/crossover";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer } from "./utils";
 
 test("Test Inventory", async () => {
-    const geohash = "w21z3we7";
+    const geohash = "w21zfkem";
     const region = String.fromCharCode(...getRandomRegion());
 
     // Spawn player
