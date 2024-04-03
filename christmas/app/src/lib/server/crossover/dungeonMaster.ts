@@ -138,7 +138,6 @@ async function performMonsterActions(
  */
 async function spawnMonsters(players: PlayerEntity[]) {
     // Get all parent geohashes (only interested with geohashes 1 level above unit precision)
-
     const parentGeohashes = players
         .map(({ location }) => {
             return location[0].slice(0, -1);
@@ -176,10 +175,17 @@ async function spawnMonsters(players: PlayerEntity[]) {
             // Get a random child geohash
             const childGeohash = childGeohashes[i % childGeohashes.length];
 
-            const monster = await spawnMonster({
-                geohash: childGeohash,
-                beast: bestiary.goblin.beast, // TODO: use PG to get random beast
-            });
+            // TODO: use PG to get random beast
+            const beast = bestiary.goblin.beast;
+
+            try {
+                const monster = await spawnMonster({
+                    geohash: childGeohash,
+                    beast,
+                });
+            } catch (error) {
+                console.log(`Error spawning ${beast}`, error);
+            }
         }
     }
 }

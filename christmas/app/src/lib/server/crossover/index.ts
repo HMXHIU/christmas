@@ -1,4 +1,5 @@
 import {
+    biomeAtGeohash,
     calculateLocation,
     childrenGeohashes,
     entityDimensions,
@@ -21,6 +22,7 @@ import {
     MS_PER_TICK,
     abilities,
     bestiary,
+    biomes,
     compendium,
     worldSeed,
 } from "$lib/crossover/world/settings";
@@ -330,7 +332,13 @@ async function spawnMonster({
         geohash = autoCorrectGeohashPrecision(geohash, precision);
     }
 
+    // Check location for traversability and colliders
     const location = calculateLocation(geohash, width, height);
+    for (const loc of location) {
+        if (!(await isGeohashTraversable(loc))) {
+            throw new Error(`Cannot spawn ${beast}, ${loc} is untraversable`);
+        }
+    }
 
     // Get monster stats
     const { hp, mp, st, ap } = monsterStats({ level, beast });
@@ -398,7 +406,7 @@ async function spawnItem({
     // Check location for traversability
     for (const loc of location) {
         if ((await collidersInGeohashQuerySet(loc).return.count()) > 0) {
-            throw new Error(`Cannot spawn item in location with colliders`);
+            throw new Error(`Cannot spawn item in location`);
         }
     }
 
@@ -1044,14 +1052,27 @@ async function isDirectionTraversable(
             location.push(nextGeohash);
             continue;
         }
-        // Get colliders in next geohash
-        if (
-            (await collidersInGeohashQuerySet(nextGeohash).return.count()) > 0
-        ) {
-            return [false, entity.location];
+
+        // Check if geohash is traversable
+        if (!(await isGeohashTraversable(nextGeohash))) {
+            return [false, entity.location]; // early return if not traversable
         } else {
             location.push(nextGeohash);
         }
     }
     return [true, location];
+}
+
+async function isGeohashTraversable(geohash: string): Promise<boolean> {
+    // Check if biome is traversable
+    if (biomes[biomeAtGeohash(geohash)].traversableSpeed <= 0) {
+        return false;
+    }
+
+    // Get colliders in geohash
+    if ((await collidersInGeohashQuerySet(geohash).return.count()) > 0) {
+        return false;
+    }
+
+    return true;
 }

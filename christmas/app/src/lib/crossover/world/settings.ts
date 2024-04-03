@@ -445,6 +445,13 @@ let biomes: Record<string, Biome> = {
             precision: worldSeed.spatial.unit.precision,
         },
     },
+    ice: {
+        biome: "ice",
+        name: "Ice",
+        description:
+            "A region covered in ice, with limited vegetation and wildlife.",
+        traversableSpeed: 1.0,
+    },
 };
 
 /**

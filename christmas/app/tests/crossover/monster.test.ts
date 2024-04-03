@@ -1,6 +1,7 @@
+import { geohashNeighbour } from "$lib/crossover/world";
 import { monsterStats } from "$lib/crossover/world/bestiary";
-import { abilities } from "$lib/crossover/world/settings";
-import { spawnMonster } from "$lib/server/crossover";
+import { abilities, compendium } from "$lib/crossover/world/settings";
+import { spawnItem, spawnMonster } from "$lib/server/crossover";
 import {
     performMonsterActions,
     selectMonsterAbility,
@@ -10,20 +11,20 @@ import {
     playerRepository,
 } from "$lib/server/crossover/redis";
 import type {
+    ItemEntity,
     MonsterEntity,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
-import { createRandomPlayer } from "./utils";
+import { createRandomPlayer, generateRandomGeohash } from "./utils";
 
 test("Test Monster", async () => {
     const region = String.fromCharCode(...getRandomRegion());
-    const geohash = "w21z3we7";
 
     // Player one
     const playerOneName = "Gandalf";
-    const playerOneGeohash = geohash;
+    const playerOneGeohash = generateRandomGeohash(8);
     let [playerOneWallet, playerOneCookies, playerOne] =
         await createRandomPlayer({
             region,
@@ -31,7 +32,9 @@ test("Test Monster", async () => {
             name: playerOneName,
         });
 
-    // Test monster stats
+    /*
+     * Test monster stats
+     */
     expect(monsterStats({ level: 1, beast: "goblin" })).toMatchObject({
         ap: 11,
         hp: 20,
@@ -45,37 +48,57 @@ test("Test Monster", async () => {
         st: 296,
     });
 
-    // Test monster location with more than 1 cell
+    /*
+     * Test `spawnMonster`
+     */
+
+    // Spawn dragon (3x3 grid)
+    const dragonGeohash = generateRandomGeohash(8, "h9"); // h9* is all ice (fully traversable)
     let dragon = await spawnMonster({
-        geohash: geohash,
+        geohash: dragonGeohash,
         beast: "dragon",
         level: 1,
     });
     expect(dragon).toMatchObject({
         location: [
-            "w21z3we7",
-            "w21z3wee",
-            "w21z3weg",
-            "w21z3we6",
-            "w21z3wed",
-            "w21z3wef",
-            "w21z3we3",
-            "w21z3we9",
-            "w21z3wec",
+            // row 1
+            dragonGeohash,
+            geohashNeighbour(dragonGeohash, "e"),
+            geohashNeighbour(geohashNeighbour(dragonGeohash, "e"), "e"),
+            // row 2
+            geohashNeighbour(dragonGeohash, "s"),
+            geohashNeighbour(geohashNeighbour(dragonGeohash, "s"), "e"),
+            geohashNeighbour(
+                geohashNeighbour(geohashNeighbour(dragonGeohash, "s"), "e"),
+                "e",
+            ),
+            // row 3
+            geohashNeighbour(geohashNeighbour(dragonGeohash, "s"), "s"),
+            geohashNeighbour(
+                geohashNeighbour(geohashNeighbour(dragonGeohash, "s"), "s"),
+                "e",
+            ),
+            geohashNeighbour(
+                geohashNeighbour(
+                    geohashNeighbour(geohashNeighbour(dragonGeohash, "s"), "s"),
+                    "e",
+                ),
+                "e",
+            ),
         ],
         locationType: "geohash",
     });
 
-    // Test spawn monster
+    // Spawn goblin (1x1 grid)
     let goblin = await spawnMonster({
-        geohash: geohash,
+        geohash: playerOneGeohash,
         beast: "goblin",
         level: 1,
     });
     expect(goblin).toMatchObject({
         name: "goblin",
         beast: "goblin",
-        location: [geohash],
+        location: [playerOneGeohash],
         level: 1,
         hp: 20,
         mp: 20,
@@ -84,6 +107,26 @@ test("Test Monster", async () => {
         buffs: [],
         debuffs: [],
     });
+
+    // Test cannot spawn monster on collider
+    const woodenDoorGeohash = generateRandomGeohash(8);
+    let woodenDoor = (await spawnItem({
+        geohash: woodenDoorGeohash,
+        prop: compendium.woodenDoor.prop,
+    })) as ItemEntity;
+    await expect(
+        spawnMonster({
+            geohash: woodenDoorGeohash,
+            beast: "goblin",
+            level: 1,
+        }),
+    ).rejects.toThrow(
+        `Cannot spawn goblin, ${woodenDoorGeohash} is untraversable`,
+    );
+
+    /*
+     * Test `selectMonsterAbility`
+     */
 
     // Test monster ability selection (offensive)
     const ability = selectMonsterAbility(goblin, playerOne as PlayerEntity);
@@ -101,6 +144,10 @@ test("Test Monster", async () => {
     goblin.ap = 0;
     const noAbility = selectMonsterAbility(goblin, playerOne as PlayerEntity);
     expect(noAbility).toBe(null);
+
+    /*
+     * Test `performMonsterActions`
+     */
 
     // Test monster attacking player
     goblin.ap = 10;

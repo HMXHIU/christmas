@@ -59,12 +59,15 @@ export function waitForEventData(
     });
 }
 
-export function generateRandomGeohash(precision: number): string {
+export function generateRandomGeohash(
+    precision: number,
+    startsWith?: string,
+): string {
     const evenChars = "bcfguvyz89destwx2367kmqr0145hjnp".split("");
     const oddChars = "prxznqwyjmtvhksu57eg46df139c028b".split("");
 
-    let geohash = "";
-    for (let i = 0; i < precision; i++) {
+    let geohash = startsWith || "";
+    for (let i = geohash.length; i < precision; i++) {
         if (i % 2 === 0) {
             geohash += evenChars[Math.floor(Math.random() * evenChars.length)];
         } else {

@@ -211,6 +211,12 @@ function tileAtGeohash(
  */
 function biomeAtGeohash(geohash: string, seed?: WorldSeed): string {
     seed = seed || worldSeed;
+
+    // Leave h9* for ice for testing (fully traversable)
+    if (geohash.startsWith("h9")) {
+        return biomes.ice.biome;
+    }
+
     const continent = geohash.charAt(0);
     const probBio = seed.seeds.continent[continent].bio;
     const probWater = seed.seeds.continent[continent].water;
@@ -237,7 +243,7 @@ function biomeAtGeohash(geohash: string, seed?: WorldSeed): string {
  *
  * @param geohash - The geohash geohash to generate biomes for.
  * @param seed - Optional world seed.
- * @returns A record of geohashd to biomes generated with biomeAtGeohash().
+ * @returns A record of geohash to biomes generated with biomeAtGeohash().
  */
 function biomesAtGeohash(
     geohash: string,

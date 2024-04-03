@@ -70,6 +70,14 @@ test("Test Items", async () => {
             "A custom door sign",
     });
 
+    // Test cannot spawn item on collider
+    await expect(
+        spawnItem({
+            geohash: woodenDoorGeohash,
+            prop: compendium.woodenDoor.prop,
+        }),
+    ).rejects.toThrowError("Cannot spawn item in location");
+
     /*
      * Test item configuration (via variables)
      */
