@@ -1,10 +1,5 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
-import {
-    biomeAtGeohash,
-    geohashNeighbour,
-    tileAtGeohash,
-} from "$lib/crossover/world";
-import { biomes } from "$lib/crossover/world/biomes";
+import { biomeAtGeohash, tileAtGeohash } from "$lib/crossover/world";
 import { compendium } from "$lib/crossover/world/compendium";
 import { worldSeed } from "$lib/crossover/world/seed";
 import {
@@ -22,12 +17,9 @@ import {
     configureItem,
     getUserMetadata,
     initPlayerEntity,
+    isDirectionTraversable,
     loadPlayerEntity,
-    loggedInPlayersQuerySet,
-    monstersInGeohashQuerySet,
     performAbility,
-    playerInventoryQuerySet,
-    playersInGeohashQuerySet,
     saveEntity,
     savePlayerEntityState,
     spawnItem,
@@ -44,6 +36,12 @@ import type { MessageFeed } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, internalServiceProcedure, t } from "../trpc";
 import { performMonsterActions, spawnMonsters } from "./dungeonMaster";
+import {
+    loggedInPlayersQuerySet,
+    monstersInGeohashQuerySet,
+    playerInventoryQuerySet,
+    playersInGeohashQuerySet,
+} from "./redis";
 import type {
     Item,
     ItemEntity,
@@ -479,18 +477,17 @@ const crossoverRouter = {
                 ctx.user.publicKey,
             )) as PlayerEntity;
 
-            // Check if next geohash is travasable
-            const nextGeohash = geohashNeighbour(player.location[0], direction);
-            const biome = biomeAtGeohash(nextGeohash);
-
-            // TODO: account for speed
-            if (biomes[biome].traversable > 0) {
-                // Update player geohash
-                player.location = [nextGeohash];
-                await playerRepository.save(player.player, player);
+            // Check if direction is traversable
+            const [isTraversable, location] = await isDirectionTraversable(
+                player,
+                direction,
+            );
+            if (!isTraversable) {
                 return player.location;
             }
 
+            player.location = location;
+            await playerRepository.save(player.player, player);
             return player.location;
         }),
         // cmd.performAbility

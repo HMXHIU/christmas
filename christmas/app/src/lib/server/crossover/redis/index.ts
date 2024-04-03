@@ -6,6 +6,7 @@ import {
     REDIS_PORT,
     REDIS_USERNAME,
 } from "$env/static/private";
+import type { Search } from "redis-om";
 import { Repository } from "redis-om";
 import {
     ItemEntitySchema,
@@ -22,8 +23,13 @@ export {
     initializeClients,
     isEntityBusy,
     itemRepository,
+    itemsInGeohashQuerySet,
+    loggedInPlayersQuerySet,
     monsterRepository,
+    monstersInGeohashQuerySet,
+    playerInventoryQuerySet,
     playerRepository,
+    playersInGeohashQuerySet,
     redisClient,
     redisSubscribeClient,
     saveEntity,
@@ -126,4 +132,63 @@ async function setEnityBusy(entity: string, ms: number) {
 
 async function isEntityBusy(entity: string): Promise<boolean> {
     return (await redisClient.get(`${entity}:busy`)) === "true";
+}
+
+/**
+ * Returns a search query set for logged in players.
+ * @returns A search query set for logged in players.
+ */
+function loggedInPlayersQuerySet(): Search {
+    return playerRepository.search().where("loggedIn").equal(true);
+}
+
+/**
+ * Returns a search query set for players in a specific geohash.
+ * @param geohash The geohash to filter players by.
+ * @returns A search query set for players in the specified geohash.
+ */
+function playersInGeohashQuerySet(geohash: string): Search {
+    // TODO: this should include all children geohashes
+    return loggedInPlayersQuerySet()
+        .and("location")
+        .contains(`${geohash}*`)
+        .and("locationType")
+        .equal("geohash");
+}
+
+/**
+ * Returns a search query set for monsters in a specific geohash.
+ * @param geohash The geohash to filter monsters by.
+ * @returns A search query set for monsters in the specified geohash.
+ */
+function monstersInGeohashQuerySet(geohash: string): Search {
+    return monsterRepository
+        .search()
+        .and("location")
+        .contains(`${geohash}*`)
+        .and("locationType")
+        .equal("geohash");
+}
+
+/**
+ * Retrieves the inventory items for a specific player.
+ * @param player - The name of the player.
+ * @returns A Search object representing the query for player inventory items.
+ */
+function playerInventoryQuerySet(player: string): Search {
+    return itemRepository.search().where("location").contains(player);
+}
+
+/**
+ * Retrieves items in a geohash query set.
+ * @param geohash - The geohash to search for.
+ * @returns A Search object representing the query.
+ */
+function itemsInGeohashQuerySet(geohash: string): Search {
+    return itemRepository
+        .search()
+        .where("location")
+        .contains(`${geohash}*`)
+        .and("locationType")
+        .equal("geohash");
 }

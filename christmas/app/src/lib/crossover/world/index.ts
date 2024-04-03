@@ -1,4 +1,4 @@
-import type { Monster } from "$lib/server/crossover/redis/entities";
+import type { Item, Monster } from "$lib/server/crossover/redis/entities";
 import type { TileSchema } from "$lib/server/crossover/router";
 
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
@@ -6,7 +6,7 @@ import lodash from "lodash";
 import ngeohash from "ngeohash";
 import type { z } from "zod";
 import { biomes } from "./biomes";
-import type { EquipmentSlot } from "./compendium";
+import { itemAttibutes, type EquipmentSlot } from "./compendium";
 import { worldSeed } from "./seed";
 const { groupBy } = lodash;
 
@@ -21,6 +21,7 @@ export {
     directionToVector,
     geohashNeighbour,
     geohashToCell,
+    isGeohashTraversable,
     loadMoreGrid,
     monsterLimitAtGeohash,
     tileAtGeohash,
@@ -528,4 +529,24 @@ function childrenGeohashes(geohash: string): string[] {
             return geohash + c;
         });
     }
+}
+
+async function isGeohashTraversable(
+    geohash: string,
+    items: Item[],
+): Promise<boolean> {
+    // Check if next geohash is traversable
+    const biome = biomeAtGeohash(geohash);
+
+    // Check any untraversable items
+    for (const itemEntity of items) {
+        if (itemAttibutes(itemEntity).traversable <= 0) {
+            console.log("Item is untraversable", itemEntity);
+            return false;
+        }
+    }
+
+    console.log(`Biome is ${biomes[biome].traversable}`);
+
+    return biomes[biome].traversable > 0;
 }

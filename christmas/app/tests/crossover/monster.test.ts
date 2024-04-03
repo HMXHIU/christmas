@@ -51,7 +51,6 @@ test("Test Monster", async () => {
         beast: "dragon",
         level: 1,
     });
-
     expect(dragon).toMatchObject({
         location: [
             "w21z3we7",

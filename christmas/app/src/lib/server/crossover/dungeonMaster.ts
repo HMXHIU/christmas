@@ -10,7 +10,8 @@ import {
     type Beast,
 } from "$lib/crossover/world/bestiary";
 import { worldSeed } from "$lib/crossover/world/seed";
-import { monstersInGeohashQuerySet, performAbility, spawnMonster } from ".";
+import { performAbility, spawnMonster } from ".";
+import { monstersInGeohashQuerySet } from "./redis";
 import type { MonsterEntity, PlayerEntity } from "./redis/entities";
 
 export {

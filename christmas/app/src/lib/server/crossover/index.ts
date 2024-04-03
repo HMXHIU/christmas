@@ -2,6 +2,9 @@ import {
     MS_PER_TICK,
     calculateLocation,
     childrenGeohashes,
+    geohashNeighbour,
+    isGeohashTraversable,
+    type Direction,
 } from "$lib/crossover/world";
 import {
     abilities,
@@ -21,12 +24,12 @@ import { worldSeed } from "$lib/crossover/world/seed";
 import { serverAnchorClient } from "$lib/server";
 import { parseZodErrors, sleep } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
-import type { Search } from "redis-om";
 import { z } from "zod";
 import { ObjectStorage } from "../objectStorage";
 import {
     isEntityBusy,
     itemRepository,
+    itemsInGeohashQuerySet,
     monsterRepository,
     playerRepository,
     redisClient,
@@ -50,13 +53,10 @@ export {
     getPlayerMetadata,
     getUserMetadata,
     initPlayerEntity,
+    isDirectionTraversable,
     itemVariableValue,
     loadPlayerEntity,
-    loggedInPlayersQuerySet,
-    monstersInGeohashQuerySet,
     performAbility,
-    playerInventoryQuerySet,
-    playersInGeohashQuerySet,
     saveEntity,
     savePlayerEntityState,
     setPlayerState,
@@ -294,52 +294,6 @@ async function savePlayerEntityState(publicKey: string): Promise<string> {
         publicKey,
         (await playerRepository.fetch(publicKey)) as PlayerEntity,
     );
-}
-
-/**
- * Returns a search query set for logged in players.
- * @returns A search query set for logged in players.
- */
-function loggedInPlayersQuerySet(): Search {
-    return playerRepository.search().where("loggedIn").equal(true);
-}
-
-/**
- * Returns a search query set for players in a specific geohash.
- * @param geohash The geohash to filter players by.
- * @returns A search query set for players in the specified geohash.
- */
-function playersInGeohashQuerySet(geohash: string): Search {
-    // TODO: this should include all children geohashes
-    return loggedInPlayersQuerySet()
-        .and("location")
-        .contains(`${geohash}*`)
-        .and("locationType")
-        .equal("geohash");
-}
-
-/**
- * Returns a search query set for monsters in a specific geohash.
- * @param geohash The geohash to filter monsters by.
- * @returns A search query set for monsters in the specified geohash.
- */
-function monstersInGeohashQuerySet(geohash: string): Search {
-    return monsterRepository
-        .search()
-        .and("location")
-        .contains(`${geohash}*`)
-        .and("locationType")
-        .equal("geohash");
-}
-
-/**
- * Retrieves the inventory items for a specific player.
- *
- * @param player - The name of the player.
- * @returns A Search object representing the query for player inventory items.
- */
-function playerInventoryQuerySet(player: string): Search {
-    return itemRepository.search().where("location").contains(player);
 }
 
 /**
@@ -1047,4 +1001,32 @@ async function publishEffectToPlayer(player: string, effect: ProcedureEffect) {
             variables: {},
         }),
     );
+}
+
+async function isDirectionTraversable(
+    entity: PlayerEntity | MonsterEntity,
+    direction: Direction,
+): Promise<[boolean, string[]]> {
+    let location: string[] = [];
+
+    for (const geohash of entity.location) {
+        const nextGeohash = geohashNeighbour(geohash, direction);
+
+        // Inside current location is always traversable
+        if (entity.location.includes(nextGeohash)) {
+            location.push(nextGeohash);
+            continue;
+        }
+        // Get items in next geohash
+        const items = (await itemsInGeohashQuerySet(
+            nextGeohash,
+        ).return.all()) as ItemEntity[];
+
+        if (!(await isGeohashTraversable(nextGeohash, items))) {
+            return [false, entity.location];
+        } else {
+            location.push(nextGeohash);
+        }
+    }
+    return [true, location];
 }

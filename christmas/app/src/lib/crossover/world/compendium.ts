@@ -1,7 +1,4 @@
-import type {
-    EntityType,
-    ItemEntity,
-} from "$lib/server/crossover/redis/entities";
+import type { EntityType, Item } from "$lib/server/crossover/redis/entities";
 import { substituteVariables } from "$lib/utils";
 import lodash from "lodash";
 import { type AssetMetadata } from ".";
@@ -245,6 +242,41 @@ let compendium: Record<string, Prop> = {
             },
         },
     },
+    tavern: {
+        prop: "tavern",
+        defaultName: "Tavern",
+        // TODO: Add tavern asset
+        asset: {
+            bundle: "props",
+            name: "gothic",
+            variants: {
+                default: "tavern",
+            },
+            width: 2,
+            height: 2,
+            precision: worldSeed.spatial.unit.precision,
+        },
+        defaultState: "default",
+        durability: 100,
+        charges: 0,
+        weight: -1, // cannot be taken
+        states: {
+            default: {
+                traversable: -1, // not traversable
+                destructible: false,
+                description: "A humble tavern. ${description}",
+                variant: "default",
+            },
+        },
+        actions: {},
+        variables: {
+            description: {
+                variable: "description",
+                type: "string",
+                value: "A plain wooden door greets you.",
+            },
+        },
+    },
     portal: {
         prop: "portal",
         defaultName: "Portal",
@@ -308,9 +340,9 @@ let compendium: Record<string, Prop> = {
  * @param item - The item entity for which to retrieve the attributes.
  * @returns The attributes of the item after variable substitution.
  */
-function itemAttibutes(item: ItemEntity): PropAttributes {
+function itemAttibutes(item: Item): PropAttributes {
     const state = cloneDeep(compendium[item.prop].states[item.state]);
-    const variables = JSON.parse(item.variables);
+    const variables = JSON.parse(item.variables); // TODO: Use a more efficient way to store variables
     // Replace variables in description
     state.description = substituteVariables(
         state.description,
