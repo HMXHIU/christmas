@@ -271,7 +271,7 @@ test("Test Player", async () => {
     })) as ItemEntity;
     expect(woodenDoor).toMatchObject({
         state: "closed",
-        variables: '{"doorSign":"A custom door sign"}',
+        variables: { doorSign: "A custom door sign" },
     });
 
     // Configure woodenDoor
@@ -289,7 +289,7 @@ test("Test Player", async () => {
     ).item;
     expect(woodenDoor).toMatchObject({
         state: "closed",
-        variables: '{"doorSign":"A new door sign"}',
+        variables: { doorSign: "A new door sign" },
     });
 
     /*
@@ -311,7 +311,7 @@ test("Test Player", async () => {
         prop: "woodenDoor",
         location: woodenDoor.location,
         state: "open",
-        variables: '{"doorSign":"A new door sign"}',
+        variables: { doorSign: "A new door sign" },
     });
     woodenDoor = item as ItemEntity;
     expect(itemAttibutes(woodenDoor)).toMatchObject({
@@ -399,7 +399,7 @@ test("Test Player", async () => {
         owner: playerOne.player, // playerOne owns the woodenClub
         configOwner: playerOne.player, // playerOne can configure the woodenClub
         state: "default",
-        variables: "{}",
+        variables: {},
         debuffs: [],
         buffs: [],
     });

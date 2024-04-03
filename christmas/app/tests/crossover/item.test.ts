@@ -6,7 +6,6 @@ import {
     configureItem,
     itemVariableValue,
     spawnItem,
-    updatedItemVariables,
     useItem,
 } from "$lib/server/crossover";
 import type {
@@ -65,7 +64,7 @@ test("Test Items", async () => {
         debuffs: [],
         buffs: [],
     });
-    expect(JSON.parse(woodenDoor.variables)).toMatchObject({
+    expect(woodenDoor.variables).toMatchObject({
         [compendium.woodenDoor.variables!.doorSign.variable]:
             "A custom door sign",
     });
@@ -191,15 +190,6 @@ test("Test Items", async () => {
     // Test `itemVariableValue`
     const portalOneTarget = await itemVariableValue(portalOne, "target");
     expect(portalOneTarget).toMatchObject(portalTwo);
-
-    // Test `updatedItemVariables`
-    const newVariables = updatedItemVariables(portalOne, {
-        description: `Portal One updated description.`,
-    });
-    expect(JSON.parse(newVariables)).toMatchObject({
-        description: "Portal One updated description.",
-        target: portalTwo.item,
-    });
 
     /*
      * Test using item ability
@@ -365,6 +355,6 @@ test("Test Items", async () => {
         })
     ).item;
     expect(woodenDoor).toMatchObject({
-        variables: '{"doorSign":"A public door sign"}',
+        variables: { doorSign: "A public door sign" },
     });
 });

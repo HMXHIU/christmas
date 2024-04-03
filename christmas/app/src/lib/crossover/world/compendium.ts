@@ -76,11 +76,10 @@ type ItemVariables = Record<string, string | number | boolean>;
  */
 function itemAttibutes(item: Item): PropAttributes {
     const state = cloneDeep(compendium[item.prop].states[item.state]);
-    const variables = JSON.parse(item.variables); // TODO: Use a more efficient way to store variables
     // Replace variables in description
     state.description = substituteVariables(
         state.description,
-        variables,
+        item.variables,
     ) as string;
     return state;
 }

@@ -422,7 +422,7 @@ async function spawnItem({
         durability: durability,
         charges: charges,
         state: defaultState,
-        variables: JSON.stringify(parseItemVariables(variables || {}, prop)),
+        variables: parseItemVariables(variables || {}, prop),
         debuffs: [],
         buffs: [],
     };
@@ -464,7 +464,11 @@ async function configureItem({
     }
 
     // Save item with updated variables
-    item.variables = updatedItemVariables(item, variables);
+    item.variables = {
+        ...item.variables,
+        ...parseItemVariables(variables, item.prop),
+    };
+
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
 
     return {
@@ -752,34 +756,28 @@ function parseItemVariables(
     return itemVariables;
 }
 
-function updatedItemVariables(
-    item: ItemEntity,
-    variables: ItemVariables,
-): string {
-    return JSON.stringify({
-        ...JSON.parse(item.variables),
-        ...parseItemVariables(variables, item.prop),
-    });
-}
-
 async function itemVariableValue(
     item: ItemEntity,
     key: string,
 ): Promise<
     string | number | boolean | PlayerEntity | MonsterEntity | ItemEntity
 > {
-    const itemVariables = JSON.parse(item.variables);
+    const itemVariables = item.variables;
     const propVariables = compendium[item.prop].variables;
 
     const { type } = propVariables[key];
     const variable = itemVariables[key];
 
     if (type === "item") {
-        return (await itemRepository.fetch(variable)) as ItemEntity;
+        return (await itemRepository.fetch(variable as string)) as ItemEntity;
     } else if (type === "player") {
-        return (await playerRepository.fetch(variable)) as PlayerEntity;
+        return (await playerRepository.fetch(
+            variable as string,
+        )) as PlayerEntity;
     } else if (type === "monster") {
-        return (await monsterRepository.fetch(variable)) as MonsterEntity;
+        return (await monsterRepository.fetch(
+            variable as string,
+        )) as MonsterEntity;
     } else if (type === "string") {
         return String(variable);
     } else if (type === "number") {

@@ -106,7 +106,9 @@ const ItemEntitySchema = new Schema("Item", {
     item: { type: "string" },
     name: { type: "string" },
     prop: { type: "string" },
-    variables: { type: "string" }, // JSON string non searchable
+
+    // variables: { type: "string" }, // JSON string non searchable
+
     owner: { type: "string" }, // who owns or can use the item (player | monster | public (empty) | dm)
     configOwner: { type: "string" }, // who can configure the item (player | monster | public (empty) | dm)
     collider: { type: "boolean" },
@@ -124,7 +126,9 @@ interface Item {
     item: string;
     name: string;
     prop: string;
-    variables: string;
+
+    variables: Record<string, string | number | boolean>; // not searchable
+
     owner: string;
     configOwner: string;
     collider: boolean;
