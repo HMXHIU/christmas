@@ -1,6 +1,11 @@
 <script lang="ts">
     import { abyssTile, geohashToGridCell } from "$lib/crossover/world";
-    import { bestiary, biomes } from "$lib/crossover/world/settings";
+    import { playerAsset } from "$lib/crossover/world/player";
+    import {
+        bestiary,
+        biomes,
+        compendium,
+    } from "$lib/crossover/world/settings";
     import type { TileSchema } from "$lib/server/crossover/router";
     import {
         AnimatedSprite,
@@ -11,7 +16,7 @@
     } from "pixi.js";
     import { onMount } from "svelte";
     import type { z } from "zod";
-    import { grid } from "../../../store";
+    import { grid, player } from "../../../store";
 
     const CANVAS_WIDTH = 200;
     const CANVAS_HEIGHT = 200;
@@ -49,7 +54,10 @@
         y: number;
     }
 
-    // Example: gridSprites[row][col][monster|biome] = {sprite, x, y}, [monster|biome] is a unique identifier (w.r.t the grid cell to allow update)
+    /**
+     * Example: gridSprites[row][col][monster|player|item|biome] = {sprite, x, y}
+     * [monster|player|item|biome] is a unique identifier (w.r.t the grid cell to allow update)
+     */
     let gridSprites: Record<
         number,
         Record<number, Record<string, GridSprite>>
@@ -64,8 +72,11 @@
     }
 
     async function drawPlayer() {
-        const { player } = await Assets.loadBundle("player");
-        const playerSprite = new AnimatedSprite(player.animations["stand"]);
+        // TODO: use playerAsset
+        const { player: playerBundle } = await Assets.loadBundle("player");
+        const playerSprite = new AnimatedSprite(
+            playerBundle.animations["stand"],
+        );
         playerSprite.x = CANVAS_MID_COL * CELL_WIDTH;
         playerSprite.y = CANVAS_MID_ROW * CELL_HEIGHT;
         playerSprite.width = CELL_WIDTH;
@@ -192,7 +203,59 @@
                     }
                 }
 
-                // Fill in monsters
+                // Fill in players
+                const players =
+                    $grid?.[cell.precision]?.[gridRow]?.[gridCol]?.players;
+                if (players) {
+                    for (const p of Object.values(players)) {
+                        // Skip the current player
+                        if (p.player === $player?.player) {
+                            continue;
+                        }
+
+                        const sprite = await loadSprite({
+                            asset: playerAsset,
+                            col,
+                            row,
+                            alpha,
+                        });
+                        if (sprite) {
+                            setGridSprite(gridRow, gridCol, {
+                                id: p.player,
+                                sprite: world.addChild(sprite),
+                                x: sprite.x,
+                                y: sprite.y,
+                            });
+                        }
+                    }
+                }
+
+                // Fill in items (TODO: account for items with > 1 cell)
+                const items =
+                    $grid?.[cell.precision]?.[gridRow]?.[gridCol]?.items;
+                if (items) {
+                    for (const item of Object.values(items)) {
+                        const asset = compendium[item.item]?.asset;
+                        if (asset) {
+                            const sprite = await loadSprite({
+                                asset,
+                                col,
+                                row,
+                                alpha,
+                            });
+                            if (sprite) {
+                                setGridSprite(gridRow, gridCol, {
+                                    id: item.item,
+                                    sprite: world.addChild(sprite),
+                                    x: sprite.x,
+                                    y: sprite.y,
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // Fill in monsters (TODO: account for items with > 1 cell)
                 const monsters =
                     $grid?.[cell.precision]?.[gridRow]?.[gridCol]?.monsters;
                 if (monsters) {

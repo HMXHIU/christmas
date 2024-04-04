@@ -213,11 +213,11 @@ async function commandLook(
 ): Promise<{ players: Player[]; tile: z.infer<typeof TileSchema> }> {
     const { target } = input;
     const result = await trpc({ headers }).crossover.cmd.look.query({ target });
-    const { monsters, players, tile } = result;
+    const { monsters, players, items, tile } = result;
 
-    // Update grid
+    // Update `grid` with monsters, props, and players
     grid.update((g) => {
-        return updateGrid({ grid: g, monsters });
+        return updateGrid({ grid: g, monsters, players, items });
     });
 
     return result;
@@ -303,3 +303,14 @@ function commandConfigureItem(
         variables,
     });
 }
+
+// function commandSpawnMonster(
+//     input: { geohash: string; monster: string },
+//     headers: HTTPHeaders = {},
+// ) {
+//     const { geohash, monster } = input;
+//     return trpc({ headers }).crossover.cmd.spawnMonster.query({
+//         geohash,
+//         monster,
+//     });
+// }

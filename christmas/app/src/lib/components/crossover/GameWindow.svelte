@@ -18,6 +18,7 @@
         FlameKindling,
         Grab,
         MessageSquare,
+        Wand2,
     } from "lucide-svelte";
     import ChevronsUpDown from "lucide-svelte/icons/chevrons-up-down";
     import { Assets } from "pixi.js";
@@ -102,6 +103,26 @@
                     icon: FlameKindling,
                     shortcut: "⌘R",
                     description: "Rest and recover.",
+                },
+            ],
+        ],
+        // Dungeon Master
+        [
+            { key: "dm", label: "Dungeon Master" },
+            [
+                {
+                    key: "spawnItem",
+                    label: "Spawn Item",
+                    icon: Wand2,
+                    shortcut: "",
+                    description: "Spawn Item.",
+                },
+                {
+                    key: "spawnMonster",
+                    label: "Spawn Monster",
+                    icon: Wand2,
+                    shortcut: "",
+                    description: "Spawn Monster.",
                 },
             ],
         ],

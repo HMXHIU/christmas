@@ -4,7 +4,10 @@ import {
     updateGrid,
     type WorldSeed,
 } from "$lib/crossover/world";
-import { biomeAtGeohash, biomesAtGeohash } from "$lib/crossover/world/biomes";
+import {
+    biomeAtGeohash,
+    biomesNearbyGeohash,
+} from "$lib/crossover/world/biomes";
 import { expect } from "chai";
 import { test } from "vitest";
 
@@ -77,8 +80,8 @@ test("Test World", async () => {
     expect(biomeAtGeohash("w21z3m6k", worldSeed)).to.equal("forest");
     expect(biomeAtGeohash("w61z4m6h", worldSeed)).to.equal("water");
 
-    // Test biomesAtGeohash - 7 digits of precision returns tiles with 8 digits of precision
-    expect(biomesAtGeohash("w61z4m6", worldSeed)).to.deep.equal({
+    // Test biomesNearbyGeohash - 7 digits of precision returns tiles with 8 digits of precision
+    expect(biomesNearbyGeohash("w61z4m6", worldSeed)).to.deep.equal({
         w61z4m1z: "forest",
         w61z4m4p: "forest",
         w61z4m4r: "forest",
@@ -128,7 +131,10 @@ test("Test World", async () => {
 
     // Test updateGrid
     let grid = {};
-    grid = updateGrid({ grid, biomes: biomesAtGeohash("w61z4m6", worldSeed) });
+    grid = updateGrid({
+        grid,
+        biomes: biomesNearbyGeohash("w61z4m6", worldSeed),
+    });
 
     expect(grid).to.deep.equal({
         "8": {

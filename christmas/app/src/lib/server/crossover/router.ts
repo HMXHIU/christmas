@@ -5,6 +5,7 @@ import {
     fetchEntity,
     initializeClients,
     itemRepository,
+    itemsInGeohashQuerySet,
     playerRepository,
     redisClient,
 } from "$lib/server/crossover/redis";
@@ -443,28 +444,36 @@ const crossoverRouter = {
             .query(async ({ ctx, input }) => {
                 // Get player
                 const player = await tryFetchEntity(ctx.user.publicKey);
+                const parentGeohash = player.location[0].slice(0, -1);
 
-                // Get logged in players in geohash
+                // Get players in surrounding
                 const players = (await playersInGeohashQuerySet(
-                    player.location[0],
+                    parentGeohash,
                 ).return.all({
-                    pageSize: LOOK_PAGE_SIZE,
+                    pageSize: LOOK_PAGE_SIZE, // limit players using page size
                 })) as PlayerEntity[];
 
                 // Get monsters in surrounding (don't use page size for monsters)
                 const monsters = (await monstersInGeohashQuerySet(
-                    player.location[0].slice(0, -1),
+                    parentGeohash,
                 ).return.all()) as MonsterEntity[];
 
                 // Get tile
-                const biome = biomeAtGeohash(player.location[0]);
+                const tile = tileAtGeohash(
+                    player.location[0],
+                    biomeAtGeohash(player.location[0]),
+                );
 
-                // TODO: inclue POI when generating tile
+                // Get items
+                const items = (await itemsInGeohashQuerySet(
+                    parentGeohash,
+                ).return.all()) as ItemEntity[];
 
                 return {
-                    tile: tileAtGeohash(player.location[0], biome),
+                    tile,
                     players: players as Player[],
                     monsters: monsters as Monster[],
+                    items: items as Item[],
                 };
             }),
         // cmd.move

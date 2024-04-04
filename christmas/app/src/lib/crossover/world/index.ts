@@ -1,9 +1,13 @@
-import type { Monster } from "$lib/server/crossover/redis/entities";
+import type {
+    Item,
+    Monster,
+    Player,
+} from "$lib/server/crossover/redis/entities";
 import type { TileSchema } from "$lib/server/crossover/router";
 import lodash from "lodash";
 import ngeohash from "ngeohash";
 import type { z } from "zod";
-import { biomesAtGeohash } from "./biomes";
+import { biomesNearbyGeohash } from "./biomes";
 import { type EquipmentSlot } from "./compendium";
 const { groupBy } = lodash;
 
@@ -47,6 +51,8 @@ type LocationType =
 interface GridEntry {
     biome?: string; // can be procedurally generated at client
     monsters?: Record<string, Monster>; // needs to be fetched from server (spawned by dungeon master)
+    players?: Record<string, Player>; // needs to be fetched from server
+    items?: Record<string, Item>; // needs to be fetched from server
 }
 type Grid = Record<number, Record<number, Record<number, GridEntry>>>;
 
@@ -106,24 +112,51 @@ const gridSizeAtPrecision: Record<number, { rows: number; cols: number }> = {
 };
 
 /**
- * Updates the provided grid with biomes from the biomes record.
- * Iterates through the biomes record entries, gets the latitude/longitude for each geohash,
- * calculates the row/col in the grid based on the geohash precision, and sets the biome value.
- * Initializes grid cells if they don't already exist.
+ * Loads more grid data (biome only) based on the given geohash and grid.
+ *
+ * @param geohash - The current geohash to load more grid data for.
+ * @param grid - The current grid data.
+ * @returns The updated grid data.
+ */
+function loadMoreGrid(geohash: string, grid: Grid): Grid {
+    const parentGeohash = geohash.slice(0, -1);
+
+    // Update grid with biomes
+    const biomes = biomesNearbyGeohash(parentGeohash);
+    grid = updateGrid({ grid, biomes });
+
+    // Get neighbor geohashes of parent
+    ngeohash.neighbors(parentGeohash).forEach((neighborGeohash) => {
+        // Update grid with biomes if not previously loaded
+        const biomes = biomesNearbyGeohash(neighborGeohash);
+        grid = updateGrid({ grid, biomes });
+    });
+
+    return grid;
+}
+
+/**
+ * Updates the provided grid with biomes, monsters, players, and items.
  *
  * @param grid - The grid to update with biomes.
  * @param biomes - Record of geohash strings to biome names.
  * @param monsters - Array of monsters to add to the grid.
+ * @param players - Array of players to add to the grid.
+ * @param items - Array of items to add to the grid.
  * @returns The updated grid.
  */
 function updateGrid({
     grid,
     biomes,
     monsters,
+    players,
+    items,
 }: {
     grid: Grid;
     biomes?: Record<string, string>;
     monsters?: Monster[];
+    players?: Player[];
+    items?: Item[];
 }) {
     // Update biomes
     if (biomes) {
@@ -139,7 +172,7 @@ function updateGrid({
         }
     }
 
-    // Update monsters
+    // Update monsters (TODO: account for monsters with > 1 cell)
     if (monsters && monsters.length > 0) {
         for (const [geohash, mxs] of Object.entries(
             groupBy(monsters, (monster) => monster.location[0]),
@@ -161,7 +194,49 @@ function updateGrid({
         }
     }
 
-    // TODO: Update grid with POIs
+    // Update players
+    if (players && players.length > 0) {
+        for (const [geohash, pxs] of Object.entries(
+            groupBy(players, (player) => player.location[0]),
+        )) {
+            const { precision, row, col } = geohashToGridCell(geohash);
+            updateGridEntry({
+                grid,
+                precision,
+                row,
+                col,
+                players: pxs.reduce(
+                    (acc, px) => {
+                        acc[px.player] = px;
+                        return acc;
+                    },
+                    {} as Record<string, Player>,
+                ),
+            });
+        }
+    }
+
+    // Update items (TODO: account for monsters with > 1 cell)
+    if (items && items.length > 0) {
+        for (const [geohash, ixs] of Object.entries(
+            groupBy(items, (item) => item.location[0]),
+        )) {
+            const { precision, row, col } = geohashToGridCell(geohash);
+            updateGridEntry({
+                grid,
+                precision,
+                row,
+                col,
+                items: ixs.reduce(
+                    (acc, ix) => {
+                        acc[ix.item] = ix;
+                        return acc;
+                    },
+                    {} as Record<string, Item>,
+                ),
+            });
+        }
+    }
 
     return grid;
 }
@@ -183,6 +258,8 @@ function updateGridEntry({
     row,
     col,
     monsters,
+    players,
+    items,
     biome,
 }: {
     grid: Grid;
@@ -190,6 +267,8 @@ function updateGridEntry({
     row: number;
     col: number;
     monsters?: Record<string, Monster>;
+    players?: Record<string, Player>;
+    items?: Record<string, Item>;
     biome?: string;
 }) {
     grid[precision] ??= {};
@@ -199,30 +278,18 @@ function updateGridEntry({
     if (monsters != null) {
         grid[precision][row][col].monsters = monsters;
     }
+
+    if (players != null) {
+        grid[precision][row][col].players = players;
+    }
+
+    if (items != null) {
+        grid[precision][row][col].items = items;
+    }
+
     if (biome != null) {
         grid[precision][row][col].biome = biome;
     }
-}
-
-/**
- * Loads more grid data based on the given geohash and grid.
- * @param geohash - The current geohash to load more grid data for.
- * @param grid - The current grid data.
- * @returns The updated grid data.
- */
-function loadMoreGrid(geohash: string, grid: Grid): Grid {
-    const parentGeohash = geohash.slice(0, -1);
-    const biomes = biomesAtGeohash(parentGeohash);
-    grid = updateGrid({ grid, biomes });
-
-    // Get neighbor geohashes of parent
-    ngeohash.neighbors(parentGeohash).forEach((neighborGeohash) => {
-        // Update grid with biomes if not previously loaded
-        const biomes = biomesAtGeohash(neighborGeohash);
-        grid = updateGrid({ grid, biomes });
-    });
-
-    return grid;
 }
 
 /**

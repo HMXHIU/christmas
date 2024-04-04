@@ -45,6 +45,12 @@
                 await look();
                 break;
 
+            case "spawnItem":
+                break;
+
+            case "spawnMonster":
+                break;
+
             default:
                 console.warn("Unknown command:", command?.key, message);
                 break;

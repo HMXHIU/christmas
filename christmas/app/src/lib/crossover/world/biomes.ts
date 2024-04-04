@@ -4,7 +4,7 @@ import ngeohash from "ngeohash";
 import type { z } from "zod";
 import { type AssetMetadata, type WorldSeed } from ".";
 import { biomes, worldSeed } from "./settings";
-export { biomeAtGeohash, biomesAtGeohash, tileAtGeohash, type Biome };
+export { biomeAtGeohash, biomesNearbyGeohash, tileAtGeohash, type Biome };
 
 interface Biome {
     biome: string;
@@ -51,16 +51,14 @@ function biomeAtGeohash(geohash: string, seed?: WorldSeed): string {
 }
 
 /**
- * Generates biomes for all geohash at one precision higher than the provided geohash,
- * using the biomeAtGeohash() function.
- *
- * TODO: Add caching to avoid redundant calls to biomeAtGeohash().
+ * Generates biomes in the vincinity of the given geohash by iterating
+ * over all child geohashes at a precision 1 higher than the given geohash
  *
  * @param geohash - The geohash geohash to generate biomes for.
  * @param seed - Optional world seed.
  * @returns A record of geohash to biomes generated with biomeAtGeohash().
  */
-function biomesAtGeohash(
+function biomesNearbyGeohash(
     geohash: string,
     seed?: WorldSeed,
 ): Record<string, string> {
