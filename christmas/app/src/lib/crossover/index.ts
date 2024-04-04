@@ -1,9 +1,6 @@
 import { PUBLIC_HOST } from "$env/static/public";
 import type { TransactionResult } from "$lib/anchorClient/types";
-import type {
-    PlayerMetadataSchema,
-    TileSchema,
-} from "$lib/server/crossover/router";
+import type { PlayerMetadataSchema } from "$lib/server/crossover/router";
 import { trpc } from "$lib/trpcClient";
 import { retry, signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
@@ -210,14 +207,18 @@ function commandSay(
 async function commandLook(
     input: { target?: string },
     headers: HTTPHeaders = {},
-): Promise<{ players: Player[]; tile: z.infer<typeof TileSchema> }> {
+) {
     const { target } = input;
     const result = await trpc({ headers }).crossover.cmd.look.query({ target });
-    const { monsters, players, items, tile } = result;
 
     // Update `grid` with monsters, props, and players
     grid.update((g) => {
-        return updateGrid({ grid: g, monsters, players, items });
+        return updateGrid({
+            grid: g,
+            monsters: result.monsters,
+            players: result.players,
+            items: result.items,
+        });
     });
 
     return result;
@@ -303,14 +304,3 @@ function commandConfigureItem(
         variables,
     });
 }
-
-// function commandSpawnMonster(
-//     input: { geohash: string; monster: string },
-//     headers: HTTPHeaders = {},
-// ) {
-//     const { geohash, monster } = input;
-//     return trpc({ headers }).crossover.cmd.spawnMonster.query({
-//         geohash,
-//         monster,
-//     });
-// }

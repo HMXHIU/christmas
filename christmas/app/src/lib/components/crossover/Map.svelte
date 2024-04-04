@@ -233,9 +233,10 @@
                 // Fill in items (TODO: account for items with > 1 cell)
                 const items =
                     $grid?.[cell.precision]?.[gridRow]?.[gridCol]?.items;
+
                 if (items) {
                     for (const item of Object.values(items)) {
-                        const asset = compendium[item.item]?.asset;
+                        const asset = compendium[item.prop]?.asset;
                         if (asset) {
                             const sprite = await loadSprite({
                                 asset,

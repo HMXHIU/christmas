@@ -9,7 +9,11 @@
     import * as Collapsible from "$lib/components/ui/collapsible/index.js";
     import type { Direction } from "$lib/crossover/world";
     import { abyssTile } from "$lib/crossover/world";
-    import type { Player } from "$lib/server/crossover/redis/entities";
+    import type {
+        Item,
+        Monster,
+        Player,
+    } from "$lib/server/crossover/redis/entities";
     import type { TileSchema } from "$lib/server/crossover/router";
     import { cn } from "$lib/shadcn";
     import {
@@ -28,6 +32,8 @@
     import Map from "./Map.svelte";
 
     export let players: Player[] = [];
+    export let monsters: Monster[] = [];
+    export let items: Item[] = [];
     export let tile: z.infer<typeof TileSchema> = abyssTile;
     export let onMove: (direction: Direction) => void;
 
@@ -145,7 +151,13 @@
         class="h-3/5"
     ></Chat>
     <!-- Context Section -->
-    <ContextSection {players} {tile} {onMove} class="h-2/5 pt-2"
+    <ContextSection
+        {players}
+        {monsters}
+        {items}
+        {tile}
+        {onMove}
+        class="h-2/5 pt-2"
     ></ContextSection>
     <!-- Map -->
     <div class="fixed top-20 right-0">

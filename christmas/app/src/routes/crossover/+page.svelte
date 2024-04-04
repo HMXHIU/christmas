@@ -2,9 +2,11 @@
     import GameWindow from "$lib/components/crossover/GameWindow.svelte";
     import Onboard from "$lib/components/crossover/Onboard.svelte";
     import {
+        commandCreateItem,
         commandLook,
         commandMove,
         commandSay,
+        commandUseItem,
         stream,
     } from "$lib/crossover";
 
@@ -18,7 +20,12 @@
         loadMoreGrid,
         type Direction,
     } from "$lib/crossover/world";
-    import type { Player } from "$lib/server/crossover/redis/entities";
+    import { compendium } from "$lib/crossover/world/settings";
+    import type {
+        Item,
+        Monster,
+        Player,
+    } from "$lib/server/crossover/redis/entities";
     import type { TileSchema } from "$lib/server/crossover/router";
     import { substituteVariables } from "$lib/utils";
     import { onMount } from "svelte";
@@ -31,6 +38,8 @@
     let closeStream: (() => void) | null = null;
     let tile: z.infer<typeof TileSchema> = abyssTile;
     let players: Player[] = [];
+    let items: Item[] = [];
+    let monsters: Monster[] = [];
 
     async function onChatMessage(
         command: ChatCommandUI | null,
@@ -46,6 +55,21 @@
                 break;
 
             case "spawnItem":
+                // Test spawn wooden door
+                const item = await commandCreateItem({
+                    geohash: tile.geohash,
+                    prop: compendium.woodenDoor.prop,
+                });
+                console.log(JSON.stringify(item, null, 2));
+                break;
+
+            case "useItem":
+                // Test use wooden door
+                const usedItem = await commandUseItem({
+                    item: "",
+                    action: "open",
+                });
+                console.log(JSON.stringify(usedItem, null, 2));
                 break;
 
             case "spawnMonster":
@@ -55,6 +79,14 @@
                 console.warn("Unknown command:", command?.key, message);
                 break;
         }
+    }
+
+    async function look() {
+        const lookResult = await commandLook({});
+        players = lookResult.players;
+        tile = lookResult.tile;
+        monsters = lookResult.monsters;
+        items = lookResult.items;
     }
 
     async function onMove(direction: Direction) {
@@ -120,12 +152,6 @@
         }
     }
 
-    async function look() {
-        const lookResult = await commandLook({});
-        players = lookResult.players;
-        tile = lookResult.tile;
-    }
-
     onMount(() => {
         // Start streaming crossover server events on login
         const unsubscribe = player.subscribe(async (p) => {
@@ -160,5 +186,7 @@
         {messageFeed}
         {tile}
         {players}
+        {items}
+        {monsters}
     />
 {/if}

@@ -3,7 +3,11 @@
     import { ScrollArea } from "$lib/components/ui/scroll-area";
     import type { z } from "zod";
 
-    import type { Player } from "$lib/server/crossover/redis/entities";
+    import type {
+        Item,
+        Monster,
+        Player,
+    } from "$lib/server/crossover/redis/entities";
     import type { TileSchema } from "$lib/server/crossover/router";
     import {
         ArrowDown,
@@ -34,6 +38,8 @@
 
     export let tile: z.infer<typeof TileSchema> = abyssTile;
     export let players: Player[] = [];
+    export let monsters: Monster[] = [];
+    export let items: Item[] = [];
 
     export let onMove: (direction: Direction) => void;
 </script>
@@ -59,8 +65,6 @@
                                 {tile.description}
                             </p>
 
-                            <!-- NPCs -->
-                            <!-- Items -->
                             <!-- Players -->
                             {#if players.length > 0}
                                 <p class="text-sm text-primary-background">
@@ -72,6 +76,34 @@
                             >
                                 {#each players as player (player.player)}
                                     <p>{player.name}</p>
+                                {/each}
+                            </div>
+
+                            <!-- Monsters -->
+                            {#if monsters.length > 0}
+                                <p class="text-sm text-primary-background">
+                                    You see some creatures here
+                                </p>
+                            {/if}
+                            <div
+                                class="flex gap-2 text-sm text-muted-foreground"
+                            >
+                                {#each monsters as monster (monster.monster)}
+                                    <p>{monster.name}</p>
+                                {/each}
+                            </div>
+
+                            <!-- Items -->
+                            {#if items.length > 0}
+                                <p class="text-sm text-primary-background">
+                                    You see some items here
+                                </p>
+                            {/if}
+                            <div
+                                class="flex gap-2 text-sm text-muted-foreground"
+                            >
+                                {#each items as item (item.item)}
+                                    <p>{item.name}</p>
                                 {/each}
                             </div>
                         </ScrollArea>
