@@ -10,7 +10,7 @@ import {
 import BN from "bn.js";
 import bs58 from "bs58";
 import { z } from "zod";
-import type { TransactionResult } from "../anchorClient/types";
+import type { TransactionResult } from "./anchorClient/types";
 
 export {
     calculateDistance,

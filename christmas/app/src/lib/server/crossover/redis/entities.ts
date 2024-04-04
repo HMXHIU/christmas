@@ -7,6 +7,7 @@ export {
     PlayerEntitySchema,
     type EntityState,
     type EntityType,
+    type GameEntity,
     type Item,
     type ItemEntity,
     type Monster,
@@ -16,6 +17,7 @@ export {
 };
 
 type EntityType = "player" | "monster" | "item";
+type GameEntity = Monster | Player | Item;
 
 interface EntityState {
     location: string[];
