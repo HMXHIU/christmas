@@ -440,7 +440,6 @@ test("Test Player", async () => {
         },
         { Cookie: playerOneCookies },
     );
-    console.log(message);
 
     expect(status).toBe("success");
     expect(target).toMatchObject({

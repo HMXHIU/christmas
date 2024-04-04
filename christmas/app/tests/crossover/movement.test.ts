@@ -1,5 +1,6 @@
 import { commandMove } from "$lib/crossover";
-import { biomeAtGeohash, geohashNeighbour } from "$lib/crossover/world";
+import { geohashNeighbour } from "$lib/crossover/utils";
+import { biomeAtGeohash } from "$lib/crossover/world/biomes";
 import { biomes, compendium } from "$lib/crossover/world/settings";
 import { spawnItem } from "$lib/server/crossover";
 import type { ItemEntity } from "$lib/server/crossover/redis/entities";

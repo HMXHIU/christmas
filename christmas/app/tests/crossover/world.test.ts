@@ -1,11 +1,10 @@
+import { childrenGeohashes } from "$lib/crossover/utils";
 import {
-    biomeAtGeohash,
-    biomesAtGeohash,
-    childrenGeohashes,
-    geohashToCell,
+    geohashToGridCell,
     updateGrid,
     type WorldSeed,
 } from "$lib/crossover/world";
+import { biomeAtGeohash, biomesAtGeohash } from "$lib/crossover/world/biomes";
 import { expect } from "chai";
 import { test } from "vitest";
 
@@ -290,7 +289,7 @@ test("Test World", async () => {
     });
 
     // Test cells in grid
-    expect(geohashToCell("w61z4m6f")).to.deep.equal({
+    expect(geohashToGridCell("w61z4m6f")).to.deep.equal({
         precision: 8,
         row: 451413,
         col: 826667,

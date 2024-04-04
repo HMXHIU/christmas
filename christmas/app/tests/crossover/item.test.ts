@@ -1,5 +1,5 @@
 import { commandTakeItem, equipItem } from "$lib/crossover";
-import { geohashNeighbour } from "$lib/crossover/world";
+import { geohashNeighbour } from "$lib/crossover/utils";
 import { itemAttibutes } from "$lib/crossover/world/compendium";
 import { compendium } from "$lib/crossover/world/settings";
 import {

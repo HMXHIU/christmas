@@ -1,11 +1,10 @@
 import {
-    biomeAtGeohash,
     calculateLocation,
     childrenGeohashes,
     entityDimensions,
     geohashNeighbour,
-    type Direction,
-} from "$lib/crossover/world";
+} from "$lib/crossover/utils";
+import type { Direction } from "$lib/crossover/world";
 import {
     canPerformAbility,
     checkInRange,
@@ -13,6 +12,7 @@ import {
     type ProcedureEffect,
 } from "$lib/crossover/world/abilities";
 import { monsterStats } from "$lib/crossover/world/bestiary";
+import { biomeAtGeohash } from "$lib/crossover/world/biomes";
 import {
     type EquipmentSlot,
     type ItemVariables,
@@ -67,7 +67,6 @@ export {
     setPlayerState,
     spawnItem,
     spawnMonster,
-    updatedItemVariables,
     useItem,
     type ConnectedUser,
 };

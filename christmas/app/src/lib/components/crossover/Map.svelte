@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { abyssTile, geohashToCell } from "$lib/crossover/world";
+    import { abyssTile, geohashToGridCell } from "$lib/crossover/world";
     import { bestiary, biomes } from "$lib/crossover/world/settings";
     import type { TileSchema } from "$lib/server/crossover/router";
     import {
@@ -222,8 +222,8 @@
 
     async function updateWorld(tile: z.infer<typeof TileSchema>) {
         if (prevTile != null) {
-            const cell = geohashToCell(tile.geohash);
-            const prevCell = geohashToCell(prevTile.geohash);
+            const cell = geohashToGridCell(tile.geohash);
+            const prevCell = geohashToGridCell(prevTile.geohash);
 
             if (cell.precision === prevCell.precision) {
                 const deltaCol = cell.col - prevCell.col;
@@ -320,7 +320,7 @@
 
         await drawPlayer();
         await fillInGrid({
-            cell: geohashToCell(tile.geohash),
+            cell: geohashToGridCell(tile.geohash),
             colStart: 0,
             colEnd: GRID_COLS,
         });

@@ -5,7 +5,7 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import { substituteVariables } from "$lib/utils";
 import lodash from "lodash";
-import { geohashToCell } from ".";
+import { geohashToGridCell } from ".";
 import { abilities } from "./settings";
 const { cloneDeep } = lodash;
 
@@ -162,8 +162,8 @@ function checkInRange(
     range: number,
 ): boolean {
     // Use only the first geohash in the location
-    const { row: r1, col: c1 } = geohashToCell(self.location[0]);
-    const { row: r2, col: c2 } = geohashToCell(target.location[0]);
+    const { row: r1, col: c1 } = geohashToGridCell(self.location[0]);
+    const { row: r2, col: c2 } = geohashToGridCell(target.location[0]);
     const inRange =
         range < 0 ||
         Math.ceil(Math.sqrt((r1 - r2) ** 2 + (c1 - c2) ** 2)) <= range;

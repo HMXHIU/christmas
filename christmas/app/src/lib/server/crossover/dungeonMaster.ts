@@ -1,10 +1,10 @@
-import {
-    childrenGeohashes,
-    monsterLimitAtGeohash,
-    uninhabitedNeighbouringGeohashes,
-} from "$lib/crossover/world";
+import { childrenGeohashes, surroundingGeohashes } from "$lib/crossover/utils";
 import { canPerformAbility } from "$lib/crossover/world/abilities";
-import { monsterStats, type Beast } from "$lib/crossover/world/bestiary";
+import {
+    monsterLimitAtGeohash,
+    monsterStats,
+    type Beast,
+} from "$lib/crossover/world/bestiary";
 import { abilities, bestiary, worldSeed } from "$lib/crossover/world/settings";
 import { performAbility, spawnMonster } from ".";
 import { monstersInGeohashQuerySet } from "./redis";
@@ -148,8 +148,7 @@ async function spawnMonsters(players: PlayerEntity[]) {
         );
 
     // Get all neighboring geohashes where there are no players
-    const uninhabitedGeohashes =
-        await uninhabitedNeighbouringGeohashes(parentGeohashes);
+    const uninhabitedGeohashes = await surroundingGeohashes(parentGeohashes);
 
     for (const geohash of uninhabitedGeohashes) {
         // Get monster limit for each uninhabited geohash

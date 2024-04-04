@@ -53,15 +53,16 @@
 
     async function onMove(direction: Direction) {
         // Calculate new tile (TODO: get other metadata like description, etc.)
-        const nextGeohash = await commandMove({ direction });
+        const location = await commandMove({ direction });
+        const geohash = location[0];
 
         // Load more grid data if parent geohash changes
-        if (nextGeohash.slice(0, -1) !== tile.geohash.slice(0, -1)) {
-            grid.set(await loadMoreGrid(nextGeohash, $grid));
+        if (geohash.slice(0, -1) !== tile.geohash.slice(0, -1)) {
+            grid.set(await loadMoreGrid(geohash, $grid));
         }
 
-        if (nextGeohash !== tile.geohash) {
-            tile.geohash = nextGeohash;
+        if (geohash !== tile.geohash) {
+            tile.geohash = geohash;
             tile = tile;
         }
     }

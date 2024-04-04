@@ -1,7 +1,9 @@
-import { type AssetMetadata } from ".";
+import { type AssetMetadata, type WorldSeed } from ".";
+import { seededRandom, stringToRandomNumber } from "../utils";
 import { type AbilityType } from "./abilities";
-import { bestiary } from "./settings";
-export { monsterStats, type Beast };
+import { bestiary, worldSeed } from "./settings";
+
+export { monsterLimitAtGeohash, monsterStats, type Beast };
 
 /**
  * `Beast` is a template used to spawn a `Monster` with derived stats from the template.
@@ -38,4 +40,27 @@ function monsterStats({ level, beast }: { level: number; beast: string }): {
         st: Math.ceil(beastTemplate.endurance * 10 * multiplier),
         ap: Math.ceil(beastTemplate.speed + 10),
     };
+}
+
+/**
+ * Calculates the monster limit at a given geohash location based on the world seed.
+ *
+ * @param geohash - The geohash location.
+ * @param seed - The world seed (optional). If not provided, the default world seed will be used.
+ * @returns The calculated monster limit at the geohash location.
+ */
+function monsterLimitAtGeohash(geohash: string, seed?: WorldSeed): number {
+    seed = seed || worldSeed;
+    const continent = geohash.charAt(0);
+    const probHostile = seed.seeds.continent[continent].bio;
+
+    // Every precision down divides by 32 the number of monsters
+    const maxMonsters =
+        (seed.constants.maxMonstersPerContinent * probHostile) /
+        32 ** (geohash.length - 1);
+
+    // Use the geohash as the random seed (must be reproducible)
+    const rv = seededRandom(stringToRandomNumber(geohash));
+
+    return Math.ceil(rv * maxMonsters);
 }

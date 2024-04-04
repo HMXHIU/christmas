@@ -1,4 +1,4 @@
-import { calculateLocation } from "$lib/crossover/world";
+import { calculateLocation } from "$lib/crossover/utils";
 import { expect, test } from "vitest";
 
 test("Test Utils", async () => {
