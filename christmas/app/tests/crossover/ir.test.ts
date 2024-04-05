@@ -71,13 +71,23 @@ test("Test IR", async () => {
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        monsters: [],
-        players: [
-            {
-                name: "Gandalf",
+        entities: {
+            monsters: [],
+            players: [
+                {
+                    name: "Gandalf",
+                },
+            ],
+            items: [],
+        },
+        entityTokenPositions: {
+            [playerOne.player]: {
+                "0": {
+                    token: "Gandalf",
+                    score: 1,
+                },
             },
-        ],
-        items: [],
+        },
     });
     expect(
         entitiesInfomationRetrieval(tokenize("Saruman"), {
@@ -86,13 +96,23 @@ test("Test IR", async () => {
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        monsters: [],
-        players: [
-            {
-                name: "Saruman",
+        entities: {
+            monsters: [],
+            players: [
+                {
+                    name: "Saruman",
+                },
+            ],
+            items: [],
+        },
+        entityTokenPositions: {
+            [playerTwo.player]: {
+                "0": {
+                    token: "Saruman",
+                    score: 1,
+                },
             },
-        ],
-        items: [],
+        },
     });
 
     // Search player by player id
@@ -103,13 +123,23 @@ test("Test IR", async () => {
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        monsters: [],
-        players: [
-            {
-                player: playerOne.player,
+        entities: {
+            monsters: [],
+            players: [
+                {
+                    player: playerOne.player,
+                },
+            ],
+            items: [],
+        },
+        entityTokenPositions: {
+            [playerOne.player]: {
+                "0": {
+                    token: playerOne.player,
+                    score: 1,
+                },
             },
-        ],
-        items: [],
+        },
     });
 
     // Search item by name
@@ -120,13 +150,27 @@ test("Test IR", async () => {
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        monsters: [],
-        players: [],
-        items: [
-            {
-                name: woodenClub.name,
+        entities: {
+            monsters: [],
+            players: [],
+            items: [
+                {
+                    name: woodenClub.name,
+                },
+            ],
+        },
+        entityTokenPositions: {
+            [woodenClub.item]: {
+                "0": {
+                    token: "Wooden",
+                    score: 1,
+                },
+                "1": {
+                    token: "Club",
+                    score: 1,
+                },
             },
-        ],
+        },
     });
 
     // Search item by item id
@@ -137,13 +181,23 @@ test("Test IR", async () => {
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        monsters: [],
-        players: [],
-        items: [
-            {
-                item: woodenDoor.item,
+        entities: {
+            monsters: [],
+            players: [],
+            items: [
+                {
+                    item: woodenDoor.item,
+                },
+            ],
+        },
+        entityTokenPositions: {
+            [woodenDoor.item]: {
+                "0": {
+                    token: woodenDoor.item,
+                    score: 1,
+                },
             },
-        ],
+        },
     });
 
     // Search monster by name
@@ -154,13 +208,23 @@ test("Test IR", async () => {
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        monsters: [
-            {
-                name: dragon.name,
+        entities: {
+            monsters: [
+                {
+                    name: dragon.name,
+                },
+            ],
+            players: [],
+            items: [],
+        },
+        entityTokenPositions: {
+            [dragon.monster]: {
+                "0": {
+                    token: dragon.name,
+                    score: 1,
+                },
             },
-        ],
-        players: [],
-        items: [],
+        },
     });
 
     // Search monster by monster id
@@ -171,13 +235,23 @@ test("Test IR", async () => {
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        monsters: [
-            {
-                monster: goblin.monster,
+        entities: {
+            monsters: [
+                {
+                    monster: goblin.monster,
+                },
+            ],
+            players: [],
+            items: [],
+        },
+        entityTokenPositions: {
+            [goblin.monster]: {
+                "0": {
+                    token: goblin.monster,
+                    score: 1,
+                },
             },
-        ],
-        players: [],
-        items: [],
+        },
     });
 
     /**
@@ -191,14 +265,25 @@ test("Test IR", async () => {
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        monsters: [],
-        players: [
-            {
-                name: "Gandalf",
+        entities: {
+            monsters: [],
+            players: [
+                {
+                    name: "Gandalf",
+                },
+            ],
+            items: [],
+        },
+        entityTokenPositions: {
+            [playerOne.player]: {
+                "0": {
+                    token: "Gandaf",
+                    score: 0.8,
+                },
             },
-        ],
-        items: [],
+        },
     });
+
     expect(
         entitiesInfomationRetrieval(tokenize("Gan"), {
             // to much error
@@ -208,9 +293,12 @@ test("Test IR", async () => {
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        monsters: [],
-        players: [],
-        items: [],
+        entities: {
+            monsters: [],
+            players: [],
+            items: [],
+        },
+        entityTokenPositions: {},
     });
 
     /**
@@ -224,16 +312,32 @@ test("Test IR", async () => {
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        monsters: [
-            {
-                monster: goblin.monster,
+        entities: {
+            monsters: [
+                {
+                    monster: goblin.monster,
+                },
+            ],
+            players: [
+                {
+                    name: "Gandalf",
+                },
+            ],
+            items: [],
+        },
+        entityTokenPositions: {
+            [goblin.monster]: {
+                "2": {
+                    token: "gobli",
+                    score: 0.8,
+                },
             },
-        ],
-        players: [
-            {
-                name: "Gandalf",
+            [playerOne.player]: {
+                "0": {
+                    token: "Gandaf",
+                    score: 0.8,
+                },
             },
-        ],
-        items: [],
+        },
     });
 });

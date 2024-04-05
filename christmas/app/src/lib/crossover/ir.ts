@@ -6,6 +6,90 @@ import type {
 
 export { entitiesInfomationRetrieval, tokenize };
 
+type MatchedTokenPosition = Record<number, { token: string; score: number }>;
+type EntityTokenPositions = Record<string, MatchedTokenPosition>;
+
+/**
+ * Retrieves entities based on the given query tokens.
+ * @param queryTokens - The tokens representing the query.
+ * @param entities - The entities to search within.
+ * @returns An object containing the filtered monsters, players, and items.
+ */
+function entitiesInfomationRetrieval(
+    queryTokens: string[],
+    entities: { monsters: Monster[]; players: Player[]; items: Item[] },
+): {
+    entities: { monsters: Monster[]; players: Player[]; items: Item[] };
+    entityTokenPositions: EntityTokenPositions;
+} {
+    let { monsters, players, items } = entities;
+    let entityTokenPositions: EntityTokenPositions = {};
+
+    monsters = monsters.filter((monster) => {
+        return [monster.beast, monster.name, monster.monster].some(
+            (document) => {
+                const { score, matchedTokens } = documentScore(
+                    queryTokens,
+                    document,
+                );
+                if (score > 0.6) {
+                    entityTokenPositions[monster.monster] = matchedTokens;
+                    return true;
+                }
+                return false;
+            },
+        );
+    });
+
+    players = players.filter((player) => {
+        return [player.name, player.player].some((document) => {
+            const { score, matchedTokens } = documentScore(
+                queryTokens,
+                document,
+            );
+            if (score > 0.6) {
+                entityTokenPositions[player.player] = matchedTokens;
+                return true;
+            }
+            return false;
+        });
+    });
+
+    items = items.filter((item) => {
+        return [item.name, item.item].some((document) => {
+            const { score, matchedTokens } = documentScore(
+                queryTokens,
+                document,
+            );
+            if (score > 0.6) {
+                entityTokenPositions[item.item] = matchedTokens;
+                return true;
+            }
+            return false;
+        });
+    });
+
+    return {
+        entities: {
+            monsters: monsters || [],
+            players: players || [],
+            items: items || [],
+        },
+        entityTokenPositions,
+    };
+}
+
+function maxLevenshteinDistance(query: string): number {
+    if (query.length <= 3) {
+        return 0;
+    } else if (query.length <= 4) {
+        return 1;
+    } else if (query.length <= 6) {
+        return 2;
+    }
+    return 3;
+}
+
 function tokenize(query: string): string[] {
     return query.split(/\s+/);
 }
@@ -24,65 +108,53 @@ function tokenMatchAny(token: string, matchAny: string[]): number {
     return 0;
 }
 
-function documentScore(queryTokens: string[], document: string): number {
+/**
+ * Calculates the score of a document based on the matching tokens with a query.
+ * Also returns the matched tokens and their positions in `queryTokens`.
+ *
+ * @param queryTokens - An array of query tokens.
+ * @param document - The document to calculate the score for.
+ * @returns An object containing the matched tokens and the score.
+ */
+function documentScore(
+    queryTokens: string[],
+    document: string,
+): {
+    matchedTokens: MatchedTokenPosition;
+    score: number;
+} {
     const documentTokens = tokenize(document);
     const denominator = documentTokens.length;
+    let matchedTokens: MatchedTokenPosition = {};
+
     if (denominator === 0) {
-        return 0;
+        return {
+            matchedTokens,
+            score: 0,
+        };
     }
     let numerator = 0;
-    for (const token of queryTokens) {
-        numerator += tokenMatchAny(token, documentTokens);
+    for (let i = 0; i < queryTokens.length; i++) {
+        const token = queryTokens[i];
+        const tokenScore = tokenMatchAny(token, documentTokens);
+        if (tokenScore > 0.5) {
+            matchedTokens[i] = {
+                token,
+                score: tokenScore,
+            };
+        }
+        numerator += tokenScore;
         if (numerator >= denominator) {
-            return 1;
+            return {
+                matchedTokens,
+                score: 1,
+            };
         }
     }
-    return numerator / denominator;
-}
-
-function entitiesInfomationRetrieval(
-    queryTokens: string[],
-    entities: { monsters: Monster[]; players: Player[]; items: Item[] },
-): { monsters: Monster[]; players: Player[]; items: Item[] } {
-    let { monsters, players, items } = entities;
-
-    monsters = monsters.filter((monster) => {
-        const monsterDocuments = [monster.beast, monster.name, monster.monster];
-        return monsterDocuments.some((document) => {
-            return documentScore(queryTokens, document) > 0.6;
-        });
-    });
-
-    players = players.filter((player) => {
-        const playerDocuments = [player.name, player.player];
-        return playerDocuments.some((document) => {
-            return documentScore(queryTokens, document) > 0.6;
-        });
-    });
-
-    items = items.filter((item) => {
-        const itemDocuments = [item.name, item.item];
-        return itemDocuments.some((document) => {
-            return documentScore(queryTokens, document) > 0.6;
-        });
-    });
-
     return {
-        monsters: monsters || [],
-        players: players || [],
-        items: items || [],
+        matchedTokens,
+        score: numerator / denominator,
     };
-}
-
-function maxLevenshteinDistance(query: string): number {
-    if (query.length <= 3) {
-        return 0;
-    } else if (query.length <= 4) {
-        return 1;
-    } else if (query.length <= 6) {
-        return 2;
-    }
-    return 3;
 }
 
 /**
