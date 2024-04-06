@@ -122,7 +122,7 @@ test("Test Player", async () => {
                 items,
             }),
         ])
-        .filter((ability) => ability != null);
+        .filter(([ability, entities]) => entities != null);
     expect(abilityEntities).to.toMatchObject([
         [
             {
@@ -175,7 +175,7 @@ test("Test Player", async () => {
                 items,
             }),
         ])
-        .filter((ability) => ability != null);
+        .filter(([ability, entities]) => entities != null);
     expect(abilityEntities).to.toMatchObject([
         [
             {
@@ -228,7 +228,7 @@ test("Test Player", async () => {
                 items,
             }),
         ])
-        .filter((ability) => ability != null);
+        .filter(([ability, entities]) => entities != null);
     expect(abilityEntities).to.toMatchObject([
         [
             {
@@ -244,4 +244,48 @@ test("Test Player", async () => {
             },
         ],
     ]);
+
+    /**
+     * Test query flow (playerOne scratch self) - should not resolve
+     */
+
+    // Tokenize query
+    query = "scratch gandalf";
+    queryTokens = tokenize(query);
+
+    // Retrieve entities relevant to query from the environment
+    var { monsters, players, items } = entitiesIR({
+        queryTokens,
+        monsters: [dragon, goblin],
+        players: [playerOne, playerTwo, playerThree],
+        items: [woodenDoor, woodenClub, portal],
+    });
+
+    // Retrieve actions and abilities relevant to query
+    var { actions, abilities: abilitiesRetrieved } = abilitiesActionsIR({
+        queryTokens,
+        abilities: playerAbilities,
+        actions: playerActions,
+    });
+
+    //  WHY BANDAGE AND SCRATCH RETURNED? should only be scratch
+    // !! bandage and gandalf are matching - ensure token only used once make more strict
+    console.log("abilitiesRetrieved", abilitiesRetrieved);
+
+    // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
+    abilityEntities = abilitiesRetrieved
+        .map((ability) => [
+            ability,
+            resolveAbilityEntities({
+                queryTokens,
+                ability: ability.ability,
+                self: playerOne,
+                monsters,
+                players,
+                items,
+            }),
+        ])
+        .filter(([ability, entities]) => entities != null);
+
+    console.log(JSON.stringify(abilityEntities, null, 2));
 });

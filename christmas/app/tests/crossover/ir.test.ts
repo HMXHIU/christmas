@@ -1,4 +1,9 @@
-import { abilitiesActionsIR, entitiesIR, tokenize } from "$lib/crossover/ir";
+import {
+    abilitiesActionsIR,
+    entitiesIR,
+    fuzzyMatch,
+    tokenize,
+} from "$lib/crossover/ir";
 import type { Ability } from "$lib/crossover/world/abilities";
 import type { PropAction } from "$lib/crossover/world/compendium";
 import { abilities, compendium } from "$lib/crossover/world/settings";
@@ -62,6 +67,14 @@ test("Test IR", async () => {
     });
 
     /**
+     * Test `fuzzyMatch`
+     */
+
+    expect(fuzzyMatch("Gandalf", "Gandalf", 1)).toBe(true);
+    expect(fuzzyMatch("bandage", "gandalf", 1)).toBe(false);
+    expect(fuzzyMatch("bandage", "gandalf", 3)).toBe(true);
+
+    /**
      * Test exact match `entitiesIR`
      */
 
@@ -84,7 +97,7 @@ test("Test IR", async () => {
         tokenPositions: {
             [playerOne.player]: {
                 "0": {
-                    token: "Gandalf",
+                    token: "gandalf",
                     score: 1,
                 },
             },
@@ -108,7 +121,7 @@ test("Test IR", async () => {
         tokenPositions: {
             [playerTwo.player]: {
                 "0": {
-                    token: "Saruman",
+                    token: "saruman",
                     score: 1,
                 },
             },
@@ -134,7 +147,7 @@ test("Test IR", async () => {
         tokenPositions: {
             [playerOne.player]: {
                 "0": {
-                    token: playerOne.player,
+                    token: playerOne.player.toLocaleLowerCase(),
                     score: 1,
                 },
             },
@@ -160,11 +173,11 @@ test("Test IR", async () => {
         tokenPositions: {
             [woodenClub.item]: {
                 "0": {
-                    token: "Wooden",
+                    token: "wooden",
                     score: 1,
                 },
                 "1": {
-                    token: "Club",
+                    token: "club",
                     score: 1,
                 },
             },
@@ -190,7 +203,7 @@ test("Test IR", async () => {
         tokenPositions: {
             [woodenDoor.item]: {
                 "0": {
-                    token: woodenDoor.item,
+                    token: woodenDoor.item.toLocaleLowerCase(),
                     score: 1,
                 },
             },
@@ -216,7 +229,7 @@ test("Test IR", async () => {
         tokenPositions: {
             [dragon.monster]: {
                 "0": {
-                    token: dragon.name,
+                    token: dragon.name.toLocaleLowerCase(),
                     score: 1,
                 },
             },
@@ -242,7 +255,7 @@ test("Test IR", async () => {
         tokenPositions: {
             [goblin.monster]: {
                 "0": {
-                    token: goblin.monster,
+                    token: goblin.monster.toLocaleLowerCase(),
                     score: 1,
                 },
             },
@@ -270,7 +283,7 @@ test("Test IR", async () => {
         tokenPositions: {
             [playerOne.player]: {
                 "0": {
-                    token: "Gandaf",
+                    token: "gandaf",
                     score: 0.8,
                 },
             },
@@ -323,7 +336,7 @@ test("Test IR", async () => {
             },
             [playerOne.player]: {
                 "0": {
-                    token: "Gandaf",
+                    token: "gandaf",
                     score: 0.8,
                 },
             },

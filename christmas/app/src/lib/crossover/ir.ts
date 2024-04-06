@@ -6,7 +6,7 @@ import type {
 import type { Ability } from "./world/abilities";
 import type { PropAction } from "./world/compendium";
 
-export { abilitiesActionsIR, entitiesIR, tokenize };
+export { abilitiesActionsIR, entitiesIR, fuzzyMatch, tokenize };
 
 type MatchedTokenPosition = Record<number, { token: string; score: number }>;
 type TokenPositions = Record<string, MatchedTokenPosition>;
@@ -156,7 +156,7 @@ function maxLevenshteinDistance(query: string): number {
 }
 
 function tokenize(query: string): string[] {
-    return query.split(/\s+/);
+    return query.split(/\s+/).map((token) => token.toLowerCase());
 }
 
 function tokenMatchAny(token: string, matchAny: string[]): number {
@@ -166,7 +166,13 @@ function tokenMatchAny(token: string, matchAny: string[]): number {
     }
     // Try to find a fuzzy match
     for (let document of matchAny) {
-        if (fuzzyMatch(token, document, maxLevenshteinDistance(document))) {
+        if (
+            fuzzyMatch(
+                token.toLowerCase(),
+                document.toLowerCase(),
+                maxLevenshteinDistance(document),
+            )
+        ) {
             return 0.8;
         }
     }
