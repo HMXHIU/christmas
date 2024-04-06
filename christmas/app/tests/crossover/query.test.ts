@@ -87,7 +87,7 @@ test("Test Player", async () => {
     const playerAbilities: Ability[] = Object.values(abilities);
 
     /**
-     * Test query flow (player sctratch goblin)
+     * Test query flow (player scratch goblin)
      */
 
     // Tokenize query
@@ -95,7 +95,7 @@ test("Test Player", async () => {
     let queryTokens = tokenize(query);
 
     // Retrieve entities relevant to query from the environment
-    let { monsters, players, items } = entitiesIR({
+    var { monsters, players, items } = entitiesIR({
         queryTokens,
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
@@ -103,13 +103,13 @@ test("Test Player", async () => {
     });
 
     // Retrieve actions and abilities relevant to query
-    let { actions, abilities: abilitiesRetrieved } = abilitiesActionsIR({
+    var { actions, abilities: abilitiesRetrieved } = abilitiesActionsIR({
         queryTokens,
         abilities: playerAbilities,
         actions: playerActions,
     });
 
-    // Resolve abilities relevant to retrieved entities
+    // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
     let abilityEntities = abilitiesRetrieved
         .map((ability) => [
             ability,
@@ -134,6 +134,112 @@ test("Test Player", async () => {
                 },
                 target: {
                     monster: goblin.monster,
+                },
+            },
+        ],
+    ]);
+
+    /**
+     * Test query flow (dragon breathe fire on goblin)
+     */
+
+    // Tokenize query
+    query = "breathFire on goblin";
+    queryTokens = tokenize(query);
+
+    // Retrieve entities relevant to query from the environment
+    var { monsters, players, items } = entitiesIR({
+        queryTokens,
+        monsters: [dragon, goblin],
+        players: [playerOne, playerTwo, playerThree],
+        items: [woodenDoor, woodenClub, portal],
+    });
+
+    // Retrieve actions and abilities relevant to query
+    var { actions, abilities: abilitiesRetrieved } = abilitiesActionsIR({
+        queryTokens,
+        abilities: playerAbilities,
+        actions: playerActions,
+    });
+
+    // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
+    abilityEntities = abilitiesRetrieved
+        .map((ability) => [
+            ability,
+            resolveAbilityEntities({
+                queryTokens,
+                ability: ability.ability,
+                self: dragon, // self is dragon
+                monsters,
+                players,
+                items,
+            }),
+        ])
+        .filter((ability) => ability != null);
+    expect(abilityEntities).to.toMatchObject([
+        [
+            {
+                ability: "breathFire",
+            },
+            {
+                self: {
+                    monster: dragon.monster,
+                },
+                target: {
+                    monster: goblin.monster,
+                },
+            },
+        ],
+    ]);
+
+    /**
+     * Test query flow (playerOne bandage self)
+     */
+
+    // Tokenize query
+    query = "bandage gandalf";
+    queryTokens = tokenize(query);
+
+    // Retrieve entities relevant to query from the environment
+    var { monsters, players, items } = entitiesIR({
+        queryTokens,
+        monsters: [dragon, goblin],
+        players: [playerOne, playerTwo, playerThree],
+        items: [woodenDoor, woodenClub, portal],
+    });
+
+    // Retrieve actions and abilities relevant to query
+    var { actions, abilities: abilitiesRetrieved } = abilitiesActionsIR({
+        queryTokens,
+        abilities: playerAbilities,
+        actions: playerActions,
+    });
+
+    // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
+    abilityEntities = abilitiesRetrieved
+        .map((ability) => [
+            ability,
+            resolveAbilityEntities({
+                queryTokens,
+                ability: ability.ability,
+                self: playerOne,
+                monsters,
+                players,
+                items,
+            }),
+        ])
+        .filter((ability) => ability != null);
+    expect(abilityEntities).to.toMatchObject([
+        [
+            {
+                ability: "bandage",
+            },
+            {
+                self: {
+                    player: playerOne.player,
+                },
+                target: {
+                    player: playerOne.player,
                 },
             },
         ],
