@@ -109,6 +109,11 @@ const abilities: Record<string, Ability> = {
         mp: 0,
         range: 0,
         aoe: 0,
+        predicate: {
+            self: ["player", "monster"],
+            target: ["player", "monster"],
+            targetSelfAllowed: true,
+        },
     },
     scratch: {
         ability: "scratch",
@@ -130,6 +135,11 @@ const abilities: Record<string, Ability> = {
         mp: 0,
         range: 0,
         aoe: 0,
+        predicate: {
+            self: ["player", "monster"],
+            target: ["player", "monster"],
+            targetSelfAllowed: false,
+        },
     },
     swing: {
         ability: "swing",
@@ -151,6 +161,11 @@ const abilities: Record<string, Ability> = {
         mp: 0,
         range: 0,
         aoe: 0,
+        predicate: {
+            self: ["player", "monster"],
+            target: ["player", "monster"],
+            targetSelfAllowed: false,
+        },
     },
     doubleSlash: {
         ability: "doubleSlash",
@@ -180,7 +195,13 @@ const abilities: Record<string, Ability> = {
         mp: 0,
         range: 0,
         aoe: 0,
+        predicate: {
+            self: ["player", "monster"],
+            target: ["player", "monster"],
+            targetSelfAllowed: false,
+        },
     },
+    // Blinded target cannot be affected by genjutsu
     eyePoke: {
         ability: "eyePoke",
         type: "offensive",
@@ -217,7 +238,13 @@ const abilities: Record<string, Ability> = {
         mp: 0,
         range: 0,
         aoe: 0,
+        predicate: {
+            self: ["player", "monster"],
+            target: ["player", "monster"],
+            targetSelfAllowed: true,
+        },
     },
+    // TODO: Remove illusions (genjutsu) on target
     bite: {
         ability: "bite",
         type: "offensive",
@@ -238,6 +265,11 @@ const abilities: Record<string, Ability> = {
         mp: 0,
         range: 1,
         aoe: 0,
+        predicate: {
+            self: ["player", "monster"],
+            target: ["player", "monster"],
+            targetSelfAllowed: true,
+        },
     },
     breathFire: {
         ability: "breathFire",
@@ -275,6 +307,11 @@ const abilities: Record<string, Ability> = {
         mp: 2,
         range: 1,
         aoe: 1,
+        predicate: {
+            self: ["player", "monster"],
+            target: ["player", "monster", "item"],
+            targetSelfAllowed: false,
+        },
     },
     paralyze: {
         ability: "paralyze",
@@ -296,6 +333,11 @@ const abilities: Record<string, Ability> = {
         mp: 2,
         range: 0,
         aoe: 0,
+        predicate: {
+            self: ["player", "monster"],
+            target: ["player", "monster"],
+            targetSelfAllowed: true,
+        },
     },
     blind: {
         ability: "blind",
@@ -317,6 +359,11 @@ const abilities: Record<string, Ability> = {
         mp: 2,
         range: 0,
         aoe: 0,
+        predicate: {
+            self: ["player", "monster"],
+            target: ["player", "monster"],
+            targetSelfAllowed: true,
+        },
     },
     teleport: {
         ability: "teleport",
@@ -342,6 +389,11 @@ const abilities: Record<string, Ability> = {
         mp: 20,
         range: -1,
         aoe: 0,
+        predicate: {
+            self: ["player", "monster"],
+            target: ["player", "monster", "item"],
+            targetSelfAllowed: true,
+        },
     },
 };
 
