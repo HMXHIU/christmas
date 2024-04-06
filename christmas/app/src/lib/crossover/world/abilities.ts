@@ -51,7 +51,27 @@ type Debuff =
     | "diseased";
 type Buff = "haste" | "regeneration" | "shield" | "invisibility" | "berserk";
 
-type State = "location" | "ap" | "hp" | "mp" | "st";
+// /**
+//  *
+//  */
+// interface AbilityTrigger {
+//     trigger: string; // "${ability} ${target}"
+//     variables: Record<string, string>;
+// }
+// interface AbilityTriggerVariable {
+//     [variable: string]: {
+//         type: EntityType;
+//     }
+// }
+
+// const x = {
+//     dialogues: ["${ability} ${target}"],
+//     variables: {
+//         "target" : {
+//             entityTypes: ["player", "monster", "item"],
+//         }
+//     }
+// }
 
 interface Ability {
     ability: string;
@@ -64,6 +84,7 @@ interface Ability {
     st: number; // ST cost of the ability
     range: number; // range of the ability (number of unit precision geohashes)
     aoe: number; // area of effect (number of unit precision geohashes)
+    // trigger: AbilityTrigger
 }
 
 type Procedure = ["action" | "check", ProcedureEffect];
@@ -83,7 +104,7 @@ interface ProcedureEffect {
         op: "push" | "pop" | "contains" | "doesNotContain";
     };
     states?: {
-        state: State;
+        state: "location" | "ap" | "hp" | "mp" | "st";
         op: "change" | "subtract" | "add";
         value: number | string | boolean | string[];
     };

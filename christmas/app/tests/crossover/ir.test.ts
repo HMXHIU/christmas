@@ -1,5 +1,7 @@
-import { entitiesInfomationRetrieval, tokenize } from "$lib/crossover/ir";
-import { compendium } from "$lib/crossover/world/settings";
+import { abilitiesActionsIR, entitiesIR, tokenize } from "$lib/crossover/ir";
+import type { Ability } from "$lib/crossover/world/abilities";
+import type { PropAction } from "$lib/crossover/world/compendium";
+import { abilities, compendium } from "$lib/crossover/world/settings";
 import { spawnItem, spawnMonster } from "$lib/server/crossover";
 import type { ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
@@ -60,27 +62,26 @@ test("Test IR", async () => {
     });
 
     /**
-     * Test exact match
+     * Test exact match `entitiesIR`
      */
 
     // Search player by name
     expect(
-        entitiesInfomationRetrieval(tokenize("Gandalf"), {
+        entitiesIR({
+            queryTokens: tokenize("Gandalf"),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        entities: {
-            monsters: [],
-            players: [
-                {
-                    name: "Gandalf",
-                },
-            ],
-            items: [],
-        },
-        entityTokenPositions: {
+        monsters: [],
+        players: [
+            {
+                name: "Gandalf",
+            },
+        ],
+        items: [],
+        tokenPositions: {
             [playerOne.player]: {
                 "0": {
                     token: "Gandalf",
@@ -90,22 +91,21 @@ test("Test IR", async () => {
         },
     });
     expect(
-        entitiesInfomationRetrieval(tokenize("Saruman"), {
+        entitiesIR({
+            queryTokens: tokenize("Saruman"),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        entities: {
-            monsters: [],
-            players: [
-                {
-                    name: "Saruman",
-                },
-            ],
-            items: [],
-        },
-        entityTokenPositions: {
+        monsters: [],
+        players: [
+            {
+                name: "Saruman",
+            },
+        ],
+        items: [],
+        tokenPositions: {
             [playerTwo.player]: {
                 "0": {
                     token: "Saruman",
@@ -117,22 +117,21 @@ test("Test IR", async () => {
 
     // Search player by player id
     expect(
-        entitiesInfomationRetrieval(tokenize(playerOne.player), {
+        entitiesIR({
+            queryTokens: tokenize(playerOne.player),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        entities: {
-            monsters: [],
-            players: [
-                {
-                    player: playerOne.player,
-                },
-            ],
-            items: [],
-        },
-        entityTokenPositions: {
+        monsters: [],
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
+        items: [],
+        tokenPositions: {
             [playerOne.player]: {
                 "0": {
                     token: playerOne.player,
@@ -144,22 +143,21 @@ test("Test IR", async () => {
 
     // Search item by name
     expect(
-        entitiesInfomationRetrieval(tokenize(woodenClub.name), {
+        entitiesIR({
+            queryTokens: tokenize(woodenClub.name),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        entities: {
-            monsters: [],
-            players: [],
-            items: [
-                {
-                    name: woodenClub.name,
-                },
-            ],
-        },
-        entityTokenPositions: {
+        monsters: [],
+        players: [],
+        items: [
+            {
+                name: woodenClub.name,
+            },
+        ],
+        tokenPositions: {
             [woodenClub.item]: {
                 "0": {
                     token: "Wooden",
@@ -175,22 +173,21 @@ test("Test IR", async () => {
 
     // Search item by item id
     expect(
-        entitiesInfomationRetrieval(tokenize(woodenDoor.item), {
+        entitiesIR({
+            queryTokens: tokenize(woodenDoor.item),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        entities: {
-            monsters: [],
-            players: [],
-            items: [
-                {
-                    item: woodenDoor.item,
-                },
-            ],
-        },
-        entityTokenPositions: {
+        monsters: [],
+        players: [],
+        items: [
+            {
+                item: woodenDoor.item,
+            },
+        ],
+        tokenPositions: {
             [woodenDoor.item]: {
                 "0": {
                     token: woodenDoor.item,
@@ -202,22 +199,21 @@ test("Test IR", async () => {
 
     // Search monster by name
     expect(
-        entitiesInfomationRetrieval(tokenize(dragon.name), {
+        entitiesIR({
+            queryTokens: tokenize(dragon.name),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        entities: {
-            monsters: [
-                {
-                    name: dragon.name,
-                },
-            ],
-            players: [],
-            items: [],
-        },
-        entityTokenPositions: {
+        monsters: [
+            {
+                name: dragon.name,
+            },
+        ],
+        players: [],
+        items: [],
+        tokenPositions: {
             [dragon.monster]: {
                 "0": {
                     token: dragon.name,
@@ -229,22 +225,21 @@ test("Test IR", async () => {
 
     // Search monster by monster id
     expect(
-        entitiesInfomationRetrieval(tokenize(goblin.monster), {
+        entitiesIR({
+            queryTokens: tokenize(goblin.monster),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        entities: {
-            monsters: [
-                {
-                    monster: goblin.monster,
-                },
-            ],
-            players: [],
-            items: [],
-        },
-        entityTokenPositions: {
+        monsters: [
+            {
+                monster: goblin.monster,
+            },
+        ],
+        players: [],
+        items: [],
+        tokenPositions: {
             [goblin.monster]: {
                 "0": {
                     token: goblin.monster,
@@ -255,26 +250,24 @@ test("Test IR", async () => {
     });
 
     /**
-     * Test search by partial match
+     * Test search by partial match `entitiesIR`
      */
     expect(
-        entitiesInfomationRetrieval(tokenize("Gandaf"), {
-            // subtracted one letter
+        entitiesIR({
+            queryTokens: tokenize("Gandaf"), // subtracted one letter
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        entities: {
-            monsters: [],
-            players: [
-                {
-                    name: "Gandalf",
-                },
-            ],
-            items: [],
-        },
-        entityTokenPositions: {
+        monsters: [],
+        players: [
+            {
+                name: "Gandalf",
+            },
+        ],
+        items: [],
+        tokenPositions: {
             [playerOne.player]: {
                 "0": {
                     token: "Gandaf",
@@ -285,47 +278,43 @@ test("Test IR", async () => {
     });
 
     expect(
-        entitiesInfomationRetrieval(tokenize("Gan"), {
-            // to much error
-            // subtracted one letter
+        entitiesIR({
+            queryTokens: tokenize("Gan"), // subtracted one letter
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        entities: {
-            monsters: [],
-            players: [],
-            items: [],
-        },
-        entityTokenPositions: {},
+        monsters: [],
+        players: [], // to much error
+        items: [],
+        tokenPositions: {},
     });
 
     /**
-     * Test search multiple entities
+     * Test search multiple entities `entitiesIR`
      */
     expect(
-        entitiesInfomationRetrieval(tokenize("Gandaf attacks gobli"), {
+        entitiesIR({
             // subtracted one letter
+            queryTokens: tokenize("Gandaf attacks gobli"),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
             items: [woodenDoor, woodenClub],
         }),
     ).to.toMatchObject({
-        entities: {
-            monsters: [
-                {
-                    monster: goblin.monster,
-                },
-            ],
-            players: [
-                {
-                    name: "Gandalf",
-                },
-            ],
-            items: [],
-        },
-        entityTokenPositions: {
+        monsters: [
+            {
+                monster: goblin.monster,
+            },
+        ],
+        players: [
+            {
+                name: "Gandalf",
+            },
+        ],
+        items: [],
+        tokenPositions: {
             [goblin.monster]: {
                 "2": {
                     token: "gobli",
@@ -336,6 +325,96 @@ test("Test IR", async () => {
                 "0": {
                     token: "Gandaf",
                     score: 0.8,
+                },
+            },
+        },
+    });
+
+    /**
+     * Test exact match `abilitiesActionsIR`
+     */
+
+    const playerActions: PropAction[] = Object.values(compendium).flatMap(
+        (prop) => Object.values(prop.actions),
+    );
+    const playerAbilities: Ability[] = Object.values(abilities);
+
+    // Test action
+    expect(
+        abilitiesActionsIR({
+            queryTokens: tokenize("open woodendoor"),
+            abilities: playerAbilities,
+            actions: playerActions,
+        }),
+    ).to.toMatchObject({
+        abilities: [],
+        actions: [
+            {
+                action: "open",
+                description: "Open the door.",
+            },
+        ],
+        tokenPositions: {
+            open: {
+                "0": {
+                    token: "open",
+                    score: 1,
+                },
+            },
+        },
+    });
+
+    // Test ability
+    expect(
+        abilitiesActionsIR({
+            queryTokens: tokenize("eyepok goblin"), // subtracted one letter
+            abilities: playerAbilities,
+            actions: playerActions,
+        }),
+    ).to.toMatchObject({
+        abilities: [
+            {
+                ability: "eyePoke",
+                type: "offensive",
+                description: "Pokes the player's eyes, blinding them.",
+            },
+        ],
+        actions: [],
+        tokenPositions: {
+            eyePoke: {
+                "0": {
+                    token: "eyepok",
+                    score: 0.8,
+                },
+            },
+        },
+    });
+
+    // Test token exists in abilities and actions
+    expect(
+        abilitiesActionsIR({
+            queryTokens: tokenize("teleport to player"),
+            abilities: playerAbilities,
+            actions: playerActions,
+        }),
+    ).to.toMatchObject({
+        abilities: [
+            {
+                ability: "teleport",
+                description: "Teleport to the target location.",
+            },
+        ],
+        actions: [
+            {
+                action: "teleport",
+                description: "Step through the portal.",
+            },
+        ],
+        tokenPositions: {
+            teleport: {
+                "0": {
+                    token: "teleport",
+                    score: 1,
                 },
             },
         },

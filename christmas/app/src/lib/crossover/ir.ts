@@ -3,11 +3,70 @@ import type {
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
+import type { Ability } from "./world/abilities";
+import type { PropAction } from "./world/compendium";
 
-export { entitiesInfomationRetrieval, tokenize };
+export { abilitiesActionsIR, entitiesIR, tokenize };
 
 type MatchedTokenPosition = Record<number, { token: string; score: number }>;
-type EntityTokenPositions = Record<string, MatchedTokenPosition>;
+type TokenPositions = Record<string, MatchedTokenPosition>;
+
+/**
+ * Retrieves abilities and actions based on the given query tokens.
+ * @param queryTokens - The query tokens used to filter the abilities and actions.
+ * @param abilities - The list of abilities to filter.
+ * @param actions - The list of actions to filter.
+ * @returns An object containing the filtered abilities and actions.
+ */
+function abilitiesActionsIR({
+    queryTokens,
+    abilities,
+    actions,
+}: {
+    queryTokens: string[];
+    abilities: Ability[];
+    actions: PropAction[];
+}): {
+    abilities: Ability[];
+    actions: PropAction[];
+    tokenPositions: TokenPositions;
+} {
+    let tokenPositions: TokenPositions = {};
+
+    abilities = abilities.filter((ability) => {
+        return [ability.ability].some((document) => {
+            const { score, matchedTokens } = documentScore(
+                queryTokens,
+                document,
+            );
+            if (score > 0.6) {
+                tokenPositions[ability.ability] = matchedTokens;
+                return true;
+            }
+            return false;
+        });
+    });
+
+    actions = actions.filter((action) => {
+        return [action.action].some((document) => {
+            const { score, matchedTokens } = documentScore(
+                queryTokens,
+                document,
+            );
+            if (score > 0.6) {
+                tokenPositions[action.action] = matchedTokens;
+                return true;
+            }
+            return false;
+        });
+    });
+
+    return {
+        abilities: abilities || [],
+        actions: actions || [],
+        tokenPositions,
+    };
+}
 
 /**
  * Retrieves entities based on the given query tokens.
@@ -15,15 +74,23 @@ type EntityTokenPositions = Record<string, MatchedTokenPosition>;
  * @param entities - The entities to search within.
  * @returns An object containing the filtered monsters, players, and items.
  */
-function entitiesInfomationRetrieval(
-    queryTokens: string[],
-    entities: { monsters: Monster[]; players: Player[]; items: Item[] },
-): {
-    entities: { monsters: Monster[]; players: Player[]; items: Item[] };
-    entityTokenPositions: EntityTokenPositions;
+function entitiesIR({
+    queryTokens,
+    monsters,
+    players,
+    items,
+}: {
+    queryTokens: string[];
+    monsters: Monster[];
+    players: Player[];
+    items: Item[];
+}): {
+    monsters: Monster[];
+    players: Player[];
+    items: Item[];
+    tokenPositions: TokenPositions;
 } {
-    let { monsters, players, items } = entities;
-    let entityTokenPositions: EntityTokenPositions = {};
+    let tokenPositions: TokenPositions = {};
 
     monsters = monsters.filter((monster) => {
         return [monster.beast, monster.name, monster.monster].some(
@@ -33,7 +100,7 @@ function entitiesInfomationRetrieval(
                     document,
                 );
                 if (score > 0.6) {
-                    entityTokenPositions[monster.monster] = matchedTokens;
+                    tokenPositions[monster.monster] = matchedTokens;
                     return true;
                 }
                 return false;
@@ -48,7 +115,7 @@ function entitiesInfomationRetrieval(
                 document,
             );
             if (score > 0.6) {
-                entityTokenPositions[player.player] = matchedTokens;
+                tokenPositions[player.player] = matchedTokens;
                 return true;
             }
             return false;
@@ -62,7 +129,7 @@ function entitiesInfomationRetrieval(
                 document,
             );
             if (score > 0.6) {
-                entityTokenPositions[item.item] = matchedTokens;
+                tokenPositions[item.item] = matchedTokens;
                 return true;
             }
             return false;
@@ -70,12 +137,10 @@ function entitiesInfomationRetrieval(
     });
 
     return {
-        entities: {
-            monsters: monsters || [],
-            players: players || [],
-            items: items || [],
-        },
-        entityTokenPositions,
+        monsters: monsters || [],
+        players: players || [],
+        items: items || [],
+        tokenPositions,
     };
 }
 

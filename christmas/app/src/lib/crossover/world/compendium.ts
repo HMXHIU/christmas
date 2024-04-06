@@ -5,7 +5,13 @@ import { type AssetMetadata } from ".";
 import { compendium } from "./settings";
 const { cloneDeep } = lodash;
 
-export { itemAttibutes, type EquipmentSlot, type ItemVariables, type Prop };
+export {
+    itemAttibutes,
+    type EquipmentSlot,
+    type ItemVariables,
+    type Prop,
+    type PropAction,
+};
 
 type EquipmentSlot =
     | "rh" // right hand
