@@ -95,7 +95,12 @@ test("Test Player", async () => {
     let queryTokens = tokenize(query);
 
     // Retrieve entities relevant to query from the environment
-    var { monsters, players, items } = entitiesIR({
+    var {
+        monsters,
+        players,
+        items,
+        tokenPositions: entityTokenPositions,
+    } = entitiesIR({
         queryTokens,
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
@@ -103,7 +108,11 @@ test("Test Player", async () => {
     });
 
     // Retrieve actions and abilities relevant to query
-    var { actions, abilities: abilitiesRetrieved } = abilitiesActionsIR({
+    var {
+        actions,
+        abilities: abilitiesRetrieved,
+        tokenPositions: abilityTokenPositions,
+    } = abilitiesActionsIR({
         queryTokens,
         abilities: playerAbilities,
         actions: playerActions,
@@ -115,6 +124,10 @@ test("Test Player", async () => {
             ability,
             resolveAbilityEntities({
                 queryTokens,
+                tokenPositions: {
+                    ...entityTokenPositions,
+                    ...abilityTokenPositions,
+                },
                 ability: ability.ability,
                 self: playerOne,
                 monsters,
@@ -148,7 +161,12 @@ test("Test Player", async () => {
     queryTokens = tokenize(query);
 
     // Retrieve entities relevant to query from the environment
-    var { monsters, players, items } = entitiesIR({
+    var {
+        monsters,
+        players,
+        items,
+        tokenPositions: entityTokenPositions,
+    } = entitiesIR({
         queryTokens,
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
@@ -156,7 +174,11 @@ test("Test Player", async () => {
     });
 
     // Retrieve actions and abilities relevant to query
-    var { actions, abilities: abilitiesRetrieved } = abilitiesActionsIR({
+    var {
+        actions,
+        abilities: abilitiesRetrieved,
+        tokenPositions: abilityTokenPositions,
+    } = abilitiesActionsIR({
         queryTokens,
         abilities: playerAbilities,
         actions: playerActions,
@@ -168,6 +190,10 @@ test("Test Player", async () => {
             ability,
             resolveAbilityEntities({
                 queryTokens,
+                tokenPositions: {
+                    ...entityTokenPositions,
+                    ...abilityTokenPositions,
+                },
                 ability: ability.ability,
                 self: dragon, // self is dragon
                 monsters,
@@ -201,7 +227,12 @@ test("Test Player", async () => {
     queryTokens = tokenize(query);
 
     // Retrieve entities relevant to query from the environment
-    var { monsters, players, items } = entitiesIR({
+    var {
+        monsters,
+        players,
+        items,
+        tokenPositions: entityTokenPositions,
+    } = entitiesIR({
         queryTokens,
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
@@ -209,7 +240,11 @@ test("Test Player", async () => {
     });
 
     // Retrieve actions and abilities relevant to query
-    var { actions, abilities: abilitiesRetrieved } = abilitiesActionsIR({
+    var {
+        actions,
+        abilities: abilitiesRetrieved,
+        tokenPositions: abilityTokenPositions,
+    } = abilitiesActionsIR({
         queryTokens,
         abilities: playerAbilities,
         actions: playerActions,
@@ -221,6 +256,10 @@ test("Test Player", async () => {
             ability,
             resolveAbilityEntities({
                 queryTokens,
+                tokenPositions: {
+                    ...entityTokenPositions,
+                    ...abilityTokenPositions,
+                },
                 ability: ability.ability,
                 self: playerOne,
                 monsters,
@@ -254,7 +293,12 @@ test("Test Player", async () => {
     queryTokens = tokenize(query);
 
     // Retrieve entities relevant to query from the environment
-    var { monsters, players, items } = entitiesIR({
+    var {
+        monsters,
+        players,
+        items,
+        tokenPositions: entityTokenPositions,
+    } = entitiesIR({
         queryTokens,
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
@@ -262,15 +306,15 @@ test("Test Player", async () => {
     });
 
     // Retrieve actions and abilities relevant to query
-    var { actions, abilities: abilitiesRetrieved } = abilitiesActionsIR({
+    var {
+        actions,
+        abilities: abilitiesRetrieved,
+        tokenPositions: abilityTokenPositions,
+    } = abilitiesActionsIR({
         queryTokens,
         abilities: playerAbilities,
         actions: playerActions,
     });
-
-    //  WHY BANDAGE AND SCRATCH RETURNED? should only be scratch
-    // !! bandage and gandalf are matching - ensure token only used once make more strict
-    console.log("abilitiesRetrieved", abilitiesRetrieved);
 
     // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
     abilityEntities = abilitiesRetrieved
@@ -278,6 +322,10 @@ test("Test Player", async () => {
             ability,
             resolveAbilityEntities({
                 queryTokens,
+                tokenPositions: {
+                    ...entityTokenPositions,
+                    ...abilityTokenPositions,
+                },
                 ability: ability.ability,
                 self: playerOne,
                 monsters,
@@ -287,5 +335,7 @@ test("Test Player", async () => {
         ])
         .filter(([ability, entities]) => entities != null);
 
-    console.log(JSON.stringify(abilityEntities, null, 2));
+    // Should not resolve - cant scratch self
+    expect(abilityEntities.length).toBe(0);
+    expect(abilityEntities).toMatchObject([]);
 });

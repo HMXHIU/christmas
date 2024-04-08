@@ -6,7 +6,13 @@ import type {
 import type { Ability } from "./world/abilities";
 import type { PropAction } from "./world/compendium";
 
-export { abilitiesActionsIR, entitiesIR, fuzzyMatch, tokenize };
+export {
+    abilitiesActionsIR,
+    entitiesIR,
+    fuzzyMatch,
+    tokenize,
+    type TokenPositions,
+};
 
 type MatchedTokenPosition = Record<number, { token: string; score: number }>;
 type TokenPositions = Record<string, MatchedTokenPosition>;
@@ -149,7 +155,7 @@ function maxLevenshteinDistance(query: string): number {
         return 0;
     } else if (query.length <= 4) {
         return 1;
-    } else if (query.length <= 6) {
+    } else if (query.length <= 7) {
         return 2;
     }
     return 3;

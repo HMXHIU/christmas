@@ -10,6 +10,7 @@ import type {
 import { substituteVariables } from "$lib/utils";
 import lodash from "lodash";
 import { geohashToGridCell } from ".";
+import type { TokenPositions } from "../ir";
 import { abilities } from "./settings";
 const { cloneDeep } = lodash;
 
@@ -198,6 +199,7 @@ function checkInRange(
  */
 function resolveAbilityEntities({
     queryTokens,
+    tokenPositions,
     ability,
     self,
     monsters,
@@ -205,6 +207,7 @@ function resolveAbilityEntities({
     items,
 }: {
     queryTokens: string[];
+    tokenPositions: TokenPositions;
     ability: string;
     self: Player | Monster | Item;
     monsters: Monster[];
@@ -220,7 +223,7 @@ function resolveAbilityEntities({
         targetSelfAllowed,
     } = abilities[ability].predicate;
 
-    // Check self types
+    // Check self types (e.g. player, monster, item in self)
     if (!selfTypes.some((type) => ((self as any)[type] as string) != null)) {
         return null;
     }
