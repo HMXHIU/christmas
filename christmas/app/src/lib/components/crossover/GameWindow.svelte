@@ -1,5 +1,4 @@
 <script lang="ts">
-    import Chat from "$lib/components/common/Chat.svelte";
     import type {
         ChatCommandGroupUI,
         ChatCommandUI,
@@ -7,6 +6,7 @@
     } from "$lib/components/common/types";
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Collapsible from "$lib/components/ui/collapsible/index.js";
+    import type { GameCommand } from "$lib/crossover/ir";
     import type { Direction } from "$lib/crossover/world";
     import { abyssTile } from "$lib/crossover/world";
     import type {
@@ -28,6 +28,7 @@
     import { Assets } from "pixi.js";
     import { onMount } from "svelte";
     import { z } from "zod";
+    import Chat from "./Chat.svelte";
     import ContextSection from "./ContextSection.svelte";
     import Map from "./Map.svelte";
 
@@ -35,13 +36,9 @@
     export let monsters: Monster[] = [];
     export let items: Item[] = [];
     export let tile: z.infer<typeof TileSchema> = abyssTile;
-    export let onMove: (direction: Direction) => void;
-
     export let messageFeed: MessageFeedUI[] = [];
-    export let onChatMessage: (
-        command: ChatCommandUI | null,
-        message: string,
-    ) => void;
+    export let onMove: (direction: Direction) => void;
+    export let onGameCommand: (gameCommand: GameCommand) => void;
 
     let defaultCommand = "say";
     let commandGroups: [ChatCommandGroupUI, ChatCommandUI[]][] = [
@@ -145,9 +142,12 @@
     <!-- Chat -->
     <Chat
         {messageFeed}
-        {onChatMessage}
+        {onGameCommand}
         {commandGroups}
         {defaultCommand}
+        {monsters}
+        {players}
+        {items}
         class="h-3/5"
     ></Chat>
     <!-- Context Section -->

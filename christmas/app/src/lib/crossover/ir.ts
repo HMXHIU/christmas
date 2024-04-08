@@ -3,19 +3,27 @@ import type {
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
-import type { Ability } from "./world/abilities";
+import { resolveGameCommandEntities, type Ability } from "./world/abilities";
 import type { PropAction } from "./world/compendium";
 
 export {
     abilitiesActionsIR,
     entitiesIR,
     fuzzyMatch,
+    searchAbilities,
     tokenize,
+    type GameCommand,
+    type GameCommandEntities,
     type TokenPositions,
 };
 
 type MatchedTokenPosition = Record<number, { token: string; score: number }>;
 type TokenPositions = Record<string, MatchedTokenPosition>;
+type GameCommandEntities = {
+    self: Player | Monster | Item;
+    target: Player | Monster | Item;
+};
+type GameCommand = [Ability | PropAction, GameCommandEntities];
 
 /**
  * Retrieves abilities and actions based on the given query tokens.
@@ -299,4 +307,66 @@ function fuzzyMatch(str1: string, str2: string, maxErrors: number): boolean {
 
     // Check if the final Levenshtein distance is within the allowed error threshold
     return dp[m][n] <= maxErrors;
+}
+
+function searchAbilities({
+    query,
+    player,
+    playerActions,
+    playerAbilities,
+    monsters,
+    players,
+    items,
+}: {
+    query: string;
+    player: Player;
+    playerActions: PropAction[];
+    playerAbilities: Ability[];
+    monsters: Monster[];
+    players: Player[];
+    items: Item[];
+}): GameCommand[] {
+    const queryTokens = tokenize(query);
+
+    // Retrieve entities relevant to query from the environment
+    var {
+        monsters: monstersRetrieved,
+        players: playersRetrieved,
+        items: itemsRetrieved,
+        tokenPositions: entityTokenPositions,
+    } = entitiesIR({
+        queryTokens,
+        monsters,
+        players,
+        items,
+    });
+
+    // Retrieve actions and abilities relevant to query
+    var {
+        actions: actionsRetrieved,
+        abilities: abilitiesRetrieved,
+        tokenPositions: abilityTokenPositions,
+    } = abilitiesActionsIR({
+        queryTokens,
+        abilities: playerAbilities,
+        actions: playerActions,
+    });
+
+    return abilitiesRetrieved
+        .map((ability) => {
+            const entities = resolveGameCommandEntities({
+                queryTokens,
+                tokenPositions: {
+                    ...entityTokenPositions,
+                    ...abilityTokenPositions,
+                },
+                ability: ability.ability,
+                self: player,
+                monsters: monstersRetrieved,
+                players: playersRetrieved,
+                items: itemsRetrieved,
+            });
+            return entities ? [ability, entities] : null;
+        })
+        .filter((x) => x != null) as GameCommand[];
 }

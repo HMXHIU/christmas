@@ -15,11 +15,13 @@
         MessageFeedUI,
     } from "$lib/components/common/types";
 
+    import type { GameCommand } from "$lib/crossover/ir";
     import {
         abyssTile,
         loadMoreGrid,
         type Direction,
     } from "$lib/crossover/world";
+    import { type Ability } from "$lib/crossover/world/abilities";
     import { compendium } from "$lib/crossover/world/settings";
     import type {
         Item,
@@ -40,6 +42,14 @@
     let players: Player[] = [];
     let items: Item[] = [];
     let monsters: Monster[] = [];
+    let abilityEntities: [
+        Ability,
+        { self: Player | Monster | Item; target: Player | Monster | Item },
+    ][] = [];
+
+    async function onGameCommand(gameCommand: GameCommand) {
+        console.log(gameCommand);
+    }
 
     async function onChatMessage(
         command: ChatCommandUI | null,
@@ -182,6 +192,7 @@
     <GameWindow
         class="h-full p-3"
         {onChatMessage}
+        {onGameCommand}
         {onMove}
         {messageFeed}
         {tile}

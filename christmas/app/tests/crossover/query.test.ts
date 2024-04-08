@@ -1,6 +1,6 @@
 import { abilitiesActionsIR, entitiesIR, tokenize } from "$lib/crossover/ir";
 import {
-    resolveAbilityEntities,
+    resolveGameCommandEntities,
     type Ability,
 } from "$lib/crossover/world/abilities";
 import type { PropAction } from "$lib/crossover/world/compendium";
@@ -122,7 +122,7 @@ test("Test Player", async () => {
     let abilityEntities = abilitiesRetrieved
         .map((ability) => [
             ability,
-            resolveAbilityEntities({
+            resolveGameCommandEntities({
                 queryTokens,
                 tokenPositions: {
                     ...entityTokenPositions,
@@ -188,7 +188,7 @@ test("Test Player", async () => {
     abilityEntities = abilitiesRetrieved
         .map((ability) => [
             ability,
-            resolveAbilityEntities({
+            resolveGameCommandEntities({
                 queryTokens,
                 tokenPositions: {
                     ...entityTokenPositions,
@@ -254,7 +254,7 @@ test("Test Player", async () => {
     abilityEntities = abilitiesRetrieved
         .map((ability) => [
             ability,
-            resolveAbilityEntities({
+            resolveGameCommandEntities({
                 queryTokens,
                 tokenPositions: {
                     ...entityTokenPositions,
@@ -320,7 +320,7 @@ test("Test Player", async () => {
     abilityEntities = abilitiesRetrieved
         .map((ability) => [
             ability,
-            resolveAbilityEntities({
+            resolveGameCommandEntities({
                 queryTokens,
                 tokenPositions: {
                     ...entityTokenPositions,

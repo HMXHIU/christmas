@@ -10,7 +10,7 @@ import type {
 import { substituteVariables } from "$lib/utils";
 import lodash from "lodash";
 import { geohashToGridCell } from ".";
-import type { TokenPositions } from "../ir";
+import type { GameCommandEntities, TokenPositions } from "../ir";
 import { abilities } from "./settings";
 const { cloneDeep } = lodash;
 
@@ -18,7 +18,7 @@ export {
     canPerformAbility,
     checkInRange,
     fillInEffectVariables,
-    resolveAbilityEntities,
+    resolveGameCommandEntities,
     type Ability,
     type AbilityType,
     type Buff,
@@ -197,7 +197,7 @@ function checkInRange(
  * @param items - The item entities.
  * @returns - The resolved ability entities, or null if no entities are found.
  */
-function resolveAbilityEntities({
+function resolveGameCommandEntities({
     queryTokens,
     tokenPositions,
     ability,
@@ -213,10 +213,7 @@ function resolveAbilityEntities({
     monsters: Monster[];
     players: Player[];
     items: Item[];
-}): null | {
-    self: Player | Monster | Item;
-    target: Player | Monster | Item;
-} {
+}): null | GameCommandEntities {
     const {
         target: targetTypes,
         self: selfTypes,
