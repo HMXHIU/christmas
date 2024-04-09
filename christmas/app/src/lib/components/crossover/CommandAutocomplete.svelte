@@ -16,6 +16,10 @@
     } from "lucide-svelte";
 
     export let gameCommands: GameCommand[] = [];
+    export let selected: GameCommand | null = null;
+    export let onGameCommand: (gameCommand: GameCommand) => void;
+
+    let value: string = "0-0";
 
     $: groupedCommands = groupBy(gameCommands, (gc: GameCommand) => {
         if ("action" in gc[0]) {
@@ -26,6 +30,9 @@
             return "Other";
         }
     });
+    // Default to first command
+    $: selected = gameCommands[0] || null;
+    $: value = gameCommands.length > 0 ? "0-0" : "0-0";
 
     function targetName(command: GameCommand): string {
         if ("player" in command[1].target) {
@@ -47,15 +54,28 @@
     function commandName(command: GameCommand): string {
         return "action" in command[0] ? command[0].action : command[0].ability;
     }
+
+    function onSubmit() {
+        if (selected) {
+            onGameCommand(selected);
+        }
+    }
 </script>
 
 <div class={cn($$restProps.class)}>
-    <Command.Root class="rounded-lg border shadow-md">
+    <Command.Root class="rounded-lg border shadow-md" {value}>
         <Command.List>
             {#each Object.entries(groupedCommands) as [group, commands], groupIdx (group)}
                 <Command.Group heading={group}>
                     {#each commands as command, commandIdx}
-                        <Command.Item class="justify-between">
+                        <Command.Item
+                            class="justify-between"
+                            value={`${groupIdx}-${commandIdx}`}
+                            onSelect={() => {
+                                selected = command;
+                                value = `${groupIdx}-${commandIdx}`;
+                            }}
+                        >
                             <div class="flex flex-row items-center">
                                 <!-- Command Icon -->
                                 {#if abilityType(command) === "offensive"}
@@ -74,11 +94,17 @@
                                 <span>{targetName(command)}</span>
                             </div>
                             <!-- Default [Enter] -->
-                            <Button variant="secondary" class="h-8 px-2">
-                                <CornerDownLeft class="w-4 h-4 mr-2"
-                                ></CornerDownLeft>
-                                <span class="text-xs">Enter</span>
-                            </Button>
+                            {#if `${groupIdx}-${commandIdx}` === value}
+                                <Button
+                                    variant="secondary"
+                                    class="h-5 px-2"
+                                    on:click={onSubmit}
+                                >
+                                    <CornerDownLeft class="w-3 h-3 mr-2"
+                                    ></CornerDownLeft>
+                                    <span class="text-xs">Enter</span>
+                                </Button>
+                            {/if}
                         </Command.Item>
                     {/each}
                 </Command.Group>

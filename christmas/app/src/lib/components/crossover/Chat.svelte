@@ -10,18 +10,16 @@
     } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
     import { player } from "../../../store";
-    import ChatInput from "../common/ChatInput.svelte";
     import ChatWindow from "../common/ChatWindow.svelte";
-    import type {
-        ChatCommandGroupUI,
-        ChatCommandUI,
-        MessageFeedUI,
-    } from "../common/types";
+    import type { MessageFeedUI } from "../common/types";
+    import ChatInput from "./ChatInput.svelte";
     import CommandAutocomplete from "./CommandAutocomplete.svelte";
+    import type { ChatCommandGroupUI, ChatCommandUI } from "./types";
 
     export let players: Player[] = [];
     export let monsters: Monster[] = [];
     export let items: Item[] = [];
+    export let target: Player | Monster | Item | null = null;
 
     export let messageFeed: MessageFeedUI[] = [];
     export let defaultCommand: string;
@@ -31,27 +29,31 @@
 
     let gameCommands: GameCommand[] = [];
 
-    async function onChatMessage(
-        command: ChatCommandUI | null,
-        message: string,
-    ) {
-        // TODO: replace with actual player's Actions & Abilities
-        const playerActions: PropAction[] = Object.values(compendium).flatMap(
-            (prop) => Object.values(prop.actions),
-        );
-        const playerAbilities: Ability[] = Object.values(abilities);
+    async function onEnter(message: string) {
+        gameCommands = []; // clear game commands
+    }
 
-        gameCommands = searchAbilities({
-            query: message,
-            playerActions,
-            playerAbilities,
-            monsters,
-            players,
-            items,
-            player: $player!,
-        });
+    async function onPartial(message: string) {
+        if (message.length > 2) {
+            // TODO: replace with actual player's Actions & Abilities
+            const playerActions: PropAction[] = Object.values(
+                compendium,
+            ).flatMap((prop) => Object.values(prop.actions));
+            const playerAbilities: Ability[] = Object.values(abilities);
 
-        console.log(JSON.stringify(gameCommands, null, 2));
+            // Autocomplete game commands
+            gameCommands = searchAbilities({
+                query: message,
+                playerActions,
+                playerAbilities,
+                monsters,
+                players,
+                items,
+                player: $player!,
+            });
+        } else {
+            gameCommands = [];
+        }
     }
 </script>
 
@@ -64,5 +66,14 @@
     ></CommandAutocomplete>
 
     <!-- Chat Input -->
-    <ChatInput {onChatMessage} {commandGroups} {defaultCommand}></ChatInput>
+    <ChatInput
+        bind:target
+        {onEnter}
+        {onPartial}
+        {commandGroups}
+        {defaultCommand}
+        {players}
+        {monsters}
+        {items}
+    ></ChatInput>
 </section>
