@@ -92,7 +92,7 @@ const PerformAbilitySchema = z.object({
 });
 const UseItemSchema = z.object({
     item: z.string(),
-    action: z.string(),
+    utility: z.string(),
     target: z.string().optional(),
 });
 const ConfigureItemSchema = z.object({
@@ -530,7 +530,7 @@ const crossoverRouter = {
         useItem: authProcedure
             .input(UseItemSchema)
             .query(async ({ ctx, input }) => {
-                const { item, action, target } = input;
+                const { item, utility, target } = input;
 
                 // Get player
                 const player = (await tryFetchEntity(
@@ -545,7 +545,7 @@ const crossoverRouter = {
                     self: player,
                     item: itemEntity,
                     target: target ? await tryFetchEntity(target) : undefined, // get target if provided
-                    action,
+                    utility,
                 });
 
                 return {

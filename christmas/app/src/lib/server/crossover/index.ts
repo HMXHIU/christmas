@@ -507,22 +507,22 @@ async function saveEntity(
 }
 
 /**
- * Uses an item by performing the specified action on the target entity.
+ * Uses an item by performing the specified utility on the target entity.
  *
  * @param params.item - The item to be used.
- * @param params.action - The action to perform on the item.
+ * @param params.utility - The utility to perform on the item.
  * @param params.self - The entity using the item.
- * @param params.target - The target entity for the action (optional).
+ * @param params.target - The target entity for the utility (optional).
  * @returns A promise that resolves to the updated item entity.
  */
 async function useItem({
     item,
-    action,
+    utility,
     self,
     target,
 }: {
     item: ItemEntity;
-    action: string;
+    utility: string;
     self: PlayerEntity | MonsterEntity; // sell can only be `player` or `monster`
     target?: PlayerEntity | MonsterEntity | ItemEntity; // target can be an `item`
 }): Promise<{
@@ -533,7 +533,7 @@ async function useItem({
     message: string;
 }> {
     // Check if can use item
-    const { canUse, message } = canUseItem(self, item, action);
+    const { canUse, message } = canUseItem(self, item, utility);
     if (!canUse) {
         // TODO: publish to player message
         console.log(message);
@@ -547,11 +547,11 @@ async function useItem({
     }
 
     const prop = compendium[item.prop];
-    const propAction = prop.actions![action];
-    const propAbility = propAction.ability;
+    const propUtility = prop.utilities![utility];
+    const propAbility = propUtility.ability;
 
     // Set item start state
-    item.state = propAction.state.start;
+    item.state = propUtility.state.start;
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
 
     // TODO: publish to clients
@@ -587,7 +587,7 @@ async function useItem({
 
         if (status !== "success") {
             // Reset item state
-            item.state = propAction.state.start;
+            item.state = propUtility.state.start;
             item = (await itemRepository.save(item.item, item)) as ItemEntity;
             return {
                 item,
@@ -603,9 +603,9 @@ async function useItem({
     }
 
     // Set item end state, consume charges and durability
-    item.state = propAction.state.end;
-    item.charges -= propAction.cost.charges;
-    item.durability -= propAction.cost.durability;
+    item.state = propUtility.state.end;
+    item.charges -= propUtility.cost.charges;
+    item.durability -= propUtility.cost.durability;
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
 
     // TODO: publish to clients
@@ -648,7 +648,7 @@ function canConfigureItem(
 function canUseItem(
     self: PlayerEntity | MonsterEntity,
     item: ItemEntity,
-    action: string,
+    utility: string,
 ): { canUse: boolean; message: string } {
     // Check valid prop
     if (!compendium.hasOwnProperty(item.prop)) {
@@ -659,11 +659,11 @@ function canUseItem(
     }
     const prop = compendium[item.prop];
 
-    // Check valid action
-    if (!(prop.actions && prop.actions[action])) {
+    // Check valid utility
+    if (!(prop.utilities && prop.utilities[utility])) {
         return {
             canUse: false,
-            message: `Invalid action ${action} for item ${item.item}`,
+            message: `Invalid utility ${utility} for item ${item.item}`,
         };
     }
 
@@ -675,9 +675,9 @@ function canUseItem(
         };
     }
 
-    // Check if action requires item to be equipped and is equipped in the correct slot
+    // Check if utility requires item to be equipped and is equipped in the correct slot
     if (
-        prop.actions[action].requireEquipped &&
+        prop.utilities[utility].requireEquipped &&
         !compendium[item.prop].equipmentSlot!.includes(
             item.locationType as EquipmentSlot,
         )
@@ -689,17 +689,17 @@ function canUseItem(
     }
 
     // Check has enough charges or durability
-    const propAction = prop.actions[action];
-    if (item.charges < propAction.cost.charges) {
+    const propUtility = prop.utilities[utility];
+    if (item.charges < propUtility.cost.charges) {
         return {
             canUse: false,
-            message: `${item.item} has not enough charges to perform ${action}`,
+            message: `${item.item} has not enough charges to perform ${utility}`,
         };
     }
-    if (item.durability < propAction.cost.durability) {
+    if (item.durability < propUtility.cost.durability) {
         return {
             canUse: false,
-            message: `${item.item} has not enough durability to perform ${action}`,
+            message: `${item.item} has not enough durability to perform ${utility}`,
         };
     }
 

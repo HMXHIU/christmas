@@ -22,8 +22,8 @@
     let value: string = "0-0";
 
     $: groupedCommands = groupBy(gameCommands, (gc: GameCommand) => {
-        if ("action" in gc[0]) {
-            return "Item Actions";
+        if ("utility" in gc[0]) {
+            return "Items";
         } else if ("ability" in gc[0]) {
             return "Abilities";
         } else {
@@ -52,7 +52,9 @@
     }
 
     function commandName(command: GameCommand): string {
-        return "action" in command[0] ? command[0].action : command[0].ability;
+        return "utility" in command[0]
+            ? command[0].utility
+            : command[0].ability;
     }
 
     function onSubmit() {
@@ -62,53 +64,56 @@
     }
 </script>
 
-<div class={cn($$restProps.class)}>
-    <Command.Root class="rounded-lg border shadow-md" {value}>
-        <Command.List>
-            {#each Object.entries(groupedCommands) as [group, commands], groupIdx (group)}
-                <Command.Group heading={group}>
-                    {#each commands as command, commandIdx}
-                        <Command.Item
-                            class="justify-between"
-                            value={`${groupIdx}-${commandIdx}`}
-                            onSelect={() => {
-                                selected = command;
-                                value = `${groupIdx}-${commandIdx}`;
-                            }}
-                        >
-                            <div class="flex flex-row items-center">
-                                <!-- Command Icon -->
-                                {#if abilityType(command) === "offensive"}
-                                    <Sword class="mr-2 h-4 w-4" />
-                                {:else if abilityType(command) === "defensive"}
-                                    <Shield class="mr-2 h-4 w-4" />
-                                {:else if abilityType(command) === "healing"}
-                                    <Cross class="mr-2 h-4 w-4" />
-                                {:else if abilityType(command) === "neutral"}
-                                    <Wrench class="mr-2 h-4 w-4" />
+{#if Object.keys(groupedCommands).length > 0}
+    <div class={cn($$restProps.class)}>
+        <Command.Root class="rounded-lg border shadow-md" {value}>
+            <Command.List>
+                {#each Object.entries(groupedCommands) as [group, commands], groupIdx (group)}
+                    <Command.Group heading={group}>
+                        {#each commands as command, commandIdx}
+                            <Command.Item
+                                class="justify-between"
+                                value={`${groupIdx}-${commandIdx}`}
+                                onSelect={() => {
+                                    selected = command;
+                                    value = `${groupIdx}-${commandIdx}`;
+                                }}
+                            >
+                                <div class="flex flex-row items-center">
+                                    <!-- Command Icon -->
+                                    {#if abilityType(command) === "offensive"}
+                                        <Sword class="mr-2 h-4 w-4" />
+                                    {:else if abilityType(command) === "defensive"}
+                                        <Shield class="mr-2 h-4 w-4" />
+                                    {:else if abilityType(command) === "healing"}
+                                        <Cross class="mr-2 h-4 w-4" />
+                                    {:else if abilityType(command) === "neutral"}
+                                        <Wrench class="mr-2 h-4 w-4" />
+                                    {/if}
+                                    <!-- Ability -->
+                                    <span>{commandName(command)}</span>
+                                    <!-- Target -->
+                                    <ChevronRight class="w-4 h-4"
+                                    ></ChevronRight>
+                                    <span>{targetName(command)}</span>
+                                </div>
+                                <!-- Default [Enter] -->
+                                {#if `${groupIdx}-${commandIdx}` === value}
+                                    <Button
+                                        variant="secondary"
+                                        class="h-5 px-2"
+                                        on:click={onSubmit}
+                                    >
+                                        <CornerDownLeft class="w-3 h-3 mr-2"
+                                        ></CornerDownLeft>
+                                        <span class="text-xs">Enter</span>
+                                    </Button>
                                 {/if}
-                                <!-- Ability -->
-                                <span>{commandName(command)}</span>
-                                <!-- Target -->
-                                <ChevronRight class="w-4 h-4"></ChevronRight>
-                                <span>{targetName(command)}</span>
-                            </div>
-                            <!-- Default [Enter] -->
-                            {#if `${groupIdx}-${commandIdx}` === value}
-                                <Button
-                                    variant="secondary"
-                                    class="h-5 px-2"
-                                    on:click={onSubmit}
-                                >
-                                    <CornerDownLeft class="w-3 h-3 mr-2"
-                                    ></CornerDownLeft>
-                                    <span class="text-xs">Enter</span>
-                                </Button>
-                            {/if}
-                        </Command.Item>
-                    {/each}
-                </Command.Group>
-            {/each}
-        </Command.List>
-    </Command.Root>
-</div>
+                            </Command.Item>
+                        {/each}
+                    </Command.Group>
+                {/each}
+            </Command.List>
+        </Command.Root>
+    </div>
+{/if}

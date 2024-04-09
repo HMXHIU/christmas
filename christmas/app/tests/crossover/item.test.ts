@@ -93,7 +93,7 @@ test("Test Items", async () => {
     const woodenDoorProp = compendium[woodenDoor.prop];
     const { item: openedWoodenDoor } = await useItem({
         item: woodenDoor,
-        action: woodenDoorProp.actions.open.action,
+        utility: woodenDoorProp.utilities.open.utility,
         self: playerOne as PlayerEntity,
     });
 
@@ -103,7 +103,7 @@ test("Test Items", async () => {
     });
     const { item: closedWoodenDoor } = await useItem({
         item: openedWoodenDoor,
-        action: woodenDoorProp.actions.close.action,
+        utility: woodenDoorProp.utilities.close.utility,
         self: playerOne as PlayerEntity,
     });
     expect(closedWoodenDoor).toMatchObject({
@@ -200,17 +200,17 @@ test("Test Items", async () => {
     expect(playerOne.location[0] === portalTwo.location[0]).toBe(false);
     let itemResult = await useItem({
         item: portalOne,
-        action: compendium.portal.actions.teleport.action,
+        utility: compendium.portal.utilities.teleport.utility,
         self: playerOne as PlayerEntity,
     });
     portalOne = itemResult.item;
     playerOne = itemResult.self as PlayerEntity;
 
     expect(portalOne.charges).toBe(
-        beforeCharges - compendium.portal.actions.teleport.cost.charges,
+        beforeCharges - compendium.portal.utilities.teleport.cost.charges,
     );
     expect(portalOne.durability).toBe(
-        beforeDurability - compendium.portal.actions.teleport.cost.durability,
+        beforeDurability - compendium.portal.utilities.teleport.cost.durability,
     );
     expect(playerOne.location[0] === portalTwo.location[0]).toBe(true);
 
@@ -243,7 +243,7 @@ test("Test Items", async () => {
     // Test cannot use item without equipping
     var { status, message } = await useItem({
         item: playerOneWoodenClub,
-        action: compendium.woodenClub.actions.swing.action,
+        utility: compendium.woodenClub.utilities.swing.utility,
         self: playerOne as PlayerEntity,
         target: playerTwo as PlayerEntity,
     });
@@ -264,7 +264,7 @@ test("Test Items", async () => {
     // Test target out of range
     var { status, message } = await useItem({
         item: playerOneWoodenClub,
-        action: compendium.woodenClub.actions.swing.action,
+        utility: compendium.woodenClub.utilities.swing.utility,
         self: playerOne as PlayerEntity,
         target: playerTwo as PlayerEntity,
     });
@@ -276,7 +276,7 @@ test("Test Items", async () => {
     await expect(
         useItem({
             item: playerOneWoodenClub,
-            action: compendium.woodenClub.actions.swing.action,
+            utility: compendium.woodenClub.utilities.swing.utility,
             self: playerOne as PlayerEntity,
             target: playerTwo as PlayerEntity,
         }),
@@ -303,7 +303,7 @@ test("Test Items", async () => {
     // Test negative permissions
     var { status, message } = await useItem({
         item: playerOneWoodenClub,
-        action: compendium.woodenClub.actions.swing.action,
+        utility: compendium.woodenClub.utilities.swing.utility,
         self: playerTwo as PlayerEntity,
         target: playerOne as PlayerEntity,
     });

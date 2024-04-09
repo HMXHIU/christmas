@@ -3,46 +3,49 @@ import type {
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
-import { resolveGameCommandEntities, type Ability } from "./world/abilities";
-import type { PropAction } from "./world/compendium";
+import { resolveAbilityEntities, type Ability } from "./world/abilities";
+import type { Utility } from "./world/compendium";
+import { compendium } from "./world/settings";
 
 export {
-    abilitiesActionsIR,
     entitiesIR,
     fuzzyMatch,
-    searchAbilities,
+    gameActionsIR,
+    searchPossibleCommands,
     tokenize,
+    type GameActionEntities,
     type GameCommand,
-    type GameCommandEntities,
     type TokenPositions,
 };
 
 type MatchedTokenPosition = Record<number, { token: string; score: number }>;
 type TokenPositions = Record<string, MatchedTokenPosition>;
-type GameCommandEntities = {
-    self: Player | Monster | Item;
+type GameActionEntities = {
+    self: Player | Monster;
     target: Player | Monster | Item;
+    item?: Item;
 };
-type GameCommand = [Ability | PropAction, GameCommandEntities];
+type GameAction = Ability | Utility;
+type GameCommand = [GameAction, GameActionEntities];
 
 /**
- * Retrieves abilities and actions based on the given query tokens.
- * @param queryTokens - The query tokens used to filter the abilities and actions.
+ * Retrieves abilities and utilities based on the given query tokens.
+ * @param queryTokens - The query tokens used to filter the abilities and utilities.
  * @param abilities - The list of abilities to filter.
- * @param actions - The list of actions to filter.
- * @returns An object containing the filtered abilities and actions.
+ * @param itemUtilities - The list of [item, utilities] to filter.
+ * @returns An object containing the filtered abilities and itemUtilities.
  */
-function abilitiesActionsIR({
+function gameActionsIR({
     queryTokens,
     abilities,
-    actions,
+    itemUtilities,
 }: {
     queryTokens: string[];
     abilities: Ability[];
-    actions: PropAction[];
+    itemUtilities: [Item, Utility][];
 }): {
     abilities: Ability[];
-    actions: PropAction[];
+    itemUtilities: [Item, Utility][];
     tokenPositions: TokenPositions;
 } {
     let tokenPositions: TokenPositions = {};
@@ -61,14 +64,14 @@ function abilitiesActionsIR({
         });
     });
 
-    actions = actions.filter((action) => {
-        return [action.action].some((document) => {
+    itemUtilities = itemUtilities.filter(([item, utility]) => {
+        return [utility.utility].some((document) => {
             const { score, matchedTokens } = documentScore(
                 queryTokens,
                 document,
             );
             if (score > 0.6) {
-                tokenPositions[action.action] = matchedTokens;
+                tokenPositions[utility.utility] = matchedTokens;
                 return true;
             }
             return false;
@@ -77,7 +80,7 @@ function abilitiesActionsIR({
 
     return {
         abilities: abilities || [],
-        actions: actions || [],
+        itemUtilities: itemUtilities || [],
         tokenPositions,
     };
 }
@@ -309,18 +312,20 @@ function fuzzyMatch(str1: string, str2: string, maxErrors: number): boolean {
     return dp[m][n] <= maxErrors;
 }
 
-function searchAbilities({
+function searchPossibleCommands({
     query,
+    // Player
     player,
-    playerActions,
     playerAbilities,
+    playerItems,
+    // Environment
     monsters,
     players,
     items,
 }: {
     query: string;
     player: Player;
-    playerActions: PropAction[];
+    playerItems: Item[];
     playerAbilities: Ability[];
     monsters: Monster[];
     players: Player[];
@@ -328,7 +333,7 @@ function searchAbilities({
 }): GameCommand[] {
     const queryTokens = tokenize(query);
 
-    // Retrieve entities relevant to query from the environment
+    // Entities in environment relevant to the query
     var {
         monsters: monstersRetrieved,
         players: playersRetrieved,
@@ -341,24 +346,33 @@ function searchAbilities({
         items,
     });
 
-    // Retrieve actions and abilities relevant to query
-    var {
-        actions: actionsRetrieved,
-        abilities: abilitiesRetrieved,
-        tokenPositions: abilityTokenPositions,
-    } = abilitiesActionsIR({
-        queryTokens,
-        abilities: playerAbilities,
-        actions: playerActions,
+    // All possible utilities from playerItems
+    const itemUtilities = playerItems.flatMap((item) => {
+        return Object.values(compendium[item.prop].utilities).map(
+            (utility): [Item, Utility] => {
+                return [item, utility];
+            },
+        );
     });
 
-    return abilitiesRetrieved
+    // Player abilities & utilities relevant to the query
+    var {
+        itemUtilities: itemUtilitiesPossible,
+        abilities: abilitiesPosssible,
+        tokenPositions: actionsTokenPositions,
+    } = gameActionsIR({
+        queryTokens,
+        abilities: playerAbilities,
+        itemUtilities,
+    });
+
+    const abilityCommands = abilitiesPosssible
         .map((ability) => {
-            const entities = resolveGameCommandEntities({
+            const entities = resolveAbilityEntities({
                 queryTokens,
                 tokenPositions: {
                     ...entityTokenPositions,
-                    ...abilityTokenPositions,
+                    ...actionsTokenPositions,
                 },
                 ability: ability.ability,
                 self: player,
@@ -369,4 +383,31 @@ function searchAbilities({
             return entities ? [ability, entities] : null;
         })
         .filter((x) => x != null) as GameCommand[];
+
+    const utilityCommands = itemUtilitiesPossible
+        .map(([item, utility]) => {
+            let entities = null;
+            // Check if the utility performs an ability
+            if (utility.ability) {
+                entities = resolveAbilityEntities({
+                    queryTokens,
+                    tokenPositions: {
+                        ...entityTokenPositions,
+                        ...actionsTokenPositions,
+                    },
+                    ability: utility.ability,
+                    self: player, // Note: self is still the player when performing an ability from an item
+                    monsters: monstersRetrieved,
+                    players: playersRetrieved,
+                    items: itemsRetrieved,
+                });
+            }
+            // Insert the item being used into the entities
+            return entities ? [utility, { ...entities, item: item }] : null;
+        })
+        .filter((x) => x != null) as GameCommand[];
+
+    // TODO: utilities that dont have an ability
+
+    return [...abilityCommands, ...utilityCommands];
 }

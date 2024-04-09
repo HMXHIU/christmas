@@ -1,12 +1,12 @@
-import { abilitiesActionsIR, entitiesIR, tokenize } from "$lib/crossover/ir";
+import { entitiesIR, gameActionsIR, tokenize } from "$lib/crossover/ir";
 import {
-    resolveGameCommandEntities,
+    resolveAbilityEntities,
     type Ability,
 } from "$lib/crossover/world/abilities";
-import type { PropAction } from "$lib/crossover/world/compendium";
+import type { Utility } from "$lib/crossover/world/compendium";
 import { abilities, compendium } from "$lib/crossover/world/settings";
 import { spawnItem, spawnMonster } from "$lib/server/crossover";
-import type { ItemEntity } from "$lib/server/crossover/redis/entities";
+import type { Item, ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer, generateRandomGeohash } from "./utils";
@@ -81,9 +81,17 @@ test("Test Player", async () => {
     });
 
     // Actions & Abilities
-    const playerActions: PropAction[] = Object.values(compendium).flatMap(
-        (prop) => Object.values(prop.actions),
-    );
+    const itemUtilities: [Item, Utility][] = [
+        woodenClub,
+        woodenDoor,
+        portal,
+    ].flatMap((item) => {
+        return Object.values(compendium[item.prop].utilities).map(
+            (utility): [Item, Utility] => {
+                return [item, utility];
+            },
+        );
+    });
     const playerAbilities: Ability[] = Object.values(abilities);
 
     /**
@@ -109,20 +117,20 @@ test("Test Player", async () => {
 
     // Retrieve actions and abilities relevant to query
     var {
-        actions,
-        abilities: abilitiesRetrieved,
+        itemUtilities: itemUtilitiesPossible,
+        abilities: abilitiesPossible,
         tokenPositions: abilityTokenPositions,
-    } = abilitiesActionsIR({
+    } = gameActionsIR({
         queryTokens,
         abilities: playerAbilities,
-        actions: playerActions,
+        itemUtilities,
     });
 
     // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
-    let abilityEntities = abilitiesRetrieved
+    let abilityEntities = abilitiesPossible
         .map((ability) => [
             ability,
-            resolveGameCommandEntities({
+            resolveAbilityEntities({
                 queryTokens,
                 tokenPositions: {
                     ...entityTokenPositions,
@@ -175,20 +183,20 @@ test("Test Player", async () => {
 
     // Retrieve actions and abilities relevant to query
     var {
-        actions,
-        abilities: abilitiesRetrieved,
+        itemUtilities: itemUtilitiesPossible,
+        abilities: abilitiesPossible,
         tokenPositions: abilityTokenPositions,
-    } = abilitiesActionsIR({
+    } = gameActionsIR({
         queryTokens,
         abilities: playerAbilities,
-        actions: playerActions,
+        itemUtilities,
     });
 
     // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
-    abilityEntities = abilitiesRetrieved
+    abilityEntities = abilitiesPossible
         .map((ability) => [
             ability,
-            resolveGameCommandEntities({
+            resolveAbilityEntities({
                 queryTokens,
                 tokenPositions: {
                     ...entityTokenPositions,
@@ -241,20 +249,20 @@ test("Test Player", async () => {
 
     // Retrieve actions and abilities relevant to query
     var {
-        actions,
-        abilities: abilitiesRetrieved,
+        itemUtilities: itemUtilitiesPossible,
+        abilities: abilitiesPossible,
         tokenPositions: abilityTokenPositions,
-    } = abilitiesActionsIR({
+    } = gameActionsIR({
         queryTokens,
         abilities: playerAbilities,
-        actions: playerActions,
+        itemUtilities,
     });
 
     // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
-    abilityEntities = abilitiesRetrieved
+    abilityEntities = abilitiesPossible
         .map((ability) => [
             ability,
-            resolveGameCommandEntities({
+            resolveAbilityEntities({
                 queryTokens,
                 tokenPositions: {
                     ...entityTokenPositions,
@@ -307,20 +315,20 @@ test("Test Player", async () => {
 
     // Retrieve actions and abilities relevant to query
     var {
-        actions,
-        abilities: abilitiesRetrieved,
+        itemUtilities: itemUtilitiesPossible,
+        abilities: abilitiesPossible,
         tokenPositions: abilityTokenPositions,
-    } = abilitiesActionsIR({
+    } = gameActionsIR({
         queryTokens,
         abilities: playerAbilities,
-        actions: playerActions,
+        itemUtilities,
     });
 
     // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
-    abilityEntities = abilitiesRetrieved
+    abilityEntities = abilitiesPossible
         .map((ability) => [
             ability,
-            resolveGameCommandEntities({
+            resolveAbilityEntities({
                 queryTokens,
                 tokenPositions: {
                     ...entityTokenPositions,

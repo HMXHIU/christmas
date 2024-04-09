@@ -1,14 +1,14 @@
 import {
-    abilitiesActionsIR,
     entitiesIR,
     fuzzyMatch,
+    gameActionsIR,
     tokenize,
 } from "$lib/crossover/ir";
 import type { Ability } from "$lib/crossover/world/abilities";
-import type { PropAction } from "$lib/crossover/world/compendium";
+import type { Utility } from "$lib/crossover/world/compendium";
 import { abilities, compendium } from "$lib/crossover/world/settings";
 import { spawnItem, spawnMonster } from "$lib/server/crossover";
-import type { ItemEntity } from "$lib/server/crossover/redis/entities";
+import type { Item, ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer, generateRandomGeohash } from "./utils";
@@ -51,6 +51,12 @@ test("Test IR", async () => {
         geohash: generateRandomGeohash(8),
         prop: compendium.woodenClub.prop,
     });
+
+    // Item - portal
+    let portal = (await spawnItem({
+        geohash: playerOneGeohash,
+        prop: compendium.portal.prop,
+    })) as ItemEntity;
 
     // Monster - dragon
     let dragon = await spawnMonster({
@@ -344,28 +350,41 @@ test("Test IR", async () => {
     });
 
     /**
-     * Test exact match `abilitiesActionsIR`
+     * Test exact match `gameActionsIR`
      */
 
-    const playerActions: PropAction[] = Object.values(compendium).flatMap(
-        (prop) => Object.values(prop.actions),
-    );
+    const itemUtilities: [Item, Utility][] = [
+        woodenClub,
+        woodenDoor,
+        portal,
+    ].flatMap((item) => {
+        return Object.values(compendium[item.prop].utilities).map(
+            (utility): [Item, Utility] => {
+                return [item, utility];
+            },
+        );
+    });
     const playerAbilities: Ability[] = Object.values(abilities);
 
     // Test action
     expect(
-        abilitiesActionsIR({
+        gameActionsIR({
             queryTokens: tokenize("open woodendoor"),
             abilities: playerAbilities,
-            actions: playerActions,
+            itemUtilities,
         }),
     ).to.toMatchObject({
         abilities: [],
-        actions: [
-            {
-                action: "open",
-                description: "Open the door.",
-            },
+        itemUtilities: [
+            [
+                {
+                    item: woodenDoor.item,
+                },
+                {
+                    utility: "open",
+                    description: "Open the door.",
+                },
+            ],
         ],
         tokenPositions: {
             open: {
@@ -379,10 +398,10 @@ test("Test IR", async () => {
 
     // Test ability
     expect(
-        abilitiesActionsIR({
+        gameActionsIR({
             queryTokens: tokenize("eyepok goblin"), // subtracted one letter
             abilities: playerAbilities,
-            actions: playerActions,
+            itemUtilities,
         }),
     ).to.toMatchObject({
         abilities: [
@@ -392,7 +411,7 @@ test("Test IR", async () => {
                 description: "Pokes the player's eyes, blinding them.",
             },
         ],
-        actions: [],
+        itemUtilities: [],
         tokenPositions: {
             eyePoke: {
                 "0": {
@@ -405,10 +424,10 @@ test("Test IR", async () => {
 
     // Test token exists in abilities and actions
     expect(
-        abilitiesActionsIR({
+        gameActionsIR({
             queryTokens: tokenize("teleport to player"),
             abilities: playerAbilities,
-            actions: playerActions,
+            itemUtilities,
         }),
     ).to.toMatchObject({
         abilities: [
@@ -417,11 +436,17 @@ test("Test IR", async () => {
                 description: "Teleport to the target location.",
             },
         ],
-        actions: [
-            {
-                action: "teleport",
-                description: "Step through the portal.",
-            },
+        itemUtilities: [
+            [
+                {
+                    item: portal.item,
+                },
+                {
+                    utility: "teleport",
+                    description: "Step through the portal.",
+                    ability: "teleport",
+                },
+            ],
         ],
         tokenPositions: {
             teleport: {

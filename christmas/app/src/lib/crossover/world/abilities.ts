@@ -10,7 +10,7 @@ import type {
 import { substituteVariables } from "$lib/utils";
 import lodash from "lodash";
 import { geohashToGridCell } from ".";
-import type { GameCommandEntities, TokenPositions } from "../ir";
+import type { GameActionEntities, TokenPositions } from "../ir";
 import { abilities } from "./settings";
 const { cloneDeep } = lodash;
 
@@ -18,7 +18,7 @@ export {
     canPerformAbility,
     checkInRange,
     fillInEffectVariables,
-    resolveGameCommandEntities,
+    resolveAbilityEntities,
     type Ability,
     type AbilityType,
     type Buff,
@@ -58,7 +58,7 @@ type Debuff =
 type Buff = "haste" | "regeneration" | "shield" | "invisibility" | "berserk";
 
 /**
- * 1. `abilitiesActionsIR` returns possible actions and abilities based on the query tokens.
+ * 1. `gameActionsIR` returns possible actions and abilities based on the query tokens.
  * 2. `entityIR` returns possible entities based on the query tokens.
  * 3. Create the variables - include `self` (the initiator) and entities returned from `entityIR`.
  * 4. Filter the abilities and actions based on predicate and variables.
@@ -197,7 +197,7 @@ function checkInRange(
  * @param items - The item entities.
  * @returns - The resolved ability entities, or null if no entities are found.
  */
-function resolveGameCommandEntities({
+function resolveAbilityEntities({
     queryTokens,
     tokenPositions,
     ability,
@@ -209,11 +209,11 @@ function resolveGameCommandEntities({
     queryTokens: string[];
     tokenPositions: TokenPositions;
     ability: string;
-    self: Player | Monster | Item;
+    self: Player | Monster;
     monsters: Monster[];
     players: Player[];
     items: Item[];
-}): null | GameCommandEntities {
+}): null | GameActionEntities {
     const {
         target: targetTypes,
         self: selfTypes,

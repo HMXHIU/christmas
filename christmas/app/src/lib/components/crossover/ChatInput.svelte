@@ -21,7 +21,7 @@
 
     let message: string = "";
 
-    const debouncedOnPartial = debounce(onPartial, 700, {
+    const debouncedOnPartial = debounce(onPartial, 500, {
         leading: true,
         trailing: true,
     });

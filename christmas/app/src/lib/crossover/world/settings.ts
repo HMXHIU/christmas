@@ -645,9 +645,9 @@ let compendium: Record<string, Prop> = {
                 variant: "default",
             },
         },
-        actions: {
+        utilities: {
             swing: {
-                action: "swing",
+                utility: "swing",
                 description: "Swing the club at a target.",
                 cost: {
                     charges: 0,
@@ -696,9 +696,9 @@ let compendium: Record<string, Prop> = {
                 variant: "default",
             },
         },
-        actions: {
+        utilities: {
             sip: {
-                action: "sip",
+                utility: "sip",
                 description: "Sip the potion to restore health.",
                 cost: {
                     charges: 1,
@@ -744,9 +744,9 @@ let compendium: Record<string, Prop> = {
                 variant: "closed",
             },
         },
-        actions: {
+        utilities: {
             open: {
-                action: "open",
+                utility: "open",
                 description: "Open the door.",
                 cost: {
                     charges: 0,
@@ -758,7 +758,7 @@ let compendium: Record<string, Prop> = {
                 },
             },
             close: {
-                action: "close",
+                utility: "close",
                 description: "Close the door.",
                 cost: {
                     charges: 0,
@@ -804,7 +804,7 @@ let compendium: Record<string, Prop> = {
                 variant: "default",
             },
         },
-        actions: {},
+        utilities: {},
         variables: {
             description: {
                 variable: "description",
@@ -852,9 +852,9 @@ let compendium: Record<string, Prop> = {
                 value: "A portal pulsing with magical energy",
             },
         },
-        actions: {
+        utilities: {
             teleport: {
-                action: "teleport",
+                utility: "teleport",
                 description: "Step through the portal.",
                 cost: {
                     charges: 1,

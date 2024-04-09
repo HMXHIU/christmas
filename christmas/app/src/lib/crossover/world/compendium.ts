@@ -10,7 +10,7 @@ export {
     type EquipmentSlot,
     type ItemVariables,
     type Prop,
-    type PropAction,
+    type Utility,
 };
 
 type EquipmentSlot =
@@ -35,7 +35,7 @@ interface Prop {
     durability: number;
     charges: number;
     states: Record<string, PropAttributes>; // map item.state to prop attributes
-    actions: Record<string, PropAction>;
+    utilities: Record<string, Utility>;
     variables: PropVariables; // configurable variables to alter prop behavior & descriptions
     equipmentSlot?: EquipmentSlot[];
     weight: number; // -1 means it cannot be taken
@@ -48,8 +48,8 @@ interface PropAttributes {
     variant: string;
 }
 
-interface PropAction {
-    action: string;
+interface Utility {
+    utility: string;
     description: string;
     cost: {
         charges: number;

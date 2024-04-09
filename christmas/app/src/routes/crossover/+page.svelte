@@ -2,18 +2,14 @@
     import GameWindow from "$lib/components/crossover/GameWindow.svelte";
     import Onboard from "$lib/components/crossover/Onboard.svelte";
     import {
-        commandCreateItem,
         commandLook,
         commandMove,
-        commandSay,
+        commandPerformAbility,
         commandUseItem,
         stream,
     } from "$lib/crossover";
 
-    import type {
-        ChatCommandUI,
-        MessageFeedUI,
-    } from "$lib/components/common/types";
+    import type { MessageFeedUI } from "$lib/components/common/types";
 
     import type { GameCommand } from "$lib/crossover/ir";
     import {
@@ -21,8 +17,6 @@
         loadMoreGrid,
         type Direction,
     } from "$lib/crossover/world";
-    import { type Ability } from "$lib/crossover/world/abilities";
-    import { compendium } from "$lib/crossover/world/settings";
     import type {
         Item,
         Monster,
@@ -42,54 +36,70 @@
     let players: Player[] = [];
     let items: Item[] = [];
     let monsters: Monster[] = [];
-    let abilityEntities: [
-        Ability,
-        { self: Player | Monster | Item; target: Player | Monster | Item },
-    ][] = [];
 
     async function onGameCommand(gameCommand: GameCommand) {
-        console.log(gameCommand);
-    }
-
-    async function onChatMessage(
-        command: ChatCommandUI | null,
-        message: string,
-    ) {
-        switch (command?.key) {
-            case "say":
-                await commandSay({ message });
-                break;
-
-            case "look":
-                await look();
-                break;
-
-            case "spawnItem":
-                // Test spawn wooden door
-                const item = await commandCreateItem({
-                    geohash: tile.geohash,
-                    prop: compendium.woodenDoor.prop,
-                });
-                console.log(JSON.stringify(item, null, 2));
-                break;
-
-            case "useItem":
-                // Test use wooden door
-                const usedItem = await commandUseItem({
-                    item: "",
-                    action: "open",
-                });
-                console.log(JSON.stringify(usedItem, null, 2));
-                break;
-
-            case "spawnMonster":
-                break;
-
-            default:
-                console.warn("Unknown command:", command?.key, message);
-                break;
+        const [command, { self, target }] = gameCommand;
+        if ("utility" in command) {
+            commandUseItem({
+                target:
+                    (target as any).player ||
+                    (target as any).monster ||
+                    (target as any).item,
+                item: "", // HOW TO GET ITEM
+                utility: command.utility,
+            });
+        } else if ("ability" in command) {
+            commandPerformAbility({
+                target:
+                    (target as any).player ||
+                    (target as any).monster ||
+                    (target as any).item,
+                ability: command.ability,
+            });
         }
     }
+
+    // TODO: convert these to special commands
+    //
+    // async function onChatMessage(
+    //     command: ChatCommandUI | null,
+    //     message: string,
+    // ) {
+    //     switch (command?.key) {
+    //         case "say":
+    //             await commandSay({ message });
+    //             break;
+
+    //         case "look":
+    //             await look();
+    //             break;
+
+    //         case "spawnItem":
+    //             // Test spawn wooden door
+    //             const item = await commandCreateItem({
+    //                 geohash: tile.geohash,
+    //                 prop: compendium.woodenDoor.prop,
+    //             });
+    //             console.log(JSON.stringify(item, null, 2));
+    //             break;
+
+    //         case "useItem":
+    //             // Test use wooden door
+    //             const usedItem = await commandUseItem({
+    //                 item: "",
+    //                 action: "open",
+    //             });
+    //             console.log(JSON.stringify(usedItem, null, 2));
+    //             break;
+
+    //         case "spawnMonster":
+    //             break;
+
+    //         default:
+    //             console.warn("Unknown command:", command?.key, message);
+    //             break;
+    //     }
+    // }
 
     async function look() {
         const lookResult = await commandLook({});
@@ -191,7 +201,6 @@
 {:else}
     <GameWindow
         class="h-full p-3"
-        {onChatMessage}
         {onGameCommand}
         {onMove}
         {messageFeed}

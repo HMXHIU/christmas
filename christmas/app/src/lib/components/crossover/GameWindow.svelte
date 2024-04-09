@@ -1,9 +1,5 @@
 <script lang="ts">
-    import type {
-        ChatCommandGroupUI,
-        ChatCommandUI,
-        MessageFeedUI,
-    } from "$lib/components/common/types";
+    import type { MessageFeedUI } from "$lib/components/common/types";
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Collapsible from "$lib/components/ui/collapsible/index.js";
     import type { GameCommand } from "$lib/crossover/ir";
@@ -16,14 +12,6 @@
     } from "$lib/server/crossover/redis/entities";
     import type { TileSchema } from "$lib/server/crossover/router";
     import { cn } from "$lib/shadcn";
-    import {
-        ArrowLeft,
-        Eye,
-        FlameKindling,
-        Grab,
-        MessageSquare,
-        Wand2,
-    } from "lucide-svelte";
     import ChevronsUpDown from "lucide-svelte/icons/chevrons-up-down";
     import { Assets } from "pixi.js";
     import { onMount } from "svelte";
@@ -40,96 +28,98 @@
     export let onMove: (direction: Direction) => void;
     export let onGameCommand: (gameCommand: GameCommand) => void;
 
-    let defaultCommand = "say";
-    let commandGroups: [ChatCommandGroupUI, ChatCommandUI[]][] = [
-        // Speech
-        [
-            { key: "speech", label: "Speech" },
-            [
-                {
-                    key: "say",
-                    label: "Say",
-                    icon: MessageSquare,
-                    shortcut: "⌘S",
-                    description: "Say something to everyone in the room.",
-                },
-                {
-                    key: "shout",
-                    label: "Shout",
-                    icon: MessageSquare,
-                    shortcut: null,
-                    description: "Shout something to everyone in the area.",
-                },
-                {
-                    key: "whisper",
-                    label: "Whisper",
-                    icon: MessageSquare,
-                    shortcut: null,
-                    description: "Whisper something to someone.",
-                },
-            ],
-        ],
-        // Combat
-        [
-            { key: "combat", label: "Combat" },
-            [
-                {
-                    key: "punch",
-                    label: "Punch",
-                    icon: Grab,
-                    shortcut: "⌘P",
-                    description: "Punch someone.",
-                },
-                {
-                    key: "flee",
-                    label: "Flee",
-                    icon: ArrowLeft,
-                    shortcut: "⌘F",
-                    description: "Flee from combat.",
-                },
-            ],
-        ],
-        // Out of Combat (OOC)
-        [
-            { key: "ooc", label: "Out of Combat (OOC)" },
-            [
-                {
-                    key: "look",
-                    label: "Look",
-                    icon: Eye,
-                    shortcut: "⌘L",
-                    description: "Look at something.",
-                },
-                {
-                    key: "rest",
-                    label: "Rest",
-                    icon: FlameKindling,
-                    shortcut: "⌘R",
-                    description: "Rest and recover.",
-                },
-            ],
-        ],
-        // Dungeon Master
-        [
-            { key: "dm", label: "Dungeon Master" },
-            [
-                {
-                    key: "spawnItem",
-                    label: "Spawn Item",
-                    icon: Wand2,
-                    shortcut: "",
-                    description: "Spawn Item.",
-                },
-                {
-                    key: "spawnMonster",
-                    label: "Spawn Monster",
-                    icon: Wand2,
-                    shortcut: "",
-                    description: "Spawn Monster.",
-                },
-            ],
-        ],
-    ];
+    // TODO: convert these to special commands
+    //
+    // let defaultCommand = "say";
+    // let commandGroups: [ChatCommandGroupUI, ChatCommandUI[]][] = [
+    //     // Speech
+    //     [
+    //         { key: "speech", label: "Speech" },
+    //         [
+    //             {
+    //                 key: "say",
+    //                 label: "Say",
+    //                 icon: MessageSquare,
+    //                 shortcut: "⌘S",
+    //                 description: "Say something to everyone in the room.",
+    //             },
+    //             {
+    //                 key: "shout",
+    //                 label: "Shout",
+    //                 icon: MessageSquare,
+    //                 shortcut: null,
+    //                 description: "Shout something to everyone in the area.",
+    //             },
+    //             {
+    //                 key: "whisper",
+    //                 label: "Whisper",
+    //                 icon: MessageSquare,
+    //                 shortcut: null,
+    //                 description: "Whisper something to someone.",
+    //             },
+    //         ],
+    //     ],
+    //     // Combat
+    //     [
+    //         { key: "combat", label: "Combat" },
+    //         [
+    //             {
+    //                 key: "punch",
+    //                 label: "Punch",
+    //                 icon: Grab,
+    //                 shortcut: "⌘P",
+    //                 description: "Punch someone.",
+    //             },
+    //             {
+    //                 key: "flee",
+    //                 label: "Flee",
+    //                 icon: ArrowLeft,
+    //                 shortcut: "⌘F",
+    //                 description: "Flee from combat.",
+    //             },
+    //         ],
+    //     ],
+    //     // Out of Combat (OOC)
+    //     [
+    //         { key: "ooc", label: "Out of Combat (OOC)" },
+    //         [
+    //             {
+    //                 key: "look",
+    //                 label: "Look",
+    //                 icon: Eye,
+    //                 shortcut: "⌘L",
+    //                 description: "Look at something.",
+    //             },
+    //             {
+    //                 key: "rest",
+    //                 label: "Rest",
+    //                 icon: FlameKindling,
+    //                 shortcut: "⌘R",
+    //                 description: "Rest and recover.",
+    //             },
+    //         ],
+    //     ],
+    //     // Dungeon Master
+    //     [
+    //         { key: "dm", label: "Dungeon Master" },
+    //         [
+    //             {
+    //                 key: "spawnItem",
+    //                 label: "Spawn Item",
+    //                 icon: Wand2,
+    //                 shortcut: "",
+    //                 description: "Spawn Item.",
+    //             },
+    //             {
+    //                 key: "spawnMonster",
+    //                 label: "Spawn Monster",
+    //                 icon: Wand2,
+    //                 shortcut: "",
+    //                 description: "Spawn Monster.",
+    //             },
+    //         ],
+    //     ],
+    // ];
 
     onMount(async () => {
         // Load assets in background
@@ -143,8 +133,6 @@
     <Chat
         {messageFeed}
         {onGameCommand}
-        {commandGroups}
-        {defaultCommand}
         {monsters}
         {players}
         {items}

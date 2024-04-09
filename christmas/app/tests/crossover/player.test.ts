@@ -300,7 +300,7 @@ test("Test Player", async () => {
     var { item, status } = await commandUseItem(
         {
             item: woodenDoor.item,
-            action: compendium.woodenDoor.actions.open.action,
+            utility: compendium.woodenDoor.utilities.open.utility,
         },
         { Cookie: playerOneCookies },
     );
@@ -357,7 +357,7 @@ test("Test Player", async () => {
         await commandUseItem(
             {
                 item: portalOne.item,
-                action: compendium.portal.actions.teleport.action,
+                utility: compendium.portal.utilities.teleport.utility,
             },
             { Cookie: playerOneCookies },
         )
@@ -369,7 +369,7 @@ test("Test Player", async () => {
         await commandUseItem(
             {
                 item: portalTwo.item,
-                action: compendium.portal.actions.teleport.action,
+                utility: compendium.portal.utilities.teleport.utility,
             },
             { Cookie: playerOneCookies },
         )
@@ -435,7 +435,7 @@ test("Test Player", async () => {
     var { status, message, self, target, item } = await commandUseItem(
         {
             item: woodenClub.item,
-            action: compendium.woodenClub.actions.swing.action,
+            utility: compendium.woodenClub.utilities.swing.utility,
             target: playerTwo.player,
         },
         { Cookie: playerOneCookies },

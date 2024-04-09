@@ -244,14 +244,14 @@ function commandPerformAbility(
 }
 
 function commandUseItem(
-    input: { target?: string; item: string; action: string },
+    input: { target?: string; item: string; utility: string },
     headers: HTTPHeaders = {},
 ) {
-    const { target, item, action } = input;
+    const { target, item, utility } = input;
     return trpc({ headers }).crossover.cmd.useItem.query({
         target,
         item,
-        action,
+        utility,
     });
 }
 
