@@ -9,10 +9,16 @@ import type { z } from "zod";
 import { grid, player } from "../../store";
 
 import { refresh } from "$lib/community";
-import type { Player } from "$lib/server/crossover/redis/entities";
+import type {
+    Item,
+    Monster,
+    Player,
+} from "$lib/server/crossover/redis/entities";
 import type { StreamEvent } from "../../routes/api/crossover/stream/+server";
+import type { GameCommand } from "./ir";
 import { updateGrid, type Direction } from "./world";
-import type { EquipmentSlot, ItemVariables } from "./world/compendium";
+import type { Ability } from "./world/abilities";
+import type { EquipmentSlot, ItemVariables, Utility } from "./world/compendium";
 
 export {
     commandConfigureItem,
@@ -25,6 +31,7 @@ export {
     commandTakeItem,
     commandUseItem,
     equipItem,
+    executeGameCommand,
     getPlayer,
     login,
     logout,
@@ -303,4 +310,40 @@ function commandConfigureItem(
         item,
         variables,
     });
+}
+
+async function executeGameCommand(
+    gameCommand: GameCommand,
+    headers: HTTPHeaders = {},
+) {
+    const [action, { self, target, item }] = gameCommand;
+
+    // Use Item
+    if (item != null) {
+        return await commandUseItem(
+            {
+                target:
+                    (target as Player)?.player ||
+                    (target as Monster)?.monster ||
+                    (target as Item)?.item ||
+                    undefined,
+                item: item.item,
+                utility: (action as Utility).utility,
+            },
+            headers,
+        );
+    }
+    // Perform ability
+    else {
+        return await commandPerformAbility(
+            {
+                target:
+                    (target as Player)?.player ||
+                    (target as Monster)?.monster ||
+                    (target as Item)?.item,
+                ability: (action as Ability).ability,
+            },
+            headers,
+        );
+    }
 }

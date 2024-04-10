@@ -1,4 +1,9 @@
-import { entitiesIR, gameActionsIR, tokenize } from "$lib/crossover/ir";
+import {
+    entitiesIR,
+    gameActionsIR,
+    searchPossibleCommands,
+    tokenize,
+} from "$lib/crossover/ir";
 import {
     resolveAbilityEntities,
     type Ability,
@@ -346,4 +351,173 @@ test("Test Player", async () => {
     // Should not resolve - cant scratch self
     expect(abilityEntities.length).toBe(0);
     expect(abilityEntities).toMatchObject([]);
+
+    /**
+     * Test `searchPossibleCommands`
+     */
+
+    // Test ability on self
+    let gameCommands = searchPossibleCommands({
+        query: "bandage gandalf",
+        // Player
+        player: playerOne,
+        playerAbilities: [abilities.scratch, abilities.bandage],
+        playerItems: [woodenClub],
+        // Environment
+        monsters: [goblin, dragon],
+        players: [playerOne], // Note: need to include self to bandage
+        items: [woodenDoor],
+    });
+    expect(gameCommands).toMatchObject([
+        [
+            {
+                ability: "bandage",
+                type: "healing",
+                predicate: {
+                    self: ["player", "monster"],
+                    target: ["player", "monster"],
+                    targetSelfAllowed: true,
+                },
+            },
+            {
+                self: {
+                    player: playerOne.player,
+                    name: "Gandalf",
+                },
+                target: {
+                    player: playerOne.player,
+                    name: "Gandalf",
+                },
+            },
+        ],
+    ]);
+
+    // Test item utility on monster
+    gameCommands = searchPossibleCommands({
+        query: "swing at goblin",
+        // Player
+        player: playerOne,
+        playerAbilities: [abilities.scratch, abilities.bandage],
+        playerItems: [woodenClub],
+        // Environment
+        monsters: [goblin, dragon],
+        players: [playerOne], // Note: need to include self to bandage
+        items: [woodenDoor],
+    });
+
+    expect(gameCommands).toMatchObject([
+        [
+            {
+                utility: "swing",
+                description: "Swing the club at a target.",
+                ability: "swing",
+                requireEquipped: true,
+            },
+            {
+                self: {
+                    player: playerOne.player,
+                },
+                target: {
+                    monster: goblin.monster,
+                    name: "goblin",
+                    beast: "goblin",
+                },
+                item: {
+                    item: woodenClub.item,
+                    name: "Wooden Club",
+                    prop: "woodenClub",
+                },
+            },
+        ],
+    ]);
+
+    // Test both utility and ability
+    gameCommands = searchPossibleCommands({
+        query: "swing at goblin",
+        // Player
+        player: playerOne,
+        playerAbilities: [
+            abilities.scratch,
+            abilities.bandage,
+            abilities.swing,
+        ], // has swing action
+        playerItems: [woodenClub], // has swing utility
+        // Environment
+        monsters: [goblin, dragon],
+        players: [playerOne], // Note: need to include self to bandage
+        items: [woodenDoor],
+    });
+    expect(gameCommands).toMatchObject([
+        [
+            {
+                ability: "swing",
+                type: "offensive",
+            },
+            {
+                self: {
+                    player: playerOne.player,
+                },
+                target: {
+                    monster: goblin.monster,
+                },
+            },
+        ],
+        [
+            {
+                utility: "swing",
+            },
+            {
+                self: {
+                    player: playerOne.player,
+                },
+                target: {
+                    monster: goblin.monster,
+                },
+                item: {
+                    item: woodenClub.item,
+                },
+            },
+        ],
+    ]);
+
+    // Test non ability utility
+    gameCommands = searchPossibleCommands({
+        query: "open woodendoor",
+        // Player
+        player: playerOne,
+        playerAbilities: [
+            abilities.scratch,
+            abilities.bandage,
+            abilities.swing,
+        ], // has swing action
+        playerItems: [woodenClub], // has swing utility
+        // Environment
+        monsters: [goblin, dragon],
+        players: [playerOne], // Note: need to include self to bandage
+        items: [woodenDoor],
+    });
+    expect(gameCommands).toMatchObject([
+        [
+            {
+                utility: "open",
+                description: "Open the door.",
+                cost: {
+                    charges: 0,
+                    durability: 0,
+                },
+                state: {
+                    start: "closed",
+                    end: "open",
+                },
+            },
+            {
+                self: {
+                    player: playerOne.player,
+                },
+                item: {
+                    item: woodenDoor.item,
+                },
+            },
+        ],
+    ]);
 });

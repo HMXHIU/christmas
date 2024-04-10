@@ -347,7 +347,16 @@ function searchPossibleCommands({
     });
 
     // All possible utilities from playerItems
-    const itemUtilities = playerItems.flatMap((item) => {
+    const playerItemUtilities = playerItems.flatMap((item) => {
+        return Object.values(compendium[item.prop].utilities).map(
+            (utility): [Item, Utility] => {
+                return [item, utility];
+            },
+        );
+    });
+
+    // All possible utilities from environment
+    const environmentItemUtilities = items.flatMap((item) => {
         return Object.values(compendium[item.prop].utilities).map(
             (utility): [Item, Utility] => {
                 return [item, utility];
@@ -363,7 +372,7 @@ function searchPossibleCommands({
     } = gameActionsIR({
         queryTokens,
         abilities: playerAbilities,
-        itemUtilities,
+        itemUtilities: [...playerItemUtilities, ...environmentItemUtilities],
     });
 
     const abilityCommands = abilitiesPosssible
@@ -402,6 +411,12 @@ function searchPossibleCommands({
                     items: itemsRetrieved,
                 });
             }
+            // Utilities that dont have an ability (eg. open door)
+            else {
+                // Note: there is no target for such item utilities, use ability if target is needed
+                entities = { self: player };
+            }
+
             // Insert the item being used into the entities
             return entities ? [utility, { ...entities, item: item }] : null;
         })
