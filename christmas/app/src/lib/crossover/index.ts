@@ -5,7 +5,7 @@ import { trpc } from "$lib/trpcClient";
 import { retry, signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
 import type { HTTPHeaders } from "@trpc/client";
-import type { z } from "zod";
+import { type z } from "zod";
 import { grid, player } from "../../store";
 
 import { refresh } from "$lib/community";
@@ -14,8 +14,13 @@ import type {
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
-import type { StreamEvent } from "../../routes/api/crossover/stream/+server";
-import type { GameCommand } from "./ir";
+import type {
+    FeedEvent,
+    StreamEvent,
+} from "../../routes/api/crossover/stream/+server";
+import { performAction } from "./actions";
+import type { GameCommand, GameCommandVariables, TokenPositions } from "./ir";
+import { entityId, gameActionId } from "./utils";
 import { updateGrid, type Direction } from "./world";
 import type { Ability } from "./world/abilities";
 import type { EquipmentSlot, ItemVariables, Utility } from "./world/compendium";
@@ -30,6 +35,7 @@ export {
     commandSay,
     commandTakeItem,
     commandUseItem,
+    deriveGameCommandVariables,
     equipItem,
     executeGameCommand,
     getPlayer,
@@ -154,10 +160,15 @@ async function stream(headers: any = {}): Promise<[EventTarget, () => void]> {
             .pipeThrough(new TextDecoderStream())
             .pipeThrough(makeJsonDecoder())
             .pipeTo(eventStream)
-            .catch((error) => {
-                console.error(error);
+            .catch((err: any) => {
+                console.error(err);
+                const feedEvent: FeedEvent = {
+                    event: "feed",
+                    type: "error",
+                    message: err.message,
+                };
                 eventTarget.dispatchEvent(
-                    new CustomEvent("error", { detail: error }),
+                    new MessageEvent(feedEvent.event, { data: feedEvent }),
                 );
             });
     });
@@ -183,10 +194,12 @@ function makeJsonDecoder(): TransformStream<any, any> {
                         controller.enqueue(JSON.parse(s));
                     }
                 } catch (err: any) {
-                    controller.enqueue({
-                        type: "system",
-                        data: { event: "error", message: err.message },
-                    });
+                    const feedEvent: FeedEvent = {
+                        event: "feed",
+                        type: "error",
+                        message: err.message,
+                    };
+                    controller.enqueue(feedEvent);
                 }
             }
         },
@@ -195,9 +208,9 @@ function makeJsonDecoder(): TransformStream<any, any> {
 
 function makeWriteableEventStream(eventTarget: EventTarget) {
     return new WritableStream({
-        write(message: StreamEvent, controller) {
+        write(event: StreamEvent, controller) {
             eventTarget.dispatchEvent(
-                new MessageEvent(message.type, { data: message }),
+                new MessageEvent(event.event, { data: event }),
             );
         },
     });
@@ -312,11 +325,64 @@ function commandConfigureItem(
     });
 }
 
+function deriveGameCommandVariables({
+    command,
+    queryTokens,
+    tokenPositions,
+}: {
+    command: GameCommand;
+    queryTokens: string[];
+    tokenPositions: TokenPositions;
+}): GameCommandVariables {
+    const [action, { self, target, item }] = command;
+
+    const actionId = gameActionId(action);
+    const selfId = entityId(self);
+    const targetId = target != null ? entityId(target) : null;
+    const itemId = item != null ? entityId(item) : null;
+
+    const relevantPositions = [
+        ...Object.keys(tokenPositions[actionId] || {}),
+        ...Object.keys(tokenPositions[selfId] || {}),
+        ...(targetId ? Object.keys(tokenPositions[targetId] || {}) : []),
+        ...(itemId ? Object.keys(tokenPositions[itemId] || {}) : []),
+    ];
+
+    const queryIrrelevant = Array.from(queryTokens.entries())
+        .filter(([pos, token]) => {
+            return !relevantPositions.includes(String(pos));
+        })
+        .map(([pos, token]) => token)
+        .join(" ");
+
+    return {
+        query: queryTokens.join(" "),
+        queryIrrelevant,
+    };
+}
+
 async function executeGameCommand(
-    gameCommand: GameCommand,
+    {
+        command,
+        queryTokens,
+        tokenPositions,
+    }: {
+        command: GameCommand;
+        queryTokens: string[];
+        tokenPositions: TokenPositions;
+    },
     headers: HTTPHeaders = {},
 ) {
-    const [action, { self, target, item }] = gameCommand;
+    const [action, { self, target, item }] = command;
+
+    // Derive variables
+    const variables: GameCommandVariables = deriveGameCommandVariables({
+        command,
+        queryTokens,
+        tokenPositions,
+    });
+
+    // TODO: better way to tell what type of action it is
 
     // Use Item
     if (item != null) {
@@ -334,7 +400,7 @@ async function executeGameCommand(
         );
     }
     // Perform ability
-    else {
+    else if ("ability" in action) {
         return await commandPerformAbility(
             {
                 target:
@@ -345,5 +411,13 @@ async function executeGameCommand(
             },
             headers,
         );
+    }
+    // Action
+    else if ("action" in action) {
+        return await performAction({
+            action,
+            target,
+            variables,
+        });
     }
 }

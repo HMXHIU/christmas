@@ -1,26 +1,28 @@
 import { requireLogin } from "$lib/server";
 import { connectedUsers } from "$lib/server/crossover";
 import { redisSubscribeClient } from "$lib/server/crossover/redis";
-import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
+import type {
+    ItemEntity,
+    MonsterEntity,
+    PlayerEntity,
+} from "$lib/server/crossover/redis/entities";
 import type { RequestHandler } from "./$types";
 
-export type StreamEvent = MessageFeed | SystemFeed | PlayerUpdate;
+export type StreamEvent = FeedEvent | UpdateEntitiesEvent;
 
-export type MessageFeed = {
-    type: "message";
+export interface FeedEvent {
+    event: "feed";
+    type: "message" | "system" | "error";
     message: string;
-    variables: Record<string, string | number | boolean>;
-};
+    variables?: Record<string, string | number | boolean>;
+}
 
-export type SystemFeed = {
-    type: "system";
-    message: string;
-};
-
-export type PlayerUpdate = {
-    type: "player";
-    player: PlayerEntity;
-};
+export interface UpdateEntitiesEvent {
+    event: "updateEntities";
+    players?: PlayerEntity[];
+    monsters?: MonsterEntity[];
+    items?: ItemEntity[];
+}
 
 function sendStreamEvent(
     controller: ReadableStreamDefaultController<any>,
@@ -54,8 +56,9 @@ export const GET: RequestHandler = async (event) => {
             };
             redisSubscribeClient.subscribe(user.publicKey, onMessage);
 
-            // Send start event
+            // Send system feed started event
             sendStreamEvent(controller, {
+                event: "feed",
                 type: "system",
                 message: "started",
             });

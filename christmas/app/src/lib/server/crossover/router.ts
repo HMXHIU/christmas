@@ -32,7 +32,7 @@ import {
     hashObject,
     serverAnchorClient,
 } from "..";
-import type { MessageFeed } from "../../../routes/api/crossover/stream/+server";
+import type { FeedEvent } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, internalServiceProcedure, t } from "../trpc";
 import { performMonsterActions, spawnMonsters } from "./dungeonMaster";
@@ -423,7 +423,8 @@ const crossoverRouter = {
                 ).return.allIds();
 
                 // Create message feed
-                const messageFeed: MessageFeed = {
+                const messageFeed: FeedEvent = {
+                    event: "feed",
                     type: "message",
                     message: "${origin} says ${message}",
                     variables: {

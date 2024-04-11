@@ -97,7 +97,7 @@ const abilities: Record<string, Ability> = {
             [
                 "action",
                 {
-                    target: "self",
+                    target: "target",
                     damage: { amount: -5, damageType: "healing" },
                     ticks: TICKS_PER_TURN,
                 },

@@ -27,7 +27,7 @@
     import { onMount } from "svelte";
     import type { z } from "zod";
     import { grid, player } from "../../store";
-    import type { MessageFeed } from "../api/crossover/stream/+server";
+    import type { FeedEvent } from "../api/crossover/stream/+server";
 
     let messageFeed: MessageFeedUI[] = [];
     let eventStream: EventTarget | null = null;
@@ -134,27 +134,56 @@
     }
 
     function processMessageEvent(event: Event) {
-        const { message, variables } = (event as MessageEvent)
-            .data as MessageFeed;
+        const { type: streamEvent, data } = event as MessageEvent;
 
-        switch (variables.cmd) {
-            case "say":
+        // Error events
+        if (streamEvent === "error") {
+            const { message } = data as FeedEvent;
+            messageFeed = [
+                ...messageFeed,
+                {
+                    id: messageFeed.length,
+                    timestamp: getCurrentTimestamp(),
+                    message,
+                    name: "Error",
+                },
+            ];
+        }
+        // Feed events
+        else if (streamEvent === "feed") {
+            const { message, variables, type } = data as FeedEvent;
+
+            // System feed
+            if (type === "system") {
                 messageFeed = [
                     ...messageFeed,
                     {
                         id: messageFeed.length,
                         timestamp: getCurrentTimestamp(),
-                        message: substituteVariables(
-                            message,
-                            variables,
-                        ) as string,
+                        message,
+                        name: "System",
+                    },
+                ];
+                return;
+            }
+
+            // Message feed
+            else if (type === "message") {
+                messageFeed = [
+                    ...messageFeed,
+                    {
+                        id: messageFeed.length,
+                        timestamp: getCurrentTimestamp(),
+                        message: variables
+                            ? (substituteVariables(
+                                  message,
+                                  variables,
+                              ) as string)
+                            : message,
                         name: "",
                     },
                 ];
-                break;
-
-            default:
-                break;
+            }
         }
     }
 

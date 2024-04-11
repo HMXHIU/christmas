@@ -2,10 +2,13 @@ import { type Direction } from "$lib/crossover/world";
 import type {
     Item,
     ItemEntity,
+    Monster,
     MonsterEntity,
+    Player,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
 import ngeohash from "ngeohash";
+import type { GameAction } from "./ir";
 import { biomeAtGeohash } from "./world/biomes";
 import { bestiary, biomes, compendium, worldSeed } from "./world/settings";
 
@@ -14,6 +17,8 @@ export {
     childrenGeohashes,
     directionToVector,
     entityDimensions,
+    entityId,
+    gameActionId,
     geohashNeighbour,
     isGeohashTraversable,
     seededRandom,
@@ -211,4 +216,36 @@ function calculateLocation(
         rowPivot = geohashNeighbour(rowPivot, "s");
     }
     return location;
+}
+
+/**
+ * Returns the ID of the given entity.
+ *
+ * @param entity - The entity (Player, Monster, or Item) for which to get the ID.
+ * @returns The ID of the entity.
+ */
+function entityId(entity: Player | Monster | Item): string {
+    if ("player" in entity) {
+        return entity.player;
+    } else if ("monster" in entity) {
+        return entity.monster;
+    } else {
+        return entity.item;
+    }
+}
+
+/**
+ * Returns the ID of a game action.
+ *
+ * @param gameAction The game action object.
+ * @returns The ID of the game action.
+ */
+function gameActionId(gameAction: GameAction): string {
+    if ("utility" in gameAction) {
+        return gameAction.utility;
+    } else if ("ability" in gameAction) {
+        return gameAction.ability;
+    } else {
+        return gameAction.action;
+    }
 }

@@ -21,31 +21,31 @@ test("Test Player", async () => {
 
     // Player one
     const playerOneName = "Gandalf";
-    const playerOneGeohash = generateRandomGeohash(6);
+    const playerOneGeohash = generateRandomGeohash(8, "h9");
     let [playerOneWallet, playerOneCookies, playerOne] =
         await createRandomPlayer({
             region,
-            geohash: generateRandomGeohash(8, "h9"),
+            geohash: playerOneGeohash,
             name: playerOneName,
         });
 
     // Player two
     const playerTwoName = "Saruman";
-    const playerTwoGeohash = generateRandomGeohash(6);
+    const playerTwoGeohash = generateRandomGeohash(8, "h9");
     let [playerTwoWallet, playerTwoCookies, playerTwo] =
         await createRandomPlayer({
             region,
-            geohash: generateRandomGeohash(8, "h9"),
+            geohash: playerTwoGeohash,
             name: playerTwoName,
         });
 
     // Player three
     const playerThreeName = "Sauron";
-    const playerThreeGeohash = playerOneGeohash;
+    const playerThreeGeohash = generateRandomGeohash(8, "h9");
     let [playerThreeWallet, playerThreeCookies, playerThree] =
         await createRandomPlayer({
             region,
-            geohash: generateRandomGeohash(8, "h9"),
+            geohash: playerThreeGeohash,
             name: playerThreeName,
         });
 
@@ -129,6 +129,7 @@ test("Test Player", async () => {
         queryTokens,
         abilities: playerAbilities,
         itemUtilities,
+        actions: [],
     });
 
     // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
@@ -195,6 +196,7 @@ test("Test Player", async () => {
         queryTokens,
         abilities: playerAbilities,
         itemUtilities,
+        actions: [],
     });
 
     // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
@@ -261,6 +263,7 @@ test("Test Player", async () => {
         queryTokens,
         abilities: playerAbilities,
         itemUtilities,
+        actions: [],
     });
 
     // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
@@ -327,6 +330,7 @@ test("Test Player", async () => {
         queryTokens,
         abilities: playerAbilities,
         itemUtilities,
+        actions: [],
     });
 
     // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
@@ -363,11 +367,12 @@ test("Test Player", async () => {
         player: playerOne,
         playerAbilities: [abilities.scratch, abilities.bandage],
         playerItems: [woodenClub],
+        actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
         items: [woodenDoor],
-    });
+    }).commands;
     expect(gameCommands).toMatchObject([
         [
             {
@@ -399,11 +404,12 @@ test("Test Player", async () => {
         player: playerOne,
         playerAbilities: [abilities.scratch, abilities.bandage],
         playerItems: [woodenClub],
+        actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
         items: [woodenDoor],
-    });
+    }).commands;
 
     expect(gameCommands).toMatchObject([
         [
@@ -442,11 +448,12 @@ test("Test Player", async () => {
             abilities.swing,
         ], // has swing action
         playerItems: [woodenClub], // has swing utility
+        actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
         items: [woodenDoor],
-    });
+    }).commands;
     expect(gameCommands).toMatchObject([
         [
             {
@@ -491,11 +498,12 @@ test("Test Player", async () => {
             abilities.swing,
         ], // has swing action
         playerItems: [woodenClub], // has swing utility
+        actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
         items: [woodenDoor],
-    });
+    }).commands;
     expect(gameCommands).toMatchObject([
         [
             {

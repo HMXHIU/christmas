@@ -3,6 +3,7 @@ import type {
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
+import { resolveActionEntities, type Action } from "./actions";
 import { resolveAbilityEntities, type Ability } from "./world/abilities";
 import type { Utility } from "./world/compendium";
 import { compendium } from "./world/settings";
@@ -13,19 +14,25 @@ export {
     gameActionsIR,
     searchPossibleCommands,
     tokenize,
+    type GameAction,
     type GameActionEntities,
     type GameCommand,
+    type GameCommandVariables,
     type TokenPositions,
 };
 
 type MatchedTokenPosition = Record<number, { token: string; score: number }>;
 type TokenPositions = Record<string, MatchedTokenPosition>;
+type GameCommandVariables = {
+    query: string;
+    queryIrrelevant: string; // stripped of relevant tokens (eg. entities, actions, abilities, utility)
+};
 type GameActionEntities = {
     self: Player | Monster;
-    target: Player | Monster | Item;
+    target?: Player | Monster | Item;
     item?: Item;
 };
-type GameAction = Ability | Utility;
+type GameAction = Ability | Utility | Action;
 type GameCommand = [GameAction, GameActionEntities];
 
 /**
@@ -39,13 +46,16 @@ function gameActionsIR({
     queryTokens,
     abilities,
     itemUtilities,
+    actions,
 }: {
     queryTokens: string[];
     abilities: Ability[];
     itemUtilities: [Item, Utility][];
+    actions: Action[];
 }): {
     abilities: Ability[];
     itemUtilities: [Item, Utility][];
+    actions: Action[];
     tokenPositions: TokenPositions;
 } {
     let tokenPositions: TokenPositions = {};
@@ -78,9 +88,24 @@ function gameActionsIR({
         });
     });
 
+    actions = actions.filter((action) => {
+        return [action.action].some((document) => {
+            const { score, matchedTokens } = documentScore(
+                queryTokens,
+                document,
+            );
+            if (score > 0.6) {
+                tokenPositions[action.action] = matchedTokens;
+                return true;
+            }
+            return false;
+        });
+    });
+
     return {
         abilities: abilities || [],
         itemUtilities: itemUtilities || [],
+        actions: actions || [],
         tokenPositions,
     };
 }
@@ -322,6 +347,8 @@ function searchPossibleCommands({
     monsters,
     players,
     items,
+    // Actions
+    actions,
 }: {
     query: string;
     player: Player;
@@ -330,7 +357,12 @@ function searchPossibleCommands({
     monsters: Monster[];
     players: Player[];
     items: Item[];
-}): GameCommand[] {
+    actions: Action[];
+}): {
+    commands: GameCommand[];
+    queryTokens: string[];
+    tokenPositions: TokenPositions;
+} {
     const queryTokens = tokenize(query);
 
     // Entities in environment relevant to the query
@@ -368,21 +400,25 @@ function searchPossibleCommands({
     var {
         itemUtilities: itemUtilitiesPossible,
         abilities: abilitiesPosssible,
-        tokenPositions: actionsTokenPositions,
+        actions: actionsPossible,
+        tokenPositions: gameActionsTokenPositions,
     } = gameActionsIR({
         queryTokens,
         abilities: playerAbilities,
         itemUtilities: [...playerItemUtilities, ...environmentItemUtilities],
+        actions,
     });
+
+    const allTokenPositions = {
+        ...entityTokenPositions,
+        ...gameActionsTokenPositions,
+    };
 
     const abilityCommands = abilitiesPosssible
         .map((ability) => {
             const entities = resolveAbilityEntities({
                 queryTokens,
-                tokenPositions: {
-                    ...entityTokenPositions,
-                    ...actionsTokenPositions,
-                },
+                tokenPositions: allTokenPositions,
                 ability: ability.ability,
                 self: player,
                 monsters: monstersRetrieved,
@@ -400,10 +436,7 @@ function searchPossibleCommands({
             if (utility.ability) {
                 entities = resolveAbilityEntities({
                     queryTokens,
-                    tokenPositions: {
-                        ...entityTokenPositions,
-                        ...actionsTokenPositions,
-                    },
+                    tokenPositions: allTokenPositions,
                     ability: utility.ability,
                     self: player, // Note: self is still the player when performing an ability from an item
                     monsters: monstersRetrieved,
@@ -423,6 +456,24 @@ function searchPossibleCommands({
         .filter((x) => x != null) as GameCommand[];
 
     // TODO: utilities that dont have an ability
+    const actionCommands = actionsPossible
+        .map((action) => {
+            const entities = resolveActionEntities({
+                queryTokens,
+                tokenPositions: allTokenPositions,
+                action,
+                self: player,
+                monsters: monstersRetrieved,
+                players: playersRetrieved,
+                items: itemsRetrieved,
+            });
+            return entities ? [action, entities] : null;
+        })
+        .filter((x) => x != null) as GameCommand[];
 
-    return [...abilityCommands, ...utilityCommands];
+    return {
+        commands: [...abilityCommands, ...utilityCommands, ...actionCommands],
+        queryTokens,
+        tokenPositions: allTokenPositions,
+    };
 }

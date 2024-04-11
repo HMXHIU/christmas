@@ -372,6 +372,7 @@ test("Test IR", async () => {
             queryTokens: tokenize("open woodendoor"),
             abilities: playerAbilities,
             itemUtilities,
+            actions: [],
         }),
     ).to.toMatchObject({
         abilities: [],
@@ -402,6 +403,7 @@ test("Test IR", async () => {
             queryTokens: tokenize("eyepok goblin"), // subtracted one letter
             abilities: playerAbilities,
             itemUtilities,
+            actions: [],
         }),
     ).to.toMatchObject({
         abilities: [
@@ -428,6 +430,7 @@ test("Test IR", async () => {
             queryTokens: tokenize("teleport to player"),
             abilities: playerAbilities,
             itemUtilities,
+            actions: [],
         }),
     ).to.toMatchObject({
         abilities: [

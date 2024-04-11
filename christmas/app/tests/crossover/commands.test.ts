@@ -81,11 +81,12 @@ test("Test Player", async () => {
             abilities.swing,
         ],
         playerItems: [woodenClub],
+        actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne],
         items: [woodenDoor],
-    })[0];
+    }).commands[0];
 
     await expect(
         executeGameCommand(openDoor, { Cookie: playerOneCookies }),
@@ -118,11 +119,12 @@ test("Test Player", async () => {
             abilities.swing,
         ],
         playerItems: [woodenClub],
+        actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne],
         items: [woodenDoor],
-    })[0];
+    }).commands[0];
 
     await expect(
         executeGameCommand(closeDoor, { Cookie: playerOneCookies }),
@@ -159,11 +161,12 @@ test("Test Player", async () => {
             abilities.swing,
         ],
         playerItems: [woodenClub],
+        actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne],
         items: [woodenDoor],
-    })[0];
+    }).commands[0];
 
     await expect(
         executeGameCommand(scratchGoblin, { Cookie: playerOneCookies }),
@@ -207,17 +210,18 @@ test("Test Player", async () => {
         player: playerOne,
         playerAbilities: [abilities.scratch, abilities.bandage],
         playerItems: [woodenClub],
+        actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne],
         items: [woodenDoor],
-    })[0];
+    }).commands[0];
 
     await expect(
         executeGameCommand(swingGoblin, { Cookie: playerOneCookies }),
     ).resolves.toMatchObject({
         item: {
-            item: woodenClub.item,
+            item: woodenClub,
             location: [playerOne.player],
             locationType: "rh",
             durability: 99,

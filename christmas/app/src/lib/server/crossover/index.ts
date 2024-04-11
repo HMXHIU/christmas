@@ -30,6 +30,7 @@ import { serverAnchorClient } from "$lib/server";
 import { parseZodErrors, sleep } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
 import { z } from "zod";
+import type { FeedEvent } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import {
     collidersInGeohashQuerySet,
@@ -1025,14 +1026,14 @@ async function publishEffectToPlayer(player: string, effect: ProcedureEffect) {
         }
     }
 
-    await redisClient.publish(
-        player,
-        JSON.stringify({
-            type: "message",
-            message: message,
-            variables: {},
-        }),
-    );
+    const messageFeed: FeedEvent = {
+        event: "feed",
+        type: "message",
+        message,
+        variables: {},
+    };
+
+    await redisClient.publish(player, JSON.stringify(messageFeed));
 }
 
 async function isDirectionTraversable(
