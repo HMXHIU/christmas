@@ -30,7 +30,7 @@
         command: GameCommand,
         queryTokens: string[],
         tokenPositions: TokenPositions,
-    ) => void;
+    ) => Promise<void>;
 
     // TODO: convert these to special commands
     //

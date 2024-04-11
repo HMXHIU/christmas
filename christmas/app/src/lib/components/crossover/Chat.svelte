@@ -28,7 +28,7 @@
         command: GameCommand,
         queryTokens: string[],
         tokenPositions: TokenPositions,
-    ) => void;
+    ) => Promise<void>;
 
     let commands: GameCommand[] = [];
     let queryTokens: string[];
