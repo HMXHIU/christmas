@@ -1,7 +1,8 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import * as Command from "$lib/components/ui/command/index.js";
-    import type { GameCommand } from "$lib/crossover/ir";
+    import type { GameCommand, TokenPositions } from "$lib/crossover/ir";
+    import { entityId, gameActionId } from "$lib/crossover/utils";
     import type { AbilityType } from "$lib/crossover/world/abilities";
     import { abilities } from "$lib/crossover/world/settings";
     import { cn } from "$lib/shadcn";
@@ -15,51 +16,56 @@
         Wrench,
     } from "lucide-svelte";
 
-    export let gameCommands: GameCommand[] = [];
-    export let selected: GameCommand | null = null;
-    export let onGameCommand: (gameCommand: GameCommand) => void;
+    export let commands: GameCommand[] = [];
+    export let queryTokens: string[];
+    export let tokenPositions: TokenPositions;
+    export let command: GameCommand | null = null;
+    export let onGameCommand: (
+        command: GameCommand,
+        queryTokens: string[],
+        tokenPositions: TokenPositions,
+    ) => void;
 
     let value: string = "0-0";
 
-    $: groupedCommands = groupBy(gameCommands, (gc: GameCommand) => {
+    $: groupedCommands = groupBy(commands, (gc: GameCommand) => {
         if ("utility" in gc[0]) {
             return "Items";
         } else if ("ability" in gc[0]) {
             return "Abilities";
+        } else if ("action" in gc[0]) {
+            return "Actions";
         } else {
             return "Other";
         }
     });
     // Default to first command
-    $: selected = gameCommands[0] || null;
-    $: value = gameCommands.length > 0 ? "0-0" : "0-0";
+    $: command = commands[0] || null;
+    $: value = commands.length > 0 ? "0-0" : "0-0";
 
     function targetName(command: GameCommand): string {
-        if ("player" in command[1].target) {
-            return `${command[1].target.name} (${command[1].target.player.slice(0, 7)}...)`;
-        } else if ("item" in command[1].target) {
-            return `${command[1].target.name} (${command[1].target.item})`;
-        } else if ("monster" in command[1].target) {
-            return `${command[1].target.name} (${command[1].target.monster})`;
+        const [action, { target }] = command;
+        if (target) {
+            return `${target.name} (${entityId(target).slice(0, 8)}...)`;
         }
-        return "unknown target";
+        return "";
     }
 
     function abilityType(command: GameCommand): AbilityType {
-        return command[0].ability
-            ? abilities[command[0].ability].type
+        const [action, entities] = command;
+        return "ability" in action
+            ? abilities[action.ability!].type
             : "neutral";
     }
 
     function commandName(command: GameCommand): string {
-        return "utility" in command[0]
-            ? command[0].utility
-            : command[0].ability;
+        const [action, entities] = command;
+        return gameActionId(action);
     }
 
     function onSubmit() {
-        if (selected) {
-            onGameCommand(selected);
+        if (command) {
+            onGameCommand(command, queryTokens, tokenPositions);
         }
     }
 </script>
@@ -68,34 +74,34 @@
     <div class={cn($$restProps.class)}>
         <Command.Root class="rounded-lg border shadow-md" {value}>
             <Command.List>
-                {#each Object.entries(groupedCommands) as [group, commands], groupIdx (group)}
+                {#each Object.entries(groupedCommands) as [group, _commands], groupIdx (group)}
                     <Command.Group heading={group}>
-                        {#each commands as command, commandIdx}
+                        {#each _commands as _command, commandIdx}
                             <Command.Item
                                 class="justify-between"
                                 value={`${groupIdx}-${commandIdx}`}
                                 onSelect={() => {
-                                    selected = command;
+                                    command = _command;
                                     value = `${groupIdx}-${commandIdx}`;
                                 }}
                             >
                                 <div class="flex flex-row items-center">
                                     <!-- Command Icon -->
-                                    {#if abilityType(command) === "offensive"}
+                                    {#if abilityType(_command) === "offensive"}
                                         <Sword class="mr-2 h-4 w-4" />
-                                    {:else if abilityType(command) === "defensive"}
+                                    {:else if abilityType(_command) === "defensive"}
                                         <Shield class="mr-2 h-4 w-4" />
-                                    {:else if abilityType(command) === "healing"}
+                                    {:else if abilityType(_command) === "healing"}
                                         <Cross class="mr-2 h-4 w-4" />
-                                    {:else if abilityType(command) === "neutral"}
+                                    {:else if abilityType(_command) === "neutral"}
                                         <Wrench class="mr-2 h-4 w-4" />
                                     {/if}
                                     <!-- Ability -->
-                                    <span>{commandName(command)}</span>
+                                    <span>{commandName(_command)}</span>
                                     <!-- Target -->
                                     <ChevronRight class="w-4 h-4"
                                     ></ChevronRight>
-                                    <span>{targetName(command)}</span>
+                                    <span>{targetName(_command)}</span>
                                 </div>
                                 <!-- Default [Enter] -->
                                 {#if `${groupIdx}-${commandIdx}` === value}

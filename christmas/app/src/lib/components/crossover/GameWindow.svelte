@@ -2,7 +2,7 @@
     import type { MessageFeedUI } from "$lib/components/common/types";
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Collapsible from "$lib/components/ui/collapsible/index.js";
-    import type { GameCommand } from "$lib/crossover/ir";
+    import type { GameCommand, TokenPositions } from "$lib/crossover/ir";
     import type { Direction } from "$lib/crossover/world";
     import { abyssTile } from "$lib/crossover/world";
     import type {
@@ -26,7 +26,11 @@
     export let tile: z.infer<typeof TileSchema> = abyssTile;
     export let messageFeed: MessageFeedUI[] = [];
     export let onMove: (direction: Direction) => void;
-    export let onGameCommand: (gameCommand: GameCommand) => void;
+    export let onGameCommand: (
+        command: GameCommand,
+        queryTokens: string[],
+        tokenPositions: TokenPositions,
+    ) => void;
 
     // TODO: convert these to special commands
     //

@@ -4,14 +4,13 @@
     import {
         commandLook,
         commandMove,
-        commandPerformAbility,
-        commandUseItem,
+        executeGameCommand,
         stream,
     } from "$lib/crossover";
 
     import type { MessageFeedUI } from "$lib/components/common/types";
 
-    import type { GameCommand } from "$lib/crossover/ir";
+    import type { GameCommand, TokenPositions } from "$lib/crossover/ir";
     import {
         abyssTile,
         loadMoreGrid,
@@ -37,26 +36,16 @@
     let items: Item[] = [];
     let monsters: Monster[] = [];
 
-    async function onGameCommand(gameCommand: GameCommand) {
-        const [command, { self, target }] = gameCommand;
-        if ("utility" in command) {
-            commandUseItem({
-                target:
-                    (target as any).player ||
-                    (target as any).monster ||
-                    (target as any).item,
-                item: "", // HOW TO GET ITEM
-                utility: command.utility,
-            });
-        } else if ("ability" in command) {
-            commandPerformAbility({
-                target:
-                    (target as any).player ||
-                    (target as any).monster ||
-                    (target as any).item,
-                ability: command.ability,
-            });
-        }
+    async function onGameCommand(
+        command: GameCommand,
+        queryTokens: string[],
+        tokenPositions: TokenPositions,
+    ) {
+        const result = await executeGameCommand({
+            command,
+            queryTokens,
+            tokenPositions,
+        });
     }
 
     // TODO: convert these to special commands
@@ -133,12 +122,12 @@
         });
     }
 
-    function processMessageEvent(event: Event) {
-        const { type: streamEvent, data } = event as MessageEvent;
+    function processFeedEvent(event: Event) {
+        const { data } = event as MessageEvent;
+        const { type, message, variables } = data as FeedEvent;
 
         // Error events
-        if (streamEvent === "error") {
-            const { message } = data as FeedEvent;
+        if (type === "error") {
             messageFeed = [
                 ...messageFeed,
                 {
@@ -149,52 +138,45 @@
                 },
             ];
         }
-        // Feed events
-        else if (streamEvent === "feed") {
-            const { message, variables, type } = data as FeedEvent;
 
-            // System feed
-            if (type === "system") {
-                messageFeed = [
-                    ...messageFeed,
-                    {
-                        id: messageFeed.length,
-                        timestamp: getCurrentTimestamp(),
-                        message,
-                        name: "System",
-                    },
-                ];
-                return;
-            }
+        // System feed
+        if (type === "system") {
+            messageFeed = [
+                ...messageFeed,
+                {
+                    id: messageFeed.length,
+                    timestamp: getCurrentTimestamp(),
+                    message,
+                    name: "System",
+                },
+            ];
+            return;
+        }
 
-            // Message feed
-            else if (type === "message") {
-                messageFeed = [
-                    ...messageFeed,
-                    {
-                        id: messageFeed.length,
-                        timestamp: getCurrentTimestamp(),
-                        message: variables
-                            ? (substituteVariables(
-                                  message,
-                                  variables,
-                              ) as string)
-                            : message,
-                        name: "",
-                    },
-                ];
-            }
+        // Message feed
+        else if (type === "message") {
+            messageFeed = [
+                ...messageFeed,
+                {
+                    id: messageFeed.length,
+                    timestamp: getCurrentTimestamp(),
+                    message: variables
+                        ? (substituteVariables(message, variables) as string)
+                        : message,
+                    name: "",
+                },
+            ];
         }
     }
 
     async function startStream() {
         [eventStream, closeStream] = await stream();
-        eventStream.addEventListener("message", processMessageEvent);
+        eventStream.addEventListener("feed", processFeedEvent);
     }
 
     function stopStream() {
         if (eventStream != null) {
-            eventStream.removeEventListener("message", processMessageEvent);
+            eventStream.removeEventListener("feed", processFeedEvent);
         }
         if (closeStream != null) {
             closeStream();

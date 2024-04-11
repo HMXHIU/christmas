@@ -52,7 +52,8 @@ const actions: Record<Actions, Action> = {
     },
 };
 
-function performAction(
+// TODO: need to standardize command return types
+async function performAction(
     {
         action,
         target,
@@ -65,9 +66,15 @@ function performAction(
     headers: HTTPHeaders = {},
 ) {
     if (action.action === "look") {
-        commandLook({ target: target ? entityId(target) : undefined }, headers);
+        return await commandLook(
+            { target: target ? entityId(target) : undefined },
+            headers,
+        );
     } else if (action.action === "say") {
-        commandSay({ message: variables.queryIrrelevant }, headers);
+        return await commandSay(
+            { message: variables.queryIrrelevant },
+            headers,
+        );
     }
 }
 

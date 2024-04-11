@@ -40,7 +40,6 @@
     export let players: Player[] = [];
     export let monsters: Monster[] = [];
     export let items: Item[] = [];
-
     export let onMove: (direction: Direction) => void;
 </script>
 
