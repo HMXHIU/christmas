@@ -2,7 +2,11 @@
     import { Button } from "$lib/components/ui/button";
     import * as Command from "$lib/components/ui/command/index.js";
     import type { GameCommand } from "$lib/crossover/ir";
-    import { entityId, gameActionId } from "$lib/crossover/utils";
+    import {
+        REGEX_STRIP_ENTITY_TYPE,
+        entityId,
+        gameActionId,
+    } from "$lib/crossover/utils";
     import type { AbilityType } from "$lib/crossover/world/abilities";
     import { abilities } from "$lib/crossover/world/settings";
     import { cn } from "$lib/shadcn";
@@ -42,8 +46,11 @@
 
     function targetName(gc: GameCommand): string {
         const [action, { target }] = gc;
+
         if (target) {
-            return `${target.name} (${entityId(target).slice(0, 8)}...)`;
+            let id = entityId(target).replace(REGEX_STRIP_ENTITY_TYPE, "");
+            id = id.length > 10 ? id.slice(0, 10) + "..." : id;
+            return `${target.name} (${id})`;
         }
         return "";
     }
@@ -58,6 +65,20 @@
     function commandName(gc: GameCommand): string {
         const [action, entities] = gc;
         return gameActionId(action);
+    }
+
+    function commandInfo(gc: GameCommand): string {
+        const [action, entities, variables] = gc;
+        if ("utility" in action) {
+            return `durability: ${action.cost.durability} charges: ${action.cost.charges}`;
+        } else if ("ability" in action) {
+            return `ap: ${action.ap} st: ${action.st} mp: ${action.mp} hp: ${action.hp}`;
+        } else if ("action" in action) {
+            if (action.action === "say") {
+                return `${variables?.queryIrrelevant}`;
+            }
+        }
+        return "";
     }
 
     async function onSubmit() {
@@ -94,15 +115,14 @@
                                         {:else if abilityType(gc) === "neutral"}
                                             <Wrench class="mr-3 h-4 w-4" />
                                         {/if}
-                                        <!-- Ability -->
                                         <span>{commandName(gc)}</span>
-                                        <!-- Target -->
-                                        <ChevronRight class="w-4 h-4"
-                                        ></ChevronRight>
-                                        <span>{targetName(gc)}</span>
-                                        <!-- Info -->
-
-                                        <!-- TODO getCommandInfo -->
+                                        {#each [targetName(gc), commandInfo(gc)] as s}
+                                            {#if s}
+                                                <ChevronRight class="w-4 h-4"
+                                                ></ChevronRight>
+                                                <span>{s}</span>
+                                            {/if}
+                                        {/each}
                                     </div>
                                     <!-- Default [Enter] -->
                                     {#if `${groupIdx}-${commandIdx}` === value}

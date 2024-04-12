@@ -13,6 +13,7 @@ import { biomeAtGeohash } from "./world/biomes";
 import { bestiary, biomes, compendium, worldSeed } from "./world/settings";
 
 export {
+    REGEX_STRIP_ENTITY_TYPE,
     calculateLocation,
     childrenGeohashes,
     directionToVector,
@@ -25,6 +26,8 @@ export {
     stringToRandomNumber,
     surroundingGeohashes,
 };
+
+const REGEX_STRIP_ENTITY_TYPE = /^(monster_|item_)/;
 
 /**
  * Converts a string (seed) to a random number.
