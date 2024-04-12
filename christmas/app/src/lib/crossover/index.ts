@@ -19,8 +19,7 @@ import type {
     StreamEvent,
 } from "../../routes/api/crossover/stream/+server";
 import { performAction } from "./actions";
-import type { GameCommand, GameCommandVariables, TokenPositions } from "./ir";
-import { entityId, gameActionId } from "./utils";
+import type { GameCommand } from "./ir";
 import { updateGrid, type Direction } from "./world";
 import type { Ability } from "./world/abilities";
 import type { EquipmentSlot, ItemVariables, Utility } from "./world/compendium";
@@ -35,7 +34,6 @@ export {
     commandSay,
     commandTakeItem,
     commandUseItem,
-    deriveGameCommandVariables,
     equipItem,
     executeGameCommand,
     getPlayer,
@@ -325,62 +323,11 @@ function commandConfigureItem(
     });
 }
 
-function deriveGameCommandVariables({
-    command,
-    queryTokens,
-    tokenPositions,
-}: {
-    command: GameCommand;
-    queryTokens: string[];
-    tokenPositions: TokenPositions;
-}): GameCommandVariables {
-    const [action, { self, target, item }] = command;
-
-    const actionId = gameActionId(action);
-    const selfId = entityId(self);
-    const targetId = target != null ? entityId(target) : null;
-    const itemId = item != null ? entityId(item) : null;
-
-    const relevantPositions = [
-        ...Object.keys(tokenPositions[actionId] || {}),
-        ...Object.keys(tokenPositions[selfId] || {}),
-        ...(targetId ? Object.keys(tokenPositions[targetId] || {}) : []),
-        ...(itemId ? Object.keys(tokenPositions[itemId] || {}) : []),
-    ];
-
-    const queryIrrelevant = Array.from(queryTokens.entries())
-        .filter(([pos, token]) => {
-            return !relevantPositions.includes(String(pos));
-        })
-        .map(([pos, token]) => token)
-        .join(" ");
-
-    return {
-        query: queryTokens.join(" "),
-        queryIrrelevant,
-    };
-}
-
 async function executeGameCommand(
-    {
-        command,
-        queryTokens,
-        tokenPositions,
-    }: {
-        command: GameCommand;
-        queryTokens: string[];
-        tokenPositions: TokenPositions;
-    },
+    command: GameCommand,
     headers: HTTPHeaders = {},
 ) {
-    const [action, { self, target, item }] = command;
-
-    // Derive variables
-    const variables: GameCommandVariables = deriveGameCommandVariables({
-        command,
-        queryTokens,
-        tokenPositions,
-    });
+    const [action, { self, target, item }, variables] = command;
 
     // TODO: better way to tell what type of action it is
 
@@ -412,8 +359,8 @@ async function executeGameCommand(
             headers,
         );
     }
-    // Action
-    else if ("action" in action) {
+    // Action (variables are required)
+    else if ("action" in action && variables != null) {
         return await performAction({
             action,
             target,

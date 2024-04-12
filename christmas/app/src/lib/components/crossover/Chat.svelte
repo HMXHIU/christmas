@@ -3,7 +3,6 @@
     import {
         searchPossibleCommands,
         type GameCommand,
-        type TokenPositions,
     } from "$lib/crossover/ir";
     import { type Ability } from "$lib/crossover/world/abilities";
     import { abilities } from "$lib/crossover/world/settings";
@@ -24,15 +23,9 @@
     export let items: Item[] = [];
     export let target: Player | Monster | Item | null = null;
     export let messageFeed: MessageFeedUI[] = [];
-    export let onGameCommand: (
-        command: GameCommand,
-        queryTokens: string[],
-        tokenPositions: TokenPositions,
-    ) => Promise<void>;
+    export let onGameCommand: (command: GameCommand) => Promise<void>;
 
     let commands: GameCommand[] = [];
-    let queryTokens: string[];
-    let tokenPositions: TokenPositions;
     let command: GameCommand | null = null;
 
     async function onEnter(message: string) {
@@ -41,7 +34,7 @@
 
         // Submit game command on enter
         if (command) {
-            onGameCommand(command, queryTokens, tokenPositions);
+            onGameCommand(command);
         }
     }
 
@@ -51,22 +44,18 @@
             const playerAbilities: Ability[] = Object.values(abilities);
 
             // Autocomplete game commands
-            ({ commands, queryTokens, tokenPositions } = searchPossibleCommands(
-                {
-                    query: message,
-                    playerAbilities,
-                    playerItems: [], // TODO: replace with actual player's Items
-                    actions: [actions.say, actions.look],
-                    monsters,
-                    players,
-                    items,
-                    player: $player!,
-                },
-            ));
+            commands = searchPossibleCommands({
+                query: message,
+                playerAbilities,
+                playerItems: [], // TODO: replace with actual player's Items
+                actions: [actions.say, actions.look],
+                monsters,
+                players,
+                items,
+                player: $player!,
+            }).commands;
         } else {
             commands = [];
-            queryTokens = [];
-            tokenPositions = {};
         }
     }
 </script>
@@ -76,13 +65,7 @@
     <ChatWindow {messageFeed}></ChatWindow>
 
     <!-- Select Commands -->
-    <CommandAutocomplete
-        class="pb-2"
-        {queryTokens}
-        {tokenPositions}
-        {commands}
-        {onGameCommand}
-        bind:command
+    <CommandAutocomplete class="pb-2" {commands} {onGameCommand} bind:command
     ></CommandAutocomplete>
 
     <!-- Chat Input -->

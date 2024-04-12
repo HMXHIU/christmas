@@ -1,4 +1,4 @@
-import { deriveGameCommandVariables } from "$lib/crossover";
+import { commandVariables } from "$lib/crossover";
 import { actions } from "$lib/crossover/actions";
 import { searchPossibleCommands } from "$lib/crossover/ir";
 import { abilities, compendium } from "$lib/crossover/world/settings";
@@ -145,7 +145,7 @@ test("Test Actions", async () => {
     expect(commands).toMatchObject([]);
 
     /**
-     * Test `deriveGameCommandVariables`
+     * Test `commandVariables`
      */
 
     var { queryTokens, tokenPositions, commands } = searchPossibleCommands({
@@ -159,7 +159,7 @@ test("Test Actions", async () => {
         items: [woodenDoor, woodenClub, portal],
     });
 
-    var variables = deriveGameCommandVariables({
+    var variables = commandVariables({
         command: commands[0],
         queryTokens,
         tokenPositions,

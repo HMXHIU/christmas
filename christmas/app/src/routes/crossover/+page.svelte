@@ -10,7 +10,7 @@
 
     import type { MessageFeedUI } from "$lib/components/common/types";
 
-    import type { GameCommand, TokenPositions } from "$lib/crossover/ir";
+    import type { GameCommand } from "$lib/crossover/ir";
     import {
         abyssTile,
         loadMoreGrid,
@@ -36,16 +36,8 @@
     let items: Item[] = [];
     let monsters: Monster[] = [];
 
-    async function onGameCommand(
-        command: GameCommand,
-        queryTokens: string[],
-        tokenPositions: TokenPositions,
-    ) {
-        const result = await executeGameCommand({
-            command,
-            queryTokens,
-            tokenPositions,
-        });
+    async function onGameCommand(command: GameCommand) {
+        const result = await executeGameCommand(command);
     }
 
     // TODO: convert these to special commands

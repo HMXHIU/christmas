@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import * as Command from "$lib/components/ui/command/index.js";
-    import type { GameCommand, TokenPositions } from "$lib/crossover/ir";
+    import type { GameCommand } from "$lib/crossover/ir";
     import { entityId, gameActionId } from "$lib/crossover/utils";
     import type { AbilityType } from "$lib/crossover/world/abilities";
     import { abilities } from "$lib/crossover/world/settings";
@@ -17,14 +17,8 @@
     } from "lucide-svelte";
 
     export let commands: GameCommand[] = [];
-    export let queryTokens: string[];
-    export let tokenPositions: TokenPositions;
     export let command: GameCommand | null = null;
-    export let onGameCommand: (
-        command: GameCommand,
-        queryTokens: string[],
-        tokenPositions: TokenPositions,
-    ) => Promise<void>;
+    export let onGameCommand: (command: GameCommand) => Promise<void>;
 
     let value: string = "0-0";
 
@@ -68,7 +62,7 @@
 
     async function onSubmit() {
         if (command) {
-            await onGameCommand(command, queryTokens, tokenPositions);
+            await onGameCommand(command);
         }
     }
 </script>
@@ -92,13 +86,13 @@
                                     <div class="flex flex-row items-center">
                                         <!-- Command Icon -->
                                         {#if abilityType(gc) === "offensive"}
-                                            <Sword class="mr-2 h-4 w-4" />
+                                            <Sword class="mr-3 h-4 w-4" />
                                         {:else if abilityType(gc) === "defensive"}
-                                            <Shield class="mr-2 h-4 w-4" />
+                                            <Shield class="mr-3 h-4 w-4" />
                                         {:else if abilityType(gc) === "healing"}
-                                            <Cross class="mr-2 h-4 w-4" />
+                                            <Cross class="mr-3 h-4 w-4" />
                                         {:else if abilityType(gc) === "neutral"}
-                                            <Wrench class="mr-2 h-4 w-4" />
+                                            <Wrench class="mr-3 h-4 w-4" />
                                         {/if}
                                         <!-- Ability -->
                                         <span>{commandName(gc)}</span>
@@ -106,6 +100,9 @@
                                         <ChevronRight class="w-4 h-4"
                                         ></ChevronRight>
                                         <span>{targetName(gc)}</span>
+                                        <!-- Info -->
+
+                                        <!-- TODO getCommandInfo -->
                                     </div>
                                     <!-- Default [Enter] -->
                                     {#if `${groupIdx}-${commandIdx}` === value}

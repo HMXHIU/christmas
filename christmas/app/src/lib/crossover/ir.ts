@@ -4,6 +4,7 @@ import type {
     Player,
 } from "$lib/server/crossover/redis/entities";
 import { resolveActionEntities, type Action } from "./actions";
+import { entityId, gameActionId } from "./utils";
 import { resolveAbilityEntities, type Ability } from "./world/abilities";
 import type { Utility } from "./world/compendium";
 import { compendium } from "./world/settings";
@@ -33,7 +34,7 @@ type GameActionEntities = {
     item?: Item;
 };
 type GameAction = Ability | Utility | Action;
-type GameCommand = [GameAction, GameActionEntities];
+type GameCommand = [GameAction, GameActionEntities, GameCommandVariables?];
 
 /**
  * Retrieves abilities and utilities based on the given query tokens.
@@ -455,7 +456,6 @@ function searchPossibleCommands({
         })
         .filter((x) => x != null) as GameCommand[];
 
-    // TODO: utilities that dont have an ability
     const actionCommands = actionsPossible
         .map((action) => {
             const entities = resolveActionEntities({
@@ -467,7 +467,17 @@ function searchPossibleCommands({
                 players: playersRetrieved,
                 items: itemsRetrieved,
             });
-            return entities ? [action, entities] : null;
+            if (entities != null) {
+                const variables = commandVariables({
+                    gameAction: action,
+                    gameEntities: entities,
+                    queryTokens,
+                    tokenPositions: allTokenPositions,
+                });
+                return [action, entities, variables];
+            } else {
+                return null;
+            }
         })
         .filter((x) => x != null) as GameCommand[];
 
@@ -475,5 +485,43 @@ function searchPossibleCommands({
         commands: [...abilityCommands, ...utilityCommands, ...actionCommands],
         queryTokens,
         tokenPositions: allTokenPositions,
+    };
+}
+
+function commandVariables({
+    gameAction,
+    gameEntities,
+    queryTokens,
+    tokenPositions,
+}: {
+    gameAction: GameAction;
+    gameEntities: GameActionEntities;
+    queryTokens: string[];
+    tokenPositions: TokenPositions;
+}): GameCommandVariables {
+    const { self, target, item } = gameEntities;
+
+    const actionId = gameActionId(gameAction);
+    const selfId = entityId(self);
+    const targetId = target != null ? entityId(target) : null;
+    const itemId = item != null ? entityId(item) : null;
+
+    const relevantPositions = [
+        ...Object.keys(tokenPositions[actionId] || {}),
+        ...Object.keys(tokenPositions[selfId] || {}),
+        ...(targetId ? Object.keys(tokenPositions[targetId] || {}) : []),
+        ...(itemId ? Object.keys(tokenPositions[itemId] || {}) : []),
+    ];
+
+    const queryIrrelevant = Array.from(queryTokens.entries())
+        .filter(([pos, token]) => {
+            return !relevantPositions.includes(String(pos));
+        })
+        .map(([pos, token]) => token)
+        .join(" ");
+
+    return {
+        query: queryTokens.join(" "),
+        queryIrrelevant,
     };
 }
