@@ -20,6 +20,7 @@ import {
 // Exports
 export {
     collidersInGeohashQuerySet,
+    crossoverPlayerInventoryQuerySet,
     fetchEntity,
     initializeClients,
     isEntityBusy,
@@ -28,7 +29,6 @@ export {
     loggedInPlayersQuerySet,
     monsterRepository,
     monstersInGeohashQuerySet,
-    playerInventoryQuerySet,
     playerRepository,
     playersInGeohashQuerySet,
     redisClient,
@@ -176,7 +176,7 @@ function monstersInGeohashQuerySet(geohash: string): Search {
  * @param player - The name of the player.
  * @returns A Search object representing the query for player inventory items.
  */
-function playerInventoryQuerySet(player: string): Search {
+function crossoverPlayerInventoryQuerySet(player: string): Search {
     return itemRepository.search().where("location").contains(player);
 }
 

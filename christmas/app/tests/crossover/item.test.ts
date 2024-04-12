@@ -1,4 +1,4 @@
-import { commandTakeItem, equipItem } from "$lib/crossover";
+import { crossoverCmdEquip, crossoverCmdTake } from "$lib/crossover";
 import { geohashNeighbour } from "$lib/crossover/utils";
 import { itemAttibutes } from "$lib/crossover/world/compendium";
 import { compendium } from "$lib/crossover/world/settings";
@@ -219,7 +219,10 @@ test("Test Items", async () => {
      */
 
     await expect(
-        commandTakeItem({ item: portalTwo.item }, { Cookie: playerOneCookies }),
+        crossoverCmdTake(
+            { item: portalTwo.item },
+            { Cookie: playerOneCookies },
+        ),
     ).rejects.toThrowError(`${portalTwo.item} cannot be taken`);
 
     /*
@@ -235,7 +238,7 @@ test("Test Items", async () => {
     });
 
     // Take item
-    playerOneWoodenClub = await commandTakeItem(
+    playerOneWoodenClub = await crossoverCmdTake(
         { item: playerOneWoodenClub.item },
         { Cookie: playerOneCookies },
     );
@@ -253,7 +256,7 @@ test("Test Items", async () => {
     );
 
     // Equip item
-    playerOneWoodenClub = await equipItem(
+    playerOneWoodenClub = await crossoverCmdEquip(
         {
             item: playerOneWoodenClub.item,
             slot: "rh",

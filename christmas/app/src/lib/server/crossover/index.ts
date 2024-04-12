@@ -56,7 +56,7 @@ export {
     autoCorrectGeohashPrecision,
     configureItem,
     connectedUsers,
-    getPlayerMetadata,
+    crossoverAuthPlayerMetadata,
     getUserMetadata,
     initPlayerEntity,
     isDirectionTraversable,
@@ -117,7 +117,7 @@ async function getUserMetadata(
  * @param publicKey The public key of the player.
  * @returns A promise that resolves to the player metadata or null if not found.
  */
-async function getPlayerMetadata(
+async function crossoverAuthPlayerMetadata(
     publicKey: string,
 ): Promise<z.infer<typeof PlayerMetadataSchema> | null> {
     return (await getUserMetadata(publicKey))?.crossover || null;
@@ -128,7 +128,7 @@ async function getPlayerMetadata(
  * @param publicKey The public key of the player.
  * @returns A promise that resolves to the player state or null if not found.
  */
-async function getPlayerState(
+async function crossoverAuthPlayerState(
     publicKey: string,
 ): Promise<z.infer<typeof PlayerStateSchema> | null> {
     try {
@@ -181,14 +181,14 @@ async function loadPlayerEntity(
     playerState: any = {},
 ): Promise<PlayerEntity> {
     // Get player metadata
-    const playerMetadata = await getPlayerMetadata(publicKey);
+    const playerMetadata = await crossoverAuthPlayerMetadata(publicKey);
     if (playerMetadata == null) {
         throw new Error(`Player ${publicKey} not found`);
     }
 
     // Get & update player state
     const newPlayerState = {
-        ...((await getPlayerState(publicKey)) || {}),
+        ...((await crossoverAuthPlayerState(publicKey)) || {}),
         ...playerState,
     };
     await setPlayerState(publicKey, newPlayerState);

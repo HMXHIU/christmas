@@ -25,27 +25,27 @@ import type { Ability } from "./world/abilities";
 import type { EquipmentSlot, ItemVariables, Utility } from "./world/compendium";
 
 export {
-    commandConfigureItem,
-    commandCreateItem,
-    commandDropItem,
-    commandLook,
-    commandMove,
-    commandPerformAbility,
-    commandSay,
-    commandTakeItem,
-    commandUseItem,
-    equipItem,
+    crossoverAuthPlayer,
+    crossoverCmdConfigureItem,
+    crossoverCmdCreateItem,
+    crossoverCmdDrop,
+    crossoverCmdEquip,
+    crossoverCmdLook,
+    crossoverCmdMove,
+    crossoverCmdPerformAbility,
+    crossoverCmdSay,
+    crossoverCmdTake,
+    crossoverCmdUnequip,
+    crossoverCmdUseItem,
+    crossoverPlayerInventory,
     executeGameCommand,
-    getPlayer,
     login,
     logout,
-    playerInventory,
     signup,
     stream,
-    unequipItem,
 };
 
-async function getPlayer(
+async function crossoverAuthPlayer(
     headers: HTTPHeaders = {},
 ): Promise<z.infer<typeof PlayerMetadataSchema>> {
     return await trpc({
@@ -214,7 +214,7 @@ function makeWriteableEventStream(eventTarget: EventTarget) {
     });
 }
 
-function commandSay(
+function crossoverCmdSay(
     input: { message: string },
     headers: HTTPHeaders = {},
 ): Promise<void> {
@@ -222,7 +222,7 @@ function commandSay(
     return trpc({ headers }).crossover.cmd.say.query({ message });
 }
 
-async function commandLook(
+async function crossoverCmdLook(
     input: { target?: string },
     headers: HTTPHeaders = {},
 ) {
@@ -242,7 +242,7 @@ async function commandLook(
     return result;
 }
 
-function commandMove(
+function crossoverCmdMove(
     input: { direction: Direction },
     headers: HTTPHeaders = {},
 ): Promise<string[]> {
@@ -250,7 +250,7 @@ function commandMove(
     return trpc({ headers }).crossover.cmd.move.query({ direction });
 }
 
-function commandPerformAbility(
+function crossoverCmdPerformAbility(
     input: { target: string; ability: string },
     headers: HTTPHeaders = {},
 ) {
@@ -261,7 +261,7 @@ function commandPerformAbility(
     });
 }
 
-function commandUseItem(
+function crossoverCmdUseItem(
     input: { target?: string; item: string; utility: string },
     headers: HTTPHeaders = {},
 ) {
@@ -273,17 +273,17 @@ function commandUseItem(
     });
 }
 
-function commandTakeItem(input: { item: string }, headers: HTTPHeaders = {}) {
+function crossoverCmdTake(input: { item: string }, headers: HTTPHeaders = {}) {
     const { item } = input;
     return trpc({ headers }).crossover.cmd.take.query({ item });
 }
 
-function commandDropItem(input: { item: string }, headers: HTTPHeaders = {}) {
+function crossoverCmdDrop(input: { item: string }, headers: HTTPHeaders = {}) {
     const { item } = input;
     return trpc({ headers }).crossover.cmd.drop.query({ item });
 }
 
-function equipItem(
+function crossoverCmdEquip(
     input: { item: string; slot: EquipmentSlot },
     headers: HTTPHeaders = {},
 ) {
@@ -291,16 +291,19 @@ function equipItem(
     return trpc({ headers }).crossover.player.equip.query({ item, slot });
 }
 
-function unequipItem(input: { item: string }, headers: HTTPHeaders = {}) {
+function crossoverCmdUnequip(
+    input: { item: string },
+    headers: HTTPHeaders = {},
+) {
     const { item } = input;
     return trpc({ headers }).crossover.player.unequip.query({ item });
 }
 
-function playerInventory(headers: HTTPHeaders = {}) {
+function crossoverPlayerInventory(headers: HTTPHeaders = {}) {
     return trpc({ headers }).crossover.player.inventory.query();
 }
 
-function commandCreateItem(
+function crossoverCmdCreateItem(
     input: { geohash: string; prop: string; variables?: ItemVariables },
     headers: HTTPHeaders = {},
 ) {
@@ -312,7 +315,7 @@ function commandCreateItem(
     });
 }
 
-function commandConfigureItem(
+function crossoverCmdConfigureItem(
     input: { item: string; variables: ItemVariables },
     headers: HTTPHeaders = {},
 ) {
@@ -333,7 +336,7 @@ async function executeGameCommand(
 
     // Use Item
     if (item != null) {
-        return await commandUseItem(
+        return await crossoverCmdUseItem(
             {
                 target:
                     (target as Player)?.player ||
@@ -348,7 +351,7 @@ async function executeGameCommand(
     }
     // Perform ability
     else if ("ability" in action) {
-        return await commandPerformAbility(
+        return await crossoverCmdPerformAbility(
             {
                 target:
                     (target as Player)?.player ||

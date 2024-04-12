@@ -1,4 +1,4 @@
-import { commandMove } from "$lib/crossover";
+import { crossoverCmdMove } from "$lib/crossover";
 import { geohashNeighbour } from "$lib/crossover/utils";
 import { biomeAtGeohash } from "$lib/crossover/world/biomes";
 import { biomes, compendium } from "$lib/crossover/world/settings";
@@ -43,14 +43,14 @@ test("Test Movement", async () => {
     });
 
     // PlayerOne tries to move south (obstructed by tavern)
-    playerOne.location = await commandMove(
+    playerOne.location = await crossoverCmdMove(
         { direction: "s" },
         { Cookie: playerOneCookies },
     );
     expect(playerOne.location[0]).toBe(playerOneGeohash); // PlayerOne should not move
 
     // PlayerOne move each (unobstructed)
-    playerOne.location = await commandMove(
+    playerOne.location = await crossoverCmdMove(
         { direction: "e" },
         { Cookie: playerOneCookies },
     );
@@ -59,7 +59,7 @@ test("Test Movement", async () => {
     expect(playerOne.location[0]).toBe(geohashNeighbour(playerOneGeohash, "e"));
 
     // PlayerOne tries to move south (obstructed by tavern)
-    let newLocation = await commandMove(
+    let newLocation = await crossoverCmdMove(
         { direction: "s" },
         { Cookie: playerOneCookies },
     );
@@ -67,7 +67,7 @@ test("Test Movement", async () => {
     playerOne.location = newLocation;
 
     // PlayerOne move south east (unobstructed)
-    newLocation = await commandMove(
+    newLocation = await crossoverCmdMove(
         { direction: "se" },
         { Cookie: playerOneCookies },
     );
@@ -75,7 +75,7 @@ test("Test Movement", async () => {
     playerOne.location = newLocation;
 
     // PlayerOne move west (obstructed by tavern)
-    playerOne.location = await commandMove(
+    playerOne.location = await crossoverCmdMove(
         { direction: "w" },
         { Cookie: playerOneCookies },
     );

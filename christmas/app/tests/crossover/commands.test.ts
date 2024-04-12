@@ -1,4 +1,8 @@
-import { commandTakeItem, equipItem, executeGameCommand } from "$lib/crossover";
+import {
+    crossoverCmdEquip,
+    crossoverCmdTake,
+    executeGameCommand,
+} from "$lib/crossover";
 import { searchPossibleCommands, type GameCommand } from "$lib/crossover/ir";
 import { geohashNeighbour } from "$lib/crossover/utils";
 import { abilities, compendium } from "$lib/crossover/world/settings";
@@ -189,13 +193,13 @@ test("Test Player", async () => {
      */
 
     // Take wooden club
-    await commandTakeItem(
+    await crossoverCmdTake(
         { item: woodenClub.item },
         { Cookie: playerOneCookies },
     );
 
     // Equip wooden club
-    await equipItem(
+    await crossoverCmdEquip(
         {
             item: woodenClub.item,
             slot: "rh",

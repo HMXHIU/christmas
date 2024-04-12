@@ -2,8 +2,8 @@
     import GameWindow from "$lib/components/crossover/GameWindow.svelte";
     import Onboard from "$lib/components/crossover/Onboard.svelte";
     import {
-        commandLook,
-        commandMove,
+        crossoverCmdLook,
+        crossoverCmdMove,
         executeGameCommand,
         stream,
     } from "$lib/crossover";
@@ -48,7 +48,7 @@
     // ) {
     //     switch (command?.key) {
     //         case "say":
-    //             await commandSay({ message });
+    //             await crossoverCmdSay({ message });
     //             break;
 
     //         case "look":
@@ -57,7 +57,7 @@
 
     //         case "spawnItem":
     //             // Test spawn wooden door
-    //             const item = await commandCreateItem({
+    //             const item = await crossoverCmdCreateItem({
     //                 geohash: tile.geohash,
     //                 prop: compendium.woodenDoor.prop,
     //             });
@@ -66,7 +66,7 @@
 
     //         case "useItem":
     //             // Test use wooden door
-    //             const usedItem = await commandUseItem({
+    //             const usedItem = await crossoverCmdUseItem({
     //                 item: "",
     //                 action: "open",
     //             });
@@ -83,7 +83,7 @@
     // }
 
     async function look() {
-        const lookResult = await commandLook({});
+        const lookResult = await crossoverCmdLook({});
         players = lookResult.players;
         tile = lookResult.tile;
         monsters = lookResult.monsters;
@@ -92,7 +92,7 @@
 
     async function onMove(direction: Direction) {
         // Calculate new tile (TODO: get other metadata like description, etc.)
-        const location = await commandMove({ direction });
+        const location = await crossoverCmdMove({ direction });
         const geohash = location[0];
 
         // Load more grid data if parent geohash changes

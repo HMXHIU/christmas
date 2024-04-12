@@ -5,7 +5,7 @@ import type {
     Player,
 } from "$lib/server/crossover/redis/entities";
 import type { HTTPHeaders } from "@trpc/client";
-import { commandLook, commandSay } from ".";
+import { crossoverCmdLook, crossoverCmdSay } from ".";
 import type {
     GameActionEntities,
     GameCommandVariables,
@@ -66,12 +66,12 @@ async function performAction(
     headers: HTTPHeaders = {},
 ) {
     if (action.action === "look") {
-        return await commandLook(
+        return await crossoverCmdLook(
             { target: target ? entityId(target) : undefined },
             headers,
         );
     } else if (action.action === "say") {
-        return await commandSay(
+        return await crossoverCmdSay(
             { message: variables.queryIrrelevant },
             headers,
         );

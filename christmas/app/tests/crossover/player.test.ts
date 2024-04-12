@@ -1,14 +1,14 @@
 import { INTERNAL_SERVICE_KEY } from "$env/static/private";
 import {
-    commandConfigureItem,
-    commandCreateItem,
-    commandLook,
-    commandMove,
-    commandPerformAbility,
-    commandSay,
-    commandTakeItem,
-    commandUseItem,
-    equipItem,
+    crossoverCmdConfigureItem,
+    crossoverCmdCreateItem,
+    crossoverCmdEquip,
+    crossoverCmdLook,
+    crossoverCmdMove,
+    crossoverCmdPerformAbility,
+    crossoverCmdSay,
+    crossoverCmdTake,
+    crossoverCmdUseItem,
     stream,
 } from "$lib/crossover";
 import { itemAttibutes } from "$lib/crossover/world/compendium";
@@ -108,7 +108,7 @@ test("Test Player", async () => {
     });
 
     // Say
-    await commandSay(
+    await crossoverCmdSay(
         { message: "Hello, world!" },
         { Cookie: playerOneCookies },
     );
@@ -143,7 +143,7 @@ test("Test Player", async () => {
     ).rejects.toThrowError("Timeout occurred while waiting for event");
 
     // Look - no target (tile)
-    let lookAtResult = await commandLook({}, { Cookie: playerOneCookies });
+    let lookAtResult = await crossoverCmdLook({}, { Cookie: playerOneCookies });
     expect(lookAtResult.tile).toMatchObject({
         geohash: playerOne.location[0],
     });
@@ -153,7 +153,7 @@ test("Test Player", async () => {
     ]);
 
     // Move
-    const nextLocation = await commandMove(
+    const nextLocation = await crossoverCmdMove(
         { direction: "n" },
         { Cookie: playerOneCookies },
     );
@@ -175,11 +175,11 @@ test("Test Player", async () => {
     });
 
     /*
-     * Test commandPerformAbility
+     * Test crossoverCmdPerformAbility
      */
 
     // Test out of range
-    var { status, message } = await commandPerformAbility(
+    var { status, message } = await crossoverCmdPerformAbility(
         {
             target: playerTwo.player,
             ability: abilities.scratch.ability,
@@ -190,7 +190,7 @@ test("Test Player", async () => {
     expect(message).toBe("Target out of range");
 
     // Test out of resources
-    var { status, message } = await commandPerformAbility(
+    var { status, message } = await crossoverCmdPerformAbility(
         {
             target: playerTwo.player,
             ability: abilities.teleport.ability,
@@ -221,7 +221,7 @@ test("Test Player", async () => {
     expect(res.status).toBe(200);
 
     // Test ability success
-    let abilityResult = await commandPerformAbility(
+    let abilityResult = await crossoverCmdPerformAbility(
         {
             target: playerTwo.player,
             ability: abilities.teleport.ability,
@@ -257,7 +257,7 @@ test("Test Player", async () => {
     });
 
     /*
-     * Test commandConfigureItem
+     * Test crossoverCmdConfigureItem
      */
 
     // Spawn woodenDoor at playerOne location
@@ -276,7 +276,7 @@ test("Test Player", async () => {
 
     // Configure woodenDoor
     woodenDoor = (
-        await commandConfigureItem(
+        await crossoverCmdConfigureItem(
             {
                 item: woodenDoor.item,
                 variables: {
@@ -293,11 +293,11 @@ test("Test Player", async () => {
     });
 
     /*
-     * Test commandUseItem
+     * Test crossoverCmdUseItem
      */
 
     // Use woodenDoor (open)
-    var { item, status } = await commandUseItem(
+    var { item, status } = await crossoverCmdUseItem(
         {
             item: woodenDoor.item,
             utility: compendium.woodenDoor.utilities.open.utility,
@@ -321,7 +321,7 @@ test("Test Player", async () => {
     });
 
     // Move playerOne south (to spawn portal without colliding with woodenDoor)
-    playerOne.location = await commandMove(
+    playerOne.location = await crossoverCmdMove(
         { direction: "s" },
         { Cookie: playerOneCookies },
     );
@@ -354,7 +354,7 @@ test("Test Player", async () => {
 
     // Use portals (player)
     playerOne = (
-        await commandUseItem(
+        await crossoverCmdUseItem(
             {
                 item: portalOne.item,
                 utility: compendium.portal.utilities.teleport.utility,
@@ -366,7 +366,7 @@ test("Test Player", async () => {
     // Teleport to portalTwo
     expect(playerOne.location[0]).toBe(portalTwo.location[0]);
     playerOne = (
-        await commandUseItem(
+        await crossoverCmdUseItem(
             {
                 item: portalTwo.item,
                 utility: compendium.portal.utilities.teleport.utility,
@@ -379,10 +379,10 @@ test("Test Player", async () => {
     expect(playerOne.location[0]).toBe(portalOne.location[0]);
 
     /*
-     * Test commandCreateItem
+     * Test crossoverCmdCreateItem
      */
 
-    const woodenClub = await commandCreateItem(
+    const woodenClub = await crossoverCmdCreateItem(
         {
             geohash: playerOne.location[0],
             prop: compendium.woodenClub.prop,
@@ -409,18 +409,18 @@ test("Test Player", async () => {
      */
 
     // Take & Equip woodenClub
-    await commandTakeItem(
+    await crossoverCmdTake(
         { item: woodenClub.item },
         { Cookie: playerOneCookies },
     );
-    await equipItem(
+    await crossoverCmdEquip(
         { item: woodenClub.item, slot: "rh" },
         { Cookie: playerOneCookies },
     );
 
     // Teleport to playerTwo's location to be in range
     playerOne = (
-        await commandPerformAbility(
+        await crossoverCmdPerformAbility(
             {
                 target: playerTwo.player,
                 ability: abilities.teleport.ability,
@@ -432,7 +432,7 @@ test("Test Player", async () => {
     // Use woodenClub (swing)
     let stBefore = playerOne.st;
     let apBefore = playerOne.ap;
-    var { status, message, self, target, item } = await commandUseItem(
+    var { status, message, self, target, item } = await crossoverCmdUseItem(
         {
             item: woodenClub.item,
             utility: compendium.woodenClub.utilities.swing.utility,

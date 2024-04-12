@@ -1,4 +1,4 @@
-import { commandPerformAbility, stream } from "$lib/crossover";
+import { crossoverCmdPerformAbility, stream } from "$lib/crossover";
 import { abilities } from "$lib/crossover/world/settings";
 import { expect, test } from "vitest";
 import { createRandomPlayer, waitForEventData } from "./utils";
@@ -44,7 +44,7 @@ test("Test Stream", async () => {
 
     // `playerOne` attacks player `playerTwo`
     setTimeout(async () => {
-        await commandPerformAbility(
+        await crossoverCmdPerformAbility(
             {
                 ability: abilities.scratch.ability,
                 target: playerTwo.player,
@@ -62,7 +62,7 @@ test("Test Stream", async () => {
 
     // `playerTwo` heals itself
     setTimeout(async () => {
-        await commandPerformAbility(
+        await crossoverCmdPerformAbility(
             {
                 ability: abilities.bandage.ability,
                 target: playerTwo.player,

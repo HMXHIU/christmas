@@ -37,9 +37,9 @@ import { ObjectStorage } from "../objectStorage";
 import { authProcedure, internalServiceProcedure, t } from "../trpc";
 import { performMonsterActions, spawnMonsters } from "./dungeonMaster";
 import {
+    crossoverPlayerInventoryQuerySet,
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
-    playerInventoryQuerySet,
     playersInGeohashQuerySet,
 } from "./redis";
 import type {
@@ -227,7 +227,7 @@ const crossoverRouter = {
                 ctx.user.publicKey,
             )) as PlayerEntity;
 
-            const inventoryItems = (await playerInventoryQuerySet(
+            const inventoryItems = (await crossoverPlayerInventoryQuerySet(
                 player.player,
             ).return.all()) as ItemEntity[];
 
@@ -270,12 +270,11 @@ const crossoverRouter = {
                 }
 
                 // Unequip existing item in slot
-                const exitingItemsInSlot = (await playerInventoryQuerySet(
-                    player.player,
-                )
-                    .and("locationType")
-                    .equal(slot)
-                    .return.all()) as ItemEntity[];
+                const exitingItemsInSlot =
+                    (await crossoverPlayerInventoryQuerySet(player.player)
+                        .and("locationType")
+                        .equal(slot)
+                        .return.all()) as ItemEntity[];
                 for (const itemEntity of exitingItemsInSlot) {
                     itemEntity.location = [player.player];
                     itemEntity.locationType = "inv";
