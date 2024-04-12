@@ -45,96 +45,6 @@ export {
     stream,
 };
 
-async function crossoverAuthPlayer(
-    headers: HTTPHeaders = {},
-): Promise<z.infer<typeof PlayerMetadataSchema>> {
-    return await trpc({
-        headers,
-    }).crossover.auth.player.query();
-}
-
-async function signup(
-    { name }: { name: string },
-    options?: { headers?: HTTPHeaders; wallet?: any },
-): Promise<TransactionResult> {
-    return await trpc({
-        headers: {
-            "Content-Type": "application/json",
-            ...(options?.headers || {}),
-        },
-    })
-        .crossover.auth.signup.query({ name })
-        .then(({ transaction }) => {
-            return signAndSendTransaction({
-                tx: Transaction.from(Buffer.from(transaction, "base64")),
-                wallet: options?.wallet,
-                commitment: "confirmed",
-            });
-        });
-}
-
-async function login(
-    {
-        region,
-        geohash,
-        retryWithRefresh,
-    }: {
-        region: string | number[];
-        geohash: string | number[];
-        retryWithRefresh?: boolean;
-    },
-    headers: HTTPHeaders = {},
-): Promise<{ status: string; player: Player }> {
-    retryWithRefresh ??= false;
-    region =
-        typeof region === "string" ? region : String.fromCharCode(...region);
-    geohash =
-        typeof geohash === "string" ? geohash : String.fromCharCode(...geohash);
-
-    let response;
-    if (!retryWithRefresh) {
-        response = await trpc({
-            headers,
-        }).crossover.auth.login.query({
-            region: region as string,
-            geohash: geohash as string,
-        });
-    } else {
-        // Try to login, and if it fails, refresh the session and try again
-        response = await retry({
-            fn: async () => {
-                return await trpc({
-                    headers,
-                }).crossover.auth.login.query({
-                    region: region as string,
-                    geohash: geohash as string,
-                });
-            },
-            remedyFn: async () => {
-                await refresh(headers);
-            },
-        });
-    }
-
-    // Update `$player`
-    player.set(response.player);
-
-    return response;
-}
-
-async function logout(
-    headers: HTTPHeaders = {},
-): Promise<{ status: string; player: z.infer<typeof PlayerMetadataSchema> }> {
-    let response = await trpc({
-        headers,
-    }).crossover.auth.logout.query();
-
-    // Update `$player`
-    player.set(null);
-
-    return response;
-}
-
 /**
  * tRPC does not support SSE yet, so we use the api route directly
  */
@@ -214,6 +124,150 @@ function makeWriteableEventStream(eventTarget: EventTarget) {
     });
 }
 
+async function executeGameCommand(
+    command: GameCommand,
+    headers: HTTPHeaders = {},
+) {
+    const [action, { self, target, item }, variables] = command;
+
+    // TODO: better way to tell what type of action it is
+
+    // Use Item
+    if (item != null) {
+        return await crossoverCmdUseItem(
+            {
+                target:
+                    (target as Player)?.player ||
+                    (target as Monster)?.monster ||
+                    (target as Item)?.item ||
+                    undefined,
+                item: item.item,
+                utility: (action as Utility).utility,
+            },
+            headers,
+        );
+    }
+    // Perform ability
+    else if ("ability" in action) {
+        return await crossoverCmdPerformAbility(
+            {
+                target:
+                    (target as Player)?.player ||
+                    (target as Monster)?.monster ||
+                    (target as Item)?.item,
+                ability: (action as Ability).ability,
+            },
+            headers,
+        );
+    }
+    // Action (variables are required)
+    else if ("action" in action && variables != null) {
+        return await performAction({
+            action,
+            target,
+            variables,
+        });
+    }
+}
+
+/*
+ * crossover.auth
+ */
+
+async function login(
+    {
+        region,
+        geohash,
+        retryWithRefresh,
+    }: {
+        region: string | number[];
+        geohash: string | number[];
+        retryWithRefresh?: boolean;
+    },
+    headers: HTTPHeaders = {},
+): Promise<{ status: string; player: Player }> {
+    retryWithRefresh ??= false;
+    region =
+        typeof region === "string" ? region : String.fromCharCode(...region);
+    geohash =
+        typeof geohash === "string" ? geohash : String.fromCharCode(...geohash);
+
+    let response;
+    if (!retryWithRefresh) {
+        response = await trpc({
+            headers,
+        }).crossover.auth.login.query({
+            region: region as string,
+            geohash: geohash as string,
+        });
+    } else {
+        // Try to login, and if it fails, refresh the session and try again
+        response = await retry({
+            fn: async () => {
+                return await trpc({
+                    headers,
+                }).crossover.auth.login.query({
+                    region: region as string,
+                    geohash: geohash as string,
+                });
+            },
+            remedyFn: async () => {
+                await refresh(headers);
+            },
+        });
+    }
+
+    // Update `$player`
+    player.set(response.player);
+
+    return response;
+}
+
+async function logout(
+    headers: HTTPHeaders = {},
+): Promise<{ status: string; player: z.infer<typeof PlayerMetadataSchema> }> {
+    let response = await trpc({
+        headers,
+    }).crossover.auth.logout.query();
+
+    // Update `$player`
+    player.set(null);
+
+    return response;
+}
+
+async function crossoverAuthPlayer(
+    headers: HTTPHeaders = {},
+): Promise<z.infer<typeof PlayerMetadataSchema>> {
+    return await trpc({
+        headers,
+    }).crossover.auth.player.query();
+}
+
+async function signup(
+    { name }: { name: string },
+    options?: { headers?: HTTPHeaders; wallet?: any },
+): Promise<TransactionResult> {
+    return await trpc({
+        headers: {
+            "Content-Type": "application/json",
+            ...(options?.headers || {}),
+        },
+    })
+        .crossover.auth.signup.query({ name })
+        .then(({ transaction }) => {
+            return signAndSendTransaction({
+                tx: Transaction.from(Buffer.from(transaction, "base64")),
+                wallet: options?.wallet,
+                commitment: "confirmed",
+            });
+        });
+}
+
+/*
+ * crossover.cmd
+ */
+
 function crossoverCmdSay(
     input: { message: string },
     headers: HTTPHeaders = {},
@@ -245,7 +299,7 @@ async function crossoverCmdLook(
 function crossoverCmdMove(
     input: { direction: Direction },
     headers: HTTPHeaders = {},
-): Promise<string[]> {
+) {
     const { direction } = input;
     return trpc({ headers }).crossover.cmd.move.query({ direction });
 }
@@ -299,10 +353,6 @@ function crossoverCmdUnequip(
     return trpc({ headers }).crossover.player.unequip.query({ item });
 }
 
-function crossoverPlayerInventory(headers: HTTPHeaders = {}) {
-    return trpc({ headers }).crossover.player.inventory.query();
-}
-
 function crossoverCmdCreateItem(
     input: { geohash: string; prop: string; variables?: ItemVariables },
     headers: HTTPHeaders = {},
@@ -326,48 +376,10 @@ function crossoverCmdConfigureItem(
     });
 }
 
-async function executeGameCommand(
-    command: GameCommand,
-    headers: HTTPHeaders = {},
-) {
-    const [action, { self, target, item }, variables] = command;
+/*
+ * crossover.player
+ */
 
-    // TODO: better way to tell what type of action it is
-
-    // Use Item
-    if (item != null) {
-        return await crossoverCmdUseItem(
-            {
-                target:
-                    (target as Player)?.player ||
-                    (target as Monster)?.monster ||
-                    (target as Item)?.item ||
-                    undefined,
-                item: item.item,
-                utility: (action as Utility).utility,
-            },
-            headers,
-        );
-    }
-    // Perform ability
-    else if ("ability" in action) {
-        return await crossoverCmdPerformAbility(
-            {
-                target:
-                    (target as Player)?.player ||
-                    (target as Monster)?.monster ||
-                    (target as Item)?.item,
-                ability: (action as Ability).ability,
-            },
-            headers,
-        );
-    }
-    // Action (variables are required)
-    else if ("action" in action && variables != null) {
-        return await performAction({
-            action,
-            target,
-            variables,
-        });
-    }
+function crossoverPlayerInventory(headers: HTTPHeaders = {}) {
+    return trpc({ headers }).crossover.player.inventory.query();
 }

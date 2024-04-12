@@ -20,9 +20,10 @@
     import ContextSection from "./ContextSection.svelte";
     import Map from "./Map.svelte";
 
-    export let players: Player[] = [];
-    export let monsters: Monster[] = [];
-    export let items: Item[] = [];
+    export let playerRecord: Record<string, Player> = {};
+    export let itemRecord: Record<string, Item> = {};
+    export let monsterRecord: Record<string, Monster> = {};
+
     export let tile: z.infer<typeof TileSchema> = abyssTile;
     export let messageFeed: MessageFeedUI[] = [];
     export let onMove: (direction: Direction) => void;
@@ -133,16 +134,16 @@
     <Chat
         {messageFeed}
         {onGameCommand}
-        {monsters}
-        {players}
-        {items}
+        {monsterRecord}
+        {playerRecord}
+        {itemRecord}
         class="h-3/5"
     ></Chat>
     <!-- Context Section -->
     <ContextSection
-        {players}
-        {monsters}
-        {items}
+        {playerRecord}
+        {monsterRecord}
+        {itemRecord}
         {tile}
         {onMove}
         class="h-2/5 pt-2"

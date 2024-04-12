@@ -13,9 +13,11 @@
     import type { GameCommand } from "$lib/crossover/ir";
     import {
         abyssTile,
-        loadMoreGrid,
+        geohashToGridCell,
+        loadMoreGridBiomes,
         type Direction,
     } from "$lib/crossover/world";
+    import { tileAtGeohash } from "$lib/crossover/world/biomes";
     import type {
         Item,
         Monster,
@@ -26,15 +28,21 @@
     import { onMount } from "svelte";
     import type { z } from "zod";
     import { grid, player } from "../../store";
-    import type { FeedEvent } from "../api/crossover/stream/+server";
+    import type {
+        FeedEvent,
+        UpdateEntitiesEvent,
+    } from "../api/crossover/stream/+server";
 
     let messageFeed: MessageFeedUI[] = [];
     let eventStream: EventTarget | null = null;
     let closeStream: (() => void) | null = null;
     let tile: z.infer<typeof TileSchema> = abyssTile;
-    let players: Player[] = [];
-    let items: Item[] = [];
-    let monsters: Monster[] = [];
+
+    let playerRecord: Record<string, Player> = {};
+    let itemRecord: Record<string, Item> = {};
+    let monsterRecord: Record<string, Monster> = {};
+
+    let streamStarted = false;
 
     async function onGameCommand(command: GameCommand) {
         const result = await executeGameCommand(command);
@@ -83,26 +91,92 @@
     // }
 
     async function look() {
-        const lookResult = await crossoverCmdLook({});
-        players = lookResult.players;
-        tile = lookResult.tile;
-        monsters = lookResult.monsters;
-        items = lookResult.items;
+        const {
+            players,
+            tile: newTile,
+            monsters,
+            items,
+        } = await crossoverCmdLook({}); // crossoverCmdLook updates grid
+
+        playerRecord = players.reduce(
+            (acc, p) => {
+                acc[p.player] = p;
+                return acc;
+            },
+            {} as Record<string, Player>,
+        );
+        monsterRecord = monsters.reduce(
+            (acc, m) => {
+                acc[m.monster] = m;
+                return acc;
+            },
+            {} as Record<string, Monster>,
+        );
+        itemRecord = items.reduce(
+            (acc, i) => {
+                acc[i.item] = i;
+                return acc;
+            },
+            {} as Record<string, Item>,
+        );
+        tile = newTile;
     }
 
     async function onMove(direction: Direction) {
         // Calculate new tile (TODO: get other metadata like description, etc.)
-        const location = await crossoverCmdMove({ direction });
-        const geohash = location[0];
+        const { players } = await crossoverCmdMove({ direction });
 
-        // Load more grid data if parent geohash changes
-        if (geohash.slice(0, -1) !== tile.geohash.slice(0, -1)) {
-            grid.set(await loadMoreGrid(geohash, $grid));
+        // Update player record
+        updateEntityRecords({ players });
+
+        if ($player != null) {
+            const geohash = $player.location[0];
+
+            // Geohash grid changed
+            if (geohash.slice(0, -1) !== tile.geohash.slice(0, -1)) {
+                // Load more grid biomes
+                grid.set(loadMoreGridBiomes(geohash, $grid));
+                // Look at surroundings
+                await look();
+            }
+
+            // Update tile
+            if (geohash !== tile.geohash) {
+                const { precision, row, col } = geohashToGridCell(geohash);
+                const biome = $grid[precision][row][col].biome;
+                tile = tileAtGeohash(geohash, biome!);
+            }
         }
+    }
 
-        if (geohash !== tile.geohash) {
-            tile.geohash = geohash;
-            tile = tile;
+    function updateEntityRecords({
+        players,
+        monsters,
+        items,
+    }: {
+        players?: Player[];
+        monsters?: Monster[];
+        items?: Item[];
+    }) {
+        if (players != null) {
+            for (const p of players) {
+                playerRecord[p.player] = p;
+
+                // Update player
+                if ($player != null && p.player === $player.player) {
+                    player.set(p);
+                }
+            }
+        }
+        if (monsters != null) {
+            for (const m of monsters) {
+                monsterRecord[m.monster] = m;
+            }
+        }
+        if (items != null) {
+            for (const i of items) {
+                itemRecord[i.item] = i;
+            }
         }
     }
 
@@ -161,14 +235,25 @@
         }
     }
 
+    function processUpdateEntities(event: Event) {
+        const { players, monsters, items } = (event as MessageEvent)
+            .data as UpdateEntitiesEvent;
+
+        console.log(JSON.stringify(players, null, 2));
+        console.log(JSON.stringify(monsters, null, 2));
+        console.log(JSON.stringify(items, null, 2));
+    }
+
     async function startStream() {
         [eventStream, closeStream] = await stream();
         eventStream.addEventListener("feed", processFeedEvent);
+        eventStream.addEventListener("entities", processUpdateEntities);
     }
 
     function stopStream() {
         if (eventStream != null) {
             eventStream.removeEventListener("feed", processFeedEvent);
+            eventStream.removeEventListener("entities", processUpdateEntities);
         }
         if (closeStream != null) {
             closeStream();
@@ -176,18 +261,21 @@
     }
 
     onMount(() => {
-        // Start streaming crossover server events on login
         const unsubscribe = player.subscribe(async (p) => {
-            if (p != null) {
+            // Start streaming on login
+            if (p != null && !streamStarted) {
                 stopStream();
                 await startStream();
+                streamStarted = true;
 
                 // Load grid
-                grid.set(await loadMoreGrid(p.location[0], $grid));
+                grid.set(loadMoreGridBiomes(p.location[0], $grid));
 
                 // Look at surroundings
                 await look();
-            } else {
+            }
+            // Stop streaming on logout
+            else if (p == null) {
                 stopStream();
             }
         });
@@ -208,8 +296,8 @@
         {onMove}
         {messageFeed}
         {tile}
-        {players}
-        {items}
-        {monsters}
+        {playerRecord}
+        {itemRecord}
+        {monsterRecord}
     />
 {/if}

@@ -37,9 +37,9 @@
     import { cn } from "$lib/shadcn";
 
     export let tile: z.infer<typeof TileSchema> = abyssTile;
-    export let players: Player[] = [];
-    export let monsters: Monster[] = [];
-    export let items: Item[] = [];
+    export let playerRecord: Record<string, Player> = {};
+    export let itemRecord: Record<string, Item> = {};
+    export let monsterRecord: Record<string, Monster> = {};
     export let onMove: (direction: Direction) => void;
 </script>
 
@@ -65,7 +65,7 @@
                             </p>
 
                             <!-- Players -->
-                            {#if players.length > 0}
+                            {#if Object.keys(playerRecord).length > 0}
                                 <p class="text-sm text-primary-background">
                                     You see some people here
                                 </p>
@@ -73,13 +73,13 @@
                             <div
                                 class="flex gap-2 text-sm text-muted-foreground"
                             >
-                                {#each players as player (player.player)}
+                                {#each Object.entries(playerRecord) as [playerId, player] (playerId)}
                                     <p>{player.name}</p>
                                 {/each}
                             </div>
 
                             <!-- Monsters -->
-                            {#if monsters.length > 0}
+                            {#if Object.keys(monsterRecord).length > 0}
                                 <p class="text-sm text-primary-background">
                                     You see some creatures here
                                 </p>
@@ -87,21 +87,21 @@
                             <div
                                 class="flex gap-2 text-sm text-muted-foreground"
                             >
-                                {#each monsters as monster (monster.monster)}
+                                {#each Object.entries(monsterRecord) as [monsterId, monster] (monsterId)}
                                     <p>{monster.name}</p>
                                 {/each}
                             </div>
 
                             <!-- Items -->
-                            {#if items.length > 0}
+                            {#if Object.keys(itemRecord).length > 0}
                                 <p class="text-sm text-primary-background">
-                                    You see some items here
+                                    You see some itemRecord here
                                 </p>
                             {/if}
                             <div
                                 class="flex gap-2 text-sm text-muted-foreground"
                             >
-                                {#each items as item (item.item)}
+                                {#each Object.entries(itemRecord) as [itemId, item] (itemId)}
                                     <p>{item.name}</p>
                                 {/each}
                             </div>

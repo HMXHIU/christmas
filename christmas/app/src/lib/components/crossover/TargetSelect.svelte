@@ -12,9 +12,9 @@
     import { tick } from "svelte";
 
     export let value: Player | Monster | Item | null = null;
-    export let players: Player[] = [];
-    export let monsters: Monster[] = [];
-    export let items: Item[] = [];
+    export let playerRecord: Record<string, Player> = {};
+    export let itemRecord: Record<string, Item> = {};
+    export let monsterRecord: Record<string, Monster> = {};
 
     let open = false;
 
@@ -46,11 +46,11 @@
             <Command.Input placeholder="Search Targets..." />
             <Command.List>
                 <!-- Players -->
-                {#if players.length > 0}
+                {#if Object.keys(playerRecord).length > 0}
                     <Command.Group heading="Players">
-                        {#each players as player (player.player)}
+                        {#each Object.entries(playerRecord) as [playerId, player] (playerId)}
                             <Command.Item
-                                value={player.player}
+                                value={playerId}
                                 onSelect={(selected) => {
                                     value = player;
                                     closeAndFocusTrigger(ids.trigger);
@@ -59,18 +59,18 @@
                             >
                                 <p>{player.name}</p>
                                 <p class="text-muted-foreground">
-                                    {player.player.slice(0, 7)}...
+                                    {playerId.slice(0, 7)}...
                                 </p>
                             </Command.Item>
                         {/each}
                     </Command.Group>
                 {/if}
                 <!-- Monsters -->
-                {#if monsters.length > 0}
+                {#if Object.keys(monsterRecord).length > 0}
                     <Command.Group heading="Monsters">
-                        {#each monsters as monster (monster.monster)}
+                        {#each Object.entries(monsterRecord) as [monsterId, monster] (monsterId)}
                             <Command.Item
-                                value={monster.monster}
+                                value={monsterId}
                                 onSelect={(selected) => {
                                     value = monster;
                                     closeAndFocusTrigger(ids.trigger);
@@ -79,18 +79,18 @@
                             >
                                 <p>{monster.name}</p>
                                 <p class="text-muted-foreground">
-                                    {monster.monster}
+                                    {monsterId}
                                 </p>
                             </Command.Item>
                         {/each}
                     </Command.Group>
                 {/if}
                 <!-- Items -->
-                {#if items.length > 0}
+                {#if Object.keys(itemRecord).length > 0}
                     <Command.Group heading="Items">
-                        {#each items as item (item.item)}
+                        {#each Object.entries(itemRecord) as [itemId, item] (itemId)}
                             <Command.Item
-                                value={item.item}
+                                value={itemId}
                                 onSelect={(selected) => {
                                     value = item;
                                     closeAndFocusTrigger(ids.trigger);
@@ -99,7 +99,7 @@
                             >
                                 <p>{item.name}</p>
                                 <p class="text-muted-foreground">
-                                    {item.item}
+                                    {itemId}
                                 </p>
                             </Command.Item>
                         {/each}

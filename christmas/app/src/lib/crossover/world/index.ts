@@ -14,7 +14,7 @@ const { groupBy } = lodash;
 export {
     abyssTile,
     geohashToGridCell,
-    loadMoreGrid,
+    loadMoreGridBiomes,
     updateGrid,
     updateGridEntry,
     type AssetMetadata,
@@ -54,6 +54,7 @@ interface GridEntry {
     players?: Record<string, Player>; // needs to be fetched from server
     items?: Record<string, Item>; // needs to be fetched from server
 }
+// grid[precision][row][col][GridEntry]
 type Grid = Record<number, Record<number, Record<number, GridEntry>>>;
 
 interface WorldSeed {
@@ -118,7 +119,7 @@ const gridSizeAtPrecision: Record<number, { rows: number; cols: number }> = {
  * @param grid - The current grid data.
  * @returns The updated grid data.
  */
-function loadMoreGrid(geohash: string, grid: Grid): Grid {
+function loadMoreGridBiomes(geohash: string, grid: Grid): Grid {
     const parentGeohash = geohash.slice(0, -1);
 
     // Update grid with biomes
@@ -136,9 +137,10 @@ function loadMoreGrid(geohash: string, grid: Grid): Grid {
 }
 
 /**
- * Updates the provided grid with biomes, monsters, players, and items.
+ * Updates (recreate at geohash) or Upserts the provided grid with biomes, monsters, players, and items.
  *
  * @param grid - The grid to update with biomes.
+ * @param upsert - Whether to upsert the provided monsters, players, and items (default: false).
  * @param biomes - Record of geohash strings to biome names.
  * @param monsters - Array of monsters to add to the grid.
  * @param players - Array of players to add to the grid.
@@ -151,8 +153,10 @@ function updateGrid({
     monsters,
     players,
     items,
+    upsert = false,
 }: {
     grid: Grid;
+    upsert?: boolean;
     biomes?: Record<string, string>;
     monsters?: Monster[];
     players?: Player[];
@@ -172,68 +176,117 @@ function updateGrid({
         }
     }
 
-    // Update monsters (TODO: account for monsters with > 1 cell)
+    // Delete monsters, players, and items from grid (relocated)
+    const monsterIds = monsters?.map((mx) => mx.monster) || [];
+    const playerIds = players?.map((px) => px.player) || [];
+    const itemIds = items?.map((ix) => ix.item) || [];
+    for (const xxs of Object.values(grid)) {
+        for (const xs of Object.values(xxs)) {
+            for (const entry of Object.values(xs)) {
+                if (entry.monsters) {
+                    for (const monsterId of Object.keys(entry.monsters)) {
+                        if (monsterIds.includes(monsterId)) {
+                            delete entry.monsters[monsterId];
+                        }
+                    }
+                }
+                if (entry.players) {
+                    for (const playerId of Object.keys(entry.players)) {
+                        if (playerIds.includes(playerId)) {
+                            delete entry.players[playerId];
+                        }
+                    }
+                }
+                if (entry.items) {
+                    for (const itemId of Object.keys(entry.items)) {
+                        if (itemIds.includes(itemId)) {
+                            delete entry.items[itemId];
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Recreate monsters at geohash (TODO: account for monsters with > 1 cell)
     if (monsters && monsters.length > 0) {
         for (const [geohash, mxs] of Object.entries(
             groupBy(monsters, (monster) => monster.location[0]),
         )) {
             const { precision, row, col } = geohashToGridCell(geohash);
+            const providedMonsters = mxs.reduce(
+                (acc, mx) => {
+                    acc[mx.monster] = mx;
+                    return acc;
+                },
+                {} as Record<string, Monster>,
+            );
+            const existingMonsters =
+                grid?.[precision]?.[row]?.[col]?.monsters || {};
+
             updateGridEntry({
                 grid,
                 precision,
                 row,
                 col,
-                monsters: mxs.reduce(
-                    (acc, mx) => {
-                        acc[mx.monster] = mx;
-                        return acc;
-                    },
-                    {} as Record<string, Monster>,
-                ),
+                monsters: upsert
+                    ? { ...existingMonsters, ...providedMonsters }
+                    : providedMonsters,
             });
         }
     }
 
-    // Update players
+    // Recreate players at geohash
     if (players && players.length > 0) {
         for (const [geohash, pxs] of Object.entries(
             groupBy(players, (player) => player.location[0]),
         )) {
             const { precision, row, col } = geohashToGridCell(geohash);
+            const providedPlayers = pxs.reduce(
+                (acc, px) => {
+                    acc[px.player] = px;
+                    return acc;
+                },
+                {} as Record<string, Player>,
+            );
+            const existingPlayers =
+                grid?.[precision]?.[row]?.[col]?.players || {};
+
             updateGridEntry({
                 grid,
                 precision,
                 row,
                 col,
-                players: pxs.reduce(
-                    (acc, px) => {
-                        acc[px.player] = px;
-                        return acc;
-                    },
-                    {} as Record<string, Player>,
-                ),
+                players: upsert
+                    ? { ...existingPlayers, ...providedPlayers }
+                    : providedPlayers,
             });
         }
     }
 
-    // Update items (TODO: account for monsters with > 1 cell)
+    // Recreate items at geohash (TODO: account for monsters with > 1 cell)
     if (items && items.length > 0) {
         for (const [geohash, ixs] of Object.entries(
             groupBy(items, (item) => item.location[0]),
         )) {
             const { precision, row, col } = geohashToGridCell(geohash);
+            const providedItems = ixs.reduce(
+                (acc, ix) => {
+                    acc[ix.item] = ix;
+                    return acc;
+                },
+                {} as Record<string, Item>,
+            );
+            const existingItems = grid?.[precision]?.[row]?.[col]?.items || {};
+
             updateGridEntry({
                 grid,
                 precision,
                 row,
                 col,
-                items: ixs.reduce(
-                    (acc, ix) => {
-                        acc[ix.item] = ix;
-                        return acc;
-                    },
-                    {} as Record<string, Item>,
-                ),
+                items: upsert
+                    ? { ...existingItems, ...providedItems }
+                    : providedItems,
             });
         }
     }

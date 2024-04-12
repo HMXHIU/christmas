@@ -18,7 +18,7 @@ export interface FeedEvent {
 }
 
 export interface UpdateEntitiesEvent {
-    event: "updateEntities";
+    event: "entities";
     players?: PlayerEntity[];
     monsters?: MonsterEntity[];
     items?: ItemEntity[];
@@ -32,7 +32,7 @@ function sendStreamEvent(
 }
 
 function onMessage(message: string, channel: string) {
-    // `message` is stringified StreamEvent
+    // `message` is a JSON stringified StreamEvent
     try {
         connectedUsers[channel].controller.enqueue(message + "\n\n");
     } catch (error: any) {

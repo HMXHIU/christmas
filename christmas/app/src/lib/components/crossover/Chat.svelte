@@ -18,9 +18,9 @@
     import ChatInput from "./ChatInput.svelte";
     import CommandAutocomplete from "./CommandAutocomplete.svelte";
 
-    export let players: Player[] = [];
-    export let monsters: Monster[] = [];
-    export let items: Item[] = [];
+    export let playerRecord: Record<string, Player> = {};
+    export let itemRecord: Record<string, Item> = {};
+    export let monsterRecord: Record<string, Monster> = {};
     export let target: Player | Monster | Item | null = null;
     export let messageFeed: MessageFeedUI[] = [];
     export let onGameCommand: (command: GameCommand) => Promise<void>;
@@ -49,9 +49,9 @@
                 playerAbilities,
                 playerItems: [], // TODO: replace with actual player's Items
                 actions: [actions.say, actions.look],
-                monsters,
-                players,
-                items,
+                monsters: Object.values(monsterRecord),
+                players: Object.values(playerRecord),
+                items: Object.values(itemRecord),
                 player: $player!,
             }).commands;
         } else {
@@ -69,6 +69,12 @@
     ></CommandAutocomplete>
 
     <!-- Chat Input -->
-    <ChatInput bind:target {onEnter} {onPartial} {players} {monsters} {items}
+    <ChatInput
+        bind:target
+        {onEnter}
+        {onPartial}
+        {playerRecord}
+        {monsterRecord}
+        {itemRecord}
     ></ChatInput>
 </section>

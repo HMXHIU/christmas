@@ -54,7 +54,7 @@ import type {
 export {
     PlayerMetadataSchema,
     PlayerStateSchema,
-    SayCommandSchema,
+    SaySchema,
     TileSchema,
     UserMetadataSchema,
     crossoverRouter,
@@ -63,15 +63,21 @@ export {
 // Initialize redis clients, repositiories, indexes
 initializeClients();
 
-// Schemas
-const SayCommandSchema = z.object({
+// Schemas - auth
+const SignupSchema = z.object({
+    name: z.string(),
+});
+const LoginSchema = z.object({
+    geohash: z.string(),
+    region: z.string(),
+});
+
+// Schemas - cmd
+const SaySchema = z.object({
     message: z.string(),
 });
-const LookCommandSchema = z.object({
+const LookSchema = z.object({
     target: z.string().optional(),
-});
-const SignupAuthSchema = z.object({
-    name: z.string(),
 });
 const TileSchema = z.object({
     geohash: z.string(),
@@ -80,11 +86,6 @@ const TileSchema = z.object({
 });
 const MoveSchema = z.object({
     direction: z.enum(["n", "s", "e", "w", "ne", "nw", "se", "sw", "u", "d"]),
-});
-const SpawnMonsterSchema = z.object({
-    geohash: z.string(),
-    level: z.number(),
-    beast: z.string(),
 });
 const PerformAbilitySchema = z.object({
     ability: z.string(),
@@ -106,11 +107,13 @@ const CreateItemSchema = z.object({
         .record(z.union([z.string(), z.number(), z.boolean()]))
         .optional(),
 });
-const EquipItemSchema = z.object({
-    item: z.string(),
-    slot: z.enum(["rh", "lh", "ft", "hd", "nk", "ch", "lg", "r1", "r2"]),
-});
 
+// Schemas - world
+const SpawnMonsterSchema = z.object({
+    geohash: z.string(),
+    level: z.number(),
+    beast: z.string(),
+});
 const BuffEntitySchema = z.object({
     entity: z.string(),
     hp: z.number().optional(),
@@ -119,6 +122,12 @@ const BuffEntitySchema = z.object({
     ap: z.number().optional(),
     buffs: z.array(z.string()).optional(),
     debuffs: z.array(z.string()).optional(),
+});
+
+// Schemas - player
+const EquipItemSchema = z.object({
+    item: z.string(),
+    slot: z.enum(["rh", "lh", "ft", "hd", "nk", "ch", "lg", "r1", "r2"]),
 });
 
 // PlayerState stores data owned by the game (does not require player permission to modify)
@@ -143,10 +152,6 @@ const PlayerMetadataSchema = z.object({
 const UserMetadataSchema = z.object({
     publicKey: z.string(),
     crossover: PlayerMetadataSchema.optional(),
-});
-const LoginSchema = z.object({
-    geohash: z.string(),
-    region: z.string(),
 });
 
 const LOOK_PAGE_SIZE = 20;
@@ -371,7 +376,9 @@ const crossoverRouter = {
                     itemEntity,
                 )) as ItemEntity;
 
-                return itemEntity as Item;
+                return {
+                    items: [itemEntity as Item],
+                };
             }),
         // cmd.drop
         drop: authProcedure
@@ -405,77 +412,75 @@ const crossoverRouter = {
                     itemEntity,
                 )) as ItemEntity;
 
-                return itemEntity as Item;
+                return {
+                    items: [itemEntity as Item],
+                };
             }),
         // cmd.say
-        say: authProcedure
-            .input(SayCommandSchema)
-            .query(async ({ ctx, input }) => {
-                // Get player
-                const player = (await tryFetchEntity(
-                    ctx.user.publicKey,
-                )) as PlayerEntity;
+        say: authProcedure.input(SaySchema).query(async ({ ctx, input }) => {
+            // Get player
+            const player = (await tryFetchEntity(
+                ctx.user.publicKey,
+            )) as PlayerEntity;
 
-                // Get logged in players in geohash
-                const users = await playersInGeohashQuerySet(
-                    player.location[0],
-                ).return.allIds();
+            // Get logged in players in geohash
+            const users = await playersInGeohashQuerySet(
+                player.location[0],
+            ).return.allIds();
 
-                // Create message feed
-                const messageFeed: FeedEvent = {
-                    event: "feed",
-                    type: "message",
-                    message: "${origin} says ${message}",
-                    variables: {
-                        cmd: "say",
-                        origin: ctx.user.publicKey,
-                        message: input.message,
-                    },
-                };
+            // Create message feed
+            const messageFeed: FeedEvent = {
+                event: "feed",
+                type: "message",
+                message: "${origin} says ${message}",
+                variables: {
+                    cmd: "say",
+                    origin: ctx.user.publicKey,
+                    message: input.message,
+                },
+            };
 
-                // Send message to all users in the geohash
-                for (const publicKey of users) {
-                    redisClient.publish(publicKey, JSON.stringify(messageFeed));
-                }
-            }),
+            // Send message to all users in the geohash
+            for (const publicKey of users) {
+                redisClient.publish(publicKey, JSON.stringify(messageFeed));
+            }
+        }),
         // cmd.look
-        look: authProcedure
-            .input(LookCommandSchema)
-            .query(async ({ ctx, input }) => {
-                // Get player
-                const player = await tryFetchEntity(ctx.user.publicKey);
-                const parentGeohash = player.location[0].slice(0, -1);
+        look: authProcedure.input(LookSchema).query(async ({ ctx, input }) => {
+            // Get player
+            const player = await tryFetchEntity(ctx.user.publicKey);
+            const parentGeohash = player.location[0].slice(0, -1);
 
-                // Get players in surrounding
-                const players = (await playersInGeohashQuerySet(
-                    parentGeohash,
-                ).return.all({
-                    pageSize: LOOK_PAGE_SIZE, // limit players using page size
-                })) as PlayerEntity[];
+            // Get players in surrounding
+            const players = (await playersInGeohashQuerySet(
+                parentGeohash,
+            ).return.all({
+                pageSize: LOOK_PAGE_SIZE, // limit players using page size
+            })) as PlayerEntity[];
 
-                // Get monsters in surrounding (don't use page size for monsters)
-                const monsters = (await monstersInGeohashQuerySet(
-                    parentGeohash,
-                ).return.all()) as MonsterEntity[];
+            // Get monsters in surrounding (don't use page size for monsters)
+            const monsters = (await monstersInGeohashQuerySet(
+                parentGeohash,
+            ).return.all()) as MonsterEntity[];
 
-                // Get tile
-                const tile = tileAtGeohash(
-                    player.location[0],
-                    biomeAtGeohash(player.location[0]),
-                );
+            // Get tile
+            const tile = tileAtGeohash(
+                player.location[0],
+                biomeAtGeohash(player.location[0]),
+            );
 
-                // Get items
-                const items = (await itemsInGeohashQuerySet(
-                    parentGeohash,
-                ).return.all()) as ItemEntity[];
+            // Get items
+            const items = (await itemsInGeohashQuerySet(
+                parentGeohash,
+            ).return.all()) as ItemEntity[];
 
-                return {
-                    tile,
-                    players: players as Player[],
-                    monsters: monsters as Monster[],
-                    items: items as Item[],
-                };
-            }),
+            return {
+                tile,
+                players: players as Player[],
+                monsters: monsters as Monster[],
+                items: items as Item[],
+            };
+        }),
         // cmd.move
         move: authProcedure.input(MoveSchema).query(async ({ ctx, input }) => {
             const { direction } = input;
@@ -491,13 +496,20 @@ const crossoverRouter = {
                 direction,
             );
             if (!isTraversable) {
-                return player.location;
+                return {
+                    players: [player as Player],
+                };
+            } else {
+                player.location = location;
+                await playerRepository.save(player.player, player);
+                return {
+                    players: [player as Player],
+                };
             }
-
-            player.location = location;
-            await playerRepository.save(player.player, player);
-            return player.location;
         }),
+
+        // FIX TILLL HERE
+
         // cmd.performAbility
         performAbility: authProcedure
             .input(PerformAbilitySchema)
@@ -604,7 +616,7 @@ const crossoverRouter = {
     auth: t.router({
         // auth.signup
         signup: authProcedure
-            .input(SignupAuthSchema)
+            .input(SignupSchema)
             .query(async ({ ctx, input }) => {
                 // Get user account
                 const user = await serverAnchorClient.getUser(

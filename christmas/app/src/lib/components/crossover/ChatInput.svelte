@@ -14,9 +14,9 @@
 
     export let onEnter: (message: string) => void;
     export let onPartial: (message: string) => void;
-    export let players: Player[] = [];
-    export let monsters: Monster[] = [];
-    export let items: Item[] = [];
+    export let playerRecord: Record<string, Player> = {};
+    export let itemRecord: Record<string, Item> = {};
+    export let monsterRecord: Record<string, Monster> = {};
     export let target: Player | Monster | Item | null = null;
 
     let message: string = "";
@@ -50,9 +50,9 @@
     <TargetSelect
         class="h-full border-0 text-muted-foreground"
         bind:value={target}
-        {players}
-        {monsters}
-        {items}
+        {playerRecord}
+        {monsterRecord}
+        {itemRecord}
     ></TargetSelect>
     <!-- Chat Input -->
     <Textarea
