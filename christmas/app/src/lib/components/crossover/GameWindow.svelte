@@ -4,27 +4,15 @@
     import * as Collapsible from "$lib/components/ui/collapsible/index.js";
     import type { GameCommand } from "$lib/crossover/ir";
     import type { Direction } from "$lib/crossover/world";
-    import { abyssTile } from "$lib/crossover/world";
-    import type {
-        Item,
-        Monster,
-        Player,
-    } from "$lib/server/crossover/redis/entities";
-    import type { TileSchema } from "$lib/server/crossover/router";
     import { cn } from "$lib/shadcn";
     import ChevronsUpDown from "lucide-svelte/icons/chevrons-up-down";
     import { Assets } from "pixi.js";
     import { onMount } from "svelte";
-    import { z } from "zod";
+    import { tile } from "../../../store";
     import Chat from "./Chat.svelte";
     import ContextSection from "./ContextSection.svelte";
     import Map from "./Map.svelte";
 
-    export let playerRecord: Record<string, Player> = {};
-    export let itemRecord: Record<string, Item> = {};
-    export let monsterRecord: Record<string, Monster> = {};
-
-    export let tile: z.infer<typeof TileSchema> = abyssTile;
     export let messageFeed: MessageFeedUI[] = [];
     export let onMove: (direction: Direction) => void;
     export let onGameCommand: (command: GameCommand) => Promise<void>;
@@ -131,39 +119,27 @@
 
 <div class={cn("w-full flex flex-col", $$restProps.class)}>
     <!-- Chat -->
-    <Chat
-        {messageFeed}
-        {onGameCommand}
-        {monsterRecord}
-        {playerRecord}
-        {itemRecord}
-        class="h-3/5"
-    ></Chat>
+    <Chat {messageFeed} {onGameCommand} class="h-3/5"></Chat>
     <!-- Context Section -->
-    <ContextSection
-        {playerRecord}
-        {monsterRecord}
-        {itemRecord}
-        {tile}
-        {onMove}
-        class="h-2/5 pt-2"
-    ></ContextSection>
+    <ContextSection {tile} {onMove} class="h-2/5 pt-2"></ContextSection>
     <!-- Map -->
-    <div class="fixed top-20 right-0">
-        <Collapsible.Root class="w-[200px] space-y-2">
-            <div
-                class="flex items-center justify-end text-right space-x-4 px-4"
-            >
-                <Collapsible.Trigger asChild let:builder>
-                    <Button builders={[builder]} variant="ghost" size="sm">
-                        {tile.name}
-                        <ChevronsUpDown class="h-4 w-4 ml-2" />
-                    </Button>
-                </Collapsible.Trigger>
-            </div>
-            <Collapsible.Content>
-                <Map {tile}></Map>
-            </Collapsible.Content>
-        </Collapsible.Root>
-    </div>
+    {#if $tile}
+        <div class="fixed top-20 right-0">
+            <Collapsible.Root class="w-[200px] space-y-2">
+                <div
+                    class="flex items-center justify-end text-right space-x-4 px-4"
+                >
+                    <Collapsible.Trigger asChild let:builder>
+                        <Button builders={[builder]} variant="ghost" size="sm">
+                            {$tile.name}
+                            <ChevronsUpDown class="h-4 w-4 ml-2" />
+                        </Button>
+                    </Collapsible.Trigger>
+                </div>
+                <Collapsible.Content>
+                    <Map></Map>
+                </Collapsible.Content>
+            </Collapsible.Root>
+        </div>
+    {/if}
 </div>

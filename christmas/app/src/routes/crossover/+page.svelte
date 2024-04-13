@@ -12,7 +12,6 @@
 
     import type { GameCommand } from "$lib/crossover/ir";
     import {
-        abyssTile,
         geohashToGridCell,
         loadMoreGridBiomes,
         type Direction,
@@ -23,11 +22,16 @@
         Monster,
         Player,
     } from "$lib/server/crossover/redis/entities";
-    import type { TileSchema } from "$lib/server/crossover/router";
     import { substituteVariables } from "$lib/utils";
     import { onMount } from "svelte";
-    import type { z } from "zod";
-    import { grid, player } from "../../store";
+    import {
+        grid,
+        itemRecord,
+        monsterRecord,
+        player,
+        playerRecord,
+        tile,
+    } from "../../store";
     import type {
         FeedEvent,
         UpdateEntitiesEvent,
@@ -36,12 +40,6 @@
     let messageFeed: MessageFeedUI[] = [];
     let eventStream: EventTarget | null = null;
     let closeStream: (() => void) | null = null;
-    let tile: z.infer<typeof TileSchema> = abyssTile;
-
-    let playerRecord: Record<string, Player> = {};
-    let itemRecord: Record<string, Item> = {};
-    let monsterRecord: Record<string, Monster> = {};
-
     let streamStarted = false;
 
     async function onGameCommand(command: GameCommand) {
@@ -98,28 +96,35 @@
             items,
         } = await crossoverCmdLook({}); // crossoverCmdLook updates grid
 
-        playerRecord = players.reduce(
-            (acc, p) => {
-                acc[p.player] = p;
-                return acc;
-            },
-            {} as Record<string, Player>,
+        playerRecord.set(
+            players.reduce(
+                (acc, p) => {
+                    acc[p.player] = p;
+                    return acc;
+                },
+                {} as Record<string, Player>,
+            ),
         );
-        monsterRecord = monsters.reduce(
-            (acc, m) => {
-                acc[m.monster] = m;
-                return acc;
-            },
-            {} as Record<string, Monster>,
+        monsterRecord.set(
+            monsters.reduce(
+                (acc, m) => {
+                    acc[m.monster] = m;
+                    return acc;
+                },
+                {} as Record<string, Monster>,
+            ),
         );
-        itemRecord = items.reduce(
-            (acc, i) => {
-                acc[i.item] = i;
-                return acc;
-            },
-            {} as Record<string, Item>,
+        itemRecord.set(
+            items.reduce(
+                (acc, i) => {
+                    acc[i.item] = i;
+                    return acc;
+                },
+                {} as Record<string, Item>,
+            ),
         );
-        tile = newTile;
+
+        tile.set(newTile);
     }
 
     async function onMove(direction: Direction) {
@@ -133,7 +138,7 @@
             const geohash = $player.location[0];
 
             // Geohash grid changed
-            if (geohash.slice(0, -1) !== tile.geohash.slice(0, -1)) {
+            if (geohash.slice(0, -1) !== $tile.geohash.slice(0, -1)) {
                 // Load more grid biomes
                 grid.set(loadMoreGridBiomes(geohash, $grid));
                 // Look at surroundings
@@ -141,10 +146,10 @@
             }
 
             // Update tile
-            if (geohash !== tile.geohash) {
+            if (geohash !== $tile.geohash) {
                 const { precision, row, col } = geohashToGridCell(geohash);
                 const biome = $grid[precision][row][col].biome;
-                tile = tileAtGeohash(geohash, biome!);
+                tile.set(tileAtGeohash(geohash, biome!));
             }
         }
     }
@@ -160,7 +165,10 @@
     }) {
         if (players != null) {
             for (const p of players) {
-                playerRecord[p.player] = p;
+                playerRecord.update((d) => {
+                    d[p.player] = p;
+                    return d;
+                });
 
                 // Update player
                 if ($player != null && p.player === $player.player) {
@@ -170,12 +178,18 @@
         }
         if (monsters != null) {
             for (const m of monsters) {
-                monsterRecord[m.monster] = m;
+                monsterRecord.update((d) => {
+                    d[m.monster] = m;
+                    return d;
+                });
             }
         }
         if (items != null) {
             for (const i of items) {
-                itemRecord[i.item] = i;
+                itemRecord.update((d) => {
+                    d[i.item] = i;
+                    return d;
+                });
             }
         }
     }
@@ -290,14 +304,5 @@
 {#if !$player}
     <Onboard />
 {:else}
-    <GameWindow
-        class="h-full p-3"
-        {onGameCommand}
-        {onMove}
-        {messageFeed}
-        {tile}
-        {playerRecord}
-        {itemRecord}
-        {monsterRecord}
-    />
+    <GameWindow class="h-full p-3" {onGameCommand} {onMove} {messageFeed} />
 {/if}

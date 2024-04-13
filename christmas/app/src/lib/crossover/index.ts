@@ -45,9 +45,56 @@ export {
     stream,
 };
 
-/**
- * tRPC does not support SSE yet, so we use the api route directly
+async function executeGameCommand(
+    command: GameCommand,
+    headers: HTTPHeaders = {},
+) {
+    const [action, { self, target, item }, variables] = command;
+
+    // TODO: better way to tell what type of action it is
+
+    // Use Item
+    if (item != null) {
+        return await crossoverCmdUseItem(
+            {
+                target:
+                    (target as Player)?.player ||
+                    (target as Monster)?.monster ||
+                    (target as Item)?.item ||
+                    undefined,
+                item: item.item,
+                utility: (action as Utility).utility,
+            },
+            headers,
+        );
+    }
+    // Perform ability
+    else if ("ability" in action) {
+        return await crossoverCmdPerformAbility(
+            {
+                target:
+                    (target as Player)?.player ||
+                    (target as Monster)?.monster ||
+                    (target as Item)?.item,
+                ability: (action as Ability).ability,
+            },
+            headers,
+        );
+    }
+    // Action (variables are required)
+    else if ("action" in action && variables != null) {
+        return await performAction({
+            action,
+            target,
+            variables,
+        });
+    }
+}
+
+/*
+ * api.crossover (tRPC does not support SSE yet, so we use the api route directly)
  */
+
 async function stream(headers: any = {}): Promise<[EventTarget, () => void]> {
     const eventTarget = new EventTarget();
     const eventStream = makeWriteableEventStream(eventTarget);
@@ -122,52 +169,6 @@ function makeWriteableEventStream(eventTarget: EventTarget) {
             );
         },
     });
-}
-
-async function executeGameCommand(
-    command: GameCommand,
-    headers: HTTPHeaders = {},
-) {
-    const [action, { self, target, item }, variables] = command;
-
-    // TODO: better way to tell what type of action it is
-
-    // Use Item
-    if (item != null) {
-        return await crossoverCmdUseItem(
-            {
-                target:
-                    (target as Player)?.player ||
-                    (target as Monster)?.monster ||
-                    (target as Item)?.item ||
-                    undefined,
-                item: item.item,
-                utility: (action as Utility).utility,
-            },
-            headers,
-        );
-    }
-    // Perform ability
-    else if ("ability" in action) {
-        return await crossoverCmdPerformAbility(
-            {
-                target:
-                    (target as Player)?.player ||
-                    (target as Monster)?.monster ||
-                    (target as Item)?.item,
-                ability: (action as Ability).ability,
-            },
-            headers,
-        );
-    }
-    // Action (variables are required)
-    else if ("action" in action && variables != null) {
-        return await performAction({
-            action,
-            target,
-            variables,
-        });
-    }
 }
 
 /*

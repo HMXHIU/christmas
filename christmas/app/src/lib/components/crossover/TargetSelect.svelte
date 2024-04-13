@@ -10,11 +10,9 @@
     import { cn } from "$lib/shadcn";
     import { Crosshair } from "lucide-svelte";
     import { tick } from "svelte";
+    import { itemRecord, monsterRecord, playerRecord } from "../../../store";
 
     export let value: Player | Monster | Item | null = null;
-    export let playerRecord: Record<string, Player> = {};
-    export let itemRecord: Record<string, Item> = {};
-    export let monsterRecord: Record<string, Monster> = {};
 
     let open = false;
 
@@ -46,9 +44,9 @@
             <Command.Input placeholder="Search Targets..." />
             <Command.List>
                 <!-- Players -->
-                {#if Object.keys(playerRecord).length > 0}
+                {#if Object.keys($playerRecord).length > 0}
                     <Command.Group heading="Players">
-                        {#each Object.entries(playerRecord) as [playerId, player] (playerId)}
+                        {#each Object.entries($playerRecord) as [playerId, player] (playerId)}
                             <Command.Item
                                 value={playerId}
                                 onSelect={(selected) => {
@@ -66,9 +64,9 @@
                     </Command.Group>
                 {/if}
                 <!-- Monsters -->
-                {#if Object.keys(monsterRecord).length > 0}
+                {#if Object.keys($monsterRecord).length > 0}
                     <Command.Group heading="Monsters">
-                        {#each Object.entries(monsterRecord) as [monsterId, monster] (monsterId)}
+                        {#each Object.entries($monsterRecord) as [monsterId, monster] (monsterId)}
                             <Command.Item
                                 value={monsterId}
                                 onSelect={(selected) => {
@@ -86,9 +84,9 @@
                     </Command.Group>
                 {/if}
                 <!-- Items -->
-                {#if Object.keys(itemRecord).length > 0}
+                {#if Object.keys($itemRecord).length > 0}
                     <Command.Group heading="Items">
-                        {#each Object.entries(itemRecord) as [itemId, item] (itemId)}
+                        {#each Object.entries($itemRecord) as [itemId, item] (itemId)}
                             <Command.Item
                                 value={itemId}
                                 onSelect={(selected) => {

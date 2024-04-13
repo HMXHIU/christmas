@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { abyssTile, geohashToGridCell } from "$lib/crossover/world";
+    import { geohashToGridCell } from "$lib/crossover/world";
     import { playerAsset } from "$lib/crossover/world/player";
     import {
         bestiary,
@@ -16,7 +16,7 @@
     } from "pixi.js";
     import { onMount } from "svelte";
     import type { z } from "zod";
-    import { grid, player } from "../../../store";
+    import { grid, player, tile } from "../../../store";
 
     const CANVAS_WIDTH = 200;
     const CANVAS_HEIGHT = 200;
@@ -39,7 +39,6 @@
     const CELL_HEIGHT = WORLD_HEIGHT / GRID_ROWS;
     const CELL_WIDTH = WORLD_WIDTH / GRID_COLS;
 
-    export let tile: z.infer<typeof TileSchema> = abyssTile;
     let prevTile: z.infer<typeof TileSchema> | null = null;
 
     let container: HTMLDivElement;
@@ -63,7 +62,7 @@
         Record<number, Record<string, GridSprite>>
     > = {};
 
-    $: updateWorld(tile);
+    $: updateWorld($tile);
 
     function setGridSprite(row: number, col: number, gridSprite: GridSprite) {
         gridSprites[row] ??= {};
@@ -384,7 +383,7 @@
 
         await drawPlayer();
         await fillInGrid({
-            cell: geohashToGridCell(tile.geohash),
+            cell: geohashToGridCell($tile.geohash),
             colStart: 0,
             colEnd: GRID_COLS,
         });

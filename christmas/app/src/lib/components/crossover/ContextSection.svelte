@@ -1,14 +1,12 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
+    import * as Card from "$lib/components/ui/card/index.js";
+    import { Input } from "$lib/components/ui/input/index.js";
+    import { Label } from "$lib/components/ui/label/index.js";
     import { ScrollArea } from "$lib/components/ui/scroll-area";
-    import type { z } from "zod";
-
-    import type {
-        Item,
-        Monster,
-        Player,
-    } from "$lib/server/crossover/redis/entities";
-    import type { TileSchema } from "$lib/server/crossover/router";
+    import * as Tabs from "$lib/components/ui/tabs/index.js";
+    import type { Direction } from "$lib/crossover/world";
+    import { cn } from "$lib/shadcn";
     import {
         ArrowDown,
         ArrowDownLeft,
@@ -27,19 +25,11 @@
         Map,
         Trees,
     } from "lucide-svelte";
+    import ItemList from "./ItemList.svelte";
+    import MonsterList from "./MonsterList.svelte";
+    import PlayerList from "./PlayerList.svelte";
+    import TileInfo from "./TileInfo.svelte";
 
-    import * as Card from "$lib/components/ui/card/index.js";
-    import { Input } from "$lib/components/ui/input/index.js";
-    import { Label } from "$lib/components/ui/label/index.js";
-    import * as Tabs from "$lib/components/ui/tabs/index.js";
-    import type { Direction } from "$lib/crossover/world";
-    import { abyssTile } from "$lib/crossover/world";
-    import { cn } from "$lib/shadcn";
-
-    export let tile: z.infer<typeof TileSchema> = abyssTile;
-    export let playerRecord: Record<string, Player> = {};
-    export let itemRecord: Record<string, Item> = {};
-    export let monsterRecord: Record<string, Monster> = {};
     export let onMove: (direction: Direction) => void;
 </script>
 
@@ -57,54 +47,13 @@
                     <div class="flex justify-between">
                         <ScrollArea class="h-[250px]">
                             <!-- Tile -->
-                            <p class="text-sm text-primary-background">
-                                {tile.name || tile.geohash}
-                            </p>
-                            <p class="text-sm text-muted-foreground">
-                                {tile.description}
-                            </p>
-
+                            <TileInfo></TileInfo>
                             <!-- Players -->
-                            {#if Object.keys(playerRecord).length > 0}
-                                <p class="text-sm text-primary-background">
-                                    You see some people here
-                                </p>
-                            {/if}
-                            <div
-                                class="flex gap-2 text-sm text-muted-foreground"
-                            >
-                                {#each Object.entries(playerRecord) as [playerId, player] (playerId)}
-                                    <p>{player.name}</p>
-                                {/each}
-                            </div>
-
+                            <PlayerList></PlayerList>
                             <!-- Monsters -->
-                            {#if Object.keys(monsterRecord).length > 0}
-                                <p class="text-sm text-primary-background">
-                                    You see some creatures here
-                                </p>
-                            {/if}
-                            <div
-                                class="flex gap-2 text-sm text-muted-foreground"
-                            >
-                                {#each Object.entries(monsterRecord) as [monsterId, monster] (monsterId)}
-                                    <p>{monster.name}</p>
-                                {/each}
-                            </div>
-
+                            <MonsterList></MonsterList>
                             <!-- Items -->
-                            {#if Object.keys(itemRecord).length > 0}
-                                <p class="text-sm text-primary-background">
-                                    You see some itemRecord here
-                                </p>
-                            {/if}
-                            <div
-                                class="flex gap-2 text-sm text-muted-foreground"
-                            >
-                                {#each Object.entries(itemRecord) as [itemId, item] (itemId)}
-                                    <p>{item.name}</p>
-                                {/each}
-                            </div>
+                            <ItemList></ItemList>
                         </ScrollArea>
                         <!-- Movement -->
                         <div class="flex-shrink-0">
