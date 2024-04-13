@@ -4,18 +4,11 @@ import type {
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
-import type { HTTPHeaders } from "@trpc/client";
-import { crossoverCmdLook, crossoverCmdSay } from ".";
-import type {
-    GameActionEntities,
-    GameCommandVariables,
-    TokenPositions,
-} from "./ir";
-import { entityId } from "./utils";
+import type { GameActionEntities, TokenPositions } from "./ir";
 
-export { actions, performAction, resolveActionEntities, type Action };
+export { actions, resolveActionEntities, type Action };
 
-type Actions = "look" | "say";
+type Actions = "look" | "say" | "move";
 // | "equip"
 // | "unequip"
 // | "take"
@@ -50,33 +43,15 @@ const actions: Record<Actions, Action> = {
             tokenPositions: { action: 0, target: 1 },
         },
     },
-};
-
-// TODO: need to standardize command return types
-async function performAction(
-    {
-        action,
-        target,
-        variables,
-    }: {
-        action: Action;
-        target?: Player | Monster | Item;
-        variables: GameCommandVariables;
+    move: {
+        action: "move",
+        description: "Move in a direction.",
+        predicate: {
+            target: ["none"],
+            tokenPositions: { action: 0 },
+        },
     },
-    headers: HTTPHeaders = {},
-) {
-    if (action.action === "look") {
-        return await crossoverCmdLook(
-            { target: target ? entityId(target) : undefined },
-            headers,
-        );
-    } else if (action.action === "say") {
-        return await crossoverCmdSay(
-            { message: variables.queryIrrelevant },
-            headers,
-        );
-    }
-}
+};
 
 function resolveActionEntities({
     queryTokens,

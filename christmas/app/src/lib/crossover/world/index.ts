@@ -156,11 +156,11 @@ function updateGrid({
     upsert = false,
 }: {
     grid: Grid;
-    upsert?: boolean;
     biomes?: Record<string, string>;
     monsters?: Monster[];
     players?: Player[];
     items?: Item[];
+    upsert?: boolean;
 }) {
     // Update biomes
     if (biomes) {

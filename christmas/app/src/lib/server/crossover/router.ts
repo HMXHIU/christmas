@@ -1,4 +1,5 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
+import type { GameCommandResponse } from "$lib/crossover";
 import { biomeAtGeohash, tileAtGeohash } from "$lib/crossover/world/biomes";
 import { compendium, worldSeed } from "$lib/crossover/world/settings";
 import {
@@ -479,7 +480,9 @@ const crossoverRouter = {
                 players: players as Player[],
                 monsters: monsters as Monster[],
                 items: items as Item[],
-            };
+                status: "success",
+                op: "replace",
+            } as GameCommandResponse;
         }),
         // cmd.move
         move: authProcedure.input(MoveSchema).query(async ({ ctx, input }) => {
@@ -497,14 +500,17 @@ const crossoverRouter = {
             );
             if (!isTraversable) {
                 return {
-                    players: [player as Player],
-                };
+                    status: "failure",
+                    message: `Cannot move ${direction}`,
+                } as GameCommandResponse;
             } else {
                 player.location = location;
                 await playerRepository.save(player.player, player);
                 return {
                     players: [player as Player],
-                };
+                    op: "upsert",
+                    status: "success",
+                } as GameCommandResponse;
             }
         }),
 
@@ -531,12 +537,25 @@ const crossoverRouter = {
                     ability,
                 });
 
+                let players = [result.self as Player];
+                let monsters = [];
+                let items = [];
+                if (result.target?.player) {
+                    players.push(result.target as Player);
+                } else if (result.target?.monster) {
+                    monsters.push(result.target as Monster);
+                } else if (result.target?.item) {
+                    items.push(result.target as Item);
+                }
+
                 return {
-                    self: result.self as Player,
-                    target: result.target as Player | Monster | Item,
+                    items,
+                    players,
+                    monsters,
                     status: result.status,
                     message: result.message,
-                };
+                    op: "upsert",
+                } as GameCommandResponse;
             }),
         // cmd.useItem
         useItem: authProcedure
@@ -560,13 +579,25 @@ const crossoverRouter = {
                     utility,
                 });
 
+                let items: Item[] = [result.item as Item];
+                let players: Player[] = [result.self as Player];
+                let monsters: Monster[] = [];
+                if (result.target?.player) {
+                    players.push(result.target as Player);
+                } else if (result.target?.monster) {
+                    monsters.push(result.target as Monster);
+                } else if (result.target?.item) {
+                    items.push(result.target as Item);
+                }
+
                 return {
-                    item: result.item as Item,
-                    self: result.self as Player,
-                    target: result.target as Player | Monster | Item,
+                    items,
+                    players,
+                    monsters,
                     status: result.status,
                     message: result.message,
-                };
+                    op: "upsert",
+                } as GameCommandResponse;
             }),
         // cmd.createItem
         createItem: authProcedure

@@ -1,15 +1,9 @@
 <script lang="ts">
+    import type { MessageFeedUI } from "$lib/components/common/types";
     import GameWindow from "$lib/components/crossover/GameWindow.svelte";
     import Onboard from "$lib/components/crossover/Onboard.svelte";
-    import {
-        crossoverCmdLook,
-        crossoverCmdMove,
-        executeGameCommand,
-        stream,
-    } from "$lib/crossover";
-
-    import type { MessageFeedUI } from "$lib/components/common/types";
-
+    import { executeGameCommand, stream } from "$lib/crossover";
+    import { actions } from "$lib/crossover/actions";
     import type { GameCommand } from "$lib/crossover/ir";
     import {
         geohashToGridCell,
@@ -44,153 +38,75 @@
 
     async function onGameCommand(command: GameCommand) {
         const result = await executeGameCommand(command);
-    }
+        if (result) {
+            const {
+                players,
+                monsters,
+                items,
+                tile: newTile,
+                op,
+                status,
+                message,
+            } = result;
 
-    // TODO: convert these to special commands
-    //
-    // async function onChatMessage(
-    //     command: ChatCommandUI | null,
-    //     message: string,
-    // ) {
-    //     switch (command?.key) {
-    //         case "say":
-    //             await crossoverCmdSay({ message });
-    //             break;
+            // Update tile
+            if (newTile != null) {
+                tile.set(newTile);
+            }
 
-    //         case "look":
-    //             await look();
-    //             break;
-
-    //         case "spawnItem":
-    //             // Test spawn wooden door
-    //             const item = await crossoverCmdCreateItem({
-    //                 geohash: tile.geohash,
-    //                 prop: compendium.woodenDoor.prop,
-    //             });
-    //             console.log(JSON.stringify(item, null, 2));
-    //             break;
-
-    //         case "useItem":
-    //             // Test use wooden door
-    //             const usedItem = await crossoverCmdUseItem({
-    //                 item: "",
-    //                 action: "open",
-    //             });
-    //             console.log(JSON.stringify(usedItem, null, 2));
-    //             break;
-
-    //         case "spawnMonster":
-    //             break;
-
-    //         default:
-    //             console.warn("Unknown command:", command?.key, message);
-    //             break;
-    //     }
-    // }
-
-    async function look() {
-        const {
-            players,
-            tile: newTile,
-            monsters,
-            items,
-        } = await crossoverCmdLook({}); // crossoverCmdLook updates grid
-
-        playerRecord.set(
-            players.reduce(
-                (acc, p) => {
-                    acc[p.player] = p;
-                    return acc;
-                },
-                {} as Record<string, Player>,
-            ),
-        );
-        monsterRecord.set(
-            monsters.reduce(
-                (acc, m) => {
-                    acc[m.monster] = m;
-                    return acc;
-                },
-                {} as Record<string, Monster>,
-            ),
-        );
-        itemRecord.set(
-            items.reduce(
-                (acc, i) => {
-                    acc[i.item] = i;
-                    return acc;
-                },
-                {} as Record<string, Item>,
-            ),
-        );
-
-        tile.set(newTile);
+            // Update records
+            if (players != null) {
+                const pr = players.reduce(
+                    (acc, p) => {
+                        acc[p.player] = p;
+                        return acc;
+                    },
+                    {} as Record<string, Player>,
+                );
+                playerRecord.set(
+                    op === "replace" ? pr : { ...$playerRecord, ...pr },
+                );
+                // Update player
+                for (const p of players) {
+                    if (p.player === $player?.player) {
+                        player.set(p);
+                    }
+                }
+            }
+            if (monsters != null) {
+                const mr = monsters.reduce(
+                    (acc, m) => {
+                        acc[m.monster] = m;
+                        return acc;
+                    },
+                    {} as Record<string, Monster>,
+                );
+                monsterRecord.set(
+                    op === "replace" ? mr : { ...$monsterRecord, ...mr },
+                );
+            }
+            if (items != null) {
+                const ir = items.reduce(
+                    (acc, i) => {
+                        acc[i.item] = i;
+                        return acc;
+                    },
+                    {} as Record<string, Item>,
+                );
+                itemRecord.set(
+                    op === "replace" ? ir : { ...$itemRecord, ...ir },
+                );
+            }
+        }
     }
 
     async function onMove(direction: Direction) {
-        // Calculate new tile (TODO: get other metadata like description, etc.)
-        const { players } = await crossoverCmdMove({ direction });
-
-        // Update player record
-        updateEntityRecords({ players });
-
         if ($player != null) {
-            const geohash = $player.location[0];
-
-            // Geohash grid changed
-            if (geohash.slice(0, -1) !== $tile.geohash.slice(0, -1)) {
-                // Load more grid biomes
-                grid.set(loadMoreGridBiomes(geohash, $grid));
-                // Look at surroundings
-                await look();
-            }
-
-            // Update tile
-            if (geohash !== $tile.geohash) {
-                const { precision, row, col } = geohashToGridCell(geohash);
-                const biome = $grid[precision][row][col].biome;
-                tile.set(tileAtGeohash(geohash, biome!));
-            }
-        }
-    }
-
-    function updateEntityRecords({
-        players,
-        monsters,
-        items,
-    }: {
-        players?: Player[];
-        monsters?: Monster[];
-        items?: Item[];
-    }) {
-        if (players != null) {
-            for (const p of players) {
-                playerRecord.update((d) => {
-                    d[p.player] = p;
-                    return d;
-                });
-
-                // Update player
-                if ($player != null && p.player === $player.player) {
-                    player.set(p);
-                }
-            }
-        }
-        if (monsters != null) {
-            for (const m of monsters) {
-                monsterRecord.update((d) => {
-                    d[m.monster] = m;
-                    return d;
-                });
-            }
-        }
-        if (items != null) {
-            for (const i of items) {
-                itemRecord.update((d) => {
-                    d[i.item] = i;
-                    return d;
-                });
-            }
+            await onGameCommand([
+                actions.move,
+                { self: $player },
+                { queryIrrelevant: direction, query: "" },
+            ]);
         }
     }
 
@@ -274,6 +190,11 @@
         }
     }
 
+    $: async ($player: Player) => {
+        if ($player != null) {
+        }
+    };
+
     onMount(() => {
         const unsubscribe = player.subscribe(async (p) => {
             // Start streaming on login
@@ -286,11 +207,30 @@
                 grid.set(loadMoreGridBiomes(p.location[0], $grid));
 
                 // Look at surroundings
-                await look();
+                await onGameCommand([actions.look, { self: p }]);
             }
             // Stop streaming on logout
             else if (p == null) {
                 stopStream();
+            }
+
+            if (p != null) {
+                const geohash = p.location[0];
+
+                // Geohash grid changed
+                if (geohash.slice(0, -1) !== $tile.geohash.slice(0, -1)) {
+                    // Load more grid biomes
+                    grid.set(loadMoreGridBiomes(geohash, $grid));
+                    // Look at surroundings
+                    await onGameCommand([actions.look, { self: p }]);
+                }
+
+                // Update tile
+                if (geohash !== $tile.geohash) {
+                    const { precision, row, col } = geohashToGridCell(geohash);
+                    const biome = $grid[precision][row][col].biome;
+                    tile.set(tileAtGeohash(geohash, biome!));
+                }
             }
         });
 

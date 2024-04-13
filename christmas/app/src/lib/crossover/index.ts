@@ -1,6 +1,9 @@
 import { PUBLIC_HOST } from "$env/static/public";
 import type { TransactionResult } from "$lib/anchorClient/types";
-import type { PlayerMetadataSchema } from "$lib/server/crossover/router";
+import type {
+    PlayerMetadataSchema,
+    TileSchema,
+} from "$lib/server/crossover/router";
 import { trpc } from "$lib/trpcClient";
 import { retry, signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
@@ -18,8 +21,9 @@ import type {
     FeedEvent,
     StreamEvent,
 } from "../../routes/api/crossover/stream/+server";
-import { performAction } from "./actions";
-import type { GameCommand } from "./ir";
+import { type Action } from "./actions";
+import type { GameCommand, GameCommandVariables } from "./ir";
+import { entityId } from "./utils";
 import { updateGrid, type Direction } from "./world";
 import type { Ability } from "./world/abilities";
 import type { EquipmentSlot, ItemVariables, Utility } from "./world/compendium";
@@ -43,12 +47,23 @@ export {
     logout,
     signup,
     stream,
+    type GameCommandResponse,
 };
+
+interface GameCommandResponse {
+    status: "success" | "failure";
+    op?: "upsert" | "replace";
+    message?: string;
+    players?: Player[];
+    monsters?: Monster[];
+    items?: Item[];
+    tile?: z.infer<typeof TileSchema>;
+}
 
 async function executeGameCommand(
     command: GameCommand,
     headers: HTTPHeaders = {},
-) {
+): Promise<GameCommandResponse | void> {
     const [action, { self, target, item }, variables] = command;
 
     // TODO: better way to tell what type of action it is
@@ -82,13 +97,51 @@ async function executeGameCommand(
         );
     }
     // Action (variables are required)
-    else if ("action" in action && variables != null) {
+    else if ("action" in action) {
         return await performAction({
             action,
             target,
             variables,
         });
     }
+}
+
+async function performAction(
+    {
+        action,
+        target,
+        variables,
+    }: {
+        action: Action;
+        target?: Player | Monster | Item;
+        variables?: GameCommandVariables;
+    },
+    headers: HTTPHeaders = {},
+): Promise<GameCommandResponse | void> {
+    if (action.action === "look") {
+        return await crossoverCmdLook(
+            { target: target ? entityId(target) : undefined },
+            headers,
+        );
+    } else if (action.action === "say" && variables != null) {
+        return await crossoverCmdSay(
+            { message: variables.queryIrrelevant },
+            headers,
+        );
+    } else if (action.action === "move" && variables != null) {
+        if (
+            ["n", "s", "e", "w", "ne", "nw", "se", "sw", "u", "d"].includes(
+                variables.queryIrrelevant,
+            )
+        ) {
+            return await crossoverCmdMove(
+                { direction: variables.queryIrrelevant as Direction },
+                headers,
+            );
+        }
+        console.error("Invalid direction", variables.queryIrrelevant);
+    }
+    console.error("Unknown action", action);
 }
 
 /*
