@@ -518,7 +518,8 @@ function commandVariables({
             return !relevantPositions.includes(String(pos));
         })
         .map(([pos, token]) => token)
-        .join(" ");
+        .join(" ")
+        .trim();
 
     return {
         query: queryTokens.join(" "),

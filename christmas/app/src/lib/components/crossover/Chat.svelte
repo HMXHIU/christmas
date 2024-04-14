@@ -50,7 +50,16 @@
                 query: message,
                 playerAbilities,
                 playerItems: [], // TODO: replace with actual player's Items
-                actions: [actions.say, actions.look, actions.move],
+                actions: [
+                    actions.say,
+                    actions.look,
+                    actions.move,
+                    actions.take,
+                    actions.drop,
+                    actions.equip,
+                    actions.unequip,
+                    actions.create,
+                ],
                 monsters: Object.values($monsterRecord),
                 players: Object.values($playerRecord),
                 items: Object.values($itemRecord),

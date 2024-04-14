@@ -8,12 +8,15 @@ import type { GameActionEntities, TokenPositions } from "./ir";
 
 export { actions, resolveActionEntities, type Action };
 
-type Actions = "look" | "say" | "move";
-// | "equip"
-// | "unequip"
-// | "take"
-// | "drop"
-// | "create";
+type Actions =
+    | "look"
+    | "say"
+    | "move"
+    | "equip"
+    | "unequip"
+    | "take"
+    | "drop"
+    | "create";
 
 type ActionTargets = EntityType | "none";
 
@@ -46,6 +49,46 @@ const actions: Record<Actions, Action> = {
     move: {
         action: "move",
         description: "Move in a direction.",
+        predicate: {
+            target: ["none"],
+            tokenPositions: { action: 0 },
+        },
+    },
+    take: {
+        action: "take",
+        description: "Take an item.",
+        predicate: {
+            target: ["item"],
+            tokenPositions: { action: 0, target: 1 },
+        },
+    },
+    drop: {
+        action: "drop",
+        description: "Drop an item.",
+        predicate: {
+            target: ["item"],
+            tokenPositions: { action: 0, target: 1 },
+        },
+    },
+    equip: {
+        action: "equip",
+        description: "Equip an item.",
+        predicate: {
+            target: ["item"],
+            tokenPositions: { action: 0, target: 1 },
+        },
+    },
+    unequip: {
+        action: "unequip",
+        description: "Unequip an item.",
+        predicate: {
+            target: ["item"],
+            tokenPositions: { action: 0, target: 1 },
+        },
+    },
+    create: {
+        action: "create",
+        description: "Create an item.",
         predicate: {
             target: ["none"],
             tokenPositions: { action: 0 },

@@ -254,25 +254,25 @@ const crossoverRouter = {
 
                 // Check if item is in player inventory (can be inventory or equipment slot)
                 if (itemToEquip.location[0] !== player.player) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
+                    return {
+                        status: "failure",
                         message: `${item} is not in inventory`,
-                    });
+                    } as GameCommandResponse;
                 }
 
                 // Check equipment slot
                 const slots = compendium[itemToEquip.prop].equipmentSlot;
                 if (!slots) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
+                    return {
+                        status: "failure",
                         message: `${item} is not equippable`,
-                    });
+                    } as GameCommandResponse;
                 }
                 if (!slots.includes(slot)) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
+                    return {
+                        status: "failure",
                         message: `${item} cannot be equipped in ${slot}`,
-                    });
+                    } as GameCommandResponse;
                 }
 
                 // Unequip existing item in slot
@@ -290,13 +290,16 @@ const crossoverRouter = {
                 // Equip item in slot
                 itemToEquip.location = [player.player];
                 itemToEquip.locationType = slot;
-
                 itemToEquip = (await itemRepository.save(
                     itemToEquip.item,
                     itemToEquip,
                 )) as ItemEntity;
 
-                return itemToEquip as Item;
+                return {
+                    status: "success",
+                    op: "upsert",
+                    items: [itemToEquip as Item],
+                } as GameCommandResponse;
             }),
         // player.unequip
         unequip: authProcedure
@@ -307,14 +310,22 @@ const crossoverRouter = {
             )
             .query(async ({ ctx, input }) => {
                 const { item } = input;
+                let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
 
                 // Get player
                 const player = (await tryFetchEntity(
                     ctx.user.publicKey,
                 )) as PlayerEntity;
 
+                // Check item is on player
+                if (itemEntity.location[0] !== player.player) {
+                    return {
+                        status: "failure",
+                        message: `${item} is not equipped`,
+                    } as GameCommandResponse;
+                }
+
                 // Unequip item
-                let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
                 itemEntity.location = [player.player];
                 itemEntity.locationType = "inv";
                 itemEntity = (await itemRepository.save(
@@ -322,7 +333,11 @@ const crossoverRouter = {
                     itemEntity,
                 )) as ItemEntity;
 
-                return itemEntity as Item;
+                return {
+                    status: "success",
+                    op: "upsert",
+                    items: [itemEntity as Item],
+                } as GameCommandResponse;
             }),
     }),
     // Commands
@@ -347,26 +362,26 @@ const crossoverRouter = {
 
                 // Check item owner is player or public
                 if (itemEntity.owner !== player.player && itemEntity.owner) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
+                    return {
+                        status: "failure",
                         message: `${item} is owned by someone else`,
-                    });
+                    } as GameCommandResponse;
                 }
 
                 // Check if in range
                 if (itemEntity.location[0] !== player.location[0]) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
+                    return {
+                        status: "failure",
                         message: `${item} is not in range`,
-                    });
+                    } as GameCommandResponse;
                 }
 
                 // Check if item is takeable
                 if (compendium[itemEntity.prop].weight < 0) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
+                    return {
+                        status: "failure",
                         message: `${item} cannot be taken`,
-                    });
+                    } as GameCommandResponse;
                 }
 
                 // Take item
@@ -378,8 +393,10 @@ const crossoverRouter = {
                 )) as ItemEntity;
 
                 return {
+                    status: "success",
+                    op: "upsert",
                     items: [itemEntity as Item],
-                };
+                } as GameCommandResponse;
             }),
         // cmd.drop
         drop: authProcedure
@@ -399,10 +416,10 @@ const crossoverRouter = {
                 // Check item is in player inventory
                 let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
                 if (itemEntity.location[0] !== player.player) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
+                    return {
+                        status: "failure",
                         message: `${item} is not in inventory`,
-                    });
+                    } as GameCommandResponse;
                 }
 
                 // Drop item
@@ -414,8 +431,10 @@ const crossoverRouter = {
                 )) as ItemEntity;
 
                 return {
+                    status: "success",
+                    op: "upsert",
                     items: [itemEntity as Item],
-                };
+                } as GameCommandResponse;
             }),
         // cmd.say
         say: authProcedure.input(SaySchema).query(async ({ ctx, input }) => {
@@ -611,13 +630,19 @@ const crossoverRouter = {
                 )) as PlayerEntity;
 
                 // Create item
-                return (await spawnItem({
+                const item = (await spawnItem({
                     geohash,
                     prop,
                     variables,
                     owner: player.player, // owner is player
                     configOwner: player.player,
                 })) as Item;
+
+                return {
+                    items: [item],
+                    status: "success",
+                    op: "upsert",
+                } as GameCommandResponse;
             }),
         // cmd.configureItem
         configureItem: authProcedure
@@ -636,11 +661,13 @@ const crossoverRouter = {
                     item: (await tryFetchEntity(item)) as ItemEntity,
                     variables,
                 });
+
                 return {
-                    item: result.item as Item,
+                    items: [result.item as Item],
+                    op: "upsert",
                     status: result.status,
                     message: result.message,
-                };
+                } as GameCommandResponse;
             }),
     }),
     // Authentication

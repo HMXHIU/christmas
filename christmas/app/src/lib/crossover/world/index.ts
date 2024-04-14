@@ -12,6 +12,7 @@ import { type EquipmentSlot } from "./compendium";
 const { groupBy } = lodash;
 
 export {
+    Directions,
     abyssTile,
     geohashToGridCell,
     loadMoreGridBiomes,
@@ -41,6 +42,18 @@ interface AssetMetadata {
 }
 
 type Direction = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw" | "u" | "d";
+const Directions: Direction[] = [
+    "n",
+    "s",
+    "e",
+    "w",
+    "ne",
+    "nw",
+    "se",
+    "sw",
+    "u",
+    "d",
+];
 
 type LocationType =
     | "geohash"

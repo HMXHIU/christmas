@@ -6,6 +6,7 @@ import { compendium } from "./settings";
 const { cloneDeep } = lodash;
 
 export {
+    EquipmentSlots,
     itemAttibutes,
     type EquipmentSlot,
     type ItemVariables,
@@ -23,6 +24,18 @@ type EquipmentSlot =
     | "lg" // legs
     | "r1" // ring 1
     | "r2"; // ring 2
+
+const EquipmentSlots: EquipmentSlot[] = [
+    "rh",
+    "lh",
+    "ft",
+    "hd",
+    "nk",
+    "ch",
+    "lg",
+    "r1",
+    "r2",
+];
 
 /**
  * `Prop` is a template used to create an `item` instance

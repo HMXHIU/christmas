@@ -24,9 +24,15 @@ import type {
 import { type Action } from "./actions";
 import type { GameCommand, GameCommandVariables } from "./ir";
 import { entityId } from "./utils";
-import { updateGrid, type Direction } from "./world";
+import { Directions, updateGrid, type Direction } from "./world";
 import type { Ability } from "./world/abilities";
-import type { EquipmentSlot, ItemVariables, Utility } from "./world/compendium";
+import {
+    EquipmentSlots,
+    type EquipmentSlot,
+    type ItemVariables,
+    type Utility,
+} from "./world/compendium";
+import { compendium } from "./world/settings";
 
 export {
     crossoverAuthPlayer,
@@ -66,8 +72,6 @@ async function executeGameCommand(
 ): Promise<GameCommandResponse | void> {
     const [action, { self, target, item }, variables] = command;
 
-    // TODO: better way to tell what type of action it is
-
     // Use Item
     if (item != null) {
         return await crossoverCmdUseItem(
@@ -99,6 +103,7 @@ async function executeGameCommand(
     // Action (variables are required)
     else if ("action" in action) {
         return await performAction({
+            self,
             action,
             target,
             variables,
@@ -108,11 +113,13 @@ async function executeGameCommand(
 
 async function performAction(
     {
+        self,
         action,
         target,
         variables,
     }: {
         action: Action;
+        self: Player | Monster;
         target?: Player | Monster | Item;
         variables?: GameCommandVariables;
     },
@@ -129,19 +136,54 @@ async function performAction(
             headers,
         );
     } else if (action.action === "move" && variables != null) {
-        if (
-            ["n", "s", "e", "w", "ne", "nw", "se", "sw", "u", "d"].includes(
-                variables.queryIrrelevant,
-            )
-        ) {
-            return await crossoverCmdMove(
-                { direction: variables.queryIrrelevant as Direction },
+        const direction = variables.queryIrrelevant as Direction;
+        if (Directions.includes(direction)) {
+            return await crossoverCmdMove({ direction }, headers);
+        }
+        throw new Error(`Invalid direction ${direction}`);
+    } else if (action.action === "take") {
+        return await crossoverCmdTake(
+            { item: entityId(target as Item) },
+            headers,
+        );
+    } else if (action.action === "drop") {
+        return await crossoverCmdDrop(
+            { item: entityId(target as Item) },
+            headers,
+        );
+    } else if (action.action === "equip" && variables != null) {
+        const slot = variables.queryIrrelevant as EquipmentSlot;
+        if (EquipmentSlots.includes(slot)) {
+            return await crossoverCmdEquip(
+                {
+                    item: entityId(target as Item),
+                    slot,
+                },
                 headers,
             );
         }
-        console.error("Invalid direction", variables.queryIrrelevant);
+        throw new Error(`Invalid slot ${slot}`);
+    } else if (action.action === "unequip") {
+        return await crossoverCmdUnequip(
+            { item: entityId(target as Item) },
+            headers,
+        );
+    } else if (action.action === "create" && variables != null) {
+        const prop = variables.queryIrrelevant as string;
+        const geohash = self.location[0];
+        console.log(Object.keys(compendium), `[${prop}]`);
+        if (Object.keys(compendium).includes(prop)) {
+            return await crossoverCmdCreateItem(
+                {
+                    geohash,
+                    prop: prop,
+                },
+                headers,
+            );
+        }
+        throw new Error(`Invalid prop ${prop}`);
     }
-    console.error("Unknown action", action);
+    throw new Error(`Unknown action ${action}`);
 }
 
 /*

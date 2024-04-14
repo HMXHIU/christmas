@@ -37,71 +37,75 @@
     let streamStarted = false;
 
     async function onGameCommand(command: GameCommand) {
-        const result = await executeGameCommand(command);
-        if (result) {
-            const {
-                players,
-                monsters,
-                items,
-                tile: newTile,
-                op,
-                status,
-                message,
-            } = result;
+        try {
+            const result = await executeGameCommand(command);
+            if (result) {
+                const {
+                    players,
+                    monsters,
+                    items,
+                    tile: newTile,
+                    op,
+                    status,
+                    message,
+                } = result;
 
-            // Update message feed
-            if (status === "failure" && message != null) {
-                addMessageFeed({ message, name: "Error" });
-            }
+                // Update message feed
+                if (status === "failure" && message != null) {
+                    addMessageFeed({ message, name: "Error" });
+                }
 
-            // Update tile
-            if (newTile != null) {
-                tile.set(newTile);
-            }
+                // Update tile
+                if (newTile != null) {
+                    tile.set(newTile);
+                }
 
-            // Update records
-            if (players != null) {
-                const pr = players.reduce(
-                    (acc, p) => {
-                        acc[p.player] = p;
-                        return acc;
-                    },
-                    {} as Record<string, Player>,
-                );
-                playerRecord.set(
-                    op === "replace" ? pr : { ...$playerRecord, ...pr },
-                );
-                // Update player
-                for (const p of players) {
-                    if (p.player === $player?.player) {
-                        player.set(p);
+                // Update records
+                if (players != null) {
+                    const pr = players.reduce(
+                        (acc, p) => {
+                            acc[p.player] = p;
+                            return acc;
+                        },
+                        {} as Record<string, Player>,
+                    );
+                    playerRecord.set(
+                        op === "replace" ? pr : { ...$playerRecord, ...pr },
+                    );
+                    // Update player
+                    for (const p of players) {
+                        if (p.player === $player?.player) {
+                            player.set(p);
+                        }
                     }
                 }
+                if (monsters != null) {
+                    const mr = monsters.reduce(
+                        (acc, m) => {
+                            acc[m.monster] = m;
+                            return acc;
+                        },
+                        {} as Record<string, Monster>,
+                    );
+                    monsterRecord.set(
+                        op === "replace" ? mr : { ...$monsterRecord, ...mr },
+                    );
+                }
+                if (items != null) {
+                    const ir = items.reduce(
+                        (acc, i) => {
+                            acc[i.item] = i;
+                            return acc;
+                        },
+                        {} as Record<string, Item>,
+                    );
+                    itemRecord.set(
+                        op === "replace" ? ir : { ...$itemRecord, ...ir },
+                    );
+                }
             }
-            if (monsters != null) {
-                const mr = monsters.reduce(
-                    (acc, m) => {
-                        acc[m.monster] = m;
-                        return acc;
-                    },
-                    {} as Record<string, Monster>,
-                );
-                monsterRecord.set(
-                    op === "replace" ? mr : { ...$monsterRecord, ...mr },
-                );
-            }
-            if (items != null) {
-                const ir = items.reduce(
-                    (acc, i) => {
-                        acc[i.item] = i;
-                        return acc;
-                    },
-                    {} as Record<string, Item>,
-                );
-                itemRecord.set(
-                    op === "replace" ? ir : { ...$itemRecord, ...ir },
-                );
-            }
+        } catch (error: any) {
+            addMessageFeed({ message: error.message, name: "Error" });
         }
     }
 
