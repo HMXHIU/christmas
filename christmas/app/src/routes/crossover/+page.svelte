@@ -49,6 +49,11 @@
                 message,
             } = result;
 
+            // Update message feed
+            if (status === "failure" && message != null) {
+                addMessageFeed({ message, name: "Error" });
+            }
+
             // Update tile
             if (newTile != null) {
                 tile.set(newTile);
@@ -124,45 +129,41 @@
 
         // Error events
         if (type === "error") {
-            messageFeed = [
-                ...messageFeed,
-                {
-                    id: messageFeed.length,
-                    timestamp: getCurrentTimestamp(),
-                    message,
-                    name: "Error",
-                },
-            ];
+            addMessageFeed({ message, name: "Error" });
         }
 
         // System feed
-        if (type === "system") {
-            messageFeed = [
-                ...messageFeed,
-                {
-                    id: messageFeed.length,
-                    timestamp: getCurrentTimestamp(),
-                    message,
-                    name: "System",
-                },
-            ];
-            return;
+        else if (type === "system") {
+            addMessageFeed({ message, name: "System" });
         }
 
         // Message feed
         else if (type === "message") {
-            messageFeed = [
-                ...messageFeed,
-                {
-                    id: messageFeed.length,
-                    timestamp: getCurrentTimestamp(),
-                    message: variables
-                        ? (substituteVariables(message, variables) as string)
-                        : message,
-                    name: "",
-                },
-            ];
+            addMessageFeed({
+                message: variables
+                    ? (substituteVariables(message, variables) as string)
+                    : message,
+                name: "",
+            });
         }
+    }
+
+    function addMessageFeed({
+        message,
+        name,
+    }: {
+        message: string;
+        name: string;
+    }) {
+        messageFeed = [
+            ...messageFeed,
+            {
+                id: messageFeed.length,
+                timestamp: getCurrentTimestamp(),
+                message,
+                name,
+            },
+        ];
     }
 
     function processUpdateEntities(event: Event) {
@@ -189,11 +190,6 @@
             closeStream();
         }
     }
-
-    $: async ($player: Player) => {
-        if ($player != null) {
-        }
-    };
 
     onMount(() => {
         const unsubscribe = player.subscribe(async (p) => {

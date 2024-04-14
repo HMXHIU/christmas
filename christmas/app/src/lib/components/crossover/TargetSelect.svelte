@@ -9,10 +9,14 @@
     } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
     import { Crosshair } from "lucide-svelte";
-    import { tick } from "svelte";
+    import { onMount, tick } from "svelte";
     import { itemRecord, monsterRecord, playerRecord } from "../../../store";
 
     export let value: Player | Monster | Item | null = null;
+
+    let monsters: Monster[] = [];
+    let players: Player[] = [];
+    let items: Item[] = [];
 
     let open = false;
 
@@ -22,6 +26,24 @@
             document.getElementById(triggerId)?.focus();
         });
     }
+
+    onMount(() => {
+        const unsubscribeItems = itemRecord.subscribe((value) => {
+            items = Object.values(value);
+        });
+        const unsubscribeMonsters = monsterRecord.subscribe((value) => {
+            monsters = Object.values(value);
+        });
+        const unsubscribePlayers = playerRecord.subscribe((value) => {
+            players = Object.values(value);
+        });
+
+        return () => {
+            unsubscribeItems();
+            unsubscribeMonsters();
+            unsubscribePlayers();
+        };
+    });
 </script>
 
 <Popover.Root bind:open let:ids>
@@ -44,11 +66,11 @@
             <Command.Input placeholder="Search Targets..." />
             <Command.List>
                 <!-- Players -->
-                {#if Object.keys($playerRecord).length > 0}
+                {#if players.length > 0}
                     <Command.Group heading="Players">
-                        {#each Object.entries($playerRecord) as [playerId, player] (playerId)}
+                        {#each players as player (player.player)}
                             <Command.Item
-                                value={playerId}
+                                value={player.player}
                                 onSelect={(selected) => {
                                     value = player;
                                     closeAndFocusTrigger(ids.trigger);
@@ -57,18 +79,18 @@
                             >
                                 <p>{player.name}</p>
                                 <p class="text-muted-foreground">
-                                    {playerId.slice(0, 7)}...
+                                    {player.player.slice(0, 7)}...
                                 </p>
                             </Command.Item>
                         {/each}
                     </Command.Group>
                 {/if}
                 <!-- Monsters -->
-                {#if Object.keys($monsterRecord).length > 0}
+                {#if monsters.length > 0}
                     <Command.Group heading="Monsters">
-                        {#each Object.entries($monsterRecord) as [monsterId, monster] (monsterId)}
+                        {#each monsters as monster (monster.monster)}
                             <Command.Item
-                                value={monsterId}
+                                value={monster.monster}
                                 onSelect={(selected) => {
                                     value = monster;
                                     closeAndFocusTrigger(ids.trigger);
@@ -77,18 +99,18 @@
                             >
                                 <p>{monster.name}</p>
                                 <p class="text-muted-foreground">
-                                    {monsterId}
+                                    {monster.monster}
                                 </p>
                             </Command.Item>
                         {/each}
                     </Command.Group>
                 {/if}
                 <!-- Items -->
-                {#if Object.keys($itemRecord).length > 0}
+                {#if items.length > 0}
                     <Command.Group heading="Items">
-                        {#each Object.entries($itemRecord) as [itemId, item] (itemId)}
+                        {#each items as item (item.item)}
                             <Command.Item
-                                value={itemId}
+                                value={item.item}
                                 onSelect={(selected) => {
                                     value = item;
                                     closeAndFocusTrigger(ids.trigger);
@@ -97,7 +119,7 @@
                             >
                                 <p>{item.name}</p>
                                 <p class="text-muted-foreground">
-                                    {itemId}
+                                    {item.item}
                                 </p>
                             </Command.Item>
                         {/each}
