@@ -42,7 +42,7 @@ test("Test Player", async () => {
 
     // Player one
     const playerOneName = "Gandalf";
-    const playerOneGeohash = generateRandomGeohash(6);
+    const playerOneGeohash = generateRandomGeohash(6, "h9");
     let [playerOneWallet, playerOneCookies, playerOne] =
         await createRandomPlayer({
             region,
@@ -54,7 +54,7 @@ test("Test Player", async () => {
 
     // Player two
     const playerTwoName = "Saruman";
-    const playerTwoGeohash = generateRandomGeohash(6);
+    const playerTwoGeohash = generateRandomGeohash(6, "h9");
     let [playerTwoWallet, playerTwoCookies, playerTwo] =
         await createRandomPlayer({
             region,
@@ -83,7 +83,7 @@ test("Test Player", async () => {
         Cookie: playerOneCookies,
     });
     await expect(
-        waitForEventData(playerOneEventStream, "system"),
+        waitForEventData(playerOneEventStream, "feed"),
     ).resolves.toMatchObject({
         type: "system",
         message: "started",
@@ -92,7 +92,7 @@ test("Test Player", async () => {
         Cookie: playerTwoCookies,
     });
     await expect(
-        waitForEventData(playerTwoEventStream, "system"),
+        waitForEventData(playerTwoEventStream, "feed"),
     ).resolves.toMatchObject({
         type: "system",
         message: "started",
@@ -101,7 +101,7 @@ test("Test Player", async () => {
         Cookie: playerThreeCookies,
     });
     await expect(
-        waitForEventData(playerThreeEventStream, "system"),
+        waitForEventData(playerThreeEventStream, "feed"),
     ).resolves.toMatchObject({
         type: "system",
         message: "started",
@@ -113,7 +113,7 @@ test("Test Player", async () => {
         { Cookie: playerOneCookies },
     );
     await expect(
-        waitForEventData(playerOneEventStream, "message"),
+        waitForEventData(playerOneEventStream, "feed"),
     ).resolves.toMatchObject({
         type: "message",
         message: "${origin} says ${message}",
@@ -126,7 +126,7 @@ test("Test Player", async () => {
 
     // Say - player three should receive message (same tile)
     await expect(
-        waitForEventData(playerThreeEventStream, "message"),
+        waitForEventData(playerThreeEventStream, "feed"),
     ).resolves.toMatchObject({
         type: "message",
         message: "${origin} says ${message}",
@@ -139,7 +139,7 @@ test("Test Player", async () => {
 
     // Say - player two should not receive the message (different tile)
     await expect(
-        waitForEventData(playerTwoEventStream, "message"),
+        waitForEventData(playerTwoEventStream, "feed"),
     ).rejects.toThrowError("Timeout occurred while waiting for event");
 
     // Look - no target (tile)
@@ -153,10 +153,9 @@ test("Test Player", async () => {
     ]);
 
     // Move
-    const nextLocation = await crossoverCmdMove(
-        { direction: "n" },
-        { Cookie: playerOneCookies },
-    );
+    const nextLocation = (
+        await crossoverCmdMove({ direction: "n" }, { Cookie: playerOneCookies })
+    ).players?.[0].location!;
     const northTile = ngeohash.neighbor(playerOne.location[0], [1, 0]);
     expect(nextLocation[0]).toEqual(northTile);
 
@@ -228,33 +227,40 @@ test("Test Player", async () => {
         },
         { Cookie: playerOneCookies },
     );
-    playerOne = abilityResult.self;
     expect(abilityResult).toMatchObject({
-        self: {
-            player: playerOne.player,
-            name: "Gandalf",
-            loggedIn: true,
-            location: playerTwo.location, // teleported to playerTwo location
-            level: 1,
-            hp: 100,
-            mp: 80,
-            st: 100,
-            ap: 90,
-        },
-        target: {
-            player: playerTwo.player,
-            name: "Saruman",
-            loggedIn: true,
-            location: playerTwo.location,
-            level: 1,
-            hp: 10,
-            mp: 10,
-            st: 10,
-            ap: 10,
-        },
+        players: [
+            {
+                player: playerOne.player,
+                name: "Gandalf",
+                loggedIn: true,
+                location: playerTwo.location, // teleported to playerTwo location
+                level: 1,
+                hp: 100,
+                mp: 80,
+                st: 100,
+                ap: 90,
+            },
+            {
+                player: playerTwo.player,
+                name: "Saruman",
+                loggedIn: true,
+                location: playerTwo.location,
+                level: 1,
+                hp: 10,
+                mp: 10,
+                st: 10,
+                ap: 10,
+            },
+        ],
         status: "success",
+        op: "upsert",
         message: "",
     });
+    for (const p of abilityResult.players || []) {
+        if (p.player === playerOne.player) {
+            playerOne = p;
+        }
+    }
 
     /*
      * Test crossoverCmdConfigureItem
@@ -286,7 +292,7 @@ test("Test Player", async () => {
             },
             { Cookie: playerOneCookies },
         )
-    ).item;
+    ).items?.[0]!;
     expect(woodendoor).toMatchObject({
         state: "closed",
         variables: { doorSign: "A new door sign" },
@@ -297,23 +303,27 @@ test("Test Player", async () => {
      */
 
     // Use woodendoor (open)
-    var { item, status } = await crossoverCmdUseItem(
+    var useItemRes = await crossoverCmdUseItem(
         {
             item: woodendoor.item,
             utility: compendium.woodendoor.utilities.open.utility,
         },
         { Cookie: playerOneCookies },
     );
-    expect(status).toBe("success");
-    expect(item).toMatchObject({
-        item: woodendoor.item,
-        name: "Wooden Door",
-        prop: "woodendoor",
-        location: woodendoor.location,
-        state: "open",
-        variables: { doorSign: "A new door sign" },
+    expect(useItemRes).toMatchObject({
+        items: [
+            {
+                item: woodendoor.item,
+                name: "Wooden Door",
+                prop: "woodendoor",
+                location: woodendoor.location,
+                state: "open",
+                variables: { doorSign: "A new door sign" },
+            },
+        ],
+        status: "success",
     });
-    woodendoor = item as ItemEntity;
+    woodendoor = useItemRes.items?.[0]!;
     expect(itemAttibutes(woodendoor)).toMatchObject({
         destructible: false,
         description: "A new door sign. The door is open.",
@@ -321,10 +331,9 @@ test("Test Player", async () => {
     });
 
     // Move playerOne south (to spawn portal without colliding with woodendoor)
-    playerOne.location = await crossoverCmdMove(
-        { direction: "s" },
-        { Cookie: playerOneCookies },
-    );
+    playerOne.location = (
+        await crossoverCmdMove({ direction: "s" }, { Cookie: playerOneCookies })
+    ).players?.[0].location!;
 
     // Spawn portals (dm)
     const portalOne = (await spawnItem({
@@ -361,7 +370,7 @@ test("Test Player", async () => {
             },
             { Cookie: playerOneCookies },
         )
-    ).self;
+    ).players?.[0]!;
 
     // Teleport to portalTwo
     expect(playerOne.location[0]).toBe(portalTwo.location[0]);
@@ -373,7 +382,7 @@ test("Test Player", async () => {
             },
             { Cookie: playerOneCookies },
         )
-    ).self;
+    ).players?.[0]!;
 
     // Teleport back to portalOne
     expect(playerOne.location[0]).toBe(portalOne.location[0]);
@@ -382,13 +391,15 @@ test("Test Player", async () => {
      * Test crossoverCmdCreateItem
      */
 
-    const woodenclub = await crossoverCmdCreateItem(
-        {
-            geohash: playerOne.location[0],
-            prop: compendium.woodenclub.prop,
-        },
-        { Cookie: playerOneCookies },
-    );
+    const woodenclub = (
+        await crossoverCmdCreateItem(
+            {
+                geohash: playerOne.location[0],
+                prop: compendium.woodenclub.prop,
+            },
+            { Cookie: playerOneCookies },
+        )
+    ).items?.[0]!;
 
     expect(woodenclub).toMatchObject({
         name: "Wooden Club",
@@ -419,41 +430,51 @@ test("Test Player", async () => {
     );
 
     // Teleport to playerTwo's location to be in range
-    playerOne = (
-        await crossoverCmdPerformAbility(
-            {
-                target: playerTwo.player,
-                ability: abilities.teleport.ability,
-            },
-            { Cookie: playerOneCookies },
-        )
-    ).self;
+    var { players } = await crossoverCmdPerformAbility(
+        {
+            target: playerTwo.player,
+            ability: abilities.teleport.ability,
+        },
+        { Cookie: playerOneCookies },
+    );
+    for (const p of players || []) {
+        if (p.player === playerOne.player) {
+            playerOne = p;
+        }
+    }
 
     // Use woodenclub (swing)
     let stBefore = playerOne.st;
     let apBefore = playerOne.ap;
-    var { status, message, self, target, item } = await crossoverCmdUseItem(
-        {
-            item: woodenclub.item,
-            utility: compendium.woodenclub.utilities.swing.utility,
-            target: playerTwo.player,
-        },
-        { Cookie: playerOneCookies },
-    );
-
-    expect(status).toBe("success");
-    expect(target).toMatchObject({
-        player: playerTwo.player,
-        hp: 9,
-    });
-    expect(self).toMatchObject({
-        player: playerOne.player,
-        st: stBefore, // uses item charge not player's resources
-        ap: apBefore, // uses item charge not player's resources
-    });
-    expect(item).toMatchObject({
-        item: woodenclub.item,
-        durability: 99, // -1 durability
-        charges: 0,
+    await expect(
+        crossoverCmdUseItem(
+            {
+                item: woodenclub.item,
+                utility: compendium.woodenclub.utilities.swing.utility,
+                target: playerTwo.player,
+            },
+            { Cookie: playerOneCookies },
+        ),
+    ).resolves.toMatchObject({
+        players: [
+            {
+                player: playerOne.player,
+                st: stBefore, // uses item charge not player's resources
+                ap: apBefore, // uses item charge not player's resources
+            },
+            {
+                player: playerTwo.player,
+                hp: 9,
+            },
+        ],
+        items: [
+            {
+                item: woodenclub.item,
+                durability: 99, // -1 durability
+                charges: 0,
+            },
+        ],
+        status: "success",
+        op: "upsert",
     });
 });

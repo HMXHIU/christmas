@@ -536,7 +536,6 @@ const crossoverRouter = {
                 } as GameCommandResponse;
             }
         }),
-
         // cmd.performAbility
         performAbility: authProcedure
             .input(PerformAbilitySchema)

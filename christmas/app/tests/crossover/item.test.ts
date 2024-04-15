@@ -223,7 +223,10 @@ test("Test Items", async () => {
             { item: portalTwo.item },
             { Cookie: playerOneCookies },
         ),
-    ).rejects.toThrowError(`${portalTwo.item} cannot be taken`);
+    ).resolves.toMatchObject({
+        status: "failure",
+        message: `${portalTwo.item} cannot be taken`,
+    });
 
     /*
      * Test item permissions
@@ -238,10 +241,12 @@ test("Test Items", async () => {
     });
 
     // Take item
-    playerOneWoodenClub = await crossoverCmdTake(
-        { item: playerOneWoodenClub.item },
-        { Cookie: playerOneCookies },
-    );
+    playerOneWoodenClub = (
+        await crossoverCmdTake(
+            { item: playerOneWoodenClub.item },
+            { Cookie: playerOneCookies },
+        )
+    ).items?.[0]!;
 
     // Test cannot use item without equipping
     var { status, message } = await useItem({
@@ -256,13 +261,15 @@ test("Test Items", async () => {
     );
 
     // Equip item
-    playerOneWoodenClub = await crossoverCmdEquip(
-        {
-            item: playerOneWoodenClub.item,
-            slot: "rh",
-        },
-        { Cookie: playerOneCookies },
-    );
+    playerOneWoodenClub = (
+        await crossoverCmdEquip(
+            {
+                item: playerOneWoodenClub.item,
+                slot: "rh",
+            },
+            { Cookie: playerOneCookies },
+        )
+    ).items?.[0]!;
 
     // Test target out of range
     var { status, message } = await useItem({

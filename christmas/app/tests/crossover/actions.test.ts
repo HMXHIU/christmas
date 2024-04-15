@@ -1,4 +1,3 @@
-import { commandVariables } from "$lib/crossover";
 import { actions } from "$lib/crossover/actions";
 import { searchPossibleCommands } from "$lib/crossover/ir";
 import { abilities, compendium } from "$lib/crossover/world/settings";
@@ -98,6 +97,10 @@ test("Test Actions", async () => {
                     player: playerOne.player,
                 },
             },
+            {
+                query: "look",
+                queryIrrelevant: "",
+            },
         ],
     ]);
 
@@ -125,6 +128,10 @@ test("Test Actions", async () => {
                     monster: goblin.monster,
                 },
             },
+            {
+                query: "look goblin",
+                queryIrrelevant: "",
+            },
         ],
     ]);
 
@@ -145,7 +152,7 @@ test("Test Actions", async () => {
     expect(commands).toMatchObject([]);
 
     /**
-     * Test `commandVariables`
+     * Test GameCommandVariables
      */
 
     var { queryTokens, tokenPositions, commands } = searchPossibleCommands({
@@ -158,13 +165,7 @@ test("Test Actions", async () => {
         players: [playerTwo],
         items: [woodendoor, woodenclub, portal],
     });
-
-    var variables = commandVariables({
-        command: commands[0],
-        queryTokens,
-        tokenPositions,
-    });
-
+    const [action, entities, variables] = commands[0];
     expect(variables).toMatchObject({
         query: "say saruman thou shall not pass",
         queryIrrelevant: "thou shall not pass",

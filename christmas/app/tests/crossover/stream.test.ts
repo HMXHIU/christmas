@@ -27,7 +27,7 @@ test("Test Stream", async () => {
         Cookie: playerOneCookie,
     });
     await expect(
-        waitForEventData(eventStreamOne, "system"),
+        waitForEventData(eventStreamOne, "feed"),
     ).resolves.toMatchObject({
         type: "system",
         message: "started",
@@ -36,7 +36,7 @@ test("Test Stream", async () => {
         Cookie: playerTwoCookie,
     });
     await expect(
-        waitForEventData(eventStreamTwo, "system"),
+        waitForEventData(eventStreamTwo, "feed"),
     ).resolves.toMatchObject({
         type: "system",
         message: "started",
@@ -53,7 +53,7 @@ test("Test Stream", async () => {
         );
     }, 0);
     await expect(
-        waitForEventData(eventStreamTwo, "message"),
+        waitForEventData(eventStreamTwo, "feed"),
     ).resolves.toMatchObject({
         type: "message",
         message: "You took 1 damage",
@@ -71,7 +71,7 @@ test("Test Stream", async () => {
         );
     }, 0);
     await expect(
-        waitForEventData(eventStreamTwo, "message"),
+        waitForEventData(eventStreamTwo, "feed"),
     ).resolves.toMatchObject({
         type: "message",
         message: "You healed for 5",

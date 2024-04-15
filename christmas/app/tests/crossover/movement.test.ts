@@ -11,7 +11,7 @@ import { createRandomPlayer, generateRandomGeohash } from "./utils";
 test("Test Movement", async () => {
     // Player one
     const playerOneName = "Gandalf";
-    let playerOneGeohash = generateRandomGeohash(8);
+    let playerOneGeohash = generateRandomGeohash(8, "h9");
     let [playerOneWallet, playerOneCookies, playerOne] =
         await createRandomPlayer({
             region: String.fromCharCode(...getRandomRegion()),
@@ -43,41 +43,46 @@ test("Test Movement", async () => {
     });
 
     // PlayerOne tries to move south (obstructed by tavern)
-    playerOne.location = await crossoverCmdMove(
-        { direction: "s" },
-        { Cookie: playerOneCookies },
-    );
+    await expect(
+        crossoverCmdMove({ direction: "s" }, { Cookie: playerOneCookies }),
+    ).resolves.toMatchObject({
+        status: "failure",
+        message: "Cannot move s",
+    });
     expect(playerOne.location[0]).toBe(playerOneGeohash); // PlayerOne should not move
 
     // PlayerOne move each (unobstructed)
-    playerOne.location = await crossoverCmdMove(
-        { direction: "e" },
-        { Cookie: playerOneCookies },
-    );
+    playerOne.location = (
+        await crossoverCmdMove({ direction: "e" }, { Cookie: playerOneCookies })
+    ).players?.[0].location!;
     const biome = biomeAtGeohash(geohashNeighbour(playerOneGeohash, "e"));
     expect(biomes[biome].traversableSpeed).toBeGreaterThan(0);
     expect(playerOne.location[0]).toBe(geohashNeighbour(playerOneGeohash, "e"));
 
     // PlayerOne tries to move south (obstructed by tavern)
-    let newLocation = await crossoverCmdMove(
-        { direction: "s" },
-        { Cookie: playerOneCookies },
-    );
-    expect(newLocation[0]).toBe(playerOne.location[0]); // PlayerOne should not move
-    playerOne.location = newLocation;
+    await expect(
+        crossoverCmdMove({ direction: "s" }, { Cookie: playerOneCookies }),
+    ).resolves.toMatchObject({
+        status: "failure",
+        message: "Cannot move s",
+    });
 
     // PlayerOne move south east (unobstructed)
-    newLocation = await crossoverCmdMove(
-        { direction: "se" },
-        { Cookie: playerOneCookies },
-    );
+    var newLocation = (
+        await crossoverCmdMove(
+            { direction: "se" },
+            { Cookie: playerOneCookies },
+        )
+    ).players?.[0].location!;
     expect(newLocation[0]).toBe(geohashNeighbour(playerOne.location[0], "se"));
     playerOne.location = newLocation;
 
     // PlayerOne move west (obstructed by tavern)
-    playerOne.location = await crossoverCmdMove(
-        { direction: "w" },
-        { Cookie: playerOneCookies },
-    );
+    await expect(
+        crossoverCmdMove({ direction: "w" }, { Cookie: playerOneCookies }),
+    ).resolves.toMatchObject({
+        status: "failure",
+        message: "Cannot move w",
+    });
     expect(playerOne.location[0]).toBe(newLocation[0]); // PlayerOne should not move
 });

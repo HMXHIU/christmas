@@ -50,7 +50,10 @@ test("Test Inventory", async () => {
             { item: playerOneWoodenClub.item, slot: "rh" },
             { Cookie: playerOneCookies },
         ),
-    ).rejects.toThrow(`${playerOneWoodenClub.item} is not in inventory`);
+    ).resolves.toMatchObject({
+        message: `${playerOneWoodenClub.item} is not in inventory`,
+        status: "failure",
+    });
 
     /*
      * Test `crossoverCmdTake` and `crossoverPlayerInventory`
@@ -60,13 +63,19 @@ test("Test Inventory", async () => {
     let inventory = await crossoverPlayerInventory({
         Cookie: playerOneCookies,
     });
-    expect(inventory).deep.equal([]);
+    expect(inventory).deep.equal({
+        items: [],
+        status: "success",
+        op: "upsert",
+    });
 
     // Take item
-    playerOneWoodenClub = await crossoverCmdTake(
-        { item: playerOneWoodenClub.item },
-        { Cookie: playerOneCookies },
-    );
+    playerOneWoodenClub = (
+        await crossoverCmdTake(
+            { item: playerOneWoodenClub.item },
+            { Cookie: playerOneCookies },
+        )
+    ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
         location: [playerOne.player],
         locationType: "inv",
@@ -74,23 +83,27 @@ test("Test Inventory", async () => {
 
     // Check inventory
     inventory = await crossoverPlayerInventory({ Cookie: playerOneCookies });
-    expect(inventory).toMatchObject([
-        {
-            item: playerOneWoodenClub.item,
-            location: [playerOne.player],
-            locationType: "inv",
-        },
-    ]);
+    expect(inventory).toMatchObject({
+        items: [
+            {
+                item: playerOneWoodenClub.item,
+            },
+        ],
+        status: "success",
+        op: "upsert",
+    });
 
     /*
      * Test `crossoverCmdDrop`
      */
 
     // Drop item
-    playerOneWoodenClub = await crossoverCmdDrop(
-        { item: playerOneWoodenClub.item },
-        { Cookie: playerOneCookies },
-    );
+    playerOneWoodenClub = (
+        await crossoverCmdDrop(
+            { item: playerOneWoodenClub.item },
+            { Cookie: playerOneCookies },
+        )
+    ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
         location: playerOne.location,
         locationType: "geohash",
@@ -103,10 +116,9 @@ test("Test Inventory", async () => {
      */
 
     // Move player to a different geohash
-    playerOne.location = await crossoverCmdMove(
-        { direction: "s" },
-        { Cookie: playerOneCookies },
-    );
+    playerOne.location = (
+        await crossoverCmdMove({ direction: "s" }, { Cookie: playerOneCookies })
+    ).players?.[0].location!;
     expect(playerOne.location[0]).not.equal(playerOneWoodenClub.location[0]);
 
     // Try take item
@@ -115,20 +127,24 @@ test("Test Inventory", async () => {
             { item: playerOneWoodenClub.item },
             { Cookie: playerOneCookies },
         ),
-    ).rejects.toThrow(`${playerOneWoodenClub.item} is not in range`);
+    ).resolves.toMatchObject({
+        status: "failure",
+        message: `${playerOneWoodenClub.item} is not in range`,
+    });
 
     // Move to item
-    playerOne.location = await crossoverCmdMove(
-        { direction: "n" },
-        { Cookie: playerOneCookies },
-    );
+    playerOne.location = (
+        await crossoverCmdMove({ direction: "n" }, { Cookie: playerOneCookies })
+    ).players?.[0].location!;
     expect(playerOne.location[0]).equal(playerOneWoodenClub.location[0]);
 
     // Take item
-    playerOneWoodenClub = await crossoverCmdTake(
-        { item: playerOneWoodenClub.item },
-        { Cookie: playerOneCookies },
-    );
+    playerOneWoodenClub = (
+        await crossoverCmdTake(
+            { item: playerOneWoodenClub.item },
+            { Cookie: playerOneCookies },
+        )
+    ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
         location: [playerOne.player],
         locationType: "inv",
@@ -144,13 +160,18 @@ test("Test Inventory", async () => {
             { item: playerOneWoodenClub.item, slot: "hd" },
             { Cookie: playerOneCookies },
         ),
-    ).rejects.toThrow(`${playerOneWoodenClub.item} cannot be equipped in hd`);
+    ).resolves.toMatchObject({
+        status: "failure",
+        message: `${playerOneWoodenClub.item} cannot be equipped in hd`,
+    });
 
     // Equip item - rh
-    playerOneWoodenClub = await crossoverCmdEquip(
-        { item: playerOneWoodenClub.item, slot: "rh" },
-        { Cookie: playerOneCookies },
-    );
+    playerOneWoodenClub = (
+        await crossoverCmdEquip(
+            { item: playerOneWoodenClub.item, slot: "rh" },
+            { Cookie: playerOneCookies },
+        )
+    ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
         location: [playerOne.player],
         locationType: "rh",
@@ -158,19 +179,25 @@ test("Test Inventory", async () => {
 
     // Check inventory
     inventory = await crossoverPlayerInventory({ Cookie: playerOneCookies });
-    expect(inventory).toMatchObject([
-        {
-            item: playerOneWoodenClub.item,
-            location: [playerOne.player],
-            locationType: "rh",
-        },
-    ]);
+    expect(inventory).toMatchObject({
+        items: [
+            {
+                item: playerOneWoodenClub.item,
+                location: [playerOne.player],
+                locationType: "rh",
+            },
+        ],
+        status: "success",
+        op: "upsert",
+    });
 
     // Equip item - lh
-    playerOneWoodenClub = await crossoverCmdEquip(
-        { item: playerOneWoodenClub.item, slot: "lh" },
-        { Cookie: playerOneCookies },
-    );
+    playerOneWoodenClub = (
+        await crossoverCmdEquip(
+            { item: playerOneWoodenClub.item, slot: "lh" },
+            { Cookie: playerOneCookies },
+        )
+    ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
         location: [playerOne.player],
         locationType: "lh",
@@ -178,37 +205,48 @@ test("Test Inventory", async () => {
 
     // Check inventory
     inventory = await crossoverPlayerInventory({ Cookie: playerOneCookies });
-    expect(inventory).toMatchObject([
-        {
-            item: playerOneWoodenClub.item,
-            location: [playerOne.player],
-            locationType: "lh",
-        },
-    ]);
+    expect(inventory).toMatchObject({
+        items: [
+            {
+                item: playerOneWoodenClub.item,
+                location: [playerOne.player],
+                locationType: "lh",
+            },
+        ],
+        status: "success",
+        op: "upsert",
+    });
 
     /*
      * Test `crossoverCmdUnequip`
      */
 
     // Unequip item
-    playerOneWoodenClub = await crossoverCmdUnequip(
-        { item: playerOneWoodenClub.item },
-        { Cookie: playerOneCookies },
-    );
+    playerOneWoodenClub = (
+        await crossoverCmdUnequip(
+            { item: playerOneWoodenClub.item },
+            { Cookie: playerOneCookies },
+        )
+    ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
+        item: playerOneWoodenClub.item,
         location: [playerOne.player],
         locationType: "inv",
     });
 
     // Check inventory
     inventory = await crossoverPlayerInventory({ Cookie: playerOneCookies });
-    expect(inventory).toMatchObject([
-        {
-            item: playerOneWoodenClub.item,
-            location: [playerOne.player],
-            locationType: "inv",
-        },
-    ]);
+    expect(inventory).toMatchObject({
+        items: [
+            {
+                item: playerOneWoodenClub.item,
+                location: [playerOne.player],
+                locationType: "inv",
+            },
+        ],
+        status: "success",
+        op: "upsert",
+    });
 
     /*
      * Test unable to equip unequipable item
@@ -221,10 +259,12 @@ test("Test Inventory", async () => {
     });
 
     // Take item
-    potionofhealth = await crossoverCmdTake(
-        { item: potionofhealth.item },
-        { Cookie: playerOneCookies },
-    );
+    potionofhealth = (
+        await crossoverCmdTake(
+            { item: potionofhealth.item },
+            { Cookie: playerOneCookies },
+        )
+    ).items?.[0]!;
     expect(potionofhealth).toMatchObject({
         location: [playerOne.player],
         locationType: "inv",
@@ -236,7 +276,10 @@ test("Test Inventory", async () => {
             { item: potionofhealth.item, slot: "lh" },
             { Cookie: playerOneCookies },
         ),
-    ).rejects.toThrow(`${potionofhealth.item} is not equippable`);
+    ).resolves.toMatchObject({
+        status: "failure",
+        message: `${potionofhealth.item} is not equippable`,
+    });
 
     /*
      * Test unable to take item belonging to another player
@@ -254,5 +297,8 @@ test("Test Inventory", async () => {
             { item: unpickablePotion.item },
             { Cookie: playerOneCookies },
         ),
-    ).rejects.toThrow(`${unpickablePotion.item} is owned by someone else`);
+    ).resolves.toMatchObject({
+        status: "failure",
+        message: `${unpickablePotion.item} is owned by someone else`,
+    });
 });

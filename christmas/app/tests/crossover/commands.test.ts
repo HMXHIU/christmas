@@ -95,22 +95,28 @@ test("Test Player", async () => {
     await expect(
         executeGameCommand(openDoor, { Cookie: playerOneCookies }),
     ).resolves.toMatchObject({
-        item: {
-            item: woodendoor.item,
-            durability: 100,
-            charges: 0,
-            state: "open",
-            variables: {
-                doorSign: "A custom door sign",
+        items: [
+            {
+                item: woodendoor.item,
+                durability: 100,
+                charges: 0,
+                state: "open",
+                variables: {
+                    doorSign: "A custom door sign",
+                },
+                debuffs: [],
+                buffs: [],
             },
-            debuffs: [],
-            buffs: [],
-        },
-        self: {
-            player: playerOne.player,
-        },
+        ],
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
+        monsters: [],
         status: "success",
         message: "",
+        op: "upsert",
     });
 
     const closeDoor: GameCommand = searchPossibleCommands({
@@ -133,22 +139,28 @@ test("Test Player", async () => {
     await expect(
         executeGameCommand(closeDoor, { Cookie: playerOneCookies }),
     ).resolves.toMatchObject({
-        item: {
-            item: woodendoor.item,
-            durability: 100,
-            charges: 0,
-            state: "closed",
-            variables: {
-                doorSign: "A custom door sign",
+        items: [
+            {
+                item: woodendoor.item,
+                durability: 100,
+                charges: 0,
+                state: "closed",
+                variables: {
+                    doorSign: "A custom door sign",
+                },
+                debuffs: [],
+                buffs: [],
             },
-            debuffs: [],
-            buffs: [],
-        },
-        self: {
-            player: playerOne.player,
-        },
+        ],
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
+        monsters: [],
         status: "success",
         message: "",
+        op: "upsert",
     });
 
     /**
@@ -175,17 +187,21 @@ test("Test Player", async () => {
     await expect(
         executeGameCommand(scratchGoblin, { Cookie: playerOneCookies }),
     ).resolves.toMatchObject({
-        self: {
-            player: playerOne.player,
-            st: 9,
-            ap: 9,
-        },
-        target: {
-            monster: goblin.monster,
-            hp: 19,
-        },
+        players: [
+            {
+                player: playerOne.player,
+                st: 9,
+                ap: 9,
+            },
+        ],
+        monsters: [
+            {
+                monster: goblin.monster,
+                hp: 19,
+            },
+        ],
+        op: "upsert",
         status: "success",
-        message: "",
     });
 
     /**
@@ -224,22 +240,29 @@ test("Test Player", async () => {
     await expect(
         executeGameCommand(swingGoblin, { Cookie: playerOneCookies }),
     ).resolves.toMatchObject({
-        item: {
-            item: woodenclub,
-            location: [playerOne.player],
-            locationType: "rh",
-            durability: 99,
-            charges: 0,
-        },
-        self: {
-            player: playerOne.player,
-            st: 9,
-            ap: 9,
-        },
-        target: {
-            monster: goblin.monster,
-            hp: 18,
-        },
+        items: [
+            {
+                item: woodenclub.item,
+                location: [playerOne.player],
+                locationType: "rh",
+                durability: 99,
+                charges: 0,
+            },
+        ],
+        players: [
+            {
+                player: playerOne.player,
+                st: 9,
+                ap: 9,
+            },
+        ],
+        monsters: [
+            {
+                monster: goblin.monster,
+                hp: 18,
+            },
+        ],
+        op: "upsert",
         status: "success",
         message: "",
     });

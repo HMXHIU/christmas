@@ -239,8 +239,9 @@
                 // Load grid
                 grid.set(loadMoreGridBiomes(p.location[0], $grid));
 
-                // Look at surroundings
+                // Look at surroundings & update inventory
                 await onGameCommand([actions.look, { self: p }]);
+                await onGameCommand([actions.inventory, { self: p }]);
             }
             // Stop streaming on logout
             else if (p == null) {
