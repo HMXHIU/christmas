@@ -16,7 +16,8 @@ type Actions =
     | "unequip"
     | "take"
     | "drop"
-    | "create";
+    | "create"
+    | "inventory";
 
 type ActionTargets = EntityType | "none";
 
@@ -94,6 +95,14 @@ const actions: Record<Actions, Action> = {
             tokenPositions: { action: 0 },
         },
     },
+    inventory: {
+        action: "inventory",
+        description: "View inventory.",
+        predicate: {
+            target: ["none"],
+            tokenPositions: { action: 0 },
+        },
+    },
 };
 
 function resolveActionEntities({
@@ -123,15 +132,6 @@ function resolveActionEntities({
         actionTokenPosition != null &&
         (!(action.action in tokenPositions) ||
             !(actionTokenPosition in tokenPositions[action.action]))
-    ) {
-        return null;
-    }
-
-    // Check target token position
-    if (
-        targetTokenPosition != null &&
-        !targetTypes.includes("none") &&
-        !(targetTokenPosition === queryTokens.length)
     ) {
         return null;
     }

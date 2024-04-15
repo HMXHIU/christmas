@@ -44,43 +44,43 @@ test("Test Items", async () => {
      */
 
     // Spawn wooden door at random location
-    const woodenDoorGeohash = generateRandomGeohash(8);
-    let woodenDoor = (await spawnItem({
-        geohash: woodenDoorGeohash,
-        prop: compendium.woodenDoor.prop,
+    const woodendoorGeohash = generateRandomGeohash(8);
+    let woodendoor = (await spawnItem({
+        geohash: woodendoorGeohash,
+        prop: compendium.woodendoor.prop,
         variables: {
-            [compendium.woodenDoor.variables!.doorSign.variable]:
+            [compendium.woodendoor.variables!.doorSign.variable]:
                 "A custom door sign",
         },
     })) as ItemEntity;
-    expect(woodenDoor).toMatchObject({
-        name: compendium.woodenDoor.defaultName,
-        prop: compendium.woodenDoor.prop,
-        location: [woodenDoorGeohash],
+    expect(woodendoor).toMatchObject({
+        name: compendium.woodendoor.defaultName,
+        prop: compendium.woodendoor.prop,
+        location: [woodendoorGeohash],
         locationType: "geohash",
-        durability: compendium.woodenDoor.durability,
-        charges: compendium.woodenDoor.charges,
-        state: compendium.woodenDoor.defaultState,
+        durability: compendium.woodendoor.durability,
+        charges: compendium.woodendoor.charges,
+        state: compendium.woodendoor.defaultState,
         debuffs: [],
         buffs: [],
     });
-    expect(woodenDoor.variables).toMatchObject({
-        [compendium.woodenDoor.variables!.doorSign.variable]:
+    expect(woodendoor.variables).toMatchObject({
+        [compendium.woodendoor.variables!.doorSign.variable]:
             "A custom door sign",
     });
 
     // Test cannot spawn item on collider
     await expect(
         spawnItem({
-            geohash: woodenDoorGeohash,
-            prop: compendium.woodenDoor.prop,
+            geohash: woodendoorGeohash,
+            prop: compendium.woodendoor.prop,
         }),
     ).rejects.toThrowError("Cannot spawn item in location");
 
     /*
      * Test item configuration (via variables)
      */
-    const attributes = itemAttibutes(woodenDoor);
+    const attributes = itemAttibutes(woodendoor);
     expect(attributes).toMatchObject({
         destructible: false,
         description: "A custom door sign. The door is closed.",
@@ -90,10 +90,10 @@ test("Test Items", async () => {
     /*
      * Test `useItem`
      */
-    const woodenDoorProp = compendium[woodenDoor.prop];
+    const woodendoorProp = compendium[woodendoor.prop];
     const { item: openedWoodenDoor } = await useItem({
-        item: woodenDoor,
-        utility: woodenDoorProp.utilities.open.utility,
+        item: woodendoor,
+        utility: woodendoorProp.utilities.open.utility,
         self: playerOne as PlayerEntity,
     });
 
@@ -103,7 +103,7 @@ test("Test Items", async () => {
     });
     const { item: closedWoodenDoor } = await useItem({
         item: openedWoodenDoor,
-        utility: woodenDoorProp.utilities.close.utility,
+        utility: woodendoorProp.utilities.close.utility,
         self: playerOne as PlayerEntity,
     });
     expect(closedWoodenDoor).toMatchObject({
@@ -232,7 +232,7 @@ test("Test Items", async () => {
     // Test owner permissions
     let playerOneWoodenClub = await spawnItem({
         geohash: playerOne.location[0],
-        prop: compendium.woodenClub.prop,
+        prop: compendium.woodenclub.prop,
         owner: playerOne.player,
         configOwner: playerOne.player,
     });
@@ -246,7 +246,7 @@ test("Test Items", async () => {
     // Test cannot use item without equipping
     var { status, message } = await useItem({
         item: playerOneWoodenClub,
-        utility: compendium.woodenClub.utilities.swing.utility,
+        utility: compendium.woodenclub.utilities.swing.utility,
         self: playerOne as PlayerEntity,
         target: playerTwo as PlayerEntity,
     });
@@ -267,7 +267,7 @@ test("Test Items", async () => {
     // Test target out of range
     var { status, message } = await useItem({
         item: playerOneWoodenClub,
-        utility: compendium.woodenClub.utilities.swing.utility,
+        utility: compendium.woodenclub.utilities.swing.utility,
         self: playerOne as PlayerEntity,
         target: playerTwo as PlayerEntity,
     });
@@ -279,7 +279,7 @@ test("Test Items", async () => {
     await expect(
         useItem({
             item: playerOneWoodenClub,
-            utility: compendium.woodenClub.utilities.swing.utility,
+            utility: compendium.woodenclub.utilities.swing.utility,
             self: playerOne as PlayerEntity,
             target: playerTwo as PlayerEntity,
         }),
@@ -306,7 +306,7 @@ test("Test Items", async () => {
     // Test negative permissions
     var { status, message } = await useItem({
         item: playerOneWoodenClub,
-        utility: compendium.woodenClub.utilities.swing.utility,
+        utility: compendium.woodenclub.utilities.swing.utility,
         self: playerTwo as PlayerEntity,
         target: playerOne as PlayerEntity,
     });
@@ -321,7 +321,7 @@ test("Test Items", async () => {
             self: playerOne as PlayerEntity,
             item: playerOneWoodenClub,
             variables: {
-                [compendium.woodenClub.variables.etching.variable]:
+                [compendium.woodenclub.variables.etching.variable]:
                     "An etching",
             },
         })
@@ -337,7 +337,7 @@ test("Test Items", async () => {
         self: playerTwo as PlayerEntity,
         item: playerOneWoodenClub,
         variables: {
-            [compendium.woodenClub.variables.etching.variable]:
+            [compendium.woodenclub.variables.etching.variable]:
                 "playerTwo's etching",
         },
     });
@@ -347,17 +347,17 @@ test("Test Items", async () => {
     );
 
     // Test config public item
-    woodenDoor = (
+    woodendoor = (
         await configureItem({
             self: playerOne as PlayerEntity,
-            item: woodenDoor,
+            item: woodendoor,
             variables: {
-                [compendium.woodenDoor.variables!.doorSign.variable]:
+                [compendium.woodendoor.variables!.doorSign.variable]:
                     "A public door sign",
             },
         })
     ).item;
-    expect(woodenDoor).toMatchObject({
+    expect(woodendoor).toMatchObject({
         variables: { doorSign: "A public door sign" },
     });
 });

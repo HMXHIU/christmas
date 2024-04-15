@@ -32,19 +32,19 @@ test("Test Actions", async () => {
         });
 
     // Wooden Door
-    let woodenDoor = (await spawnItem({
+    let woodendoor = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
-        prop: compendium.woodenDoor.prop,
+        prop: compendium.woodendoor.prop,
         variables: {
-            [compendium.woodenDoor.variables.doorSign.variable]:
+            [compendium.woodendoor.variables.doorSign.variable]:
                 "A custom door sign",
         },
     })) as ItemEntity;
 
     // Wooden club
-    let woodenClub = (await spawnItem({
+    let woodenclub = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
-        prop: compendium.woodenClub.prop,
+        prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
     // Portal
@@ -75,10 +75,10 @@ test("Test Actions", async () => {
         player: playerOne,
         actions: [actions.look, actions.say],
         playerAbilities: [abilities.scratch],
-        playerItems: [woodenClub],
+        playerItems: [woodenclub],
         monsters: [dragon],
         players: [playerTwo],
-        items: [woodenDoor, woodenClub, portal],
+        items: [woodendoor, woodenclub, portal],
     }).commands;
     expect(commands).toMatchObject([
         [
@@ -107,10 +107,10 @@ test("Test Actions", async () => {
         player: playerOne,
         actions: [actions.look, actions.say],
         playerAbilities: [abilities.scratch],
-        playerItems: [woodenClub],
+        playerItems: [woodenclub],
         monsters: [dragon, goblin],
         players: [playerTwo],
-        items: [woodenDoor, woodenClub, portal],
+        items: [woodendoor, woodenclub, portal],
     }).commands;
     expect(commands).toMatchObject([
         [
@@ -136,10 +136,10 @@ test("Test Actions", async () => {
         player: playerOne,
         actions: [actions.look, actions.say],
         playerAbilities: [abilities.scratch],
-        playerItems: [woodenClub],
+        playerItems: [woodenclub],
         monsters: [dragon],
         players: [playerTwo],
-        items: [woodenDoor, woodenClub, portal],
+        items: [woodendoor, woodenclub, portal],
     }).commands;
     expect(commands.length).toBe(0);
     expect(commands).toMatchObject([]);
@@ -153,10 +153,10 @@ test("Test Actions", async () => {
         player: playerOne,
         actions: [actions.look, actions.say],
         playerAbilities: [abilities.scratch],
-        playerItems: [woodenClub],
+        playerItems: [woodenclub],
         monsters: [dragon],
         players: [playerTwo],
-        items: [woodenDoor, woodenClub, portal],
+        items: [woodendoor, woodenclub, portal],
     });
 
     var variables = commandVariables({

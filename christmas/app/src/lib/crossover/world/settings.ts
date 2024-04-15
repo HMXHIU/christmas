@@ -619,8 +619,8 @@ const bestiary: Record<string, Beast> = {
  * `compendium` is a collection of `Prop` templates used  to create `item` instances.
  */
 let compendium: Record<string, Prop> = {
-    woodenClub: {
-        prop: "woodenClub",
+    woodenclub: {
+        prop: "woodenclub",
         defaultName: "Wooden Club",
         asset: {
             bundle: "props",
@@ -669,8 +669,8 @@ let compendium: Record<string, Prop> = {
             },
         },
     },
-    potionOfHealth: {
-        prop: "potionOfHealth",
+    potionofhealth: {
+        prop: "potionofhealth",
         defaultName: "Potion of Health",
         // TODO: Add potion asset
         asset: {
@@ -713,8 +713,8 @@ let compendium: Record<string, Prop> = {
         },
         variables: {},
     },
-    woodenDoor: {
-        prop: "woodenDoor",
+    woodendoor: {
+        prop: "woodendoor",
         defaultName: "Wooden Door",
         asset: {
             bundle: "props",

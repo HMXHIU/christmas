@@ -36,19 +36,19 @@ test("Test Player", async () => {
         });
 
     // Wooden Door
-    let woodenDoor = (await spawnItem({
+    let woodendoor = (await spawnItem({
         geohash: geohashNeighbour(playerOneGeohash, "n"),
-        prop: compendium.woodenDoor.prop,
+        prop: compendium.woodendoor.prop,
         variables: {
-            [compendium.woodenDoor.variables.doorSign.variable]:
+            [compendium.woodendoor.variables.doorSign.variable]:
                 "A custom door sign",
         },
     })) as ItemEntity;
 
     // Wooden club
-    let woodenClub = (await spawnItem({
+    let woodenclub = (await spawnItem({
         geohash: playerOneGeohash,
-        prop: compendium.woodenClub.prop,
+        prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
     // Portal
@@ -84,19 +84,19 @@ test("Test Player", async () => {
             abilities.bandage,
             abilities.swing,
         ],
-        playerItems: [woodenClub],
+        playerItems: [woodenclub],
         actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne],
-        items: [woodenDoor],
+        items: [woodendoor],
     }).commands[0];
 
     await expect(
         executeGameCommand(openDoor, { Cookie: playerOneCookies }),
     ).resolves.toMatchObject({
         item: {
-            item: woodenDoor.item,
+            item: woodendoor.item,
             durability: 100,
             charges: 0,
             state: "open",
@@ -122,19 +122,19 @@ test("Test Player", async () => {
             abilities.bandage,
             abilities.swing,
         ],
-        playerItems: [woodenClub],
+        playerItems: [woodenclub],
         actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne],
-        items: [woodenDoor],
+        items: [woodendoor],
     }).commands[0];
 
     await expect(
         executeGameCommand(closeDoor, { Cookie: playerOneCookies }),
     ).resolves.toMatchObject({
         item: {
-            item: woodenDoor.item,
+            item: woodendoor.item,
             durability: 100,
             charges: 0,
             state: "closed",
@@ -164,12 +164,12 @@ test("Test Player", async () => {
             abilities.bandage,
             abilities.swing,
         ],
-        playerItems: [woodenClub],
+        playerItems: [woodenclub],
         actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne],
-        items: [woodenDoor],
+        items: [woodendoor],
     }).commands[0];
 
     await expect(
@@ -194,14 +194,14 @@ test("Test Player", async () => {
 
     // Take wooden club
     await crossoverCmdTake(
-        { item: woodenClub.item },
+        { item: woodenclub.item },
         { Cookie: playerOneCookies },
     );
 
     // Equip wooden club
     await crossoverCmdEquip(
         {
-            item: woodenClub.item,
+            item: woodenclub.item,
             slot: "rh",
         },
         { Cookie: playerOneCookies },
@@ -213,19 +213,19 @@ test("Test Player", async () => {
         // Player
         player: playerOne,
         playerAbilities: [abilities.scratch, abilities.bandage],
-        playerItems: [woodenClub],
+        playerItems: [woodenclub],
         actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne],
-        items: [woodenDoor],
+        items: [woodendoor],
     }).commands[0];
 
     await expect(
         executeGameCommand(swingGoblin, { Cookie: playerOneCookies }),
     ).resolves.toMatchObject({
         item: {
-            item: woodenClub,
+            item: woodenclub,
             location: [playerOne.player],
             locationType: "rh",
             durability: 99,

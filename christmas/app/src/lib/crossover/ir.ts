@@ -376,7 +376,7 @@ function searchPossibleCommands({
         queryTokens,
         monsters,
         players,
-        items,
+        items: [...playerItems, ...items], // include player items in the search
     });
 
     // All possible utilities from playerItems

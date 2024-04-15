@@ -237,7 +237,11 @@ const crossoverRouter = {
                 player.player,
             ).return.all()) as ItemEntity[];
 
-            return inventoryItems as Item[];
+            return {
+                items: inventoryItems as Item[],
+                status: "success",
+                op: "upsert",
+            } as GameCommandResponse;
         }),
         // player.equip
         equip: authProcedure
@@ -532,8 +536,6 @@ const crossoverRouter = {
                 } as GameCommandResponse;
             }
         }),
-
-        // FIX TILLL HERE
 
         // cmd.performAbility
         performAbility: authProcedure

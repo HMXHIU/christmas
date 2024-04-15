@@ -260,34 +260,34 @@ test("Test Player", async () => {
      * Test crossoverCmdConfigureItem
      */
 
-    // Spawn woodenDoor at playerOne location
-    let woodenDoor = (await spawnItem({
+    // Spawn woodendoor at playerOne location
+    let woodendoor = (await spawnItem({
         geohash: playerOne.location[0],
-        prop: compendium.woodenDoor.prop,
+        prop: compendium.woodendoor.prop,
         variables: {
-            [compendium.woodenDoor.variables.doorSign.variable]:
+            [compendium.woodendoor.variables.doorSign.variable]:
                 "A custom door sign",
         },
     })) as ItemEntity;
-    expect(woodenDoor).toMatchObject({
+    expect(woodendoor).toMatchObject({
         state: "closed",
         variables: { doorSign: "A custom door sign" },
     });
 
-    // Configure woodenDoor
-    woodenDoor = (
+    // Configure woodendoor
+    woodendoor = (
         await crossoverCmdConfigureItem(
             {
-                item: woodenDoor.item,
+                item: woodendoor.item,
                 variables: {
-                    [compendium.woodenDoor.variables.doorSign.variable]:
+                    [compendium.woodendoor.variables.doorSign.variable]:
                         "A new door sign",
                 },
             },
             { Cookie: playerOneCookies },
         )
     ).item;
-    expect(woodenDoor).toMatchObject({
+    expect(woodendoor).toMatchObject({
         state: "closed",
         variables: { doorSign: "A new door sign" },
     });
@@ -296,31 +296,31 @@ test("Test Player", async () => {
      * Test crossoverCmdUseItem
      */
 
-    // Use woodenDoor (open)
+    // Use woodendoor (open)
     var { item, status } = await crossoverCmdUseItem(
         {
-            item: woodenDoor.item,
-            utility: compendium.woodenDoor.utilities.open.utility,
+            item: woodendoor.item,
+            utility: compendium.woodendoor.utilities.open.utility,
         },
         { Cookie: playerOneCookies },
     );
     expect(status).toBe("success");
     expect(item).toMatchObject({
-        item: woodenDoor.item,
+        item: woodendoor.item,
         name: "Wooden Door",
-        prop: "woodenDoor",
-        location: woodenDoor.location,
+        prop: "woodendoor",
+        location: woodendoor.location,
         state: "open",
         variables: { doorSign: "A new door sign" },
     });
-    woodenDoor = item as ItemEntity;
-    expect(itemAttibutes(woodenDoor)).toMatchObject({
+    woodendoor = item as ItemEntity;
+    expect(itemAttibutes(woodendoor)).toMatchObject({
         destructible: false,
         description: "A new door sign. The door is open.",
         variant: "default",
     });
 
-    // Move playerOne south (to spawn portal without colliding with woodenDoor)
+    // Move playerOne south (to spawn portal without colliding with woodendoor)
     playerOne.location = await crossoverCmdMove(
         { direction: "s" },
         { Cookie: playerOneCookies },
@@ -382,22 +382,22 @@ test("Test Player", async () => {
      * Test crossoverCmdCreateItem
      */
 
-    const woodenClub = await crossoverCmdCreateItem(
+    const woodenclub = await crossoverCmdCreateItem(
         {
             geohash: playerOne.location[0],
-            prop: compendium.woodenClub.prop,
+            prop: compendium.woodenclub.prop,
         },
         { Cookie: playerOneCookies },
     );
 
-    expect(woodenClub).toMatchObject({
+    expect(woodenclub).toMatchObject({
         name: "Wooden Club",
-        prop: "woodenClub",
+        prop: "woodenclub",
         location: playerOne.location,
         durability: 100,
         charges: 0,
-        owner: playerOne.player, // playerOne owns the woodenClub
-        configOwner: playerOne.player, // playerOne can configure the woodenClub
+        owner: playerOne.player, // playerOne owns the woodenclub
+        configOwner: playerOne.player, // playerOne can configure the woodenclub
         state: "default",
         variables: {},
         debuffs: [],
@@ -408,13 +408,13 @@ test("Test Player", async () => {
      * Test `useItem` permissions
      */
 
-    // Take & Equip woodenClub
+    // Take & Equip woodenclub
     await crossoverCmdTake(
-        { item: woodenClub.item },
+        { item: woodenclub.item },
         { Cookie: playerOneCookies },
     );
     await crossoverCmdEquip(
-        { item: woodenClub.item, slot: "rh" },
+        { item: woodenclub.item, slot: "rh" },
         { Cookie: playerOneCookies },
     );
 
@@ -429,13 +429,13 @@ test("Test Player", async () => {
         )
     ).self;
 
-    // Use woodenClub (swing)
+    // Use woodenclub (swing)
     let stBefore = playerOne.st;
     let apBefore = playerOne.ap;
     var { status, message, self, target, item } = await crossoverCmdUseItem(
         {
-            item: woodenClub.item,
-            utility: compendium.woodenClub.utilities.swing.utility,
+            item: woodenclub.item,
+            utility: compendium.woodenclub.utilities.swing.utility,
             target: playerTwo.player,
         },
         { Cookie: playerOneCookies },
@@ -452,7 +452,7 @@ test("Test Player", async () => {
         ap: apBefore, // uses item charge not player's resources
     });
     expect(item).toMatchObject({
-        item: woodenClub.item,
+        item: woodenclub.item,
         durability: 99, // -1 durability
         charges: 0,
     });

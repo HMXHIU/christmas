@@ -60,7 +60,7 @@
                     tile.set(newTile);
                 }
 
-                // Update records
+                // Update playerRecord
                 if (players != null) {
                     const pr = players.reduce(
                         (acc, p) => {
@@ -79,6 +79,7 @@
                         }
                     }
                 }
+                // Update monsterRecord
                 if (monsters != null) {
                     const mr = monsters.reduce(
                         (acc, m) => {
@@ -91,6 +92,8 @@
                         op === "replace" ? mr : { ...$monsterRecord, ...mr },
                     );
                 }
+
+                // Update itemRecord
                 if (items != null) {
                     const ir = items.reduce(
                         (acc, i) => {
@@ -102,6 +105,36 @@
                     itemRecord.set(
                         op === "replace" ? ir : { ...$itemRecord, ...ir },
                     );
+                }
+
+                // Perform secondary effects
+                const [action, entities, variables] = command;
+                if ($player != null && "action" in action) {
+                    // Update inventory
+                    if (
+                        [
+                            actions.equip.action,
+                            actions.unequip.action,
+                            actions.take.action,
+                            actions.drop.action,
+                        ].includes(action.action)
+                    ) {
+                        await onGameCommand([
+                            actions.inventory,
+                            { self: $player },
+                        ]);
+                    }
+                    // Look at surroundings
+                    if (
+                        [actions.take.action, actions.drop.action].includes(
+                            action.action,
+                        )
+                    ) {
+                        await onGameCommand([
+                            actions.inventory,
+                            { self: $player },
+                        ]);
+                    }
                 }
             }
         } catch (error: any) {

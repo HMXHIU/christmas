@@ -50,19 +50,19 @@ test("Test Player", async () => {
         });
 
     // Wooden Door
-    let woodenDoor = (await spawnItem({
+    let woodendoor = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
-        prop: compendium.woodenDoor.prop,
+        prop: compendium.woodendoor.prop,
         variables: {
-            [compendium.woodenDoor.variables.doorSign.variable]:
+            [compendium.woodendoor.variables.doorSign.variable]:
                 "A custom door sign",
         },
     })) as ItemEntity;
 
     // Wooden club
-    let woodenClub = (await spawnItem({
+    let woodenclub = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
-        prop: compendium.woodenClub.prop,
+        prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
     // Portal
@@ -87,8 +87,8 @@ test("Test Player", async () => {
 
     // Actions & Abilities
     const itemUtilities: [Item, Utility][] = [
-        woodenClub,
-        woodenDoor,
+        woodenclub,
+        woodendoor,
         portal,
     ].flatMap((item) => {
         return Object.values(compendium[item.prop].utilities).map(
@@ -117,7 +117,7 @@ test("Test Player", async () => {
         queryTokens,
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
-        items: [woodenDoor, woodenClub, portal],
+        items: [woodendoor, woodenclub, portal],
     });
 
     // Retrieve actions and abilities relevant to query
@@ -184,7 +184,7 @@ test("Test Player", async () => {
         queryTokens,
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
-        items: [woodenDoor, woodenClub, portal],
+        items: [woodendoor, woodenclub, portal],
     });
 
     // Retrieve actions and abilities relevant to query
@@ -251,7 +251,7 @@ test("Test Player", async () => {
         queryTokens,
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
-        items: [woodenDoor, woodenClub, portal],
+        items: [woodendoor, woodenclub, portal],
     });
 
     // Retrieve actions and abilities relevant to query
@@ -318,7 +318,7 @@ test("Test Player", async () => {
         queryTokens,
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
-        items: [woodenDoor, woodenClub, portal],
+        items: [woodendoor, woodenclub, portal],
     });
 
     // Retrieve actions and abilities relevant to query
@@ -366,12 +366,12 @@ test("Test Player", async () => {
         // Player
         player: playerOne,
         playerAbilities: [abilities.scratch, abilities.bandage],
-        playerItems: [woodenClub],
+        playerItems: [woodenclub],
         actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
-        items: [woodenDoor],
+        items: [woodendoor],
     }).commands;
     expect(gameCommands).toMatchObject([
         [
@@ -403,12 +403,12 @@ test("Test Player", async () => {
         // Player
         player: playerOne,
         playerAbilities: [abilities.scratch, abilities.bandage],
-        playerItems: [woodenClub],
+        playerItems: [woodenclub],
         actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
-        items: [woodenDoor],
+        items: [woodendoor],
     }).commands;
 
     expect(gameCommands).toMatchObject([
@@ -429,9 +429,9 @@ test("Test Player", async () => {
                     beast: "goblin",
                 },
                 item: {
-                    item: woodenClub.item,
+                    item: woodenclub.item,
                     name: "Wooden Club",
-                    prop: "woodenClub",
+                    prop: "woodenclub",
                 },
             },
         ],
@@ -447,12 +447,12 @@ test("Test Player", async () => {
             abilities.bandage,
             abilities.swing,
         ], // has swing action
-        playerItems: [woodenClub], // has swing utility
+        playerItems: [woodenclub], // has swing utility
         actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
-        items: [woodenDoor],
+        items: [woodendoor],
     }).commands;
     expect(gameCommands).toMatchObject([
         [
@@ -481,7 +481,7 @@ test("Test Player", async () => {
                     monster: goblin.monster,
                 },
                 item: {
-                    item: woodenClub.item,
+                    item: woodenclub.item,
                 },
             },
         ],
@@ -497,12 +497,12 @@ test("Test Player", async () => {
             abilities.bandage,
             abilities.swing,
         ], // has swing action
-        playerItems: [woodenClub], // has swing utility
+        playerItems: [woodenclub], // has swing utility
         actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
-        items: [woodenDoor],
+        items: [woodendoor],
     }).commands;
     expect(gameCommands).toMatchObject([
         [
@@ -523,7 +523,7 @@ test("Test Player", async () => {
                     player: playerOne.player,
                 },
                 item: {
-                    item: woodenDoor.item,
+                    item: woodendoor.item,
                 },
             },
         ],

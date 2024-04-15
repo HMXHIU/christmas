@@ -139,7 +139,7 @@
         alpha: number;
     }) {
         const bundle = await Assets.loadBundle(asset.bundle);
-        const frame = bundle[asset.name].textures[asset.variants!.default];
+        const frame = bundle[asset.name]?.textures[asset.variants!.default];
         if (!frame) return null;
 
         const sprite = new Sprite(frame);

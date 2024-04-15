@@ -26,10 +26,10 @@ test("Test Inventory", async () => {
             name: playerOneName,
         });
 
-    // Spawn woodenClub
+    // Spawn woodenclub
     let playerOneWoodenClub = await spawnItem({
         geohash: playerOne.location[0],
-        prop: compendium.woodenClub.prop,
+        prop: compendium.woodenclub.prop,
         owner: playerOne.player,
         configOwner: playerOne.player,
     });
@@ -215,17 +215,17 @@ test("Test Inventory", async () => {
      */
 
     // Spawn potion of health
-    let potionOfHealth = await spawnItem({
+    let potionofhealth = await spawnItem({
         geohash: playerOne.location[0],
-        prop: compendium.potionOfHealth.prop,
+        prop: compendium.potionofhealth.prop,
     });
 
     // Take item
-    potionOfHealth = await crossoverCmdTake(
-        { item: potionOfHealth.item },
+    potionofhealth = await crossoverCmdTake(
+        { item: potionofhealth.item },
         { Cookie: playerOneCookies },
     );
-    expect(potionOfHealth).toMatchObject({
+    expect(potionofhealth).toMatchObject({
         location: [playerOne.player],
         locationType: "inv",
     });
@@ -233,10 +233,10 @@ test("Test Inventory", async () => {
     // Equip potion of health
     await expect(
         crossoverCmdEquip(
-            { item: potionOfHealth.item, slot: "lh" },
+            { item: potionofhealth.item, slot: "lh" },
             { Cookie: playerOneCookies },
         ),
-    ).rejects.toThrow(`${potionOfHealth.item} is not equippable`);
+    ).rejects.toThrow(`${potionofhealth.item} is not equippable`);
 
     /*
      * Test unable to take item belonging to another player
@@ -244,7 +244,7 @@ test("Test Inventory", async () => {
 
     let unpickablePotion = await spawnItem({
         geohash: playerOne.location[0],
-        prop: compendium.potionOfHealth.prop,
+        prop: compendium.potionofhealth.prop,
         owner: "anotherPlayer",
     });
 

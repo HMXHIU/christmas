@@ -125,23 +125,30 @@ async function performAction(
     },
     headers: HTTPHeaders = {},
 ): Promise<GameCommandResponse | void> {
+    // look
     if (action.action === "look") {
         return await crossoverCmdLook(
             { target: target ? entityId(target) : undefined },
             headers,
         );
-    } else if (action.action === "say" && variables != null) {
+    }
+    // say
+    else if (action.action === "say" && variables != null) {
         return await crossoverCmdSay(
             { message: variables.queryIrrelevant },
             headers,
         );
-    } else if (action.action === "move" && variables != null) {
+    }
+    // move
+    else if (action.action === "move" && variables != null) {
         const direction = variables.queryIrrelevant as Direction;
         if (Directions.includes(direction)) {
             return await crossoverCmdMove({ direction }, headers);
         }
         throw new Error(`Invalid direction ${direction}`);
-    } else if (action.action === "take") {
+    }
+    // take, drop
+    else if (action.action === "take") {
         return await crossoverCmdTake(
             { item: entityId(target as Item) },
             headers,
@@ -151,7 +158,9 @@ async function performAction(
             { item: entityId(target as Item) },
             headers,
         );
-    } else if (action.action === "equip" && variables != null) {
+    }
+    // equip, unequip
+    else if (action.action === "equip" && variables != null) {
         const slot = variables.queryIrrelevant as EquipmentSlot;
         if (EquipmentSlots.includes(slot)) {
             return await crossoverCmdEquip(
@@ -168,10 +177,11 @@ async function performAction(
             { item: entityId(target as Item) },
             headers,
         );
-    } else if (action.action === "create" && variables != null) {
+    }
+    // create
+    else if (action.action === "create" && variables != null) {
         const prop = variables.queryIrrelevant as string;
         const geohash = self.location[0];
-        console.log(Object.keys(compendium), `[${prop}]`);
         if (Object.keys(compendium).includes(prop)) {
             return await crossoverCmdCreateItem(
                 {
@@ -183,6 +193,11 @@ async function performAction(
         }
         throw new Error(`Invalid prop ${prop}`);
     }
+    // inventory
+    else if (action.action === "inventory") {
+        return await crossoverPlayerInventory(headers);
+    }
+
     throw new Error(`Unknown action ${action}`);
 }
 

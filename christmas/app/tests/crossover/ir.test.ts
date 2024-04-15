@@ -36,20 +36,20 @@ test("Test IR", async () => {
             name: playerTwoName,
         });
 
-    // Item - woodenDoor
-    let woodenDoor = (await spawnItem({
+    // Item - woodendoor
+    let woodendoor = (await spawnItem({
         geohash: generateRandomGeohash(8),
-        prop: compendium.woodenDoor.prop,
+        prop: compendium.woodendoor.prop,
         variables: {
-            [compendium.woodenDoor.variables!.doorSign.variable]:
+            [compendium.woodendoor.variables!.doorSign.variable]:
                 "A custom door sign",
         },
     })) as ItemEntity;
 
-    // Item - woodenClub
-    let woodenClub = await spawnItem({
+    // Item - woodenclub
+    let woodenclub = await spawnItem({
         geohash: generateRandomGeohash(8),
-        prop: compendium.woodenClub.prop,
+        prop: compendium.woodenclub.prop,
     });
 
     // Item - portal
@@ -90,7 +90,7 @@ test("Test IR", async () => {
             queryTokens: tokenize("Gandalf"),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
-            items: [woodenDoor, woodenClub],
+            items: [woodendoor, woodenclub],
         }),
     ).to.toMatchObject({
         monsters: [],
@@ -114,7 +114,7 @@ test("Test IR", async () => {
             queryTokens: tokenize("Saruman"),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
-            items: [woodenDoor, woodenClub],
+            items: [woodendoor, woodenclub],
         }),
     ).to.toMatchObject({
         monsters: [],
@@ -140,7 +140,7 @@ test("Test IR", async () => {
             queryTokens: tokenize(playerOne.player),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
-            items: [woodenDoor, woodenClub],
+            items: [woodendoor, woodenclub],
         }),
     ).to.toMatchObject({
         monsters: [],
@@ -163,21 +163,21 @@ test("Test IR", async () => {
     // Search item by name
     expect(
         entitiesIR({
-            queryTokens: tokenize(woodenClub.name),
+            queryTokens: tokenize(woodenclub.name),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
-            items: [woodenDoor, woodenClub],
+            items: [woodendoor, woodenclub],
         }),
     ).to.toMatchObject({
         monsters: [],
         players: [],
         items: [
             {
-                name: woodenClub.name,
+                name: woodenclub.name,
             },
         ],
         tokenPositions: {
-            [woodenClub.item]: {
+            [woodenclub.item]: {
                 "0": {
                     token: "wooden",
                     score: 1,
@@ -193,23 +193,23 @@ test("Test IR", async () => {
     // Search item by item id
     expect(
         entitiesIR({
-            queryTokens: tokenize(woodenDoor.item),
+            queryTokens: tokenize(woodendoor.item),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
-            items: [woodenDoor, woodenClub],
+            items: [woodendoor, woodenclub],
         }),
     ).to.toMatchObject({
         monsters: [],
         players: [],
         items: [
             {
-                item: woodenDoor.item,
+                item: woodendoor.item,
             },
         ],
         tokenPositions: {
-            [woodenDoor.item]: {
+            [woodendoor.item]: {
                 "0": {
-                    token: woodenDoor.item.toLocaleLowerCase(),
+                    token: woodendoor.item.toLocaleLowerCase(),
                     score: 1,
                 },
             },
@@ -222,7 +222,7 @@ test("Test IR", async () => {
             queryTokens: tokenize(dragon.name),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
-            items: [woodenDoor, woodenClub],
+            items: [woodendoor, woodenclub],
         }),
     ).to.toMatchObject({
         monsters: [
@@ -248,7 +248,7 @@ test("Test IR", async () => {
             queryTokens: tokenize(goblin.monster),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
-            items: [woodenDoor, woodenClub],
+            items: [woodendoor, woodenclub],
         }),
     ).to.toMatchObject({
         monsters: [
@@ -276,7 +276,7 @@ test("Test IR", async () => {
             queryTokens: tokenize("Gandaf"), // subtracted one letter
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
-            items: [woodenDoor, woodenClub],
+            items: [woodendoor, woodenclub],
         }),
     ).to.toMatchObject({
         monsters: [],
@@ -301,7 +301,7 @@ test("Test IR", async () => {
             queryTokens: tokenize("Gan"), // subtracted one letter
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
-            items: [woodenDoor, woodenClub],
+            items: [woodendoor, woodenclub],
         }),
     ).to.toMatchObject({
         monsters: [],
@@ -319,7 +319,7 @@ test("Test IR", async () => {
             queryTokens: tokenize("Gandaf attacks gobli"),
             monsters: [dragon, goblin],
             players: [playerOne, playerTwo],
-            items: [woodenDoor, woodenClub],
+            items: [woodendoor, woodenclub],
         }),
     ).to.toMatchObject({
         monsters: [
@@ -354,8 +354,8 @@ test("Test IR", async () => {
      */
 
     const itemUtilities: [Item, Utility][] = [
-        woodenClub,
-        woodenDoor,
+        woodenclub,
+        woodendoor,
         portal,
     ].flatMap((item) => {
         return Object.values(compendium[item.prop].utilities).map(
@@ -379,7 +379,7 @@ test("Test IR", async () => {
         itemUtilities: [
             [
                 {
-                    item: woodenDoor.item,
+                    item: woodendoor.item,
                 },
                 {
                     utility: "open",

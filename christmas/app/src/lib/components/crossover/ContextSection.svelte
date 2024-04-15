@@ -1,8 +1,6 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import * as Card from "$lib/components/ui/card/index.js";
-    import { Input } from "$lib/components/ui/input/index.js";
-    import { Label } from "$lib/components/ui/label/index.js";
     import { ScrollArea } from "$lib/components/ui/scroll-area";
     import * as Tabs from "$lib/components/ui/tabs/index.js";
     import type { Direction } from "$lib/crossover/world";
@@ -25,6 +23,7 @@
         Map,
         Trees,
     } from "lucide-svelte";
+    import Inventory from "./Inventory.svelte";
     import ItemList from "./ItemList.svelte";
     import MonsterList from "./MonsterList.svelte";
     import PlayerList from "./PlayerList.svelte";
@@ -128,28 +127,7 @@
         </Tabs.Content>
         <!-- Inventory -->
         <Tabs.Content value="inventory">
-            <Card.Root>
-                <Card.Header>
-                    <Card.Title>Password</Card.Title>
-                    <Card.Description>
-                        Change your password here. After saving, you'll be
-                        logged out.
-                    </Card.Description>
-                </Card.Header>
-                <Card.Content class="space-y-2">
-                    <div class="space-y-1">
-                        <Label for="current">Current password</Label>
-                        <Input id="current" type="password" />
-                    </div>
-                    <div class="space-y-1">
-                        <Label for="new">New password</Label>
-                        <Input id="new" type="password" />
-                    </div>
-                </Card.Content>
-                <Card.Footer>
-                    <Button>Save password</Button>
-                </Card.Footer>
-            </Card.Root>
+            <Inventory></Inventory>
         </Tabs.Content>
         <!-- Build -->
         <Tabs.Content value="build">

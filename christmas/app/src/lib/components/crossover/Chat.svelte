@@ -59,6 +59,7 @@
                     actions.equip,
                     actions.unequip,
                     actions.create,
+                    actions.inventory,
                 ],
                 monsters: Object.values($monsterRecord),
                 players: Object.values($playerRecord),

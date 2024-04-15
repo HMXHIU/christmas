@@ -109,19 +109,19 @@ test("Test Monster", async () => {
     });
 
     // Test cannot spawn monster on collider
-    const woodenDoorGeohash = generateRandomGeohash(8);
-    let woodenDoor = (await spawnItem({
-        geohash: woodenDoorGeohash,
-        prop: compendium.woodenDoor.prop,
+    const woodendoorGeohash = generateRandomGeohash(8);
+    let woodendoor = (await spawnItem({
+        geohash: woodendoorGeohash,
+        prop: compendium.woodendoor.prop,
     })) as ItemEntity;
     await expect(
         spawnMonster({
-            geohash: woodenDoorGeohash,
+            geohash: woodendoorGeohash,
             beast: "goblin",
             level: 1,
         }),
     ).rejects.toThrow(
-        `Cannot spawn goblin, ${woodenDoorGeohash} is untraversable`,
+        `Cannot spawn goblin, ${woodendoorGeohash} is untraversable`,
     );
 
     /*
