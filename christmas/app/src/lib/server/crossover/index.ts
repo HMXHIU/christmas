@@ -30,6 +30,7 @@ import {
 import { serverAnchorClient } from "$lib/server";
 import { parseZodErrors, sleep } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
+import lodash from "lodash";
 import { z } from "zod";
 import type { UpdateEntitiesEvent } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
@@ -45,6 +46,7 @@ import {
 import {
     type ItemEntity,
     type MonsterEntity,
+    type Player,
     type PlayerEntity,
 } from "./redis/entities";
 import {
@@ -52,6 +54,8 @@ import {
     type PlayerMetadataSchema,
     type UserMetadataSchema,
 } from "./router";
+
+const { uniqBy } = lodash;
 
 export {
     autoCorrectGeohashPrecision,
@@ -534,10 +538,11 @@ async function useItem({
     status: "success" | "failure";
     message: string;
 }> {
+    const playerId = self.player || null; // save the user of the item
+
     // Check if can use item
     const { canUse, message } = canUseItem(self, item, utility);
     if (!canUse) {
-        // TODO: publish to player message
         return {
             item,
             self,
@@ -555,9 +560,23 @@ async function useItem({
     item.state = propUtility.state.start;
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
 
-    // TODO: publish to clients
+    // TODO: move consume item resources here
 
-    // Overwrite target specified in item variables
+    // Publish item state to player (non blocking)
+    // TODO: what about other people in the vincinity?
+    redisClient
+        .publish(
+            (self as PlayerEntity).player,
+            JSON.stringify({
+                event: "entities",
+                players: [],
+                monsters: [],
+                items: [item],
+            } as UpdateEntitiesEvent),
+        )
+        .catch((error) => console.error(error));
+
+    // Overwrite target if specified in item variables
     if (prop.variables.target) {
         target = (await itemVariableValue(item, "target")) as
             | PlayerEntity
@@ -565,14 +584,14 @@ async function useItem({
             | ItemEntity;
     }
 
-    // Overwrite self specified in item variables (can only be `player` or `monster`)
+    // Overwrite self if specified in item variables (can only be `player` or `monster`)
     if (prop.variables.self) {
         self = (await itemVariableValue(item, "self")) as
             | PlayerEntity
             | MonsterEntity;
     }
 
-    // Perform ability
+    // Perform ability (ignore cost when using items)
     if (propAbility && target) {
         const {
             self: modifiedSelf,
@@ -587,9 +606,6 @@ async function useItem({
         });
 
         if (status !== "success") {
-            // Reset item state
-            item.state = propUtility.state.start;
-            item = (await itemRepository.save(item.item, item)) as ItemEntity;
             return {
                 item,
                 self,
@@ -609,7 +625,21 @@ async function useItem({
     item.durability -= propUtility.cost.durability;
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
 
-    // TODO: publish to clients
+    // Publish item state to user (use saved playerId as it might have changed after substitution) (non blocking)
+    // TODO: what about other people in the vincinity?
+    if (playerId != null) {
+        redisClient
+            .publish(
+                playerId as string,
+                JSON.stringify({
+                    event: "entities",
+                    players: [],
+                    monsters: [],
+                    items: [item],
+                } as UpdateEntitiesEvent),
+            )
+            .catch((error) => console.error(error));
+    }
 
     return {
         item,
@@ -866,10 +896,10 @@ async function performAbility({
         self.hp -= hp;
     }
     self = (await saveEntity(self)) as PlayerEntity | MonsterEntity;
-    target = target.player === self.player ? self : target; // target might be self
+    target = target.player === self.player ? self : target; // target might be self, in which case update it after save
 
     // Publish ability costs changes to player (non blocking)
-    if (self.player) {
+    if (self.player && !ignoreCost) {
         redisClient
             .publish(
                 (self as PlayerEntity).player,
@@ -1038,42 +1068,64 @@ async function publishEffectToPlayers({
     entities: (PlayerEntity | MonsterEntity | ItemEntity)[];
     effect: ProcedureEffect;
 }) {
-    const effectedOtherPlayers = entities.filter(
-        (entity) => entity.player && entity.player !== self.player,
+    const effectedPlayers = uniqBy(
+        [self, ...entities].filter((entity) => entity.player),
+        "player",
     );
-    const effectedMonsters = entities.filter((entity) => entity.monster);
-    const effectedItems = entities.filter((entity) => entity.item);
+    const effectedMonsters = uniqBy(
+        entities.filter((entity) => entity.monster),
+        "monster",
+    );
+    const effectedItems = uniqBy(
+        entities.filter((entity) => entity.item),
+        "item",
+    );
+
+    // Publish effects to players
+    for (const p of effectedPlayers) {
+        await redisClient.publish(
+            (p as Player).player,
+            JSON.stringify({
+                event: "entities",
+                players: effectedPlayers,
+                monsters: effectedMonsters,
+                items: effectedItems,
+            } as UpdateEntitiesEvent),
+        );
+    }
 
     // Publish effected entities to self (player)
-    if (self.player) {
-        await redisClient.publish(
-            (self as PlayerEntity).player,
-            JSON.stringify({
-                event: "entities",
-                players: [self, ...effectedOtherPlayers],
-                monsters: effectedMonsters,
-                items: effectedItems,
-            } as UpdateEntitiesEvent),
-        );
-    }
-    // Publish effected entities to other players
-    for (const otherPlayer of effectedOtherPlayers) {
-        // Add back self to effected players when publishing to other players
-        if (self.player) {
-            effectedOtherPlayers.push(self);
-        } else if (self.monster) {
-            effectedMonsters.push(self);
-        }
-        await redisClient.publish(
-            (otherPlayer as PlayerEntity).player,
-            JSON.stringify({
-                event: "entities",
-                players: effectedOtherPlayers,
-                monsters: effectedMonsters,
-                items: effectedItems,
-            } as UpdateEntitiesEvent),
-        );
-    }
+    // if (self.player) {
+    //     await redisClient.publish(
+    //         (self as PlayerEntity).player,
+    //         JSON.stringify({
+    //             event: "entities",
+    //             players: [self, ...effectedOtherPlayers],
+    //             monsters: effectedMonsters,
+    //             items: effectedItems,
+    //         } as UpdateEntitiesEvent),
+    //     );
+    // }
+
+    // // Add back self to effected players/monsters before publishing to other players
+    // if (self.player) {
+    //     effectedOtherPlayers.push(self);
+    // } else if (self.monster) {
+    //     effectedMonsters.push(self);
+    // }
+
+    // // Publish effected entities to other players
+    // for (const otherPlayer of effectedOtherPlayers) {
+    //     await redisClient.publish(
+    //         (otherPlayer as PlayerEntity).player,
+    //         JSON.stringify({
+    //             event: "entities",
+    //             players: effectedOtherPlayers,
+    //             monsters: effectedMonsters,
+    //             items: effectedItems,
+    //         } as UpdateEntitiesEvent),
+    //     );
+    // }
 }
 
 async function isDirectionTraversable(

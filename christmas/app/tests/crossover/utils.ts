@@ -41,7 +41,7 @@ export async function createRandomPlayer({
 export function waitForEventData(
     eventTarget: EventTarget,
     type: string,
-    timeout = 1000, // default timeout 1 second
+    timeout = 500, // default timeout 500 ms
 ): Promise<StreamEvent> {
     return new Promise((resolve, reject) => {
         const timer = setTimeout(() => {

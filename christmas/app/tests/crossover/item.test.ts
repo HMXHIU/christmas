@@ -21,7 +21,7 @@ test("Test Items", async () => {
 
     // Player one
     const playerOneName = "Gandalf";
-    const playerOneGeohash = generateRandomGeohash(8);
+    const playerOneGeohash = generateRandomGeohash(8, "h9");
     let [playerOneWallet, playerOneCookies, playerOne] =
         await createRandomPlayer({
             region,
@@ -31,7 +31,7 @@ test("Test Items", async () => {
 
     // Player two
     const playerTwoName = "Saruman";
-    const playerTwoGeohash = generateRandomGeohash(8);
+    const playerTwoGeohash = generateRandomGeohash(8, "h9");
     let [playerTwoWallet, playerTwoCookies, playerTwo] =
         await createRandomPlayer({
             region,

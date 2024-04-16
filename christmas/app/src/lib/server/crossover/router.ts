@@ -464,7 +464,7 @@ const crossoverRouter = {
                 },
             };
 
-            // Send message to all users in the geohash
+            // Send message to all users in the geohash (non blocking)
             for (const publicKey of users) {
                 redisClient.publish(publicKey, JSON.stringify(messageFeed));
             }
@@ -570,32 +570,6 @@ const crossoverRouter = {
                         }
                     }
                 });
-
-                // const result = await performAbility({
-                //     self: player,
-                //     target: targetEntity,
-                //     ability,
-                // });
-
-                // let players = [result.self as Player];
-                // let monsters = [];
-                // let items = [];
-                // if (result.target?.player) {
-                //     players.push(result.target as Player);
-                // } else if (result.target?.monster) {
-                //     monsters.push(result.target as Monster);
-                // } else if (result.target?.item) {
-                //     items.push(result.target as Item);
-                // }
-
-                // return {
-                //     items,
-                //     players,
-                //     monsters,
-                //     status: result.status,
-                //     message: result.message,
-                //     op: "upsert",
-                // } as GameCommandResponse;
             }),
         // cmd.useItem
         useItem: authProcedure
@@ -611,33 +585,27 @@ const crossoverRouter = {
                 // Get item
                 const itemEntity = (await tryFetchEntity(item)) as ItemEntity;
 
-                // Use Item
-                const result = await useItem({
+                // Use Item (non blocking)
+                useItem({
                     self: player,
                     item: itemEntity,
                     target: target ? await tryFetchEntity(target) : undefined, // get target if provided
                     utility,
+                }).then(async ({ self, status, message }) => {
+                    // Publish feed event on failure
+                    if (status === "failure") {
+                        if (self.player != null) {
+                            await redisClient.publish(
+                                (self as Player).player,
+                                JSON.stringify({
+                                    event: "feed",
+                                    type: "message",
+                                    message,
+                                } as FeedEvent),
+                            );
+                        }
+                    }
                 });
-
-                let items: Item[] = [result.item as Item];
-                let players: Player[] = [result.self as Player];
-                let monsters: Monster[] = [];
-                if (result.target?.player) {
-                    players.push(result.target as Player);
-                } else if (result.target?.monster) {
-                    monsters.push(result.target as Monster);
-                } else if (result.target?.item) {
-                    items.push(result.target as Item);
-                }
-
-                return {
-                    items,
-                    players,
-                    monsters,
-                    status: result.status,
-                    message: result.message,
-                    op: "upsert",
-                } as GameCommandResponse;
             }),
         // cmd.createItem
         createItem: authProcedure
