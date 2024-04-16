@@ -36,7 +36,7 @@ export {
 const connection = new Connection(PUBLIC_RPC_ENDPOINT, "processed");
 
 function substituteVariables(template: string, variables: Record<string, any>) {
-    // Variable access
+    // Variable access eg. {{target.location}}
     if (template.startsWith("{{") && template.endsWith("}}")) {
         const parts = template
             .replace(/{{(.*?)}}/g, "$1")
@@ -51,7 +51,7 @@ function substituteVariables(template: string, variables: Record<string, any>) {
         return value;
     }
 
-    // String substitution
+    // String substitution eg. ${description}
     return template.replace(/\${(.*?)}/g, (match, v) => {
         const parts = v.trim().split(".");
         let value = variables;

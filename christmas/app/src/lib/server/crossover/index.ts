@@ -8,7 +8,7 @@ import type { Direction } from "$lib/crossover/world";
 import {
     canPerformAbility,
     checkInRange,
-    fillInEffectVariables,
+    patchEffectWithVariables,
     type ProcedureEffect,
 } from "$lib/crossover/world/abilities";
 import { monsterStats } from "$lib/crossover/world/bestiary";
@@ -30,7 +30,7 @@ import { serverAnchorClient } from "$lib/server";
 import { parseZodErrors, sleep } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
 import { z } from "zod";
-import type { FeedEvent } from "../../../routes/api/crossover/stream/+server";
+import type { UpdateEntitiesEvent } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import {
     collidersInGeohashQuerySet,
@@ -537,7 +537,6 @@ async function useItem({
     const { canUse, message } = canUseItem(self, item, utility);
     if (!canUse) {
         // TODO: publish to player message
-        console.log(message);
         return {
             item,
             self,
@@ -854,26 +853,40 @@ async function performAbility({
         self.hp -= hp;
     }
     self = (await saveEntity(self)) as PlayerEntity | MonsterEntity;
+    target = target.player === self.player ? self : target; // target might be self
+
+    // Publish ability costs changes to player
+    if (self.player) {
+        await redisClient.publish(
+            (self as PlayerEntity).player,
+            JSON.stringify({
+                event: "entities",
+                players: [self],
+                monsters: [],
+                items: [],
+            } as UpdateEntitiesEvent),
+        );
+    }
 
     // Perform procedures
     for (const [type, effect] of procedures) {
+        // Get effected entity (self or target)
         let entity = effect.target === "self" ? self : target;
 
+        // Action
         if (type === "action") {
-            // Fill in effect variables
-            const actualEffect = fillInEffectVariables({
+            // Patch effect with variables
+            const actualEffect = patchEffectWithVariables({
                 effect,
                 self,
                 target,
             });
 
-            // Perform effect action
-
-            entity = await performEffectAction({
+            // Perform effect action (will block for the duration (ticks) of the effect)
+            entity = await performEffectOnEntity({
                 entity,
                 effect: actualEffect,
             });
-
             await saveEntity(entity);
 
             // Update self or target
@@ -883,14 +896,17 @@ async function performAbility({
                 target = entity as PlayerEntity | MonsterEntity | ItemEntity;
             }
 
-            // Publish effect to player
-            if (entity.player) {
-                await publishEffectToPlayer(
-                    (entity as PlayerEntity).player,
-                    actualEffect,
-                );
+            // Publish effect & effected entities to relevant players
+            if (self.player || entity.player) {
+                await publishEffectToPlayers({
+                    self,
+                    entities: [self, target],
+                    effect: actualEffect,
+                });
             }
-        } else if (type === "check") {
+        }
+        // Check
+        else if (type === "check") {
             if (!performEffectCheck({ entity, effect })) break;
         }
     }
@@ -898,7 +914,7 @@ async function performAbility({
     return { self, target, status: "success", message: "" };
 }
 
-async function performEffectAction({
+async function performEffectOnEntity({
     entity,
     effect,
 }: {
@@ -998,42 +1014,51 @@ function performEffectCheck({
     return false;
 }
 
-async function publishEffectToPlayer(player: string, effect: ProcedureEffect) {
-    const { buffs, debuffs, damage } = effect;
-    let message = "";
+async function publishEffectToPlayers({
+    self,
+    entities,
+    effect,
+}: {
+    self: PlayerEntity | MonsterEntity;
+    entities: (PlayerEntity | MonsterEntity | ItemEntity)[];
+    effect: ProcedureEffect;
+}) {
+    const effectedOtherPlayers = entities.filter(
+        (entity) => entity.player && entity.player !== self.player,
+    );
+    const effectedMonsters = entities.filter((entity) => entity.monster);
+    const effectedItems = entities.filter((entity) => entity.item);
 
-    if (damage && damage.amount > 0) {
-        message = `You took ${damage.amount} damage`;
-    } else if (damage && damage.amount < 0) {
-        message = `You healed for ${-damage.amount}`;
+    // Publish effected entities to self (player)
+    if (self.player) {
+        await redisClient.publish(
+            (self as PlayerEntity).player,
+            JSON.stringify({
+                event: "entities",
+                players: [self, ...effectedOtherPlayers],
+                monsters: effectedMonsters,
+                items: effectedItems,
+            } as UpdateEntitiesEvent),
+        );
     }
-
-    if (debuffs) {
-        const { debuff, op } = debuffs;
-        if (op === "push") {
-            message += `You gained ${debuff}`;
-        } else if (op === "pop") {
-            message += `You lost ${debuff}`;
+    // Publish effected entities to other players
+    for (const otherPlayer of effectedOtherPlayers) {
+        // Add back self to effected players when publishing to other players
+        if (self.player) {
+            effectedOtherPlayers.push(self);
+        } else if (self.monster) {
+            effectedMonsters.push(self);
         }
+        await redisClient.publish(
+            (otherPlayer as PlayerEntity).player,
+            JSON.stringify({
+                event: "entities",
+                players: effectedOtherPlayers,
+                monsters: effectedMonsters,
+                items: effectedItems,
+            } as UpdateEntitiesEvent),
+        );
     }
-
-    if (buffs) {
-        const { buff, op } = buffs;
-        if (op === "push") {
-            message += `You gained ${buff}`;
-        } else if (op === "pop") {
-            message += `You lost ${buff}`;
-        }
-    }
-
-    const messageFeed: FeedEvent = {
-        event: "feed",
-        type: "message",
-        message,
-        variables: {},
-    };
-
-    await redisClient.publish(player, JSON.stringify(messageFeed));
 }
 
 async function isDirectionTraversable(

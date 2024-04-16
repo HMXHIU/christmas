@@ -1,4 +1,4 @@
-import { fillInEffectVariables } from "$lib/crossover/world/abilities";
+import { patchEffectWithVariables } from "$lib/crossover/world/abilities";
 import { abilities } from "$lib/crossover/world/settings";
 import { performAbility } from "$lib/server/crossover";
 import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
@@ -152,9 +152,9 @@ test("Test Abilities", async () => {
         message: "Not enough resources to perform ability",
     });
 
-    // Test fillInEffectVariables
+    // Test patchEffectWithVariables
     const teleportEffect = abilities.teleport.procedures[0][1];
-    const actualEffect = fillInEffectVariables({
+    const actualEffect = patchEffectWithVariables({
         self: playerOne as PlayerEntity,
         target: playerTwo as PlayerEntity,
         effect: teleportEffect,

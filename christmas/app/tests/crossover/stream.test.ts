@@ -1,13 +1,18 @@
 import { crossoverCmdPerformAbility, stream } from "$lib/crossover";
 import { abilities } from "$lib/crossover/world/settings";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { createRandomPlayer, waitForEventData } from "./utils";
+
+vi.mock("$lib/crossover/world", async (module) => {
+    return { ...((await module()) as object), MS_PER_TICK: 10 };
+});
 
 test("Test Stream", async () => {
     // Create players
     const region = "SGP";
     const geohash = "gbsuv7bp";
 
+    // Create players
     const [playerOneWallet, playerOneCookie, playerOne] =
         await createRandomPlayer({
             region,
@@ -42,7 +47,10 @@ test("Test Stream", async () => {
         message: "started",
     });
 
-    // `playerOne` attacks player `playerTwo`
+    /*
+     * `playerOne` scratch `playerTwo`
+     */
+
     setTimeout(async () => {
         await crossoverCmdPerformAbility(
             {
@@ -52,15 +60,47 @@ test("Test Stream", async () => {
             { Cookie: playerOneCookie },
         );
     }, 0);
+
+    // Check `playerOne` received `entities` event updating resources (ap, st)
     await expect(
-        waitForEventData(eventStreamTwo, "feed"),
+        waitForEventData(eventStreamOne, "entities"),
     ).resolves.toMatchObject({
-        type: "message",
-        message: "You took 1 damage",
-        variables: {},
+        event: "entities",
+        players: [
+            {
+                player: playerOne.player,
+                st: 9, // -1
+                ap: 9, // -1
+            },
+        ],
+        monsters: [],
+        items: [],
     });
 
-    // `playerTwo` heals itself
+    // Check `playerTwo` received `entities` event which includes `playerOne`'s updated state
+    await expect(
+        waitForEventData(eventStreamTwo, "entities"),
+    ).resolves.toMatchObject({
+        event: "entities",
+        players: [
+            {
+                player: playerTwo.player,
+                hp: 9, // -1 hp
+            },
+            {
+                player: playerOne.player,
+                st: 9,
+                ap: 9,
+            },
+        ],
+        monsters: [],
+        items: [],
+    });
+
+    /*
+     * `playerTwo` bandage itself
+     */
+
     setTimeout(async () => {
         await crossoverCmdPerformAbility(
             {
@@ -70,11 +110,42 @@ test("Test Stream", async () => {
             { Cookie: playerTwoCookie },
         );
     }, 0);
+
+    // Check `playerTwo` received `entities` event updating resources (ap, st)
     await expect(
-        waitForEventData(eventStreamTwo, "feed"),
+        waitForEventData(eventStreamTwo, "entities"),
     ).resolves.toMatchObject({
-        type: "message",
-        message: "You healed for 5",
-        variables: {},
+        event: "entities",
+        players: [
+            {
+                player: playerTwo.player,
+                hp: 9,
+                st: 9, // -1
+                ap: 8, // -2
+                debuffs: [],
+                buffs: [],
+            },
+        ],
+        monsters: [],
+        items: [],
+    });
+
+    // Check `playerTwo` received `entities` event updating effect
+    await expect(
+        waitForEventData(eventStreamTwo, "entities"),
+    ).resolves.toMatchObject({
+        event: "entities",
+        players: [
+            {
+                player: playerTwo.player,
+                hp: 14, // +5 hp
+                st: 9, // -1
+                ap: 8, // -2
+                debuffs: [],
+                buffs: [],
+            },
+        ],
+        monsters: [],
+        items: [],
     });
 });

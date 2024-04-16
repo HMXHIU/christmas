@@ -17,7 +17,7 @@ const { cloneDeep } = lodash;
 export {
     canPerformAbility,
     checkInRange,
-    fillInEffectVariables,
+    patchEffectWithVariables,
     resolveAbilityEntities,
     type Ability,
     type AbilityType,
@@ -56,13 +56,6 @@ type Debuff =
     | "silenced"
     | "diseased";
 type Buff = "haste" | "regeneration" | "shield" | "invisibility" | "berserk";
-
-/**
- * 1. `gameActionsIR` returns possible actions and abilities based on the query tokens.
- * 2. `entityIR` returns possible entities based on the query tokens.
- * 3. Create the variables - include `self` (the initiator) and entities returned from `entityIR`.
- * 4. Filter the abilities and actions based on predicate and variables.
- */
 
 interface Ability {
     ability: string;
@@ -106,14 +99,14 @@ interface ProcedureEffect {
 }
 
 /**
- * Fills in effect variables in the given `effect` object using the `self` and `target` entities.
+ * Patch the effect using `self` and `target` variables.
  *
  * @param params.effect - The effect object to be modified.
  * @param params.self - The entity representing the source of the effect.
  * @param params.target - The entity representing the target of the effect.
  * @returns  The modified effect object with filled in variables.
  */
-function fillInEffectVariables({
+function patchEffectWithVariables({
     effect,
     self,
     target,
@@ -145,15 +138,13 @@ function fillInEffectVariables({
             self,
             target,
         });
+        // Location requires variable access eg. {{target.location}}
         if (effectClone.states.state === "location") {
-            // Check that value is a location (string[])
             if (!Array.isArray(value)) {
                 throw new Error("Variable is not a location string[]");
             }
-
             effectClone.states.value = value;
         } else {
-            // Check that value is a string else throw error
             if (typeof value !== "string") {
                 throw new Error("Variable is not a string");
             }
