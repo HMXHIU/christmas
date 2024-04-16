@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { MessageFeedUI } from "$lib/components/common/types";
+    import Footer from "$lib/components/crossover/Footer.svelte";
     import GameWindow from "$lib/components/crossover/GameWindow.svelte";
     import Onboard from "$lib/components/crossover/Onboard.svelte";
     import { executeGameCommand, stream } from "$lib/crossover";
@@ -311,3 +312,6 @@
 {:else}
     <GameWindow class="h-full p-3" {onGameCommand} {onMove} {messageFeed} />
 {/if}
+
+<!-- Footer -->
+<Footer />

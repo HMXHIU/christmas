@@ -5,6 +5,7 @@
         type CreateStoreParams,
     } from "$lib/community";
     import CreateStoreDialog from "$lib/components/community/CreateStoreDialog.svelte";
+    import Footer from "$lib/components/community/Footer.svelte";
 
     import StoreSection from "$lib/components/community/StoreSection.svelte";
     import { stores } from "../../store";
@@ -26,3 +27,6 @@
 <div class="flex flex-col">
     <CreateStoreDialog {onCreateStore}></CreateStoreDialog>
 </div>
+
+<!-- Footer -->
+<Footer />
