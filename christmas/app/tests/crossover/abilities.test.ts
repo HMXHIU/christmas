@@ -13,7 +13,7 @@ vi.mock("$lib/crossover/world", async (module) => {
 test("Test Abilities", async () => {
     const region = String.fromCharCode(...getRandomRegion());
 
-    // Player one
+    // Create players
     const playerOneName = "Gandalf";
     const playerOneGeohash = "gbsuv777";
     let [playerOneWallet, playerOneCookies, playerOne] =
@@ -22,8 +22,6 @@ test("Test Abilities", async () => {
             geohash: playerOneGeohash,
             name: playerOneName,
         });
-
-    // Player two
     const playerTwoName = "Saruman";
     const playerTwoGeohash = "gbsuv77e";
     let [playerTwoWallet, playerTwoCookies, playerTwo] =

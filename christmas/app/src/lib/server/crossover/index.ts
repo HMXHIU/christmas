@@ -868,17 +868,19 @@ async function performAbility({
     self = (await saveEntity(self)) as PlayerEntity | MonsterEntity;
     target = target.player === self.player ? self : target; // target might be self
 
-    // Publish ability costs changes to player
+    // Publish ability costs changes to player (non blocking)
     if (self.player) {
-        await redisClient.publish(
-            (self as PlayerEntity).player,
-            JSON.stringify({
-                event: "entities",
-                players: [self],
-                monsters: [],
-                items: [],
-            } as UpdateEntitiesEvent),
-        );
+        redisClient
+            .publish(
+                (self as PlayerEntity).player,
+                JSON.stringify({
+                    event: "entities",
+                    players: [self],
+                    monsters: [],
+                    items: [],
+                } as UpdateEntitiesEvent),
+            )
+            .catch((error) => console.error(error));
     }
 
     // Perform procedures
@@ -909,13 +911,13 @@ async function performAbility({
                 target = entity as PlayerEntity | MonsterEntity | ItemEntity;
             }
 
-            // Publish effect & effected entities to relevant players
+            // Publish effect & effected entities to relevant players (non blocking)
             if (self.player || entity.player) {
-                await publishEffectToPlayers({
+                publishEffectToPlayers({
                     self,
                     entities: [self, target],
                     effect: actualEffect,
-                });
+                }).catch((error) => console.error(error));
             }
         }
         // Check
