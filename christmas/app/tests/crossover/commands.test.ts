@@ -2,6 +2,7 @@ import {
     crossoverCmdEquip,
     crossoverCmdTake,
     executeGameCommand,
+    stream,
 } from "$lib/crossover";
 import { searchPossibleCommands, type GameCommand } from "$lib/crossover/ir";
 import { geohashNeighbour } from "$lib/crossover/utils";
@@ -10,12 +11,16 @@ import { spawnItem, spawnMonster } from "$lib/server/crossover";
 import type { ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
-import { createRandomPlayer, generateRandomGeohash } from "./utils";
+import {
+    createRandomPlayer,
+    generateRandomGeohash,
+    waitForEventData,
+} from "./utils";
 
-test("Test Player", async () => {
+test("Test Commands", async () => {
     const region = String.fromCharCode(...getRandomRegion());
 
-    // Player one
+    // Create Players
     const playerOneName = "Gandalf";
     const playerOneGeohash = generateRandomGeohash(8, "h9");
     let [playerOneWallet, playerOneCookies, playerOne] =
@@ -24,8 +29,6 @@ test("Test Player", async () => {
             geohash: playerOneGeohash,
             name: playerOneName,
         });
-
-    // Player two
     const playerTwoName = "Saruman";
     const playerTwoGeohash = playerOneGeohash;
     let [playerTwoWallet, playerTwoCookies, playerTwo] =
@@ -34,6 +37,26 @@ test("Test Player", async () => {
             geohash: playerOneGeohash,
             name: playerTwoName,
         });
+
+    // Create streams
+    const [eventStreamOne, closeStreamOne] = await stream({
+        Cookie: playerOneCookies,
+    });
+    await expect(
+        waitForEventData(eventStreamOne, "feed"),
+    ).resolves.toMatchObject({
+        type: "system",
+        message: "started",
+    });
+    const [eventStreamTwo, closeStreamTwo] = await stream({
+        Cookie: playerTwoCookies,
+    });
+    await expect(
+        waitForEventData(eventStreamTwo, "feed"),
+    ).resolves.toMatchObject({
+        type: "system",
+        message: "started",
+    });
 
     // Wooden Door
     let woodendoor = (await spawnItem({
@@ -92,31 +115,34 @@ test("Test Player", async () => {
         items: [woodendoor],
     }).commands[0];
 
-    await expect(
-        executeGameCommand(openDoor, { Cookie: playerOneCookies }),
-    ).resolves.toMatchObject({
+    setTimeout(async () => {
+        executeGameCommand(openDoor, { Cookie: playerOneCookies });
+    }, 0);
+
+    var openDoorResult = await waitForEventData(eventStreamOne, "entities");
+    expect(openDoorResult).toMatchObject({
+        event: "entities",
+        players: [],
+        monsters: [],
         items: [
             {
                 item: woodendoor.item,
-                durability: 100,
-                charges: 0,
-                state: "open",
-                variables: {
-                    doorSign: "A custom door sign",
-                },
-                debuffs: [],
-                buffs: [],
+                state: "closed",
             },
         ],
-        players: [
-            {
-                player: playerOne.player,
-            },
-        ],
+    });
+
+    openDoorResult = await waitForEventData(eventStreamOne, "entities");
+    expect(openDoorResult).toMatchObject({
+        event: "entities",
+        players: [],
         monsters: [],
-        status: "success",
-        message: "",
-        op: "upsert",
+        items: [
+            {
+                item: woodendoor.item,
+                state: "open",
+            },
+        ],
     });
 
     const closeDoor: GameCommand = searchPossibleCommands({
@@ -136,31 +162,34 @@ test("Test Player", async () => {
         items: [woodendoor],
     }).commands[0];
 
-    await expect(
-        executeGameCommand(closeDoor, { Cookie: playerOneCookies }),
-    ).resolves.toMatchObject({
+    setTimeout(async () => {
+        executeGameCommand(closeDoor, { Cookie: playerOneCookies });
+    }, 0);
+
+    var closeDoorResult = await waitForEventData(eventStreamOne, "entities");
+    expect(closeDoorResult).toMatchObject({
+        event: "entities",
+        players: [],
+        monsters: [],
         items: [
             {
                 item: woodendoor.item,
-                durability: 100,
-                charges: 0,
-                state: "closed",
-                variables: {
-                    doorSign: "A custom door sign",
-                },
-                debuffs: [],
-                buffs: [],
+                state: "open",
             },
         ],
-        players: [
-            {
-                player: playerOne.player,
-            },
-        ],
+    });
+
+    closeDoorResult = await waitForEventData(eventStreamOne, "entities");
+    expect(closeDoorResult).toMatchObject({
+        event: "entities",
+        players: [],
         monsters: [],
-        status: "success",
-        message: "",
-        op: "upsert",
+        items: [
+            {
+                item: woodendoor.item,
+                state: "closed",
+            },
+        ],
     });
 
     /**
@@ -184,9 +213,13 @@ test("Test Player", async () => {
         items: [woodendoor],
     }).commands[0];
 
-    await expect(
-        executeGameCommand(scratchGoblin, { Cookie: playerOneCookies }),
-    ).resolves.toMatchObject({
+    setTimeout(async () => {
+        executeGameCommand(scratchGoblin, { Cookie: playerOneCookies });
+    }, 0);
+
+    var scratchResult = await waitForEventData(eventStreamOne, "entities");
+    expect(scratchResult).toMatchObject({
+        event: "entities",
         players: [
             {
                 player: playerOne.player,
@@ -194,14 +227,29 @@ test("Test Player", async () => {
                 ap: 9,
             },
         ],
+        monsters: [],
+        items: [],
+    });
+    var scratchResult = await waitForEventData(eventStreamOne, "entities");
+    expect(scratchResult).toMatchObject({
+        event: "entities",
+        players: [
+            {
+                player: playerOne.player,
+                st: 9, // -1
+                ap: 9, // -1
+            },
+        ],
         monsters: [
             {
                 monster: goblin.monster,
-                hp: 19,
+                hp: 19, // -1
+                mp: 20,
+                st: 20,
+                ap: 11,
             },
         ],
-        op: "upsert",
-        status: "success",
+        items: [],
     });
 
     /**
@@ -237,21 +285,33 @@ test("Test Player", async () => {
         items: [woodendoor],
     }).commands[0];
 
-    await expect(
-        executeGameCommand(swingGoblin, { Cookie: playerOneCookies }),
-    ).resolves.toMatchObject({
+    setTimeout(async () => {
+        executeGameCommand(swingGoblin, { Cookie: playerOneCookies });
+    }, 0);
+
+    var swingResult = await waitForEventData(eventStreamOne, "entities");
+    expect(swingResult).toMatchObject({
+        event: "entities",
+        players: [],
+        monsters: [],
         items: [
             {
                 item: woodenclub.item,
-                location: [playerOne.player],
-                locationType: "rh",
-                durability: 99,
+                durability: 100,
                 charges: 0,
+                state: "default",
             },
         ],
+    });
+
+    swingResult = await waitForEventData(eventStreamOne, "entities");
+    expect(swingResult).toMatchObject({
+        event: "entities",
         players: [
             {
                 player: playerOne.player,
+                hp: 10,
+                mp: 10,
                 st: 9,
                 ap: 9,
             },
@@ -259,11 +319,23 @@ test("Test Player", async () => {
         monsters: [
             {
                 monster: goblin.monster,
-                hp: 18,
+                hp: 18, // -1
             },
         ],
-        op: "upsert",
-        status: "success",
-        message: "",
+        items: [],
+    });
+    swingResult = await waitForEventData(eventStreamOne, "entities");
+    expect(swingResult).toMatchObject({
+        event: "entities",
+        players: [],
+        monsters: [],
+        items: [
+            {
+                item: woodenclub.item,
+                durability: 99, // -1
+                charges: 0,
+                state: "default",
+            },
+        ],
     });
 });

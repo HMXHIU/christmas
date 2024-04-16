@@ -84,13 +84,13 @@ test("Test Stream", async () => {
         event: "entities",
         players: [
             {
-                player: playerTwo.player,
-                hp: 9, // -1 hp
-            },
-            {
                 player: playerOne.player,
                 st: 9,
                 ap: 9,
+            },
+            {
+                player: playerTwo.player,
+                hp: 9, // -1 hp
             },
         ],
         monsters: [],
