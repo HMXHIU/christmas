@@ -550,32 +550,52 @@ const crossoverRouter = {
                 // Get target player
                 const targetEntity = await tryFetchEntity(target);
 
-                // Perform ability
-                const result = await performAbility({
+                // Perform ability (non blocking)
+                performAbility({
                     self: player,
                     target: targetEntity,
                     ability,
+                }).then(async ({ self, status, message }) => {
+                    // Publish feed event on failure
+                    if (status === "failure") {
+                        if (self.player != null) {
+                            await redisClient.publish(
+                                (self as Player).player,
+                                JSON.stringify({
+                                    event: "feed",
+                                    type: "message",
+                                    message,
+                                } as FeedEvent),
+                            );
+                        }
+                    }
                 });
 
-                let players = [result.self as Player];
-                let monsters = [];
-                let items = [];
-                if (result.target?.player) {
-                    players.push(result.target as Player);
-                } else if (result.target?.monster) {
-                    monsters.push(result.target as Monster);
-                } else if (result.target?.item) {
-                    items.push(result.target as Item);
-                }
+                // const result = await performAbility({
+                //     self: player,
+                //     target: targetEntity,
+                //     ability,
+                // });
 
-                return {
-                    items,
-                    players,
-                    monsters,
-                    status: result.status,
-                    message: result.message,
-                    op: "upsert",
-                } as GameCommandResponse;
+                // let players = [result.self as Player];
+                // let monsters = [];
+                // let items = [];
+                // if (result.target?.player) {
+                //     players.push(result.target as Player);
+                // } else if (result.target?.monster) {
+                //     monsters.push(result.target as Monster);
+                // } else if (result.target?.item) {
+                //     items.push(result.target as Item);
+                // }
+
+                // return {
+                //     items,
+                //     players,
+                //     monsters,
+                //     status: result.status,
+                //     message: result.message,
+                //     op: "upsert",
+                // } as GameCommandResponse;
             }),
         // cmd.useItem
         useItem: authProcedure

@@ -1,5 +1,5 @@
 import { childrenGeohashes, surroundingGeohashes } from "$lib/crossover/utils";
-import { canPerformAbility } from "$lib/crossover/world/abilities";
+import { hasResourcesForAbility } from "$lib/crossover/world/abilities";
 import {
     monsterLimitAtGeohash,
     monsterStats,
@@ -46,7 +46,7 @@ function selectMonsterAbility(
                 return abilities[b].ap - abilities[a].ap;
             })
             .filter((ability) => {
-                return canPerformAbility(monster, ability);
+                return hasResourcesForAbility(monster, ability);
             });
         if (healingAbilities.length > 0) {
             return healingAbilities[0];
@@ -60,7 +60,7 @@ function selectMonsterAbility(
                 return abilities[b].ap - abilities[a].ap;
             })
             .filter((ability) => {
-                return canPerformAbility(monster, ability);
+                return hasResourcesForAbility(monster, ability);
             });
         if (offensiveAbilities.length > 0) {
             return offensiveAbilities[0];
@@ -74,7 +74,7 @@ function selectMonsterAbility(
                 return abilities[b].ap - abilities[a].ap;
             })
             .filter((ability) => {
-                return canPerformAbility(monster, ability);
+                return hasResourcesForAbility(monster, ability);
             });
         if (defensiveAbilities.length > 0) {
             return defensiveAbilities[0];
@@ -88,7 +88,7 @@ function selectMonsterAbility(
                 return abilities[b].ap - abilities[a].ap;
             })
             .filter((ability) => {
-                return canPerformAbility(monster, ability);
+                return hasResourcesForAbility(monster, ability);
             });
         if (neutralAbilities.length > 0) {
             return neutralAbilities[0];

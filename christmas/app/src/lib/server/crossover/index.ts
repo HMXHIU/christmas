@@ -2,12 +2,13 @@ import {
     calculateLocation,
     childrenGeohashes,
     entityDimensions,
+    entityId,
     geohashNeighbour,
 } from "$lib/crossover/utils";
 import type { Direction } from "$lib/crossover/world";
 import {
-    canPerformAbility,
     checkInRange,
+    hasResourcesForAbility,
     patchEffectWithVariables,
     type ProcedureEffect,
 } from "$lib/crossover/world/abilities";
@@ -804,7 +805,7 @@ async function performAbility({
     status: "success" | "failure";
     message: string;
 }> {
-    const { procedures, ap, mp, st, hp, range } = abilities[ability];
+    const { procedures, ap, mp, st, hp, range, predicate } = abilities[ability];
 
     // Check if player is busy
     if (self.player && (await isEntityBusy((self as PlayerEntity).player))) {
@@ -817,13 +818,25 @@ async function performAbility({
     }
 
     // Check if self has enough resources to perform ability
-    if (!ignoreCost && !canPerformAbility(self, ability)) {
+    if (!ignoreCost && !hasResourcesForAbility(self, ability)) {
         return {
             self,
             target,
             status: "failure",
             message: "Not enough resources to perform ability",
         };
+    }
+
+    // Check predicate
+    if (!predicate.targetSelfAllowed) {
+        if (entityId(self) === entityId(target)) {
+            return {
+                self,
+                target,
+                status: "failure",
+                message: `You can't ${ability} yourself`,
+            };
+        }
     }
 
     // Check if target is in range

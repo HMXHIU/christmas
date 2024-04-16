@@ -15,8 +15,8 @@ import { abilities } from "./settings";
 const { cloneDeep } = lodash;
 
 export {
-    canPerformAbility,
     checkInRange,
+    hasResourcesForAbility,
     patchEffectWithVariables,
     resolveAbilityEntities,
     type Ability,
@@ -155,7 +155,7 @@ function patchEffectWithVariables({
     return effectClone;
 }
 
-function canPerformAbility(
+function hasResourcesForAbility(
     self: PlayerEntity | MonsterEntity,
     ability: string,
 ): boolean {

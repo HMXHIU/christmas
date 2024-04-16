@@ -148,4 +148,26 @@ test("Test Stream", async () => {
         monsters: [],
         items: [],
     });
+
+    /*
+     * Test ability failure
+     */
+
+    setTimeout(async () => {
+        await crossoverCmdPerformAbility(
+            {
+                ability: abilities.scratch.ability,
+                target: playerOne.player,
+            },
+            { Cookie: playerOneCookie },
+        );
+    }, 0);
+
+    await expect(
+        waitForEventData(eventStreamOne, "feed"),
+    ).resolves.toMatchObject({
+        event: "feed",
+        type: "message",
+        message: "You can't scratch yourself",
+    });
 });
