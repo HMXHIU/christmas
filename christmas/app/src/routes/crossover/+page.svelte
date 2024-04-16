@@ -204,12 +204,43 @@
     }
 
     function processUpdateEntities(event: Event) {
-        const { players, monsters, items } = (event as MessageEvent)
+        const { players, items, monsters } = (event as MessageEvent)
             .data as UpdateEntitiesEvent;
 
-        console.log(JSON.stringify(players, null, 2));
-        console.log(JSON.stringify(monsters, null, 2));
-        console.log(JSON.stringify(items, null, 2));
+        // Update playerRecord
+        if (players != null) {
+            for (const p of players) {
+                playerRecord.update((pr) => {
+                    pr[p.player] = p;
+                    return pr;
+                });
+
+                // Update player
+                if (p.player === $player?.player) {
+                    player.set(p);
+                }
+            }
+        }
+
+        // Update itemRecord
+        if (items != null) {
+            for (const i of items) {
+                itemRecord.update((ir) => {
+                    ir[i.item] = i;
+                    return ir;
+                });
+            }
+        }
+
+        // Update monsterRecord
+        if (monsters != null) {
+            for (const m of monsters) {
+                monsterRecord.update((mr) => {
+                    mr[m.monster] = m;
+                    return mr;
+                });
+            }
+        }
     }
 
     async function startStream() {

@@ -560,8 +560,6 @@ async function useItem({
     item.state = propUtility.state.start;
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
 
-    // TODO: move consume item resources here
-
     // Publish item state to player (non blocking)
     // TODO: what about other people in the vincinity?
     redisClient
