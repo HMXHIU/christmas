@@ -9,7 +9,7 @@ import { retry, signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
 import type { HTTPHeaders } from "@trpc/client";
 import { type z } from "zod";
-import { grid, player } from "../../store";
+import { player } from "../../store";
 
 import { refresh } from "$lib/community";
 import type {
@@ -24,7 +24,7 @@ import type {
 import { type Action } from "./actions";
 import type { GameCommand, GameCommandVariables } from "./ir";
 import { entityId } from "./utils";
-import { Directions, updateGrid, type Direction } from "./world";
+import { Directions, type Direction } from "./world";
 import type { Ability } from "./world/abilities";
 import {
     EquipmentSlots,
@@ -392,19 +392,7 @@ async function crossoverCmdLook(
     headers: HTTPHeaders = {},
 ) {
     const { target } = input;
-    const result = await trpc({ headers }).crossover.cmd.look.query({ target });
-
-    // Update `grid` with monsters, props, and players
-    grid.update((g) => {
-        return updateGrid({
-            grid: g,
-            monsters: result.monsters,
-            players: result.players,
-            items: result.items,
-        });
-    });
-
-    return result;
+    return await trpc({ headers }).crossover.cmd.look.query({ target });
 }
 
 function crossoverCmdMove(

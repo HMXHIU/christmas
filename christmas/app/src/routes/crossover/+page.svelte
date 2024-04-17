@@ -9,6 +9,7 @@
     import {
         geohashToGridCell,
         loadMoreGridBiomes,
+        updateGrid,
         type Direction,
     } from "$lib/crossover/world";
     import { tileAtGeohash } from "$lib/crossover/world/biomes";
@@ -111,7 +112,7 @@
                 // Perform secondary effects
                 const [action, entities, variables] = command;
                 if ($player != null && "action" in action) {
-                    // Update inventory
+                    // Update inventory on equip, unequip, take, drop
                     if (
                         [
                             actions.equip.action,
@@ -125,16 +126,26 @@
                             { self: $player },
                         ]);
                     }
-                    // Look at surroundings
+                    // Look at surroundings on take, drop, create
                     if (
-                        [actions.take.action, actions.drop.action].includes(
-                            action.action,
-                        )
+                        [
+                            actions.take.action,
+                            actions.drop.action,
+                            actions.create.action,
+                        ].includes(action.action)
                     ) {
-                        await onGameCommand([
-                            actions.inventory,
-                            { self: $player },
-                        ]);
+                        await onGameCommand([actions.look, { self: $player }]);
+                    }
+                    // Recreate `grid` on look
+                    if (action.action === actions.look.action) {
+                        grid.update((g) => {
+                            return updateGrid({
+                                grid: g,
+                                monsters,
+                                players,
+                                items,
+                            });
+                        });
                     }
                 }
             }
@@ -275,11 +286,13 @@
                 await onGameCommand([actions.look, { self: p }]);
                 await onGameCommand([actions.inventory, { self: p }]);
             }
+
             // Stop streaming on logout
             else if (p == null) {
                 stopStream();
             }
 
+            // Player updated
             if (p != null) {
                 const geohash = p.location[0];
 

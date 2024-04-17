@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { geohashToGridCell } from "$lib/crossover/world";
+    import { geohashToGridCell, type Grid } from "$lib/crossover/world";
     import { playerAsset } from "$lib/crossover/world/player";
     import {
         bestiary,
@@ -39,12 +39,11 @@
     const CELL_HEIGHT = WORLD_HEIGHT / GRID_ROWS;
     const CELL_WIDTH = WORLD_WIDTH / GRID_COLS;
 
-    let prevTile: z.infer<typeof TileSchema> | null = null;
-
-    let container: HTMLDivElement;
-
     const app = new Application();
     const world = new Container();
+
+    let container: HTMLDivElement;
+    let prevTile: z.infer<typeof TileSchema> | null = null;
 
     interface GridSprite {
         id: string;
@@ -62,7 +61,7 @@
         Record<number, Record<string, GridSprite>>
     > = {};
 
-    $: updateWorld($tile);
+    $: updateWorld($tile, $grid);
 
     function setGridSprite(row: number, col: number, gridSprite: GridSprite) {
         gridSprites[row] ??= {};
@@ -152,21 +151,24 @@
         return sprite;
     }
 
-    async function fillInGrid({
-        cell,
-        colStart,
-        colEnd,
-        rowStart,
-        rowEnd,
-        alpha,
-    }: {
-        cell: { precision: number; row: number; col: number };
-        colStart?: number;
-        colEnd?: number;
-        rowStart?: number;
-        rowEnd?: number;
-        alpha?: number;
-    }) {
+    async function fillInGrid(
+        g: Grid,
+        {
+            cell,
+            colStart,
+            colEnd,
+            rowStart,
+            rowEnd,
+            alpha,
+        }: {
+            cell: { precision: number; row: number; col: number };
+            colStart?: number;
+            colEnd?: number;
+            rowStart?: number;
+            rowEnd?: number;
+            alpha?: number;
+        },
+    ) {
         rowStart ??= 0;
         rowEnd ??= GRID_ROWS;
         colStart ??= 0;
@@ -180,8 +182,7 @@
                 const gridCol = cell.col - GRID_MID_COL + col;
 
                 // Fill in biome
-                const biome =
-                    $grid?.[cell.precision]?.[gridRow]?.[gridCol]?.biome;
+                const biome = g[cell.precision]?.[gridRow]?.[gridCol]?.biome;
                 if (biome) {
                     const asset = biomes[biome].asset;
                     if (asset) {
@@ -204,7 +205,7 @@
 
                 // Fill in players
                 const players =
-                    $grid?.[cell.precision]?.[gridRow]?.[gridCol]?.players;
+                    g[cell.precision]?.[gridRow]?.[gridCol]?.players;
                 if (players) {
                     for (const p of Object.values(players)) {
                         // Skip the current player
@@ -230,9 +231,7 @@
                 }
 
                 // Fill in items (TODO: account for items with > 1 cell)
-                const items =
-                    $grid?.[cell.precision]?.[gridRow]?.[gridCol]?.items;
-
+                const items = g[cell.precision]?.[gridRow]?.[gridCol]?.items;
                 if (items) {
                     for (const item of Object.values(items)) {
                         const asset = compendium[item.prop]?.asset;
@@ -257,7 +256,7 @@
 
                 // Fill in monsters (TODO: account for items with > 1 cell)
                 const monsters =
-                    $grid?.[cell.precision]?.[gridRow]?.[gridCol]?.monsters;
+                    g[cell.precision]?.[gridRow]?.[gridCol]?.monsters;
                 if (monsters) {
                     for (const monster of Object.values(monsters)) {
                         const asset = bestiary[monster.beast]?.asset;
@@ -283,9 +282,9 @@
         }
     }
 
-    async function updateWorld(tile: z.infer<typeof TileSchema>) {
+    async function updateWorld(t: z.infer<typeof TileSchema>, g: Grid) {
         if (prevTile != null) {
-            const cell = geohashToGridCell(tile.geohash);
+            const cell = geohashToGridCell(t.geohash);
             const prevCell = geohashToGridCell(prevTile.geohash);
 
             if (cell.precision === prevCell.precision) {
@@ -313,7 +312,7 @@
 
                 // Update columns
                 if (deltaCol !== 0) {
-                    await fillInGrid({
+                    await fillInGrid(g, {
                         cell: prevCell,
                         colStart,
                         colEnd,
@@ -324,9 +323,9 @@
                     });
                 }
 
-                // Update columns
+                // Update rows
                 if (deltaRow !== 0) {
-                    await fillInGrid({
+                    await fillInGrid(g, {
                         cell: prevCell,
                         rowStart,
                         rowEnd,
@@ -339,7 +338,7 @@
 
                 // Update diagonals
                 if (deltaCol !== 0 && deltaRow !== 0) {
-                    await fillInGrid({
+                    await fillInGrid(g, {
                         cell: prevCell,
                         rowStart,
                         rowEnd,
@@ -351,6 +350,16 @@
                         rowLessThan: cell.row - GRID_MID_ROW,
                         colGreaterThan: cell.col + GRID_MID_COL,
                         colLessThan: cell.col - GRID_MID_COL,
+                    });
+                }
+
+                // Update grid (due to change in grid entities)
+                if (deltaCol === 0 && deltaRow === 0) {
+                    destroySprites({});
+                    await fillInGrid(g, {
+                        cell,
+                        colStart: 0,
+                        colEnd: GRID_COLS,
                     });
                 }
 
@@ -368,7 +377,7 @@
             }
         }
 
-        prevTile = { ...tile }; // copy, do not set by reference
+        prevTile = { ...t }; // copy, do not set by reference
     }
 
     onMount(async () => {
@@ -382,7 +391,7 @@
         app.stage.addChild(world);
 
         await drawPlayer();
-        await fillInGrid({
+        await fillInGrid($grid, {
             cell: geohashToGridCell($tile.geohash),
             colStart: 0,
             colEnd: GRID_COLS,
