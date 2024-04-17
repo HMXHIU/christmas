@@ -131,14 +131,17 @@
         col,
         row,
         alpha,
+        variant,
     }: {
         asset: any;
         col: number;
         row: number;
         alpha: number;
+        variant?: string;
     }) {
         const bundle = await Assets.loadBundle(asset.bundle);
-        const frame = bundle[asset.name]?.textures[asset.variants!.default];
+        const frame =
+            bundle[asset.name]?.textures[variant ?? asset.variants!.default];
         if (!frame) return null;
 
         const sprite = new Sprite(frame);
@@ -241,6 +244,7 @@
                                 col,
                                 row,
                                 alpha,
+                                variant: asset.variants?.[item.state],
                             });
                             if (sprite) {
                                 setGridSprite(gridRow, gridCol, {

@@ -720,8 +720,8 @@ let compendium: Record<string, Prop> = {
             bundle: "props",
             name: "gothic",
             variants: {
-                default: "wood-door-1",
-                closed: "wood-door-2",
+                default: "wood-door-2", // open
+                closed: "wood-door-1",
             },
             width: 1,
             height: 1,

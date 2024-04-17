@@ -254,6 +254,17 @@
                 });
             }
         }
+
+        // Update grid
+        grid.update((g) => {
+            return updateGrid({
+                grid: g,
+                monsters,
+                players,
+                items,
+                upsert: true, // Don't replace
+            });
+        });
     }
 
     async function startStream() {
