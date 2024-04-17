@@ -41,6 +41,7 @@
     async function onGameCommand(command: GameCommand) {
         try {
             const result = await executeGameCommand(command);
+
             if (result) {
                 const {
                     players,

@@ -49,9 +49,21 @@
 
         if (target) {
             let id = entityId(target).replace(REGEX_STRIP_ENTITY_TYPE, "");
-            id = id.length > 10 ? id.slice(0, 10) + "..." : id;
+            id = id.length > 13 ? id.slice(0, 13) + "..." : id;
             return `${target.name} (${id})`;
         }
+        return "";
+    }
+
+    function itemName(gc: GameCommand): string {
+        const [action, { item }] = gc;
+
+        if (item) {
+            let id = entityId(item).replace(REGEX_STRIP_ENTITY_TYPE, "");
+            id = id.length > 13 ? id.slice(0, 13) + "..." : id;
+            return `${item.name} (${id})`;
+        }
+
         return "";
     }
 
@@ -70,7 +82,7 @@
     function commandInfo(gc: GameCommand): string {
         const [action, entities, variables] = gc;
         if ("utility" in action) {
-            return `durability: ${action.cost.durability} charges: ${action.cost.charges}`;
+            return `dur: ${action.cost.durability} cha: ${action.cost.charges}`;
         } else if ("ability" in action) {
             return `ap: ${action.ap} st: ${action.st} mp: ${action.mp} hp: ${action.hp}`;
         } else if ("action" in action) {
@@ -116,7 +128,7 @@
                                             <Wrench class="mr-3 h-4 w-4" />
                                         {/if}
                                         <span>{commandName(gc)}</span>
-                                        {#each [targetName(gc), commandInfo(gc)] as s}
+                                        {#each [itemName(gc), targetName(gc), commandInfo(gc)] as s}
                                             {#if s}
                                                 <ChevronRight class="w-4 h-4"
                                                 ></ChevronRight>
