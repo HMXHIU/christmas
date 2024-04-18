@@ -813,6 +813,34 @@ let compendium: Record<string, Prop> = {
             },
         },
     },
+    debris: {
+        prop: "debris",
+        defaultName: "Debris",
+        asset: {
+            bundle: "props",
+            name: "gothic",
+            variants: {
+                default: "debris-9",
+            },
+            width: 2,
+            height: 2,
+            precision: worldSeed.spatial.unit.precision,
+        },
+        defaultState: "default",
+        durability: 100,
+        charges: 0,
+        weight: -1, // cannot be taken
+        collider: true,
+        states: {
+            default: {
+                destructible: false,
+                description: "Impassable debris",
+                variant: "default",
+            },
+        },
+        utilities: {},
+        variables: {},
+    },
     portal: {
         prop: "portal",
         defaultName: "Portal",

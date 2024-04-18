@@ -618,20 +618,26 @@ const crossoverRouter = {
                     ctx.user.publicKey,
                 )) as PlayerEntity;
 
-                // Create item
-                const item = (await spawnItem({
-                    geohash,
-                    prop,
-                    variables,
-                    owner: player.player, // owner is player
-                    configOwner: player.player,
-                })) as Item;
-
-                return {
-                    items: [item],
-                    status: "success",
-                    op: "upsert",
-                } as GameCommandResponse;
+                try {
+                    // Create item
+                    const item = (await spawnItem({
+                        geohash,
+                        prop,
+                        variables,
+                        owner: player.player, // owner is player
+                        configOwner: player.player,
+                    })) as Item;
+                    return {
+                        items: [item],
+                        status: "success",
+                        op: "upsert",
+                    } as GameCommandResponse;
+                } catch (error: any) {
+                    return {
+                        status: "failure",
+                        message: error.message,
+                    } as GameCommandResponse;
+                }
             }),
         // cmd.configureItem
         configureItem: authProcedure
@@ -650,13 +656,19 @@ const crossoverRouter = {
                     item: (await tryFetchEntity(item)) as ItemEntity,
                     variables,
                 });
-
-                return {
-                    items: [result.item as Item],
-                    op: "upsert",
-                    status: result.status,
-                    message: result.message,
-                } as GameCommandResponse;
+                if (result.status === "success") {
+                    return {
+                        items: [result.item as Item],
+                        op: "upsert",
+                        status: result.status,
+                        message: result.message,
+                    } as GameCommandResponse;
+                } else {
+                    return {
+                        status: result.status,
+                        message: result.message,
+                    } as GameCommandResponse;
+                }
             }),
     }),
     // Authentication

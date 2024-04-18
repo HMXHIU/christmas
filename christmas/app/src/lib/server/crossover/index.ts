@@ -410,8 +410,14 @@ async function spawnItem({
 
     // Check location for traversability
     for (const loc of location) {
+        // Has colliders
         if ((await collidersInGeohashQuerySet(loc).return.count()) > 0) {
-            throw new Error(`Cannot spawn item in location`);
+            throw new Error(`Cannot spawn item at location ${loc}`);
+        }
+        // Biome is not traversable
+        const biome = biomeAtGeohash(loc);
+        if (biomes[biome].traversableSpeed <= 0) {
+            throw new Error(`Cannot spawn item at ${biome}`);
         }
     }
 
@@ -459,8 +465,6 @@ async function configureItem({
     // Check if can configure item
     const { canConfigure, message } = canConfigureItem(self, item);
     if (!canConfigure) {
-        // TODO: publish to player message
-        console.log(message);
         return {
             item,
             status: "failure",

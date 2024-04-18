@@ -196,12 +196,10 @@ async function performAction(
     // configure
     else if (action.action === "configure" && variables != null) {
         const [key, val] = variables.queryIrrelevant.split(":");
-        const res = await crossoverCmdConfigureItem(
+        return await crossoverCmdConfigureItem(
             { item: entityId(target as Item), variables: { [key]: val } },
             headers,
         );
-
-        return res;
     }
     // inventory
     else if (action.action === "inventory") {

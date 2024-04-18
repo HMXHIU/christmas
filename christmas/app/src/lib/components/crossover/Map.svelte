@@ -239,14 +239,13 @@
                     }
                 }
 
-                // Fill in items (TODO: account for items with > 1 cell)
+                // Fill in items
                 const items = g[cell.precision]?.[gridRow]?.[gridCol]?.items;
                 if (items) {
                     for (const item of Object.values(items)) {
                         const asset = compendium[item.prop]?.asset;
                         if (asset) {
                             const { variants, width, height } = asset;
-
                             const sprite = await loadSprite({
                                 asset,
                                 col,
@@ -257,6 +256,7 @@
                                 height,
                             });
                             if (sprite) {
+                                sprite.zIndex = 1; // items are above the biome
                                 setGridSprite(gridRow, gridCol, {
                                     id: item.item,
                                     sprite: world.addChild(sprite),
@@ -268,18 +268,21 @@
                     }
                 }
 
-                // Fill in monsters (TODO: account for items with > 1 cell)
+                // Fill in monsters
                 const monsters =
                     g[cell.precision]?.[gridRow]?.[gridCol]?.monsters;
                 if (monsters) {
                     for (const monster of Object.values(monsters)) {
                         const asset = bestiary[monster.beast]?.asset;
                         if (asset) {
+                            const { width, height } = asset;
                             const sprite = await loadSprite({
                                 asset,
                                 col,
                                 row,
                                 alpha,
+                                width,
+                                height,
                             });
                             if (sprite) {
                                 setGridSprite(gridRow, gridCol, {
