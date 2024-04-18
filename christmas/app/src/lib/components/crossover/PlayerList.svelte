@@ -8,7 +8,7 @@
     {/if}
     <div class="flex gap-2 text-sm text-muted-foreground">
         {#each Object.entries($playerRecord) as [playerId, player] (playerId)}
-            <p>{player.name}</p>
+            <p>{player.name} ({player.player})</p>
         {/each}
     </div>
 {/if}

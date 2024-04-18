@@ -204,7 +204,6 @@ const crossoverRouter = {
 
                 // Get `player` or `monster` enity
                 let fetchedEntity = await tryFetchEntity(entity);
-
                 if (!fetchedEntity.player && !fetchedEntity.monster) {
                     throw new TRPCError({
                         code: "BAD_REQUEST",

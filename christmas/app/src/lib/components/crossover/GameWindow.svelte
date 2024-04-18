@@ -1,5 +1,4 @@
 <script lang="ts">
-    import type { MessageFeedUI } from "$lib/components/common/types";
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Collapsible from "$lib/components/ui/collapsible/index.js";
     import type { GameCommand } from "$lib/crossover/ir";
@@ -13,7 +12,6 @@
     import ContextSection from "./ContextSection.svelte";
     import Map from "./Map.svelte";
 
-    export let messageFeed: MessageFeedUI[] = [];
     export let onMove: (direction: Direction) => void;
     export let onGameCommand: (command: GameCommand) => Promise<void>;
 
@@ -26,7 +24,7 @@
 
 <div class={cn("w-full flex flex-col", $$restProps.class)}>
     <!-- Chat -->
-    <Chat {messageFeed} {onGameCommand} class="h-3/5"></Chat>
+    <Chat {onGameCommand} class="h-3/5"></Chat>
     <!-- Context Section -->
     <ContextSection {tile} {onMove} class="h-2/5 pt-2"></ContextSection>
     <!-- Map -->

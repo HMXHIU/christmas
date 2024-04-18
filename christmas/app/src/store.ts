@@ -1,4 +1,5 @@
 import type { Account, Coupon, Store } from "$lib/anchorClient/types";
+import type { MessageFeed } from "$lib/crossover";
 import { abyssTile, type Grid } from "$lib/crossover/world";
 import type {
     CouponMetadataSchema,
@@ -44,3 +45,4 @@ export let playerRecord = writable<Record<string, Player>>({});
 export let itemRecord = writable<Record<string, Item>>({});
 export let monsterRecord = writable<Record<string, Monster>>({});
 export let tile = writable<z.infer<typeof TileSchema>>(abyssTile);
+export let messageFeed = writable<MessageFeed[]>([]);

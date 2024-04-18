@@ -2,9 +2,9 @@ import { requireLogin } from "$lib/server";
 import { connectedUsers } from "$lib/server/crossover";
 import { redisSubscribeClient } from "$lib/server/crossover/redis";
 import type {
-    ItemEntity,
-    MonsterEntity,
-    PlayerEntity,
+    Item,
+    Monster,
+    Player,
 } from "$lib/server/crossover/redis/entities";
 import type { RequestHandler } from "./$types";
 
@@ -19,9 +19,9 @@ export interface FeedEvent {
 
 export interface UpdateEntitiesEvent {
     event: "entities";
-    players?: PlayerEntity[];
-    monsters?: MonsterEntity[];
-    items?: ItemEntity[];
+    players?: Player[];
+    monsters?: Monster[];
+    items?: Item[];
 }
 
 function sendStreamEvent(

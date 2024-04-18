@@ -19,12 +19,10 @@
         playerRecord,
     } from "../../../store";
     import ChatWindow from "../common/ChatWindow.svelte";
-    import type { MessageFeedUI } from "../common/types";
     import AutocompleteGC from "./AutocompleteGC.svelte";
     import ChatInput from "./ChatInput.svelte";
 
     export let target: Player | Monster | Item | null = null;
-    export let messageFeed: MessageFeedUI[] = [];
     export let onGameCommand: (command: GameCommand) => Promise<void>;
 
     let commands: GameCommand[] = [];
@@ -64,7 +62,7 @@
 
 <section class={cn("flex flex-col", $$restProps.class)}>
     <!-- Chat Window -->
-    <ChatWindow {messageFeed}></ChatWindow>
+    <ChatWindow></ChatWindow>
 
     <!-- Select Commands -->
     <AutocompleteGC class="pb-2" {commands} {onGameCommand} bind:command

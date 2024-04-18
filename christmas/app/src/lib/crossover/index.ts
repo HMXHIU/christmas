@@ -5,11 +5,19 @@ import type {
     TileSchema,
 } from "$lib/server/crossover/router";
 import { trpc } from "$lib/trpcClient";
-import { retry, signAndSendTransaction } from "$lib/utils";
+import { getCurrentTimestamp, retry, signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
 import type { HTTPHeaders } from "@trpc/client";
 import { type z } from "zod";
-import { player } from "../../store";
+import {
+    grid,
+    itemRecord,
+    messageFeed,
+    monsterRecord,
+    player,
+    playerRecord,
+    tile,
+} from "../../store";
 
 import { refresh } from "$lib/community";
 import type {
@@ -17,14 +25,15 @@ import type {
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
+import { get } from "svelte/store";
 import type {
     FeedEvent,
     StreamEvent,
 } from "../../routes/api/crossover/stream/+server";
-import { type Action } from "./actions";
+import { actions, type Action } from "./actions";
 import type { GameCommand, GameCommandVariables } from "./ir";
 import { entityId } from "./utils";
-import { Directions, type Direction } from "./world";
+import { Directions, updateGrid, type Direction } from "./world";
 import type { Ability } from "./world/abilities";
 import {
     EquipmentSlots,
@@ -35,6 +44,7 @@ import {
 import { compendium } from "./world/settings";
 
 export {
+    addMessageFeed,
     crossoverAuthPlayer,
     crossoverCmdConfigureItem,
     crossoverCmdCreateItem,
@@ -49,11 +59,14 @@ export {
     crossoverCmdUseItem,
     crossoverPlayerInventory,
     executeGameCommand,
+    handleGC,
+    handleUpdateEntities,
     login,
     logout,
     signup,
     stream,
     type GameCommandResponse,
+    type MessageFeed,
 };
 
 interface GameCommandResponse {
@@ -64,6 +77,208 @@ interface GameCommandResponse {
     monsters?: Monster[];
     items?: Item[];
     tile?: z.infer<typeof TileSchema>;
+}
+
+interface MessageFeed {
+    id: number;
+    name: string;
+    timestamp: string;
+    message: string;
+}
+
+async function handleGC(command: GameCommand) {
+    try {
+        const gcResponse = await executeGameCommand(command);
+        if (gcResponse != null) {
+            await processGCResponse(command, gcResponse);
+        }
+    } catch (error: any) {
+        addMessageFeed({ message: error.message, name: "Error" });
+    }
+}
+
+function handleUpdateEntities({
+    players,
+    items,
+    monsters,
+}: {
+    players?: Player[];
+    items?: Item[];
+    monsters?: Monster[];
+}) {
+    const self = get(player);
+
+    // Update playerRecord
+    if (players != null) {
+        for (const p of players) {
+            playerRecord.update((pr) => {
+                pr[p.player] = p;
+                return pr;
+            });
+
+            // Update player
+            if (p.player === self?.player) {
+                player.set(p);
+            }
+        }
+    }
+
+    // Update itemRecord
+    if (items != null) {
+        for (const i of items) {
+            itemRecord.update((ir) => {
+                ir[i.item] = i;
+                return ir;
+            });
+        }
+    }
+
+    // Update monsterRecord
+    if (monsters != null) {
+        for (const m of monsters) {
+            monsterRecord.update((mr) => {
+                mr[m.monster] = m;
+                return mr;
+            });
+        }
+    }
+
+    // Update grid
+    grid.update((g) => {
+        return updateGrid({
+            grid: g,
+            monsters,
+            players,
+            items,
+            upsert: true, // Don't replace
+        });
+    });
+}
+
+async function processGCResponse(
+    command: GameCommand,
+    response: GameCommandResponse,
+) {
+    const {
+        players,
+        monsters,
+        items,
+        tile: _tile,
+        op,
+        status,
+        message,
+    } = response;
+
+    const self = get(player);
+
+    // Update message feed
+    if (status === "failure" && message != null) {
+        addMessageFeed({ message, name: "Error" });
+    }
+
+    // Update tile
+    if (_tile != null) {
+        tile.set(_tile);
+    }
+
+    // Update playerRecord
+    if (players != null) {
+        const pr = players.reduce(
+            (acc, p) => {
+                acc[p.player] = p;
+                return acc;
+            },
+            {} as Record<string, Player>,
+        );
+        playerRecord.update((record) =>
+            op === "replace" ? pr : { ...record, ...pr },
+        );
+
+        // Update player
+        for (const p of players) {
+            if (p.player === self?.player) {
+                player.set(p);
+            }
+        }
+    }
+    // Update monsterRecord
+    if (monsters != null) {
+        const mr = monsters.reduce(
+            (acc, m) => {
+                acc[m.monster] = m;
+                return acc;
+            },
+            {} as Record<string, Monster>,
+        );
+        monsterRecord.update((record) =>
+            op === "replace" ? mr : { ...record, ...mr },
+        );
+    }
+
+    // Update itemRecord
+    if (items != null) {
+        const ir = items.reduce(
+            (acc, i) => {
+                acc[i.item] = i;
+                return acc;
+            },
+            {} as Record<string, Item>,
+        );
+        itemRecord.update((record) =>
+            op === "replace" ? ir : { ...record, ...ir },
+        );
+    }
+
+    // Perform secondary effects
+    const [action, entities, variables] = command;
+    if (self?.player != null && "action" in action) {
+        // Update inventory on equip, unequip, take, drop
+        if (
+            [
+                actions.equip.action,
+                actions.unequip.action,
+                actions.take.action,
+                actions.drop.action,
+            ].includes(action.action)
+        ) {
+            await handleGC([actions.inventory, { self }]);
+        }
+        // Look at surroundings on take, drop, create
+        if (
+            [
+                actions.take.action,
+                actions.drop.action,
+                actions.create.action,
+            ].includes(action.action)
+        ) {
+            await handleGC([actions.look, { self }]);
+        }
+        // Recreate `grid` on look
+        if (action.action === actions.look.action) {
+            grid.update((g) => {
+                return updateGrid({
+                    grid: g,
+                    monsters,
+                    players,
+                    items,
+                });
+            });
+        }
+    }
+}
+
+function addMessageFeed({ message, name }: { message: string; name: string }) {
+    messageFeed.update((ms) => {
+        return [
+            ...ms,
+            {
+                id: ms.length,
+                timestamp: getCurrentTimestamp(),
+                message,
+                name,
+            },
+        ];
+    });
 }
 
 async function executeGameCommand(

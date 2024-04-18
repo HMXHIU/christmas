@@ -19,6 +19,7 @@ export {
     connection,
     extractQueryParams,
     generateURL,
+    getCurrentTimestamp,
     getErrorMessage,
     imageDataUrlToFile,
     imageUrlToDataURL,
@@ -78,6 +79,15 @@ function stringToBase58(str: string) {
 function stringToUint8Array(input: string): Uint8Array {
     const encoder = new TextEncoder();
     return encoder.encode(input);
+}
+
+function getCurrentTimestamp(): string {
+    const timestamp = new Date().toLocaleString("en-US", {
+        hour: "numeric",
+        minute: "numeric",
+        hour12: true,
+    });
+    return timestamp; // somehow need to store it in a variable (directly returning is undefined)
 }
 
 function calculateDistance(

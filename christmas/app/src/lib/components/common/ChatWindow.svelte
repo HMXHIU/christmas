@@ -1,27 +1,26 @@
 <script lang="ts">
+    import type { MessageFeed } from "$lib/crossover";
     import { cn } from "$lib/shadcn";
     import { onMount } from "svelte";
-    import type { MessageFeedUI } from "./types";
+    import { messageFeed } from "../../../store";
 
     let chatWindow: HTMLElement;
 
-    export let messageFeed: MessageFeedUI[] = [];
+    $: onNewMessages($messageFeed);
 
     function scrollChatBottom(behavior?: ScrollBehavior): void {
         chatWindow?.scrollTo({ top: chatWindow.scrollHeight, behavior });
     }
 
-    onMount(() => {
-        scrollChatBottom();
-    });
-
-    function onNewMessages(messages: MessageFeedUI[]): void {
+    function onNewMessages(messages: MessageFeed[]): void {
         setTimeout(() => {
             scrollChatBottom("smooth");
         }, 0);
     }
 
-    $: onNewMessages(messageFeed);
+    onMount(() => {
+        scrollChatBottom();
+    });
 </script>
 
 <section
@@ -31,7 +30,7 @@
         $$restProps.class,
     )}
 >
-    {#each messageFeed as message}
+    {#each $messageFeed as message}
         <div class="flex flex-row text-left">
             <div class="flex flex-col w-16 shrink-0">
                 <p class="italic text-sm">{message.name}</p>
