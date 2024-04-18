@@ -137,6 +137,7 @@ function handleUpdateEntities({
     if (monsters != null) {
         for (const m of monsters) {
             monsterRecord.update((mr) => {
+                displayEntityEffects(mr[m.monster], m);
                 mr[m.monster] = m;
                 return mr;
             });
@@ -153,6 +154,26 @@ function handleUpdateEntities({
             upsert: true, // Don't replace
         });
     });
+}
+
+function displayEntityEffects<T extends Player | Monster | Item>(
+    oldEntity: T,
+    newEntity: T,
+) {
+    if ("monster" in oldEntity) {
+        // Handle monster entity
+        const deltaHp = oldEntity.hp - (newEntity as Monster).hp;
+        if (deltaHp > 0) {
+            addMessageFeed({
+                message: `${oldEntity.monster} lost ${deltaHp} HP`,
+                name: "",
+            });
+        }
+    } else if ("player" in oldEntity) {
+        // Handle player entity
+    } else if ("item" in oldEntity) {
+        // Handle item entity
+    }
 }
 
 async function processGCResponse(
