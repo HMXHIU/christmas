@@ -63,7 +63,7 @@ test("Test Commands", async () => {
         geohash: geohashNeighbour(playerOneGeohash, "n"),
         prop: compendium.woodendoor.prop,
         variables: {
-            [compendium.woodendoor.variables.doorSign.variable]:
+            [compendium.woodendoor.variables.doorsign.variable]:
                 "A custom door sign",
         },
     })) as ItemEntity;

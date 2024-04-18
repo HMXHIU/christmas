@@ -36,8 +36,8 @@ interface AssetMetadata {
     name: string;
     animations?: Record<string, string>; // create an animation pointing to an in the sprite.json
     variants?: Record<string, string>; // create a variant pointing to a frame in the sprite.json
-    width: number; // number of horizontal cells at the geohash precision
-    height: number; // number of vertical cells at the geohash precision
+    width: number; // number of horizontal cells at the geohash precision (origin is always top left)
+    height: number; // number of vertical cells at the geohash precision (origin is always top left)
     precision: number; // geohash precision
 }
 

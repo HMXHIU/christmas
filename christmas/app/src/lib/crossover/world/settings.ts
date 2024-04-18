@@ -735,12 +735,12 @@ let compendium: Record<string, Prop> = {
         states: {
             open: {
                 destructible: false,
-                description: "${doorSign}. The door is open.",
+                description: "${doorsign}. The door is open.",
                 variant: "default",
             },
             closed: {
                 destructible: false,
-                description: "${doorSign}. The door is closed.",
+                description: "${doorsign}. The door is closed.",
                 variant: "closed",
             },
         },
@@ -771,8 +771,8 @@ let compendium: Record<string, Prop> = {
             },
         },
         variables: {
-            doorSign: {
-                variable: "doorSign",
+            doorsign: {
+                variable: "doorsign",
                 type: "string",
                 value: "Just a plain wooden door",
             },

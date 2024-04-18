@@ -6,7 +6,7 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import type { GameActionEntities, TokenPositions } from "./ir";
 
-export { actions, resolveActionEntities, type Action };
+export { actions, playerActions, resolveActionEntities, type Action };
 
 type Actions =
     | "look"
@@ -17,6 +17,7 @@ type Actions =
     | "take"
     | "drop"
     | "create"
+    | "configure"
     | "inventory";
 
 type ActionTargets = EntityType | "none";
@@ -93,6 +94,14 @@ const actions: Record<Actions, Action> = {
         predicate: {
             target: ["none"],
             tokenPositions: { action: 0 },
+        },
+    },
+    configure: {
+        action: "configure",
+        description: "Configure an item.",
+        predicate: {
+            target: ["item"],
+            tokenPositions: { action: 0, target: 1 },
         },
     },
     inventory: {
@@ -185,3 +194,16 @@ function resolveActionEntities({
 
     return null;
 }
+
+const playerActions = [
+    actions.say,
+    actions.look,
+    actions.move,
+    actions.take,
+    actions.drop,
+    actions.equip,
+    actions.unequip,
+    actions.create,
+    actions.configure,
+    actions.inventory,
+];

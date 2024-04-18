@@ -314,13 +314,13 @@ test("Test Player", async () => {
         geohash: playerOne.location[0],
         prop: compendium.woodendoor.prop,
         variables: {
-            [compendium.woodendoor.variables.doorSign.variable]:
+            [compendium.woodendoor.variables.doorsign.variable]:
                 "A custom door sign",
         },
     })) as ItemEntity;
     expect(woodendoor).toMatchObject({
         state: "closed",
-        variables: { doorSign: "A custom door sign" },
+        variables: { doorsign: "A custom door sign" },
     });
 
     // Configure woodendoor
@@ -329,7 +329,7 @@ test("Test Player", async () => {
             {
                 item: woodendoor.item,
                 variables: {
-                    [compendium.woodendoor.variables.doorSign.variable]:
+                    [compendium.woodendoor.variables.doorsign.variable]:
                         "A new door sign",
                 },
             },
@@ -338,7 +338,7 @@ test("Test Player", async () => {
     ).items?.[0]!;
     expect(woodendoor).toMatchObject({
         state: "closed",
-        variables: { doorSign: "A new door sign" },
+        variables: { doorsign: "A new door sign" },
     });
 
     /*

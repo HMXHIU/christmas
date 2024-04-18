@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { actions } from "$lib/crossover/actions";
+    import { playerActions } from "$lib/crossover/actions";
     import {
         searchPossibleCommands,
         type GameCommand,
@@ -20,8 +20,8 @@
     } from "../../../store";
     import ChatWindow from "../common/ChatWindow.svelte";
     import type { MessageFeedUI } from "../common/types";
+    import AutocompleteGC from "./AutocompleteGC.svelte";
     import ChatInput from "./ChatInput.svelte";
-    import CommandAutocomplete from "./CommandAutocomplete.svelte";
 
     export let target: Player | Monster | Item | null = null;
     export let messageFeed: MessageFeedUI[] = [];
@@ -50,17 +50,7 @@
                 query: message,
                 playerAbilities,
                 playerItems: [], // TODO: replace with actual player's Items
-                actions: [
-                    actions.say,
-                    actions.look,
-                    actions.move,
-                    actions.take,
-                    actions.drop,
-                    actions.equip,
-                    actions.unequip,
-                    actions.create,
-                    actions.inventory,
-                ],
+                actions: playerActions,
                 monsters: Object.values($monsterRecord),
                 players: Object.values($playerRecord),
                 items: Object.values($itemRecord),
@@ -77,8 +67,8 @@
     <ChatWindow {messageFeed}></ChatWindow>
 
     <!-- Select Commands -->
-    <CommandAutocomplete class="pb-2" {commands} {onGameCommand} bind:command
-    ></CommandAutocomplete>
+    <AutocompleteGC class="pb-2" {commands} {onGameCommand} bind:command
+    ></AutocompleteGC>
 
     <!-- Chat Input -->
     <ChatInput bind:target {onEnter} {onPartial}></ChatInput>

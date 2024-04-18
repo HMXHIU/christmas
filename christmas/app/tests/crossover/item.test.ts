@@ -49,7 +49,7 @@ test("Test Items", async () => {
         geohash: woodendoorGeohash,
         prop: compendium.woodendoor.prop,
         variables: {
-            [compendium.woodendoor.variables!.doorSign.variable]:
+            [compendium.woodendoor.variables!.doorsign.variable]:
                 "A custom door sign",
         },
     })) as ItemEntity;
@@ -65,7 +65,7 @@ test("Test Items", async () => {
         buffs: [],
     });
     expect(woodendoor.variables).toMatchObject({
-        [compendium.woodendoor.variables!.doorSign.variable]:
+        [compendium.woodendoor.variables!.doorsign.variable]:
             "A custom door sign",
     });
 
@@ -359,12 +359,12 @@ test("Test Items", async () => {
             self: playerOne as PlayerEntity,
             item: woodendoor,
             variables: {
-                [compendium.woodendoor.variables!.doorSign.variable]:
+                [compendium.woodendoor.variables!.doorsign.variable]:
                     "A public door sign",
             },
         })
     ).item;
     expect(woodendoor).toMatchObject({
-        variables: { doorSign: "A public door sign" },
+        variables: { doorsign: "A public door sign" },
     });
 });

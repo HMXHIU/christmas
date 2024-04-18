@@ -132,13 +132,20 @@
         row,
         alpha,
         variant,
+        width,
+        height,
     }: {
         asset: any;
         col: number;
         row: number;
         alpha: number;
         variant?: string;
+        width?: number;
+        height?: number;
     }) {
+        width ??= 1;
+        height ??= 1;
+
         const bundle = await Assets.loadBundle(asset.bundle);
         const frame =
             bundle[asset.name]?.textures[variant ?? asset.variants!.default];
@@ -147,8 +154,8 @@
         const sprite = new Sprite(frame);
         sprite.x = col * CELL_WIDTH;
         sprite.y = row * CELL_HEIGHT;
-        sprite.width = CELL_WIDTH;
-        sprite.height = CELL_HEIGHT;
+        sprite.width = CELL_WIDTH * width;
+        sprite.height = CELL_HEIGHT * height;
         sprite.alpha = alpha;
 
         return sprite;
@@ -215,7 +222,6 @@
                         if (p.player === $player?.player) {
                             continue;
                         }
-
                         const sprite = await loadSprite({
                             asset: playerAsset,
                             col,
@@ -239,12 +245,16 @@
                     for (const item of Object.values(items)) {
                         const asset = compendium[item.prop]?.asset;
                         if (asset) {
+                            const { variants, width, height } = asset;
+
                             const sprite = await loadSprite({
                                 asset,
                                 col,
                                 row,
                                 alpha,
-                                variant: asset.variants?.[item.state],
+                                variant: variants?.[item.state],
+                                width,
+                                height,
                             });
                             if (sprite) {
                                 setGridSprite(gridRow, gridCol, {

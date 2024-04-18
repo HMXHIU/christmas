@@ -41,7 +41,7 @@ test("Test IR", async () => {
         geohash: generateRandomGeohash(8),
         prop: compendium.woodendoor.prop,
         variables: {
-            [compendium.woodendoor.variables!.doorSign.variable]:
+            [compendium.woodendoor.variables!.doorsign.variable]:
                 "A custom door sign",
         },
     })) as ItemEntity;
