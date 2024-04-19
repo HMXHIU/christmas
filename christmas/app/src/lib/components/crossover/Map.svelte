@@ -25,7 +25,7 @@
     const CANVAS_MID_ROW = Math.floor(CANVAS_ROWS / 2);
     const CANVAS_MID_COL = Math.floor(CANVAS_COLS / 2);
 
-    const OVERDRAW_MULTIPLE = 1;
+    const OVERDRAW_MULTIPLE = 2;
     const WORLD_WIDTH = CANVAS_WIDTH * OVERDRAW_MULTIPLE;
     const WORLD_HEIGHT = CANVAS_HEIGHT * OVERDRAW_MULTIPLE;
     const WORLD_PIVOT_X = (WORLD_WIDTH - CANVAS_WIDTH) / 2;
@@ -168,8 +168,8 @@
 
         // Convert cartesian to isometric
         const [isoX, isoY] = cartToIso(
-            CANVAS_MID_COL * CELL_WIDTH,
-            CANVAS_MID_ROW * CELL_HEIGHT,
+            GRID_MID_COL * CELL_WIDTH,
+            GRID_MID_ROW * CELL_HEIGHT,
         );
 
         playerSprite.x = isoX;
@@ -451,21 +451,25 @@
         // Add world container
         worldStage.width = WORLD_WIDTH;
         worldStage.height = WORLD_HEIGHT;
+        const [wpIsoX, wpIsoY] = cartToIso(WORLD_PIVOT_X, WORLD_PIVOT_Y);
+
         worldStage.pivot.x =
-            WORLD_PIVOT_X +
+            wpIsoX +
             Math.floor(CELL_WIDTH / 2) -
-            Math.floor((CANVAS_COLS * CELL_WIDTH) / 2);
-        worldStage.pivot.y = WORLD_PIVOT_Y;
+            Math.floor((GRID_COLS * CELL_WIDTH) / 2) +
+            (WORLD_PIVOT_X - wpIsoX);
+        worldStage.pivot.y = wpIsoY / 2 - CELL_WIDTH / 2;
         app.stage.addChild(worldStage);
 
         // Add player container
         playerStage.width = WORLD_WIDTH;
         playerStage.height = WORLD_HEIGHT;
         playerStage.pivot.x =
-            WORLD_PIVOT_X +
+            wpIsoX +
             Math.floor(CELL_WIDTH / 2) -
-            Math.floor((CANVAS_COLS * CELL_WIDTH) / 2);
-        playerStage.pivot.y = WORLD_PIVOT_Y;
+            Math.floor((GRID_COLS * CELL_WIDTH) / 2) +
+            (WORLD_PIVOT_X - wpIsoX);
+        playerStage.pivot.y = wpIsoY / 2 - CELL_WIDTH / 2;
         app.stage.addChild(playerStage);
 
         await drawPlayer();
