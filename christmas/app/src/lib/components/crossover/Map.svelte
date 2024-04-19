@@ -39,8 +39,6 @@
     const CELL_HEIGHT = WORLD_HEIGHT / GRID_ROWS;
     const CELL_WIDTH = WORLD_WIDTH / GRID_COLS;
 
-    const TILE_WIDTH = 18;
-
     const app = new Application();
     const worldStage = new Container();
     const playerStage = new Container();
@@ -70,29 +68,6 @@
         gridSprites[row] ??= {};
         gridSprites[row][col] ??= {};
         gridSprites[row][col][gridSprite.id] = gridSprite;
-    }
-
-    async function drawPlayer() {
-        // TODO: use playerAsset
-        const { player: playerBundle } = await Assets.loadBundle("player");
-        const playerSprite = new AnimatedSprite(
-            playerBundle.animations["stand"],
-        );
-
-        // Convert cartesian to isometric
-        const [isoX, isoY] = cartToIso(
-            CANVAS_MID_COL * CELL_WIDTH,
-            CANVAS_MID_ROW * CELL_HEIGHT,
-        );
-
-        playerSprite.x = isoX; // CANVAS_MID_COL * CELL_WIDTH;
-        playerSprite.y = isoY; // CANVAS_MID_ROW * CELL_HEIGHT;
-        playerSprite.width = CELL_WIDTH;
-        playerSprite.height = CELL_HEIGHT;
-        playerSprite.animationSpeed = 0.1;
-        playerSprite.play();
-        // Add player (not in the world container - directly to stage, thus different coordinate system)
-        playerStage.addChild(playerSprite);
     }
 
     function destroySprites({
@@ -138,28 +113,13 @@
 
     /**
      * Rotate clockwise by 45 degrees, scale vertically by 0.5
+     *
      * [x, y] * [ 0.5  0.25 ]
      *          [ -0.5 0.25 ]
      */
     function cartToIso(x: number, y: number) {
         return [x * 0.5 + y * -0.5, x * 0.25 + y * 0.25];
     }
-
-    // function isoToIndex(x, y) {
-    //     var b = as * at;
-
-    //     var s = x - ox;
-    //     var t = y - oy;
-
-    //     var j = (((t - (s * ar) / ai) / (1 + ar * ar)) * ai) / b;
-    //     var i = (s + j * b * ar) / b;
-
-    //     i = Math.floor(i);
-    //     j = Math.floor(j);
-
-    //     // console.log( 'isoToIndex: ' + x,y,i,j)
-    //     return [i, j];
-    // }
 
     async function loadSprite({
         asset,
@@ -190,14 +150,36 @@
 
         // Convert cartesian to isometric
         const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
-
-        sprite.x = isoX; // col * CELL_WIDTH;
-        sprite.y = isoY; // row * CELL_HEIGHT;
+        sprite.x = isoX;
+        sprite.y = isoY;
         sprite.width = CELL_WIDTH * width; // TODO: also need to convert to ISO
         sprite.height = CELL_HEIGHT * height;
         sprite.alpha = alpha;
 
         return sprite;
+    }
+
+    async function drawPlayer() {
+        // TODO: use playerAsset
+        const { player: playerBundle } = await Assets.loadBundle("player");
+        const playerSprite = new AnimatedSprite(
+            playerBundle.animations["stand"],
+        );
+
+        // Convert cartesian to isometric
+        const [isoX, isoY] = cartToIso(
+            CANVAS_MID_COL * CELL_WIDTH,
+            CANVAS_MID_ROW * CELL_HEIGHT,
+        );
+
+        playerSprite.x = isoX;
+        playerSprite.y = isoY - CELL_HEIGHT / 2; // TODO: WHY - CELL_HEIGHT / 2?
+        playerSprite.width = CELL_WIDTH;
+        playerSprite.height = CELL_HEIGHT;
+        playerSprite.animationSpeed = 0.1;
+        playerSprite.play();
+        // Add player (not in the world container - directly to stage, thus different coordinate system)
+        playerStage.addChild(playerSprite);
     }
 
     async function fillInGrid(
@@ -230,6 +212,16 @@
             for (let col: number = colStart; col < colEnd; col++) {
                 const gridCol = cell.col - GRID_MID_COL + col;
 
+                // Destroy existing sprites in this grid cell
+                if (gridSprites?.[gridRow]?.[gridCol] != null) {
+                    for (const [id, gs] of Object.entries(
+                        gridSprites[gridRow][gridCol],
+                    )) {
+                        gs.sprite.destroy();
+                        delete gridSprites[gridRow][gridCol][id];
+                    }
+                }
+
                 // Fill in biome
                 const biome = g[cell.precision]?.[gridRow]?.[gridCol]?.biome;
                 if (biome) {
@@ -241,6 +233,7 @@
                             row,
                             alpha,
                         });
+
                         if (sprite) {
                             setGridSprite(gridRow, gridCol, {
                                 id: "biome",
@@ -435,9 +428,21 @@
                     }
                 }
             }
+            sortSpriteOrder(worldStage);
         }
 
         prevTile = { ...t }; // copy, do not set by reference
+    }
+
+    /**
+     * Set the z-index of sprites based on their y-coordinate, drawing the sprites futhest away first
+     */
+    function sortSpriteOrder(stage: Container) {
+        const sprites = stage.children as Sprite[];
+        sprites.sort((a, b) => a.y - b.y);
+        for (let i = 0; i < sprites.length; i++) {
+            sprites[i].zIndex = i;
+        }
     }
 
     onMount(async () => {
