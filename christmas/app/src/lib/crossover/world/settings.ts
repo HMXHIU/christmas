@@ -401,6 +401,31 @@ const abilities: Record<string, Ability> = {
  * `biomes` is a collection of all the `Biome` available in the game.
  */
 let biomes: Record<string, Biome> = {
+    // forest: {
+    //     biome: "forest",
+    //     name: "Forest",
+    //     description:
+    //         "A dense collection of trees and vegetation, home to a variety of wildlife.",
+    //     traversableSpeed: 0.8,
+    //     asset: {
+    //         bundle: "biomes",
+    //         name: "tree",
+    //         animations: {
+    //             sway: "sway",
+    //         },
+    //         variants: {
+    //             default: "sway/0",
+    //             1: "sway/1",
+    //             2: "sway/2",
+    //             3: "sway/3",
+    //             4: "sway/4",
+    //             dead: "stump",
+    //         },
+    //         width: 1,
+    //         height: 1,
+    //         precision: worldSeed.spatial.unit.precision,
+    //     },
+    // },
     forest: {
         biome: "forest",
         name: "Forest",
@@ -409,17 +434,9 @@ let biomes: Record<string, Biome> = {
         traversableSpeed: 0.8,
         asset: {
             bundle: "biomes",
-            name: "tree",
-            animations: {
-                sway: "sway",
-            },
+            name: "lightgrass",
             variants: {
-                default: "sway/0",
-                1: "sway/1",
-                2: "sway/2",
-                3: "sway/3",
-                4: "sway/4",
-                dead: "stump",
+                default: "lightgrass",
             },
             width: 1,
             height: 1,
@@ -488,9 +505,9 @@ let biomes: Record<string, Biome> = {
         traversableSpeed: 0,
         asset: {
             bundle: "biomes",
-            name: "water",
+            name: "lightwater",
             variants: {
-                default: "Water",
+                default: "lightwater",
             },
             width: 1,
             height: 1,

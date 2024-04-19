@@ -39,8 +39,11 @@
     const CELL_HEIGHT = WORLD_HEIGHT / GRID_ROWS;
     const CELL_WIDTH = WORLD_WIDTH / GRID_COLS;
 
+    const TILE_WIDTH = 18;
+
     const app = new Application();
-    const world = new Container();
+    const worldStage = new Container();
+    const playerStage = new Container();
 
     let container: HTMLDivElement;
     let prevTile: z.infer<typeof TileSchema> | null = null;
@@ -75,14 +78,21 @@
         const playerSprite = new AnimatedSprite(
             playerBundle.animations["stand"],
         );
-        playerSprite.x = CANVAS_MID_COL * CELL_WIDTH;
-        playerSprite.y = CANVAS_MID_ROW * CELL_HEIGHT;
+
+        // Convert cartesian to isometric
+        const [isoX, isoY] = cartToIso(
+            CANVAS_MID_COL * CELL_WIDTH,
+            CANVAS_MID_ROW * CELL_HEIGHT,
+        );
+
+        playerSprite.x = isoX; // CANVAS_MID_COL * CELL_WIDTH;
+        playerSprite.y = isoY; // CANVAS_MID_ROW * CELL_HEIGHT;
         playerSprite.width = CELL_WIDTH;
         playerSprite.height = CELL_HEIGHT;
         playerSprite.animationSpeed = 0.1;
         playerSprite.play();
         // Add player (not in the world container - directly to stage, thus different coordinate system)
-        app.stage.addChild(playerSprite);
+        playerStage.addChild(playerSprite);
     }
 
     function destroySprites({
@@ -126,6 +136,31 @@
         }
     }
 
+    /**
+     * Rotate clockwise by 45 degrees, scale vertically by 0.5
+     * [x, y] * [ 0.5  0.25 ]
+     *          [ -0.5 0.25 ]
+     */
+    function cartToIso(x: number, y: number) {
+        return [x * 0.5 + y * -0.5, x * 0.25 + y * 0.25];
+    }
+
+    // function isoToIndex(x, y) {
+    //     var b = as * at;
+
+    //     var s = x - ox;
+    //     var t = y - oy;
+
+    //     var j = (((t - (s * ar) / ai) / (1 + ar * ar)) * ai) / b;
+    //     var i = (s + j * b * ar) / b;
+
+    //     i = Math.floor(i);
+    //     j = Math.floor(j);
+
+    //     // console.log( 'isoToIndex: ' + x,y,i,j)
+    //     return [i, j];
+    // }
+
     async function loadSprite({
         asset,
         col,
@@ -152,9 +187,13 @@
         if (!frame) return null;
 
         const sprite = new Sprite(frame);
-        sprite.x = col * CELL_WIDTH;
-        sprite.y = row * CELL_HEIGHT;
-        sprite.width = CELL_WIDTH * width;
+
+        // Convert cartesian to isometric
+        const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
+
+        sprite.x = isoX; // col * CELL_WIDTH;
+        sprite.y = isoY; // row * CELL_HEIGHT;
+        sprite.width = CELL_WIDTH * width; // TODO: also need to convert to ISO
         sprite.height = CELL_HEIGHT * height;
         sprite.alpha = alpha;
 
@@ -205,7 +244,7 @@
                         if (sprite) {
                             setGridSprite(gridRow, gridCol, {
                                 id: "biome",
-                                sprite: world.addChild(sprite),
+                                sprite: worldStage.addChild(sprite),
                                 x: sprite.x,
                                 y: sprite.y,
                             });
@@ -231,7 +270,7 @@
                         if (sprite) {
                             setGridSprite(gridRow, gridCol, {
                                 id: p.player,
-                                sprite: world.addChild(sprite),
+                                sprite: worldStage.addChild(sprite),
                                 x: sprite.x,
                                 y: sprite.y,
                             });
@@ -259,7 +298,7 @@
                                 sprite.zIndex = 1; // items are above the biome
                                 setGridSprite(gridRow, gridCol, {
                                     id: item.item,
-                                    sprite: world.addChild(sprite),
+                                    sprite: worldStage.addChild(sprite),
                                     x: sprite.x,
                                     y: sprite.y,
                                 });
@@ -287,7 +326,7 @@
                             if (sprite) {
                                 setGridSprite(gridRow, gridCol, {
                                     id: monster.monster,
-                                    sprite: world.addChild(sprite),
+                                    sprite: worldStage.addChild(sprite),
                                     x: sprite.x,
                                     y: sprite.y,
                                 });
@@ -382,11 +421,15 @@
 
                 // Update sprite target positions
                 if (deltaCol !== 0 || deltaRow !== 0) {
+                    const [isoX, isoY] = cartToIso(
+                        deltaCol * CELL_WIDTH,
+                        deltaRow * CELL_HEIGHT,
+                    );
                     for (const row of Object.values(gridSprites)) {
                         for (const gridSprite of Object.values(row)) {
                             for (const gs of Object.values(gridSprite)) {
-                                gs.x -= deltaCol * CELL_WIDTH;
-                                gs.y -= deltaRow * CELL_HEIGHT;
+                                gs.x -= isoX; // deltaCol * CELL_WIDTH;
+                                gs.y -= isoY; //  deltaRow * CELL_HEIGHT;
                             }
                         }
                     }
@@ -400,12 +443,25 @@
     onMount(async () => {
         await app.init({ width: CANVAS_WIDTH, height: CANVAS_HEIGHT });
 
-        // Add the world container
-        world.width = WORLD_WIDTH;
-        world.height = WORLD_HEIGHT;
-        world.pivot.x = WORLD_PIVOT_X;
-        world.pivot.y = WORLD_PIVOT_Y;
-        app.stage.addChild(world);
+        // Add world container
+        worldStage.width = WORLD_WIDTH;
+        worldStage.height = WORLD_HEIGHT;
+        worldStage.pivot.x =
+            WORLD_PIVOT_X +
+            Math.floor(CELL_WIDTH / 2) -
+            Math.floor((CANVAS_COLS * CELL_WIDTH) / 2);
+        worldStage.pivot.y = WORLD_PIVOT_Y;
+        app.stage.addChild(worldStage);
+
+        // Add player container
+        playerStage.width = WORLD_WIDTH;
+        playerStage.height = WORLD_HEIGHT;
+        playerStage.pivot.x =
+            WORLD_PIVOT_X +
+            Math.floor(CELL_WIDTH / 2) -
+            Math.floor((CANVAS_COLS * CELL_WIDTH) / 2);
+        playerStage.pivot.y = WORLD_PIVOT_Y;
+        app.stage.addChild(playerStage);
 
         await drawPlayer();
         await fillInGrid($grid, {

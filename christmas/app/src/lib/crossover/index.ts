@@ -171,6 +171,13 @@ function displayEntityEffects<T extends Player | Monster | Item>(
         }
     } else if ("player" in oldEntity) {
         // Handle player entity
+        const deltaHp = oldEntity.hp - (newEntity as Player).hp;
+        if (deltaHp > 0) {
+            addMessageFeed({
+                message: `${oldEntity.player} lost ${deltaHp} HP`,
+                name: "",
+            });
+        }
     } else if ("item" in oldEntity) {
         // Handle item entity
     }

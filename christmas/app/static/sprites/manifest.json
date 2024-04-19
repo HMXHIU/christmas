@@ -17,8 +17,24 @@
                     "src": "/sprites/tree/sprite.json"
                 },
                 {
-                    "alias": "water",
-                    "src": "/sprites/water/sprite.json"
+                    "alias": "lightwater",
+                    "src": "/sprites/biome/sprite.json"
+                },
+                {
+                    "alias": "lightgrass",
+                    "src": "/sprites/biome/sprite.json"
+                },
+                {
+                    "alias": "darkgrass",
+                    "src": "/sprites/biome/sprite.json"
+                },
+                {
+                    "alias": "lightsand",
+                    "src": "/sprites/biome/sprite.json"
+                },
+                {
+                    "alias": "darksand",
+                    "src": "/sprites/biome/sprite.json"
                 }
             ]
         },
