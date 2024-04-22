@@ -67,7 +67,7 @@
                         alt={store.account.name}
                     />
                     <Avatar.Fallback
-                        >{store.account.name.slice(2)}</Avatar.Fallback
+                        >{store.account.name.slice(0, 2)}</Avatar.Fallback
                     >
                 </Avatar.Root>
                 <div class="flex flex-col my-auto">

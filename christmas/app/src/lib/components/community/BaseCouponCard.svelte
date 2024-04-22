@@ -1,7 +1,7 @@
 <script lang="ts">
-    import { cleanString } from "$lib/utils";
     import * as Avatar from "$lib/components/ui/avatar";
     import * as Card from "$lib/components/ui/card";
+    import { cleanString } from "$lib/utils";
 
     export let couponName: string;
     export let couponNameSuffix: string | null = null;
@@ -144,7 +144,7 @@
             <!-- Store Avatar -->
             <Avatar.Root class="my-auto">
                 <Avatar.Image src={storeImageUrl} alt={storeName} />
-                <Avatar.Fallback>{storeName.slice(2)}</Avatar.Fallback>
+                <Avatar.Fallback>{storeName.slice(0, 2)}</Avatar.Fallback>
             </Avatar.Root>
 
             <!-- Store Name, Address -->
