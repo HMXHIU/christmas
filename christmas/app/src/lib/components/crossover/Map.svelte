@@ -233,7 +233,6 @@
                             row,
                             alpha,
                         });
-
                         if (sprite) {
                             setGridSprite(gridRow, gridCol, {
                                 id: "biome",
@@ -261,6 +260,7 @@
                             alpha,
                         });
                         if (sprite) {
+                            sprite.y -= CELL_HEIGHT / 2; // players should be on top of the biome
                             setGridSprite(gridRow, gridCol, {
                                 id: p.player,
                                 sprite: worldStage.addChild(sprite),
@@ -288,7 +288,7 @@
                                 height,
                             });
                             if (sprite) {
-                                sprite.zIndex = 1; // items are above the biome
+                                sprite.y -= CELL_HEIGHT / 2; // items should be on top of the biome
                                 setGridSprite(gridRow, gridCol, {
                                     id: item.item,
                                     sprite: worldStage.addChild(sprite),
@@ -317,6 +317,7 @@
                                 height,
                             });
                             if (sprite) {
+                                sprite.y -= CELL_HEIGHT / 2; // monsters should be on top of the biome
                                 setGridSprite(gridRow, gridCol, {
                                     id: monster.monster,
                                     sprite: worldStage.addChild(sprite),
