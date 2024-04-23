@@ -1,6 +1,7 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
 import type { GameCommandResponse } from "$lib/crossover";
 import { biomeAtGeohash, tileAtGeohash } from "$lib/crossover/world/biomes";
+import { playerStats } from "$lib/crossover/world/player";
 import { compendium, worldSeed } from "$lib/crossover/world/settings";
 import {
     fetchEntity,
@@ -669,6 +670,27 @@ const crossoverRouter = {
                     } as GameCommandResponse;
                 }
             }),
+        // cmd.rest
+        rest: authProcedure.query(async ({ ctx }) => {
+            // Get player
+            const player = (await tryFetchEntity(
+                ctx.user.publicKey,
+            )) as PlayerEntity;
+
+            // Rest player
+            player.hp = playerStats({ level: player.level }).hp;
+            player.mp = playerStats({ level: player.level }).mp;
+            player.st = playerStats({ level: player.level }).st;
+
+            // Save player
+            await playerRepository.save(player.player, player);
+
+            return {
+                players: [player as Player],
+                op: "upsert",
+                status: "success",
+            } as GameCommandResponse;
+        }),
     }),
     // Authentication
     auth: t.router({

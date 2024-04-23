@@ -18,7 +18,8 @@ type Actions =
     | "drop"
     | "create"
     | "configure"
-    | "inventory";
+    | "inventory"
+    | "rest";
 
 type ActionTargets = EntityType | "none";
 
@@ -107,6 +108,14 @@ const actions: Record<Actions, Action> = {
     inventory: {
         action: "inventory",
         description: "View inventory.",
+        predicate: {
+            target: ["none"],
+            tokenPositions: { action: 0 },
+        },
+    },
+    rest: {
+        action: "rest",
+        description: "Rest and recover.",
         predicate: {
             target: ["none"],
             tokenPositions: { action: 0 },
@@ -206,4 +215,5 @@ const playerActions = [
     actions.create,
     actions.configure,
     actions.inventory,
+    actions.rest,
 ];

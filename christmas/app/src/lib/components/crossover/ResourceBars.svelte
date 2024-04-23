@@ -31,11 +31,8 @@
     });
 </script>
 
-<div>
-    <svg
-        viewBox="0 0 100 100"
-        class={cn("circular-progress w-20 h-20", $$restProps.class)}
-    >
+<div class={cn("w-20 h-20", $$restProps.class)}>
+    <svg viewBox="0 0 100 100" class={cn("circular-progress")}>
         <circle class="bg"></circle>
         <circle class="hp" style="--progress: {hpProgress};"></circle>
         <circle class="mp" style="--progress: {mpProgress};"></circle>

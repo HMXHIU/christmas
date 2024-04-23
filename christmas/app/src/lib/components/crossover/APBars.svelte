@@ -13,7 +13,6 @@
                 const stats = playerStats({ level: p.level });
                 maxAp = stats.ap;
                 apProgress = (p.ap / maxAp || 0) * 100;
-                console.log(p);
             }
         });
 
@@ -22,13 +21,13 @@
 </script>
 
 <div class={cn("w-20 h-20", $$restProps.class)}>
-    <svg
-        viewBox="0 0 100 100"
-        class={cn("circular-progress overflow-visible", $$restProps.class)}
-    >
-        <circle class="bg"></circle>
+    <svg viewBox="0 0 100 100" class={cn("circular-progress overflow-visible")}>
+        <circle class="bg" style="--stroke-width: 6px;"></circle>
         <circle class="ap" style="--progress: {apProgress};"></circle>
-        <circle class="dividers" style="--bars: {maxAp * 2}"></circle>
+        <circle
+            class="dividers"
+            style="--bars: {maxAp * 2}; --stroke-width: 6px;"
+        ></circle>
     </svg>
 </div>
 
@@ -63,7 +62,6 @@
         transform-origin: var(--half-size) var(--half-size);
         stroke-dasharray: var(--dash) calc(var(--circumference) - var(--dash));
         transition: stroke-dasharray 0.3s linear 0s;
-        /* transform: rotate(-90deg); */
         stroke: #e2e2e2;
     }
 

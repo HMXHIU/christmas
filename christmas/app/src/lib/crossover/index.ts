@@ -53,6 +53,7 @@ export {
     crossoverCmdLook,
     crossoverCmdMove,
     crossoverCmdPerformAbility,
+    crossoverCmdRest,
     crossoverCmdSay,
     crossoverCmdTake,
     crossoverCmdUnequip,
@@ -448,6 +449,10 @@ async function performAction(
     else if (action.action === "inventory") {
         return await crossoverPlayerInventory(headers);
     }
+    // rest
+    else if (action.action === "rest") {
+        return await crossoverCmdRest(headers);
+    }
 
     throw new Error(`Unknown action ${action}`);
 }
@@ -724,6 +729,10 @@ function crossoverCmdConfigureItem(
         item,
         variables,
     });
+}
+
+function crossoverCmdRest(headers: HTTPHeaders = {}) {
+    return trpc({ headers }).crossover.cmd.rest.query();
 }
 
 /*
