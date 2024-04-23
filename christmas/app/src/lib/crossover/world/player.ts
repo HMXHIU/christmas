@@ -1,7 +1,9 @@
 import type { AssetMetadata } from ".";
 import { worldSeed } from "./settings";
 
-export { playerAsset, playerStats };
+export { MAX_POSSIBLE_AP, playerAsset, playerStats };
+
+const MAX_POSSIBLE_AP = 8;
 
 function playerStats({ level }: { level: number }): {
     hp: number;
@@ -13,7 +15,7 @@ function playerStats({ level }: { level: number }): {
         hp: level * 10,
         mp: level * 10,
         st: level * 10,
-        ap: level * 10,
+        ap: Math.min(4 + Math.floor(level / 10), MAX_POSSIBLE_AP),
     };
 }
 

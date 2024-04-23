@@ -146,6 +146,9 @@
             bundle[asset.name]?.textures[variant ?? asset.variants!.default];
         if (!frame) return null;
 
+        // PIXILATE
+        // frame.baseTexture.scaleMode = SCALE_MODES.NEAREST;
+
         const sprite = new Sprite(frame);
 
         // Convert cartesian to isometric
@@ -233,6 +236,7 @@
                             row,
                             alpha,
                         });
+
                         if (sprite) {
                             setGridSprite(gridRow, gridCol, {
                                 id: "biome",

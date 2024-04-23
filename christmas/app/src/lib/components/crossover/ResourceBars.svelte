@@ -21,9 +21,9 @@
                 maxHp = stats.hp;
                 maxMp = stats.mp;
                 maxSt = stats.st;
-                hpProgress = Math.max((p.hp / maxHp) * 33.33 || 0, 33.33);
-                mpProgress = Math.max((p.mp / maxMp) * 33.33 || 0, 33.33);
-                stProgress = Math.max((p.st / maxSt) * 33.33 || 0, 33.33);
+                hpProgress = Math.min((p.hp / maxHp) * 33.33 || 0, 33.33);
+                mpProgress = Math.min((p.mp / maxMp) * 33.33 || 0, 33.33);
+                stProgress = Math.min((p.st / maxSt) * 33.33 || 0, 33.33);
             }
         });
 
@@ -59,7 +59,7 @@
         r: var(--radius);
         stroke-width: var(--stroke-width);
         fill: none;
-        stroke-linecap: round;
+        stroke-linecap: square;
     }
 
     .circular-progress circle.hp,
