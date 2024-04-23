@@ -1,5 +1,6 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
 import type { GameCommandResponse } from "$lib/crossover";
+import { actions } from "$lib/crossover/actions";
 import { biomeAtGeohash, tileAtGeohash } from "$lib/crossover/world/biomes";
 import { playerStats } from "$lib/crossover/world/player";
 import { compendium, worldSeed } from "$lib/crossover/world/settings";
@@ -16,6 +17,7 @@ import { TRPCError } from "@trpc/server";
 import { performance } from "perf_hooks";
 import { z } from "zod";
 import {
+    checkAndSetBusy,
     configureItem,
     getUserMetadata,
     initPlayerEntity,
@@ -59,7 +61,7 @@ export {
     SaySchema,
     TileSchema,
     UserMetadataSchema,
-    crossoverRouter,
+    crossoverRouter
 };
 
 // Initialize redis clients, repositiories, indexes
@@ -254,6 +256,19 @@ const crossoverRouter = {
                     ctx.user.publicKey,
                 )) as PlayerEntity;
 
+                // Check if player is busy
+                if (
+                    await checkAndSetBusy({
+                        player,
+                        action: actions.equip.action,
+                    })
+                ) {
+                    return {
+                        status: "failure",
+                        message: "You are busy at the moment.",
+                    } as GameCommandResponse;
+                }
+
                 let itemToEquip = (await tryFetchEntity(item)) as ItemEntity;
 
                 // Check if item is in player inventory (can be inventory or equipment slot)
@@ -321,6 +336,19 @@ const crossoverRouter = {
                     ctx.user.publicKey,
                 )) as PlayerEntity;
 
+                // Check if player is busy
+                if (
+                    await checkAndSetBusy({
+                        player,
+                        action: actions.unequip.action,
+                    })
+                ) {
+                    return {
+                        status: "failure",
+                        message: "You are busy at the moment.",
+                    } as GameCommandResponse;
+                }
+
                 // Check item is on player
                 if (itemEntity.location[0] !== player.player) {
                     return {
@@ -360,6 +388,19 @@ const crossoverRouter = {
                 const player = (await tryFetchEntity(
                     ctx.user.publicKey,
                 )) as PlayerEntity;
+
+                // Check if player is busy
+                if (
+                    await checkAndSetBusy({
+                        player,
+                        action: actions.take.action,
+                    })
+                ) {
+                    return {
+                        status: "failure",
+                        message: "You are busy at the moment.",
+                    } as GameCommandResponse;
+                }
 
                 // Get item
                 let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
@@ -417,6 +458,19 @@ const crossoverRouter = {
                     ctx.user.publicKey,
                 )) as PlayerEntity;
 
+                // Check if player is busy
+                if (
+                    await checkAndSetBusy({
+                        player,
+                        action: actions.drop.action,
+                    })
+                ) {
+                    return {
+                        status: "failure",
+                        message: "You are busy at the moment.",
+                    } as GameCommandResponse;
+                }
+
                 // Check item is in player inventory
                 let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
                 if (itemEntity.location[0] !== player.player) {
@@ -447,6 +501,19 @@ const crossoverRouter = {
                 ctx.user.publicKey,
             )) as PlayerEntity;
 
+            // Check if player is busy
+            if (
+                await checkAndSetBusy({
+                    player,
+                    action: actions.say.action,
+                })
+            ) {
+                return {
+                    status: "failure",
+                    message: "You are busy at the moment.",
+                } as GameCommandResponse;
+            }
+
             // Get logged in players in geohash
             const users = await playersInGeohashQuerySet(
                 player.location[0],
@@ -472,7 +539,23 @@ const crossoverRouter = {
         // cmd.look
         look: authProcedure.input(LookSchema).query(async ({ ctx, input }) => {
             // Get player
-            const player = await tryFetchEntity(ctx.user.publicKey);
+            const player = (await tryFetchEntity(
+                ctx.user.publicKey,
+            )) as PlayerEntity;
+
+            // Check if player is busy
+            if (
+                await checkAndSetBusy({
+                    player,
+                    action: actions.look.action,
+                })
+            ) {
+                return {
+                    status: "failure",
+                    message: "You are busy at the moment.",
+                } as GameCommandResponse;
+            }
+
             const parentGeohash = player.location[0].slice(0, -1);
 
             // Get players in surrounding
@@ -515,6 +598,19 @@ const crossoverRouter = {
             const player = (await tryFetchEntity(
                 ctx.user.publicKey,
             )) as PlayerEntity;
+
+            // Check if player is busy
+            if (
+                await checkAndSetBusy({
+                    player,
+                    action: actions.move.action,
+                })
+            ) {
+                return {
+                    status: "failure",
+                    message: "You are busy at the moment.",
+                } as GameCommandResponse;
+            }
 
             // Check if direction is traversable
             const [isTraversable, location] = await isDirectionTraversable(
@@ -618,6 +714,19 @@ const crossoverRouter = {
                     ctx.user.publicKey,
                 )) as PlayerEntity;
 
+                // Check if player is busy
+                if (
+                    await checkAndSetBusy({
+                        player,
+                        action: actions.create.action,
+                    })
+                ) {
+                    return {
+                        status: "failure",
+                        message: "You are busy at the moment.",
+                    } as GameCommandResponse;
+                }
+
                 try {
                     // Create item
                     const item = (await spawnItem({
@@ -650,6 +759,19 @@ const crossoverRouter = {
                     ctx.user.publicKey,
                 )) as PlayerEntity;
 
+                // Check if player is busy
+                if (
+                    await checkAndSetBusy({
+                        player,
+                        action: actions.configure.action,
+                    })
+                ) {
+                    return {
+                        status: "failure",
+                        message: "You are busy at the moment.",
+                    } as GameCommandResponse;
+                }
+
                 // Get & configure item
                 const result = await configureItem({
                     self: player,
@@ -676,6 +798,19 @@ const crossoverRouter = {
             const player = (await tryFetchEntity(
                 ctx.user.publicKey,
             )) as PlayerEntity;
+
+            // Check if player is busy
+            if (
+                await checkAndSetBusy({
+                    player,
+                    action: actions.rest.action,
+                })
+            ) {
+                return {
+                    status: "failure",
+                    message: "You are busy at the moment.",
+                } as GameCommandResponse;
+            }
 
             // Rest player
             player.hp = playerStats({ level: player.level }).hp;

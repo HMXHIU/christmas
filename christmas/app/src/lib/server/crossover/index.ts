@@ -1,3 +1,4 @@
+import { actions, type Actions } from "$lib/crossover/actions";
 import {
     calculateLocation,
     childrenGeohashes,
@@ -59,6 +60,7 @@ const { uniqBy } = lodash;
 
 export {
     autoCorrectGeohashPrecision,
+    checkAndSetBusy,
     configureItem,
     connectedUsers,
     crossoverAuthPlayerMetadata,
@@ -845,7 +847,7 @@ async function performAbility({
             self,
             target,
             status: "failure",
-            message: "Player is busy",
+            message: "You are busy at the moment.",
         };
     }
 
@@ -855,7 +857,7 @@ async function performAbility({
             self,
             target,
             status: "failure",
-            message: "Not enough resources to perform ability",
+            message: `You do not enough resources to ${ability}`,
         };
     }
 
@@ -877,7 +879,7 @@ async function performAbility({
             self,
             target,
             status: "failure",
-            message: "Target out of range",
+            message: "Target is out of range",
         };
     }
 
@@ -1095,39 +1097,6 @@ async function publishEffectToPlayers({
             } as UpdateEntitiesEvent),
         );
     }
-
-    // Publish effected entities to self (player)
-    // if (self.player) {
-    //     await redisClient.publish(
-    //         (self as PlayerEntity).player,
-    //         JSON.stringify({
-    //             event: "entities",
-    //             players: [self, ...effectedOtherPlayers],
-    //             monsters: effectedMonsters,
-    //             items: effectedItems,
-    //         } as UpdateEntitiesEvent),
-    //     );
-    // }
-
-    // // Add back self to effected players/monsters before publishing to other players
-    // if (self.player) {
-    //     effectedOtherPlayers.push(self);
-    // } else if (self.monster) {
-    //     effectedMonsters.push(self);
-    // }
-
-    // // Publish effected entities to other players
-    // for (const otherPlayer of effectedOtherPlayers) {
-    //     await redisClient.publish(
-    //         (otherPlayer as PlayerEntity).player,
-    //         JSON.stringify({
-    //             event: "entities",
-    //             players: effectedOtherPlayers,
-    //             monsters: effectedMonsters,
-    //             items: effectedItems,
-    //         } as UpdateEntitiesEvent),
-    //     );
-    // }
 }
 
 async function isDirectionTraversable(
@@ -1167,4 +1136,36 @@ async function isGeohashTraversable(geohash: string): Promise<boolean> {
     }
 
     return true;
+}
+
+async function checkAndSetBusy({
+    player,
+    action,
+    ability,
+}: {
+    player: PlayerEntity;
+    action?: Actions;
+    ability?: string;
+}): Promise<Boolean> {
+    if (await isEntityBusy((player as Player).player)) {
+        return true;
+    }
+
+    // Action
+    if (action != null && actions[action].ticks > 0) {
+        await setEnityBusy(
+            (player as Player).player,
+            actions[action].ticks * MS_PER_TICK,
+        );
+    }
+    // Ability
+    else if (ability != null) {
+        const ticks = abilities[ability].procedures.reduce(
+            (acc, [type, effect]) => acc + effect.ticks,
+            0,
+        );
+        await setEnityBusy((player as Player).player, ticks * MS_PER_TICK);
+    }
+
+    return false;
 }

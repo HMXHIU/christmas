@@ -5,8 +5,15 @@ import type {
     Player,
 } from "$lib/server/crossover/redis/entities";
 import type { GameActionEntities, TokenPositions } from "./ir";
+import { TICKS_PER_TURN } from "./world/settings";
 
-export { actions, playerActions, resolveActionEntities, type Action };
+export {
+    actions,
+    playerActions,
+    resolveActionEntities,
+    type Action,
+    type Actions,
+};
 
 type Actions =
     | "look"
@@ -30,6 +37,7 @@ interface Action {
         target: ActionTargets[];
         tokenPositions: Record<string, number>;
     };
+    ticks: number;
 }
 
 const actions: Record<Actions, Action> = {
@@ -40,6 +48,7 @@ const actions: Record<Actions, Action> = {
             target: ["player", "monster", "item", "none"],
             tokenPositions: { action: 0, target: 1 },
         },
+        ticks: 1,
     },
     say: {
         action: "say",
@@ -48,6 +57,7 @@ const actions: Record<Actions, Action> = {
             target: ["player", "monster", "none"],
             tokenPositions: { action: 0, target: 1 },
         },
+        ticks: 1,
     },
     move: {
         action: "move",
@@ -56,6 +66,7 @@ const actions: Record<Actions, Action> = {
             target: ["none"],
             tokenPositions: { action: 0 },
         },
+        ticks: 1,
     },
     take: {
         action: "take",
@@ -64,6 +75,7 @@ const actions: Record<Actions, Action> = {
             target: ["item"],
             tokenPositions: { action: 0, target: 1 },
         },
+        ticks: 1,
     },
     drop: {
         action: "drop",
@@ -72,6 +84,7 @@ const actions: Record<Actions, Action> = {
             target: ["item"],
             tokenPositions: { action: 0, target: 1 },
         },
+        ticks: 1,
     },
     equip: {
         action: "equip",
@@ -80,6 +93,7 @@ const actions: Record<Actions, Action> = {
             target: ["item"],
             tokenPositions: { action: 0, target: 1 },
         },
+        ticks: 1,
     },
     unequip: {
         action: "unequip",
@@ -88,6 +102,7 @@ const actions: Record<Actions, Action> = {
             target: ["item"],
             tokenPositions: { action: 0, target: 1 },
         },
+        ticks: 1,
     },
     create: {
         action: "create",
@@ -96,6 +111,7 @@ const actions: Record<Actions, Action> = {
             target: ["none"],
             tokenPositions: { action: 0 },
         },
+        ticks: 1,
     },
     configure: {
         action: "configure",
@@ -104,6 +120,7 @@ const actions: Record<Actions, Action> = {
             target: ["item"],
             tokenPositions: { action: 0, target: 1 },
         },
+        ticks: 1,
     },
     inventory: {
         action: "inventory",
@@ -112,6 +129,7 @@ const actions: Record<Actions, Action> = {
             target: ["none"],
             tokenPositions: { action: 0 },
         },
+        ticks: 0,
     },
     rest: {
         action: "rest",
@@ -120,6 +138,7 @@ const actions: Record<Actions, Action> = {
             target: ["none"],
             tokenPositions: { action: 0 },
         },
+        ticks: TICKS_PER_TURN * 4,
     },
 };
 

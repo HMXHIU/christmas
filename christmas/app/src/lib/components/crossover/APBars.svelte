@@ -15,7 +15,7 @@
                 const stats = playerStats({ level: p.level });
                 maxAp = stats.ap;
                 apProgress = (p.ap / maxAp || 0) * 100;
-                recoveryRate = 100 / (maxAp * TICKS_PER_TURN);
+                recoveryRate = 100 / (maxAp * TICKS_PER_TURN); // recovers all AP in 1 turn
             }
         });
 
