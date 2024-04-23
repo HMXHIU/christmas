@@ -1,11 +1,13 @@
 <script lang="ts">
     import { playerStats } from "$lib/crossover/world/player";
+    import { MS_PER_TICK, TICKS_PER_TURN } from "$lib/crossover/world/settings";
     import { cn } from "$lib/shadcn";
     import { onMount } from "svelte";
     import { player } from "../../../store";
 
     let maxAp = 0;
     let apProgress = 0;
+    let recoveryRate = 0;
 
     onMount(() => {
         const unsubscribe = player.subscribe((p) => {
@@ -13,10 +15,21 @@
                 const stats = playerStats({ level: p.level });
                 maxAp = stats.ap;
                 apProgress = (p.ap / maxAp || 0) * 100;
+                recoveryRate = 100 / (maxAp * TICKS_PER_TURN);
             }
         });
 
-        return unsubscribe;
+        // Preemptively recover AP over time (client side)
+        const apTimer = setInterval(() => {
+            if (apProgress < 100) {
+                apProgress = Math.min(apProgress + recoveryRate, 100);
+            }
+        }, MS_PER_TICK);
+
+        return () => {
+            unsubscribe();
+            clearInterval(apTimer);
+        };
     });
 </script>
 
