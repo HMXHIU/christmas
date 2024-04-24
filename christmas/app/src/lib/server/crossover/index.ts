@@ -841,16 +841,6 @@ async function performAbility({
 }> {
     const { procedures, ap, mp, st, hp, range, predicate } = abilities[ability];
 
-    // Check if player is busy
-    if (self.player && (await isEntityBusy((self as PlayerEntity).player))) {
-        return {
-            self,
-            target,
-            status: "failure",
-            message: "You are busy at the moment.",
-        };
-    }
-
     // Check if self has enough resources to perform ability
     if (!ignoreCost && !hasResourcesForAbility(self, ability)) {
         return {
@@ -883,13 +873,20 @@ async function performAbility({
         };
     }
 
-    // Set player busy state (only for player entities)
-    if (self.player) {
-        const ticks = procedures.reduce(
-            (acc, [type, effect]) => acc + effect.ticks,
-            0,
-        );
-        setEnityBusy((self as PlayerEntity).player, ticks * MS_PER_TICK);
+    // Check if player is busy
+    if (
+        self.player &&
+        (await checkAndSetBusy({
+            player: self as PlayerEntity,
+            ability,
+        }))
+    ) {
+        return {
+            self,
+            target,
+            status: "failure",
+            message: "You are busy at the moment.",
+        };
     }
 
     // Expend ability costs
