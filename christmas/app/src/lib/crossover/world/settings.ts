@@ -1,3 +1,4 @@
+import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 import { type WorldSeed } from ".";
 import type { Ability } from "./abilities";
 import type { Beast } from "./bestiary";
@@ -15,8 +16,8 @@ export {
 };
 
 const TICKS_PER_TURN = 4;
-// const MS_PER_TICK = PUBLIC_ENVIRONMENT === "development" ? 10 : 2000;
-const MS_PER_TICK = 2000;
+const MS_PER_TICK = PUBLIC_ENVIRONMENT === "development" ? 1 : 2000;
+// const MS_PER_TICK = 2000;
 
 /**
  * `worldSeed` is a template used to generate a `World` instance.
@@ -383,7 +384,7 @@ const abilities: Record<string, Ability> = {
                 },
             ],
         ],
-        ap: 10,
+        ap: 4,
         st: 0,
         hp: 0,
         mp: 20,

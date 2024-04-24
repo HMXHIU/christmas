@@ -70,7 +70,7 @@ test("Test Stream", async () => {
             {
                 player: playerOne.player,
                 st: 9, // -1
-                ap: 9, // -1
+                ap: 3, // -1
             },
         ],
         monsters: [],
@@ -86,7 +86,7 @@ test("Test Stream", async () => {
             {
                 player: playerOne.player,
                 st: 9,
-                ap: 9,
+                ap: 3,
             },
             {
                 player: playerTwo.player,
@@ -121,7 +121,7 @@ test("Test Stream", async () => {
                 player: playerTwo.player,
                 hp: 9,
                 st: 9, // -1
-                ap: 8, // -2
+                ap: 2, // -2
                 debuffs: [],
                 buffs: [],
             },
@@ -140,7 +140,7 @@ test("Test Stream", async () => {
                 player: playerTwo.player,
                 hp: 14, // +5 hp
                 st: 9, // -1
-                ap: 8, // -2
+                ap: 2, // -2
                 debuffs: [],
                 buffs: [],
             },

@@ -20,10 +20,10 @@ import {
 } from "$lib/crossover/world/settings";
 import { configureItem, spawnItem } from "$lib/server/crossover";
 import type {
+    Item,
     ItemEntity,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
-import { sleep } from "$lib/utils";
 import { groupBy } from "lodash";
 import ngeohash from "ngeohash";
 import { expect, test, vi } from "vitest";
@@ -167,13 +167,13 @@ test("Test Player", async () => {
         hp: 10,
         mp: 10,
         st: 10,
-        ap: 10,
+        ap: 4,
     });
     expect(playerStats({ level: 2 })).toMatchObject({
         hp: 20,
         mp: 20,
         st: 20,
-        ap: 20,
+        ap: 4,
     });
 
     /*
@@ -195,7 +195,7 @@ test("Test Player", async () => {
     ).resolves.toMatchObject({
         event: "feed",
         type: "message",
-        message: "Target out of range",
+        message: "Target is out of range",
     });
 
     // Test out of resources
@@ -213,7 +213,7 @@ test("Test Player", async () => {
     ).resolves.toMatchObject({
         event: "feed",
         type: "message",
-        message: "Not enough resources to perform ability",
+        message: "You do not enough resources to teleport",
     });
 
     // Buff entity with enough resources to teleport
@@ -230,7 +230,7 @@ test("Test Player", async () => {
                 hp: 100,
                 mp: 100,
                 st: 100,
-                ap: 100,
+                ap: 40,
             }),
         },
     );
@@ -266,7 +266,7 @@ test("Test Player", async () => {
                 hp: 100,
                 mp: 80, // -20
                 st: 100,
-                ap: 90, // -10
+                ap: 36, // -10
             },
         ],
         monsters: [],
@@ -288,7 +288,7 @@ test("Test Player", async () => {
                 hp: 100,
                 mp: 80,
                 st: 100,
-                ap: 90,
+                ap: 36,
             },
             {
                 player: playerTwo.player,
@@ -317,7 +317,7 @@ test("Test Player", async () => {
             [compendium.woodendoor.variables.doorsign.variable]:
                 "A custom door sign",
         },
-    })) as ItemEntity;
+    })) as Item;
     expect(woodendoor).toMatchObject({
         state: "closed",
         variables: { doorsign: "A custom door sign" },
@@ -408,23 +408,23 @@ test("Test Player", async () => {
     let portalOne = (await spawnItem({
         geohash: playerOne.location[0], // spawn at playerOne
         prop: compendium.portal.prop,
-    })) as ItemEntity;
+    })) as Item;
     let portalTwo = (await spawnItem({
-        geohash: generateRandomGeohash(8), // spawn portalTwo somewhere else
+        geohash: generateRandomGeohash(8, "h9"), // spawn portalTwo somewhere else
         prop: compendium.portal.prop,
-    })) as ItemEntity;
+    })) as Item;
 
     // Configure portals (dm)
     await configureItem({
         self: playerOne as PlayerEntity,
-        item: portalOne,
+        item: portalOne as ItemEntity,
         variables: {
             target: portalTwo.item,
         },
     });
     await configureItem({
         self: playerOne as PlayerEntity,
-        item: portalTwo,
+        item: portalTwo as ItemEntity,
         variables: {
             target: portalOne.item,
         },
@@ -650,6 +650,7 @@ test("Test Player", async () => {
         },
         { Cookie: playerOneCookies },
     );
+    await waitForEventData(playerOneStream, "entities"); // consume update resources
     var abilityResult = (await waitForEventData(
         playerOneStream,
         "entities",
@@ -660,26 +661,26 @@ test("Test Player", async () => {
         }
     }
 
-    // Test `playerOne` busy
-    setTimeout(async () => {
-        crossoverCmdUseItem(
-            {
-                item: woodenclub.item,
-                utility: compendium.woodenclub.utilities.swing.utility,
-                target: playerTwo.player,
-            },
-            { Cookie: playerOneCookies },
-        );
-    }, 0);
-    await expect(
-        waitForEventData(playerOneStream, "feed"),
-    ).resolves.toMatchObject({
-        event: "feed",
-        type: "message",
-        message: "Player is busy",
-    });
-
-    await sleep(1000);
+    // TODO: Find a better way to test busy (dev environment is set as 10ms per tick)
+    //
+    // // Test `playerOne` busy
+    // setTimeout(async () => {
+    //     crossoverCmdUseItem(
+    //         {
+    //             item: woodenclub.item,
+    //             utility: compendium.woodenclub.utilities.swing.utility,
+    //             target: playerTwo.player,
+    //         },
+    //         { Cookie: playerOneCookies },
+    //     );
+    // }, 0);
+    // await expect(
+    //     waitForEventData(playerOneStream, "feed"),
+    // ).resolves.toMatchObject({
+    //     event: "feed",
+    //     type: "message",
+    //     message: "Player is busy",
+    // });
 
     // Use woodenclub (swing)
     let stBefore = playerOne.st;

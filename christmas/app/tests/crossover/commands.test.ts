@@ -224,7 +224,7 @@ test("Test Commands", async () => {
             {
                 player: playerOne.player,
                 st: 9,
-                ap: 9,
+                ap: 3,
             },
         ],
         monsters: [],
@@ -237,7 +237,7 @@ test("Test Commands", async () => {
             {
                 player: playerOne.player,
                 st: 9, // -1
-                ap: 9, // -1
+                ap: 3, // -1
             },
         ],
         monsters: [
@@ -313,7 +313,7 @@ test("Test Commands", async () => {
                 hp: 10,
                 mp: 10,
                 st: 9,
-                ap: 9,
+                ap: 3,
             },
         ],
         monsters: [

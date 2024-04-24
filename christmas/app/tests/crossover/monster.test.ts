@@ -24,7 +24,7 @@ test("Test Monster", async () => {
 
     // Player one
     const playerOneName = "Gandalf";
-    const playerOneGeohash = generateRandomGeohash(8);
+    const playerOneGeohash = generateRandomGeohash(8, "h9");
     let [playerOneWallet, playerOneCookies, playerOne] =
         await createRandomPlayer({
             region,

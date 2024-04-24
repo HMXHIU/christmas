@@ -44,7 +44,7 @@ test("Test Items", async () => {
      */
 
     // Spawn wooden door at random location
-    const woodendoorGeohash = generateRandomGeohash(8);
+    const woodendoorGeohash = generateRandomGeohash(8, "h9");
     let woodendoor = (await spawnItem({
         geohash: woodendoorGeohash,
         prop: compendium.woodendoor.prop,
@@ -75,7 +75,9 @@ test("Test Items", async () => {
             geohash: woodendoorGeohash,
             prop: compendium.woodendoor.prop,
         }),
-    ).rejects.toThrowError("Cannot spawn item in location");
+    ).rejects.toThrowError(
+        `Cannot spawn item at location ${woodendoorGeohash}`,
+    );
 
     /*
      * Test item configuration (via variables)
@@ -279,7 +281,7 @@ test("Test Items", async () => {
         target: playerTwo as PlayerEntity,
     });
     expect(status).toBe("failure");
-    expect(message).toBe("Target out of range");
+    expect(message).toBe("Target is out of range");
 
     // Test in range and have permissions
     playerTwo.location[0] = playerOne.location[0];
@@ -303,7 +305,7 @@ test("Test Items", async () => {
         },
         self: {
             player: playerOne.player,
-            ap: 10, // item uses charges instead of user's resources
+            ap: 4, // item uses charges instead of user's resources
             st: 10, // item uses charges instead of user's resources
         },
         status: "success",

@@ -66,7 +66,7 @@ test("Test Abilities", async () => {
             buffs: [],
         },
         status: "failure",
-        message: "Target out of range",
+        message: "Target is out of range",
     });
 
     // Test ability in range
@@ -147,7 +147,7 @@ test("Test Abilities", async () => {
             buffs: [],
         },
         status: "failure",
-        message: "Not enough resources to perform ability",
+        message: "You do not enough resources to scratch",
     });
 
     // Test patchEffectWithVariables
