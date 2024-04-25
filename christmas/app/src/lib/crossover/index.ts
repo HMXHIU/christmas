@@ -638,7 +638,7 @@ async function signup(
 function crossoverCmdSay(
     input: { message: string },
     headers: HTTPHeaders = {},
-): Promise<void> {
+): Promise<GameCommandResponse> {
     const { message } = input;
     return trpc({ headers }).crossover.cmd.say.query({ message });
 }

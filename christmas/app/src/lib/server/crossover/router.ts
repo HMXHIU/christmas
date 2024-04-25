@@ -61,7 +61,7 @@ export {
     SaySchema,
     TileSchema,
     UserMetadataSchema,
-    crossoverRouter
+    crossoverRouter,
 };
 
 // Initialize redis clients, repositiories, indexes
@@ -535,6 +535,11 @@ const crossoverRouter = {
             for (const publicKey of users) {
                 redisClient.publish(publicKey, JSON.stringify(messageFeed));
             }
+
+            return {
+                status: "success",
+                message: "",
+            } as GameCommandResponse;
         }),
         // cmd.look
         look: authProcedure.input(LookSchema).query(async ({ ctx, input }) => {

@@ -19,11 +19,13 @@ export {
 type EntityType = "player" | "monster" | "item";
 type GameEntity = Monster | Player | Item;
 
+// TODO: change to `loc` `locT` `dbuf` `buf`, 'lvl' for lower memory usage
 interface EntityState {
     location: string[];
     locationType: LocationType;
     level: number;
     ap: number; // action points (require to perform abilities)
+    apclk: number; // time the last action points was used
     hp: number; // health points
     mp: number; // mana points
     st: number; // stamina points
@@ -34,6 +36,8 @@ interface EntityState {
 /*
  * Player
  */
+
+// TODO: change to `desc` for lower memory usage
 
 // Combines both `PlayerState` and `PlayerMetadata`
 const PlayerEntitySchema = new Schema("Player", {
@@ -50,6 +54,7 @@ const PlayerEntitySchema = new Schema("Player", {
     hp: { type: "number" }, // health points
     mp: { type: "number" }, // mana points
     st: { type: "number" }, // stamina points
+    apclk: { type: "number" }, // time the last action points was used
     debuffs: { type: "string[]" },
     buffs: { type: "string[]" },
 });
@@ -84,6 +89,7 @@ const MonsterEntitySchema = new Schema("Monster", {
     hp: { type: "number" }, // health points
     mp: { type: "number" }, // mana points
     st: { type: "number" }, // stamina points
+    apclk: { type: "number" }, // time the last action points was used
     debuffs: { type: "string[]" },
     buffs: { type: "string[]" },
 });
@@ -108,9 +114,6 @@ const ItemEntitySchema = new Schema("Item", {
     item: { type: "string" },
     name: { type: "string" },
     prop: { type: "string" },
-
-    // variables: { type: "string" }, // JSON string non searchable
-
     owner: { type: "string" }, // who owns or can use the item (player | monster | public (empty) | dm)
     configOwner: { type: "string" }, // who can configure the item (player | monster | public (empty) | dm)
     collider: { type: "boolean" },
@@ -128,9 +131,7 @@ interface Item {
     item: string;
     name: string;
     prop: string;
-
     variables: Record<string, string | number | boolean>; // not searchable
-
     owner: string;
     configOwner: string;
     collider: boolean;

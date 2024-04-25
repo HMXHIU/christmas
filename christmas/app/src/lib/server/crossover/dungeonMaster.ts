@@ -46,7 +46,7 @@ function selectMonsterAbility(
                 return abilities[b].ap - abilities[a].ap;
             })
             .filter((ability) => {
-                return hasResourcesForAbility(monster, ability);
+                return hasResourcesForAbility(monster, ability).hasResources;
             });
         if (healingAbilities.length > 0) {
             return healingAbilities[0];
@@ -60,7 +60,7 @@ function selectMonsterAbility(
                 return abilities[b].ap - abilities[a].ap;
             })
             .filter((ability) => {
-                return hasResourcesForAbility(monster, ability);
+                return hasResourcesForAbility(monster, ability).hasResources;
             });
         if (offensiveAbilities.length > 0) {
             return offensiveAbilities[0];
@@ -74,7 +74,7 @@ function selectMonsterAbility(
                 return abilities[b].ap - abilities[a].ap;
             })
             .filter((ability) => {
-                return hasResourcesForAbility(monster, ability);
+                return hasResourcesForAbility(monster, ability).hasResources;
             });
         if (defensiveAbilities.length > 0) {
             return defensiveAbilities[0];
@@ -88,7 +88,7 @@ function selectMonsterAbility(
                 return abilities[b].ap - abilities[a].ap;
             })
             .filter((ability) => {
-                return hasResourcesForAbility(monster, ability);
+                return hasResourcesForAbility(monster, ability).hasResources;
             });
         if (neutralAbilities.length > 0) {
             return neutralAbilities[0];

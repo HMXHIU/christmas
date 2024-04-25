@@ -360,6 +360,7 @@ async function spawnMonster({
         mp,
         st,
         ap,
+        apclk: Date.now(),
         buffs: [],
         debuffs: [],
     };
@@ -841,14 +842,20 @@ async function performAbility({
 }> {
     const { procedures, ap, mp, st, hp, range, predicate } = abilities[ability];
 
+    // Recover AP
+    self = await recoverAp(self);
+
     // Check if self has enough resources to perform ability
-    if (!ignoreCost && !hasResourcesForAbility(self, ability)) {
-        return {
-            self,
-            target,
-            status: "failure",
-            message: `You do not enough resources to ${ability}`,
-        };
+    if (!ignoreCost) {
+        const { hasResources, message } = hasResourcesForAbility(self, ability);
+        if (!hasResources) {
+            return {
+                self,
+                target,
+                status: "failure",
+                message,
+            };
+        }
     }
 
     // Check predicate
@@ -891,12 +898,8 @@ async function performAbility({
 
     // Expend ability costs
     if (!ignoreCost) {
-        self.ap -= ap;
-        self.mp -= mp;
-        self.st -= st;
-        self.hp -= hp;
+        self = await consumeResources(self, { ap, mp, st, hp });
     }
-    self = (await saveEntity(self)) as PlayerEntity | MonsterEntity;
     target = target.player === self.player ? self : target; // target might be self, in which case update it after save
 
     // Publish ability costs changes to player (non blocking)
@@ -1165,4 +1168,75 @@ async function checkAndSetBusy({
     }
 
     return false;
+}
+
+async function recoverAp(
+    entity: PlayerEntity | MonsterEntity,
+): Promise<PlayerEntity | MonsterEntity> {
+    const maxAp = entity.player
+        ? playerStats({ level: entity.level }).ap
+        : monsterStats({
+              level: entity.level,
+              beast: (entity as MonsterEntity).beast,
+          }).ap;
+
+    if (entity.ap < maxAp) {
+        const now = Date.now();
+        entity.ap = Math.min(
+            maxAp,
+            Math.floor(entity.ap + (now - entity.apclk) / MS_PER_TICK),
+        );
+        entity.apclk = now; // reset ap clock after recovery
+        return (await saveEntity(entity)) as PlayerEntity | MonsterEntity;
+    }
+
+    return entity;
+}
+
+async function consumeResources(
+    entity: PlayerEntity | MonsterEntity,
+    {
+        ap,
+        mp,
+        st,
+        hp,
+    }: {
+        ap: number;
+        mp: number;
+        st: number;
+        hp: number;
+    },
+): Promise<PlayerEntity | MonsterEntity> {
+    // Get max stats
+    const {
+        ap: maxAp,
+        hp: maxHp,
+        st: maxSt,
+        mp: maxMp,
+    } = entity.player
+        ? playerStats({ level: entity.level })
+        : monsterStats({
+              level: entity.level,
+              beast: (entity as MonsterEntity).beast,
+          });
+
+    if (ap !== 0) {
+        entity.ap = Math.max(Math.min(maxAp, entity.ap - ap), 0);
+    }
+    if (mp !== 0) {
+        entity.mp = Math.max(Math.min(maxMp, entity.mp - mp), 0);
+    }
+    if (st !== 0) {
+        entity.st = Math.max(Math.min(maxSt, entity.st - st), 0);
+    }
+    if (hp !== 0) {
+        entity.hp = Math.max(Math.min(maxHp, entity.hp - hp), 0);
+    }
+
+    // Set AP clock (if consumed)
+    if (ap > 0) {
+        entity.apclk = Date.now();
+    }
+
+    return (await saveEntity(entity)) as PlayerEntity;
 }

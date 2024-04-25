@@ -158,9 +158,35 @@ function patchEffectWithVariables({
 function hasResourcesForAbility(
     self: PlayerEntity | MonsterEntity,
     ability: string,
-): boolean {
+): { hasResources: boolean; message: string } {
     const { ap, mp, st, hp } = abilities[ability];
-    return self.ap >= ap && self.mp >= mp && self.st >= st && self.hp >= hp;
+
+    if (self.ap < ap) {
+        return {
+            hasResources: false,
+            message: `Not enough action points to ${ability}.`,
+        };
+    } else if (self.hp < hp) {
+        return {
+            hasResources: false,
+            message: `Not enough health points to ${ability}.`,
+        };
+    } else if (self.mp < mp) {
+        return {
+            hasResources: false,
+            message: `Not enough mana points to ${ability}.`,
+        };
+    } else if (self.st < st) {
+        return {
+            hasResources: false,
+            message: `Not enough stamina points to ${ability}.`,
+        };
+    }
+
+    return {
+        hasResources: true,
+        message: "",
+    };
 }
 
 function checkInRange(
