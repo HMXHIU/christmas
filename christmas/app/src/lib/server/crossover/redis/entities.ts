@@ -26,6 +26,7 @@ interface EntityState {
     level: number;
     ap: number; // action points (require to perform abilities)
     apclk: number; // time the last action points was used
+    buclk: number; // busy clock (time the entity is busy till)
     hp: number; // health points
     mp: number; // mana points
     st: number; // stamina points

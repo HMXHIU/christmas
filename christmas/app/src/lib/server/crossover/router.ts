@@ -254,17 +254,17 @@ const crossoverRouter = {
                 const { item, slot } = input;
 
                 // Get player
-                const player = (await tryFetchEntity(
+                let player = (await tryFetchEntity(
                     ctx.user.publicKey,
                 )) as PlayerEntity;
 
                 // Check if player is busy
-                if (
-                    await checkAndSetBusy({
-                        player,
-                        action: actions.equip.action,
-                    })
-                ) {
+                const { busy, entity } = await checkAndSetBusy({
+                    entity: player,
+                    action: actions.equip.action,
+                });
+                player = entity as PlayerEntity;
+                if (busy) {
                     return {
                         status: "failure",
                         message: "You are busy at the moment.",
@@ -334,17 +334,17 @@ const crossoverRouter = {
                 let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
 
                 // Get player
-                const player = (await tryFetchEntity(
+                let player = (await tryFetchEntity(
                     ctx.user.publicKey,
                 )) as PlayerEntity;
 
                 // Check if player is busy
-                if (
-                    await checkAndSetBusy({
-                        player,
-                        action: actions.unequip.action,
-                    })
-                ) {
+                const { busy, entity } = await checkAndSetBusy({
+                    entity: player,
+                    action: actions.unequip.action,
+                });
+                player = entity as PlayerEntity;
+                if (busy) {
                     return {
                         status: "failure",
                         message: "You are busy at the moment.",
@@ -387,17 +387,17 @@ const crossoverRouter = {
                 const { item } = input;
 
                 // Get player
-                const player = (await tryFetchEntity(
+                let player = (await tryFetchEntity(
                     ctx.user.publicKey,
                 )) as PlayerEntity;
 
                 // Check if player is busy
-                if (
-                    await checkAndSetBusy({
-                        player,
-                        action: actions.take.action,
-                    })
-                ) {
+                const { busy, entity } = await checkAndSetBusy({
+                    entity: player,
+                    action: actions.take.action,
+                });
+                player = entity as PlayerEntity;
+                if (busy) {
                     return {
                         status: "failure",
                         message: "You are busy at the moment.",
@@ -456,17 +456,17 @@ const crossoverRouter = {
                 const { item } = input;
 
                 // Get player
-                const player = (await tryFetchEntity(
+                let player = (await tryFetchEntity(
                     ctx.user.publicKey,
                 )) as PlayerEntity;
 
                 // Check if player is busy
-                if (
-                    await checkAndSetBusy({
-                        player,
-                        action: actions.drop.action,
-                    })
-                ) {
+                const { busy, entity } = await checkAndSetBusy({
+                    entity: player,
+                    action: actions.drop.action,
+                });
+                player = entity as PlayerEntity;
+                if (busy) {
                     return {
                         status: "failure",
                         message: "You are busy at the moment.",
@@ -499,27 +499,31 @@ const crossoverRouter = {
         // cmd.say
         say: authProcedure.input(SaySchema).query(async ({ ctx, input }) => {
             // Get player
-            const player = (await tryFetchEntity(
+            let player = (await tryFetchEntity(
                 ctx.user.publicKey,
             )) as PlayerEntity;
 
             // Check if player is busy
-            if (
-                await checkAndSetBusy({
-                    player,
-                    action: actions.say.action,
-                })
-            ) {
+            const { busy, entity } = await checkAndSetBusy({
+                entity: player,
+                action: actions.say.action,
+            });
+            player = entity as PlayerEntity;
+            if (busy) {
                 return {
                     status: "failure",
                     message: "You are busy at the moment.",
                 } as GameCommandResponse;
             }
 
+            console.log("SAY", input.message);
+
             // Get logged in players in geohash
             const users = await playersInGeohashQuerySet(
                 player.location[0],
             ).return.allIds();
+
+            console.log("USERS", users);
 
             // Create message feed
             const messageFeed: FeedEvent = {
@@ -535,6 +539,7 @@ const crossoverRouter = {
 
             // Send message to all users in the geohash (non blocking)
             for (const publicKey of users) {
+                console.log("PUBLISH", publicKey, JSON.stringify(messageFeed));
                 redisClient.publish(publicKey, JSON.stringify(messageFeed));
             }
 
@@ -546,17 +551,17 @@ const crossoverRouter = {
         // cmd.look
         look: authProcedure.input(LookSchema).query(async ({ ctx, input }) => {
             // Get player
-            const player = (await tryFetchEntity(
+            let player = (await tryFetchEntity(
                 ctx.user.publicKey,
             )) as PlayerEntity;
 
             // Check if player is busy
-            if (
-                await checkAndSetBusy({
-                    player,
-                    action: actions.look.action,
-                })
-            ) {
+            const { busy, entity } = await checkAndSetBusy({
+                entity: player,
+                action: actions.look.action,
+            });
+            player = entity as PlayerEntity;
+            if (busy) {
                 return {
                     status: "failure",
                     message: "You are busy at the moment.",
@@ -602,22 +607,9 @@ const crossoverRouter = {
             const { direction } = input;
 
             // Get player
-            const player = (await tryFetchEntity(
+            let player = (await tryFetchEntity(
                 ctx.user.publicKey,
             )) as PlayerEntity;
-
-            // Check if player is busy
-            if (
-                await checkAndSetBusy({
-                    player,
-                    action: actions.move.action,
-                })
-            ) {
-                return {
-                    status: "failure",
-                    message: "You are busy at the moment.",
-                } as GameCommandResponse;
-            }
 
             // Check if direction is traversable
             const [isTraversable, location] = await isDirectionTraversable(
@@ -630,6 +622,19 @@ const crossoverRouter = {
                     message: `Cannot move ${direction}`,
                 } as GameCommandResponse;
             } else {
+                // Check if player is busy
+                const { busy, entity } = await checkAndSetBusy({
+                    entity: player,
+                    action: actions.move.action,
+                });
+                player = entity as PlayerEntity;
+                if (busy) {
+                    return {
+                        status: "failure",
+                        message: "You are busy at the moment.",
+                    } as GameCommandResponse;
+                }
+
                 player.location = location;
                 await playerRepository.save(player.player, player);
                 return {
@@ -717,17 +722,17 @@ const crossoverRouter = {
                 const { geohash, prop, variables } = input;
 
                 // Get player
-                const player = (await tryFetchEntity(
+                let player = (await tryFetchEntity(
                     ctx.user.publicKey,
                 )) as PlayerEntity;
 
                 // Check if player is busy
-                if (
-                    await checkAndSetBusy({
-                        player,
-                        action: actions.create.action,
-                    })
-                ) {
+                const { busy, entity } = await checkAndSetBusy({
+                    entity: player,
+                    action: actions.create.action,
+                });
+                player = entity as PlayerEntity;
+                if (busy) {
                     return {
                         status: "failure",
                         message: "You are busy at the moment.",
@@ -762,17 +767,17 @@ const crossoverRouter = {
                 const { item, variables } = input;
 
                 // Get player
-                const player = (await tryFetchEntity(
+                let player = (await tryFetchEntity(
                     ctx.user.publicKey,
                 )) as PlayerEntity;
 
                 // Check if player is busy
-                if (
-                    await checkAndSetBusy({
-                        player,
-                        action: actions.configure.action,
-                    })
-                ) {
+                const { busy, entity } = await checkAndSetBusy({
+                    entity: player,
+                    action: actions.configure.action,
+                });
+                player = entity as PlayerEntity;
+                if (busy) {
                     return {
                         status: "failure",
                         message: "You are busy at the moment.",
@@ -802,17 +807,17 @@ const crossoverRouter = {
         // cmd.rest
         rest: authProcedure.query(async ({ ctx }) => {
             // Get player
-            const player = (await tryFetchEntity(
+            let player = (await tryFetchEntity(
                 ctx.user.publicKey,
             )) as PlayerEntity;
 
             // Check if player is busy
-            if (
-                await checkAndSetBusy({
-                    player,
-                    action: actions.rest.action,
-                })
-            ) {
+            const { busy, entity } = await checkAndSetBusy({
+                entity: player,
+                action: actions.rest.action,
+            });
+            player = entity as PlayerEntity;
+            if (busy) {
                 return {
                     status: "failure",
                     message: "You are busy at the moment.",

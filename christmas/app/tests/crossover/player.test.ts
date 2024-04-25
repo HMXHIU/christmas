@@ -115,8 +115,10 @@ test("Test Player", async () => {
             { Cookie: playerOneCookies },
         );
     }, 0);
+
+    // Say - player three should receive message (same tile)
     await expect(
-        waitForEventData(playerOneStream, "feed"),
+        waitForEventData(playerThreeStream, "feed"),
     ).resolves.toMatchObject({
         type: "message",
         message: "${origin} says ${message}",
@@ -127,9 +129,8 @@ test("Test Player", async () => {
         },
     });
 
-    // Say - player three should receive message (same tile)
     await expect(
-        waitForEventData(playerThreeStream, "feed"),
+        waitForEventData(playerOneStream, "feed"),
     ).resolves.toMatchObject({
         type: "message",
         message: "${origin} says ${message}",

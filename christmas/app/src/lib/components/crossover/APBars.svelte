@@ -12,9 +12,13 @@
     onMount(() => {
         const unsubscribe = player.subscribe((p) => {
             if (p != null) {
-                const stats = playerStats({ level: p.level });
-                maxAp = stats.ap;
-                apProgress = (p.ap / maxAp || 0) * 100;
+                maxAp = playerStats({ level: p.level }).ap;
+                // Calculate AP progress considering the time passed since the last AP update
+                const ap = Math.min(
+                    maxAp,
+                    Math.floor(p.ap + (Date.now() - p.apclk) / MS_PER_TICK),
+                );
+                apProgress = (ap / maxAp) * 100;
                 recoveryRate = 100 / (maxAp * TICKS_PER_TURN); // recovers all AP in 1 turn
             }
         });

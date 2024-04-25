@@ -37,12 +37,10 @@ import type { UpdateEntitiesEvent } from "../../../routes/api/crossover/stream/+
 import { ObjectStorage } from "../objectStorage";
 import {
     collidersInGeohashQuerySet,
-    isEntityBusy,
     itemRepository,
     monsterRepository,
     playerRepository,
     redisClient,
-    setEnityBusy,
 } from "./redis";
 import {
     type ItemEntity,
@@ -883,13 +881,13 @@ async function performAbility({
     }
 
     // Check if player is busy
-    if (
-        self.player &&
-        (await checkAndSetBusy({
-            player: self as PlayerEntity,
-            ability,
-        }))
-    ) {
+    const { busy, entity } = await checkAndSetBusy({
+        entity: self as PlayerEntity,
+        ability,
+    });
+    self = entity; // update `buclk`
+
+    if (self.player && busy) {
         return {
             self,
             target,
@@ -1141,24 +1139,28 @@ async function isGeohashTraversable(geohash: string): Promise<boolean> {
 }
 
 async function checkAndSetBusy({
-    player,
+    entity,
     action,
     ability,
 }: {
-    player: PlayerEntity;
+    entity: PlayerEntity | MonsterEntity;
     action?: Actions;
     ability?: string;
-}): Promise<Boolean> {
-    if (await isEntityBusy((player as Player).player)) {
-        return true;
+}): Promise<{ busy: Boolean; entity: PlayerEntity | MonsterEntity }> {
+    // Check if entity is busy
+    const now = Date.now();
+    if (entity.buclk > now) {
+        return { busy: true, entity };
     }
 
     // Action
     if (action != null && actions[action].ticks > 0) {
-        await setEnityBusy(
-            (player as Player).player,
-            actions[action].ticks * MS_PER_TICK,
-        );
+        const ms = actions[action].ticks * MS_PER_TICK;
+        entity.buclk = now + ms;
+        return {
+            busy: false,
+            entity: (await saveEntity(entity)) as PlayerEntity,
+        };
     }
     // Ability
     else if (ability != null) {
@@ -1166,10 +1168,19 @@ async function checkAndSetBusy({
             (acc, [type, effect]) => acc + effect.ticks,
             0,
         );
-        await setEnityBusy((player as Player).player, ticks * MS_PER_TICK);
+        if (ticks > 0) {
+            const ms = ticks * MS_PER_TICK;
+            entity.buclk = now + ms;
+            return {
+                busy: false,
+                entity: (await saveEntity(entity)) as PlayerEntity,
+            };
+        }
     }
-
-    return false;
+    return {
+        busy: false,
+        entity,
+    };
 }
 
 async function recoverAp(

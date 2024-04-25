@@ -66,7 +66,6 @@
     function processUpdateEntities(event: Event) {
         const { players, items, monsters } = (event as MessageEvent)
             .data as UpdateEntitiesEvent;
-
         handleUpdateEntities({ players, items, monsters });
     }
 
