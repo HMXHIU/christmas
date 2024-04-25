@@ -33,7 +33,6 @@
 
 <div class={cn("w-20 h-20", $$restProps.class)}>
     <svg viewBox="0 0 100 100" class={cn("circular-progress")}>
-        <circle class="bg"></circle>
         <circle class="hp" style="--progress: {hpProgress};"></circle>
         <circle class="mp" style="--progress: {mpProgress};"></circle>
         <circle class="st" style="--progress: {stProgress};"></circle>
@@ -66,10 +65,6 @@
         transform-origin: var(--half-size) var(--half-size);
         stroke-dasharray: var(--dash) calc(var(--circumference) - var(--dash));
         transition: stroke-dasharray 0.3s linear 0s;
-    }
-
-    .circular-progress circle.bg {
-        stroke: #ddd;
     }
 
     .circular-progress circle.mp {

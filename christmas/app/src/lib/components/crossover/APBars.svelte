@@ -53,7 +53,7 @@
         --size: 100px;
         --half-size: calc(var(--size) / 2);
         --stroke-width: 4px;
-        --radius: calc((var(--size) + var(--stroke-width) * 2.5) / 2);
+        --radius: calc((var(--size) + var(--stroke-width) * 1.5) / 2);
         --circumference: calc(var(--radius) * pi * 2);
         animation: progress-animation 5s linear 0s 1 forwards;
     }

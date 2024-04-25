@@ -2,6 +2,7 @@
     import * as Avatar from "$lib/components/ui/avatar";
     import { player } from "../../../store";
     import APBars from "./APBars.svelte";
+    import BusyBar from "./BusyBar.svelte";
     import ResourceBars from "./ResourceBars.svelte";
 
     // TODO: Use player actual portrait
@@ -20,9 +21,15 @@
             <Avatar.Fallback>{$player?.name.slice(0, 2)}</Avatar.Fallback>
         </Avatar.Root>
     </div>
+    <!-- Busy -->
+    <div class="relative h-0 flex justify-center md:bottom-14 bottom-10">
+        <BusyBar class="h-16 w-16 sm:min-h-20 sm:min-w-20"></BusyBar>
+    </div>
+    <!-- AP -->
     <div class="relative h-0 flex justify-center md:bottom-14 bottom-10">
         <APBars class="h-16 w-16 sm:min-h-20 sm:min-w-20"></APBars>
     </div>
+    <!-- HP, MP, ST -->
     <div class="relative h-0 flex justify-center md:bottom-14 bottom-10">
         <ResourceBars class="h-16 w-16 sm:min-h-20 sm:min-w-20"></ResourceBars>
     </div>
