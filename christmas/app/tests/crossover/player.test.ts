@@ -1,5 +1,6 @@
 import { INTERNAL_SERVICE_KEY } from "$env/static/private";
 import {
+    crossoverAuthPlayer,
     crossoverCmdConfigureItem,
     crossoverCmdCreateItem,
     crossoverCmdEquip,
@@ -213,10 +214,10 @@ test("Test Player", async () => {
     ).resolves.toMatchObject({
         event: "feed",
         type: "message",
-        message: "You do not enough resources to teleport",
+        message: "Not enough mana points to teleport.",
     });
 
-    // Buff entity with enough resources to teleport
+    // Buff `playerOne` with enough resources to teleport
     let res = await fetch(
         "http://localhost:5173/trpc/crossover.world.buffEntity",
         {
@@ -227,10 +228,8 @@ test("Test Player", async () => {
             },
             body: JSON.stringify({
                 entity: playerOne.player,
-                hp: 100,
-                mp: 100,
-                st: 100,
-                ap: 40,
+                level: 10,
+                ...playerStats({ level: 10 }),
             }),
         },
     );
@@ -252,6 +251,10 @@ test("Test Player", async () => {
     }, 0);
 
     // `playerOne` update resources
+    playerOne = (await crossoverAuthPlayer({
+        Cookie: playerOneCookies,
+    })) as PlayerEntity;
+
     await expect(
         waitForEventData(playerOneStream, "entities"),
     ).resolves.toMatchObject({
@@ -262,11 +265,9 @@ test("Test Player", async () => {
                 name: "Gandalf",
                 loggedIn: true,
                 location: playerOne.location, // no change yet
-                level: 1,
-                hp: 100,
-                mp: 80, // -20
-                st: 100,
-                ap: 36, // -10
+                level: 10,
+                mp: playerOne.mp - abilities.teleport.mp,
+                ap: playerOne.ap - abilities.teleport.ap,
             },
         ],
         monsters: [],
@@ -285,10 +286,9 @@ test("Test Player", async () => {
                 player: playerOne.player,
                 name: "Gandalf",
                 location: playerTwo.location,
-                hp: 100,
-                mp: 80,
-                st: 100,
-                ap: 36,
+                level: 10,
+                mp: playerOne.mp - abilities.teleport.mp,
+                ap: playerOne.ap - abilities.teleport.ap,
             },
             {
                 player: playerTwo.player,
@@ -712,7 +712,6 @@ test("Test Player", async () => {
             {
                 player: playerOne.player,
                 st: stBefore, // uses item charge not player's resources
-                ap: apBefore, // uses item charge not player's resources
             },
             {
                 player: playerTwo.player,

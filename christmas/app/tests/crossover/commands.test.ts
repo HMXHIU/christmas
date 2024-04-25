@@ -313,7 +313,6 @@ test("Test Commands", async () => {
                 hp: 10,
                 mp: 10,
                 st: 9,
-                ap: 3,
             },
         ],
         monsters: [

@@ -123,6 +123,7 @@ const BuffEntitySchema = z.object({
     hp: z.number().optional(),
     mp: z.number().optional(),
     st: z.number().optional(),
+    level: z.number().optional(),
     ap: z.number().optional(),
     buffs: z.array(z.string()).optional(),
     debuffs: z.array(z.string()).optional(),
@@ -203,7 +204,7 @@ const crossoverRouter = {
         buffEntity: internalServiceProcedure
             .input(BuffEntitySchema)
             .mutation(async ({ input }) => {
-                const { entity, hp, mp, st, ap, buffs, debuffs } = input;
+                const { entity, hp, mp, st, ap, level, buffs, debuffs } = input;
 
                 // Get `player` or `monster` enity
                 let fetchedEntity = await tryFetchEntity(entity);
@@ -215,6 +216,7 @@ const crossoverRouter = {
                 }
 
                 // Buff entity
+                fetchedEntity.level = level ?? fetchedEntity.level;
                 fetchedEntity.hp = hp ?? fetchedEntity.hp;
                 fetchedEntity.mp = mp ?? fetchedEntity.mp;
                 fetchedEntity.st = st ?? fetchedEntity.st;

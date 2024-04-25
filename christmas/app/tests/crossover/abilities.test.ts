@@ -1,7 +1,16 @@
 import { patchEffectWithVariables } from "$lib/crossover/world/abilities";
-import { abilities } from "$lib/crossover/world/settings";
-import { performAbility } from "$lib/server/crossover";
+import {
+    MS_PER_TICK,
+    TICKS_PER_TURN,
+    abilities,
+} from "$lib/crossover/world/settings";
+import {
+    consumeResources,
+    performAbility,
+    recoverAp,
+} from "$lib/server/crossover";
 import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
+import { sleep } from "$lib/utils";
 import { expect, test, vi } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer } from "./utils";
@@ -30,6 +39,15 @@ test("Test Abilities", async () => {
             geohash: playerTwoGeohash,
             name: playerTwoName,
         });
+
+    // Test AP recovery
+    playerOne = (await consumeResources(playerOne as PlayerEntity, {
+        ap: 100,
+    })) as PlayerEntity;
+    expect(playerOne.ap).toBe(0);
+    playerOne = (await recoverAp(playerOne as PlayerEntity)) as PlayerEntity;
+    await sleep(MS_PER_TICK * (TICKS_PER_TURN + 1));
+    expect(playerOne.ap).toBe(4);
 
     // Test ability out of range (scratch has 0 range)
     expect(
@@ -113,6 +131,7 @@ test("Test Abilities", async () => {
 
     // Test not enough action points
     playerOne.ap = 0;
+    playerOne.apclk = Date.now();
     await expect(
         performAbility({
             self: playerOne as PlayerEntity,
@@ -147,7 +166,7 @@ test("Test Abilities", async () => {
             buffs: [],
         },
         status: "failure",
-        message: "You do not enough resources to scratch",
+        message: "Not enough action points to scratch.",
     });
 
     // Test patchEffectWithVariables

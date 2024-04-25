@@ -63,6 +63,7 @@ export {
     checkAndSetBusy,
     configureItem,
     connectedUsers,
+    consumeResources,
     crossoverAuthPlayerMetadata,
     getUserMetadata,
     initPlayerEntity,
@@ -70,6 +71,7 @@ export {
     itemVariableValue,
     loadPlayerEntity,
     performAbility,
+    recoverAp,
     saveEntity,
     savePlayerEntityState,
     setPlayerState,
@@ -1201,10 +1203,10 @@ async function consumeResources(
         st,
         hp,
     }: {
-        ap: number;
-        mp: number;
-        st: number;
-        hp: number;
+        ap?: number;
+        mp?: number;
+        st?: number;
+        hp?: number;
     },
 ): Promise<PlayerEntity | MonsterEntity> {
     // Get max stats
@@ -1220,21 +1222,21 @@ async function consumeResources(
               beast: (entity as MonsterEntity).beast,
           });
 
-    if (ap !== 0) {
+    if (ap != null && ap !== 0) {
         entity.ap = Math.max(Math.min(maxAp, entity.ap - ap), 0);
     }
-    if (mp !== 0) {
+    if (mp != null && mp !== 0) {
         entity.mp = Math.max(Math.min(maxMp, entity.mp - mp), 0);
     }
-    if (st !== 0) {
+    if (st != null && st !== 0) {
         entity.st = Math.max(Math.min(maxSt, entity.st - st), 0);
     }
-    if (hp !== 0) {
+    if (hp != null && hp !== 0) {
         entity.hp = Math.max(Math.min(maxHp, entity.hp - hp), 0);
     }
 
     // Set AP clock (if consumed)
-    if (ap > 0) {
+    if (ap != null && ap > 0) {
         entity.apclk = Date.now();
     }
 

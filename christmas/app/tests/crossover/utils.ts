@@ -1,5 +1,6 @@
+import { INTERNAL_SERVICE_KEY } from "$env/static/private";
 import { login as loginCrossover, signup } from "$lib/crossover";
-import type { Player } from "$lib/server/crossover/redis/entities";
+import type { Monster, Player } from "$lib/server/crossover/redis/entities";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import type { StreamEvent } from "../../src/routes/api/crossover/stream/+server";
 import { createRandomUser } from "../utils";
@@ -76,4 +77,34 @@ export function generateRandomGeohash(
     }
 
     return geohash;
+}
+
+export async function buffEntity(
+    entity: string,
+    {
+        level,
+        hp,
+        mp,
+        st,
+        ap,
+    }: { level: number; hp: number; mp: number; st: number; ap: number },
+): Promise<Player | Monster> {
+    const { result } = await (
+        await fetch("http://localhost:5173/trpc/crossover.world.buffEntity", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${INTERNAL_SERVICE_KEY}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                entity,
+                level,
+                hp,
+                mp,
+                st,
+                ap,
+            }),
+        })
+    ).json();
+    return result.data as Player | Monster;
 }

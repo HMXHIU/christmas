@@ -1,5 +1,6 @@
 import { geohashNeighbour } from "$lib/crossover/utils";
 import { monsterStats } from "$lib/crossover/world/bestiary";
+import { playerStats } from "$lib/crossover/world/player";
 import { abilities, compendium } from "$lib/crossover/world/settings";
 import { spawnItem, spawnMonster } from "$lib/server/crossover";
 import {
@@ -17,7 +18,7 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
-import { createRandomPlayer, generateRandomGeohash } from "./utils";
+import { buffEntity, createRandomPlayer, generateRandomGeohash } from "./utils";
 
 test("Test Monster", async () => {
     const region = String.fromCharCode(...getRandomRegion());
@@ -109,7 +110,7 @@ test("Test Monster", async () => {
     });
 
     // Test cannot spawn monster on collider
-    const woodendoorGeohash = generateRandomGeohash(8);
+    const woodendoorGeohash = generateRandomGeohash(8, "h9");
     let woodendoor = (await spawnItem({
         geohash: woodendoorGeohash,
         prop: compendium.woodendoor.prop,
@@ -149,24 +150,26 @@ test("Test Monster", async () => {
      * Test `performMonsterActions`
      */
 
+    // Reset `playerOne`, `goblin` stats
+    goblin = (await buffEntity(goblin.monster, {
+        level: goblin.level,
+        ...monsterStats({ level: goblin.level, beast: goblin.beast }),
+    })) as MonsterEntity;
+    playerOne = (await buffEntity(playerOne.player, {
+        level: playerOne.level,
+        ...playerStats({ level: playerOne.level }),
+    })) as PlayerEntity;
+
     // Test monster attacking player
-    goblin.ap = 10;
-    goblin.hp = 20;
-    goblin = (await monsterRepository.save(
-        goblin.monster,
-        goblin,
-    )) as MonsterEntity;
-    playerOne.hp = 20;
-    playerOne = (await playerRepository.save(
-        playerOne.player,
-        playerOne as PlayerEntity,
-    )) as PlayerEntity;
+    var hp = playerOne.hp;
+    var ap = goblin.ap;
     await performMonsterActions([playerOne as PlayerEntity], [goblin]);
+
     playerOne = (await playerRepository.fetch(
         playerOne.player,
     )) as PlayerEntity;
     goblin = (await monsterRepository.fetch(goblin.monster)) as MonsterEntity;
 
-    expect(playerOne.hp).toBe(20 - 1); // test player hp reduced by scatch damage
-    expect(goblin.ap).toBe(10 - abilities.scratch.ap); // test monster ap reduced by scratch ap
+    expect(playerOne.hp).toBe(hp - 1); // test player hp reduced by scatch damage
+    expect(goblin.ap).toBe(ap - abilities.scratch.ap); // test monster ap reduced by scratch ap
 });

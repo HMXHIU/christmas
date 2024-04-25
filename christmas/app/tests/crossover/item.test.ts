@@ -126,7 +126,7 @@ test("Test Items", async () => {
     })) as ItemEntity;
 
     // Spawn portalTwo at random location
-    const portalTwoGeohash = generateRandomGeohash(8);
+    const portalTwoGeohash = generateRandomGeohash(8, "h9");
     let portalTwo = (await spawnItem({
         geohash: portalTwoGeohash, // somwhere else
         prop: compendium.portal.prop,

@@ -18,7 +18,7 @@ test("Test IR", async () => {
 
     // Player - playerOne
     const playerOneName = "Gandalf";
-    const playerOneGeohash = generateRandomGeohash(8);
+    const playerOneGeohash = generateRandomGeohash(8, "h9");
     let [playerOneWallet, playerOneCookies, playerOne] =
         await createRandomPlayer({
             region,
@@ -28,7 +28,7 @@ test("Test IR", async () => {
 
     // Player - playerTwo
     const playerTwoName = "Saruman";
-    const playerTwoGeohash = generateRandomGeohash(8);
+    const playerTwoGeohash = generateRandomGeohash(8, "h9");
     let [playerTwoWallet, playerTwoCookies, playerTwo] =
         await createRandomPlayer({
             region,
@@ -38,7 +38,7 @@ test("Test IR", async () => {
 
     // Item - woodendoor
     let woodendoor = (await spawnItem({
-        geohash: generateRandomGeohash(8),
+        geohash: generateRandomGeohash(8, "h9"),
         prop: compendium.woodendoor.prop,
         variables: {
             [compendium.woodendoor.variables!.doorsign.variable]:
@@ -48,7 +48,7 @@ test("Test IR", async () => {
 
     // Item - woodenclub
     let woodenclub = await spawnItem({
-        geohash: generateRandomGeohash(8),
+        geohash: generateRandomGeohash(8, "h9"),
         prop: compendium.woodenclub.prop,
     });
 
