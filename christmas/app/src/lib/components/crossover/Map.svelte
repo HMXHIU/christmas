@@ -7,7 +7,14 @@
         compendium,
     } from "$lib/crossover/world/settings";
     import type { TileSchema } from "$lib/server/crossover/router";
-    import { Application, Assets, Container, Sprite, Texture } from "pixi.js";
+    import {
+        Application,
+        Assets,
+        Container,
+        Graphics,
+        Sprite,
+        Texture,
+    } from "pixi.js";
     import { onMount } from "svelte";
     import type { z } from "zod";
     import { grid, player, tile } from "../../../store";
@@ -443,7 +450,11 @@
     }
 
     onMount(async () => {
-        await app.init({ width: CANVAS_WIDTH, height: CANVAS_HEIGHT });
+        await app.init({
+            width: CANVAS_WIDTH,
+            height: CANVAS_HEIGHT,
+            antialias: true,
+        });
 
         // Add world container
         worldStage.width = WORLD_WIDTH;
@@ -463,6 +474,18 @@
         playerSprite = new Sprite(playerTexture);
         playerSprite.width = CELL_WIDTH;
         playerSprite.height = CELL_HEIGHT;
+
+        // Player mask
+        const playerSpriteMask = new Graphics();
+        playerSpriteMask.circle(
+            playerTexture.width / 2,
+            playerTexture.height / 2,
+            playerTexture.width / 2,
+        );
+        playerSpriteMask.fill();
+        playerSprite.mask = playerSpriteMask;
+
+        playerSprite.addChild(playerSpriteMask);
         worldStage.addChild(playerSprite);
 
         await fillInGrid($grid, {
