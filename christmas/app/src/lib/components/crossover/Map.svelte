@@ -7,16 +7,14 @@
         compendium,
     } from "$lib/crossover/world/settings";
     import type { TileSchema } from "$lib/server/crossover/router";
-    import {
-        AnimatedSprite,
-        Application,
-        Assets,
-        Container,
-        Sprite,
-    } from "pixi.js";
+    import { Application, Assets, Container, Sprite, Texture } from "pixi.js";
     import { onMount } from "svelte";
     import type { z } from "zod";
     import { grid, player, tile } from "../../../store";
+
+    let playerAvatar = "/sprites/portraits/female_drow.jpeg";
+    let playerTexture: Texture;
+    let playerSprite: Sprite;
 
     const CANVAS_WIDTH = 200;
     const CANVAS_HEIGHT = 200;
@@ -41,7 +39,6 @@
 
     const app = new Application();
     const worldStage = new Container();
-    const playerStage = new Container();
 
     let container: HTMLDivElement;
     let prevTile: z.infer<typeof TileSchema> | null = null;
@@ -145,10 +142,6 @@
         const frame =
             bundle[asset.name]?.textures[variant ?? asset.variants!.default];
         if (!frame) return null;
-
-        // PIXILATE
-        // frame.baseTexture.scaleMode = SCALE_MODES.NEAREST;
-
         const sprite = new Sprite(frame);
 
         // Convert cartesian to isometric
@@ -162,29 +155,6 @@
         return sprite;
     }
 
-    async function drawPlayer() {
-        // TODO: use playerAsset
-        const { player: playerBundle } = await Assets.loadBundle("player");
-        const playerSprite = new AnimatedSprite(
-            playerBundle.animations["stand"],
-        );
-
-        // Convert cartesian to isometric
-        const [isoX, isoY] = cartToIso(
-            GRID_MID_COL * CELL_WIDTH,
-            GRID_MID_ROW * CELL_HEIGHT,
-        );
-
-        playerSprite.x = isoX;
-        playerSprite.y = isoY - CELL_HEIGHT / 2; // TODO: WHY - CELL_HEIGHT / 2?
-        playerSprite.width = CELL_WIDTH;
-        playerSprite.height = CELL_HEIGHT;
-        playerSprite.animationSpeed = 0.1;
-        playerSprite.play();
-        // Add player (not in the world container - directly to stage, thus different coordinate system)
-        playerStage.addChild(playerSprite);
-    }
-
     async function fillInGrid(
         g: Grid,
         {
@@ -195,7 +165,7 @@
             rowEnd,
             alpha,
         }: {
-            cell: { precision: number; row: number; col: number };
+            cell: { precision: number; row: number; col: number }; // the center cell
             colStart?: number;
             colEnd?: number;
             rowStart?: number;
@@ -337,8 +307,20 @@
     }
 
     async function updateWorld(t: z.infer<typeof TileSchema>, g: Grid) {
+        const cell = geohashToGridCell(t.geohash);
+
+        // Player
+        if (playerSprite != null && cell != null) {
+            const [isoX, isoY] = cartToIso(
+                GRID_MID_COL * CELL_WIDTH,
+                GRID_MID_ROW * CELL_HEIGHT,
+            );
+            playerSprite.x = isoX;
+            playerSprite.y = isoY - CELL_HEIGHT / 2;
+        }
+
+        // Environment
         if (prevTile != null) {
-            const cell = geohashToGridCell(t.geohash);
             const prevCell = geohashToGridCell(prevTile.geohash);
 
             if (cell.precision === prevCell.precision) {
@@ -417,7 +399,7 @@
                     });
                 }
 
-                // Update sprite target positions
+                // Update sprite target positions (gs.sprite.x -> gs.x)
                 if (deltaCol !== 0 || deltaRow !== 0) {
                     const [isoX, isoY] = cartToIso(
                         deltaCol * CELL_WIDTH,
@@ -426,17 +408,20 @@
                     for (const row of Object.values(gridSprites)) {
                         for (const gridSprite of Object.values(row)) {
                             for (const gs of Object.values(gridSprite)) {
-                                gs.x -= isoX; // deltaCol * CELL_WIDTH;
-                                gs.y -= isoY; //  deltaRow * CELL_HEIGHT;
+                                gs.x -= isoX;
+                                gs.y -= isoY;
                             }
                         }
                     }
                 }
             }
+
+            // Sort sprites based on their y-coordinate
             sortSpriteOrder(worldStage);
         }
 
-        prevTile = { ...t }; // copy, do not set by reference
+        // Update the previous tile (copy, do not set by reference)
+        prevTile = { ...t };
     }
 
     /**
@@ -466,23 +451,19 @@
         worldStage.pivot.y = wpIsoY / 2 - CELL_WIDTH / 2;
         app.stage.addChild(worldStage);
 
-        // Add player container
-        playerStage.width = WORLD_WIDTH;
-        playerStage.height = WORLD_HEIGHT;
-        playerStage.pivot.x =
-            wpIsoX +
-            Math.floor(CELL_WIDTH / 2) -
-            Math.floor((GRID_COLS * CELL_WIDTH) / 2) +
-            (WORLD_PIVOT_X - wpIsoX);
-        playerStage.pivot.y = wpIsoY / 2 - CELL_WIDTH / 2;
-        app.stage.addChild(playerStage);
+        // Player sprite
+        playerTexture = await Assets.load(playerAvatar);
+        playerSprite = new Sprite(playerTexture);
+        playerSprite.width = CELL_WIDTH;
+        playerSprite.height = CELL_HEIGHT;
+        worldStage.addChild(playerSprite);
 
-        await drawPlayer();
         await fillInGrid($grid, {
             cell: geohashToGridCell($tile.geohash),
             colStart: 0,
             colEnd: GRID_COLS,
         });
+        await updateWorld($tile, $grid);
 
         // Ticker
         app.ticker.add((deltaTime) => {

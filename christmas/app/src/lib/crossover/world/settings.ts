@@ -16,7 +16,7 @@ export {
 };
 
 const TICKS_PER_TURN = 4;
-const MS_PER_TICK = PUBLIC_ENVIRONMENT === "development" ? 1000 : 2000;
+const MS_PER_TICK = PUBLIC_ENVIRONMENT === "development" ? 1 : 2000;
 // const MS_PER_TICK = 2000;
 
 /**
