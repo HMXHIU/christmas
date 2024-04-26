@@ -12,6 +12,11 @@
     import type { z } from "zod";
     import { grid, player, tile } from "../../../store";
 
+    type SpriteLayer = "biome" | "entity";
+
+    const BIOME_ZLAYER = 0;
+    const ENTITIES_ZLAYER = 10000;
+
     let playerAvatar = "/sprites/portraits/female_drow.jpeg";
     let playerTexture: Texture;
     let playerSprite: Sprite;
@@ -48,6 +53,7 @@
         sprite: Sprite;
         x: number;
         y: number;
+        layerType: SpriteLayer;
     }
 
     /**
@@ -123,6 +129,7 @@
         col,
         row,
         alpha,
+        layerType,
         variant,
         width,
         height,
@@ -131,6 +138,7 @@
         col: number;
         row: number;
         alpha: number;
+        layerType: SpriteLayer;
         variant?: string;
         width?: number;
         height?: number;
@@ -151,6 +159,10 @@
         sprite.width = CELL_WIDTH * width; // TODO: also need to convert to ISO
         sprite.height = CELL_HEIGHT * height;
         sprite.alpha = alpha;
+
+        // Set z-index based on y-coordinate & layer
+        sprite.zIndex = layerType === "biome" ? BIOME_ZLAYER : ENTITIES_ZLAYER;
+        sprite.zIndex += sprite.y;
 
         return sprite;
     }
@@ -205,6 +217,7 @@
                             col,
                             row,
                             alpha,
+                            layerType: "biome",
                         });
 
                         if (sprite) {
@@ -213,6 +226,7 @@
                                 sprite: worldStage.addChild(sprite),
                                 x: sprite.x,
                                 y: sprite.y,
+                                layerType: "biome",
                             });
                         }
                     }
@@ -232,6 +246,7 @@
                             col,
                             row,
                             alpha,
+                            layerType: "entity",
                         });
                         if (sprite) {
                             sprite.y -= CELL_HEIGHT / 2; // players should be on top of the biome
@@ -240,6 +255,7 @@
                                 sprite: worldStage.addChild(sprite),
                                 x: sprite.x,
                                 y: sprite.y,
+                                layerType: "entity",
                             });
                         }
                     }
@@ -260,6 +276,7 @@
                                 variant: variants?.[item.state],
                                 width,
                                 height,
+                                layerType: "entity",
                             });
                             if (sprite) {
                                 sprite.y -= CELL_HEIGHT / 2; // items should be on top of the biome
@@ -268,6 +285,7 @@
                                     sprite: worldStage.addChild(sprite),
                                     x: sprite.x,
                                     y: sprite.y,
+                                    layerType: "entity",
                                 });
                             }
                         }
@@ -289,6 +307,7 @@
                                 alpha,
                                 width,
                                 height,
+                                layerType: "entity",
                             });
                             if (sprite) {
                                 sprite.y -= CELL_HEIGHT / 2; // monsters should be on top of the biome
@@ -297,6 +316,7 @@
                                     sprite: worldStage.addChild(sprite),
                                     x: sprite.x,
                                     y: sprite.y,
+                                    layerType: "entity",
                                 });
                             }
                         }
@@ -317,6 +337,7 @@
             );
             playerSprite.x = isoX;
             playerSprite.y = isoY - CELL_HEIGHT / 2;
+            playerSprite.zIndex = ENTITIES_ZLAYER + playerSprite.y;
         }
 
         // Environment
@@ -415,24 +436,10 @@
                     }
                 }
             }
-
-            // Sort sprites based on their y-coordinate
-            sortSpriteOrder(worldStage);
         }
 
         // Update the previous tile (copy, do not set by reference)
         prevTile = { ...t };
-    }
-
-    /**
-     * Set the z-index of sprites based on their y-coordinate, drawing the sprites futhest away first
-     */
-    function sortSpriteOrder(stage: Container) {
-        const sprites = stage.children as Sprite[];
-        sprites.sort((a, b) => a.y - b.y);
-        for (let i = 0; i < sprites.length; i++) {
-            sprites[i].zIndex = i;
-        }
     }
 
     onMount(async () => {
