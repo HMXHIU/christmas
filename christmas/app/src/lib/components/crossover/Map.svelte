@@ -43,7 +43,7 @@
     const CANVAS_MID_ROW = Math.floor(CANVAS_ROWS / 2);
     const CANVAS_MID_COL = Math.floor(CANVAS_COLS / 2);
 
-    const OVERDRAW_MULTIPLE = 1;
+    const OVERDRAW_MULTIPLE = 2;
     const WORLD_WIDTH = CANVAS_WIDTH * OVERDRAW_MULTIPLE;
     const WORLD_HEIGHT = CANVAS_HEIGHT * OVERDRAW_MULTIPLE;
     const WORLD_PIVOT_X = (WORLD_WIDTH - CANVAS_WIDTH) / 2;
@@ -512,20 +512,60 @@
         // Player sprite
         playerTexture = await Assets.load(playerAvatar);
         playerSprite = new Sprite(playerTexture);
-        playerSprite.width = CELL_WIDTH;
-        playerSprite.height = CELL_HEIGHT;
 
-        // Player mask
+        const textureWidth = playerSprite.texture.height / 3;
+        const textureCenter = playerSprite.texture.width / 2;
+
+        // Banner mask
         const playerSpriteMask = new Graphics();
-        playerSpriteMask.circle(
-            playerTexture.width / 2,
-            playerTexture.height / 2,
-            playerTexture.width / 2,
-        );
+        playerSpriteMask.poly([
+            { x: textureCenter - textureWidth / 2, y: 0 },
+            { x: textureCenter + textureWidth / 2, y: 0 },
+            {
+                x: textureCenter + textureWidth / 2,
+                y: playerSprite.texture.height * 0.92,
+            },
+            {
+                x: textureCenter,
+                y: playerSprite.texture.height,
+            },
+            {
+                x: textureCenter - textureWidth / 2,
+                y: playerSprite.texture.height * 0.92,
+            },
+        ]);
         playerSpriteMask.fill();
         playerSprite.mask = playerSpriteMask;
-
         playerSprite.addChild(playerSpriteMask);
+
+        // Banner border
+        const bannerBorder = new Graphics();
+        bannerBorder.poly([
+            { x: textureCenter - textureWidth / 2, y: 0 },
+            { x: textureCenter + textureWidth / 2, y: 0 },
+            {
+                x: textureCenter + textureWidth / 2,
+                y: playerSprite.texture.height * 0.92,
+            },
+            {
+                x: textureCenter,
+                y: playerSprite.texture.height,
+            },
+            {
+                x: textureCenter - textureWidth / 2,
+                y: playerSprite.texture.height * 0.92,
+            },
+        ]);
+        bannerBorder.stroke({ width: 30, color: 0x000000 });
+        playerSprite.addChild(bannerBorder);
+
+        // Scale to grid cell (slightly smaller) while maintaining aspect ratio
+        playerSprite.width =
+            playerSprite.texture.width / (textureWidth / (CELL_WIDTH - 15));
+        playerSprite.height =
+            (playerSprite.texture.height * playerSprite.width) /
+            playerSprite.texture.width;
+
         worldStage.addChild(playerSprite);
 
         await fillInGrid($grid, {
