@@ -1,5 +1,10 @@
 <script lang="ts">
-    import { geohashToGridCell, type Grid } from "$lib/crossover/world";
+    import { seededRandom } from "$lib/crossover/utils";
+    import {
+        geohashToGridCell,
+        type AssetMetadata,
+        type Grid,
+    } from "$lib/crossover/world";
     import { playerAsset } from "$lib/crossover/world/player";
     import {
         bestiary,
@@ -30,8 +35,8 @@
 
     const CANVAS_WIDTH = 200;
     const CANVAS_HEIGHT = 200;
-    const CANVAS_ROWS = 7;
-    const CANVAS_COLS = 7;
+    const CANVAS_ROWS = 5;
+    const CANVAS_COLS = 5;
     const CANVAS_MID_ROW = Math.floor(CANVAS_ROWS / 2);
     const CANVAS_MID_COL = Math.floor(CANVAS_COLS / 2);
 
@@ -140,8 +145,9 @@
         variant,
         width,
         height,
+        seed,
     }: {
-        asset: any;
+        asset: AssetMetadata;
         col: number;
         row: number;
         alpha: number;
@@ -149,13 +155,36 @@
         variant?: string;
         width?: number;
         height?: number;
+        seed?: number; // seed used for any random generators
     }) {
         width ??= 1;
         height ??= 1;
-
+        seed ??= 0;
         const bundle = await Assets.loadBundle(asset.bundle);
+
+        // Determine variant
+        if (variant == null) {
+            if (asset.prob != null) {
+                const rv = seededRandom(seed);
+                const entries = Object.entries(asset.prob);
+                let acc = entries[0][1];
+                variant = entries[0][0];
+                for (const [v, p] of Object.entries(asset.prob)) {
+                    if (rv < acc) {
+                        variant = v;
+                        break;
+                    } else {
+                        acc += p;
+                    }
+                }
+            }
+        }
+        variant ??= "default";
+
         const frame =
-            bundle[asset.name]?.textures[variant ?? asset.variants!.default];
+            bundle[asset.name]?.textures[
+                asset.variants?.[variant] || "default"
+            ];
         if (!frame) return null;
         const sprite = new Sprite(frame);
 
@@ -163,8 +192,9 @@
         const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
         sprite.x = isoX;
         sprite.y = isoY;
-        sprite.width = CELL_WIDTH * width; // TODO: also need to convert to ISO
-        sprite.height = CELL_HEIGHT * height;
+
+        sprite.width = CELL_WIDTH * width;
+        sprite.height = (frame.height * sprite.width) / frame.width; // maintain aspect ratio
         sprite.alpha = alpha;
 
         // Set z-index based on y-coordinate & layer
@@ -225,6 +255,7 @@
                             row,
                             alpha,
                             layerType: "biome",
+                            seed: gridRow * 1000 + gridCol,
                         });
 
                         if (sprite) {
@@ -453,14 +484,12 @@
         await app.init({
             width: CANVAS_WIDTH,
             height: CANVAS_HEIGHT,
-            antialias: true,
         });
 
         // Add world container
         worldStage.width = WORLD_WIDTH;
         worldStage.height = WORLD_HEIGHT;
         const [wpIsoX, wpIsoY] = cartToIso(WORLD_PIVOT_X, WORLD_PIVOT_Y);
-
         worldStage.pivot.x =
             wpIsoX +
             Math.floor(CELL_WIDTH / 2) -

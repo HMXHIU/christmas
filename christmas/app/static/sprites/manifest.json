@@ -13,27 +13,15 @@
             "name": "biomes",
             "assets": [
                 {
+                    "alias": "terrain",
+                    "src": "/sprites/biome/terrain/sprite.json"
+                },
+                {
                     "alias": "tree",
                     "src": "/sprites/tree/sprite.json"
                 },
                 {
                     "alias": "lightwater",
-                    "src": "/sprites/biome/sprite.json"
-                },
-                {
-                    "alias": "lightgrass",
-                    "src": "/sprites/biome/sprite.json"
-                },
-                {
-                    "alias": "darkgrass",
-                    "src": "/sprites/biome/sprite.json"
-                },
-                {
-                    "alias": "lightsand",
-                    "src": "/sprites/biome/sprite.json"
-                },
-                {
-                    "alias": "darksand",
                     "src": "/sprites/biome/sprite.json"
                 }
             ]

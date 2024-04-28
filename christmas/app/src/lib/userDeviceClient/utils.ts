@@ -7,7 +7,26 @@ import type { Location } from "./types";
 export async function getLocation(
     geoHashPrecision?: number,
 ): Promise<Location> {
+    // // TESTING OFFLINE
+    // return {
+    //     geolocationCoordinates: {
+    //         latitude: 90,
+    //         longitude: 90,
+    //         accuracy: 0,
+    //         altitude: 0,
+    //         altitudeAccuracy: 0,
+    //         heading: 0,
+    //         speed: 0,
+    //     },
+    //     geohash: Array.from(stringToUint8Array("gbsuv77e")),
+    //     country: {
+    //         code: Array.from(stringToUint8Array("SGP")),
+    //         name: "Singapore",
+    //     },
+    // };
+
     const geolocationCoordinates = await getGeolocationCoordinates();
+
     return {
         geolocationCoordinates,
         geohash: Array.from(
