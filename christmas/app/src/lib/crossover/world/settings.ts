@@ -488,9 +488,16 @@ let biomes: Record<string, Biome> = {
         traversableSpeed: 0,
         asset: {
             bundle: "biomes",
-            name: "lightwater",
+            name: "terrain",
             variants: {
-                default: "lightwater",
+                default: "rocks1",
+                alt1: "rocks2",
+                alt2: "rocks3",
+            },
+            prob: {
+                default: 0.33,
+                alt1: 0.33,
+                alt2: 0.33,
             },
             width: 1,
             height: 1,

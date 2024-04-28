@@ -30,7 +30,7 @@
     <!-- Map -->
     {#if $tile}
         <div class="fixed top-20 right-0">
-            <Collapsible.Root class="w-[200px] space-y-2">
+            <Collapsible.Root class="w-[320px] space-y-2">
                 <div
                     class="flex items-center justify-end text-right space-x-4 px-4"
                 >

@@ -27,20 +27,23 @@
     type SpriteLayer = "biome" | "entity";
 
     const BIOME_ZLAYER = 0;
-    const ENTITIES_ZLAYER = 10000;
+    const ENTITIES_ZLAYER = 1000000000;
 
     let playerAvatar = "/sprites/portraits/female_drow.jpeg";
     let playerTexture: Texture;
     let playerSprite: Sprite;
 
-    const CANVAS_WIDTH = 200;
-    const CANVAS_HEIGHT = 200;
+    const CELL_WIDTH = 64;
+    const CELL_HEIGHT = CELL_WIDTH;
+
     const CANVAS_ROWS = 5;
     const CANVAS_COLS = 5;
+    const CANVAS_WIDTH = CELL_WIDTH * CANVAS_COLS;
+    const CANVAS_HEIGHT = CELL_HEIGHT * CANVAS_ROWS;
     const CANVAS_MID_ROW = Math.floor(CANVAS_ROWS / 2);
     const CANVAS_MID_COL = Math.floor(CANVAS_COLS / 2);
 
-    const OVERDRAW_MULTIPLE = 2;
+    const OVERDRAW_MULTIPLE = 1;
     const WORLD_WIDTH = CANVAS_WIDTH * OVERDRAW_MULTIPLE;
     const WORLD_HEIGHT = CANVAS_HEIGHT * OVERDRAW_MULTIPLE;
     const WORLD_PIVOT_X = (WORLD_WIDTH - CANVAS_WIDTH) / 2;
@@ -50,9 +53,6 @@
     const GRID_COLS = CANVAS_COLS * OVERDRAW_MULTIPLE;
     const GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
     const GRID_MID_COL = Math.floor(GRID_COLS / 2);
-
-    const CELL_HEIGHT = WORLD_HEIGHT / GRID_ROWS;
-    const CELL_WIDTH = WORLD_WIDTH / GRID_COLS;
 
     const app = new Application();
     const worldStage = new Container();
@@ -197,9 +197,9 @@
         sprite.height = (frame.height * sprite.width) / frame.width; // maintain aspect ratio
         sprite.alpha = alpha;
 
-        // Set z-index based on y-coordinate & layer
-        sprite.zIndex = layerType === "biome" ? BIOME_ZLAYER : ENTITIES_ZLAYER;
-        sprite.zIndex += sprite.y;
+        // // Set z-index based on y-coordinate & layer
+        // sprite.zIndex = layerType === "biome" ? BIOME_ZLAYER : ENTITIES_ZLAYER;
+        // sprite.zIndex += sprite.y;
 
         return sprite;
     }
@@ -266,6 +266,8 @@
                                 y: sprite.y,
                                 layerType: "biome",
                             });
+                            // Set z-index based on y-coordinate & layer
+                            sprite.zIndex = BIOME_ZLAYER + gridRow + gridCol;
                         }
                     }
                 }
@@ -295,6 +297,8 @@
                                 y: sprite.y,
                                 layerType: "entity",
                             });
+                            // Set z-index based on y-coordinate & layer
+                            sprite.zIndex = ENTITIES_ZLAYER + gridRow + gridCol;
                         }
                     }
                 }
@@ -325,6 +329,9 @@
                                     y: sprite.y,
                                     layerType: "entity",
                                 });
+                                // Set z-index based on y-coordinate & layer
+                                sprite.zIndex =
+                                    ENTITIES_ZLAYER + gridRow + gridCol;
                             }
                         }
                     }
@@ -356,6 +363,9 @@
                                     y: sprite.y,
                                     layerType: "entity",
                                 });
+                                // Set z-index based on y-coordinate & layer
+                                sprite.zIndex =
+                                    ENTITIES_ZLAYER + gridRow + gridCol;
                             }
                         }
                     }
@@ -484,6 +494,7 @@
         await app.init({
             width: CANVAS_WIDTH,
             height: CANVAS_HEIGHT,
+            antialias: false,
         });
 
         // Add world container
