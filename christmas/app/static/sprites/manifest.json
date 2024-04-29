@@ -27,6 +27,15 @@
             ]
         },
         {
+            "name": "pedestals",
+            "assets":[
+                {
+                    "alias": "pedestals",
+                    "src": "/sprites/pedestals/sprite.json"
+                }
+            ]
+        },
+        {
             "name": "bestiary",
             "assets": [
                 {

@@ -36,14 +36,14 @@
     const CELL_WIDTH = 64;
     const CELL_HEIGHT = CELL_WIDTH;
 
-    const CANVAS_ROWS = 5;
-    const CANVAS_COLS = 5;
+    const CANVAS_ROWS = 7;
+    const CANVAS_COLS = 7;
     const CANVAS_WIDTH = CELL_WIDTH * CANVAS_COLS;
-    const CANVAS_HEIGHT = CELL_HEIGHT * CANVAS_ROWS;
+    const CANVAS_HEIGHT = CELL_HEIGHT * CANVAS_ROWS; // TODO: wrong calculation
     const CANVAS_MID_ROW = Math.floor(CANVAS_ROWS / 2);
     const CANVAS_MID_COL = Math.floor(CANVAS_COLS / 2);
 
-    const OVERDRAW_MULTIPLE = 2;
+    const OVERDRAW_MULTIPLE = 1;
     const WORLD_WIDTH = CANVAS_WIDTH * OVERDRAW_MULTIPLE;
     const WORLD_HEIGHT = CANVAS_HEIGHT * OVERDRAW_MULTIPLE;
     const WORLD_PIVOT_X = (WORLD_WIDTH - CANVAS_WIDTH) / 2;
@@ -192,14 +192,11 @@
         const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
         sprite.x = isoX;
         sprite.y = isoY;
+        sprite.anchor.set(0.5);
 
         sprite.width = CELL_WIDTH * width;
         sprite.height = (frame.height * sprite.width) / frame.width; // maintain aspect ratio
         sprite.alpha = alpha;
-
-        // // Set z-index based on y-coordinate & layer
-        // sprite.zIndex = layerType === "biome" ? BIOME_ZLAYER : ENTITIES_ZLAYER;
-        // sprite.zIndex += sprite.y;
 
         return sprite;
     }
@@ -289,7 +286,6 @@
                             layerType: "entity",
                         });
                         if (sprite) {
-                            sprite.y -= CELL_HEIGHT / 2; // players should be on top of the biome
                             setGridSprite(gridRow, gridCol, {
                                 id: p.player,
                                 sprite: worldStage.addChild(sprite),
@@ -321,7 +317,6 @@
                                 layerType: "entity",
                             });
                             if (sprite) {
-                                sprite.y -= CELL_HEIGHT / 2; // items should be on top of the biome
                                 setGridSprite(gridRow, gridCol, {
                                     id: item.item,
                                     sprite: worldStage.addChild(sprite),
@@ -355,7 +350,6 @@
                                 layerType: "entity",
                             });
                             if (sprite) {
-                                sprite.y -= CELL_HEIGHT / 2; // monsters should be on top of the biome
                                 setGridSprite(gridRow, gridCol, {
                                     id: monster.monster,
                                     sprite: worldStage.addChild(sprite),
@@ -490,6 +484,73 @@
         prevTile = { ...t };
     }
 
+    function createCreatureSprite(
+        texture: Texture,
+        pedestalTexture: Texture,
+    ): Sprite {
+        const sprite = new Sprite(playerTexture);
+
+        const anchorY = 0.92;
+        sprite.anchor.set(0.5, anchorY);
+
+        const width = texture.height / 3;
+        const xMid = texture.width / 2;
+        const yMid = texture.height * anchorY;
+        const halfW = width / 2;
+        const shape = [
+            {
+                x: -halfW,
+                y: -yMid,
+            },
+            {
+                x: halfW,
+                y: -yMid,
+            },
+            {
+                x: halfW,
+                y: 0,
+            },
+            {
+                x: 0,
+                y: texture.height - yMid,
+            },
+            {
+                x: -halfW,
+                y: 0,
+            },
+        ];
+
+        // Banner mask
+        const mask = new Graphics();
+        mask.poly(shape);
+        mask.fill();
+        sprite.mask = mask;
+        sprite.addChild(mask);
+
+        // Banner border
+        const bannerBorder = new Graphics();
+        bannerBorder.poly(shape);
+        bannerBorder.stroke({ width: 30, color: 0x000000 });
+        sprite.addChild(bannerBorder);
+
+        // Scale to grid cell (slightly smaller) while maintaining aspect ratio
+        sprite.width = texture.width / (width / (CELL_WIDTH - 20));
+        sprite.height = (texture.height * sprite.width) / texture.width;
+
+        // Pedastal
+        const pedestal = new Sprite(pedestalTexture);
+        pedestal.width = CELL_WIDTH;
+        pedestal.height =
+            (pedestalTexture.height * pedestal.width) / pedestalTexture.width;
+        pedestal.anchor.set(0.5);
+
+        const parent = new Sprite();
+        parent.addChild(pedestal);
+        parent.addChild(sprite);
+
+        return parent;
+    }
+
     onMount(async () => {
         await app.init({
             width: CANVAS_WIDTH,
@@ -511,61 +572,10 @@
 
         // Player sprite
         playerTexture = await Assets.load(playerAvatar);
-        playerSprite = new Sprite(playerTexture);
-
-        const textureWidth = playerSprite.texture.height / 3;
-        const textureCenter = playerSprite.texture.width / 2;
-
-        // Banner mask
-        const playerSpriteMask = new Graphics();
-        playerSpriteMask.poly([
-            { x: textureCenter - textureWidth / 2, y: 0 },
-            { x: textureCenter + textureWidth / 2, y: 0 },
-            {
-                x: textureCenter + textureWidth / 2,
-                y: playerSprite.texture.height * 0.92,
-            },
-            {
-                x: textureCenter,
-                y: playerSprite.texture.height,
-            },
-            {
-                x: textureCenter - textureWidth / 2,
-                y: playerSprite.texture.height * 0.92,
-            },
-        ]);
-        playerSpriteMask.fill();
-        playerSprite.mask = playerSpriteMask;
-        playerSprite.addChild(playerSpriteMask);
-
-        // Banner border
-        const bannerBorder = new Graphics();
-        bannerBorder.poly([
-            { x: textureCenter - textureWidth / 2, y: 0 },
-            { x: textureCenter + textureWidth / 2, y: 0 },
-            {
-                x: textureCenter + textureWidth / 2,
-                y: playerSprite.texture.height * 0.92,
-            },
-            {
-                x: textureCenter,
-                y: playerSprite.texture.height,
-            },
-            {
-                x: textureCenter - textureWidth / 2,
-                y: playerSprite.texture.height * 0.92,
-            },
-        ]);
-        bannerBorder.stroke({ width: 30, color: 0x000000 });
-        playerSprite.addChild(bannerBorder);
-
-        // Scale to grid cell (slightly smaller) while maintaining aspect ratio
-        playerSprite.width =
-            playerSprite.texture.width / (textureWidth / (CELL_WIDTH - 15));
-        playerSprite.height =
-            (playerSprite.texture.height * playerSprite.width) /
-            playerSprite.texture.width;
-
+        const pedestalBundle = await Assets.loadBundle("pedestals");
+        const pedestalTexture =
+            pedestalBundle["pedestals"].textures["square_dirt_high"];
+        playerSprite = createCreatureSprite(playerTexture, pedestalTexture);
         worldStage.addChild(playerSprite);
 
         await fillInGrid($grid, {
