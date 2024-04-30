@@ -192,9 +192,9 @@
         const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
         sprite.x = isoX;
         sprite.y = isoY;
-        sprite.anchor.set(0.5);
+        sprite.anchor.set(0.5); // TODO: set anchor in sprite.json not here as each asset is different
 
-        sprite.width = CELL_WIDTH * width;
+        sprite.width = CELL_WIDTH * width; // TODO: remove this scale image to 64 pix per grid
         sprite.height = (frame.height * sprite.width) / frame.width; // maintain aspect ratio
         sprite.alpha = alpha;
 
@@ -378,7 +378,7 @@
                 GRID_MID_ROW * CELL_HEIGHT,
             );
             playerSprite.x = isoX;
-            playerSprite.y = isoY - CELL_HEIGHT / 2;
+            playerSprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
             playerSprite.zIndex = ENTITIES_ZLAYER + playerSprite.y;
         }
 
@@ -494,17 +494,17 @@
         sprite.anchor.set(0.5, anchorY);
 
         const width = texture.height / 3;
-        const xMid = texture.width / 2;
-        const yMid = texture.height * anchorY;
+        const yTop = texture.height * anchorY;
+        const yTip = texture.height * (1 - anchorY);
         const halfW = width / 2;
         const shape = [
             {
                 x: -halfW,
-                y: -yMid,
+                y: -yTop,
             },
             {
                 x: halfW,
-                y: -yMid,
+                y: -yTop,
             },
             {
                 x: halfW,
@@ -512,7 +512,7 @@
             },
             {
                 x: 0,
-                y: texture.height - yMid,
+                y: yTip,
             },
             {
                 x: -halfW,
@@ -542,7 +542,7 @@
         pedestal.width = CELL_WIDTH;
         pedestal.height =
             (pedestalTexture.height * pedestal.width) / pedestalTexture.width;
-        pedestal.anchor.set(0.5);
+        pedestal.anchor.set(0.5); // TODO: set in sprite.json
 
         const parent = new Sprite();
         parent.addChild(pedestal);
