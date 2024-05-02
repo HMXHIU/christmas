@@ -24,10 +24,11 @@
     import type { z } from "zod";
     import { grid, player, tile } from "../../../store";
 
-    type SpriteLayer = "biome" | "entity";
+    type SpriteLayer = "biome" | "creature" | "prop";
 
     const BIOME_ZLAYER = 0;
-    const ENTITIES_ZLAYER = 1000000000;
+    const CREATURE_ZLAYER = 10000000000;
+    const PROP_ZLAYER = 1000000000;
 
     let playerAvatar = "/sprites/portraits/female_drow.jpeg";
     let playerTexture: Texture;
@@ -65,7 +66,7 @@
         sprite: Sprite;
         x: number;
         y: number;
-        layerType: SpriteLayer;
+        spriteType: SpriteLayer;
     }
 
     /**
@@ -141,7 +142,7 @@
         col,
         row,
         alpha,
-        layerType,
+        spriteType,
         variant,
         width,
         height,
@@ -151,7 +152,7 @@
         col: number;
         row: number;
         alpha: number;
-        layerType: SpriteLayer;
+        spriteType: SpriteLayer;
         variant?: string;
         width?: number;
         height?: number;
@@ -180,22 +181,38 @@
             }
         }
         variant ??= "default";
-
         const frame =
-            bundle[asset.name]?.textures[
+            bundle[asset.name]?.textures?.[
                 asset.variants?.[variant] || "default"
-            ];
+            ] || bundle[asset.name];
         if (!frame) return null;
-        const sprite = new Sprite(frame);
 
-        // Convert cartesian to isometric
-        const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
-        sprite.x = isoX;
-        sprite.y = isoY;
-        sprite.anchor.set(0.5); // TODO: set anchor in sprite.json not here as each asset is different
+        // Creature sprite
+        let sprite;
 
-        sprite.width = CELL_WIDTH * width; // TODO: remove this scale image to 64 pix per grid
-        sprite.height = (frame.height * sprite.width) / frame.width; // maintain aspect ratio
+        if (spriteType === "creature") {
+            const pedestalBundle = await Assets.loadBundle("pedestals");
+            const pedestalTexture =
+                pedestalBundle["pedestals"].textures["square_dirt_high"];
+            sprite = createCreatureSprite(frame, pedestalTexture);
+
+            // Convert cartesian to isometric position
+            const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
+            sprite.x = isoX;
+            sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
+        } else {
+            // TODO: fix biome
+            sprite = new Sprite(frame);
+            sprite.anchor.set(0.5); // TODO: set anchor in sprite.json not here as each asset is different
+            sprite.width = CELL_WIDTH * width; // TODO: remove this scale image to 64 pix per grid
+            sprite.height = (frame.height * sprite.width) / frame.width; // maintain aspect ratio
+
+            // Convert cartesian to isometric position
+            const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
+            sprite.x = isoX;
+            sprite.y = isoY;
+        }
+
         sprite.alpha = alpha;
 
         return sprite;
@@ -251,7 +268,7 @@
                             col,
                             row,
                             alpha,
-                            layerType: "biome",
+                            spriteType: "biome",
                             seed: gridRow * 1000 + gridCol,
                         });
 
@@ -261,7 +278,7 @@
                                 sprite: worldStage.addChild(sprite),
                                 x: sprite.x,
                                 y: sprite.y,
-                                layerType: "biome",
+                                spriteType: "biome",
                             });
                             // Set z-index based on y-coordinate & layer
                             sprite.zIndex = BIOME_ZLAYER + gridRow + gridCol;
@@ -283,7 +300,7 @@
                             col,
                             row,
                             alpha,
-                            layerType: "entity",
+                            spriteType: "creature",
                         });
                         if (sprite) {
                             setGridSprite(gridRow, gridCol, {
@@ -291,10 +308,10 @@
                                 sprite: worldStage.addChild(sprite),
                                 x: sprite.x,
                                 y: sprite.y,
-                                layerType: "entity",
+                                spriteType: "creature",
                             });
                             // Set z-index based on y-coordinate & layer
-                            sprite.zIndex = ENTITIES_ZLAYER + gridRow + gridCol;
+                            sprite.zIndex = CREATURE_ZLAYER + gridRow + gridCol;
                         }
                     }
                 }
@@ -314,7 +331,7 @@
                                 variant: variants?.[item.state],
                                 width,
                                 height,
-                                layerType: "entity",
+                                spriteType: "prop",
                             });
                             if (sprite) {
                                 setGridSprite(gridRow, gridCol, {
@@ -322,11 +339,10 @@
                                     sprite: worldStage.addChild(sprite),
                                     x: sprite.x,
                                     y: sprite.y,
-                                    layerType: "entity",
+                                    spriteType: "prop",
                                 });
                                 // Set z-index based on y-coordinate & layer
-                                sprite.zIndex =
-                                    ENTITIES_ZLAYER + gridRow + gridCol;
+                                sprite.zIndex = PROP_ZLAYER + gridRow + gridCol;
                             }
                         }
                     }
@@ -347,7 +363,7 @@
                                 alpha,
                                 width,
                                 height,
-                                layerType: "entity",
+                                spriteType: "creature",
                             });
                             if (sprite) {
                                 setGridSprite(gridRow, gridCol, {
@@ -355,11 +371,11 @@
                                     sprite: worldStage.addChild(sprite),
                                     x: sprite.x,
                                     y: sprite.y,
-                                    layerType: "entity",
+                                    spriteType: "creature",
                                 });
                                 // Set z-index based on y-coordinate & layer
                                 sprite.zIndex =
-                                    ENTITIES_ZLAYER + gridRow + gridCol;
+                                    CREATURE_ZLAYER + gridRow + gridCol;
                             }
                         }
                     }
@@ -379,7 +395,7 @@
             );
             playerSprite.x = isoX;
             playerSprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-            playerSprite.zIndex = ENTITIES_ZLAYER + playerSprite.y;
+            playerSprite.zIndex = CREATURE_ZLAYER + playerSprite.y;
         }
 
         // Environment
@@ -488,7 +504,7 @@
         texture: Texture,
         pedestalTexture: Texture,
     ): Sprite {
-        const sprite = new Sprite(playerTexture);
+        const sprite = new Sprite(texture);
 
         const anchorY = 0.92;
         sprite.anchor.set(0.5, anchorY);

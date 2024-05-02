@@ -40,7 +40,7 @@
             "assets": [
                 {
                     "alias": "goblin",
-                    "src": "/sprites/goblin/sprite.json"
+                    "src": "/sprites/portraits/goblin.jpeg"
                 }
             ]
         },

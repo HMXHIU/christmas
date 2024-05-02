@@ -541,12 +541,12 @@ const bestiary: Record<string, Beast> = {
         asset: {
             bundle: "bestiary",
             name: "goblin",
-            animations: {
-                stand: "stand",
-            },
-            variants: {
-                default: "stand/0",
-            },
+            // animations: {
+            //     stand: "stand",
+            // },
+            // variants: {
+            //     default: "stand/0",
+            // },
             width: 1,
             height: 1,
             precision: worldSeed.spatial.unit.precision,
