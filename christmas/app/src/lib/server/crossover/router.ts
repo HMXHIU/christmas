@@ -1,6 +1,7 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
 import type { GameCommandResponse } from "$lib/crossover";
 import { actions } from "$lib/crossover/actions";
+import { geohashesNearby } from "$lib/crossover/utils";
 import { biomeAtGeohash, tileAtGeohash } from "$lib/crossover/world/biomes";
 import { playerStats } from "$lib/crossover/world/player";
 import { compendium, worldSeed } from "$lib/crossover/world/settings";
@@ -9,6 +10,7 @@ import {
     initializeClients,
     itemRepository,
     itemsInGeohashQuerySet,
+    monstersInGeohashQuerySet,
     playerRepository,
     redisClient,
 } from "$lib/server/crossover/redis";
@@ -43,7 +45,6 @@ import { performMonsterActions, spawnMonsters } from "./dungeonMaster";
 import {
     crossoverPlayerInventoryQuerySet,
     loggedInPlayersQuerySet,
-    monstersInGeohashQuerySet,
     playersInGeohashQuerySet,
 } from "./redis";
 import type {
@@ -236,6 +237,8 @@ const crossoverRouter = {
             const player = (await tryFetchEntity(
                 ctx.user.publicKey,
             )) as PlayerEntity;
+
+            // Note: Inventory doesn't cost any ticks
 
             const inventoryItems = (await crossoverPlayerInventoryQuerySet(
                 player.player,
@@ -515,15 +518,12 @@ const crossoverRouter = {
                     message: "You are busy at the moment.",
                 } as GameCommandResponse;
             }
-
-            console.log("SAY", input.message);
+            const parentGeohash = player.location[0].slice(0, -1);
 
             // Get logged in players in geohash
-            const users = await playersInGeohashQuerySet(
-                player.location[0],
-            ).return.allIds();
-
-            console.log("USERS", users);
+            const players = await playersInGeohashQuerySet(
+                geohashesNearby(parentGeohash),
+            ).return.allIds({ pageSize: LOOK_PAGE_SIZE }); // limit players using page size
 
             // Create message feed
             const messageFeed: FeedEvent = {
@@ -537,9 +537,8 @@ const crossoverRouter = {
                 },
             };
 
-            // Send message to all users in the geohash (non blocking)
-            for (const publicKey of users) {
-                console.log("PUBLISH", publicKey, JSON.stringify(messageFeed));
+            // Send message to all players in the geohash (non blocking)
+            for (const publicKey of players) {
                 redisClient.publish(publicKey, JSON.stringify(messageFeed));
             }
 
@@ -555,31 +554,19 @@ const crossoverRouter = {
                 ctx.user.publicKey,
             )) as PlayerEntity;
 
-            // Check if player is busy
-            const { busy, entity } = await checkAndSetBusy({
-                entity: player,
-                action: actions.look.action,
-            });
-            player = entity as PlayerEntity;
-            if (busy) {
-                return {
-                    status: "failure",
-                    message: "You are busy at the moment.",
-                } as GameCommandResponse;
-            }
-
+            // Note: Look doesnt cost any ticks
             const parentGeohash = player.location[0].slice(0, -1);
 
             // Get players in surrounding
             const players = (await playersInGeohashQuerySet(
-                parentGeohash,
+                geohashesNearby(parentGeohash),
             ).return.all({
                 pageSize: LOOK_PAGE_SIZE, // limit players using page size
             })) as PlayerEntity[];
 
             // Get monsters in surrounding (don't use page size for monsters)
             const monsters = (await monstersInGeohashQuerySet(
-                parentGeohash,
+                geohashesNearby(parentGeohash),
             ).return.all()) as MonsterEntity[];
 
             // Get tile
@@ -590,7 +577,7 @@ const crossoverRouter = {
 
             // Get items
             const items = (await itemsInGeohashQuerySet(
-                parentGeohash,
+                geohashesNearby(parentGeohash),
             ).return.all()) as ItemEntity[];
 
             return {

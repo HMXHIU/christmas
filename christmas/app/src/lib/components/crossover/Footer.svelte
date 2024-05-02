@@ -9,7 +9,7 @@
 </script>
 
 <!-- Page Footer -->
-<footer class="py-3 fixed w-full bottom-0 z-50 bg-secondary pl-2">
+<footer class="py-3 fixed w-full bottom-0 z-50 bg-secondary">
     <!-- Player Info -->
     <div class="relative h-0 flex justify-center md:bottom-14 bottom-10">
         <!-- Player Avatar -->

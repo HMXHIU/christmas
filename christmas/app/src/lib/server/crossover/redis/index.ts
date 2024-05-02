@@ -136,11 +136,10 @@ function loggedInPlayersQuerySet(): Search {
  * @param geohash The geohash to filter players by.
  * @returns A search query set for players in the specified geohash.
  */
-function playersInGeohashQuerySet(geohash: string): Search {
-    // TODO: this should include all children geohashes
+function playersInGeohashQuerySet(geohashes: string[]): Search {
     return loggedInPlayersQuerySet()
         .and("location")
-        .contains(`${geohash}*`)
+        .containOneOf(...geohashes.map((x) => `${x}*`))
         .and("locationType")
         .equal("geohash");
 }
@@ -150,11 +149,25 @@ function playersInGeohashQuerySet(geohash: string): Search {
  * @param geohash The geohash to filter monsters by.
  * @returns A search query set for monsters in the specified geohash.
  */
-function monstersInGeohashQuerySet(geohash: string): Search {
+function monstersInGeohashQuerySet(geohashes: string[]): Search {
     return monsterRepository
         .search()
         .and("location")
-        .contains(`${geohash}*`)
+        .containOneOf(...geohashes.map((x) => `${x}*`))
+        .and("locationType")
+        .equal("geohash");
+}
+
+/**
+ * Retrieves items in a geohash query set.
+ * @param geohash - The geohash to search for.
+ * @returns A Search object representing the query.
+ */
+function itemsInGeohashQuerySet(geohashes: string[]): Search {
+    return itemRepository
+        .search()
+        .where("location")
+        .containOneOf(...geohashes.map((x) => `${x}*`))
         .and("locationType")
         .equal("geohash");
 }
@@ -169,24 +182,10 @@ function crossoverPlayerInventoryQuerySet(player: string): Search {
 }
 
 /**
- * Retrieves items in a geohash query set.
- * @param geohash - The geohash to search for.
- * @returns A Search object representing the query.
- */
-function itemsInGeohashQuerySet(geohash: string): Search {
-    return itemRepository
-        .search()
-        .where("location")
-        .contains(`${geohash}*`)
-        .and("locationType")
-        .equal("geohash");
-}
-
-/**
  * Retrieves a search query for finding colliders in a geohash.
  * @param geohash - The geohash to search for colliders in.
  * @returns A search query for finding colliders in the specified geohash.
  */
 function collidersInGeohashQuerySet(geohash: string): Search {
-    return itemsInGeohashQuerySet(geohash).and("collider").equal(true);
+    return itemsInGeohashQuerySet([geohash]).and("collider").equal(true);
 }

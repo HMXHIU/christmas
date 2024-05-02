@@ -21,6 +21,7 @@ export {
     entityId,
     gameActionId,
     geohashNeighbour,
+    geohashesNearby,
     isGeohashTraversable,
     seededRandom,
     stringToRandomNumber,
@@ -115,6 +116,36 @@ async function surroundingGeohashes(geohashes: string[]): Promise<string[]> {
         }
     }
     return Array.from(neighboringGeohashes);
+}
+
+/**
+ * Retrieves the geohashes in the surroundings (24x20 or 20x24) of a given geohash (including itself).
+ * If precision is odd, the geohash grid is 8x4, 8 neighbours will give 24x12 grid, add 3 more neighbours to the east and west
+ * If precision is even, the geohash grid is 4x8, 8 neighbours will give 12x24 grid, add 3 more neighbours to the north and south
+ * @param geohash - The geohash for which to retrieve the surrounding geohashes.
+ * @returns An array of geohashes including the original geohash and its surrounding geohashes.
+ */
+function geohashesNearby(geohash: string): string[] {
+    const evenPrecision = geohash.length % 2;
+    const [n, ne, e, se, s, sw, w, nw] = ngeohash.neighbors(geohash);
+    const additionalNeghbours = evenPrecision
+        ? [
+              ngeohash.neighbor(n, [1, 0]),
+              ngeohash.neighbor(nw, [1, 0]),
+              ngeohash.neighbor(ne, [1, 0]),
+              ngeohash.neighbor(s, [-1, 0]),
+              ngeohash.neighbor(sw, [-1, 0]),
+              ngeohash.neighbor(se, [-1, 0]),
+          ]
+        : [
+              ngeohash.neighbor(w, [0, -1]),
+              ngeohash.neighbor(nw, [0, -1]),
+              ngeohash.neighbor(sw, [0, -1]),
+              ngeohash.neighbor(e, [0, 1]),
+              ngeohash.neighbor(ne, [0, 1]),
+              ngeohash.neighbor(se, [0, 1]),
+          ];
+    return [geohash, n, ne, e, se, s, sw, w, nw, ...additionalNeghbours];
 }
 
 /**

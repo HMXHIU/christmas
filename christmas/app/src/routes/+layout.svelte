@@ -110,7 +110,7 @@
     <!-- Page Content -->
     <main style="height: calc(100dvh - 7rem);">
         <!-- Your Page Content Goes Here -->
-        <div class="container mx-auto px-0 py-0 h-full">
+        <div class="mx-auto px-0 py-0 h-full">
             <!-- Content Slot -->
             <slot />
         </div>

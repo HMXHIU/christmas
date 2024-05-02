@@ -48,7 +48,7 @@ const actions: Record<Actions, Action> = {
             target: ["player", "monster", "item", "none"],
             tokenPositions: { action: 0, target: 1 },
         },
-        ticks: 1,
+        ticks: 0,
     },
     say: {
         action: "say",
