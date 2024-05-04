@@ -12,6 +12,7 @@
         compendium,
     } from "$lib/crossover/world/settings";
     import type { TileSchema } from "$lib/server/crossover/router";
+    import { cn } from "$lib/shadcn";
     import {
         Application,
         Assets,
@@ -40,11 +41,11 @@
     const CANVAS_ROWS = 7;
     const CANVAS_COLS = 7;
     const CANVAS_WIDTH = CELL_WIDTH * CANVAS_COLS;
-    const CANVAS_HEIGHT = CELL_HEIGHT * CANVAS_ROWS; // TODO: wrong calculation
+    const CANVAS_HEIGHT = (CELL_HEIGHT * CANVAS_ROWS) / 2; // TODO: wrong calculation
     const CANVAS_MID_ROW = Math.floor(CANVAS_ROWS / 2);
     const CANVAS_MID_COL = Math.floor(CANVAS_COLS / 2);
 
-    const OVERDRAW_MULTIPLE = 2;
+    const OVERDRAW_MULTIPLE = 1;
     const WORLD_WIDTH = CANVAS_WIDTH * OVERDRAW_MULTIPLE;
     const WORLD_HEIGHT = CANVAS_HEIGHT * OVERDRAW_MULTIPLE;
     const WORLD_PIVOT_X = (WORLD_WIDTH - CANVAS_WIDTH) / 2;
@@ -621,4 +622,8 @@
     });
 </script>
 
-<div bind:this={container}></div>
+<div class={cn("w-full", $$restProps.class)}>
+    {#if $tile}
+        <div bind:this={container}></div>
+    {/if}
+</div>
