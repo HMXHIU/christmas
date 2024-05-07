@@ -44,9 +44,9 @@
 
     const CELL_WIDTH = 64;
     const CELL_HEIGHT = CELL_WIDTH;
-    const CANVAS_ROWS = 21;
-    const CANVAS_COLS = 21;
-    const OVERDRAW_MULTIPLE = 1;
+    const CANVAS_ROWS = 7;
+    const CANVAS_COLS = 7;
+    const OVERDRAW_MULTIPLE = 3;
 
     // note: this are cartesian coordinates
     let CANVAS_WIDTH = CELL_WIDTH * CANVAS_COLS;

@@ -107,8 +107,8 @@
         </div>
     </header>
 
-    <!-- Page Content (3rem/h-12 is height of the footer) -->
-    <main style="height: calc(100dvh - 3rem);">
+    <!-- Page Content (account for footer header) -->
+    <main style="height: calc(100dvh - 4rem);">
         <!-- Your Page Content Goes Here -->
         <div class="mx-auto px-0 py-0 h-full">
             <!-- Content Slot -->
