@@ -26,7 +26,6 @@
     import AutocompleteGC from "./AutocompleteGC.svelte";
     import ChatInput from "./ChatInput.svelte";
     import Look from "./Look.svelte";
-    import Map from "./Map.svelte";
 
     const LARGE_SCREEN = 800;
     let innerWidth: number; // window.innerWidth
@@ -105,7 +104,7 @@
     <ChatInput class="my-2" bind:target {onEnter} {onPartial}></ChatInput>
 
     <!-- Map -->
-    <Map></Map>
+    <!-- <Map></Map> -->
     <!-- <div class="h-2/5 pt-2">
         {#if $tile}
             <Map></Map>

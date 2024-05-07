@@ -93,6 +93,7 @@
     "trpc-sveltekit": "^3.6.0",
     "trpc-sveltekit-monorepo": "github:BearToCode/trpc-sveltekit#e1cf30d63b99ec726cc4f6180b12c3352886d372",
     "tweetnacl": "^1.0.3",
+    "vaul-svelte": "^0.3.0",
     "yup": "^1.3.3",
     "zod": "^3.22.4"
   }

@@ -35,7 +35,7 @@
 </script>
 
 <div class={cn("w-full", $$restProps.class)}>
-    <Card.Root>
+    <Card.Root class="border-none">
         <Card.Header>
             <Card.Title>Inventory</Card.Title>
         </Card.Header>
