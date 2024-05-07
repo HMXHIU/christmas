@@ -163,7 +163,7 @@
 {#if !$player}
     <Onboard />
 {:else}
-    <GameWindow class="h-full p-3" onGameCommand={handleGC} {onMove} />
+    <GameWindow class="h-full p-0" onGameCommand={handleGC} {onMove} />
 {/if}
 
 <!-- Footer -->

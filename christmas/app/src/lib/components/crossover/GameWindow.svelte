@@ -26,6 +26,7 @@
     import AutocompleteGC from "./AutocompleteGC.svelte";
     import ChatInput from "./ChatInput.svelte";
     import Look from "./Look.svelte";
+    import Map from "./Map.svelte";
 
     const LARGE_SCREEN = 800;
     let innerWidth: number; // window.innerWidth
@@ -76,38 +77,37 @@
 
 <svelte:window bind:innerWidth />
 
-<div class={cn("w-full flex flex-col", $$restProps.class)}>
-    {#if innerWidth > LARGE_SCREEN}
-        <Resizable.PaneGroup direction="horizontal">
+<div class={cn("w-full flex flex-col justify-end", $$restProps.class)}>
+    <div class="h-1/2">
+        {#if innerWidth > LARGE_SCREEN}
+            <Resizable.PaneGroup direction="horizontal">
+                <!-- Chat Window -->
+                <Resizable.Pane class="p-3">
+                    <ChatWindow></ChatWindow>
+                </Resizable.Pane>
+                <Resizable.Handle withHandle />
+                <!-- Look (TODO: doesnt seem to scroll inside resizable) -->
+                <Resizable.Pane class="p-3">
+                    <ScrollArea orientation="vertical">
+                        <Look></Look>
+                    </ScrollArea>
+                </Resizable.Pane>
+            </Resizable.PaneGroup>
+        {:else}
             <!-- Chat Window -->
-            <Resizable.Pane class="p-3">
-                <ChatWindow></ChatWindow>
-            </Resizable.Pane>
-            <Resizable.Handle withHandle />
-            <!-- Look (TODO: doesnt seem to scroll inside resizable) -->
-            <Resizable.Pane class="p-3">
-                <ScrollArea orientation="vertical">
-                    <Look></Look>
-                </ScrollArea>
-            </Resizable.Pane>
-        </Resizable.PaneGroup>
-    {:else}
-        <!-- Chat Window -->
-        <ChatWindow></ChatWindow>
-    {/if}
+            <ChatWindow></ChatWindow>
+        {/if}
+    </div>
 
     <!-- Autocomplete Game Commands -->
-    <AutocompleteGC class="pb-2" {commands} {onGameCommand} bind:command
+    <AutocompleteGC class="pb-2 px-2" {commands} {onGameCommand} bind:command
     ></AutocompleteGC>
 
     <!-- Chat Input -->
-    <ChatInput class="my-2" bind:target {onEnter} {onPartial}></ChatInput>
+    <ChatInput class="m-2" bind:target {onEnter} {onPartial}></ChatInput>
 
     <!-- Map -->
-    <!-- <Map></Map> -->
-    <!-- <div class="h-2/5 pt-2">
-        {#if $tile}
-            <Map></Map>
-        {/if}
-    </div> -->
+    <div class="h-1/2">
+        <Map></Map>
+    </div>
 </div>

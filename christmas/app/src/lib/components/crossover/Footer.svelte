@@ -44,7 +44,6 @@
     >
         <ResourceBars class="h-16 w-16 sm:min-h-20 sm:min-w-20"></ResourceBars>
     </div>
-
     <!-- Inventory -->
     <div class="grid grid-cols-3 place-items-center h-full">
         <!-- Inventory -->

@@ -27,40 +27,41 @@
 
     type SpriteLayer = "biome" | "creature" | "prop";
 
-    const BIOME_ZLAYER = 0;
-    const CREATURE_ZLAYER = 10000000000;
-    const PROP_ZLAYER = 1000000000;
+    let container: HTMLDivElement;
+    let prevTile: z.infer<typeof TileSchema> | null = null;
+    let isInitialized = false;
 
     let playerAvatar = "/sprites/portraits/female_drow.jpeg";
     let playerTexture: Texture;
     let playerSprite: Sprite;
 
+    let clientWidth: number;
+    let clientHeight: number;
+
+    const BIOME_ZLAYER = 0;
+    const CREATURE_ZLAYER = 10000000000;
+    const PROP_ZLAYER = 1000000000;
+
     const CELL_WIDTH = 64;
     const CELL_HEIGHT = CELL_WIDTH;
-
-    const CANVAS_ROWS = 7;
-    const CANVAS_COLS = 7;
-    const CANVAS_WIDTH = CELL_WIDTH * CANVAS_COLS;
-    const CANVAS_HEIGHT = (CELL_HEIGHT * CANVAS_ROWS) / 2; // TODO: wrong calculation
-    const CANVAS_MID_ROW = Math.floor(CANVAS_ROWS / 2);
-    const CANVAS_MID_COL = Math.floor(CANVAS_COLS / 2);
-
+    const CANVAS_ROWS = 21;
+    const CANVAS_COLS = 21;
     const OVERDRAW_MULTIPLE = 1;
-    const WORLD_WIDTH = CANVAS_WIDTH * OVERDRAW_MULTIPLE;
-    const WORLD_HEIGHT = CANVAS_HEIGHT * OVERDRAW_MULTIPLE;
-    const WORLD_PIVOT_X = (WORLD_WIDTH - CANVAS_WIDTH) / 2;
-    const WORLD_PIVOT_Y = (WORLD_HEIGHT - CANVAS_HEIGHT) / 2;
 
-    const GRID_ROWS = CANVAS_ROWS * OVERDRAW_MULTIPLE;
-    const GRID_COLS = CANVAS_COLS * OVERDRAW_MULTIPLE;
-    const GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
-    const GRID_MID_COL = Math.floor(GRID_COLS / 2);
+    // note: this are cartesian coordinates
+    let CANVAS_WIDTH = CELL_WIDTH * CANVAS_COLS;
+    let CANVAS_HEIGHT = CELL_HEIGHT * CANVAS_ROWS;
+    let WORLD_WIDTH = CANVAS_WIDTH * OVERDRAW_MULTIPLE;
+    let WORLD_HEIGHT = CANVAS_HEIGHT * OVERDRAW_MULTIPLE;
+    let WORLD_PIVOT_X = (WORLD_WIDTH - CANVAS_WIDTH) / 2;
+    let WORLD_PIVOT_Y = (WORLD_HEIGHT - CANVAS_HEIGHT) / 2;
+    let GRID_ROWS = CANVAS_ROWS * OVERDRAW_MULTIPLE;
+    let GRID_COLS = CANVAS_COLS * OVERDRAW_MULTIPLE;
+    let GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
+    let GRID_MID_COL = Math.floor(GRID_COLS / 2);
 
     const app = new Application();
     const worldStage = new Container();
-
-    let container: HTMLDivElement;
-    let prevTile: z.infer<typeof TileSchema> | null = null;
 
     interface GridSprite {
         id: string;
@@ -80,6 +81,15 @@
     > = {};
 
     $: updateWorld($tile, $grid);
+    $: resize(clientHeight, clientWidth);
+
+    async function resize(clientHeight: number, clientWidth: number) {
+        if (isInitialized && clientHeight && clientWidth) {
+            app.renderer.resize(clientWidth, clientHeight);
+            // Update the pivot to center camera
+            updatePivot();
+        }
+    }
 
     function setGridSprite(row: number, col: number, gridSprite: GridSprite) {
         gridSprites[row] ??= {};
@@ -195,6 +205,7 @@
             const pedestalBundle = await Assets.loadBundle("pedestals");
             const pedestalTexture =
                 pedestalBundle["pedestals"].textures["square_dirt_high"];
+
             sprite = createCreatureSprite(frame, pedestalTexture);
 
             // Convert cartesian to isometric position
@@ -270,7 +281,7 @@
                             row,
                             alpha,
                             spriteType: "biome",
-                            seed: gridRow * 1000 + gridCol,
+                            seed: gridRow * 1000 + gridCol, // * 1000 to prevent checker board pattern
                         });
 
                         if (sprite) {
@@ -386,6 +397,10 @@
     }
 
     async function updateWorld(t: z.infer<typeof TileSchema>, g: Grid) {
+        if (!isInitialized) {
+            return;
+        }
+
         const cell = geohashToGridCell(t.geohash);
 
         // Player
@@ -568,6 +583,21 @@
         return parent;
     }
 
+    function updatePivot() {
+        CANVAS_WIDTH = clientWidth;
+        CANVAS_HEIGHT = clientHeight;
+        WORLD_PIVOT_X = (WORLD_WIDTH - CANVAS_WIDTH) / 2;
+        WORLD_PIVOT_Y = (WORLD_HEIGHT - CANVAS_HEIGHT) / 2;
+
+        const [wpIsoX, wpIsoY] = cartToIso(WORLD_PIVOT_X, WORLD_PIVOT_Y);
+        worldStage.pivot.x =
+            wpIsoX +
+            Math.floor(CELL_WIDTH / 2) -
+            Math.floor((GRID_COLS * CELL_WIDTH) / 2) +
+            (WORLD_PIVOT_X - wpIsoX);
+        worldStage.pivot.y = wpIsoY / 2 - CELL_WIDTH / 2;
+    }
+
     onMount(async () => {
         await app.init({
             width: CANVAS_WIDTH,
@@ -578,13 +608,7 @@
         // Add world container
         worldStage.width = WORLD_WIDTH;
         worldStage.height = WORLD_HEIGHT;
-        const [wpIsoX, wpIsoY] = cartToIso(WORLD_PIVOT_X, WORLD_PIVOT_Y);
-        worldStage.pivot.x =
-            wpIsoX +
-            Math.floor(CELL_WIDTH / 2) -
-            Math.floor((GRID_COLS * CELL_WIDTH) / 2) +
-            (WORLD_PIVOT_X - wpIsoX);
-        worldStage.pivot.y = wpIsoY / 2 - CELL_WIDTH / 2;
+        updatePivot();
         app.stage.addChild(worldStage);
 
         // Player sprite
@@ -619,11 +643,19 @@
 
         // Add the canvas to the DOM
         container.appendChild(app.canvas);
+
+        isInitialized = true;
+
+        // Resize the canvas
+        resize(clientHeight, clientWidth);
     });
 </script>
 
-<div class={cn("w-full", $$restProps.class)}>
-    {#if $tile}
-        <div bind:this={container}></div>
-    {/if}
-</div>
+{#if $tile}
+    <div
+        class={cn("w-full h-full p-0 m-0", $$restProps.class)}
+        bind:this={container}
+        bind:clientHeight
+        bind:clientWidth
+    ></div>
+{/if}
