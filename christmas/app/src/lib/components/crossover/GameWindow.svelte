@@ -22,9 +22,9 @@
         player,
         playerRecord,
     } from "../../../store";
-    import ChatWindow from "../common/ChatWindow.svelte";
     import AutocompleteGC from "./AutocompleteGC.svelte";
     import ChatInput from "./ChatInput.svelte";
+    import ChatWindow from "./ChatWindow.svelte";
     import Look from "./Look.svelte";
     import Map from "./Map.svelte";
 

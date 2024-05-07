@@ -80,11 +80,14 @@ interface GameCommandResponse {
     tile?: z.infer<typeof TileSchema>;
 }
 
+type MessageFeedType = "error" | "message" | "look" | "system";
+
 interface MessageFeed {
     id: number;
     name: string;
     timestamp: string;
     message: string;
+    messageFeedType: MessageFeedType;
 }
 
 async function handleGC(command: GameCommand) {
@@ -94,7 +97,11 @@ async function handleGC(command: GameCommand) {
             await processGCResponse(command, gcResponse);
         }
     } catch (error: any) {
-        addMessageFeed({ message: error.message, name: "Error" });
+        addMessageFeed({
+            message: error.message,
+            name: "Error",
+            messageFeedType: "error",
+        });
     }
 }
 
@@ -168,6 +175,7 @@ function displayEntityEffects<T extends Player | Monster | Item>(
             addMessageFeed({
                 message: `${oldEntity.monster} lost ${deltaHp} HP`,
                 name: "",
+                messageFeedType: "message",
             });
         }
     } else if ("player" in oldEntity) {
@@ -177,6 +185,7 @@ function displayEntityEffects<T extends Player | Monster | Item>(
             addMessageFeed({
                 message: `${oldEntity.player} lost ${deltaHp} HP`,
                 name: "",
+                messageFeedType: "message",
             });
         }
     } else if ("item" in oldEntity) {
@@ -202,7 +211,7 @@ async function processGCResponse(
 
     // Update message feed
     if (status === "failure" && message != null) {
-        addMessageFeed({ message, name: "Error" });
+        addMessageFeed({ message, name: "Error", messageFeedType: "error" });
     }
 
     // Update tile
@@ -282,7 +291,7 @@ async function processGCResponse(
         ) {
             await handleGC([actions.look, { self }]);
         }
-        // Recreate `grid` on look
+        // Recreate `grid` on look, add `look` to message feed
         if (action.action === actions.look.action) {
             grid.update((g) => {
                 return updateGrid({
@@ -292,11 +301,24 @@ async function processGCResponse(
                     items,
                 });
             });
+            addMessageFeed({
+                message: "",
+                name: "",
+                messageFeedType: "look",
+            });
         }
     }
 }
 
-function addMessageFeed({ message, name }: { message: string; name: string }) {
+function addMessageFeed({
+    message,
+    name,
+    messageFeedType,
+}: {
+    message: string;
+    name: string;
+    messageFeedType: MessageFeedType;
+}) {
     messageFeed.update((ms) => {
         return [
             ...ms,
@@ -305,6 +327,7 @@ function addMessageFeed({ message, name }: { message: string; name: string }) {
                 timestamp: getCurrentTimestamp(),
                 message,
                 name,
+                messageFeedType,
             },
         ];
     });
@@ -391,19 +414,21 @@ async function performAction(
         }
         throw new Error(`Invalid direction ${direction}`);
     }
-    // take, drop
+    // take
     else if (action.action === "take") {
         return await crossoverCmdTake(
             { item: entityId(target as Item) },
             headers,
         );
-    } else if (action.action === "drop") {
+    }
+    // drop
+    else if (action.action === "drop") {
         return await crossoverCmdDrop(
             { item: entityId(target as Item) },
             headers,
         );
     }
-    // equip, unequip
+    // equip
     else if (action.action === "equip" && variables != null) {
         const slot = variables.queryIrrelevant as EquipmentSlot;
         if (EquipmentSlots.includes(slot)) {
@@ -416,7 +441,9 @@ async function performAction(
             );
         }
         throw new Error(`Invalid slot ${slot}`);
-    } else if (action.action === "unequip") {
+    }
+    // unequip
+    else if (action.action === "unequip") {
         return await crossoverCmdUnequip(
             { item: entityId(target as Item) },
             headers,

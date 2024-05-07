@@ -44,12 +44,20 @@
 
         // Error events
         if (type === "error") {
-            addMessageFeed({ message, name: "Error" });
+            addMessageFeed({
+                message,
+                name: "Error",
+                messageFeedType: "error",
+            });
         }
 
         // System feed
         else if (type === "system") {
-            addMessageFeed({ message, name: "System" });
+            addMessageFeed({
+                message,
+                name: "System",
+                messageFeedType: "system",
+            });
         }
 
         // Message feed
@@ -59,6 +67,7 @@
                     ? (substituteVariables(message, variables) as string)
                     : message,
                 name: "",
+                messageFeedType: "message",
             });
         }
     }

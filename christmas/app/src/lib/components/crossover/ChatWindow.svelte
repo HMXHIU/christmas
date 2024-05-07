@@ -3,6 +3,7 @@
     import { cn } from "$lib/shadcn";
     import { onMount } from "svelte";
     import { messageFeed } from "../../../store";
+    import Look from "./Look.svelte";
 
     let chatWindow: HTMLElement;
 
@@ -36,9 +37,13 @@
                 <p class="italic text-sm">{message.name}</p>
                 <small class="opacity-50 text-xs">{message.timestamp}</small>
             </div>
-            <p class="text-sm font-extralight px-2 text-left">
-                {message.message}
-            </p>
+            {#if message.messageFeedType === "look"}
+                <Look class="px-2"></Look>
+            {:else}
+                <p class="text-sm font-extralight px-2 text-left">
+                    {message.message}
+                </p>
+            {/if}
         </div>
     {/each}
 </section>
