@@ -1,11 +1,15 @@
 <script lang="ts">
     import type { MessageFeed } from "$lib/crossover";
     import { cn } from "$lib/shadcn";
+    import { getCurrentTimestamp } from "$lib/utils";
     import { onMount } from "svelte";
     import { messageFeed } from "../../../store";
     import Look from "./Look.svelte";
 
+    const ERROR_TIMESPAN = 5000;
+
     let chatWindow: HTMLElement;
+    let systemMessage: MessageFeed | undefined;
 
     $: onNewMessages($messageFeed);
 
@@ -14,6 +18,22 @@
     }
 
     function onNewMessages(messages: MessageFeed[]): void {
+        const now = new Date().getTime();
+        // Get the last valid error or system message
+        systemMessage = messages
+            .reverse()
+            .filter((m) => {
+                return m.timestamp.getTime() > now - ERROR_TIMESPAN;
+            })
+            .find(
+                (message) =>
+                    message.messageFeedType === "error" ||
+                    message.messageFeedType === "system",
+            );
+        setTimeout(() => {
+            systemMessage = undefined;
+        }, ERROR_TIMESPAN);
+        // Scroll to the bottom of the chat window
         setTimeout(() => {
             scrollChatBottom("smooth");
         }, 0);
@@ -24,29 +44,47 @@
     });
 </script>
 
-<section
-    bind:this={chatWindow}
-    class={cn(
-        "h-full w-full p-4 overflow-y-auto space-y-2 scroll-container",
-        $$restProps.class,
-    )}
+<div
+    class={cn("h-full w-full flex flex-col justify-between", $$restProps.class)}
 >
-    {#each $messageFeed as message}
-        <div class="flex flex-row text-left">
-            <div class="flex flex-col w-16 shrink-0">
-                <p class="italic text-sm">{message.name}</p>
-                <small class="opacity-50 text-xs">{message.timestamp}</small>
-            </div>
-            {#if message.messageFeedType === "look"}
-                <Look class="px-2"></Look>
-            {:else}
-                <p class="text-sm font-extralight px-2 text-left">
-                    {message.message}
-                </p>
+    <section
+        bind:this={chatWindow}
+        class="p-4 overflow-y-auto space-y-2 scroll-container"
+    >
+        {#each $messageFeed as message}
+            {#if message.messageFeedType === "look" || message.messageFeedType === "message"}
+                <div class="flex flex-row text-left">
+                    <div class="flex flex-col w-16 shrink-0">
+                        <p class="italic text-sm">{message.name}</p>
+                        <small class="opacity-50 text-xs"
+                            >{getCurrentTimestamp(message.timestamp)}</small
+                        >
+                    </div>
+                    {#if message.messageFeedType === "look"}
+                        <!-- Look Message -->
+                        <Look class="px-2"></Look>
+                    {:else if message.messageFeedType === "message"}
+                        <!-- Normal Messages -->
+                        <p class="text-sm font-extralight px-2 text-left">
+                            {message.message}
+                        </p>
+                    {/if}
+                </div>
             {/if}
-        </div>
-    {/each}
-</section>
+        {/each}
+    </section>
+    <section class="px-4 py-2 overflow-y-auto">
+        {#if systemMessage}
+            <div class="flex flex-row text-left">
+                <p
+                    class="text-sm font-extralight px-2 text-left text-destructive"
+                >
+                    {systemMessage.message}
+                </p>
+            </div>
+        {/if}
+    </section>
+</div>
 
 <!-- Styles -->
 <style>

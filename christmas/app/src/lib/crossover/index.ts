@@ -5,7 +5,7 @@ import type {
     TileSchema,
 } from "$lib/server/crossover/router";
 import { trpc } from "$lib/trpcClient";
-import { getCurrentTimestamp, retry, signAndSendTransaction } from "$lib/utils";
+import { retry, signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
 import type { HTTPHeaders } from "@trpc/client";
 import { type z } from "zod";
@@ -85,7 +85,7 @@ type MessageFeedType = "error" | "message" | "look" | "system";
 interface MessageFeed {
     id: number;
     name: string;
-    timestamp: string;
+    timestamp: Date;
     message: string;
     messageFeedType: MessageFeedType;
 }
@@ -324,7 +324,7 @@ function addMessageFeed({
             ...ms,
             {
                 id: ms.length,
-                timestamp: getCurrentTimestamp(),
+                timestamp: new Date(),
                 message,
                 name,
                 messageFeedType,

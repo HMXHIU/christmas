@@ -81,8 +81,8 @@ function stringToUint8Array(input: string): Uint8Array {
     return encoder.encode(input);
 }
 
-function getCurrentTimestamp(): string {
-    const timestamp = new Date().toLocaleString("en-US", {
+function getCurrentTimestamp(date: Date): string {
+    const timestamp = (date || new Date()).toLocaleString("en-US", {
         hour: "numeric",
         minute: "numeric",
         hour12: true,

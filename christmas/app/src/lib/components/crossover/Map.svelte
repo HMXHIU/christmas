@@ -83,7 +83,7 @@
     $: updateWorld($tile, $grid);
     $: resize(clientHeight, clientWidth);
 
-    async function resize(clientHeight: number, clientWidth: number) {
+    function resize(clientHeight: number, clientWidth: number) {
         if (isInitialized && clientHeight && clientWidth) {
             app.renderer.resize(clientWidth, clientHeight);
             // Update the pivot to center camera
@@ -619,13 +619,6 @@
         playerSprite = createCreatureSprite(playerTexture, pedestalTexture);
         worldStage.addChild(playerSprite);
 
-        await fillInGrid($grid, {
-            cell: geohashToGridCell($tile.geohash),
-            colStart: 0,
-            colEnd: GRID_COLS,
-        });
-        await updateWorld($tile, $grid);
-
         // Ticker
         app.ticker.add((deltaTime) => {
             // Move sprites to their target positions
@@ -648,6 +641,14 @@
 
         // Resize the canvas
         resize(clientHeight, clientWidth);
+
+        // Load the grid
+        await fillInGrid($grid, {
+            cell: geohashToGridCell($tile.geohash),
+            colStart: 0,
+            colEnd: GRID_COLS,
+        });
+        await updateWorld($tile, $grid);
     });
 </script>
 
