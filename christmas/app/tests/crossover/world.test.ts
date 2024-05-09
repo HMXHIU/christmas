@@ -1,4 +1,8 @@
-import { childrenGeohashes, geohashNeighbour } from "$lib/crossover/utils";
+import {
+    childrenGeohashes,
+    geohashNeighbour,
+    getPlotGeohashes,
+} from "$lib/crossover/utils";
 import {
     geohashToGridCell,
     updateGrid,
@@ -303,6 +307,12 @@ test("Test World", async () => {
         col: 826667,
     });
 
+    // Test geohashNeighbour
+    let geohash = generateRandomGeohash(8);
+    expect(geohashNeighbour(geohash, "e", 2)).to.equal(
+        geohashNeighbour(geohashNeighbour(geohash, "e"), "e"),
+    );
+
     // Test childrenGeohashes
     expect(childrenGeohashes("w61z4m6").sort()).to.deep.equal(
         [
@@ -341,22 +351,51 @@ test("Test World", async () => {
         ].sort(),
     );
 
+    // Test getPlotGeohashes
+    let loc = generateRandomGeohash(8);
+    var parentGeohash = loc.slice(0, -1);
+    let plotGeohashes = getPlotGeohashes(loc, 8, 4);
+    expect(plotGeohashes).to.deep.equal([parentGeohash]);
+
+    plotGeohashes = getPlotGeohashes(loc, 16, 8);
+    expect(plotGeohashes).to.deep.equal([
+        parentGeohash,
+        geohashNeighbour(parentGeohash, "e"),
+        geohashNeighbour(parentGeohash, "s"),
+        geohashNeighbour(geohashNeighbour(parentGeohash, "s"), "e"),
+    ]);
+
     /*
     Test spawn world assets (from tiled json format)
     */
 
     const asset: WorldAssetMetadata = {
+        height: 8,
+        width: 4,
         tileheight: 128,
         tilewidth: 256,
-        height: 5,
         layers: [
             {
                 data: [
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 74, 74, 74, 0, 0, 74, 74,
-                    74, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 94, 94, 94, 0, 85, 85, 85, 0, 85, 85, 85, 0, 85,
+                    85, 85, 0, 95, 139, 95, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                height: 5,
+                height: 8,
+                name: "platform",
+                type: "tilelayer",
+                width: 4,
+                x: 0,
+                y: 0,
+            },
+            {
+                data: [
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 74, 74, 0, 0, 74, 74,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                ],
+                height: 8,
                 name: "floor",
+                offsetx: 0,
+                offsety: -42.6820872917527,
                 properties: [
                     {
                         name: "collider",
@@ -370,17 +409,19 @@ test("Test World", async () => {
                     },
                 ],
                 type: "tilelayer",
-                width: 5,
+                width: 4,
                 x: 0,
                 y: 0,
             },
             {
                 data: [
-                    0, 0, 0, 0, 0, 0, 218, 218, 218, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 218, 218, 0, 220, 0, 0, 0, 220,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
-                height: 5,
+                height: 8,
                 name: "wall_ne",
+                offsetx: 12.010347376201,
+                offsety: -37.1388500411984,
                 properties: [
                     {
                         name: "interior",
@@ -389,135 +430,12 @@ test("Test World", async () => {
                     },
                 ],
                 type: "tilelayer",
-                width: 5,
-                x: 0,
-                y: 0,
-            },
-            {
-                data: [
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 220, 0, 0, 0, 0, 220, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0,
-                ],
-                height: 5,
-                name: "wall_nw",
-                properties: [
-                    {
-                        name: "interior",
-                        type: "bool",
-                        value: true,
-                    },
-                ],
-                type: "tilelayer",
-                width: 5,
-                x: 0,
-                y: 0,
-            },
-            {
-                data: [
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 139, 0, 0, 0, 0,
-                    137, 0, 0, 0, 0, 0, 0,
-                ],
-                height: 5,
-                name: "props",
-                type: "tilelayer",
-                width: 5,
-                x: 0,
-                y: 0,
-            },
-            {
-                data: [
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 143, 151, 159, 0,
-                ],
-                height: 5,
-                name: "wall_sw",
-                type: "tilelayer",
-                width: 5,
-                x: 0,
-                y: 0,
-            },
-            {
-                data: [
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 217, 0, 0, 0, 0,
-                    201, 0, 0, 0, 0, 0,
-                ],
-                height: 5,
-                name: "wall_se",
-                type: "tilelayer",
-                width: 5,
-                x: 0,
-                y: 0,
-            },
-            {
-                data: [
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 213, 0, 0, 0, 0,
-                    209, 0, 0, 0, 0, 0,
-                ],
-                height: 5,
-                name: "wall_se_l2",
-                type: "tilelayer",
-                width: 5,
-                x: 0,
-                y: 0,
-            },
-            {
-                data: [
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 116, 116, 116, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0,
-                ],
-                height: 5,
-                name: "wall_ne_l2",
-                type: "tilelayer",
-                width: 5,
-                x: 0,
-                y: 0,
-            },
-            {
-                data: [
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 156, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0,
-                ],
-                height: 5,
-                name: "wall_panels",
-                type: "tilelayer",
-                width: 5,
-                x: 0,
-                y: 0,
-            },
-            {
-                data: [
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 113, 0, 113,
-                    0, 0, 0, 223, 0, 0,
-                ],
-                height: 5,
-                name: "wall_nw_l2",
-                type: "tilelayer",
-                width: 5,
-                x: 0,
-                y: 0,
-            },
-
-            {
-                data: [
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 131, 0,
-                    0, 0, 0, 0, 0, 0,
-                ],
-                height: 5,
-                name: "wall_nw_l3",
-                type: "tilelayer",
-                width: 5,
+                width: 4,
                 x: 0,
                 y: 0,
             },
         ],
-        width: 5,
     };
-
-    // Test geohashNeighbour
-    let geohash = generateRandomGeohash(8);
-    expect(geohashNeighbour(geohash, "e", 2)).to.equal(
-        geohashNeighbour(geohashNeighbour(geohash, "e"), "e"),
-    );
 
     // Spawn world
     let worldGeohash = generateRandomGeohash(8);
@@ -528,46 +446,46 @@ test("Test World", async () => {
         tileWidth: asset.tilewidth,
     });
 
-    /* Test colliders
+    /* Test colliders/locations
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, x, x, x, 0,
-        0, x, x, x, 0,
-        0, 0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, x, x, 0, 
+        0, x, x, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
     ]
     */
-    const u = geohashNeighbour(
-        geohashNeighbour(geohashNeighbour(worldGeohash, "s"), "s"),
-        "e",
-    );
-    const v = geohashNeighbour(u, "s");
+
+    var p = geohashNeighbour(geohashNeighbour(worldGeohash, "s", 3), "e");
+    var p2 = geohashNeighbour(p, "s");
     expect(world).toMatchObject({
-        loc: worldGeohash,
-        h: 5,
-        w: 5,
-        cdrs: [
-            u,
-            geohashNeighbour(u, "e"),
-            geohashNeighbour(geohashNeighbour(u, "e"), "e"),
-            v,
-            geohashNeighbour(v, "e"),
-            geohashNeighbour(geohashNeighbour(v, "e"), "e"),
-        ],
+        loc: [worldGeohash.slice(0, -1)],
+        h: 8,
+        w: 4,
+        cdrs: [p, geohashNeighbour(p, "e"), p2, geohashNeighbour(p2, "e")],
     });
 
-    /* Test colliders if cell dimensions is differnt from tile dimensions
+    /* Test colliders/locations if cell dimensions is differnt from tile dimensions
     [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, x, x, x, x, x, x, 0, 0,
-        0, 0, x, x, x, x, x, x, 0, 0,
-        0, 0, x, x, x, x, x, x, 0, 0,
-        0, 0, x, x, x, x, x, x, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, x, x, x, x, 0, 0,
+        0, 0, x, x, x, x, 0, 0,
+        0, 0, x, x, x, x, 0, 0,
+        0, 0, x, x, x, x, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
     ]
     */
     worldGeohash = generateRandomGeohash(8);
@@ -578,10 +496,17 @@ test("Test World", async () => {
         tileWidth: asset.tilewidth / 2,
     });
 
-    const p = geohashNeighbour(geohashNeighbour(worldGeohash, "s", 4), "e", 2);
-    const p2 = geohashNeighbour(p, "s");
-    const p3 = geohashNeighbour(p2, "s");
-    const p4 = geohashNeighbour(p3, "s");
+    var p = geohashNeighbour(geohashNeighbour(worldGeohash, "s", 6), "e", 2);
+    var p2 = geohashNeighbour(p, "s");
+    var p3 = geohashNeighbour(p2, "s");
+    var p4 = geohashNeighbour(p3, "s");
+    var parentGeohash = worldGeohash.slice(0, -1);
+    expect(world.loc).to.deep.equal([
+        parentGeohash,
+        geohashNeighbour(parentGeohash, "e"),
+        geohashNeighbour(parentGeohash, "s"),
+        geohashNeighbour(geohashNeighbour(parentGeohash, "s"), "e"),
+    ]);
     expect(world.cdrs.sort()).to.deep.equal(
         [
             // row 1
@@ -589,29 +514,21 @@ test("Test World", async () => {
             geohashNeighbour(p, "e"),
             geohashNeighbour(p, "e", 2),
             geohashNeighbour(p, "e", 3),
-            geohashNeighbour(p, "e", 4),
-            geohashNeighbour(p, "e", 5),
             // row 2
             p2,
             geohashNeighbour(p2, "e"),
             geohashNeighbour(p2, "e", 2),
             geohashNeighbour(p2, "e", 3),
-            geohashNeighbour(p2, "e", 4),
-            geohashNeighbour(p2, "e", 5),
             // row 3
             p3,
             geohashNeighbour(p3, "e"),
             geohashNeighbour(p3, "e", 2),
             geohashNeighbour(p3, "e", 3),
-            geohashNeighbour(p3, "e", 4),
-            geohashNeighbour(p3, "e", 5),
             // row 4
             p4,
             geohashNeighbour(p4, "e"),
             geohashNeighbour(p4, "e", 2),
             geohashNeighbour(p4, "e", 3),
-            geohashNeighbour(p4, "e", 4),
-            geohashNeighbour(p4, "e", 5),
         ].sort(),
     );
 });

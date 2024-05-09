@@ -5,6 +5,7 @@ import {
     entityDimensions,
     entityId,
     geohashNeighbour,
+    getPlotGeohashes,
 } from "$lib/crossover/utils";
 import type { Direction, WorldAssetMetadata } from "$lib/crossover/world";
 import {
@@ -374,6 +375,11 @@ async function spawnMonster({
 /**
  * Spawns a world asset from a tiled map in a specific geohash.
  *
+ * Note:
+ * - World assets must have a geohash precision equal to the world seed's spatial unit precision.
+ * - World assets must take up the entire geohash area at -1 the unit precision.
+ * - World assets must take up exact multiples of the full geohash grid.
+ *
  * @param geohash - The geohash of the world asset.
  * @param assetUrl - The URL of the asset (required to be rendered).
  * @param asset - The world asset object.
@@ -394,8 +400,16 @@ async function spawnWorld({
     tileHeight: number;
     tileWidth: number;
 }): Promise<WorldEntity> {
+    // Check asset or assetUrl
     if (!asset && !assetUrl) {
         throw new Error("asset or assetUrl must be provided");
+    }
+
+    // Check geohash precision
+    if (worldSeed.spatial.unit.precision !== geohash.length) {
+        throw new Error(
+            `Geohash precision must be ${worldSeed.spatial.unit.precision}`,
+        );
     }
 
     asset ??= await (await fetch(assetUrl!)).json();
@@ -407,17 +421,24 @@ async function spawnWorld({
         tilewidth: assetTileWidth,
     } = asset!;
 
-    // Check tilewidth and tileheight must be exact multiples of cellWidth and cellHeight
+    // Check asset dimensions multiples of tile dimensions
     if (
         assetTileWidth % tileWidth !== 0 ||
         assetTileHeight % tileHeight !== 0
     ) {
         throw new Error(
-            `Tile width and height must be exact multiples of cell width and height`,
+            `Asset tile width and height must be exact multiples of tile width and height`,
         );
     }
     const heightMultiplier = assetTileHeight / tileHeight;
     const widthMultiplier = assetTileWidth / tileWidth;
+
+    // Get plot geohashes
+    const plotGeohashes = getPlotGeohashes(
+        geohash,
+        height * heightMultiplier,
+        width * widthMultiplier,
+    );
 
     // Get colliders
     let colliders = [];
@@ -476,7 +497,7 @@ async function spawnWorld({
     const entity: WorldEntity = {
         world,
         url: assetUrl || "",
-        loc: geohash,
+        loc: plotGeohashes,
         h: height,
         w: width,
         cdrs: colliders,

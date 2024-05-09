@@ -22,6 +22,7 @@ export {
     gameActionId,
     geohashNeighbour,
     geohashesNearby,
+    getPlotGeohashes,
     isGeohashTraversable,
     seededRandom,
     stringToRandomNumber,
@@ -160,6 +161,46 @@ function geohashesNearby(geohash: string): string[] {
               ngeohash.neighbor(se, [0, 1]),
           ];
     return [geohash, n, ne, e, se, s, sw, w, nw, ...additionalNeghbours];
+}
+
+/**
+ * Retrieves an array of geohashes representing a plot grid within a given geohash.
+ * A plot is one whole geohash grid depending on the precision (4x8 or 8x4).
+ *
+ * @param geohash - The geohash to generate the plot grid from.
+ * @param width - The width of the plot grid.
+ * @param height - The height of the plot grid.
+ * @returns An array of geohashes representing the plot grid.
+ * @throws Error if the plot size is not a multiple of the calculated plot height and width.
+ */
+function getPlotGeohashes(
+    geohash: string,
+    height: number,
+    width: number,
+): string[] {
+    let geohashes: string[] = [];
+    const parentGeohash = geohash.slice(0, -1);
+    const parentGeohashIsEven = parentGeohash.length % 2 === 0;
+    const plotHeight = parentGeohashIsEven ? 4 : 8;
+    const plotWidth = parentGeohashIsEven ? 8 : 4;
+
+    // Check plot size
+    if (width % plotWidth !== 0 || height % plotHeight !== 0) {
+        throw new Error(
+            `Plot size must be a multiple of ${plotHeight} by ${plotWidth}`,
+        );
+    }
+    let geohashRow = parentGeohash;
+    for (let m = 0; m < height / plotHeight; m++) {
+        let geohashCol = geohashRow;
+        for (let n = 0; n < width / plotWidth; n++) {
+            geohashes.push(geohashCol);
+            geohashCol = geohashNeighbour(geohashCol, "e");
+        }
+        geohashRow = geohashNeighbour(geohashRow, "s");
+    }
+
+    return geohashes;
 }
 
 /**

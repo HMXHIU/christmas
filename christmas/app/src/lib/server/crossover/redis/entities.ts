@@ -160,7 +160,7 @@ type ItemEntity = Item & Entity;
 const WorldEntitySchema = new Schema("World", {
     world: { type: "string" },
     url: { type: "string" },
-    loc: { type: "string" }, // location (origin only)
+    loc: { type: "string[]" },
     h: { type: "number" }, // height
     w: { type: "number" }, // width
     cdrs: { type: "string[]" }, // colliders
@@ -169,9 +169,9 @@ const WorldEntitySchema = new Schema("World", {
 interface World {
     world: string;
     url: string;
-    loc: string;
     h: number;
     w: number;
+    loc: string[];
     cdrs: string[];
 }
 
