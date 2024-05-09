@@ -5,6 +5,7 @@ export {
     ItemEntitySchema,
     MonsterEntitySchema,
     PlayerEntitySchema,
+    WorldEntitySchema,
     type EntityState,
     type EntityType,
     type GameEntity,
@@ -14,6 +15,8 @@ export {
     type MonsterEntity,
     type Player,
     type PlayerEntity,
+    type World,
+    type WorldEntity,
 };
 
 type EntityType = "player" | "monster" | "item";
@@ -147,3 +150,29 @@ interface Item {
 }
 
 type ItemEntity = Item & Entity;
+
+/*
+ * World
+ *
+ * World entity is created from a tiled map (JSON format).
+ */
+
+const WorldEntitySchema = new Schema("World", {
+    world: { type: "string" },
+    url: { type: "string" },
+    loc: { type: "string" }, // location (origin only)
+    h: { type: "number" }, // height
+    w: { type: "number" }, // width
+    cdrs: { type: "string[]" }, // colliders
+});
+
+interface World {
+    world: string;
+    url: string;
+    loc: string;
+    h: number;
+    w: number;
+    cdrs: string[];
+}
+
+type WorldEntity = World & Entity;

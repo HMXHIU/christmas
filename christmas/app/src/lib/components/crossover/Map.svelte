@@ -13,6 +13,7 @@
     } from "$lib/crossover/world/settings";
     import type { TileSchema } from "$lib/server/crossover/router";
     import { cn } from "$lib/shadcn";
+    import { groupBy } from "lodash";
     import {
         Application,
         Assets,
@@ -48,7 +49,7 @@
     const CANVAS_COLS = 7;
     const OVERDRAW_MULTIPLE = 3;
 
-    // note: this are cartesian coordinates
+    // Note: this are cartesian coordinates
     let CANVAS_WIDTH = CELL_WIDTH * CANVAS_COLS;
     let CANVAS_HEIGHT = CELL_HEIGHT * CANVAS_ROWS;
     let WORLD_WIDTH = CANVAS_WIDTH * OVERDRAW_MULTIPLE;
@@ -146,6 +147,43 @@
      */
     function cartToIso(x: number, y: number) {
         return [x * 0.5 + y * -0.5, x * 0.25 + y * 0.25];
+    }
+
+    async function loadWorldAssetMetadata(
+        assetUrl: string,
+    ): Promise<Container> {
+        const tilemap = await Assets.load(assetUrl);
+        const tileset = await Assets.load(tilemap.tilesets[0].source);
+        const container = new Container();
+
+        for (const layer of tilemap.layers) {
+            const { data, properties, offsetx, offsety, width, height, x, y } =
+                layer;
+
+            const { interior, collider } = groupBy(properties, "name");
+
+            for (let i = 0; i < height; i++) {
+                for (let j = 0; j < width; j++) {
+                    const tileId = data[i * width + j];
+                    if (tileId === 0) {
+                        continue;
+                    }
+                    const { image, imageheight, imagewidth } =
+                        tileset.tiles[tileId - 1];
+
+                    const texture = await Assets.load(image);
+                    const sprite = new Sprite(texture);
+                    const [isoX, isoY] = cartToIso(
+                        j * imagewidth,
+                        (i * imageheight) / 2,
+                    );
+                    sprite.x = isoX + (offsetx || 0);
+                    sprite.y = isoY + (offsety || 0);
+                    container.addChild(sprite);
+                }
+            }
+        }
+        return container;
     }
 
     async function loadSprite({
@@ -599,6 +637,16 @@
     }
 
     onMount(async () => {
+        // Load assets in background
+        await Assets.init({ manifest: "/sprites/manifest.json" });
+        Assets.backgroundLoadBundle([
+            "player",
+            "biomes",
+            "bestiary",
+            "props",
+            "pedestals",
+        ]);
+
         await app.init({
             width: CANVAS_WIDTH,
             height: CANVAS_HEIGHT,
@@ -619,6 +667,14 @@
         playerSprite = createCreatureSprite(playerTexture, pedestalTexture);
         worldStage.addChild(playerSprite);
 
+        // Test load tilemap
+        const tileMap = await loadWorldAssetMetadata(
+            "/sprites/tiled/tilemaps/house.json",
+        );
+        tileMap.zIndex = CREATURE_ZLAYER + 100;
+        tileMap.y = -CELL_HEIGHT * 8;
+        worldStage.addChild(tileMap);
+
         // Ticker
         app.ticker.add((deltaTime) => {
             // Move sprites to their target positions
@@ -636,7 +692,6 @@
 
         // Add the canvas to the DOM
         container.appendChild(app.canvas);
-
         isInitialized = true;
 
         // Resize the canvas

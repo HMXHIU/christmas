@@ -90,10 +90,24 @@ function directionToVector(direction: Direction): [number, number] {
  *
  * @param geohash - The current geohash.
  * @param direction - The direction to get the neighbor geohash.
+ * @param times - The number of times to perform operation (default to 1).
  * @returns The neighbor geohash in the given direction.
  */
-function geohashNeighbour(geohash: string, direction: Direction): string {
-    return ngeohash.neighbor(geohash, directionToVector(direction));
+function geohashNeighbour(
+    geohash: string,
+    direction: Direction,
+    times?: number,
+): string {
+    times ??= 1;
+    const d = directionToVector(direction);
+    if (times > 1) {
+        return geohashNeighbour(
+            ngeohash.neighbor(geohash, d),
+            direction,
+            times - 1,
+        );
+    }
+    return ngeohash.neighbor(geohash, d);
 }
 
 /**

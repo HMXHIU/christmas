@@ -4,7 +4,12 @@ import { actions } from "$lib/crossover/actions";
 import { geohashesNearby } from "$lib/crossover/utils";
 import { biomeAtGeohash, tileAtGeohash } from "$lib/crossover/world/biomes";
 import { playerStats } from "$lib/crossover/world/player";
-import { compendium, worldSeed } from "$lib/crossover/world/settings";
+import {
+    TILE_HEIGHT,
+    TILE_WIDTH,
+    compendium,
+    worldSeed,
+} from "$lib/crossover/world/settings";
 import {
     fetchEntity,
     initializeClients,
@@ -30,6 +35,7 @@ import {
     savePlayerEntityState,
     spawnItem,
     spawnMonster,
+    spawnWorld,
     useItem,
 } from ".";
 import {
@@ -54,6 +60,7 @@ import type {
     MonsterEntity,
     Player,
     PlayerEntity,
+    World,
 } from "./redis/entities";
 
 export {
@@ -129,6 +136,10 @@ const BuffEntitySchema = z.object({
     buffs: z.array(z.string()).optional(),
     debuffs: z.array(z.string()).optional(),
 });
+const SpawnWorldSchema = z.object({
+    geohash: z.string(),
+    url: z.string(),
+});
 
 // Schemas - player
 const EquipItemSchema = z.object({
@@ -201,6 +212,18 @@ const crossoverRouter = {
 
                 const monster = await spawnMonster({ geohash, level, beast });
                 return monster;
+            }),
+        spawnWorld: internalServiceProcedure
+            .input(SpawnWorldSchema)
+            .mutation(async ({ input }) => {
+                const { geohash, url } = input;
+                const world = await spawnWorld({
+                    geohash,
+                    assetUrl: url,
+                    tileHeight: TILE_HEIGHT,
+                    tileWidth: TILE_WIDTH,
+                });
+                return world as World;
             }),
         buffEntity: internalServiceProcedure
             .input(BuffEntitySchema)

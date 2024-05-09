@@ -1,15 +1,17 @@
-import { childrenGeohashes } from "$lib/crossover/utils";
+import { childrenGeohashes, geohashNeighbour } from "$lib/crossover/utils";
 import {
     geohashToGridCell,
     updateGrid,
+    type WorldAssetMetadata,
     type WorldSeed,
 } from "$lib/crossover/world";
 import {
     biomeAtGeohash,
     biomesNearbyGeohash,
 } from "$lib/crossover/world/biomes";
-import { expect } from "chai";
-import { test } from "vitest";
+import { spawnWorld } from "$lib/server/crossover";
+import { expect, test } from "vitest";
+import { generateRandomGeohash } from "./utils";
 
 const worldSeed: WorldSeed = {
     name: "yggdrasil 01",
@@ -336,6 +338,280 @@ test("Test World", async () => {
             "w61z4m62",
             "w61z4m68",
             "w61z4m6b",
+        ].sort(),
+    );
+
+    /*
+    Test spawn world assets (from tiled json format)
+    */
+
+    const asset: WorldAssetMetadata = {
+        tileheight: 128,
+        tilewidth: 256,
+        height: 5,
+        layers: [
+            {
+                data: [
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 74, 74, 74, 0, 0, 74, 74,
+                    74, 0, 0, 0, 0, 0, 0,
+                ],
+                height: 5,
+                name: "floor",
+                properties: [
+                    {
+                        name: "collider",
+                        type: "bool",
+                        value: true,
+                    },
+                    {
+                        name: "interior",
+                        type: "bool",
+                        value: true,
+                    },
+                ],
+                type: "tilelayer",
+                width: 5,
+                x: 0,
+                y: 0,
+            },
+            {
+                data: [
+                    0, 0, 0, 0, 0, 0, 218, 218, 218, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                ],
+                height: 5,
+                name: "wall_ne",
+                properties: [
+                    {
+                        name: "interior",
+                        type: "bool",
+                        value: true,
+                    },
+                ],
+                type: "tilelayer",
+                width: 5,
+                x: 0,
+                y: 0,
+            },
+            {
+                data: [
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 220, 0, 0, 0, 0, 220, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0,
+                ],
+                height: 5,
+                name: "wall_nw",
+                properties: [
+                    {
+                        name: "interior",
+                        type: "bool",
+                        value: true,
+                    },
+                ],
+                type: "tilelayer",
+                width: 5,
+                x: 0,
+                y: 0,
+            },
+            {
+                data: [
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 139, 0, 0, 0, 0,
+                    137, 0, 0, 0, 0, 0, 0,
+                ],
+                height: 5,
+                name: "props",
+                type: "tilelayer",
+                width: 5,
+                x: 0,
+                y: 0,
+            },
+            {
+                data: [
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 143, 151, 159, 0,
+                ],
+                height: 5,
+                name: "wall_sw",
+                type: "tilelayer",
+                width: 5,
+                x: 0,
+                y: 0,
+            },
+            {
+                data: [
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 217, 0, 0, 0, 0,
+                    201, 0, 0, 0, 0, 0,
+                ],
+                height: 5,
+                name: "wall_se",
+                type: "tilelayer",
+                width: 5,
+                x: 0,
+                y: 0,
+            },
+            {
+                data: [
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 213, 0, 0, 0, 0,
+                    209, 0, 0, 0, 0, 0,
+                ],
+                height: 5,
+                name: "wall_se_l2",
+                type: "tilelayer",
+                width: 5,
+                x: 0,
+                y: 0,
+            },
+            {
+                data: [
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 116, 116, 116, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                ],
+                height: 5,
+                name: "wall_ne_l2",
+                type: "tilelayer",
+                width: 5,
+                x: 0,
+                y: 0,
+            },
+            {
+                data: [
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 156, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0,
+                ],
+                height: 5,
+                name: "wall_panels",
+                type: "tilelayer",
+                width: 5,
+                x: 0,
+                y: 0,
+            },
+            {
+                data: [
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 113, 0, 113,
+                    0, 0, 0, 223, 0, 0,
+                ],
+                height: 5,
+                name: "wall_nw_l2",
+                type: "tilelayer",
+                width: 5,
+                x: 0,
+                y: 0,
+            },
+
+            {
+                data: [
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 131, 0,
+                    0, 0, 0, 0, 0, 0,
+                ],
+                height: 5,
+                name: "wall_nw_l3",
+                type: "tilelayer",
+                width: 5,
+                x: 0,
+                y: 0,
+            },
+        ],
+        width: 5,
+    };
+
+    // Test geohashNeighbour
+    let geohash = generateRandomGeohash(8);
+    expect(geohashNeighbour(geohash, "e", 2)).to.equal(
+        geohashNeighbour(geohashNeighbour(geohash, "e"), "e"),
+    );
+
+    // Spawn world
+    let worldGeohash = generateRandomGeohash(8);
+    let world = await spawnWorld({
+        asset,
+        geohash: worldGeohash,
+        tileHeight: asset.tileheight,
+        tileWidth: asset.tilewidth,
+    });
+
+    /* Test colliders
+    [
+        0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
+        0, x, x, x, 0,
+        0, x, x, x, 0,
+        0, 0, 0, 0, 0,
+    ]
+    */
+    const u = geohashNeighbour(
+        geohashNeighbour(geohashNeighbour(worldGeohash, "s"), "s"),
+        "e",
+    );
+    const v = geohashNeighbour(u, "s");
+    expect(world).toMatchObject({
+        loc: worldGeohash,
+        h: 5,
+        w: 5,
+        cdrs: [
+            u,
+            geohashNeighbour(u, "e"),
+            geohashNeighbour(geohashNeighbour(u, "e"), "e"),
+            v,
+            geohashNeighbour(v, "e"),
+            geohashNeighbour(geohashNeighbour(v, "e"), "e"),
+        ],
+    });
+
+    /* Test colliders if cell dimensions is differnt from tile dimensions
+    [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, x, x, x, x, x, x, 0, 0,
+        0, 0, x, x, x, x, x, x, 0, 0,
+        0, 0, x, x, x, x, x, x, 0, 0,
+        0, 0, x, x, x, x, x, x, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    ]
+    */
+    worldGeohash = generateRandomGeohash(8);
+    world = await spawnWorld({
+        asset,
+        geohash: worldGeohash,
+        tileHeight: asset.tileheight / 2,
+        tileWidth: asset.tilewidth / 2,
+    });
+
+    const p = geohashNeighbour(geohashNeighbour(worldGeohash, "s", 4), "e", 2);
+    const p2 = geohashNeighbour(p, "s");
+    const p3 = geohashNeighbour(p2, "s");
+    const p4 = geohashNeighbour(p3, "s");
+    expect(world.cdrs.sort()).to.deep.equal(
+        [
+            // row 1
+            p,
+            geohashNeighbour(p, "e"),
+            geohashNeighbour(p, "e", 2),
+            geohashNeighbour(p, "e", 3),
+            geohashNeighbour(p, "e", 4),
+            geohashNeighbour(p, "e", 5),
+            // row 2
+            p2,
+            geohashNeighbour(p2, "e"),
+            geohashNeighbour(p2, "e", 2),
+            geohashNeighbour(p2, "e", 3),
+            geohashNeighbour(p2, "e", 4),
+            geohashNeighbour(p2, "e", 5),
+            // row 3
+            p3,
+            geohashNeighbour(p3, "e"),
+            geohashNeighbour(p3, "e", 2),
+            geohashNeighbour(p3, "e", 3),
+            geohashNeighbour(p3, "e", 4),
+            geohashNeighbour(p3, "e", 5),
+            // row 4
+            p4,
+            geohashNeighbour(p4, "e"),
+            geohashNeighbour(p4, "e", 2),
+            geohashNeighbour(p4, "e", 3),
+            geohashNeighbour(p4, "e", 4),
+            geohashNeighbour(p4, "e", 5),
         ].sort(),
     );
 });

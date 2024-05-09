@@ -6,7 +6,7 @@ import {
     entityId,
     geohashNeighbour,
 } from "$lib/crossover/utils";
-import type { Direction } from "$lib/crossover/world";
+import type { Direction, WorldAssetMetadata } from "$lib/crossover/world";
 import {
     checkInRange,
     hasResourcesForAbility,
@@ -41,12 +41,14 @@ import {
     monsterRepository,
     playerRepository,
     redisClient,
+    worldRepository,
 } from "./redis";
 import {
     type ItemEntity,
     type MonsterEntity,
     type Player,
     type PlayerEntity,
+    type WorldEntity,
 } from "./redis/entities";
 import {
     PlayerStateSchema,
@@ -75,6 +77,7 @@ export {
     setPlayerState,
     spawnItem,
     spawnMonster,
+    spawnWorld,
     useItem,
     type ConnectedUser,
 };
@@ -361,10 +364,125 @@ async function spawnMonster({
         st,
         ap,
         apclk: Date.now(),
+        buclk: 0,
         buffs: [],
         debuffs: [],
     };
     return (await monsterRepository.save(monsterId, monster)) as MonsterEntity;
+}
+
+/**
+ * Spawns a world asset from a tiled map in a specific geohash.
+ *
+ * @param geohash - The geohash of the world asset.
+ * @param assetUrl - The URL of the asset (required to be rendered).
+ * @param asset - The world asset object.
+ * @param tileHeight - The height of a tile in game (asset tileheight might be different).
+ * @param tileWidth - The width of a tile in game (asset tilewidth might be different).
+ * @returns A promise that resolves to a WorldEntity.
+ */
+async function spawnWorld({
+    geohash,
+    assetUrl,
+    asset,
+    tileHeight,
+    tileWidth,
+}: {
+    geohash: string;
+    assetUrl?: string;
+    asset?: WorldAssetMetadata;
+    tileHeight: number;
+    tileWidth: number;
+}): Promise<WorldEntity> {
+    if (!asset && !assetUrl) {
+        throw new Error("asset or assetUrl must be provided");
+    }
+
+    asset ??= await (await fetch(assetUrl!)).json();
+    const {
+        height,
+        width,
+        layers,
+        tileheight: assetTileHeight,
+        tilewidth: assetTileWidth,
+    } = asset!;
+
+    // Check tilewidth and tileheight must be exact multiples of cellWidth and cellHeight
+    if (
+        assetTileWidth % tileWidth !== 0 ||
+        assetTileHeight % tileHeight !== 0
+    ) {
+        throw new Error(
+            `Tile width and height must be exact multiples of cell width and height`,
+        );
+    }
+    const heightMultiplier = assetTileHeight / tileHeight;
+    const widthMultiplier = assetTileWidth / tileWidth;
+
+    // Get colliders
+    let colliders = [];
+    for (const { data, properties, width, height } of layers) {
+        if (properties == null) {
+            continue;
+        }
+        for (const { name, value } of properties) {
+            if (name === "collider" && value === true) {
+                // Outer row
+                let geohashRow = geohash;
+                for (let i = 0; i < height; i++) {
+                    // Outer col
+                    let geohashCol = geohashRow;
+                    for (let j = 0; j < width; j++) {
+                        if (data[i * width + j] !== 0) {
+                            // Inner row
+                            let geohashRowInner = geohashCol;
+                            for (let m = 0; m < heightMultiplier; m++) {
+                                // Inner col
+                                let geohashColInner = geohashRowInner;
+                                for (let n = 0; n < widthMultiplier; n++) {
+                                    colliders.push(geohashColInner); // add collider
+                                    geohashColInner = geohashNeighbour(
+                                        geohashColInner,
+                                        "e",
+                                    );
+                                }
+                                geohashRowInner = geohashNeighbour(
+                                    geohashRowInner,
+                                    "s",
+                                );
+                            }
+                        }
+                        geohashCol = geohashNeighbour(
+                            geohashCol,
+                            "e",
+                            widthMultiplier,
+                        );
+                    }
+                    geohashRow = geohashNeighbour(
+                        geohashRow,
+                        "s",
+                        heightMultiplier,
+                    );
+                }
+            }
+        }
+    }
+
+    // Get world count
+    const count = await worldRepository.search().count();
+    const world = `world_${count}`;
+
+    // Create world asset
+    const entity: WorldEntity = {
+        world,
+        url: assetUrl || "",
+        loc: geohash,
+        h: height,
+        w: width,
+        cdrs: colliders,
+    };
+
+    return (await worldRepository.save(world, entity)) as WorldEntity;
 }
 
 /**

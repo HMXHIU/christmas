@@ -22,6 +22,7 @@ export {
     type Direction,
     type Grid,
     type LocationType,
+    type WorldAssetMetadata,
     type WorldSeed,
 };
 
@@ -40,6 +41,25 @@ interface AssetMetadata {
     width: number; // number of horizontal cells at the geohash precision (origin is always top left)
     height: number; // number of vertical cells at the geohash precision (origin is always top left)
     precision: number; // geohash precision
+}
+
+interface WorldAssetMetadata {
+    layers: {
+        data: number[];
+        properties?: { name: string; value: any; type: string }[];
+        offsetx?: number; // offset in pixels
+        offsety?: number;
+        height: number; // height in tiles
+        width: number;
+        name: string;
+        type: "tilelayer";
+        x: number; // x coordinate in tiles
+        y: number;
+    }[];
+    height: number;
+    width: number;
+    tilewidth: number;
+    tileheight: number;
 }
 
 type Direction = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw" | "u" | "d";

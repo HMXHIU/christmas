@@ -12,6 +12,7 @@ import {
     ItemEntitySchema,
     MonsterEntitySchema,
     PlayerEntitySchema,
+    WorldEntitySchema,
     type ItemEntity,
     type MonsterEntity,
     type PlayerEntity,
@@ -33,12 +34,14 @@ export {
     redisClient,
     redisSubscribeClient,
     saveEntity,
+    worldRepository,
 };
 
 // Repositories
 let playerRepository: Repository;
 let monsterRepository: Repository;
 let itemRepository: Repository;
+let worldRepository: Repository;
 
 // Create clients
 const redisClient = createClient({
@@ -73,6 +76,7 @@ function registerSchemas() {
     playerRepository = new Repository(PlayerEntitySchema, redisClient);
     monsterRepository = new Repository(MonsterEntitySchema, redisClient);
     itemRepository = new Repository(ItemEntitySchema, redisClient);
+    worldRepository = new Repository(WorldEntitySchema, redisClient);
 }
 
 function createIndexes() {
@@ -80,6 +84,7 @@ function createIndexes() {
     playerRepository.createIndex();
     monsterRepository.createIndex();
     itemRepository.createIndex();
+    worldRepository.createIndex();
 }
 
 async function fetchEntity(

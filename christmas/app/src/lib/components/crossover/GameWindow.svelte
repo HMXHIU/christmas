@@ -14,8 +14,6 @@
         Player,
     } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
-    import { Assets } from "pixi.js";
-    import { onMount } from "svelte";
     import {
         itemRecord,
         monsterRecord,
@@ -67,12 +65,6 @@
             commands = [];
         }
     }
-
-    onMount(async () => {
-        // Load assets in background
-        await Assets.init({ manifest: "/sprites/manifest.json" });
-        Assets.backgroundLoadBundle(["player", "biomes", "bestiary", "props"]);
-    });
 </script>
 
 <svelte:window bind:innerWidth />
