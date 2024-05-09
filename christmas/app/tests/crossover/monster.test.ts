@@ -87,7 +87,7 @@ test("Test Monster", async () => {
                 "e",
             ),
         ],
-        locationType: "geohash",
+        locT: "geohash",
     });
 
     // Spawn goblin (1x1 grid)

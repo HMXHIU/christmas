@@ -35,6 +35,7 @@ export {
     redisSubscribeClient,
     saveEntity,
     worldRepository,
+    worldsInGeohashQuerySet,
 };
 
 // Repositories
@@ -145,7 +146,7 @@ function playersInGeohashQuerySet(geohashes: string[]): Search {
     return loggedInPlayersQuerySet()
         .and("location")
         .containOneOf(...geohashes.map((x) => `${x}*`))
-        .and("locationType")
+        .and("locT")
         .equal("geohash");
 }
 
@@ -159,7 +160,7 @@ function monstersInGeohashQuerySet(geohashes: string[]): Search {
         .search()
         .and("location")
         .containOneOf(...geohashes.map((x) => `${x}*`))
-        .and("locationType")
+        .and("locT")
         .equal("geohash");
 }
 
@@ -173,8 +174,15 @@ function itemsInGeohashQuerySet(geohashes: string[]): Search {
         .search()
         .where("location")
         .containOneOf(...geohashes.map((x) => `${x}*`))
-        .and("locationType")
+        .and("locT")
         .equal("geohash");
+}
+
+function worldsInGeohashQuerySet(geohashes: string[]): Search {
+    return worldRepository
+        .search()
+        .where("loc")
+        .containOneOf(...geohashes.map((x) => `${x}*`));
 }
 
 /**

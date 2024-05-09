@@ -22,12 +22,10 @@
                 );
             });
             inventoryItems = playerItems.filter((item) => {
-                return item.locationType === "inv";
+                return item.locT === "inv";
             });
             equippedItems = playerItems.filter((item) => {
-                return EquipmentSlots.includes(
-                    item.locationType as EquipmentSlot,
-                );
+                return EquipmentSlots.includes(item.locT as EquipmentSlot);
             });
         });
         return unsubscribe;

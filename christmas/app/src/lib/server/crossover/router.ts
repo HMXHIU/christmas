@@ -18,6 +18,7 @@ import {
     monstersInGeohashQuerySet,
     playerRepository,
     redisClient,
+    worldsInGeohashQuerySet,
 } from "$lib/server/crossover/redis";
 import { PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
@@ -61,6 +62,7 @@ import type {
     Player,
     PlayerEntity,
     World,
+    WorldEntity,
 } from "./redis/entities";
 
 export {
@@ -150,7 +152,7 @@ const EquipItemSchema = z.object({
 // PlayerState stores data owned by the game (does not require player permission to modify)
 const PlayerStateSchema = z.object({
     location: z.array(z.string()).optional(),
-    locationType: z.string().optional(),
+    locT: z.string().optional(),
     loggedIn: z.boolean().optional(),
     hp: z.number().optional(),
     mp: z.number().optional(),
@@ -325,18 +327,18 @@ const crossoverRouter = {
                 // Unequip existing item in slot
                 const exitingItemsInSlot =
                     (await crossoverPlayerInventoryQuerySet(player.player)
-                        .and("locationType")
+                        .and("locT")
                         .equal(slot)
                         .return.all()) as ItemEntity[];
                 for (const itemEntity of exitingItemsInSlot) {
                     itemEntity.location = [player.player];
-                    itemEntity.locationType = "inv";
+                    itemEntity.locT = "inv";
                     await itemRepository.save(itemEntity.item, itemEntity);
                 }
 
                 // Equip item in slot
                 itemToEquip.location = [player.player];
-                itemToEquip.locationType = slot;
+                itemToEquip.locT = slot;
                 itemToEquip = (await itemRepository.save(
                     itemToEquip.item,
                     itemToEquip,
@@ -387,7 +389,7 @@ const crossoverRouter = {
 
                 // Unequip item
                 itemEntity.location = [player.player];
-                itemEntity.locationType = "inv";
+                itemEntity.locT = "inv";
                 itemEntity = (await itemRepository.save(
                     itemEntity.item,
                     itemEntity,
@@ -459,7 +461,7 @@ const crossoverRouter = {
 
                 // Take item
                 itemEntity.location = [player.player];
-                itemEntity.locationType = "inv";
+                itemEntity.locT = "inv";
                 itemEntity = (await itemRepository.save(
                     itemEntity.item,
                     itemEntity,
@@ -510,7 +512,7 @@ const crossoverRouter = {
 
                 // Drop item
                 itemEntity.location = player.location;
-                itemEntity.locationType = "geohash";
+                itemEntity.locT = "geohash";
                 itemEntity = (await itemRepository.save(
                     itemEntity.item,
                     itemEntity,
@@ -579,18 +581,24 @@ const crossoverRouter = {
 
             // Note: Look doesnt cost any ticks
             const parentGeohash = player.location[0].slice(0, -1);
+            const nearbyGeohashes = geohashesNearby(parentGeohash);
 
             // Get players in surrounding
             const players = (await playersInGeohashQuerySet(
-                geohashesNearby(parentGeohash),
+                nearbyGeohashes,
             ).return.all({
                 pageSize: LOOK_PAGE_SIZE, // limit players using page size
             })) as PlayerEntity[];
 
             // Get monsters in surrounding (don't use page size for monsters)
             const monsters = (await monstersInGeohashQuerySet(
-                geohashesNearby(parentGeohash),
+                nearbyGeohashes,
             ).return.all()) as MonsterEntity[];
+
+            // Get worlds in surrounding
+            const worlds = (await worldsInGeohashQuerySet(
+                nearbyGeohashes,
+            ).return.all()) as WorldEntity[];
 
             // Get tile
             const tile = tileAtGeohash(
@@ -600,7 +608,7 @@ const crossoverRouter = {
 
             // Get items
             const items = (await itemsInGeohashQuerySet(
-                geohashesNearby(parentGeohash),
+                nearbyGeohashes,
             ).return.all()) as ItemEntity[];
 
             return {
@@ -608,6 +616,7 @@ const crossoverRouter = {
                 players: players as Player[],
                 monsters: monsters as Monster[],
                 items: items as Item[],
+                worlds: worlds as World[],
                 status: "success",
                 op: "replace",
             } as GameCommandResponse;

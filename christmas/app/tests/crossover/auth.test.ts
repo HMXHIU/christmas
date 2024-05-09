@@ -110,7 +110,7 @@ test("Test Auth", async () => {
     ).resolves.toMatchObject({
         loggedIn: true,
         location: player.location,
-        locationType: "geohash",
+        locT: "geohash",
         ap: 4,
         hp: 10,
         level: 1,
@@ -128,7 +128,7 @@ test("Test Auth", async () => {
             name: name,
             loggedIn: false,
             location: player.location,
-            locationType: "geohash",
+            locT: "geohash",
             ap: 4,
             hp: 10,
             level: 1,
@@ -149,7 +149,7 @@ test("Test Auth", async () => {
     ).resolves.toMatchObject({
         loggedIn: false,
         location: player.location,
-        locationType: "geohash",
+        locT: "geohash",
         ap: 4,
         hp: 10,
         level: 1,

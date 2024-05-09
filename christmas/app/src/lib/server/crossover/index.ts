@@ -236,7 +236,7 @@ async function initPlayerEntity(
     if (!player.location) {
         // TODO: Spawn player in region's city center spawn point
         player.location = [geohash];
-        player.locationType = "geohash";
+        player.locT = "geohash";
         changed = true;
     }
 
@@ -262,7 +262,7 @@ async function initPlayerEntity(
                 worldSeed.spatial.unit.precision,
             ),
         ];
-        player.locationType = "geohash";
+        player.locT = "geohash";
         console.log("Auto corrected player's location", player.location);
     }
 
@@ -358,7 +358,7 @@ async function spawnMonster({
         name: beast,
         beast,
         location,
-        locationType: "geohash",
+        locT: "geohash",
         level,
         hp,
         mp,
@@ -405,11 +405,13 @@ async function spawnWorld({
         throw new Error("asset or assetUrl must be provided");
     }
 
-    // Check geohash precision
-    if (worldSeed.spatial.unit.precision !== geohash.length) {
-        throw new Error(
-            `Geohash precision must be ${worldSeed.spatial.unit.precision}`,
+    // Auto correct geohash precision
+    if (geohash.length !== worldSeed.spatial.unit.precision) {
+        geohash = autoCorrectGeohashPrecision(
+            geohash,
+            worldSeed.spatial.unit.precision,
         );
+        console.log("Auto corrected geohash precision", geohash);
     }
 
     asset ??= await (await fetch(assetUrl!)).json();
@@ -500,7 +502,7 @@ async function spawnWorld({
         loc: plotGeohashes,
         h: height,
         w: width,
-        cdrs: colliders,
+        cld: colliders,
     };
 
     return (await worldRepository.save(world, entity)) as WorldEntity;
@@ -568,7 +570,7 @@ async function spawnItem({
         name: defaultName,
         prop,
         location,
-        locationType: "geohash",
+        locT: "geohash",
         owner,
         configOwner,
         collider,
@@ -854,7 +856,7 @@ function canUseItem(
     if (
         prop.utilities[utility].requireEquipped &&
         !compendium[item.prop].equipmentSlot!.includes(
-            item.locationType as EquipmentSlot,
+            item.locT as EquipmentSlot,
         )
     ) {
         return {

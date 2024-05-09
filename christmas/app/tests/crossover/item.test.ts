@@ -57,7 +57,7 @@ test("Test Items", async () => {
         name: compendium.woodendoor.defaultName,
         prop: compendium.woodendoor.prop,
         location: [woodendoorGeohash],
-        locationType: "geohash",
+        locT: "geohash",
         durability: compendium.woodendoor.durability,
         charges: compendium.woodendoor.charges,
         state: compendium.woodendoor.defaultState,

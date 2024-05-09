@@ -461,11 +461,13 @@ test("Test World", async () => {
 
     var p = geohashNeighbour(geohashNeighbour(worldGeohash, "s", 3), "e");
     var p2 = geohashNeighbour(p, "s");
+
+    console.log(JSON.stringify(world, null, 2));
     expect(world).toMatchObject({
         loc: [worldGeohash.slice(0, -1)],
         h: 8,
         w: 4,
-        cdrs: [p, geohashNeighbour(p, "e"), p2, geohashNeighbour(p2, "e")],
+        cld: [p, geohashNeighbour(p, "e"), p2, geohashNeighbour(p2, "e")],
     });
 
     /* Test colliders/locations if cell dimensions is differnt from tile dimensions
@@ -507,7 +509,7 @@ test("Test World", async () => {
         geohashNeighbour(parentGeohash, "s"),
         geohashNeighbour(geohashNeighbour(parentGeohash, "s"), "e"),
     ]);
-    expect(world.cdrs.sort()).to.deep.equal(
+    expect(world.cld.sort()).to.deep.equal(
         [
             // row 1
             p,

@@ -22,10 +22,10 @@ export {
 type EntityType = "player" | "monster" | "item";
 type GameEntity = Monster | Player | Item;
 
-// TODO: change to `loc` `locT` `dbuf` `buf`, 'lvl' for lower memory usage
+// TODO: change to `loc` `dbuf` `buf`, 'lvl' for lower memory usage
 interface EntityState {
     location: string[];
-    locationType: LocationType;
+    locT: LocationType;
     level: number;
     ap: number; // action points (require to perform abilities)
     apclk: number; // time the last action points was used
@@ -51,7 +51,7 @@ const PlayerEntitySchema = new Schema("Player", {
     description: { type: "string" },
     // Player state
     location: { type: "string[]" },
-    locationType: { type: "string" },
+    locT: { type: "string" },
     loggedIn: { type: "boolean" },
     level: { type: "number" },
     ap: { type: "number" }, // action points (require to perform abilities)
@@ -87,7 +87,7 @@ const MonsterEntitySchema = new Schema("Monster", {
     beast: { type: "string" },
     // Monster state
     location: { type: "string[]" },
-    locationType: { type: "string" },
+    locT: { type: "string" },
     level: { type: "number" },
     ap: { type: "number" }, // action points (require to perform abilities)
     hp: { type: "number" }, // health points
@@ -123,7 +123,7 @@ const ItemEntitySchema = new Schema("Item", {
     collider: { type: "boolean" },
     // Item state
     location: { type: "string[]" },
-    locationType: { type: "string" },
+    locT: { type: "string" },
     durability: { type: "number" },
     charges: { type: "number" },
     debuffs: { type: "string[]" },
@@ -141,7 +141,7 @@ interface Item {
     collider: boolean;
     // Item state
     location: string[];
-    locationType: LocationType;
+    locT: LocationType;
     durability: number;
     charges: number;
     state: string;
@@ -163,7 +163,7 @@ const WorldEntitySchema = new Schema("World", {
     loc: { type: "string[]" },
     h: { type: "number" }, // height
     w: { type: "number" }, // width
-    cdrs: { type: "string[]" }, // colliders
+    cld: { type: "string[]" }, // colliders
 });
 
 interface World {
@@ -172,7 +172,7 @@ interface World {
     h: number;
     w: number;
     loc: string[];
-    cdrs: string[];
+    cld: string[];
 }
 
 type WorldEntity = World & Entity;

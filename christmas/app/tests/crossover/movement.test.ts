@@ -39,7 +39,7 @@ test("Test Movement", async () => {
             geohashNeighbour(tavernOrigin, "s"),
             geohashNeighbour(tavernOrigin, "se"),
         ],
-        locationType: "geohash",
+        locT: "geohash",
     });
 
     // PlayerOne tries to move south (obstructed by tavern)

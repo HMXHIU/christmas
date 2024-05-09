@@ -1,5 +1,12 @@
 import { PUBLIC_HOST } from "$env/static/public";
 import type { TransactionResult } from "$lib/anchorClient/types";
+import { refresh } from "$lib/community";
+import type {
+    Item,
+    Monster,
+    Player,
+    World,
+} from "$lib/server/crossover/redis/entities";
 import type {
     PlayerMetadataSchema,
     TileSchema,
@@ -8,7 +15,12 @@ import { trpc } from "$lib/trpcClient";
 import { retry, signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
 import type { HTTPHeaders } from "@trpc/client";
+import { get } from "svelte/store";
 import { type z } from "zod";
+import type {
+    FeedEvent,
+    StreamEvent,
+} from "../../routes/api/crossover/stream/+server";
 import {
     grid,
     itemRecord,
@@ -18,18 +30,6 @@ import {
     playerRecord,
     tile,
 } from "../../store";
-
-import { refresh } from "$lib/community";
-import type {
-    Item,
-    Monster,
-    Player,
-} from "$lib/server/crossover/redis/entities";
-import { get } from "svelte/store";
-import type {
-    FeedEvent,
-    StreamEvent,
-} from "../../routes/api/crossover/stream/+server";
 import { actions, type Action } from "./actions";
 import type { GameCommand, GameCommandVariables } from "./ir";
 import { entityId } from "./utils";
@@ -76,6 +76,7 @@ interface GameCommandResponse {
     message?: string;
     players?: Player[];
     monsters?: Monster[];
+    worlds?: World[];
     items?: Item[];
     tile?: z.infer<typeof TileSchema>;
 }

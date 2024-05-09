@@ -8,7 +8,7 @@
     onMount(() => {
         const unsubscribe = itemRecord.subscribe((ir) => {
             environmentItems = Object.values(ir).filter((item) => {
-                return item.locationType === "geohash";
+                return item.locT === "geohash";
             });
         });
         return unsubscribe;

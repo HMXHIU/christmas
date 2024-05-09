@@ -35,7 +35,7 @@ test("Test Inventory", async () => {
     });
     expect(playerOneWoodenClub).toMatchObject({
         location: playerOne.location,
-        locationType: "geohash",
+        locT: "geohash",
         owner: playerOne.player,
         configOwner: playerOne.player,
     });
@@ -78,7 +78,7 @@ test("Test Inventory", async () => {
     ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
         location: [playerOne.player],
-        locationType: "inv",
+        locT: "inv",
     });
 
     // Check inventory
@@ -106,7 +106,7 @@ test("Test Inventory", async () => {
     ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
         location: playerOne.location,
-        locationType: "geohash",
+        locT: "geohash",
         owner: playerOne.player,
         configOwner: playerOne.player,
     });
@@ -147,7 +147,7 @@ test("Test Inventory", async () => {
     ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
         location: [playerOne.player],
-        locationType: "inv",
+        locT: "inv",
     });
 
     /*
@@ -174,7 +174,7 @@ test("Test Inventory", async () => {
     ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
         location: [playerOne.player],
-        locationType: "rh",
+        locT: "rh",
     });
 
     // Check inventory
@@ -184,7 +184,7 @@ test("Test Inventory", async () => {
             {
                 item: playerOneWoodenClub.item,
                 location: [playerOne.player],
-                locationType: "rh",
+                locT: "rh",
             },
         ],
         status: "success",
@@ -200,7 +200,7 @@ test("Test Inventory", async () => {
     ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
         location: [playerOne.player],
-        locationType: "lh",
+        locT: "lh",
     });
 
     // Check inventory
@@ -210,7 +210,7 @@ test("Test Inventory", async () => {
             {
                 item: playerOneWoodenClub.item,
                 location: [playerOne.player],
-                locationType: "lh",
+                locT: "lh",
             },
         ],
         status: "success",
@@ -231,7 +231,7 @@ test("Test Inventory", async () => {
     expect(playerOneWoodenClub).toMatchObject({
         item: playerOneWoodenClub.item,
         location: [playerOne.player],
-        locationType: "inv",
+        locT: "inv",
     });
 
     // Check inventory
@@ -241,7 +241,7 @@ test("Test Inventory", async () => {
             {
                 item: playerOneWoodenClub.item,
                 location: [playerOne.player],
-                locationType: "inv",
+                locT: "inv",
             },
         ],
         status: "success",
@@ -267,7 +267,7 @@ test("Test Inventory", async () => {
     ).items?.[0]!;
     expect(potionofhealth).toMatchObject({
         location: [playerOne.player],
-        locationType: "inv",
+        locT: "inv",
     });
 
     // Equip potion of health
