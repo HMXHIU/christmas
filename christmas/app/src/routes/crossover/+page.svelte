@@ -146,7 +146,7 @@
     {#if !$player}
         <Onboard />
     {:else}
-        <GameWindow class="p-0 h-full" onGameCommand={handleGC} {onMove} />
+        <GameWindow class="pt-2 h-full" onGameCommand={handleGC} {onMove} />
     {/if}
     <!-- Footer TODO: Move to seperate svelte layout -->
     <Footer />

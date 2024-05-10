@@ -14,6 +14,7 @@ import { bestiary, biomes, compendium, worldSeed } from "./world/settings";
 
 export {
     REGEX_STRIP_ENTITY_TYPE,
+    borderingGeohashes,
     calculateLocation,
     childrenGeohashes,
     directionToVector,
@@ -26,7 +27,6 @@ export {
     isGeohashTraversable,
     seededRandom,
     stringToRandomNumber,
-    surroundingGeohashes,
 };
 
 const REGEX_STRIP_ENTITY_TYPE = /^(monster_|item_)/;
@@ -61,6 +61,7 @@ function seededRandom(seed: number): number {
 
 /**
  * Converts a direction to a vector.
+ *
  * @param direction - The direction to convert.
  * @returns The vector representation of the direction.
  * @throws {Error} If the direction is invalid.
@@ -112,31 +113,32 @@ function geohashNeighbour(
 }
 
 /**
- * Retrieves the surrounding geohashes around `geohashes` exluding itself.
+ * Retrieves the bordering geohashes around `geohashes` exluding itself.
  *
  * @param geohashes - An array of geohashes.
- * @returns A promise that resolves to an array of neighboring geohashes.
+ * @returns A promise that resolves to an array of bordering geohashes.
  */
-async function surroundingGeohashes(geohashes: string[]): Promise<string[]> {
+async function borderingGeohashes(geohashes: string[]): Promise<string[]> {
     // Get all parent geohashes
     const innerGeohashes = new Set(geohashes);
 
     // Get all neighboring geohashes (exclude parent geohashes)
-    const neighboringGeohashes = new Set<string>();
+    const borderingGeohashes = new Set<string>();
     for (const geohash of innerGeohashes) {
         for (const neighborGeohash of ngeohash.neighbors(geohash)) {
             if (!innerGeohashes.has(neighborGeohash)) {
-                neighboringGeohashes.add(neighborGeohash);
+                borderingGeohashes.add(neighborGeohash);
             }
         }
     }
-    return Array.from(neighboringGeohashes);
+    return Array.from(borderingGeohashes);
 }
 
 /**
  * Retrieves the geohashes in the surroundings (24x20 or 20x24) of a given geohash (including itself).
  * If precision is odd, the geohash grid is 8x4, 8 neighbours will give 24x12 grid, add 3 more neighbours to the east and west
  * If precision is even, the geohash grid is 4x8, 8 neighbours will give 12x24 grid, add 3 more neighbours to the north and south
+ *
  * @param geohash - The geohash for which to retrieve the surrounding geohashes.
  * @returns An array of geohashes including the original geohash and its surrounding geohashes.
  */
@@ -226,7 +228,10 @@ function childrenGeohashes(geohash: string): string[] {
 }
 
 /**
- * (Client side) Checks if a geohash is traversable based on the provided items.
+ * Checks if a geohash is traversable based on the provided items.
+ *
+ * TODO: include world colliders
+ *
  * @param geohash - The geohash to check.
  * @param items - The items to check for colliders.
  * @returns A promise that resolves to a boolean indicating if the geohash is traversable.
@@ -235,7 +240,7 @@ async function isGeohashTraversable(
     geohash: string,
     items: Item[],
 ): Promise<boolean> {
-    // Check if next geohash is traversable
+    // Check if geohash is traversable
     const biome = biomeAtGeohash(geohash);
 
     // Check any items with collider

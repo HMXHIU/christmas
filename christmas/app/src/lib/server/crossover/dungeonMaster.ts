@@ -1,4 +1,4 @@
-import { childrenGeohashes, surroundingGeohashes } from "$lib/crossover/utils";
+import { borderingGeohashes, childrenGeohashes } from "$lib/crossover/utils";
 import { hasResourcesForAbility } from "$lib/crossover/world/abilities";
 import {
     monsterLimitAtGeohash,
@@ -148,7 +148,7 @@ async function spawnMonsters(players: PlayerEntity[]) {
         );
 
     // Get all neighboring geohashes where there are no players
-    const uninhabitedGeohashes = await surroundingGeohashes(parentGeohashes);
+    const uninhabitedGeohashes = await borderingGeohashes(parentGeohashes);
 
     for (const geohash of uninhabitedGeohashes) {
         // Get monster limit for each uninhabited geohash

@@ -74,9 +74,9 @@
         {/each}
     </section>
 
-    <div class="m-0 p-0 h-4 shrink-0">
+    <div class="m-0 px-4 h-4 shrink-0">
         {#if systemMessage}
-            <p class="text-sm p-0 m-0 text-left text-destructive">
+            <p class="text-sm text-left text-destructive">
                 {systemMessage.message}
             </p>
         {/if}

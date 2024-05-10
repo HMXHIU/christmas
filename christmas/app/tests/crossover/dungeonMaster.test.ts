@@ -1,5 +1,5 @@
 import { INTERNAL_SERVICE_KEY } from "$env/static/private";
-import { surroundingGeohashes } from "$lib/crossover/utils";
+import { borderingGeohashes } from "$lib/crossover/utils";
 import { monsterLimitAtGeohash } from "$lib/crossover/world/bestiary";
 import { spawnMonsters } from "$lib/server/crossover/dungeonMaster";
 import { monstersInGeohashQuerySet } from "$lib/server/crossover/redis";
@@ -42,7 +42,7 @@ test("Test DungeonMaster", async () => {
         });
 
     // Test get all uninhabited neighbouring geohashes
-    const uninhabitedGeohashes = await surroundingGeohashes([
+    const uninhabitedGeohashes = await borderingGeohashes([
         playerOneGeohash.slice(0, -1),
         playerTwoGeohash.slice(0, -1),
         playerThreeGeohash.slice(0, -1),

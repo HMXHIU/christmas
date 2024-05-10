@@ -143,6 +143,7 @@ async function handleGC(command: GameCommand) {
     try {
         const gcResponse = await executeGameCommand(command);
         if (gcResponse != null) {
+            console.log(JSON.stringify(gcResponse, null, 2));
             await processGCResponse(command, gcResponse);
         }
     } catch (error: any) {
@@ -153,22 +154,6 @@ async function handleGC(command: GameCommand) {
         });
     }
 }
-
-// async function handlePlayerUpdated(player: Player | null) {
-//     if (player == null) {
-//         return;
-//     }
-//     const geohash = player.location[0];
-//     const t = get(tile);
-
-//     // Geohash parent grid changed (TODO: this cases abrupt look changes in UI)
-//     if (geohash.slice(0, -1) !== t.geohash.slice(0, -1)) {
-//         // Load more grid biomes
-//         grid.set(loadMoreGridBiomes(geohash, get(grid)));
-//         // Look at surroundings
-//         await handleGC([actions.look, { self: player }]);
-//     }
-// }
 
 function handleUpdateEntities({
     players,

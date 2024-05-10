@@ -13,11 +13,8 @@ import {
     fetchEntity,
     initializeClients,
     itemRepository,
-    itemsInGeohashQuerySet,
-    monstersInGeohashQuerySet,
     playerRepository,
     redisClient,
-    worldsInGeohashQuerySet,
 } from "$lib/server/crossover/redis";
 import { PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
@@ -26,6 +23,7 @@ import { z } from "zod";
 import {
     checkAndSetBusy,
     configureItem,
+    getNearbyEntities,
     getUserMetadata,
     initPlayerEntity,
     isDirectionTraversable,
@@ -56,12 +54,10 @@ import {
 import type {
     Item,
     ItemEntity,
-    Monster,
     MonsterEntity,
     Player,
     PlayerEntity,
     World,
-    WorldEntity,
 } from "./redis/entities";
 
 export {
@@ -572,37 +568,15 @@ const crossoverRouter = {
                 ctx.user.publicKey,
             )) as PlayerEntity;
 
-            // Note: Look doesnt cost any ticks
-            const parentGeohash = player.location[0].slice(0, -1);
-            const nearbyGeohashes = geohashesNearby(parentGeohash);
-
-            // Get players in surrounding
-            const players = (await playersInGeohashQuerySet(
-                nearbyGeohashes,
-            ).return.all({
-                pageSize: LOOK_PAGE_SIZE, // limit players using page size
-            })) as PlayerEntity[];
-
-            // Get monsters in surrounding (don't use page size for monsters)
-            const monsters = (await monstersInGeohashQuerySet(
-                nearbyGeohashes,
-            ).return.all()) as MonsterEntity[];
-
-            // Get worlds in surrounding
-            const worlds = (await worldsInGeohashQuerySet(
-                nearbyGeohashes,
-            ).return.all()) as WorldEntity[];
-
-            // Get items
-            const items = (await itemsInGeohashQuerySet(
-                nearbyGeohashes,
-            ).return.all()) as ItemEntity[];
+            const { monsters, players, items } = await getNearbyEntities(
+                player.location[0],
+                LOOK_PAGE_SIZE,
+            );
 
             return {
-                players: players as Player[],
-                monsters: monsters as Monster[],
-                items: items as Item[],
-                worlds: worlds as World[],
+                players,
+                monsters,
+                items,
                 status: "success",
                 op: "replace",
             } as GameCommandResponse;
@@ -621,18 +595,13 @@ const crossoverRouter = {
                 player,
                 direction,
             );
-            if (!isTraversable) {
-                return {
-                    status: "failure",
-                    message: `Cannot move ${direction}`,
-                } as GameCommandResponse;
-            } else {
+
+            if (isTraversable) {
                 // Check if player is busy
                 const { busy, entity } = await checkAndSetBusy({
                     entity: player,
                     action: actions.move.action,
                 });
-                player = entity as PlayerEntity;
                 if (busy) {
                     return {
                         status: "failure",
@@ -640,12 +609,45 @@ const crossoverRouter = {
                     } as GameCommandResponse;
                 }
 
+                // Check if player moves to a different plot
+                const plotDidChange =
+                    player.location[0].slice(0, -1) !==
+                    location[0].slice(0, -1);
+
+                // Update player location
+                player = entity as PlayerEntity;
                 player.location = location;
                 await playerRepository.save(player.player, player);
+
+                // Return nearby entities if plot changed
+                if (plotDidChange) {
+                    const { monsters, players, items } =
+                        await getNearbyEntities(
+                            player.location[0],
+                            LOOK_PAGE_SIZE,
+                        );
+                    return {
+                        players,
+                        monsters,
+                        items,
+                        status: "success",
+                        op: "replace",
+                    } as GameCommandResponse;
+                }
+                // Just update player
+                else {
+                    return {
+                        players: [player as Player],
+                        op: "upsert",
+                        status: "success",
+                    } as GameCommandResponse;
+                }
+            }
+            // Not traversable
+            else {
                 return {
-                    players: [player as Player],
-                    op: "upsert",
-                    status: "success",
+                    status: "failure",
+                    message: `Cannot move ${direction}`,
                 } as GameCommandResponse;
             }
         }),

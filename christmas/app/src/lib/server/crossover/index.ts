@@ -5,6 +5,7 @@ import {
     entityDimensions,
     entityId,
     geohashNeighbour,
+    geohashesNearby,
     getPlotGeohashes,
 } from "$lib/crossover/utils";
 import type { Direction, WorldAssetMetadata } from "$lib/crossover/world";
@@ -39,13 +40,18 @@ import { ObjectStorage } from "../objectStorage";
 import {
     collidersInGeohashQuerySet,
     itemRepository,
+    itemsInGeohashQuerySet,
     monsterRepository,
+    monstersInGeohashQuerySet,
     playerRepository,
+    playersInGeohashQuerySet,
     redisClient,
     worldRepository,
 } from "./redis";
 import {
+    type Item,
     type ItemEntity,
+    type Monster,
     type MonsterEntity,
     type Player,
     type PlayerEntity,
@@ -65,7 +71,8 @@ export {
     configureItem,
     connectedUsers,
     consumeResources,
-    crossoverAuthPlayerMetadata,
+    getNearbyEntities,
+    getPlayerMetadata,
     getUserMetadata,
     initPlayerEntity,
     isDirectionTraversable,
@@ -98,6 +105,7 @@ let connectedUsers: Record<string, ConnectedUser> = {};
 
 /**
  * Retrieves the user metadata for a given public key.
+ *
  * @param publicKey The public key of the user.
  * @returns A promise that resolves to the user metadata or null if not found.
  * @throws Error if the user account does not exist or is missing metadata URI.
@@ -125,10 +133,11 @@ async function getUserMetadata(
 
 /**
  * Retrieves the player metadata for a given public key.
+ *
  * @param publicKey The public key of the player.
  * @returns A promise that resolves to the player metadata or null if not found.
  */
-async function crossoverAuthPlayerMetadata(
+async function getPlayerMetadata(
     publicKey: string,
 ): Promise<z.infer<typeof PlayerMetadataSchema> | null> {
     return (await getUserMetadata(publicKey))?.crossover || null;
@@ -136,10 +145,11 @@ async function crossoverAuthPlayerMetadata(
 
 /**
  * Retrieves the player state for a given public key.
+ *
  * @param publicKey The public key of the player.
  * @returns A promise that resolves to the player state or null if not found.
  */
-async function crossoverAuthPlayerState(
+async function getPlayerState(
     publicKey: string,
 ): Promise<z.infer<typeof PlayerStateSchema> | null> {
     try {
@@ -155,6 +165,7 @@ async function crossoverAuthPlayerState(
 
 /**
  * Sets the player state for a given public key.
+ *
  * @param publicKey The public key of the player.
  * @param state The player state to set.
  * @returns A promise that resolves to a string indicating the success of the operation.
@@ -182,6 +193,7 @@ async function setPlayerState(
 
 /**
  * Loads the player entity (PlayerMetadata + PlayerState) for a given public key.
+ *
  * @param publicKey The public key of the player.
  * @param playerState Upsert player state if provided.
  * @returns A promise that resolves to the loaded player entity.
@@ -192,14 +204,14 @@ async function loadPlayerEntity(
     playerState: any = {},
 ): Promise<PlayerEntity> {
     // Get player metadata
-    const playerMetadata = await crossoverAuthPlayerMetadata(publicKey);
+    const playerMetadata = await getPlayerMetadata(publicKey);
     if (playerMetadata == null) {
         throw new Error(`Player ${publicKey} not found`);
     }
 
     // Get & update player state
     const newPlayerState = {
-        ...((await crossoverAuthPlayerState(publicKey)) || {}),
+        ...((await getPlayerState(publicKey)) || {}),
         ...playerState,
     };
     await setPlayerState(publicKey, newPlayerState);
@@ -212,6 +224,7 @@ async function loadPlayerEntity(
 
 /**
  * Initializes the player entity.
+ *
  * @param player The player entity.
  * @param region The region of the player.
  * @param geohash The geohash of the user (community).
@@ -233,7 +246,7 @@ async function initPlayerEntity(
     let changed = false;
 
     // Initialize geohash
-    if (!player.location) {
+    if (!player.location || !player.locT) {
         // TODO: Spawn player in region's city center spawn point
         player.location = [geohash];
         player.locT = "geohash";
@@ -320,6 +333,7 @@ function autoCorrectGeohashPrecision(
 
 /**
  * Saves the player entity state (into s3) for a given public key.
+ *
  * @param publicKey The public key of the player.
  * @returns A promise that resolves to a string indicating the success of the operation.
  */
@@ -332,6 +346,7 @@ async function savePlayerEntityState(publicKey: string): Promise<string> {
 
 /**
  * Spawns a monster in a specific geohash.
+ *
  * @param geohash The geohash where the monster will be spawned.
  * @param beast The type of monster to spawn.
  * @returns A promise that resolves to the spawned monster entity.
@@ -1411,4 +1426,47 @@ async function consumeResources(
     }
 
     return (await saveEntity(entity)) as PlayerEntity;
+}
+
+/**
+ * Retrieves nearby entities based on the provided geohash and page size.
+ *
+ * @param geohash - The geohash used to determine nearby entities.
+ * @param playersPageSize - The page size for retrieving players.
+ * @returns A promise that resolves to an object containing players, monsters, and items.
+ */
+async function getNearbyEntities(
+    geohash: string,
+    playersPageSize: number,
+): Promise<{
+    players: Player[];
+    monsters: Monster[];
+    items: Item[];
+}> {
+    // Get nearby geohashes
+    const parentGeohash = geohash.slice(0, -1);
+    const nearbyGeohashes = geohashesNearby(parentGeohash);
+
+    // Get players in surrounding
+    const players = (await playersInGeohashQuerySet(nearbyGeohashes).return.all(
+        {
+            pageSize: playersPageSize,
+        },
+    )) as PlayerEntity[];
+
+    // Get monsters in surrounding (don't use page size for monsters)
+    const monsters = (await monstersInGeohashQuerySet(
+        nearbyGeohashes,
+    ).return.all()) as MonsterEntity[];
+
+    // Get items
+    const items = (await itemsInGeohashQuerySet(
+        nearbyGeohashes,
+    ).return.all()) as ItemEntity[];
+
+    return {
+        players: players as Player[],
+        monsters: monsters as Monster[],
+        items: items as Item[],
+    };
 }
