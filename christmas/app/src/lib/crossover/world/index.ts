@@ -4,12 +4,10 @@ import type {
     Player,
     World,
 } from "$lib/server/crossover/redis/entities";
-import type { TileSchema } from "$lib/server/crossover/router";
 import lodash from "lodash";
 import ngeohash from "ngeohash";
-import type { z } from "zod";
 import { childrenGeohashes } from "../utils";
-import { biomesNearbyGeohash } from "./biomes";
+import { biomesNearbyGeohash, type Tile } from "./biomes";
 import { type EquipmentSlot } from "./compendium";
 const { groupBy } = lodash;
 
@@ -17,6 +15,7 @@ export {
     Directions,
     abyssTile,
     geohashToGridCell,
+    gridCellToGeohash,
     loadMoreGridBiomes,
     updateGrid,
     updateGridEntry,
@@ -28,7 +27,7 @@ export {
     type WorldSeed,
 };
 
-const abyssTile: z.infer<typeof TileSchema> = {
+const abyssTile: Tile = {
     name: "The Abyss",
     geohash: "59ke577h",
     description: "You are nowhere to be found.",
@@ -85,9 +84,6 @@ type LocationType =
     | EquipmentSlot;
 
 interface GridEntry {
-    // can be procedurally generated at client
-    biome?: string;
-    // needs to be fetched from server (using `look`)
     monsters?: Record<string, Monster>;
     players?: Record<string, Player>;
     items?: Record<string, Item>;
@@ -152,6 +148,7 @@ const gridSizeAtPrecision: Record<number, { rows: number; cols: number }> = {
 };
 
 /**
+ * [DEPRECATE]
  * Loads more grid data (biome only) based on the given geohash and grid.
  *
  * @param geohash - The current geohash to load more grid data for.
@@ -176,11 +173,10 @@ function loadMoreGridBiomes(geohash: string, grid: Grid): Grid {
 }
 
 /**
- * Updates (recreate at geohash) or Upserts the provided grid with biomes, monsters, players, and items.
+ * Updates (recreate at geohash) or Upserts the provided grid with entities.
  *
- * @param grid - The grid to update with biomes.
+ * @param grid - The grid to update.
  * @param upsert - Whether to upsert the provided monsters, players, and items (default: false).
- * @param biomes - Record of geohash strings to biome names.
  * @param monsters - Array of monsters to add to the grid.
  * @param players - Array of players to add to the grid.
  * @param items - Array of items to add to the grid.
@@ -188,7 +184,6 @@ function loadMoreGridBiomes(geohash: string, grid: Grid): Grid {
  */
 function updateGrid({
     grid,
-    biomes,
     monsters,
     players,
     worlds,
@@ -203,20 +198,6 @@ function updateGrid({
     worlds?: World[];
     upsert?: boolean;
 }) {
-    // Update biomes
-    if (biomes) {
-        for (const [geohash, biome] of Object.entries(biomes)) {
-            const { precision, row, col } = geohashToGridCell(geohash);
-            updateGridEntry({
-                grid,
-                precision,
-                row,
-                col,
-                biome,
-            });
-        }
-    }
-
     // Delete monsters, players, items and worlds from grid (relocated)
     const monsterIds = monsters?.map((mx) => mx.monster) || [];
     const playerIds = players?.map((px) => px.player) || [];
@@ -371,8 +352,7 @@ function updateGrid({
 }
 
 /**
- * Updates the grid entry at the specified precision, row, and column with the provided monsters and biome.
- * If monsters or biome are not provided, they will not be updated.
+ * Updates the grid entry at the specified precision, row, and column with entities
  *
  * @param grid - The grid object.
  * @param precision - The precision level.
@@ -382,7 +362,6 @@ function updateGrid({
  * @param players - The players to update in the grid.
  * @param items - The items to update in the grid.
  * @param worlds - The worlds to update in the grid.
- * @param biome - The biome to update in the grid.
  * @returns The updated grid object.
  */
 function updateGridEntry({
@@ -394,7 +373,6 @@ function updateGridEntry({
     players,
     items,
     worlds,
-    biome,
 }: {
     grid: Grid;
     precision: number;
@@ -404,7 +382,6 @@ function updateGridEntry({
     players?: Record<string, Player>;
     items?: Record<string, Item>;
     worlds?: Record<string, World>;
-    biome?: string;
 }) {
     grid[precision] ??= {};
     grid[precision][row] ??= {};
@@ -424,10 +401,6 @@ function updateGridEntry({
 
     if (worlds != null) {
         grid[precision][row][col].worlds = worlds;
-    }
-
-    if (biome != null) {
-        grid[precision][row][col].biome = biome;
     }
 }
 
@@ -454,4 +427,29 @@ function geohashToGridCell(geohash: string): {
     );
 
     return { precision, row, col };
+}
+
+/**
+ * Converts a grid cell to a geohash string.
+ *
+ * @param precision - The precision level of the geohash.
+ * @param row - The row index of the grid cell.
+ * @param col - The column index of the grid cell.
+ * @returns The geohash string representing the grid cell.
+ */
+function gridCellToGeohash({
+    precision,
+    row,
+    col,
+}: {
+    precision: number;
+    row: number;
+    col: number;
+}): string {
+    const lat = -(
+        ((row + 0.5) / gridSizeAtPrecision[precision].rows) * 180 -
+        90
+    );
+    const lon = ((col + 0.5) / gridSizeAtPrecision[precision].cols) * 360 - 180;
+    return ngeohash.encode(lat, lon, precision);
 }

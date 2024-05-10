@@ -254,6 +254,24 @@ async function initPlayerEntity(
         console.log("Initialized player's level and stats", player.player);
     }
 
+    // Fix misconfigured player
+    if (
+        player.ap == null ||
+        player.hp == null ||
+        player.st == null ||
+        player.mp == null
+    ) {
+        const { hp, mp, st, ap } = playerStats({ level: player.level });
+        player.hp = hp;
+        player.mp = mp;
+        player.st = st;
+        player.ap = ap;
+        player.debuffs = [];
+        player.buffs = [];
+        changed = true;
+        console.log("Fix misconfigured player", player.player);
+    }
+
     // Auto correct player's geohash precision
     if (player.location[0].length !== worldSeed.spatial.unit.precision) {
         player.location = [

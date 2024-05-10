@@ -1,10 +1,14 @@
 import { seededRandom, stringToRandomNumber } from "$lib/crossover/utils";
-import type { TileSchema } from "$lib/server/crossover/router";
 import ngeohash from "ngeohash";
-import type { z } from "zod";
 import { type AssetMetadata, type WorldSeed } from ".";
 import { biomes, worldSeed } from "./settings";
-export { biomeAtGeohash, biomesNearbyGeohash, tileAtGeohash, type Biome };
+export {
+    biomeAtGeohash,
+    biomesNearbyGeohash,
+    tileAtGeohash,
+    type Biome,
+    type Tile,
+};
 
 interface Biome {
     biome: string;
@@ -12,6 +16,12 @@ interface Biome {
     description: string;
     traversableSpeed: number; // 0.0 - 1.0
     asset?: AssetMetadata;
+}
+
+interface Tile {
+    geohash: string;
+    name: string;
+    description: string;
 }
 
 /**
@@ -83,14 +93,12 @@ function biomesNearbyGeohash(
 
 /**
  * Retrieves the tile information based on the given geohash and biome.
+ *
  * @param geohash - The geohash representing the location of the tile.
  * @param biome - The biome of the tile.
  * @returns The tile information including geohash, name, and description.
  */
-function tileAtGeohash(
-    geohash: string,
-    biome: string,
-): z.infer<typeof TileSchema> {
+function tileAtGeohash(geohash: string, biome: string): Tile {
     let description = "";
 
     switch (biome) {

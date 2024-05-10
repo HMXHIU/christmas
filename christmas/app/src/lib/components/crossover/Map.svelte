@@ -2,16 +2,18 @@
     import { seededRandom } from "$lib/crossover/utils";
     import {
         geohashToGridCell,
+        gridCellToGeohash,
         type AssetMetadata,
         type Grid,
     } from "$lib/crossover/world";
+    import { biomeAtGeohash } from "$lib/crossover/world/biomes";
     import { playerAsset } from "$lib/crossover/world/player";
     import {
         bestiary,
         biomes,
         compendium,
     } from "$lib/crossover/world/settings";
-    import type { TileSchema } from "$lib/server/crossover/router";
+    import type { Player } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
     import { groupBy } from "lodash";
     import {
@@ -23,8 +25,7 @@
         Texture,
     } from "pixi.js";
     import { onMount } from "svelte";
-    import type { z } from "zod";
-    import { grid, player, tile } from "../../../store";
+    import { grid, player } from "../../../store";
 
     type SpriteLayer = "biome" | "creature" | "prop" | "world";
 
@@ -34,7 +35,7 @@
     const WORLD_ZLAYER = 100000000000000;
 
     let container: HTMLDivElement;
-    let prevTile: z.infer<typeof TileSchema> | null = null;
+    let prevLocation: string | null = null;
     let isInitialized = false;
 
     let playerAvatar = "/sprites/portraits/female_drow.jpeg";
@@ -81,7 +82,7 @@
         Record<number, Record<string, GridSprite>>
     > = {};
 
-    $: updateWorld($tile, $grid);
+    $: updateWorld($player, $grid);
     $: resize(clientHeight, clientWidth);
 
     function resize(clientHeight: number, clientWidth: number) {
@@ -318,31 +319,34 @@
                 }
 
                 // Fill in biome
-                const biome = g[cell.precision]?.[gridRow]?.[gridCol]?.biome;
-                if (biome) {
-                    const asset = biomes[biome].asset;
-                    if (asset) {
-                        const sprite = await loadSprite({
-                            asset,
-                            col,
-                            row,
-                            alpha,
-                            spriteType: "biome",
-                            // bit shift by 8 else gridRow + gridCol is the same at diagonals
-                            seed: (gridRow << 8) + gridCol,
-                        });
+                const geohash = gridCellToGeohash({
+                    precision: cell.precision,
+                    row: gridRow,
+                    col: gridCol,
+                });
+                const biome = biomeAtGeohash(geohash);
+                const asset = biomes[biome].asset;
+                if (asset) {
+                    const sprite = await loadSprite({
+                        asset,
+                        col,
+                        row,
+                        alpha,
+                        spriteType: "biome",
+                        // bit shift by 8 else gridRow + gridCol is the same at diagonals
+                        seed: (gridRow << 8) + gridCol,
+                    });
 
-                        if (sprite) {
-                            setGridSprite(gridRow, gridCol, {
-                                id: "biome",
-                                sprite: worldStage.addChild(sprite),
-                                x: sprite.x,
-                                y: sprite.y,
-                                spriteType: "biome",
-                            });
-                            // Set z-index based on y-coordinate & layer
-                            sprite.zIndex = BIOME_ZLAYER + gridRow + gridCol;
-                        }
+                    if (sprite) {
+                        setGridSprite(gridRow, gridCol, {
+                            id: "biome",
+                            sprite: worldStage.addChild(sprite),
+                            x: sprite.x,
+                            y: sprite.y,
+                            spriteType: "biome",
+                        });
+                        // Set z-index based on y-coordinate & layer
+                        sprite.zIndex = BIOME_ZLAYER + gridRow + gridCol;
                     }
                 }
 
@@ -465,12 +469,12 @@
         }
     }
 
-    async function updateWorld(t: z.infer<typeof TileSchema>, g: Grid) {
-        if (!isInitialized) {
+    async function updateWorld(p: Player | null, g: Grid) {
+        if (!isInitialized || p == null) {
             return;
         }
 
-        const cell = geohashToGridCell(t.geohash);
+        const cell = geohashToGridCell(p.location[0]);
 
         // Player
         if (playerSprite != null && cell != null) {
@@ -484,8 +488,8 @@
         }
 
         // Environment
-        if (prevTile != null) {
-            const prevCell = geohashToGridCell(prevTile.geohash);
+        if (prevLocation != null) {
+            const prevCell = geohashToGridCell(prevLocation);
 
             if (cell.precision === prevCell.precision) {
                 const deltaCol = cell.col - prevCell.col;
@@ -581,8 +585,8 @@
             }
         }
 
-        // Update the previous tile (copy, do not set by reference)
-        prevTile = { ...t };
+        // Update previous location
+        prevLocation = p.location[0];
     }
 
     function createCreatureSprite(
@@ -590,7 +594,6 @@
         pedestalTexture: Texture,
     ): Sprite {
         const sprite = new Sprite(texture);
-
         const anchorY = 0.92;
         sprite.anchor.set(0.5, anchorY);
 
@@ -698,26 +701,6 @@
         playerSprite = createCreatureSprite(playerTexture, pedestalTexture);
         worldStage.addChild(playerSprite);
 
-        // // TEST world
-        // const { row, col } = geohashToGridCell("w21z3tzz");
-        // const c = await loadWorld({
-        //     url: "/worlds/tilemaps/house.json",
-        //     col: GRID_MID_COL,
-        //     row: GRID_MID_ROW,
-        // });
-        // worldStage.addChild(c);
-        // const [isoX, isoY] = cartToIso(0, 0);
-        // c.x = isoX;
-        // c.y = isoY;
-        // c.zIndex = WORLD_ZLAYER + row + col + 1000;
-        // setGridSprite(row, col, {
-        //     id: world.world,
-        //     sprite: worldStage.addChild(c),
-        //     x: c.x,
-        //     y: c.y,
-        //     spriteType: "world",
-        // });
-
         // Ticker
         app.ticker.add((deltaTime) => {
             // Move sprites to their target positions
@@ -741,16 +724,18 @@
         resize(clientHeight, clientWidth);
 
         // Load the grid
-        await fillInGrid($grid, {
-            cell: geohashToGridCell($tile.geohash),
-            colStart: 0,
-            colEnd: GRID_COLS,
-        });
-        await updateWorld($tile, $grid);
+        if ($player) {
+            await fillInGrid($grid, {
+                cell: geohashToGridCell($player.location[0]),
+                colStart: 0,
+                colEnd: GRID_COLS,
+            });
+            await updateWorld($player, $grid);
+        }
     });
 </script>
 
-{#if $tile}
+{#if $player}
     <div
         class={cn("w-full h-full p-0 m-0", $$restProps.class)}
         bind:this={container}

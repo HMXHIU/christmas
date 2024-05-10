@@ -2,7 +2,6 @@ import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
 import type { GameCommandResponse } from "$lib/crossover";
 import { actions } from "$lib/crossover/actions";
 import { geohashesNearby } from "$lib/crossover/utils";
-import { biomeAtGeohash, tileAtGeohash } from "$lib/crossover/world/biomes";
 import { playerStats } from "$lib/crossover/world/player";
 import {
     TILE_HEIGHT,
@@ -69,7 +68,6 @@ export {
     PlayerMetadataSchema,
     PlayerStateSchema,
     SaySchema,
-    TileSchema,
     UserMetadataSchema,
     crossoverRouter,
 };
@@ -92,11 +90,6 @@ const SaySchema = z.object({
 });
 const LookSchema = z.object({
     target: z.string().optional(),
-});
-const TileSchema = z.object({
-    geohash: z.string(),
-    name: z.string(),
-    description: z.string(),
 });
 const MoveSchema = z.object({
     direction: z.enum(["n", "s", "e", "w", "ne", "nw", "se", "sw", "u", "d"]),
@@ -600,19 +593,12 @@ const crossoverRouter = {
                 nearbyGeohashes,
             ).return.all()) as WorldEntity[];
 
-            // Get tile
-            const tile = tileAtGeohash(
-                player.location[0],
-                biomeAtGeohash(player.location[0]),
-            );
-
             // Get items
             const items = (await itemsInGeohashQuerySet(
                 nearbyGeohashes,
             ).return.all()) as ItemEntity[];
 
             return {
-                tile,
                 players: players as Player[],
                 monsters: monsters as Monster[],
                 items: items as Item[],

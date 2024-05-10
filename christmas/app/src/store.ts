@@ -1,6 +1,6 @@
 import type { Account, Coupon, Store } from "$lib/anchorClient/types";
 import type { MessageFeed } from "$lib/crossover";
-import { abyssTile, type Grid } from "$lib/crossover/world";
+import { type Grid } from "$lib/crossover/world";
 import type {
     CouponMetadataSchema,
     StoreMetadataSchema,
@@ -11,10 +11,7 @@ import type {
     Player,
     World,
 } from "$lib/server/crossover/redis/entities";
-import type {
-    TileSchema,
-    UserMetadataSchema,
-} from "$lib/server/crossover/router";
+import type { UserMetadataSchema } from "$lib/server/crossover/router";
 import { UserDeviceClient } from "$lib/userDeviceClient";
 import { writable } from "svelte/store";
 import { z } from "zod";
@@ -46,5 +43,4 @@ export let playerRecord = writable<Record<string, Player>>({});
 export let itemRecord = writable<Record<string, Item>>({});
 export let monsterRecord = writable<Record<string, Monster>>({});
 export let worldRecord = writable<Record<string, World>>({});
-export let tile = writable<z.infer<typeof TileSchema>>(abyssTile);
 export let messageFeed = writable<MessageFeed[]>([]);

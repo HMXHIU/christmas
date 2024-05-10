@@ -10,15 +10,10 @@
     } from "$lib/crossover";
     import { actions } from "$lib/crossover/actions";
     import { KeyboardController, type GameKey } from "$lib/crossover/keyboard";
-    import {
-        geohashToGridCell,
-        loadMoreGridBiomes,
-        type Direction,
-    } from "$lib/crossover/world";
-    import { tileAtGeohash } from "$lib/crossover/world/biomes";
+    import { type Direction } from "$lib/crossover/world";
     import { substituteVariables } from "$lib/utils";
     import { onMount } from "svelte";
-    import { grid, player, tile } from "../../store";
+    import { player } from "../../store";
     import type {
         FeedEvent,
         UpdateEntitiesEvent,
@@ -116,15 +111,13 @@
     }
 
     onMount(() => {
+        // TODO: DANGEROUS look will change player which will call look -> change player
         const unsubscribePlayer = player.subscribe(async (p) => {
             // Start streaming on login
             if (p != null && !streamStarted) {
                 stopStream();
                 await startStream();
                 streamStarted = true;
-
-                // Load grid
-                grid.set(loadMoreGridBiomes(p.location[0], $grid));
 
                 // Look at surroundings & update inventory
                 await handleGC([actions.look, { self: p }]);
@@ -134,26 +127,6 @@
             // Stop streaming on logout
             else if (p == null) {
                 stopStream();
-            }
-
-            // Player updated
-            if (p != null) {
-                const geohash = p.location[0];
-
-                // Geohash grid changed
-                if (geohash.slice(0, -1) !== $tile.geohash.slice(0, -1)) {
-                    // Load more grid biomes
-                    grid.set(loadMoreGridBiomes(geohash, $grid));
-                    // Look at surroundings
-                    await handleGC([actions.look, { self: p }]);
-                }
-
-                // Update tile
-                if (geohash !== $tile.geohash) {
-                    const { precision, row, col } = geohashToGridCell(geohash);
-                    const biome = $grid[precision][row][col].biome;
-                    tile.set(tileAtGeohash(geohash, biome!));
-                }
             }
         });
 

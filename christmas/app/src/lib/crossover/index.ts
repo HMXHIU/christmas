@@ -7,10 +7,7 @@ import type {
     Player,
     World,
 } from "$lib/server/crossover/redis/entities";
-import type {
-    PlayerMetadataSchema,
-    TileSchema,
-} from "$lib/server/crossover/router";
+import type { PlayerMetadataSchema } from "$lib/server/crossover/router";
 import { trpc } from "$lib/trpcClient";
 import { retry, signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
@@ -28,7 +25,6 @@ import {
     monsterRecord,
     player,
     playerRecord,
-    tile,
     worldRecord,
 } from "../../store";
 import { actions, type Action } from "./actions";
@@ -79,7 +75,6 @@ interface GameCommandResponse {
     monsters?: Monster[];
     worlds?: World[];
     items?: Item[];
-    tile?: z.infer<typeof TileSchema>;
 }
 
 type MessageFeedType = "error" | "message" | "look" | "system";
@@ -90,21 +85,6 @@ interface MessageFeed {
     timestamp: Date;
     message: string;
     messageFeedType: MessageFeedType;
-}
-
-async function handleGC(command: GameCommand) {
-    try {
-        const gcResponse = await executeGameCommand(command);
-        if (gcResponse != null) {
-            await processGCResponse(command, gcResponse);
-        }
-    } catch (error: any) {
-        addMessageFeed({
-            message: error.message,
-            name: "Error",
-            messageFeedType: "error",
-        });
-    }
 }
 
 function displayEntityEffects<T extends Player | Monster | Item>(
@@ -135,6 +115,60 @@ function displayEntityEffects<T extends Player | Monster | Item>(
         // Handle item entity
     }
 }
+
+function addMessageFeed({
+    message,
+    name,
+    messageFeedType,
+}: {
+    message: string;
+    name: string;
+    messageFeedType: MessageFeedType;
+}) {
+    messageFeed.update((ms) => {
+        return [
+            ...ms,
+            {
+                id: ms.length,
+                timestamp: new Date(),
+                message,
+                name,
+                messageFeedType,
+            },
+        ];
+    });
+}
+
+async function handleGC(command: GameCommand) {
+    try {
+        const gcResponse = await executeGameCommand(command);
+        if (gcResponse != null) {
+            await processGCResponse(command, gcResponse);
+        }
+    } catch (error: any) {
+        addMessageFeed({
+            message: error.message,
+            name: "Error",
+            messageFeedType: "error",
+        });
+    }
+}
+
+// async function handlePlayerUpdated(player: Player | null) {
+//     if (player == null) {
+//         return;
+//     }
+//     const geohash = player.location[0];
+//     const t = get(tile);
+
+//     // Geohash parent grid changed (TODO: this cases abrupt look changes in UI)
+//     if (geohash.slice(0, -1) !== t.geohash.slice(0, -1)) {
+//         // Load more grid biomes
+//         grid.set(loadMoreGridBiomes(geohash, get(grid)));
+//         // Look at surroundings
+//         await handleGC([actions.look, { self: player }]);
+//     }
+// }
 
 function handleUpdateEntities({
     players,
@@ -212,27 +246,12 @@ async function processGCResponse(
     command: GameCommand,
     response: GameCommandResponse,
 ) {
-    const {
-        players,
-        monsters,
-        items,
-        worlds,
-        tile: _tile,
-        op,
-        status,
-        message,
-    } = response;
-
+    const { players, monsters, items, worlds, op, status, message } = response;
     const self = get(player);
 
     // Update message feed
     if (status === "failure" && message != null) {
         addMessageFeed({ message, name: "Error", messageFeedType: "error" });
-    }
-
-    // Update tile
-    if (_tile != null) {
-        tile.set(_tile);
     }
 
     // Update playerRecord
@@ -248,7 +267,7 @@ async function processGCResponse(
             op === "replace" ? pr : { ...record, ...pr },
         );
 
-        // Update player
+        // Update player (self)
         for (const p of players) {
             if (p.player === self?.player) {
                 player.set(p);
@@ -339,29 +358,6 @@ async function processGCResponse(
             });
         }
     }
-}
-
-function addMessageFeed({
-    message,
-    name,
-    messageFeedType,
-}: {
-    message: string;
-    name: string;
-    messageFeedType: MessageFeedType;
-}) {
-    messageFeed.update((ms) => {
-        return [
-            ...ms,
-            {
-                id: ms.length,
-                timestamp: new Date(),
-                message,
-                name,
-                messageFeedType,
-            },
-        ];
-    });
 }
 
 async function executeGameCommand(
