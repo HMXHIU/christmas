@@ -9,6 +9,7 @@ import type {
     Item,
     Monster,
     Player,
+    World,
 } from "$lib/server/crossover/redis/entities";
 import type {
     TileSchema,
@@ -44,5 +45,6 @@ export let grid = writable<Grid>({});
 export let playerRecord = writable<Record<string, Player>>({});
 export let itemRecord = writable<Record<string, Item>>({});
 export let monsterRecord = writable<Record<string, Monster>>({});
+export let worldRecord = writable<Record<string, World>>({});
 export let tile = writable<z.infer<typeof TileSchema>>(abyssTile);
 export let messageFeed = writable<MessageFeed[]>([]);

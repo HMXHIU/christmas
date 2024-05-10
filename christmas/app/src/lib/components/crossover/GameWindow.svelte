@@ -69,17 +69,17 @@
 
 <svelte:window bind:innerWidth />
 
-<div class={cn("w-full flex flex-col justify-end", $$restProps.class)}>
+<div class={cn("w-full flex flex-col justify-between", $$restProps.class)}>
     <div class="h-1/2">
         {#if innerWidth > LARGE_SCREEN}
             <Resizable.PaneGroup direction="horizontal">
                 <!-- Chat Window -->
-                <Resizable.Pane class="p-3">
+                <Resizable.Pane class="px-2 pt-2">
                     <ChatWindow></ChatWindow>
                 </Resizable.Pane>
                 <Resizable.Handle withHandle />
                 <!-- Look (TODO: doesnt seem to scroll inside resizable) -->
-                <Resizable.Pane class="p-3">
+                <Resizable.Pane class="px-2 pt-2">
                     <ScrollArea orientation="vertical">
                         <Look></Look>
                     </ScrollArea>
@@ -98,8 +98,8 @@
     <!-- Chat Input -->
     <ChatInput class="m-2" bind:target {onEnter} {onPartial}></ChatInput>
 
-    <!-- Map -->
-    <div class="h-1/2">
+    <!-- Map (60px is size of ChatInput) -->
+    <div style="height: calc(50% - 60px);">
         <Map></Map>
     </div>
 </div>

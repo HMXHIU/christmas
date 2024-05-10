@@ -29,6 +29,7 @@ import {
     player,
     playerRecord,
     tile,
+    worldRecord,
 } from "../../store";
 import { actions, type Action } from "./actions";
 import type { GameCommand, GameCommandVariables } from "./ir";
@@ -106,14 +107,45 @@ async function handleGC(command: GameCommand) {
     }
 }
 
+function displayEntityEffects<T extends Player | Monster | Item>(
+    oldEntity: T,
+    newEntity: T,
+) {
+    if ("monster" in oldEntity) {
+        // Handle monster entity
+        const deltaHp = oldEntity.hp - (newEntity as Monster).hp;
+        if (deltaHp > 0) {
+            addMessageFeed({
+                message: `${oldEntity.monster} lost ${deltaHp} HP`,
+                name: "",
+                messageFeedType: "message",
+            });
+        }
+    } else if ("player" in oldEntity) {
+        // Handle player entity
+        const deltaHp = oldEntity.hp - (newEntity as Player).hp;
+        if (deltaHp > 0) {
+            addMessageFeed({
+                message: `${oldEntity.player} lost ${deltaHp} HP`,
+                name: "",
+                messageFeedType: "message",
+            });
+        }
+    } else if ("item" in oldEntity) {
+        // Handle item entity
+    }
+}
+
 function handleUpdateEntities({
     players,
     items,
     monsters,
+    worlds,
 }: {
     players?: Player[];
     items?: Item[];
     monsters?: Monster[];
+    worlds?: World[];
 }) {
     const self = get(player);
 
@@ -153,6 +185,16 @@ function handleUpdateEntities({
         }
     }
 
+    // Update worldRecord
+    if (worlds != null) {
+        for (const w of worlds) {
+            worldRecord.update((wr) => {
+                wr[w.world] = w;
+                return wr;
+            });
+        }
+    }
+
     // Update grid
     grid.update((g) => {
         return updateGrid({
@@ -160,38 +202,10 @@ function handleUpdateEntities({
             monsters,
             players,
             items,
+            worlds,
             upsert: true, // Don't replace
         });
     });
-}
-
-function displayEntityEffects<T extends Player | Monster | Item>(
-    oldEntity: T,
-    newEntity: T,
-) {
-    if ("monster" in oldEntity) {
-        // Handle monster entity
-        const deltaHp = oldEntity.hp - (newEntity as Monster).hp;
-        if (deltaHp > 0) {
-            addMessageFeed({
-                message: `${oldEntity.monster} lost ${deltaHp} HP`,
-                name: "",
-                messageFeedType: "message",
-            });
-        }
-    } else if ("player" in oldEntity) {
-        // Handle player entity
-        const deltaHp = oldEntity.hp - (newEntity as Player).hp;
-        if (deltaHp > 0) {
-            addMessageFeed({
-                message: `${oldEntity.player} lost ${deltaHp} HP`,
-                name: "",
-                messageFeedType: "message",
-            });
-        }
-    } else if ("item" in oldEntity) {
-        // Handle item entity
-    }
 }
 
 async function processGCResponse(
@@ -202,6 +216,7 @@ async function processGCResponse(
         players,
         monsters,
         items,
+        worlds,
         tile: _tile,
         op,
         status,
@@ -268,6 +283,20 @@ async function processGCResponse(
         );
     }
 
+    // Update worldRecord
+    if (worlds != null) {
+        const wr = worlds.reduce(
+            (acc, w) => {
+                acc[w.world] = w;
+                return acc;
+            },
+            {} as Record<string, World>,
+        );
+        worldRecord.update((record) =>
+            op === "replace" ? wr : { ...record, ...wr },
+        );
+    }
+
     // Perform secondary effects
     const [action, entities, variables] = command;
     if (self?.player != null && "action" in action) {
@@ -300,6 +329,7 @@ async function processGCResponse(
                     monsters,
                     players,
                     items,
+                    worlds,
                 });
             });
             addMessageFeed({

@@ -26,7 +26,12 @@
     import type { z } from "zod";
     import { grid, player, tile } from "../../../store";
 
-    type SpriteLayer = "biome" | "creature" | "prop";
+    type SpriteLayer = "biome" | "creature" | "prop" | "world";
+
+    const BIOME_ZLAYER = 0;
+    const CREATURE_ZLAYER = 10000000000;
+    const PROP_ZLAYER = 1000000000;
+    const WORLD_ZLAYER = 100000000000000;
 
     let container: HTMLDivElement;
     let prevTile: z.infer<typeof TileSchema> | null = null;
@@ -39,17 +44,12 @@
     let clientWidth: number;
     let clientHeight: number;
 
-    const BIOME_ZLAYER = 0;
-    const CREATURE_ZLAYER = 10000000000;
-    const PROP_ZLAYER = 1000000000;
-
+    // Note: this are cartesian coordinates (CELL_HEIGHT = CELL_WIDTH;)
     const CELL_WIDTH = 64;
     const CELL_HEIGHT = CELL_WIDTH;
     const CANVAS_ROWS = 7;
     const CANVAS_COLS = 7;
     const OVERDRAW_MULTIPLE = 3;
-
-    // Note: this are cartesian coordinates
     let CANVAS_WIDTH = CELL_WIDTH * CANVAS_COLS;
     let CANVAS_HEIGHT = CELL_HEIGHT * CANVAS_ROWS;
     let WORLD_WIDTH = CANVAS_WIDTH * OVERDRAW_MULTIPLE;
@@ -66,7 +66,7 @@
 
     interface GridSprite {
         id: string;
-        sprite: Sprite;
+        sprite: Sprite | Container;
         x: number;
         y: number;
         spriteType: SpriteLayer;
@@ -149,19 +149,23 @@
         return [x * 0.5 + y * -0.5, x * 0.25 + y * 0.25];
     }
 
-    async function loadWorldAssetMetadata(
-        assetUrl: string,
-    ): Promise<Container> {
-        const tilemap = await Assets.load(assetUrl);
+    async function loadWorld({
+        url,
+        col,
+        row,
+    }: {
+        url: string;
+        col: number;
+        row: number;
+    }): Promise<Container> {
+        const tilemap = await Assets.load(url);
         const tileset = await Assets.load(tilemap.tilesets[0].source);
-        const container = new Container();
+        const spriteContainer = new Container();
 
         for (const layer of tilemap.layers) {
             const { data, properties, offsetx, offsety, width, height, x, y } =
                 layer;
-
             const { interior, collider } = groupBy(properties, "name");
-
             for (let i = 0; i < height; i++) {
                 for (let j = 0; j < width; j++) {
                     const tileId = data[i * width + j];
@@ -179,11 +183,16 @@
                     );
                     sprite.x = isoX + (offsetx || 0);
                     sprite.y = isoY + (offsety || 0);
-                    container.addChild(sprite);
+                    spriteContainer.addChild(sprite);
                 }
             }
         }
-        return container;
+
+        // Convert cartesian to isometric position
+        const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
+        spriteContainer.x = isoX;
+        spriteContainer.y = isoY;
+        return spriteContainer;
     }
 
     async function loadSprite({
@@ -319,7 +328,8 @@
                             row,
                             alpha,
                             spriteType: "biome",
-                            seed: gridRow * 1000 + gridCol, // * 1000 to prevent checker board pattern
+                            // bit shift by 8 else gridRow + gridCol is the same at diagonals
+                            seed: (gridRow << 8) + gridCol,
                         });
 
                         if (sprite) {
@@ -428,6 +438,27 @@
                                     CREATURE_ZLAYER + gridRow + gridCol;
                             }
                         }
+                    }
+                }
+
+                // Fill in worlds
+                const worlds = g[cell.precision]?.[gridRow]?.[gridCol]?.worlds;
+                if (worlds) {
+                    for (const world of Object.values(worlds)) {
+                        const sprite = await loadWorld({
+                            url: world.url,
+                            col,
+                            row,
+                        });
+                        setGridSprite(gridRow, gridCol, {
+                            id: world.world,
+                            sprite: worldStage.addChild(sprite),
+                            x: sprite.x,
+                            y: sprite.y,
+                            spriteType: "world",
+                        });
+                        // Set z-index based on y-coordinate & layer
+                        sprite.zIndex = WORLD_ZLAYER + gridRow + gridCol;
                     }
                 }
             }
@@ -667,13 +698,25 @@
         playerSprite = createCreatureSprite(playerTexture, pedestalTexture);
         worldStage.addChild(playerSprite);
 
-        // Test load tilemap
-        const tileMap = await loadWorldAssetMetadata(
-            "/sprites/tiled/tilemaps/house.json",
-        );
-        tileMap.zIndex = CREATURE_ZLAYER + 100;
-        tileMap.y = -CELL_HEIGHT * 8;
-        worldStage.addChild(tileMap);
+        // // TEST world
+        // const { row, col } = geohashToGridCell("w21z3tzz");
+        // const c = await loadWorld({
+        //     url: "/worlds/tilemaps/house.json",
+        //     col: GRID_MID_COL,
+        //     row: GRID_MID_ROW,
+        // });
+        // worldStage.addChild(c);
+        // const [isoX, isoY] = cartToIso(0, 0);
+        // c.x = isoX;
+        // c.y = isoY;
+        // c.zIndex = WORLD_ZLAYER + row + col + 1000;
+        // setGridSprite(row, col, {
+        //     id: world.world,
+        //     sprite: worldStage.addChild(c),
+        //     x: c.x,
+        //     y: c.y,
+        //     spriteType: "world",
+        // });
 
         // Ticker
         app.ticker.add((deltaTime) => {

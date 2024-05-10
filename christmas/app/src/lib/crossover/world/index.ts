@@ -2,11 +2,13 @@ import type {
     Item,
     Monster,
     Player,
+    World,
 } from "$lib/server/crossover/redis/entities";
 import type { TileSchema } from "$lib/server/crossover/router";
 import lodash from "lodash";
 import ngeohash from "ngeohash";
 import type { z } from "zod";
+import { childrenGeohashes } from "../utils";
 import { biomesNearbyGeohash } from "./biomes";
 import { type EquipmentSlot } from "./compendium";
 const { groupBy } = lodash;
@@ -83,10 +85,13 @@ type LocationType =
     | EquipmentSlot;
 
 interface GridEntry {
-    biome?: string; // can be procedurally generated at client
-    monsters?: Record<string, Monster>; // needs to be fetched from server (spawned by dungeon master)
-    players?: Record<string, Player>; // needs to be fetched from server
-    items?: Record<string, Item>; // needs to be fetched from server
+    // can be procedurally generated at client
+    biome?: string;
+    // needs to be fetched from server (using `look`)
+    monsters?: Record<string, Monster>;
+    players?: Record<string, Player>;
+    items?: Record<string, Item>;
+    worlds?: Record<string, World>;
 }
 // grid[precision][row][col][GridEntry]
 type Grid = Record<number, Record<number, Record<number, GridEntry>>>;
@@ -186,6 +191,7 @@ function updateGrid({
     biomes,
     monsters,
     players,
+    worlds,
     items,
     upsert = false,
 }: {
@@ -194,6 +200,7 @@ function updateGrid({
     monsters?: Monster[];
     players?: Player[];
     items?: Item[];
+    worlds?: World[];
     upsert?: boolean;
 }) {
     // Update biomes
@@ -210,10 +217,11 @@ function updateGrid({
         }
     }
 
-    // Delete monsters, players, and items from grid (relocated)
+    // Delete monsters, players, items and worlds from grid (relocated)
     const monsterIds = monsters?.map((mx) => mx.monster) || [];
     const playerIds = players?.map((px) => px.player) || [];
     const itemIds = items?.map((ix) => ix.item) || [];
+    const worldIds = worlds?.map((wx) => wx.world) || [];
     for (const xxs of Object.values(grid)) {
         for (const xs of Object.values(xxs)) {
             for (const entry of Object.values(xs)) {
@@ -235,6 +243,13 @@ function updateGrid({
                     for (const itemId of Object.keys(entry.items)) {
                         if (itemIds.includes(itemId)) {
                             delete entry.items[itemId];
+                        }
+                    }
+                }
+                if (entry.worlds) {
+                    for (const worldId of Object.keys(entry.worlds)) {
+                        if (worldIds.includes(worldId)) {
+                            delete entry.worlds[worldId];
                         }
                     }
                 }
@@ -285,7 +300,6 @@ function updateGrid({
             );
             const existingPlayers =
                 grid?.[precision]?.[row]?.[col]?.players || {};
-
             updateGridEntry({
                 grid,
                 precision,
@@ -312,7 +326,6 @@ function updateGrid({
                 {} as Record<string, Item>,
             );
             const existingItems = grid?.[precision]?.[row]?.[col]?.items || {};
-
             updateGridEntry({
                 grid,
                 precision,
@@ -321,6 +334,35 @@ function updateGrid({
                 items: upsert
                     ? { ...existingItems, ...providedItems }
                     : providedItems,
+            });
+        }
+    }
+
+    // Recreate worlds at geohash
+    if (worlds && worlds.length > 0) {
+        for (const [firstPlot, wxs] of Object.entries(
+            groupBy(worlds, (world) => world.loc[0]),
+        )) {
+            // Use the geohash in the first plot
+            const geohash = childrenGeohashes(firstPlot)[0];
+            const { precision, row, col } = geohashToGridCell(geohash);
+            const providedWorlds = wxs.reduce(
+                (acc, wx) => {
+                    acc[wx.world] = wx;
+                    return acc;
+                },
+                {} as Record<string, World>,
+            );
+            const existingWorlds =
+                grid?.[precision]?.[row]?.[col]?.worlds || {};
+            updateGridEntry({
+                grid,
+                precision,
+                row,
+                col,
+                worlds: upsert
+                    ? { ...existingWorlds, ...providedWorlds }
+                    : providedWorlds,
             });
         }
     }
@@ -337,7 +379,11 @@ function updateGrid({
  * @param row - The row index.
  * @param col - The column index.
  * @param monsters - The monsters to update in the grid.
+ * @param players - The players to update in the grid.
+ * @param items - The items to update in the grid.
+ * @param worlds - The worlds to update in the grid.
  * @param biome - The biome to update in the grid.
+ * @returns The updated grid object.
  */
 function updateGridEntry({
     grid,
@@ -347,6 +393,7 @@ function updateGridEntry({
     monsters,
     players,
     items,
+    worlds,
     biome,
 }: {
     grid: Grid;
@@ -356,6 +403,7 @@ function updateGridEntry({
     monsters?: Record<string, Monster>;
     players?: Record<string, Player>;
     items?: Record<string, Item>;
+    worlds?: Record<string, World>;
     biome?: string;
 }) {
     grid[precision] ??= {};
@@ -372,6 +420,10 @@ function updateGridEntry({
 
     if (items != null) {
         grid[precision][row][col].items = items;
+    }
+
+    if (worlds != null) {
+        grid[precision][row][col].worlds = worlds;
     }
 
     if (biome != null) {

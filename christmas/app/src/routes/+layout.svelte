@@ -92,7 +92,7 @@
 <!-- App Shell -->
 <div class="flex flex-col h-dvh">
     <!-- Page Header -->
-    <header class="sticky top-0 z-50 w-full border-b bg-secondary">
+    <header class="sticky top-0 z-50 w-full border-b bg-secondary h-14">
         <div class="container flex h-14 max-w-screen-2xl items-center">
             <div>
                 <strong class="uppercase"><a href="/">Community</a></strong>
@@ -107,8 +107,8 @@
         </div>
     </header>
 
-    <!-- Page Content (account for footer header) -->
-    <main style="height: calc(100dvh - 4rem);">
+    <!-- Page Content (account for footer(3 rem) header(3.5 rem)) -->
+    <main style="height: calc(100dvh - 6.5rem);">
         <!-- Your Page Content Goes Here -->
         <div class="mx-auto px-0 py-0 h-full">
             <!-- Content Slot -->

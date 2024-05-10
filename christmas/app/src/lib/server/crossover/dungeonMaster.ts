@@ -113,9 +113,9 @@ async function performMonsterActions(
         // Get monsters in player's geohash
         const monstersNearPlayer =
             monsters ||
-            ((await monstersInGeohashQuerySet(
+            ((await monstersInGeohashQuerySet([
                 player.location[0],
-            ).return.all()) as MonsterEntity[]);
+            ]).return.all()) as MonsterEntity[]);
 
         // Perform monster actions
         for (const monster of monstersNearPlayer) {
@@ -155,7 +155,7 @@ async function spawnMonsters(players: PlayerEntity[]) {
         const monsterLimit = await monsterLimitAtGeohash(geohash);
 
         // Get number of monsters in geohash
-        const numMonsters = await monstersInGeohashQuerySet(geohash).count();
+        const numMonsters = await monstersInGeohashQuerySet([geohash]).count();
 
         // Number of monsters to spawn
         const numMonstersToSpawn = monsterLimit - numMonsters;

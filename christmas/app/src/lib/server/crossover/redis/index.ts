@@ -139,45 +139,50 @@ function loggedInPlayersQuerySet(): Search {
 
 /**
  * Returns a search query set for players in a specific geohash.
- * @param geohash The geohash to filter players by.
+ * @param geohashes The geohashes to filter players by.
  * @returns A search query set for players in the specified geohash.
  */
 function playersInGeohashQuerySet(geohashes: string[]): Search {
     return loggedInPlayersQuerySet()
+        .where("locT")
+        .equal("geohash")
         .and("location")
-        .containOneOf(...geohashes.map((x) => `${x}*`))
-        .and("locT")
-        .equal("geohash");
+        .containOneOf(...geohashes.map((x) => `${x}*`));
 }
 
 /**
  * Returns a search query set for monsters in a specific geohash.
- * @param geohash The geohash to filter monsters by.
+ * @param geohashes The geohashes to filter monsters by.
  * @returns A search query set for monsters in the specified geohash.
  */
 function monstersInGeohashQuerySet(geohashes: string[]): Search {
     return monsterRepository
         .search()
+        .where("locT")
+        .equal("geohash")
         .and("location")
-        .containOneOf(...geohashes.map((x) => `${x}*`))
-        .and("locT")
-        .equal("geohash");
+        .containOneOf(...geohashes.map((x) => `${x}*`));
 }
 
 /**
  * Retrieves items in a geohash query set.
- * @param geohash - The geohash to search for.
+ * @param geohashes - The geohashes to search for items in.
  * @returns A Search object representing the query.
  */
 function itemsInGeohashQuerySet(geohashes: string[]): Search {
     return itemRepository
         .search()
-        .where("location")
-        .containOneOf(...geohashes.map((x) => `${x}*`))
-        .and("locT")
-        .equal("geohash");
+        .where("locT")
+        .equal("geohash")
+        .and("location")
+        .containOneOf(...geohashes.map((x) => `${x}*`));
 }
 
+/**
+ * Retrieves worlds in a geohash query set.
+ * @param geohashes - The geohashes to search for worlds in.
+ * @returns A Search object representing the query.
+ */
 function worldsInGeohashQuerySet(geohashes: string[]): Search {
     return worldRepository
         .search()

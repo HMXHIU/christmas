@@ -169,11 +169,12 @@
     });
 </script>
 
-{#if !$player}
-    <Onboard />
-{:else}
-    <GameWindow class="h-full p-0" onGameCommand={handleGC} {onMove} />
-{/if}
-
-<!-- Footer -->
-<Footer />
+<div class="h-full">
+    {#if !$player}
+        <Onboard />
+    {:else}
+        <GameWindow class="p-0 h-full" onGameCommand={handleGC} {onMove} />
+    {/if}
+    <!-- Footer TODO: Move to seperate svelte layout -->
+    <Footer />
+</div>

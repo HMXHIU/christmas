@@ -49,7 +49,7 @@
 >
     <section
         bind:this={chatWindow}
-        class="p-4 overflow-y-auto space-y-2 scroll-container"
+        class="px-4 py-0 overflow-y-auto space-y-2 scroll-container"
     >
         {#each $messageFeed as message}
             {#if message.messageFeedType === "look" || message.messageFeedType === "message"}
@@ -73,17 +73,14 @@
             {/if}
         {/each}
     </section>
-    <section class="px-4 py-2 overflow-y-auto">
+
+    <div class="m-0 p-0 h-4 shrink-0">
         {#if systemMessage}
-            <div class="flex flex-row text-left">
-                <p
-                    class="text-sm font-extralight px-2 text-left text-destructive"
-                >
-                    {systemMessage.message}
-                </p>
-            </div>
+            <p class="text-sm p-0 m-0 text-left text-destructive">
+                {systemMessage.message}
+            </p>
         {/if}
-    </section>
+    </div>
 </div>
 
 <!-- Styles -->
