@@ -46,6 +46,9 @@ const worldSeed: WorldSeed = {
         town: {
             precision: 5,
         },
+        village: {
+            precision: 6,
+        },
         unit: {
             precision: 8,
         },

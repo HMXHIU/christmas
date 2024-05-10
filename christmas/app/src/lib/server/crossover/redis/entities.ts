@@ -160,7 +160,7 @@ type ItemEntity = Item & Entity;
 const WorldEntitySchema = new Schema("World", {
     world: { type: "string" },
     url: { type: "string" },
-    loc: { type: "string[]" },
+    loc: { type: "string[]" }, // geohashes of plots (whole grids less than unit precision)
     h: { type: "number" }, // height
     w: { type: "number" }, // width
     cld: { type: "string[]" }, // colliders

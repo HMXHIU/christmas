@@ -12,17 +12,14 @@ import {
     crossoverCmdUseItem,
     stream,
 } from "$lib/crossover";
-import type { WorldAssetMetadata } from "$lib/crossover/world";
 import { itemAttibutes } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
 import {
-    TILE_HEIGHT,
-    TILE_WIDTH,
     abilities,
     compendium,
     worldSeed,
 } from "$lib/crossover/world/settings";
-import { configureItem, spawnItem, spawnWorld } from "$lib/server/crossover";
+import { configureItem, spawnItem } from "$lib/server/crossover";
 import type {
     Item,
     ItemEntity,
@@ -149,11 +146,8 @@ test("Test Player", async () => {
         waitForEventData(playerTwoStream, "feed"),
     ).rejects.toThrowError("Timeout occurred while waiting for event");
 
-    // Look - no target (tile)
+    // Look - no target
     let lookAtResult = await crossoverCmdLook({}, { Cookie: playerOneCookies });
-    expect(lookAtResult.tile).toMatchObject({
-        geohash: playerOne.location[0],
-    });
     expect(groupBy(lookAtResult.players, "player")).contains.keys([
         playerOneWallet.publicKey.toBase58(),
         playerThreeWallet.publicKey.toBase58(),
@@ -725,55 +719,4 @@ test("Test Player", async () => {
         monsters: [],
         items: [],
     });
-
-    /*
-     * Test `look` returns world
-     */
-
-    // Spawn world
-    const worldAsset: WorldAssetMetadata = {
-        height: 8,
-        width: 4,
-        tileheight: 128,
-        tilewidth: 256,
-        layers: [
-            {
-                data: [
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 74, 74, 0, 0, 74, 74,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                ],
-                height: 8,
-                name: "floor",
-                properties: [
-                    {
-                        name: "collider",
-                        type: "bool",
-                        value: true,
-                    },
-                    {
-                        name: "interior",
-                        type: "bool",
-                        value: true,
-                    },
-                ],
-                type: "tilelayer",
-                width: 4,
-                x: 0,
-                y: 0,
-            },
-        ],
-    };
-    let world = await spawnWorld({
-        asset: worldAsset,
-        geohash: playerThreeGeohash,
-        tileHeight: TILE_HEIGHT,
-        tileWidth: TILE_WIDTH,
-    });
-    var result = await crossoverCmdLook({}, { Cookie: playerThreeCookies });
-    expect(result.worlds).toMatchObject([
-        {
-            world: world.world,
-            url: world.url,
-        },
-    ]);
 });

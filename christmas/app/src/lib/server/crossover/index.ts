@@ -406,10 +406,10 @@ async function spawnMonster({
 }
 
 /**
- * Spawns a world asset from a tiled map in a specific geohash.
+ * Spawns a world asset from a tiled map in the plot the geohash is in.
+ * A plot represents a full grid of 32 geohashes no matter the precision.
  *
  * Note:
- * - World assets must have a geohash precision equal to the world seed's spatial unit precision.
  * - World assets must take up the entire geohash area at -1 the unit precision.
  * - World assets must take up exact multiples of the full geohash grid.
  *
@@ -444,9 +444,9 @@ async function spawnWorld({
             geohash,
             worldSeed.spatial.unit.precision,
         );
-        console.log("Auto corrected geohash precision", geohash);
     }
 
+    // Get asset from URL or if provided
     asset ??= await (await fetch(assetUrl!)).json();
     const {
         height,

@@ -110,6 +110,9 @@ interface WorldSeed {
         town: {
             precision: number;
         };
+        village: {
+            precision: number;
+        };
         unit: {
             precision: number;
         };

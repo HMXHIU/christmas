@@ -1,3 +1,4 @@
+import { crossoverWorldWorlds } from "$lib/crossover";
 import {
     childrenGeohashes,
     geohashNeighbour,
@@ -15,7 +16,8 @@ import {
 } from "$lib/crossover/world/biomes";
 import { spawnWorld } from "$lib/server/crossover";
 import { expect, test } from "vitest";
-import { generateRandomGeohash } from "./utils";
+import { getRandomRegion } from "../utils";
+import { createRandomPlayer, generateRandomGeohash } from "./utils";
 
 const worldSeed: WorldSeed = {
     name: "yggdrasil 01",
@@ -35,6 +37,9 @@ const worldSeed: WorldSeed = {
         },
         town: {
             precision: 5,
+        },
+        village: {
+            precision: 6,
         },
         unit: {
             precision: 8,
@@ -82,6 +87,17 @@ const worldSeed: WorldSeed = {
 };
 
 test("Test World", async () => {
+    // Create players
+    const region = String.fromCharCode(...getRandomRegion());
+    const playerOneName = "Gandalf";
+    const playerOneGeohash = generateRandomGeohash(8);
+    let [playerOneWallet, playerOneCookies, playerOne] =
+        await createRandomPlayer({
+            region,
+            geohash: playerOneGeohash,
+            name: playerOneName,
+        });
+
     // Test biomeAtGeohash
     expect(biomeAtGeohash("w21z3m6k", worldSeed)).to.equal("forest");
     expect(biomeAtGeohash("w61z4m6h", worldSeed)).to.equal("water");
@@ -304,8 +320,6 @@ test("Test World", async () => {
 
     var p = geohashNeighbour(geohashNeighbour(worldGeohash, "s", 3), "e");
     var p2 = geohashNeighbour(p, "s");
-
-    console.log(JSON.stringify(world, null, 2));
     expect(world).toMatchObject({
         loc: [worldGeohash.slice(0, -1)],
         h: 8,
@@ -376,4 +390,11 @@ test("Test World", async () => {
             geohashNeighbour(p4, "e", 3),
         ].sort(),
     );
+
+    // Test retrieve worlds
+    const { town, worlds } = await crossoverWorldWorlds(worldGeohash, {
+        Cookie: playerOneCookies,
+    });
+    expect(town.length).to.equal(worldSeed.spatial.town.precision);
+    expect(worlds).toMatchObject([{ world: world.world }]);
 });

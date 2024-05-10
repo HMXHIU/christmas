@@ -54,6 +54,7 @@ export {
     crossoverCmdUnequip,
     crossoverCmdUseItem,
     crossoverPlayerInventory,
+    crossoverWorldWorlds,
     executeGameCommand,
     handleGC,
     handleUpdateEntities,
@@ -759,4 +760,12 @@ function crossoverCmdRest(headers: HTTPHeaders = {}) {
 
 function crossoverPlayerInventory(headers: HTTPHeaders = {}) {
     return trpc({ headers }).crossover.player.inventory.query();
+}
+
+/*
+ * crossover.world
+ */
+
+function crossoverWorldWorlds(geohash: string, headers: HTTPHeaders = {}) {
+    return trpc({ headers }).crossover.world.worlds.query({ geohash });
 }

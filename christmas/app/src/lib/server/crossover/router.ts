@@ -15,6 +15,7 @@ import {
     itemRepository,
     playerRepository,
     redisClient,
+    worldsInGeohashQuerySet,
 } from "$lib/server/crossover/redis";
 import { PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
@@ -58,6 +59,7 @@ import type {
     Player,
     PlayerEntity,
     World,
+    WorldEntity,
 } from "./redis/entities";
 
 export {
@@ -216,6 +218,19 @@ const crossoverRouter = {
                 });
                 return world as World;
             }),
+        worlds: authProcedure
+            .input(z.object({ geohash: z.string() }))
+            .query(async ({ input }) => {
+                // Get worlds in town (smallest unit for a collection of worlds)
+                const { geohash } = input;
+                const town = geohash.slice(0, worldSeed.spatial.town.precision);
+                const worlds = (await worldsInGeohashQuerySet([
+                    town,
+                ]).return.all()) as WorldEntity[];
+
+                // TODO: hash worlds and have API to check world hashes if need for invalidation
+                return { town, worlds };
+            }),
         buffEntity: internalServiceProcedure
             .input(BuffEntitySchema)
             .mutation(async ({ input }) => {
@@ -253,7 +268,6 @@ const crossoverRouter = {
             )) as PlayerEntity;
 
             // Note: Inventory doesn't cost any ticks
-
             const inventoryItems = (await crossoverPlayerInventoryQuerySet(
                 player.player,
             ).return.all()) as ItemEntity[];
