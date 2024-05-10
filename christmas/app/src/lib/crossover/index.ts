@@ -5,7 +5,6 @@ import type {
     Item,
     Monster,
     Player,
-    World,
 } from "$lib/server/crossover/redis/entities";
 import type { PlayerMetadataSchema } from "$lib/server/crossover/router";
 import { trpc } from "$lib/trpcClient";
@@ -25,7 +24,6 @@ import {
     monsterRecord,
     player,
     playerRecord,
-    worldRecord,
 } from "../../store";
 import { actions, type Action } from "./actions";
 import type { GameCommand, GameCommandVariables } from "./ir";
@@ -73,7 +71,6 @@ interface GameCommandResponse {
     message?: string;
     players?: Player[];
     monsters?: Monster[];
-    worlds?: World[];
     items?: Item[];
 }
 
@@ -143,7 +140,6 @@ async function handleGC(command: GameCommand) {
     try {
         const gcResponse = await executeGameCommand(command);
         if (gcResponse != null) {
-            console.log(JSON.stringify(gcResponse, null, 2));
             await processGCResponse(command, gcResponse);
         }
     } catch (error: any) {
@@ -159,12 +155,10 @@ function handleUpdateEntities({
     players,
     items,
     monsters,
-    worlds,
 }: {
     players?: Player[];
     items?: Item[];
     monsters?: Monster[];
-    worlds?: World[];
 }) {
     const self = get(player);
 
@@ -204,16 +198,6 @@ function handleUpdateEntities({
         }
     }
 
-    // Update worldRecord
-    if (worlds != null) {
-        for (const w of worlds) {
-            worldRecord.update((wr) => {
-                wr[w.world] = w;
-                return wr;
-            });
-        }
-    }
-
     // Update grid
     grid.update((g) => {
         return updateGrid({
@@ -221,7 +205,6 @@ function handleUpdateEntities({
             monsters,
             players,
             items,
-            worlds,
             upsert: true, // Don't replace
         });
     });
@@ -231,7 +214,7 @@ async function processGCResponse(
     command: GameCommand,
     response: GameCommandResponse,
 ) {
-    const { players, monsters, items, worlds, op, status, message } = response;
+    const { players, monsters, items, op, status, message } = response;
     const self = get(player);
 
     // Update message feed
@@ -287,20 +270,6 @@ async function processGCResponse(
         );
     }
 
-    // Update worldRecord
-    if (worlds != null) {
-        const wr = worlds.reduce(
-            (acc, w) => {
-                acc[w.world] = w;
-                return acc;
-            },
-            {} as Record<string, World>,
-        );
-        worldRecord.update((record) =>
-            op === "replace" ? wr : { ...record, ...wr },
-        );
-    }
-
     // Perform secondary effects
     const [action, entities, variables] = command;
     if (self?.player != null && "action" in action) {
@@ -333,13 +302,23 @@ async function processGCResponse(
                     monsters,
                     players,
                     items,
-                    worlds,
                 });
             });
             addMessageFeed({
                 message: "",
                 name: "",
                 messageFeedType: "look",
+            });
+        }
+        // Update `grid` on move if entities are replaced
+        if (action.action === actions.move.action && op === "replace") {
+            grid.update((g) => {
+                return updateGrid({
+                    grid: g,
+                    monsters,
+                    players,
+                    items,
+                });
             });
         }
     }

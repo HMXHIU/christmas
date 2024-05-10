@@ -1447,7 +1447,7 @@ async function getNearbyEntities(
     const parentGeohash = geohash.slice(0, -1);
     const nearbyGeohashes = geohashesNearby(parentGeohash);
 
-    // Get players in surrounding
+    // Get players
     const players = (await playersInGeohashQuerySet(nearbyGeohashes).return.all(
         {
             pageSize: playersPageSize,

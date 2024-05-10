@@ -445,26 +445,26 @@
                     }
                 }
 
-                // Fill in worlds
-                const worlds = g[cell.precision]?.[gridRow]?.[gridCol]?.worlds;
-                if (worlds) {
-                    for (const world of Object.values(worlds)) {
-                        const sprite = await loadWorld({
-                            url: world.url,
-                            col,
-                            row,
-                        });
-                        setGridSprite(gridRow, gridCol, {
-                            id: world.world,
-                            sprite: worldStage.addChild(sprite),
-                            x: sprite.x,
-                            y: sprite.y,
-                            spriteType: "world",
-                        });
-                        // Set z-index based on y-coordinate & layer
-                        sprite.zIndex = WORLD_ZLAYER + gridRow + gridCol;
-                    }
-                }
+                // // Fill in worlds
+                // const worlds = g[cell.precision]?.[gridRow]?.[gridCol]?.worlds;
+                // if (worlds) {
+                //     for (const world of Object.values(worlds)) {
+                //         const sprite = await loadWorld({
+                //             url: world.url,
+                //             col,
+                //             row,
+                //         });
+                //         setGridSprite(gridRow, gridCol, {
+                //             id: world.world,
+                //             sprite: worldStage.addChild(sprite),
+                //             x: sprite.x,
+                //             y: sprite.y,
+                //             spriteType: "world",
+                //         });
+                //         // Set z-index based on y-coordinate & layer
+                //         sprite.zIndex = WORLD_ZLAYER + gridRow + gridCol;
+                //     }
+                // }
             }
         }
     }

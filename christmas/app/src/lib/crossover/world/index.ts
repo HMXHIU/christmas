@@ -2,12 +2,10 @@ import type {
     Item,
     Monster,
     Player,
-    World,
 } from "$lib/server/crossover/redis/entities";
 import lodash from "lodash";
 import ngeohash from "ngeohash";
-import { childrenGeohashes } from "../utils";
-import { biomesNearbyGeohash, type Tile } from "./biomes";
+import { type Tile } from "./biomes";
 import { type EquipmentSlot } from "./compendium";
 const { groupBy } = lodash;
 
@@ -16,7 +14,6 @@ export {
     abyssTile,
     geohashToGridCell,
     gridCellToGeohash,
-    loadMoreGridBiomes,
     updateGrid,
     updateGridEntry,
     type AssetMetadata,
@@ -87,7 +84,6 @@ interface GridEntry {
     monsters?: Record<string, Monster>;
     players?: Record<string, Player>;
     items?: Record<string, Item>;
-    worlds?: Record<string, World>;
 }
 // grid[precision][row][col][GridEntry]
 type Grid = Record<number, Record<number, Record<number, GridEntry>>>;
@@ -148,31 +144,6 @@ const gridSizeAtPrecision: Record<number, { rows: number; cols: number }> = {
 };
 
 /**
- * [DEPRECATE]
- * Loads more grid data (biome only) based on the given geohash and grid.
- *
- * @param geohash - The current geohash to load more grid data for.
- * @param grid - The current grid data.
- * @returns The updated grid data.
- */
-function loadMoreGridBiomes(geohash: string, grid: Grid): Grid {
-    const parentGeohash = geohash.slice(0, -1);
-
-    // Update grid with biomes
-    const biomes = biomesNearbyGeohash(parentGeohash);
-    grid = updateGrid({ grid, biomes });
-
-    // Get neighbor geohashes of parent
-    ngeohash.neighbors(parentGeohash).forEach((neighborGeohash) => {
-        // Update grid with biomes if not previously loaded
-        const biomes = biomesNearbyGeohash(neighborGeohash);
-        grid = updateGrid({ grid, biomes });
-    });
-
-    return grid;
-}
-
-/**
  * Updates (recreate at geohash) or Upserts the provided grid with entities.
  *
  * @param grid - The grid to update.
@@ -186,23 +157,19 @@ function updateGrid({
     grid,
     monsters,
     players,
-    worlds,
     items,
     upsert = false,
 }: {
     grid: Grid;
-    biomes?: Record<string, string>;
     monsters?: Monster[];
     players?: Player[];
     items?: Item[];
-    worlds?: World[];
     upsert?: boolean;
 }) {
-    // Delete monsters, players, items and worlds from grid (relocated)
+    // Delete monsters, players, items from grid (relocated)
     const monsterIds = monsters?.map((mx) => mx.monster) || [];
     const playerIds = players?.map((px) => px.player) || [];
     const itemIds = items?.map((ix) => ix.item) || [];
-    const worldIds = worlds?.map((wx) => wx.world) || [];
     for (const xxs of Object.values(grid)) {
         for (const xs of Object.values(xxs)) {
             for (const entry of Object.values(xs)) {
@@ -224,13 +191,6 @@ function updateGrid({
                     for (const itemId of Object.keys(entry.items)) {
                         if (itemIds.includes(itemId)) {
                             delete entry.items[itemId];
-                        }
-                    }
-                }
-                if (entry.worlds) {
-                    for (const worldId of Object.keys(entry.worlds)) {
-                        if (worldIds.includes(worldId)) {
-                            delete entry.worlds[worldId];
                         }
                     }
                 }
@@ -319,35 +279,6 @@ function updateGrid({
         }
     }
 
-    // Recreate worlds at geohash
-    if (worlds && worlds.length > 0) {
-        for (const [firstPlot, wxs] of Object.entries(
-            groupBy(worlds, (world) => world.loc[0]),
-        )) {
-            // Use the geohash in the first plot
-            const geohash = childrenGeohashes(firstPlot)[0];
-            const { precision, row, col } = geohashToGridCell(geohash);
-            const providedWorlds = wxs.reduce(
-                (acc, wx) => {
-                    acc[wx.world] = wx;
-                    return acc;
-                },
-                {} as Record<string, World>,
-            );
-            const existingWorlds =
-                grid?.[precision]?.[row]?.[col]?.worlds || {};
-            updateGridEntry({
-                grid,
-                precision,
-                row,
-                col,
-                worlds: upsert
-                    ? { ...existingWorlds, ...providedWorlds }
-                    : providedWorlds,
-            });
-        }
-    }
-
     return grid;
 }
 
@@ -361,7 +292,6 @@ function updateGrid({
  * @param monsters - The monsters to update in the grid.
  * @param players - The players to update in the grid.
  * @param items - The items to update in the grid.
- * @param worlds - The worlds to update in the grid.
  * @returns The updated grid object.
  */
 function updateGridEntry({
@@ -372,7 +302,6 @@ function updateGridEntry({
     monsters,
     players,
     items,
-    worlds,
 }: {
     grid: Grid;
     precision: number;
@@ -381,7 +310,6 @@ function updateGridEntry({
     monsters?: Record<string, Monster>;
     players?: Record<string, Player>;
     items?: Record<string, Item>;
-    worlds?: Record<string, World>;
 }) {
     grid[precision] ??= {};
     grid[precision][row] ??= {};
@@ -397,10 +325,6 @@ function updateGridEntry({
 
     if (items != null) {
         grid[precision][row][col].items = items;
-    }
-
-    if (worlds != null) {
-        grid[precision][row][col].worlds = worlds;
     }
 }
 
