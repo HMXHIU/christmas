@@ -48,8 +48,6 @@
     let CANVAS_HEIGHT = CELL_HEIGHT * CANVAS_ROWS;
     let WORLD_WIDTH = CANVAS_WIDTH * OVERDRAW_MULTIPLE;
     let WORLD_HEIGHT = CANVAS_HEIGHT * OVERDRAW_MULTIPLE;
-    let WORLD_PIVOT_X = (WORLD_WIDTH - CANVAS_WIDTH) / 2;
-    let WORLD_PIVOT_Y = (WORLD_HEIGHT - CANVAS_HEIGHT) / 2;
     let GRID_ROWS = CANVAS_ROWS * OVERDRAW_MULTIPLE;
     let GRID_COLS = CANVAS_COLS * OVERDRAW_MULTIPLE;
     let GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
@@ -420,12 +418,17 @@
         return parent;
     }
 
-    function updatePivot() {
-        if (playerSprite != null) {
-            pivotTarget.x = Math.floor(
+    function updatePivot(tween = true) {
+        if (playerSprite) {
+            const offsetX = Math.floor(
                 playerSprite.x + CELL_WIDTH / 2 - clientWidth / 2,
             );
-            pivotTarget.y = playerSprite.y - Math.floor(clientHeight / 2);
+            const offsetY = playerSprite.y - Math.floor(clientHeight / 2);
+            if (tween) {
+                pivotTarget = { x: offsetX, y: offsetY };
+            } else {
+                worldStage.pivot = { x: offsetX, y: offsetY };
+            }
         }
     }
 
@@ -480,6 +483,8 @@
         // Initial update
         if ($player) {
             await updateWorld($player);
+            await updateMonsters($monsterRecord);
+            updatePivot(false);
         }
     });
 </script>
