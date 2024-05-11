@@ -1,19 +1,13 @@
 <script lang="ts">
-    import { seededRandom } from "$lib/crossover/utils";
+    import { cartToIso, seededRandom } from "$lib/crossover/utils";
     import {
         geohashToGridCell,
         gridCellToGeohash,
         type AssetMetadata,
-        type Grid,
     } from "$lib/crossover/world";
     import { biomeAtGeohash } from "$lib/crossover/world/biomes";
-    import { playerAsset } from "$lib/crossover/world/player";
-    import {
-        bestiary,
-        biomes,
-        compendium,
-    } from "$lib/crossover/world/settings";
-    import type { Player } from "$lib/server/crossover/redis/entities";
+    import { bestiary, biomes } from "$lib/crossover/world/settings";
+    import type { Monster, Player } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
     import { groupBy } from "lodash";
     import {
@@ -25,14 +19,13 @@
         Texture,
     } from "pixi.js";
     import { onMount } from "svelte";
-    import { grid, player } from "../../../store";
+    import { monsterRecord, player } from "../../../store";
 
     type SpriteLayer = "biome" | "creature" | "prop" | "world";
 
     const BIOME_ZLAYER = 0;
     const CREATURE_ZLAYER = 10000000000;
     const PROP_ZLAYER = 1000000000;
-    const WORLD_ZLAYER = 100000000000000;
 
     let container: HTMLDivElement;
     let prevLocation: string | null = null;
@@ -68,86 +61,25 @@
     interface GridSprite {
         id: string;
         sprite: Sprite | Container;
-        x: number;
-        y: number;
         spriteType: SpriteLayer;
+        x: number; // in isometric
+        y: number;
+        row: number; // in cells
+        col: number;
     }
+    let gridSprites: Record<string, GridSprite> = {};
+    let pivotTarget: { x: number; y: number } = { x: 0, y: 0 };
 
-    /**
-     * Example: gridSprites[row][col][monster|player|item|biome] = {sprite, x, y}
-     * [monster|player|item|biome] is a unique identifier (w.r.t the grid cell to allow update)
-     */
-    let gridSprites: Record<
-        number,
-        Record<number, Record<string, GridSprite>>
-    > = {};
-
-    $: updateWorld($player, $grid);
+    $: playerCell = $player && geohashToGridCell($player.location[0]);
+    $: playerCell && updateWorld($player);
+    $: updateMonsters($monsterRecord);
     $: resize(clientHeight, clientWidth);
 
     function resize(clientHeight: number, clientWidth: number) {
         if (isInitialized && clientHeight && clientWidth) {
             app.renderer.resize(clientWidth, clientHeight);
-            // Update the pivot to center camera
             updatePivot();
         }
-    }
-
-    function setGridSprite(row: number, col: number, gridSprite: GridSprite) {
-        gridSprites[row] ??= {};
-        gridSprites[row][col] ??= {};
-        gridSprites[row][col][gridSprite.id] = gridSprite;
-    }
-
-    function destroySprites({
-        rowGreaterThan,
-        rowLessThan,
-        colGreaterThan,
-        colLessThan,
-    }: {
-        rowGreaterThan?: number;
-        rowLessThan?: number;
-        colGreaterThan?: number;
-        colLessThan?: number;
-    }) {
-        for (const row of Object.keys(gridSprites).map(Number)) {
-            if (rowGreaterThan != null && !(row > rowGreaterThan)) {
-                continue;
-            }
-            if (rowLessThan != null && !(row < rowLessThan)) {
-                continue;
-            }
-
-            for (const col of Object.keys(gridSprites[row]).map(Number)) {
-                if (colGreaterThan != null && !(col > colGreaterThan)) {
-                    continue;
-                }
-                if (colLessThan != null && !(col < colLessThan)) {
-                    continue;
-                }
-
-                // Destroy all sprites in this grid cell
-                for (const [id, gs] of Object.entries(gridSprites[row][col])) {
-                    gs.sprite.destroy();
-                    delete gridSprites[row][col][id];
-                }
-                delete gridSprites[row][col];
-            }
-
-            if (Object.keys(gridSprites[row]).length === 0) {
-                delete gridSprites[row];
-            }
-        }
-    }
-
-    /**
-     * Rotate clockwise by 45 degrees, scale vertically by 0.5
-     *
-     * [x, y] * [ 0.5  0.25 ]
-     *          [ -0.5 0.25 ]
-     */
-    function cartToIso(x: number, y: number) {
-        return [x * 0.5 + y * -0.5, x * 0.25 + y * 0.25];
     }
 
     async function loadWorld({
@@ -278,315 +210,148 @@
         return sprite;
     }
 
-    async function fillInGrid(
-        g: Grid,
-        {
-            cell,
-            colStart,
-            colEnd,
-            rowStart,
-            rowEnd,
-            alpha,
-        }: {
-            cell: { precision: number; row: number; col: number }; // the center cell
-            colStart?: number;
-            colEnd?: number;
-            rowStart?: number;
-            rowEnd?: number;
-            alpha?: number;
-        },
-    ) {
-        rowStart ??= 0;
-        rowEnd ??= GRID_ROWS;
-        colStart ??= 0;
-        colEnd ??= GRID_COLS;
-        alpha ??= 1;
-
-        for (let row: number = rowStart; row < rowEnd; row++) {
-            const gridRow = cell.row - GRID_MID_ROW + row;
-
-            for (let col: number = colStart; col < colEnd; col++) {
-                const gridCol = cell.col - GRID_MID_COL + col;
-
-                // Destroy existing sprites in this grid cell
-                if (gridSprites?.[gridRow]?.[gridCol] != null) {
-                    for (const [id, gs] of Object.entries(
-                        gridSprites[gridRow][gridCol],
-                    )) {
-                        gs.sprite.destroy();
-                        delete gridSprites[gridRow][gridCol][id];
-                    }
-                }
-
-                // Fill in biome
-                const geohash = gridCellToGeohash({
-                    precision: cell.precision,
-                    row: gridRow,
-                    col: gridCol,
-                });
-                const biome = biomeAtGeohash(geohash);
-                const asset = biomes[biome].asset;
-                if (asset) {
-                    const sprite = await loadSprite({
-                        asset,
-                        col,
-                        row,
-                        alpha,
-                        spriteType: "biome",
-                        // bit shift by 8 else gridRow + gridCol is the same at diagonals
-                        seed: (gridRow << 8) + gridCol,
-                    });
-
-                    if (sprite) {
-                        setGridSprite(gridRow, gridCol, {
-                            id: "biome",
-                            sprite: worldStage.addChild(sprite),
-                            x: sprite.x,
-                            y: sprite.y,
-                            spriteType: "biome",
-                        });
-                        // Set z-index based on y-coordinate & layer
-                        sprite.zIndex = BIOME_ZLAYER + gridRow + gridCol;
-                    }
-                }
-
-                // Fill in players
-                const players =
-                    g[cell.precision]?.[gridRow]?.[gridCol]?.players;
-                if (players) {
-                    for (const p of Object.values(players)) {
-                        // Skip the current player
-                        if (p.player === $player?.player) {
-                            continue;
-                        }
-                        const sprite = await loadSprite({
-                            asset: playerAsset,
-                            col,
-                            row,
-                            alpha,
-                            spriteType: "creature",
-                        });
-                        if (sprite) {
-                            setGridSprite(gridRow, gridCol, {
-                                id: p.player,
-                                sprite: worldStage.addChild(sprite),
-                                x: sprite.x,
-                                y: sprite.y,
-                                spriteType: "creature",
-                            });
-                            // Set z-index based on y-coordinate & layer
-                            sprite.zIndex = CREATURE_ZLAYER + gridRow + gridCol;
-                        }
-                    }
-                }
-
-                // Fill in items
-                const items = g[cell.precision]?.[gridRow]?.[gridCol]?.items;
-                if (items) {
-                    for (const item of Object.values(items)) {
-                        const asset = compendium[item.prop]?.asset;
-                        if (asset) {
-                            const { variants, width, height } = asset;
-                            const sprite = await loadSprite({
-                                asset,
-                                col,
-                                row,
-                                alpha,
-                                variant: variants?.[item.state],
-                                width,
-                                height,
-                                spriteType: "prop",
-                            });
-                            if (sprite) {
-                                setGridSprite(gridRow, gridCol, {
-                                    id: item.item,
-                                    sprite: worldStage.addChild(sprite),
-                                    x: sprite.x,
-                                    y: sprite.y,
-                                    spriteType: "prop",
-                                });
-                                // Set z-index based on y-coordinate & layer
-                                sprite.zIndex = PROP_ZLAYER + gridRow + gridCol;
-                            }
-                        }
-                    }
-                }
-
-                // Fill in monsters
-                const monsters =
-                    g[cell.precision]?.[gridRow]?.[gridCol]?.monsters;
-                if (monsters) {
-                    for (const monster of Object.values(monsters)) {
-                        const asset = bestiary[monster.beast]?.asset;
-                        if (asset) {
-                            const { width, height } = asset;
-                            const sprite = await loadSprite({
-                                asset,
-                                col,
-                                row,
-                                alpha,
-                                width,
-                                height,
-                                spriteType: "creature",
-                            });
-                            if (sprite) {
-                                setGridSprite(gridRow, gridCol, {
-                                    id: monster.monster,
-                                    sprite: worldStage.addChild(sprite),
-                                    x: sprite.x,
-                                    y: sprite.y,
-                                    spriteType: "creature",
-                                });
-                                // Set z-index based on y-coordinate & layer
-                                sprite.zIndex =
-                                    CREATURE_ZLAYER + gridRow + gridCol;
-                            }
-                        }
-                    }
-                }
-
-                // // Fill in worlds
-                // const worlds = g[cell.precision]?.[gridRow]?.[gridCol]?.worlds;
-                // if (worlds) {
-                //     for (const world of Object.values(worlds)) {
-                //         const sprite = await loadWorld({
-                //             url: world.url,
-                //             col,
-                //             row,
-                //         });
-                //         setGridSprite(gridRow, gridCol, {
-                //             id: world.world,
-                //             sprite: worldStage.addChild(sprite),
-                //             x: sprite.x,
-                //             y: sprite.y,
-                //             spriteType: "world",
-                //         });
-                //         // Set z-index based on y-coordinate & layer
-                //         sprite.zIndex = WORLD_ZLAYER + gridRow + gridCol;
-                //     }
-                // }
-            }
-        }
-    }
-
-    async function updateWorld(p: Player | null, g: Grid) {
-        if (!isInitialized || p == null) {
+    async function updateWorld(p: Player | null) {
+        if (!isInitialized || playerCell == null) {
             return;
         }
 
-        const cell = geohashToGridCell(p.location[0]);
-
         // Player
-        if (playerSprite != null && cell != null) {
+        if (playerSprite != null) {
             const [isoX, isoY] = cartToIso(
-                GRID_MID_COL * CELL_WIDTH,
-                GRID_MID_ROW * CELL_HEIGHT,
+                playerCell.col * CELL_HEIGHT,
+                playerCell.row * CELL_WIDTH,
             );
             playerSprite.x = isoX;
             playerSprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
             playerSprite.zIndex = CREATURE_ZLAYER + playerSprite.y;
         }
 
-        // Environment
-        if (prevLocation != null) {
-            const prevCell = geohashToGridCell(prevLocation);
+        // Move camera to player
+        updatePivot();
 
-            if (cell.precision === prevCell.precision) {
-                const deltaCol = cell.col - prevCell.col;
-                const deltaRow = cell.row - prevCell.row;
+        // Cull sprites outside view
+        for (const [id, entity] of Object.entries(gridSprites)) {
+            if (
+                entity.row > playerCell.row + GRID_MID_ROW ||
+                entity.row < playerCell.row - GRID_MID_ROW ||
+                entity.col > playerCell.col + GRID_MID_COL ||
+                entity.col < playerCell.col - GRID_MID_COL
+            ) {
+                gridSprites[id].sprite.destroy();
+                delete gridSprites[id];
+            }
+        }
 
-                function calculateStartEnd(delta: number, gridSize: number) {
-                    if (delta > 0) {
-                        return [gridSize, gridSize + delta];
-                    } else if (delta < 0) {
-                        return [delta, 0];
-                    } else {
-                        return [undefined, undefined];
-                    }
-                }
+        // Create biome sprites
+        for (
+            let row = playerCell.row - GRID_MID_ROW;
+            row < playerCell.row + GRID_MID_ROW;
+            row++
+        ) {
+            for (
+                let col = playerCell.col - GRID_MID_COL;
+                col < playerCell.col + GRID_MID_COL;
+                col++
+            ) {
+                const geohash = gridCellToGeohash({
+                    precision: playerCell.precision,
+                    row,
+                    col,
+                });
+                const biome = biomeAtGeohash(geohash);
+                const asset = biomes[biome].asset;
 
-                const [rowStart, rowEnd] = calculateStartEnd(
-                    deltaRow,
-                    GRID_ROWS,
-                );
-                const [colStart, colEnd] = calculateStartEnd(
-                    deltaCol,
-                    GRID_COLS,
-                );
-
-                // Update columns
-                if (deltaCol !== 0) {
-                    await fillInGrid(g, {
-                        cell: prevCell,
-                        colStart,
-                        colEnd,
+                if (asset) {
+                    const sprite = await loadSprite({
+                        asset,
+                        col,
+                        row,
+                        alpha: 1,
+                        spriteType: "biome",
+                        seed: (row << 8) + col, // bit shift by 8 else gridRow + gridCol is the same at diagonals
                     });
-                    destroySprites({
-                        colGreaterThan: cell.col + GRID_MID_COL,
-                        colLessThan: cell.col - GRID_MID_COL,
-                    });
-                }
 
-                // Update rows
-                if (deltaRow !== 0) {
-                    await fillInGrid(g, {
-                        cell: prevCell,
-                        rowStart,
-                        rowEnd,
-                    });
-                    destroySprites({
-                        rowGreaterThan: cell.row + GRID_MID_ROW,
-                        rowLessThan: cell.row - GRID_MID_ROW,
-                    });
-                }
-
-                // Update diagonals
-                if (deltaCol !== 0 && deltaRow !== 0) {
-                    await fillInGrid(g, {
-                        cell: prevCell,
-                        rowStart,
-                        rowEnd,
-                        colStart,
-                        colEnd,
-                    });
-                    destroySprites({
-                        rowGreaterThan: cell.row + GRID_MID_ROW,
-                        rowLessThan: cell.row - GRID_MID_ROW,
-                        colGreaterThan: cell.col + GRID_MID_COL,
-                        colLessThan: cell.col - GRID_MID_COL,
-                    });
-                }
-
-                // Update grid (due to change in grid entities)
-                if (deltaCol === 0 && deltaRow === 0) {
-                    destroySprites({});
-                    await fillInGrid(g, {
-                        cell,
-                        colStart: 0,
-                        colEnd: GRID_COLS,
-                    });
-                }
-
-                // Update sprite target positions (gs.sprite.x -> gs.x)
-                if (deltaCol !== 0 || deltaRow !== 0) {
-                    const [isoX, isoY] = cartToIso(
-                        deltaCol * CELL_WIDTH,
-                        deltaRow * CELL_HEIGHT,
-                    );
-                    for (const row of Object.values(gridSprites)) {
-                        for (const gridSprite of Object.values(row)) {
-                            for (const gs of Object.values(gridSprite)) {
-                                gs.x -= isoX;
-                                gs.y -= isoY;
-                            }
-                        }
+                    if (sprite) {
+                        const biomeId = `biome-${geohash}`;
+                        sprite.zIndex = BIOME_ZLAYER + row + col;
+                        gridSprites[biomeId] = {
+                            id: biomeId,
+                            sprite: worldStage.addChild(sprite),
+                            spriteType: "biome",
+                            x: sprite.x,
+                            y: sprite.y,
+                            row,
+                            col,
+                        };
                     }
                 }
             }
         }
+    }
 
-        // Update previous location
-        prevLocation = p.location[0];
+    async function updateMonsters(mr: Record<string, Monster>) {
+        if (!isInitialized || playerCell == null) {
+            return;
+        }
+
+        for (const m of Object.values(mr)) {
+            const { row, col } = geohashToGridCell(m.location[0]);
+
+            // Ignore monsters outside view
+            if (
+                row > playerCell.row + GRID_MID_ROW ||
+                row < playerCell.row - GRID_MID_ROW ||
+                col > playerCell.col + GRID_MID_COL ||
+                col < playerCell.col - GRID_MID_COL
+            ) {
+                continue;
+            }
+
+            // Update
+            if (m.monster in gridSprites) {
+                const sprite = gridSprites[m.monster].sprite;
+                const [isoX, isoY] = cartToIso(
+                    col * CELL_HEIGHT,
+                    row * CELL_WIDTH,
+                );
+                sprite.x = isoX;
+                sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
+                sprite.zIndex = CREATURE_ZLAYER + sprite.y;
+            }
+            // Create
+            else if (
+                row < playerCell.row + GRID_MID_ROW ||
+                row > playerCell.row - GRID_MID_ROW ||
+                col < playerCell.col + GRID_MID_COL ||
+                col > playerCell.col - GRID_MID_COL
+            ) {
+                const asset = bestiary[m.beast]?.asset;
+                if (asset) {
+                    const { width, height } = asset;
+                    const sprite = await loadSprite({
+                        asset,
+                        col,
+                        row,
+                        alpha: 1,
+                        width,
+                        height,
+                        spriteType: "creature",
+                    });
+                    if (sprite) {
+                        sprite.zIndex = CREATURE_ZLAYER + row + col;
+                        gridSprites[m.monster] = {
+                            id: m.monster,
+                            sprite: worldStage.addChild(sprite),
+                            spriteType: "creature",
+                            x: sprite.x,
+                            y: sprite.y,
+                            row,
+                            col,
+                        };
+                    }
+                }
+            }
+        }
     }
 
     function createCreatureSprite(
@@ -656,18 +421,12 @@
     }
 
     function updatePivot() {
-        CANVAS_WIDTH = clientWidth;
-        CANVAS_HEIGHT = clientHeight;
-        WORLD_PIVOT_X = (WORLD_WIDTH - CANVAS_WIDTH) / 2;
-        WORLD_PIVOT_Y = (WORLD_HEIGHT - CANVAS_HEIGHT) / 2;
-
-        const [wpIsoX, wpIsoY] = cartToIso(WORLD_PIVOT_X, WORLD_PIVOT_Y);
-        worldStage.pivot.x =
-            wpIsoX +
-            Math.floor(CELL_WIDTH / 2) -
-            Math.floor((GRID_COLS * CELL_WIDTH) / 2) +
-            (WORLD_PIVOT_X - wpIsoX);
-        worldStage.pivot.y = wpIsoY / 2 - CELL_WIDTH / 2;
+        if (playerSprite != null) {
+            pivotTarget.x = Math.floor(
+                playerSprite.x + CELL_WIDTH / 2 - clientWidth / 2,
+            );
+            pivotTarget.y = playerSprite.y - Math.floor(clientHeight / 2);
+        }
     }
 
     onMount(async () => {
@@ -690,7 +449,6 @@
         // Add world container
         worldStage.width = WORLD_WIDTH;
         worldStage.height = WORLD_HEIGHT;
-        updatePivot();
         app.stage.addChild(worldStage);
 
         // Player sprite
@@ -703,17 +461,13 @@
 
         // Ticker
         app.ticker.add((deltaTime) => {
-            // Move sprites to their target positions
-            for (const row of Object.values(gridSprites)) {
-                for (const gss of Object.values(row)) {
-                    for (const gs of Object.values(gss)) {
-                        gs.sprite.x +=
-                            ((gs.x - gs.sprite.x) * deltaTime.elapsedMS) / 100;
-                        gs.sprite.y +=
-                            ((gs.y - gs.sprite.y) * deltaTime.elapsedMS) / 100;
-                    }
-                }
-            }
+            // Move camera to target position
+            worldStage.pivot.x +=
+                ((pivotTarget.x - worldStage.pivot.x) * deltaTime.elapsedMS) /
+                1000;
+            worldStage.pivot.y +=
+                ((pivotTarget.y - worldStage.pivot.y) * deltaTime.elapsedMS) /
+                1000;
         });
 
         // Add the canvas to the DOM
@@ -723,14 +477,9 @@
         // Resize the canvas
         resize(clientHeight, clientWidth);
 
-        // Load the grid
+        // Initial update
         if ($player) {
-            await fillInGrid($grid, {
-                cell: geohashToGridCell($player.location[0]),
-                colStart: 0,
-                colEnd: GRID_COLS,
-            });
-            await updateWorld($player, $grid);
+            await updateWorld($player);
         }
     });
 </script>

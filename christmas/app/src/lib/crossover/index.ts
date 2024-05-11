@@ -18,7 +18,6 @@ import type {
     StreamEvent,
 } from "../../routes/api/crossover/stream/+server";
 import {
-    grid,
     itemRecord,
     messageFeed,
     monsterRecord,
@@ -28,7 +27,7 @@ import {
 import { actions, type Action } from "./actions";
 import type { GameCommand, GameCommandVariables } from "./ir";
 import { entityId } from "./utils";
-import { Directions, updateGrid, type Direction } from "./world";
+import { Directions, type Direction } from "./world";
 import type { Ability } from "./world/abilities";
 import {
     EquipmentSlots,
@@ -198,17 +197,6 @@ function handleUpdateEntities({
             });
         }
     }
-
-    // Update grid
-    grid.update((g) => {
-        return updateGrid({
-            grid: g,
-            monsters,
-            players,
-            items,
-            upsert: true, // Don't replace
-        });
-    });
 }
 
 async function processGCResponse(
@@ -295,31 +283,12 @@ async function processGCResponse(
         ) {
             await handleGC([actions.look, { self }]);
         }
-        // Recreate `grid` on look, add `look` to message feed
+        // Add `look` to message feed
         if (action.action === actions.look.action) {
-            grid.update((g) => {
-                return updateGrid({
-                    grid: g,
-                    monsters,
-                    players,
-                    items,
-                });
-            });
             addMessageFeed({
                 message: "",
                 name: "",
                 messageFeedType: "look",
-            });
-        }
-        // Update `grid` on move if entities are replaced
-        if (action.action === actions.move.action && op === "replace") {
-            grid.update((g) => {
-                return updateGrid({
-                    grid: g,
-                    monsters,
-                    players,
-                    items,
-                });
             });
         }
     }

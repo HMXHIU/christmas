@@ -16,6 +16,7 @@ export {
     REGEX_STRIP_ENTITY_TYPE,
     borderingGeohashes,
     calculateLocation,
+    cartToIso,
     childrenGeohashes,
     directionToVector,
     entityDimensions,
@@ -57,6 +58,16 @@ function stringToRandomNumber(str: string): number {
 function seededRandom(seed: number): number {
     var x = Math.sin(seed) * 10000; // how many decimal places
     return x - Math.floor(x);
+}
+
+/**
+ * Rotate clockwise by 45 degrees, scale vertically by 0.5
+ *
+ * [x, y] * [ 0.5  0.25 ]
+ *          [ -0.5 0.25 ]
+ */
+function cartToIso(x: number, y: number) {
+    return [x * 0.5 + y * -0.5, x * 0.25 + y * 0.25];
 }
 
 /**

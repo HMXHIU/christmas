@@ -1,6 +1,5 @@
 import type { Account, Coupon, Store } from "$lib/anchorClient/types";
 import type { MessageFeed } from "$lib/crossover";
-import { type Grid } from "$lib/crossover/world";
 import type {
     CouponMetadataSchema,
     StoreMetadataSchema,
@@ -38,7 +37,6 @@ export let userMetadata = writable<
 
 // Crossver
 export let player = writable<Player | null>(null);
-export let grid = writable<Grid>({});
 export let playerRecord = writable<Record<string, Player>>({});
 export let itemRecord = writable<Record<string, Item>>({});
 export let monsterRecord = writable<Record<string, Monster>>({});
