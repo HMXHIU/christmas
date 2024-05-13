@@ -23,6 +23,7 @@ import {
     monsterRecord,
     player,
     playerRecord,
+    worldRecord,
 } from "../../store";
 import { actions, type Action } from "./actions";
 import type { GameCommand, GameCommandVariables } from "./ir";
@@ -35,7 +36,7 @@ import {
     type ItemVariables,
     type Utility,
 } from "./world/compendium";
-import { compendium } from "./world/settings";
+import { compendium, worldSeed } from "./world/settings";
 
 export {
     addMessageFeed,
@@ -143,6 +144,7 @@ async function handleGC(command: GameCommand) {
             await processGCResponse(command, gcResponse);
         }
     } catch (error: any) {
+        console.error(error);
         addMessageFeed({
             message: error.message,
             name: "Error",
@@ -151,51 +153,79 @@ async function handleGC(command: GameCommand) {
     }
 }
 
-function handleUpdateEntities({
-    players,
-    items,
-    monsters,
-}: {
-    players?: Player[];
-    items?: Item[];
-    monsters?: Monster[];
-}) {
+async function updateWorlds(geohash: string) {
+    const { town, worlds } = await crossoverWorldWorlds(geohash);
+    worldRecord.update((wr) => {
+        for (const w of worlds) {
+            if (!wr[town]) {
+                wr[town] = {};
+            }
+            wr[town][w.world] = w;
+        }
+        return wr;
+    });
+}
+
+function handleUpdateEntities(
+    {
+        players,
+        items,
+        monsters,
+    }: {
+        players?: Player[];
+        items?: Item[];
+        monsters?: Monster[];
+    },
+    op?: "upsert" | "replace",
+) {
     const self = get(player);
+    op ??= "upsert";
 
     // Update playerRecord
     if (players != null) {
-        for (const p of players) {
-            playerRecord.update((pr) => {
-                pr[p.player] = p;
-                return pr;
-            });
-
-            // Update player
-            if (p.player === self?.player) {
-                player.set(p);
+        playerRecord.update((pr) => {
+            if (op === "replace") {
+                pr = {};
             }
-        }
+            for (const p of players) {
+                // Update self (player)
+                if (p.player === self?.player) {
+                    player.set(p);
+                } else {
+                    pr[p.player] = p;
+                }
+            }
+            return pr;
+        });
     }
 
     // Update itemRecord
     if (items != null) {
-        for (const i of items) {
-            itemRecord.update((ir) => {
+        itemRecord.update((ir) => {
+            if (op === "replace") {
+                ir = {};
+            }
+            for (const i of items) {
                 ir[i.item] = i;
-                return ir;
-            });
-        }
+            }
+            return ir;
+        });
     }
 
     // Update monsterRecord
     if (monsters != null) {
-        for (const m of monsters) {
-            monsterRecord.update((mr) => {
-                displayEntityEffects(mr[m.monster], m);
+        monsterRecord.update((mr) => {
+            if (op === "replace") {
+                mr = {};
+            }
+            for (const m of monsters) {
+                if (mr[m.monster]) {
+                    displayEntityEffects(mr[m.monster], m);
+                }
                 mr[m.monster] = m;
-                return mr;
-            });
-        }
+            }
+            return mr;
+        });
     }
 }
 
@@ -211,53 +241,8 @@ async function processGCResponse(
         addMessageFeed({ message, name: "Error", messageFeedType: "error" });
     }
 
-    // Update playerRecord
-    if (players != null) {
-        const pr = players.reduce(
-            (acc, p) => {
-                acc[p.player] = p;
-                return acc;
-            },
-            {} as Record<string, Player>,
-        );
-        playerRecord.update((record) =>
-            op === "replace" ? pr : { ...record, ...pr },
-        );
-
-        // Update player (self)
-        for (const p of players) {
-            if (p.player === self?.player) {
-                player.set(p);
-            }
-        }
-    }
-    // Update monsterRecord
-    if (monsters != null) {
-        const mr = monsters.reduce(
-            (acc, m) => {
-                acc[m.monster] = m;
-                return acc;
-            },
-            {} as Record<string, Monster>,
-        );
-        monsterRecord.update((record) =>
-            op === "replace" ? mr : { ...record, ...mr },
-        );
-    }
-
-    // Update itemRecord
-    if (items != null) {
-        const ir = items.reduce(
-            (acc, i) => {
-                acc[i.item] = i;
-                return acc;
-            },
-            {} as Record<string, Item>,
-        );
-        itemRecord.update((record) =>
-            op === "replace" ? ir : { ...record, ...ir },
-        );
-    }
+    // Update entities
+    handleUpdateEntities({ players, items, monsters }, op);
 
     // Perform secondary effects
     const [action, entities, variables] = command;
@@ -283,13 +268,26 @@ async function processGCResponse(
         ) {
             await handleGC([actions.look, { self }]);
         }
-        // Add `look` to message feed
+        // Add look to message feed
         if (action.action === actions.look.action) {
             addMessageFeed({
                 message: "",
                 name: "",
                 messageFeedType: "look",
             });
+        }
+        // Update worlds on move into new town
+        if (
+            action.action === actions.move.action ||
+            action.action === actions.look.action
+        ) {
+            const town = self.location[0].slice(
+                0,
+                worldSeed.spatial.town.precision,
+            );
+            if (!get(worldRecord)[town]) {
+                await updateWorlds(town);
+            }
         }
     }
 }
@@ -356,7 +354,7 @@ async function performAction(
     // look
     if (action.action === "look") {
         return await crossoverCmdLook(
-            { target: target ? entityId(target) : undefined },
+            { target: target ? entityId(target)[0] : undefined },
             headers,
         );
     }
@@ -378,14 +376,14 @@ async function performAction(
     // take
     else if (action.action === "take") {
         return await crossoverCmdTake(
-            { item: entityId(target as Item) },
+            { item: entityId(target as Item)[0] },
             headers,
         );
     }
     // drop
     else if (action.action === "drop") {
         return await crossoverCmdDrop(
-            { item: entityId(target as Item) },
+            { item: entityId(target as Item)[0] },
             headers,
         );
     }
@@ -395,7 +393,7 @@ async function performAction(
         if (EquipmentSlots.includes(slot)) {
             return await crossoverCmdEquip(
                 {
-                    item: entityId(target as Item),
+                    item: entityId(target as Item)[0],
                     slot,
                 },
                 headers,
@@ -406,7 +404,7 @@ async function performAction(
     // unequip
     else if (action.action === "unequip") {
         return await crossoverCmdUnequip(
-            { item: entityId(target as Item) },
+            { item: entityId(target as Item)[0] },
             headers,
         );
     }
@@ -429,7 +427,7 @@ async function performAction(
     else if (action.action === "configure" && variables != null) {
         const [key, val] = variables.queryIrrelevant.split(":");
         return await crossoverCmdConfigureItem(
-            { item: entityId(target as Item), variables: { [key]: val } },
+            { item: entityId(target as Item)[0], variables: { [key]: val } },
             headers,
         );
     }

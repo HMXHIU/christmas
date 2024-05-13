@@ -502,9 +502,9 @@ function commandVariables({
     const { self, target, item } = gameEntities;
 
     const actionId = gameActionId(gameAction);
-    const selfId = entityId(self);
-    const targetId = target != null ? entityId(target) : null;
-    const itemId = item != null ? entityId(item) : null;
+    const selfId = entityId(self)[0];
+    const targetId = target != null ? entityId(target)[0] : null;
+    const itemId = item != null ? entityId(item)[0] : null;
 
     const relevantPositions = [
         ...Object.keys(tokenPositions[actionId] || {}),

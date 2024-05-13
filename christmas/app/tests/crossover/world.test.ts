@@ -2,7 +2,7 @@ import { crossoverWorldWorlds } from "$lib/crossover";
 import {
     childrenGeohashes,
     geohashNeighbour,
-    getPlotGeohashes,
+    getPlotsAtGeohash,
 } from "$lib/crossover/utils";
 import {
     geohashToGridCell,
@@ -210,13 +210,13 @@ test("Test World", async () => {
         ].sort(),
     );
 
-    // Test getPlotGeohashes
+    // Test getPlotsAtGeohash
     let loc = generateRandomGeohash(8);
     var parentGeohash = loc.slice(0, -1);
-    let plotGeohashes = getPlotGeohashes(loc, 8, 4);
+    let plotGeohashes = getPlotsAtGeohash(loc, 8, 4);
     expect(plotGeohashes).to.deep.equal([parentGeohash]);
 
-    plotGeohashes = getPlotGeohashes(loc, 16, 8);
+    plotGeohashes = getPlotsAtGeohash(loc, 16, 8);
     expect(plotGeohashes).to.deep.equal([
         parentGeohash,
         geohashNeighbour(parentGeohash, "e"),

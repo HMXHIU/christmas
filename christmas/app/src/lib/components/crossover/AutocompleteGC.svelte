@@ -48,7 +48,7 @@
         const [action, { target }] = gc;
 
         if (target) {
-            let id = entityId(target).replace(REGEX_STRIP_ENTITY_TYPE, "");
+            let id = entityId(target)[0].replace(REGEX_STRIP_ENTITY_TYPE, "");
             id = id.length > 13 ? id.slice(0, 13) + "..." : id;
             return `${target.name} (${id})`;
         }
@@ -59,7 +59,7 @@
         const [action, { item }] = gc;
 
         if (item) {
-            let id = entityId(item).replace(REGEX_STRIP_ENTITY_TYPE, "");
+            let id = entityId(item)[0].replace(REGEX_STRIP_ENTITY_TYPE, "");
             id = id.length > 13 ? id.slice(0, 13) + "..." : id;
             return `${item.name} (${id})`;
         }

@@ -1,12 +1,12 @@
 import { actions, type Actions } from "$lib/crossover/actions";
 import {
+    autoCorrectGeohashPrecision,
     calculateLocation,
-    childrenGeohashes,
     entityDimensions,
     entityId,
     geohashNeighbour,
     geohashesNearby,
-    getPlotGeohashes,
+    getPlotsAtGeohash,
 } from "$lib/crossover/utils";
 import type { Direction, WorldAssetMetadata } from "$lib/crossover/world";
 import {
@@ -66,7 +66,6 @@ import {
 const { uniqBy } = lodash;
 
 export {
-    autoCorrectGeohashPrecision,
     checkAndSetBusy,
     configureItem,
     connectedUsers,
@@ -309,29 +308,6 @@ async function initPlayerEntity(
 }
 
 /**
- * Auto-corrects the precision of a geohash by either truncating or extending it.
- * @param geohash - The geohash to be corrected.
- * @param precision - The desired precision of the geohash.
- * @returns The corrected geohash with the specified precision.
- */
-function autoCorrectGeohashPrecision(
-    geohash: string,
-    precision: number,
-): string {
-    if (geohash.length !== precision) {
-        const delta = precision - geohash.length;
-        if (delta > 0) {
-            for (let i = 0; i < delta; i++) {
-                geohash = childrenGeohashes(geohash)[0];
-            }
-        } else if (delta < 0) {
-            geohash = geohash.slice(0, precision);
-        }
-    }
-    return geohash;
-}
-
-/**
  * Saves the player entity state (into s3) for a given public key.
  *
  * @param publicKey The public key of the player.
@@ -410,8 +386,7 @@ async function spawnMonster({
  * A plot represents a full grid of 32 geohashes no matter the precision.
  *
  * Note:
- * - World assets must take up the entire geohash area at -1 the unit precision.
- * - World assets must take up exact multiples of the full geohash grid.
+ * - World assets must be exact multiples of a plot.
  *
  * @param geohash - The geohash of the world asset.
  * @param assetUrl - The URL of the asset (required to be rendered).
@@ -465,11 +440,11 @@ async function spawnWorld({
             `Asset tile width and height must be exact multiples of tile width and height`,
         );
     }
-    const heightMultiplier = assetTileHeight / tileHeight;
-    const widthMultiplier = assetTileWidth / tileWidth;
 
     // Get plot geohashes
-    const plotGeohashes = getPlotGeohashes(
+    const heightMultiplier = assetTileHeight / tileHeight;
+    const widthMultiplier = assetTileWidth / tileWidth;
+    const plotGeohashes = getPlotsAtGeohash(
         geohash,
         height * heightMultiplier,
         width * widthMultiplier,
@@ -532,7 +507,7 @@ async function spawnWorld({
     const entity: WorldEntity = {
         world,
         url: assetUrl || "",
-        loc: plotGeohashes,
+        loc: plotGeohashes, // TODO: this can be optimized not just at unit precision -1
         h: height,
         w: width,
         cld: colliders,
@@ -1034,7 +1009,7 @@ async function performAbility({
 
     // Check predicate
     if (!predicate.targetSelfAllowed) {
-        if (entityId(self) === entityId(target)) {
+        if (entityId(self)[0] === entityId(target)[0]) {
             return {
                 self,
                 target,

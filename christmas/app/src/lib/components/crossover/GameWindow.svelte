@@ -70,7 +70,7 @@
 <svelte:window bind:innerWidth />
 
 <div class={cn("w-full flex flex-col justify-between", $$restProps.class)}>
-    <div class="h-1/2">
+    <div class="h-1/2 shrink">
         {#if innerWidth > LARGE_SCREEN}
             <Resizable.PaneGroup direction="horizontal">
                 <!-- Chat Window -->
@@ -92,14 +92,20 @@
     </div>
 
     <!-- Autocomplete Game Commands -->
-    <AutocompleteGC class="pb-2 px-2" {commands} {onGameCommand} bind:command
-    ></AutocompleteGC>
+    <div class="relative">
+        <AutocompleteGC
+            class="pb-2 px-2 bottom-0 absolute"
+            {commands}
+            {onGameCommand}
+            bind:command
+        ></AutocompleteGC>
+    </div>
 
     <!-- Chat Input -->
     <ChatInput class="m-2" bind:target {onEnter} {onPartial}></ChatInput>
 
     <!-- Map (60px is size of ChatInput) -->
-    <div style="height: calc(50% - 60px);">
+    <div style="height: calc(50% - 60px); flex-shrink-0" class="shrink-0">
         <Map></Map>
     </div>
 </div>

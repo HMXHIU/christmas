@@ -9,6 +9,8 @@ export {
     gridCellToGeohash,
     type AssetMetadata,
     type Direction,
+    type EntityType,
+    type GridCell,
     type LocationType,
     type WorldAssetMetadata,
     type WorldSeed,
@@ -64,11 +66,19 @@ const Directions: Direction[] = [
     "d",
 ];
 
+type EntityType = "player" | "monster" | "item";
+
 type LocationType =
     | "geohash"
     | "item"
     | "inv" // inventory
     | EquipmentSlot;
+
+type GridCell = {
+    precision: number;
+    row: number;
+    col: number;
+};
 
 interface WorldSeed {
     name: string;
@@ -134,11 +144,7 @@ const gridSizeAtPrecision: Record<number, { rows: number; cols: number }> = {
  * @param geohash - The geohash string.
  * @returns An object with the precision, row and column for the geohash in the grid.
  */
-function geohashToGridCell(geohash: string): {
-    precision: number;
-    row: number;
-    col: number;
-} {
+function geohashToGridCell(geohash: string): GridCell {
     const precision = geohash.length;
     const { latitude, longitude } = ngeohash.decode(geohash);
 
@@ -161,15 +167,7 @@ function geohashToGridCell(geohash: string): {
  * @param col - The column index of the grid cell.
  * @returns The geohash string representing the grid cell.
  */
-function gridCellToGeohash({
-    precision,
-    row,
-    col,
-}: {
-    precision: number;
-    row: number;
-    col: number;
-}): string {
+function gridCellToGeohash({ precision, row, col }: GridCell): string {
     const lat = -(
         ((row + 0.5) / gridSizeAtPrecision[precision].rows) * 180 -
         90

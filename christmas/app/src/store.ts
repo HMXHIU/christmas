@@ -40,5 +40,5 @@ export let player = writable<Player | null>(null);
 export let playerRecord = writable<Record<string, Player>>({});
 export let itemRecord = writable<Record<string, Item>>({});
 export let monsterRecord = writable<Record<string, Monster>>({});
-export let worldRecord = writable<Record<string, World>>({});
+export let worldRecord = writable<Record<string, Record<string, World>>>({});
 export let messageFeed = writable<MessageFeed[]>([]);

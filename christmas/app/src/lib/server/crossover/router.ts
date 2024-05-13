@@ -222,14 +222,14 @@ const crossoverRouter = {
             .input(z.object({ geohash: z.string() }))
             .query(async ({ input }) => {
                 // Get worlds in town (smallest unit for a collection of worlds)
-                const { geohash } = input;
+                let { geohash } = input;
                 const town = geohash.slice(0, worldSeed.spatial.town.precision);
                 const worlds = (await worldsInGeohashQuerySet([
                     town,
                 ]).return.all()) as WorldEntity[];
 
                 // TODO: hash worlds and have API to check world hashes if need for invalidation
-                return { town, worlds };
+                return { town, worlds: worlds as World[] };
             }),
         buffEntity: internalServiceProcedure
             .input(BuffEntitySchema)
