@@ -25,7 +25,6 @@
         World,
     } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
-    import { groupBy } from "lodash";
     import {
         Application,
         Assets,
@@ -43,14 +42,6 @@
         worldRecord,
     } from "../../../store";
 
-    const zlayers = {
-        biome: 0,
-        monster: 10000000000,
-        item: 1000000000,
-        player: 100000000,
-        world: 100000001,
-    };
-
     let container: HTMLDivElement;
     let isInitialized = false;
 
@@ -67,14 +58,38 @@
     const CANVAS_ROWS = 7;
     const CANVAS_COLS = 7;
     const OVERDRAW_MULTIPLE = 3;
-    let CANVAS_WIDTH = CELL_WIDTH * CANVAS_COLS;
-    let CANVAS_HEIGHT = CELL_HEIGHT * CANVAS_ROWS;
-    let WORLD_WIDTH = CANVAS_WIDTH * OVERDRAW_MULTIPLE;
-    let WORLD_HEIGHT = CANVAS_HEIGHT * OVERDRAW_MULTIPLE;
-    let GRID_ROWS = CANVAS_ROWS * OVERDRAW_MULTIPLE;
-    let GRID_COLS = CANVAS_COLS * OVERDRAW_MULTIPLE;
-    let GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
-    let GRID_MID_COL = Math.floor(GRID_COLS / 2);
+    const CANVAS_WIDTH = CELL_WIDTH * CANVAS_COLS;
+    const CANVAS_HEIGHT = CELL_HEIGHT * CANVAS_ROWS;
+    const WORLD_WIDTH = CANVAS_WIDTH * OVERDRAW_MULTIPLE;
+    const WORLD_HEIGHT = CANVAS_HEIGHT * OVERDRAW_MULTIPLE;
+    const GRID_ROWS = CANVAS_ROWS * OVERDRAW_MULTIPLE;
+    const GRID_COLS = CANVAS_COLS * OVERDRAW_MULTIPLE;
+    const GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
+    const GRID_MID_COL = Math.floor(GRID_COLS / 2);
+
+    const ground = 0;
+    const floor = (1 * GRID_ROWS * CELL_WIDTH) / 2;
+    const hip = (2 * GRID_ROWS * CELL_WIDTH) / 2;
+    const humanoid = (3 * GRID_ROWS * CELL_WIDTH) / 2;
+    const wall = (4 * GRID_ROWS * CELL_WIDTH) / 2;
+    const l2 = (5 * GRID_ROWS * CELL_WIDTH) / 2;
+    const l3 = (6 * GRID_ROWS * CELL_WIDTH) / 2;
+    const l4 = (7 * GRID_ROWS * CELL_WIDTH) / 2;
+    const zlayers: Record<string, number> = {
+        ground,
+        floor,
+        hip,
+        humanoid,
+        wall,
+        l2,
+        l3,
+        l4,
+        biome: ground,
+        monster: humanoid,
+        item: hip,
+        player: humanoid,
+        world: wall, // TODO: replace with layers each with its own index
+    };
 
     const app = new Application();
     const worldStage = new Container();
@@ -200,8 +215,14 @@
                 x,
                 y,
             } = layer;
+
             // Get properties
-            const { interior, collider } = groupBy(properties, "name");
+            const { z, collider, interior } = (
+                properties as { name: string; value: any; type: string }[]
+            ).reduce((acc: Record<string, any>, { name, value, type }) => {
+                acc[name] = value;
+                return acc;
+            }, {});
 
             // Create tile sprites
             for (let i = 0; i < height; i++) {
@@ -228,7 +249,7 @@
                     );
                     sprite.x = isoX + (offsetx || 0) + originX;
                     sprite.y = isoY + (offsety || 0) + originY;
-                    sprite.zIndex = zlayers.world + sprite.y;
+                    sprite.zIndex = (zlayers[z] ?? zlayers.ground) + sprite.y;
 
                     // Remove old sprite
                     if (
