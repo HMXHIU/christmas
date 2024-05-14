@@ -14,6 +14,7 @@ import {
     biomeAtGeohash,
     biomesNearbyGeohash,
 } from "$lib/crossover/world/biomes";
+import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { spawnWorld } from "$lib/server/crossover";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
@@ -165,6 +166,9 @@ test("Test World", async () => {
     expect(gridCellToGeohash(geohashToGridCell(geohash))).to.equal(geohash);
     var geohash = generateRandomGeohash(6);
     expect(gridCellToGeohash(geohashToGridCell(geohash))).to.equal(geohash);
+    expect(gridCellToGeohash(geohashToGridCell("gbsuv7xp"))).to.equal(
+        "gbsuv7xp",
+    );
 
     // Test geohashNeighbour
     var geohash = generateRandomGeohash(8);
@@ -351,8 +355,8 @@ test("Test World", async () => {
     world = await spawnWorld({
         asset,
         geohash: worldGeohash,
-        tileHeight: asset.tileheight / 2,
-        tileWidth: asset.tilewidth / 2,
+        tileHeight: asset.tileheight / 2, // 128 / 2 = 64
+        tileWidth: asset.tilewidth / 2, // 256 / 2 = 128
     });
 
     var p = geohashNeighbour(geohashNeighbour(worldGeohash, "s", 6), "e", 2);
@@ -397,4 +401,15 @@ test("Test World", async () => {
     });
     expect(town.length).to.equal(worldSeed.spatial.town.precision);
     expect(worlds).toMatchObject([{ world: world.world }]);
+
+    // Test collider location
+    worldGeohash = "gbsuv7xp";
+    world = await spawnWorld({
+        asset,
+        geohash: worldGeohash,
+        tileHeight: TILE_HEIGHT,
+        tileWidth: TILE_WIDTH,
+    });
+    expect(world.loc[0]).toBe("gbsuv7x");
+    expect(world.cld[0]).toBe("gbsuve25");
 });

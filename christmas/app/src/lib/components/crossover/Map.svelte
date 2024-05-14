@@ -67,14 +67,20 @@
     const GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
     const GRID_MID_COL = Math.floor(GRID_COLS / 2);
 
+    const [isoGridX, isoGridY] = cartToIso(
+        GRID_COLS * CELL_WIDTH,
+        GRID_ROWS * CELL_HEIGHT,
+    );
+
+    // Z layers
     const ground = 0;
-    const floor = (1 * GRID_ROWS * CELL_WIDTH) / 2;
-    const hip = (2 * GRID_ROWS * CELL_WIDTH) / 2;
-    const humanoid = (3 * GRID_ROWS * CELL_WIDTH) / 2;
-    const wall = (4 * GRID_ROWS * CELL_WIDTH) / 2;
-    const l2 = (5 * GRID_ROWS * CELL_WIDTH) / 2;
-    const l3 = (6 * GRID_ROWS * CELL_WIDTH) / 2;
-    const l4 = (7 * GRID_ROWS * CELL_WIDTH) / 2;
+    const floor = isoGridY;
+    const hip = 2 * isoGridY;
+    const humanoid = 3 * isoGridY;
+    const wall = 3 * isoGridY;
+    const l2 = 4 * isoGridY;
+    const l3 = 5 * isoGridY;
+    const l4 = 6 * isoGridY;
     const zlayers: Record<string, number> = {
         ground,
         floor,
@@ -88,7 +94,6 @@
         monster: humanoid,
         item: hip,
         player: humanoid,
-        world: wall, // TODO: replace with layers each with its own index
     };
 
     const app = new Application();
@@ -196,7 +201,8 @@
         origin: GridCell;
     }) {
         const tilemap = await Assets.load(world.url);
-        const tileset = await Assets.load(tilemap.tilesets[0].source);
+        const { layers, tilesets, tileheight, tilewidth } = tilemap;
+        const tileset = await Assets.load(tilesets[0].source);
 
         // Convert cartesian to isometric position
         const [originX, originY] = cartToIso(
@@ -204,7 +210,58 @@
             origin.row * CELL_HEIGHT,
         );
 
-        for (const layer of tilemap.layers) {
+        const [tileOffsetX, tileOffsetY] = cartToIso(
+            tilewidth / 2,
+            tilewidth / 2,
+        );
+
+        // /////////////// TEST ADD COLLDIERS (DOES NOT MATCH UP WITH RENDERED TILEMAP)
+
+        // const pedestalBundle = await Assets.loadBundle("pedestals");
+        // const pedestalTexture =
+        //     pedestalBundle["pedestals"].textures["square_dirt_high"];
+
+        // // Create ORIGIN sprite
+        // const sprite = new Sprite(pedestalTexture);
+        // sprite.width = CELL_WIDTH;
+        // sprite.height =
+        //     (pedestalTexture.height * sprite.width) / pedestalTexture.width;
+        // sprite.anchor.set(0.5); // TODO: set in sprite.json
+
+        // // Convert cartesian to isometric position
+        // const [isoX, isoY] = cartToIso(
+        //     origin.col * CELL_WIDTH,
+        //     origin.row * CELL_HEIGHT,
+        // );
+        // sprite.x = isoX;
+        // sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
+        // sprite.zIndex = zlayers.humanoid + isoY + 1000000000000;
+        // worldStage.addChild(sprite);
+
+        // for (const cld of world.cld) {
+        //     const { row, col } = geohashToGridCell(cld);
+
+        //     const pedestalBundle = await Assets.loadBundle("pedestals");
+        //     const pedestalTexture =
+        //         pedestalBundle["pedestals"].textures["square_dirt_high"];
+
+        //     // Create sprite
+        //     const sprite = new Sprite(pedestalTexture);
+        //     sprite.width = CELL_WIDTH;
+        //     sprite.height =
+        //         (pedestalTexture.height * sprite.width) / pedestalTexture.width;
+        //     sprite.anchor.set(0.5); // TODO: set in sprite.json
+
+        //     // Convert cartesian to isometric position
+        //     const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
+        //     sprite.x = isoX;
+        //     sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
+        //     sprite.zIndex = zlayers.humanoid + isoY + 1000000000000;
+        //     worldStage.addChild(sprite);
+        // }
+        // ////////////////////
+
+        for (const layer of layers) {
             const {
                 data, // 1D array of tile indices
                 properties,
@@ -231,7 +288,7 @@
                     if (tileId === 0) {
                         continue;
                     }
-                    const id = `${town}-${world.world}-${i}-${j}`;
+                    const id = `${town}-${world.world}-${tileId}-${i}-${j}`;
 
                     // Skip if already created
                     if (id in worldGridSprites) {
@@ -240,16 +297,18 @@
 
                     const { image, imageheight, imagewidth } =
                         tileset.tiles[tileId - 1];
-
                     const texture = await Assets.load(image);
                     const sprite = new Sprite(texture);
                     const [isoX, isoY] = cartToIso(
                         j * imagewidth,
-                        (i * imageheight) / 2,
+                        i * imagewidth, // Note: imagewidth for cartesian
                     );
-                    sprite.x = isoX + (offsetx || 0) + originX;
-                    sprite.y = isoY + (offsety || 0) + originY;
+                    sprite.x = isoX + (offsetx || 0) + originX + tileOffsetX;
+                    sprite.y = isoY + (offsety || 0) + originY + tileOffsetY;
                     sprite.zIndex = (zlayers[z] ?? zlayers.ground) + sprite.y;
+
+                    // The anchor point is the bottom center of the sprite
+                    sprite.anchor.set(0.5, 1 - tileheight / imageheight / 2);
 
                     // Remove old sprite
                     if (
