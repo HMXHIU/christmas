@@ -2,6 +2,7 @@ import { actions, type Actions } from "$lib/crossover/actions";
 import {
     autoCorrectGeohashPrecision,
     calculateLocation,
+    childrenGeohashes,
     entityDimensions,
     entityId,
     geohashNeighbour,
@@ -413,13 +414,16 @@ async function spawnWorld({
         throw new Error("asset or assetUrl must be provided");
     }
 
-    // Auto correct geohash precision
+    // Auto correct geohash to unit precision
     if (geohash.length !== worldSeed.spatial.unit.precision) {
         geohash = autoCorrectGeohashPrecision(
             geohash,
             worldSeed.spatial.unit.precision,
         );
     }
+
+    // Get the origin cell of the plot
+    geohash = childrenGeohashes(geohash.slice(0, -1))[0];
 
     // Get asset from URL or if provided
     asset ??= await (await fetch(assetUrl!)).json();

@@ -322,10 +322,12 @@ test("Test World", async () => {
     ]
     */
 
-    var p = geohashNeighbour(geohashNeighbour(worldGeohash, "s", 3), "e");
+    var origin = childrenGeohashes(worldGeohash.slice(0, -1))[0];
+    var p = geohashNeighbour(geohashNeighbour(origin, "s", 3), "e");
     var p2 = geohashNeighbour(p, "s");
+
     expect(world).toMatchObject({
-        loc: [worldGeohash.slice(0, -1)],
+        loc: [origin.slice(0, -1)],
         h: 8,
         w: 4,
         cld: [p, geohashNeighbour(p, "e"), p2, geohashNeighbour(p2, "e")],
@@ -358,12 +360,12 @@ test("Test World", async () => {
         tileHeight: asset.tileheight / 2, // 128 / 2 = 64
         tileWidth: asset.tilewidth / 2, // 256 / 2 = 128
     });
-
-    var p = geohashNeighbour(geohashNeighbour(worldGeohash, "s", 6), "e", 2);
+    var origin = childrenGeohashes(worldGeohash.slice(0, -1))[0];
+    var p = geohashNeighbour(geohashNeighbour(origin, "s", 6), "e", 2);
     var p2 = geohashNeighbour(p, "s");
     var p3 = geohashNeighbour(p2, "s");
     var p4 = geohashNeighbour(p3, "s");
-    var parentGeohash = worldGeohash.slice(0, -1);
+    var parentGeohash = origin.slice(0, -1);
     expect(world.loc).to.deep.equal([
         parentGeohash,
         geohashNeighbour(parentGeohash, "e"),
@@ -402,8 +404,18 @@ test("Test World", async () => {
     expect(town.length).to.equal(worldSeed.spatial.town.precision);
     expect(worlds).toMatchObject([{ world: world.world }]);
 
-    // Test collider location
+    // Test collider and location origins
     worldGeohash = "gbsuv7xp";
+    world = await spawnWorld({
+        asset,
+        geohash: worldGeohash,
+        tileHeight: TILE_HEIGHT,
+        tileWidth: TILE_WIDTH,
+    });
+    expect(world.loc[0]).toBe("gbsuv7x");
+    expect(world.cld[0]).toBe("gbsuve25");
+
+    worldGeohash = "gbsuv7xe"; // origin should still be at gbsuv7xp as it is in the same
     world = await spawnWorld({
         asset,
         geohash: worldGeohash,
