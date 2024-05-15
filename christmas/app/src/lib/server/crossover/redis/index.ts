@@ -44,6 +44,7 @@ export {
     saveEntity,
     worldRepository,
     worldsContainingGeohashQuerySet,
+    worldsInGeohashQuerySet,
 };
 
 // Repositories
@@ -256,9 +257,8 @@ function itemsInGeohashQuerySet(geohashes: string[]): Search {
 }
 
 /**
- * Retrieves worlds containing a geohash.
- * Note: This is different from the `in` queries. Locations for worlds are stored as plots of varying precision.
- * Thus we need to search at different precision levels to find worlds containing a geohash.
+ * Retrieves worlds if the geohash is inside the world
+ * Note: This is the same as `worldsInGeohashQuerySet` in which the world is inside the geohash
  * @param geohashes - The geohashes to search for worlds in.
  * @param precision - The precision level of the geohashes (defaults to town).
  * @returns A Search object representing the query.
@@ -272,6 +272,18 @@ function worldsContainingGeohashQuerySet(
         .search()
         .where("loc")
         .containOneOf(...expandGeohashes(geohashes, precision));
+}
+
+/**
+ * Retrieves worlds in a geohash query set.
+ * @param geohashes - The geohashes to search for worlds in.
+ * @returns A Search object representing the query.
+ */
+function worldsInGeohashQuerySet(geohashes: string[]): Search {
+    return worldRepository
+        .search()
+        .where("loc")
+        .containOneOf(...geohashes.map((x) => `${x}*`));
 }
 
 /**

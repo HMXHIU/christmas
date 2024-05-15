@@ -16,7 +16,7 @@ import {
     itemRepository,
     playerRepository,
     redisClient,
-    worldsContainingGeohashQuerySet,
+    worldsInGeohashQuerySet,
 } from "$lib/server/crossover/redis";
 import { PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
@@ -222,13 +222,14 @@ const crossoverRouter = {
             .input(z.object({ geohash: z.string() }))
             .query(async ({ input }) => {
                 let { geohash } = input;
-                const worlds = (await worldsContainingGeohashQuerySet([
-                    geohash,
+                const town = geohash.slice(0, worldSeed.spatial.town.precision);
+                const worlds = (await worldsInGeohashQuerySet([
+                    town,
                 ]).return.all()) as WorldEntity[];
 
                 // TODO: hash worlds and have API to check world hashes if need for invalidation
                 return {
-                    town: geohash.slice(0, worldSeed.spatial.town.precision),
+                    town,
                     worlds: worlds as World[],
                 };
             }),
