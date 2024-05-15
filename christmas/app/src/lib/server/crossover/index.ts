@@ -6,7 +6,6 @@ import {
     entityDimensions,
     entityId,
     geohashNeighbour,
-    geohashesNearby,
     getPlotsAtGeohash,
 } from "$lib/crossover/utils";
 import type { Direction, WorldAssetMetadata } from "$lib/crossover/world";
@@ -39,20 +38,17 @@ import { z } from "zod";
 import type { UpdateEntitiesEvent } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import {
-    collidersInGeohashQuerySet,
+    hasCollidersInGeohash,
+    isGeohashInWorld,
     itemRepository,
-    itemsInGeohashQuerySet,
     monsterRepository,
-    monstersInGeohashQuerySet,
     playerRepository,
-    playersInGeohashQuerySet,
     redisClient,
+    saveEntity,
     worldRepository,
 } from "./redis";
 import {
-    type Item,
     type ItemEntity,
-    type Monster,
     type MonsterEntity,
     type Player,
     type PlayerEntity,
@@ -71,11 +67,11 @@ export {
     configureItem,
     connectedUsers,
     consumeResources,
-    getNearbyEntities,
     getPlayerMetadata,
     getUserMetadata,
     initPlayerEntity,
     isDirectionTraversable,
+    isLocationTraversable,
     itemVariableValue,
     loadPlayerEntity,
     performAbility,
@@ -355,10 +351,8 @@ async function spawnMonster({
 
     // Check location for traversability and colliders
     const location = calculateLocation(geohash, width, height);
-    for (const loc of location) {
-        if (!(await isGeohashTraversable(loc))) {
-            throw new Error(`Cannot spawn ${beast}, ${loc} is untraversable`);
-        }
+    if (!(await isLocationTraversable(location))) {
+        throw new Error(`Cannot spawn ${beast} at ${geohash}`);
     }
 
     // Get monster stats
@@ -565,16 +559,8 @@ async function spawnItem({
     const location = calculateLocation(geohash, width, height);
 
     // Check location for traversability
-    for (const loc of location) {
-        // Has colliders
-        if ((await collidersInGeohashQuerySet(loc).return.count()) > 0) {
-            throw new Error(`Cannot spawn item at location ${loc}`);
-        }
-        // Biome is not traversable
-        const biome = biomeAtGeohash(loc);
-        if (biomes[biome].traversableSpeed <= 0) {
-            throw new Error(`Cannot spawn item at ${biome}`);
-        }
+    if (!(await isLocationTraversable(location))) {
+        throw new Error(`Cannot spawn ${prop} at ${location}`);
     }
 
     const entity: ItemEntity = {
@@ -633,7 +619,6 @@ async function configureItem({
         ...item.variables,
         ...parseItemVariables(variables, item.prop),
     };
-
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
 
     return {
@@ -641,35 +626,6 @@ async function configureItem({
         status: "success",
         message: "",
     };
-}
-
-/**
- * Saves the given entity to the appropriate repository.
- *
- * @param entity - The entity to be saved.
- * @returns A promise that resolves to the saved entity.
- */
-async function saveEntity(
-    entity: PlayerEntity | MonsterEntity | ItemEntity,
-): Promise<PlayerEntity | MonsterEntity | ItemEntity> {
-    if (entity.player) {
-        return (await playerRepository.save(
-            (entity as PlayerEntity).player,
-            entity,
-        )) as PlayerEntity;
-    } else if (entity.monster) {
-        return (await monsterRepository.save(
-            (entity as MonsterEntity).monster,
-            entity,
-        )) as MonsterEntity;
-    } else if (entity.item) {
-        return (await itemRepository.save(
-            (entity as ItemEntity).item,
-            entity,
-        )) as ItemEntity;
-    }
-
-    throw new Error("Invalid entity");
 }
 
 /**
@@ -1258,10 +1214,11 @@ async function isDirectionTraversable(
 ): Promise<[boolean, string[]]> {
     let location: string[] = [];
 
+    // Check all cells are able to move (location might include more than 1 cell for large entities)
     for (const geohash of entity.location) {
         const nextGeohash = geohashNeighbour(geohash, direction);
 
-        // Inside current location is always traversable
+        // Within own location is always traversable
         if (entity.location.includes(nextGeohash)) {
             location.push(nextGeohash);
             continue;
@@ -1278,16 +1235,24 @@ async function isDirectionTraversable(
 }
 
 async function isGeohashTraversable(geohash: string): Promise<boolean> {
-    // Check if biome is traversable
-    if (biomes[biomeAtGeohash(geohash)].traversableSpeed <= 0) {
+    const inWorld = await isGeohashInWorld(geohash);
+    // Check if biome is traversable (ignore if user is in a world)
+    if (!inWorld && biomes[biomeAtGeohash(geohash)].traversableSpeed <= 0) {
         return false;
     }
-
     // Get colliders in geohash
-    if ((await collidersInGeohashQuerySet(geohash).return.count()) > 0) {
+    if (await hasCollidersInGeohash(geohash)) {
         return false;
     }
+    return true;
+}
 
+async function isLocationTraversable(location: string[]): Promise<boolean> {
+    for (const geohash of location) {
+        if (!(await isGeohashTraversable(geohash))) {
+            return false;
+        }
+    }
     return true;
 }
 
@@ -1405,47 +1370,4 @@ async function consumeResources(
     }
 
     return (await saveEntity(entity)) as PlayerEntity;
-}
-
-/**
- * Retrieves nearby entities based on the provided geohash and page size.
- *
- * @param geohash - The geohash used to determine nearby entities.
- * @param playersPageSize - The page size for retrieving players.
- * @returns A promise that resolves to an object containing players, monsters, and items.
- */
-async function getNearbyEntities(
-    geohash: string,
-    playersPageSize: number,
-): Promise<{
-    players: Player[];
-    monsters: Monster[];
-    items: Item[];
-}> {
-    // Get nearby geohashes
-    const parentGeohash = geohash.slice(0, -1);
-    const nearbyGeohashes = geohashesNearby(parentGeohash);
-
-    // Get players
-    const players = (await playersInGeohashQuerySet(nearbyGeohashes).return.all(
-        {
-            pageSize: playersPageSize,
-        },
-    )) as PlayerEntity[];
-
-    // Get monsters in surrounding (don't use page size for monsters)
-    const monsters = (await monstersInGeohashQuerySet(
-        nearbyGeohashes,
-    ).return.all()) as MonsterEntity[];
-
-    // Get items
-    const items = (await itemsInGeohashQuerySet(
-        nearbyGeohashes,
-    ).return.all()) as ItemEntity[];
-
-    return {
-        players: players as Player[],
-        monsters: monsters as Monster[],
-        items: items as Item[],
-    };
 }

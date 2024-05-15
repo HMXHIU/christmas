@@ -11,11 +11,12 @@ import {
 } from "$lib/crossover/world/settings";
 import {
     fetchEntity,
+    getNearbyEntities,
     initializeClients,
     itemRepository,
     playerRepository,
     redisClient,
-    worldsInGeohashQuerySet,
+    worldsContainingGeohashQuerySet,
 } from "$lib/server/crossover/redis";
 import { PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
@@ -24,7 +25,6 @@ import { z } from "zod";
 import {
     checkAndSetBusy,
     configureItem,
-    getNearbyEntities,
     getUserMetadata,
     initPlayerEntity,
     isDirectionTraversable,
@@ -221,15 +221,16 @@ const crossoverRouter = {
         worlds: authProcedure
             .input(z.object({ geohash: z.string() }))
             .query(async ({ input }) => {
-                // Get worlds in town (smallest unit for a collection of worlds)
                 let { geohash } = input;
-                const town = geohash.slice(0, worldSeed.spatial.town.precision);
-                const worlds = (await worldsInGeohashQuerySet([
-                    town,
+                const worlds = (await worldsContainingGeohashQuerySet([
+                    geohash,
                 ]).return.all()) as WorldEntity[];
 
                 // TODO: hash worlds and have API to check world hashes if need for invalidation
-                return { town, worlds: worlds as World[] };
+                return {
+                    town: geohash.slice(0, worldSeed.spatial.town.precision),
+                    worlds: worlds as World[],
+                };
             }),
         buffEntity: internalServiceProcedure
             .input(BuffEntitySchema)

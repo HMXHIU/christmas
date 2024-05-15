@@ -9,8 +9,7 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import ngeohash from "ngeohash";
 import type { GameAction } from "./ir";
-import { biomeAtGeohash } from "./world/biomes";
-import { bestiary, biomes, compendium, worldSeed } from "./world/settings";
+import { bestiary, compendium, worldSeed } from "./world/settings";
 
 export {
     REGEX_STRIP_ENTITY_TYPE,
@@ -22,11 +21,11 @@ export {
     directionToVector,
     entityDimensions,
     entityId,
+    expandGeohashes,
     gameActionId,
     geohashNeighbour,
     geohashesNearby,
     getPlotsAtGeohash,
-    isGeohashTraversable,
     seededRandom,
     stringToRandomNumber,
 };
@@ -149,6 +148,24 @@ function geohashNeighbour(
 }
 
 /**
+ * Expands an array of geohashes to include parent geoahses up to a certain precision.
+ *
+ * @param geohashes - The array of geohashes to expand.
+ * @param precision - The precision to expand the geohashes to.
+ * @returns An array of expanded geohashes.
+ */
+function expandGeohashes(geohashes: string[], precision: number): string[] {
+    return geohashes.flatMap((geohash) => {
+        const expanded = [geohash];
+        if (precision >= geohash.length) return expanded;
+        for (let i = geohash.length - 1; i >= precision; i--) {
+            expanded.push(geohash.slice(0, i));
+        }
+        return expanded;
+    });
+}
+
+/**
  * Retrieves the bordering geohashes around `geohashes` exluding itself.
  *
  * @param geohashes - An array of geohashes.
@@ -262,32 +279,6 @@ function childrenGeohashes(geohash: string): string[] {
             return geohash + c;
         });
     }
-}
-
-/**
- * Checks if a geohash is traversable based on the provided items.
- *
- * TODO: include world colliders
- *
- * @param geohash - The geohash to check.
- * @param items - The items to check for colliders.
- * @returns A promise that resolves to a boolean indicating if the geohash is traversable.
- */
-async function isGeohashTraversable(
-    geohash: string,
-    items: Item[],
-): Promise<boolean> {
-    // Check if geohash is traversable
-    const biome = biomeAtGeohash(geohash);
-
-    // Check any items with collider
-    for (const itemEntity of items) {
-        if (itemEntity.collider) {
-            return false;
-        }
-    }
-
-    return biomes[biome].traversableSpeed > 0;
 }
 
 /**

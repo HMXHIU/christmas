@@ -105,6 +105,9 @@ interface WorldSeed {
         village: {
             precision: number;
         };
+        house: {
+            precision: number;
+        };
         unit: {
             precision: number;
         };
