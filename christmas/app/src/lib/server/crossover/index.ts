@@ -1237,7 +1237,7 @@ async function isDirectionTraversable(
 async function isGeohashTraversable(geohash: string): Promise<boolean> {
     const inWorld = await isGeohashInWorld(geohash);
     // Check if biome is traversable (ignore if user is in a world)
-    if (!inWorld && biomes[biomeAtGeohash(geohash)].traversableSpeed <= 0) {
+    if (!inWorld && biomes[biomeAtGeohash(geohash)[0]].traversableSpeed <= 0) {
         return false;
     }
     // Get colliders in geohash

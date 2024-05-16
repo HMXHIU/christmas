@@ -23,6 +23,7 @@ export {
     entityId,
     expandGeohashes,
     gameActionId,
+    generateEvenlySpacedPoints,
     geohashNeighbour,
     geohashesNearby,
     getPlotsAtGeohash,
@@ -370,4 +371,40 @@ function gameActionId(gameAction: GameAction): string {
     } else {
         return gameAction.action;
     }
+}
+
+/**
+ * Generates evenly spaced points within a cell.
+ * @param {number} n - The number of points to generate.
+ * @param {number} cellRadius - The radius of the cell.
+ * @returns {Array<{x: number, y: number}>} An array of point coordinates.
+ */
+function generateEvenlySpacedPoints(n: number, cellRadius: number) {
+    const points = [];
+    const centerX = 0;
+    const centerY = 0;
+    const angle = (2 * Math.PI) / n;
+
+    if (n % 2 === 1) {
+        // Odd number of points
+        points.push({ x: centerX, y: centerY }); // Center point
+        const radius = cellRadius / (n + 1);
+        for (let i = 0; i < n; i++) {
+            const x = centerX + radius * Math.cos(i * angle);
+            const y = centerY + radius * Math.sin(i * angle);
+            points.push({ x, y });
+        }
+    } else {
+        // Even number of points
+        const radius = cellRadius / (n / 2 + 1);
+        for (let i = 0; i < n; i += 2) {
+            const x1 = centerX + radius * Math.cos((i / 2) * angle);
+            const y1 = centerY + radius * Math.sin((i / 2) * angle);
+            const x2 = centerX + radius * Math.cos((i / 2 + 1) * angle);
+            const y2 = centerY + radius * Math.sin((i / 2 + 1) * angle);
+            points.push({ x: x1, y: y1 }, { x: x2, y: y2 });
+        }
+    }
+
+    return points;
 }

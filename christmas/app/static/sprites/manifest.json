@@ -23,6 +23,10 @@
                 {
                     "alias": "lightwater",
                     "src": "/sprites/biome/sprite.json"
+                },
+                {
+                    "alias": "grass",
+                    "src": "/sprites/biome/grass/sprite.json"
                 }
             ]
         },

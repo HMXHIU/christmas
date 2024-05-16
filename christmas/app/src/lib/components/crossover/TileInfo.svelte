@@ -13,7 +13,7 @@
         return player.subscribe((p) => {
             if (!p) return;
             const geohash = p.location[0];
-            tile = tileAtGeohash(geohash, biomeAtGeohash(geohash));
+            tile = tileAtGeohash(geohash, biomeAtGeohash(geohash)[0]); // TODO: consider strength
         });
     });
 </script>

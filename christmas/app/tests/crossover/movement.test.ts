@@ -55,7 +55,7 @@ test("Test Movement", async () => {
     playerOne.location = (
         await crossoverCmdMove({ direction: "e" }, { Cookie: playerOneCookies })
     ).players?.[0].location!;
-    const biome = biomeAtGeohash(geohashNeighbour(playerOneGeohash, "e"));
+    const biome = biomeAtGeohash(geohashNeighbour(playerOneGeohash, "e"))[0];
     expect(biomes[biome].traversableSpeed).toBeGreaterThan(0);
     expect(playerOne.location[0]).toBe(geohashNeighbour(playerOneGeohash, "e"));
 

@@ -420,10 +420,9 @@ let biomes: Record<string, Biome> = {
             "A dense collection of trees and vegetation, home to a variety of wildlife.",
         traversableSpeed: 0.8,
         asset: {
-            bundle: "biomes",
-            name: "terrain",
+            path: "biomes/terrain",
             variants: {
-                default: "grass1",
+                default: "grass1", // frames in the sprite sheet
                 alt1: "grass2",
                 alt2: "grass3",
             },
@@ -435,6 +434,30 @@ let biomes: Record<string, Biome> = {
             width: 1,
             height: 1,
             precision: worldSeed.spatial.unit.precision,
+        },
+        decorations: {
+            grass: {
+                probability: 0.5, // TODO: to be modified by how strong the perlin noice affects the tile eg. how much "forest" this tile is
+                minInstances: 1,
+                maxInstances: 5,
+                radius: 2,
+                asset: {
+                    path: "biomes/grass",
+                    variants: {
+                        default: "0052",
+                        alt1: "0053",
+                        alt2: "0054",
+                    },
+                    prob: {
+                        default: 0.33,
+                        alt1: 0.33,
+                        alt2: 0.33,
+                    },
+                    width: 0.5,
+                    height: 0.5,
+                    precision: worldSeed.spatial.unit.precision,
+                },
+            },
         },
     },
     desert: {
@@ -498,8 +521,7 @@ let biomes: Record<string, Biome> = {
         description: "A large body of water, with a variety of aquatic life.",
         traversableSpeed: 0,
         asset: {
-            bundle: "biomes",
-            name: "terrain",
+            path: "biomes/terrain",
             variants: {
                 default: "rocks1",
                 alt1: "rocks2",
@@ -550,8 +572,7 @@ const bestiary: Record<string, Beast> = {
         spawnBiomes: [],
         spawnHostileThreshold: 0.1,
         asset: {
-            bundle: "bestiary",
-            name: "goblin",
+            path: "bestiary/goblin",
             // animations: {
             //     stand: "stand",
             // },
@@ -584,8 +605,7 @@ const bestiary: Record<string, Beast> = {
         spawnBiomes: [],
         spawnHostileThreshold: 0.1,
         asset: {
-            bundle: "bestiary",
-            name: "goblin",
+            path: "bestiary/goblin",
             animations: {
                 stand: "stand",
             },
@@ -618,8 +638,7 @@ const bestiary: Record<string, Beast> = {
         spawnBiomes: [],
         spawnHostileThreshold: 0.5,
         asset: {
-            bundle: "bestiary",
-            name: "goblin",
+            path: "bestiary/goblin",
             animations: {
                 stand: "stand",
             },
@@ -641,8 +660,7 @@ let compendium: Record<string, Prop> = {
         prop: "woodenclub",
         defaultName: "Wooden Club",
         asset: {
-            bundle: "props",
-            name: "weapons",
+            path: "bestiary/goblin",
             variants: {
                 default: "wooden-club",
             },
@@ -692,8 +710,7 @@ let compendium: Record<string, Prop> = {
         defaultName: "Potion of Health",
         // TODO: Add potion asset
         asset: {
-            bundle: "props",
-            name: "potions",
+            path: "props/potions",
             variants: {
                 default: "red-potion",
             },
@@ -735,8 +752,7 @@ let compendium: Record<string, Prop> = {
         prop: "woodendoor",
         defaultName: "Wooden Door",
         asset: {
-            bundle: "props",
-            name: "gothic",
+            path: "props/gothic",
             variants: {
                 default: "wood-door-2", // open
                 closed: "wood-door-1",
@@ -801,8 +817,7 @@ let compendium: Record<string, Prop> = {
         defaultName: "Tavern",
         // TODO: Add tavern asset
         asset: {
-            bundle: "props",
-            name: "gothic",
+            path: "props/gothic",
             variants: {
                 default: "tavern",
             },
@@ -835,8 +850,7 @@ let compendium: Record<string, Prop> = {
         prop: "debris",
         defaultName: "Debris",
         asset: {
-            bundle: "props",
-            name: "gothic",
+            path: "props/gothic",
             variants: {
                 default: "debris-9",
             },
@@ -863,8 +877,7 @@ let compendium: Record<string, Prop> = {
         prop: "portal",
         defaultName: "Portal",
         asset: {
-            bundle: "props",
-            name: "gothic",
+            path: "props/gothic",
             variants: {
                 default: "ritual-circle",
             },

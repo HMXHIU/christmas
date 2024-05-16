@@ -10,12 +10,21 @@ export {
     type Tile,
 };
 
+interface Decoration {
+    asset: AssetMetadata;
+    minInstances: number;
+    maxInstances: number;
+    probability: number;
+    radius: number; // in cells
+}
+
 interface Biome {
     biome: string;
     name: string;
     description: string;
     traversableSpeed: number; // 0.0 - 1.0
     asset?: AssetMetadata;
+    decorations?: Record<string, Decoration>;
 }
 
 interface Tile {
@@ -33,13 +42,19 @@ interface Tile {
  *
  * TODO: Add caching to avoid redundant calls to biomeAtGeohash().
  *
+ * TODO: Replace with simplex noise etc..
+ *
+ * |----(bio)----|
+ * |----(bio)----||----(water)----|
+ * |---dice---|   // bio, strength is taken from mid point 1 - (dice - bio/2) / bio/2
+ * |-----------dice-----------|   // water, 1 - ((dice - bio) - water/2) / water/2
  */
-function biomeAtGeohash(geohash: string, seed?: WorldSeed): string {
+function biomeAtGeohash(geohash: string, seed?: WorldSeed): [string, number] {
     seed = seed || worldSeed;
 
     // Leave h9* for ice for testing (fully traversable)
     if (geohash.startsWith("h9")) {
-        return biomes.ice.biome;
+        return [biomes.ice.biome, 1];
     }
 
     const continent = geohash.charAt(0);
@@ -52,12 +67,15 @@ function biomeAtGeohash(geohash: string, seed?: WorldSeed): string {
 
     // Select biome
     if (rv < probBio) {
-        return biomes.forest.biome;
+        const bioMid = probBio / 2;
+        return [biomes.forest.biome, 1 - Math.abs(rv - bioMid) / bioMid];
     }
     if (rv < probBio + probWater) {
-        return biomes.water.biome;
+        const rvv = rv - probBio;
+        const waterMid = probWater / 2;
+        return [biomes.water.biome, 1 - Math.abs(rvv - waterMid) / waterMid];
     }
-    return biomes.plains.biome;
+    return [biomes.plains.biome, 1];
 }
 
 /**
@@ -86,7 +104,7 @@ function biomesNearbyGeohash(
     );
 
     return geohashes.reduce((obj: any, geohash) => {
-        obj[geohash] = biomeAtGeohash(geohash, seed);
+        obj[geohash] = biomeAtGeohash(geohash, seed)[0];
         return obj;
     }, {});
 }

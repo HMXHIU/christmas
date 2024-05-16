@@ -3,7 +3,9 @@
         autoCorrectGeohashPrecision,
         cartToIso,
         entityId,
+        generateEvenlySpacedPoints,
         seededRandom,
+        stringToRandomNumber,
     } from "$lib/crossover/utils";
     import {
         geohashToGridCell,
@@ -182,12 +184,12 @@
             }
         }
         variant ??= "default";
-        const bundle = await Assets.loadBundle(asset.bundle);
+        const [bundleName, alias] = asset.path.split("/").slice(-2);
+        const bundle = await Assets.loadBundle(bundleName);
         // Bundle might be a sprite sheet or image
         const frame =
-            bundle[asset.name]?.textures?.[
-                asset.variants?.[variant] || "default"
-            ] || bundle[asset.name];
+            bundle[alias]?.textures?.[asset.variants?.[variant] || "default"] ||
+            bundle[alias];
         return frame || null;
     }
 
@@ -506,7 +508,8 @@
                     continue;
                 }
 
-                const biome = biomeAtGeohash(geohash);
+                // Get biome asset
+                const [biome, strength] = biomeAtGeohash(geohash);
                 const asset = biomes[biome].asset;
                 if (!asset) {
                     console.error(`Missing asset for ${biome}`);
@@ -555,6 +558,91 @@
                     row,
                     col,
                 };
+
+                // Get biome decorations
+                const decorations = biomes[biome].decorations;
+                if (!decorations) {
+                    continue;
+                }
+
+                const seed = stringToRandomNumber(geohash);
+
+                for (const [
+                    name,
+                    { asset, probability, minInstances, maxInstances, radius },
+                ] of Object.entries(decorations)) {
+                    // Roll probability dice
+                    // |-----(probability)-----|--(0)--|
+                    // |-------------(dice)--------|
+                    const dice = seededRandom(seed);
+                    if (dice > probability) {
+                        continue;
+                    }
+                    // Number of instances depends on the strength of the tile
+                    let numInstances = Math.ceil(
+                        minInstances + strength * (maxInstances - minInstances),
+                    );
+
+                    // Get evenly spaced offsets
+                    const spacedOffsets = generateEvenlySpacedPoints(
+                        numInstances,
+                        CELL_WIDTH * radius,
+                    );
+
+                    for (let i = 0; i < numInstances; i++) {
+                        // Load texture
+                        const texture = await loadAssetTexture(asset, {
+                            seed: (row << 8) + col + i,
+                        });
+                        if (!texture) {
+                            console.error(`Missing texture for ${name}`);
+                            continue;
+                        }
+
+                        // Create sprite
+                        const sprite = new Sprite(texture);
+                        sprite.width = asset.width * CELL_WIDTH;
+                        sprite.height =
+                            (texture.height * sprite.width) / texture.width; // maintain aspect ratio
+
+                        // Evenly space out decorations and add jitter
+                        const jitter = ((dice - 0.5) * sprite.width) / 2;
+                        sprite.x = spacedOffsets[i].x + isoX + jitter;
+                        sprite.y = spacedOffsets[i].y + isoY + jitter;
+                        sprite.zIndex = zlayers.biome + row + col + 100;
+
+                        // For debugging instances
+                        // if (i == 1) {
+                        //     sprite.tint = 0xff0000;
+                        // } else if (i == 2) {
+                        //     sprite.tint = 0x0000ff;
+                        // } else if (i == 3) {
+                        //     sprite.tint = 0x00ff00; // tint green
+                        // }
+
+                        // Remove old sprite
+                        const decorationId = `${biomeId}-${name}-${i}`;
+                        if (
+                            decorationId in entityGridSprites &&
+                            entityGridSprites[decorationId].sprite != null
+                        ) {
+                            worldStage.removeChild(
+                                entityGridSprites[decorationId].sprite,
+                            );
+                            entityGridSprites[decorationId].sprite.destroy();
+                        }
+
+                        // Add to entityGridSprites
+                        entityGridSprites[decorationId] = {
+                            id: decorationId,
+                            sprite: worldStage.addChild(sprite),
+                            x: sprite.x,
+                            y: sprite.y,
+                            row,
+                            col,
+                        };
+                    }
+                }
             }
         }
     }
@@ -777,6 +865,61 @@
             pedestalBundle["pedestals"].textures["square_dirt_high"];
         playerSprite = createCreatureSprite(playerTexture, pedestalTexture);
         worldStage.addChild(playerSprite);
+
+        // /////////////////////// TEST webgl mesh
+
+        // const biomeBundle = await Assets.loadBundle("biomes");
+        // // const grassTexture: Texture = biomeBundle["grass"].textures["0052"];
+        // const texture = await Assets.load(
+        //     "https://pixijs.com/assets/bg_scene_rotate.jpg",
+        // );
+
+        // const geometry = new Geometry({
+        //     attributes: {
+        //         aPosition: [
+        //             // tl
+        //             -100, -100,
+        //             // tr
+        //             100, -100,
+        //             // br
+        //             100, 100,
+        //         ],
+        //         aColor: [1, 0, 0, 0, 1, 0, 0, 0, 1],
+        //         aUV: [
+        //             texture.uvs.x0,
+        //             texture.uvs.y0,
+
+        //             texture.uvs.x1,
+        //             texture.uvs.y1,
+
+        //             texture.uvs.x2,
+        //             texture.uvs.y2,
+        //         ],
+        //     },
+        // });
+
+        // const gl = { vertex, fragment };
+        // const shader = Shader.from({
+        //     gl,
+        //     resources: {
+        //         uTexture: texture.source,
+        //         skews: {
+        //             uSkewX: { value: 0.3, type: "f32" },
+        //             uSkewY: { value: 0.7, type: "f32" },
+        //         },
+        //     },
+        // });
+
+        // const triangle = new Mesh({
+        //     geometry,
+        //     shader,
+        // });
+        // triangle.x = 300;
+        // triangle.y = 200;
+        // triangle.zIndex = 100000000;
+        // app.stage.addChild(triangle);
+
+        // ///////////////////////
 
         // Ticker
         app.ticker.add((deltaTime) => {

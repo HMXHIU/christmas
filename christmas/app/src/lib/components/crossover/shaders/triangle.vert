@@ -1,0 +1,68 @@
+in vec2 aPosition;
+in vec3 aColor;
+in vec2 aUV;
+
+out vec3 vColor;
+out vec2 vUV;
+
+uniform mat3 uProjectionMatrix;
+uniform mat3 uWorldTransformMatrix;
+uniform mat3 uTransformMatrix;
+// uniform float uSkewX;
+// uniform float uSkewY;
+
+void main() {
+
+    // // Isometric projection matrix
+    // mat3 isometricProjection = mat3(
+    //     0.7071, 0.0, 0.7071,
+    // 0.0, 0.5, 0.0,
+    // -0.7071, 0.0, 0.7071
+    // );
+
+    // mat2 rotate = mat2(
+    //     cos(uTransformMatrix[2][2]), -sin(uTransformMatrix[2][2]),
+    //     sin(uTransformMatrix[2][2]), cos(uTransformMatrix[2][2])
+    // );
+
+    // // create a rotation matrix of 45 degrees
+    // mat2 rotate = mat2(
+    //     cos(0.785398), -sin(0.785398),
+    //     sin(0.785398), cos(0.785398)
+    // );
+
+    // // create a 3d rotation matrix to rotate the object in 3d space by 30 degrees
+    // mat3 rotate = mat3(
+    //     cos(0.523599), -sin(0.523599), 0.0,
+    //     sin(0.523599), cos(0.523599), 0.0,
+    //     0.0, 0.0, 1.0
+    // );
+
+    // // rotate in the x axis
+    // mat3 rotateInXAxis = mat3(
+    //     1.0, 0.0, 0.0,
+    //     0.0, cos(0.523599), -sin(0.523599),
+    //     0.0, sin(0.523599), cos(0.523599)
+    // );
+
+    // //rotate in y axis
+    // mat3 rotateInYAxis = mat3(
+    //     cos(0.523599), 0.0, sin(0.523599),
+    //     0.0, 1.0, 0.0,
+    //     -sin(0.523599), 0.0, cos(0.523599)
+    // );
+    
+
+    // Create a skew transformation matrix
+    mat3 skewMatrix = mat3(
+        1.0, 0.3, 0.0,
+        0.7, 1.0, 0.0,
+        0.0, 0.0, 1.0
+    );
+
+    mat3 mvp = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix * skewMatrix;
+    gl_Position = vec4((mvp * vec3(aPosition, 1.0)).xy, 0.0, 1.0) ;
+
+    vColor = aColor;
+    vUV = aUV;
+}

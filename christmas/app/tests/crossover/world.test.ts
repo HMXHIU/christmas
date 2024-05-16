@@ -42,6 +42,9 @@ const worldSeed: WorldSeed = {
         village: {
             precision: 6,
         },
+        house: {
+            precision: 7,
+        },
         unit: {
             precision: 8,
         },
@@ -100,8 +103,8 @@ test("Test World", async () => {
         });
 
     // Test biomeAtGeohash
-    expect(biomeAtGeohash("w21z3m6k", worldSeed)).to.equal("forest");
-    expect(biomeAtGeohash("w61z4m6h", worldSeed)).to.equal("water");
+    expect(biomeAtGeohash("w21z3m6k", worldSeed)[0]).to.equal("forest");
+    expect(biomeAtGeohash("w61z4m6h", worldSeed)[0]).to.equal("water");
 
     // Test biomesNearbyGeohash - 7 digits of precision returns tiles with 8 digits of precision
     expect(biomesNearbyGeohash("w61z4m6", worldSeed)).to.deep.equal({
