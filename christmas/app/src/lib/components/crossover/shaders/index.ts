@@ -11,12 +11,15 @@ import grassFrag from "./grass.frag?raw";
 import grassVertex from "./grass.vert?raw";
 
 export {
+    MAX_SHADER_GEOMETRIES,
     createShader,
     createTexturedQuadGeometry,
     loadShaderGeometry,
     shaders,
     updateShaderWorldTransform,
 };
+
+const MAX_SHADER_GEOMETRIES = 1000;
 
 // So that we can reuse
 const loadedShaders: Record<string, Shader> = {};
@@ -98,6 +101,8 @@ function loadShaderGeometry(
 
 function createShader(s: string, texture: Texture): Shader {
     const { height, width } = texture.frame;
+    const { x, y } = texture.defaultAnchor || { x: 0, y: 0 };
+
     return Shader.from({
         gl: shaders[s],
         resources: {
@@ -113,6 +118,14 @@ function createShader(s: string, texture: Texture): Shader {
                 },
                 uTy: {
                     value: 0,
+                    type: "f32",
+                },
+                uCx: {
+                    value: width * x,
+                    type: "f32",
+                },
+                uCy: {
+                    value: height * y,
                     type: "f32",
                 },
                 uTextureHeight: {

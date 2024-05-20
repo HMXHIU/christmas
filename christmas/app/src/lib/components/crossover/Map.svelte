@@ -44,7 +44,11 @@
         worldRecord,
     } from "../../../store";
 
-    import { loadShaderGeometry, updateShaderWorldTransform } from "./shaders";
+    import {
+        MAX_SHADER_GEOMETRIES,
+        loadShaderGeometry,
+        updateShaderWorldTransform,
+    } from "./shaders";
 
     let container: HTMLDivElement;
     let isInitialized = false;
@@ -70,7 +74,6 @@
     const GRID_COLS = CANVAS_COLS * OVERDRAW_MULTIPLE;
     const GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
     const GRID_MID_COL = Math.floor(GRID_COLS / 2);
-
     const [isoGridX, isoGridY] = cartToIso(
         GRID_COLS * CELL_WIDTH,
         GRID_ROWS * CELL_HEIGHT,
@@ -103,6 +106,11 @@
     const app = new Application();
     const worldStage = new Container();
 
+    interface Decoration {
+        texture: Texture;
+        positions: number[];
+    }
+
     interface GridSprite {
         id: string;
         sprite: Sprite | Container;
@@ -111,11 +119,12 @@
         row: number; // in cells
         col: number;
         variant?: string;
+        decorations?: Record<string, Decoration>;
     }
     let entityGridSprites: Record<string, GridSprite> = {};
     let worldGridSprites: Record<string, GridSprite> = {};
     let pivotTarget: { x: number; y: number } = { x: 0, y: 0 };
-    const decorations = new Set();
+    const decorationsInWorld = new Set();
 
     $: playerCell = $player && geohashToGridCell($player.location[0]);
     $: updatePlayer(playerCell);
@@ -482,33 +491,45 @@
         }
     }
 
-    async function updateBiomeDecorations(
-        decorationTexturePositions: Record<
-            string, // texture uid
-            {
-                texture: Texture;
-                positions: [number, number];
-            }
-        >,
-    ) {
+    async function updateBiomeDecorations() {
+        // Aggregate all decorations from `entityGridSprites`
+        const decorations = Object.values(entityGridSprites).reduce(
+            (acc: Record<string, Decoration>, { decorations }) => {
+                if (decorations != null) {
+                    for (const [
+                        textureUid,
+                        { texture, positions },
+                    ] of Object.entries(decorations)) {
+                        if (acc[textureUid] == null) {
+                            acc[textureUid] = {
+                                texture,
+                                positions: [],
+                            };
+                        }
+                        acc[textureUid].positions.push(...positions);
+                    }
+                }
+                return acc;
+            },
+            {},
+        );
+
         for (const [textureUid, { texture, positions }] of Object.entries(
-            decorationTexturePositions,
+            decorations,
         )) {
             // TODO: dont hardcode shader name
             const [shader, { geometry, instancePositions, mesh }] =
-                loadShaderGeometry("grass", texture, 1000);
+                loadShaderGeometry("grass", texture, MAX_SHADER_GEOMETRIES);
 
             // Update instance positions buffer
             if (instancePositions) {
-                // TODO: Optimize this
-                for (let i = 0; i < positions.length; i++) {
-                    instancePositions.data[i] = positions[i];
-                }
+                instancePositions.data.set(positions);
                 instancePositions.update();
             }
 
             // Add mesh with instanced geometry to world
-            if (mesh && !decorations.has(textureUid)) {
+            if (mesh && !decorationsInWorld.has(textureUid)) {
+                mesh.zIndex = zlayers.biome; // TODO: How to take into account the instances?
                 app.stage.addChild(mesh);
             }
         }
@@ -518,14 +539,6 @@
         if (!isInitialized || playerCell == null) {
             return;
         }
-
-        const decorationTexturePositions: Record<
-            string, // texture uid
-            {
-                texture: Texture;
-                positions: [number, number];
-            }
-        > = {};
 
         // Create biome sprites
         for (
@@ -593,7 +606,7 @@
                 }
 
                 // Add to entityGridSprites
-                entityGridSprites[biomeId] = {
+                const gridSprite: GridSprite = {
                     id: biomeId,
                     sprite: worldStage.addChild(sprite),
                     x: sprite.x,
@@ -601,6 +614,7 @@
                     row,
                     col,
                 };
+                entityGridSprites[biomeId] = gridSprite;
 
                 /*
                  * Create biome decorations
@@ -622,6 +636,10 @@
                     if (dice > probability) {
                         continue;
                     }
+
+                    // Initialize the decorations for the biome gridsprite
+                    gridSprite.decorations = {};
+
                     // Number of instances depends on the strength of the tile
                     let numInstances = Math.ceil(
                         minInstances + strength * (maxInstances - minInstances),
@@ -644,6 +662,14 @@
                         if (!texture) {
                             console.error(`Missing texture for ${name}`);
                             continue;
+                        }
+
+                        // Initialize decorations
+                        if (gridSprite.decorations[texture.uid] == null) {
+                            gridSprite.decorations[texture.uid] = {
+                                texture,
+                                positions: [],
+                            };
                         }
 
                         // M1: Create sprite
@@ -678,18 +704,12 @@
                             isoY +
                             jitter -
                             CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height;
-                        // sprite.zIndex = zlayers.biome + sprite.y;
 
-                        if (decorationTexturePositions[texture.uid] == null) {
-                            decorationTexturePositions[texture.uid] = {
-                                texture,
-                                positions: [x, y],
-                            };
-                        } else {
-                            decorationTexturePositions[
-                                texture.uid
-                            ].positions.push(x, y);
-                        }
+                        // Add to decoration positions
+                        gridSprite.decorations[texture.uid].positions.push(
+                            x,
+                            y,
+                        );
 
                         // // Add random skew
                         // const rad = ((instanceRv - 0.5) * Math.PI) / 8;
@@ -733,9 +753,8 @@
                 }
             }
         }
-
         // Update biome decorations
-        updateBiomeDecorations(decorationTexturePositions);
+        updateBiomeDecorations();
     }
 
     async function updateItems(
@@ -969,13 +988,9 @@
         app.ticker.add((deltaTime) => {
             // Move camera to target position (prevent jitter at the end)
             const deltaX = pivotTarget.x - worldStage.pivot.x;
-            if (Math.abs(deltaX) > 5) {
-                worldStage.pivot.x += (deltaX * deltaTime.elapsedMS) / 1000;
-            }
+            worldStage.pivot.x += (deltaX * deltaTime.elapsedMS) / 1000;
             const deltaY = pivotTarget.y - worldStage.pivot.y;
-            if (Math.abs(deltaY) > 5) {
-                worldStage.pivot.y += (deltaY * deltaTime.elapsedMS) / 1000;
-            }
+            worldStage.pivot.y += (deltaY * deltaTime.elapsedMS) / 1000;
 
             // Update shader world transform
             updateShaderWorldTransform(worldStage.worldTransform);

@@ -12,6 +12,8 @@ uniform mat3 uTransformMatrix;
 // uniform mat3 uWorldStageTransform;
 uniform float uTx;
 uniform float uTy;
+uniform float uCx;
+uniform float uCy;
 
 // uniform float uSkewX
 // uniform float uSkewY
@@ -72,7 +74,7 @@ void main() {
     );
 
     mat3 mvp = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix; 
-    gl_Position = vec4((mvp * vec3(aPosition + aInstancePosition + vec2(uTx, uTy), 1.0)).xy, 0.0, 1.0) ;
+    gl_Position = vec4((mvp * vec3(aPosition + aInstancePosition + vec2(uTx, uTy) - vec2(uCx, uCy), 1.0)).xy, 0.0, 1.0) ;
     vUV = aUV;
     vPosition = aPosition;
 }
