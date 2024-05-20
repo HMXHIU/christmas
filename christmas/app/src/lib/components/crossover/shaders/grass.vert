@@ -1,15 +1,26 @@
-in vec2 aPosition;
-in vec3 aColor;
-in vec2 aUV;
+attribute vec2 aPosition;
+attribute vec2 aInstancePosition;
+attribute vec2 aUV;
 
-out vec3 vColor;
-out vec2 vUV;
+varying vec2 vPosition;
+varying vec2 vUV;
 
 uniform mat3 uProjectionMatrix;
 uniform mat3 uWorldTransformMatrix;
 uniform mat3 uTransformMatrix;
-// uniform float uSkewX;
-// uniform float uSkewY;
+
+// uniform mat3 uWorldStageTransform;
+uniform float uTx;
+uniform float uTy;
+
+// uniform float uSkewX
+// uniform float uSkewY
+
+// uniform skews {
+//     float uSkewX;
+//     float uSkewY;
+// };
+
 
 void main() {
 
@@ -60,9 +71,8 @@ void main() {
         0.0, 0.0, 1.0
     );
 
-    mat3 mvp = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix * skewMatrix;
-    gl_Position = vec4((mvp * vec3(aPosition, 1.0)).xy, 0.0, 1.0) ;
-
-    vColor = aColor;
+    mat3 mvp = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix; 
+    gl_Position = vec4((mvp * vec3(aPosition + aInstancePosition + vec2(uTx, uTy), 1.0)).xy, 0.0, 1.0) ;
     vUV = aUV;
+    vPosition = aPosition;
 }

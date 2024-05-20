@@ -449,9 +449,9 @@ let biomes: Record<string, Biome> = {
                         alt2: "0054",
                     },
                     prob: {
-                        default: 0.33,
-                        alt1: 0.33,
-                        alt2: 0.33,
+                        default: 0.3,
+                        alt1: 0.3,
+                        alt2: 0.3,
                     },
                     width: 0.5,
                     height: 0.5,

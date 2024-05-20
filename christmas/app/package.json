@@ -84,7 +84,7 @@
     "nft.storage": "^7.1.1",
     "node-cron": "^3.0.3",
     "paneforge": "^0.0.4",
-    "pixi.js": "^8.0.2",
+    "pixi.js": "^8.1.4",
     "redis-om": "^0.4.3",
     "solana-connect": "^0.1.10",
     "svelte-sonner": "^0.3.19",
