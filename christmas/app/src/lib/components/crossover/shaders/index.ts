@@ -1,12 +1,4 @@
-import {
-    Buffer,
-    BufferUsage,
-    Geometry,
-    Matrix,
-    Mesh,
-    Shader,
-    Texture,
-} from "pixi.js";
+import { Buffer, BufferUsage, Geometry, Mesh, Shader, Texture } from "pixi.js";
 import grassFrag from "./grass.frag?raw";
 import grassVertex from "./grass.vert?raw";
 
@@ -16,7 +8,6 @@ export {
     createTexturedQuadGeometry,
     loadShaderGeometry,
     shaders,
-    updateShaderWorldTransform,
 };
 
 const MAX_SHADER_GEOMETRIES = 1000;
@@ -39,17 +30,6 @@ const shaders: Record<string, { vertex: string; fragment: string }> = {
         fragment: grassFrag,
     },
 };
-
-function updateShaderWorldTransform(t: Matrix) {
-    for (const shader of Object.values(loadedShaders)) {
-        // // This crashes
-        // shader.resources.uniforms.uniforms.uWorldStageTransform = t;
-
-        // This works
-        shader.resources.uniforms.uniforms.uTx = t.tx;
-        shader.resources.uniforms.uniforms.uTy = t.ty;
-    }
-}
 
 function loadShaderGeometry(
     s: string,
@@ -108,18 +88,6 @@ function createShader(s: string, texture: Texture): Shader {
         resources: {
             uTexture: texture.source,
             uniforms: {
-                // uWorldStageTransform: {
-                //     value: new Matrix(),
-                //     type: "mat3<f32>",
-                // },
-                uTx: {
-                    value: 0,
-                    type: "f32",
-                },
-                uTy: {
-                    value: 0,
-                    type: "f32",
-                },
                 uCx: {
                     value: width * x,
                     type: "f32",

@@ -34,6 +34,7 @@
         Graphics,
         Sprite,
         Texture,
+        Ticker,
     } from "pixi.js";
     import { onMount } from "svelte";
     import {
@@ -44,11 +45,7 @@
         worldRecord,
     } from "../../../store";
 
-    import {
-        MAX_SHADER_GEOMETRIES,
-        loadShaderGeometry,
-        updateShaderWorldTransform,
-    } from "./shaders";
+    import { MAX_SHADER_GEOMETRIES, loadShaderGeometry } from "./shaders";
 
     let container: HTMLDivElement;
     let isInitialized = false;
@@ -74,34 +71,28 @@
     const GRID_COLS = CANVAS_COLS * OVERDRAW_MULTIPLE;
     const GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
     const GRID_MID_COL = Math.floor(GRID_COLS / 2);
-    const [isoGridX, isoGridY] = cartToIso(
-        GRID_COLS * CELL_WIDTH,
-        GRID_ROWS * CELL_HEIGHT,
-    );
 
     // Z layers
-    const ground = 0;
-    const floor = isoGridY;
-    const hip = 2 * isoGridY;
-    const humanoid = 3 * isoGridY;
-    const wall = 3 * isoGridY;
-    const l2 = 4 * isoGridY;
-    const l3 = 5 * isoGridY;
-    const l4 = 6 * isoGridY;
-    const zlayers: Record<string, number> = {
-        ground,
-        floor,
-        hip,
-        humanoid,
-        wall,
-        l2,
-        l3,
-        l4,
-        biome: ground,
-        monster: humanoid,
-        item: hip,
-        player: humanoid,
+    const isoGridY = cartToIso(
+        GRID_COLS * CELL_WIDTH,
+        GRID_ROWS * CELL_HEIGHT,
+    )[1];
+    const Z_LAYERS: Record<string, number> = {
+        ground: 0,
+        biome: 0,
+        floor: isoGridY,
+        hip: 2 * isoGridY,
+        item: 2 * isoGridY,
+        humanoid: 3 * isoGridY,
+        monster: 3 * isoGridY,
+        player: 3 * isoGridY,
+        wall: 3 * isoGridY,
+        l2: 4 * isoGridY,
+        l3: 5 * isoGridY,
+        l4: 6 * isoGridY,
     };
+    // In WebGL, the gl_Position.z value should be in the range [-1, 1] in normalized device coordinates (NDC)
+    const Z_SCALE = 1 / (Z_LAYERS.l4 + isoGridY);
 
     const app = new Application();
     const worldStage = new Container();
@@ -249,7 +240,7 @@
         // );
         // sprite.x = isoX;
         // sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-        // sprite.zIndex = zlayers.humanoid + isoY + 1000000000000;
+        // sprite.zIndex = Z_LAYERS.humanoid + isoY + 1000000000000;
         // worldStage.addChild(sprite);
 
         // for (const cld of world.cld) {
@@ -270,7 +261,7 @@
         //     const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
         //     sprite.x = isoX;
         //     sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-        //     sprite.zIndex = zlayers.humanoid + isoY + 1000000000000;
+        //     sprite.zIndex = Z_LAYERS.humanoid + isoY + 1000000000000;
         //     worldStage.addChild(sprite);
         // }
         // ////////////////////
@@ -319,7 +310,7 @@
                     );
                     sprite.x = isoX + (offsetx || 0) + originX + tileOffsetX;
                     sprite.y = isoY + (offsety || 0) + originY + tileOffsetY;
-                    sprite.zIndex = (zlayers[z] ?? zlayers.ground) + sprite.y;
+                    sprite.zIndex = (Z_LAYERS[z] ?? Z_LAYERS.ground) + sprite.y;
 
                     // The anchor point is the bottom center of the sprite
                     sprite.anchor.set(0.5, 1 - tileheight / imageheight / 2);
@@ -452,7 +443,7 @@
             );
             playerSprite.x = isoX;
             playerSprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-            playerSprite.zIndex = zlayers.player + playerSprite.y;
+            playerSprite.zIndex = Z_LAYERS.player + playerSprite.y;
         }
 
         // Move camera to player
@@ -529,8 +520,8 @@
 
             // Add mesh with instanced geometry to world
             if (mesh && !decorationsInWorld.has(textureUid)) {
-                mesh.zIndex = zlayers.biome; // TODO: How to take into account the instances?
-                app.stage.addChild(mesh);
+                mesh.zIndex = Z_LAYERS.hip + playerSprite.y;
+                worldStage.addChild(mesh);
             }
         }
     }
@@ -594,7 +585,7 @@
                 );
                 sprite.x = isoX;
                 sprite.y = isoY;
-                sprite.zIndex = zlayers.biome + row + col;
+                sprite.zIndex = Z_LAYERS.biome + sprite.y;
 
                 // Remove old sprite
                 if (
@@ -619,6 +610,8 @@
                 /*
                  * Create biome decorations
                  */
+
+                // TODO: Skip decorations in world
 
                 // Get biome decorations
                 const decorations = biomes[biome].decorations;
@@ -804,7 +797,7 @@
                 );
                 sprite.x = isoX;
                 sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-                sprite.zIndex = zlayers.item + sprite.y;
+                sprite.zIndex = Z_LAYERS.item + sprite.y;
             }
             // Create
             else {
@@ -828,7 +821,7 @@
                 );
                 sprite.x = isoX;
                 sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-                sprite.zIndex = zlayers.item + row + col;
+                sprite.zIndex = Z_LAYERS.item + sprite.y;
 
                 // Remove old sprite
                 if (
@@ -880,7 +873,7 @@
                 );
                 sprite.x = isoX;
                 sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-                sprite.zIndex = zlayers.monster + sprite.y;
+                sprite.zIndex = Z_LAYERS.monster + sprite.y;
             }
             // Create
             else {
@@ -918,7 +911,7 @@
                 );
                 sprite.x = isoX;
                 sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-                sprite.zIndex = zlayers[entityType] + row + col;
+                sprite.zIndex = Z_LAYERS[entityType] + sprite.y;
 
                 // Remove old sprite
                 if (
@@ -940,6 +933,18 @@
                 };
             }
         }
+    }
+
+    function ticker(deltaTime: Ticker) {
+        // Move camera to target position (prevent jitter at the end)
+        const deltaX = pivotTarget.x - worldStage.pivot.x;
+        worldStage.pivot.x = Math.floor(
+            worldStage.pivot.x + (deltaX * deltaTime.elapsedMS) / 1000,
+        );
+        const deltaY = pivotTarget.y - worldStage.pivot.y;
+        worldStage.pivot.y = Math.floor(
+            worldStage.pivot.y + (deltaY * deltaTime.elapsedMS) / 1000,
+        );
     }
 
     /*
@@ -985,16 +990,7 @@
         worldStage.addChild(playerSprite);
 
         // Ticker
-        app.ticker.add((deltaTime) => {
-            // Move camera to target position (prevent jitter at the end)
-            const deltaX = pivotTarget.x - worldStage.pivot.x;
-            worldStage.pivot.x += (deltaX * deltaTime.elapsedMS) / 1000;
-            const deltaY = pivotTarget.y - worldStage.pivot.y;
-            worldStage.pivot.y += (deltaY * deltaTime.elapsedMS) / 1000;
-
-            // Update shader world transform
-            updateShaderWorldTransform(worldStage.worldTransform);
-        });
+        app.ticker.add(ticker);
 
         // Add the canvas to the DOM
         container.appendChild(app.canvas);

@@ -437,7 +437,7 @@ let biomes: Record<string, Biome> = {
         },
         decorations: {
             grass: {
-                probability: 0.2, // TODO: to be modified by how strong the perlin noice affects the tile eg. how much "forest" this tile is
+                probability: 0.5, // TODO: to be modified by how strong the perlin noice affects the tile eg. how much "forest" this tile is
                 minInstances: 1,
                 maxInstances: 5,
                 radius: 1,
@@ -449,9 +449,9 @@ let biomes: Record<string, Biome> = {
                         alt2: "0054",
                     },
                     prob: {
-                        default: 0,
-                        alt1: 0,
-                        alt2: 1,
+                        default: 0.33,
+                        alt1: 0.33,
+                        alt2: 0.33,
                     },
                     width: 0.5,
                     height: 0.5,
