@@ -35,6 +35,7 @@
         Sprite,
         Texture,
         Ticker,
+        WebGLRenderer,
     } from "pixi.js";
     import { onMount } from "svelte";
     import {
@@ -45,7 +46,11 @@
         worldRecord,
     } from "../../../store";
 
-    import { MAX_SHADER_GEOMETRIES, loadShaderGeometry } from "./shaders";
+    import {
+        MAX_SHADER_GEOMETRIES,
+        loadShaderGeometry,
+        updateShaderUniforms,
+    } from "./shaders";
 
     let container: HTMLDivElement;
     let isInitialized = false;
@@ -92,7 +97,7 @@
         l4: 6 * isoGridY,
     };
     // In WebGL, the gl_Position.z value should be in the range [-1, 1] in normalized device coordinates (NDC)
-    const Z_SCALE = 1 / (Z_LAYERS.l4 + isoGridY);
+    const Z_SCALE = -1 / (Z_LAYERS.l4 + isoGridY);
 
     const app = new Application();
     const worldStage = new Container();
@@ -605,6 +610,7 @@
                     row,
                     col,
                 };
+
                 entityGridSprites[biomeId] = gridSprite;
 
                 /*
@@ -692,11 +698,7 @@
                         // Evenly space out decorations and add jitter
                         const jitter = ((instanceRv - 0.5) * sprite.width) / 2;
                         const x = spacedOffsets[i].x + isoX + jitter;
-                        const y =
-                            spacedOffsets[i].y +
-                            isoY +
-                            jitter -
-                            CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height;
+                        const y = spacedOffsets[i].y + isoY + jitter;
 
                         // Add to decoration positions
                         gridSprite.decorations[texture.uid].positions.push(
@@ -796,7 +798,7 @@
                     row * CELL_WIDTH,
                 );
                 sprite.x = isoX;
-                sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
+                sprite.y = isoY - CELL_HEIGHT / 4; // TODO: Remove and use anchor - isometric cell height is half of cartesian cell height
                 sprite.zIndex = Z_LAYERS.item + sprite.y;
             }
             // Create
@@ -820,7 +822,7 @@
                     row * CELL_HEIGHT,
                 );
                 sprite.x = isoX;
-                sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
+                sprite.y = isoY - CELL_HEIGHT / 4; //TODO: Remove and use anchor -  isometric cell height is half of cartesian cell height
                 sprite.zIndex = Z_LAYERS.item + sprite.y;
 
                 // Remove old sprite
@@ -935,16 +937,21 @@
         }
     }
 
-    function ticker(deltaTime: Ticker) {
+    function ticker(ticker: Ticker) {
+        // Clear depth buffer
+        const gl = (app.renderer as WebGLRenderer).gl;
+        gl.clear(gl.DEPTH_BUFFER_BIT);
+
+        const seconds = ticker.elapsedMS / 1000;
+
+        // Update shader uniforms
+        updateShaderUniforms({ deltaTime: seconds });
+
         // Move camera to target position (prevent jitter at the end)
         const deltaX = pivotTarget.x - worldStage.pivot.x;
-        worldStage.pivot.x = Math.floor(
-            worldStage.pivot.x + (deltaX * deltaTime.elapsedMS) / 1000,
-        );
+        worldStage.pivot.x = Math.round(worldStage.pivot.x + deltaX * seconds);
         const deltaY = pivotTarget.y - worldStage.pivot.y;
-        worldStage.pivot.y = Math.floor(
-            worldStage.pivot.y + (deltaY * deltaTime.elapsedMS) / 1000,
-        );
+        worldStage.pivot.y = Math.round(worldStage.pivot.y + deltaY * seconds);
     }
 
     /*
@@ -973,8 +980,15 @@
             antialias: false,
             preference: "webgl",
         });
-
         await initAssetManager();
+
+        // Set up depth test
+        const gl = (app.renderer as WebGLRenderer).gl;
+        // gl.enable(gl.DEPTH_TEST);
+        // gl.depthFunc(gl.LEQUAL);
+        // gl.depthMask(true);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
         // Add world container
         worldStage.width = WORLD_WIDTH;

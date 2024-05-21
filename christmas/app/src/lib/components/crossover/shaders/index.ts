@@ -1,6 +1,12 @@
 import { Buffer, BufferUsage, Geometry, Mesh, Shader, Texture } from "pixi.js";
 import grassFrag from "./grass.frag?raw";
 import grassVertex from "./grass.vert?raw";
+import snoise from "./lygia/generative/snoise.glsl?raw";
+import grad4 from "./lygia/math/grad4.glsl?raw";
+import mod289 from "./lygia/math/mod289.glsl?raw";
+import permute from "./lygia/math/permute.glsl?raw";
+import remap from "./lygia/math/remap.glsl?raw";
+import taylorInvSqrt from "./lygia/math/taylorInvSqrt.glsl?raw";
 
 export {
     MAX_SHADER_GEOMETRIES,
@@ -8,6 +14,7 @@ export {
     createTexturedQuadGeometry,
     loadShaderGeometry,
     shaders,
+    updateShaderUniforms,
 };
 
 const MAX_SHADER_GEOMETRIES = 1000;
@@ -26,10 +33,24 @@ const loadedGeometry: Record<
 
 const shaders: Record<string, { vertex: string; fragment: string }> = {
     grass: {
-        vertex: grassVertex,
+        vertex: `
+        ${mod289}
+        ${grad4}
+        ${permute}
+        ${taylorInvSqrt}
+        ${snoise}
+        ${remap}
+        ${grassVertex}
+        `,
         fragment: grassFrag,
     },
 };
+
+function updateShaderUniforms({ deltaTime }: { deltaTime: number }) {
+    for (const shader of Object.values(loadedShaders)) {
+        shader.resources.uniforms.uniforms.uTime += deltaTime;
+    }
+}
 
 function loadShaderGeometry(
     s: string,
@@ -94,6 +115,10 @@ function createShader(s: string, texture: Texture): Shader {
                 },
                 uCy: {
                     value: height * y,
+                    type: "f32",
+                },
+                uTime: {
+                    value: 0,
                     type: "f32",
                 },
                 uTextureHeight: {
