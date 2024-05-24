@@ -19,6 +19,7 @@ export {
     getRandomDate,
     getRandomRegion,
     login,
+    profileFunction,
     readImageAsBuffer,
     readImageAsDataUrl,
 };
@@ -126,4 +127,12 @@ async function createRandomUser({
     );
 
     return [wallet, cookies];
+}
+
+function profileFunction(fn: any) {
+    const startTime = performance.now();
+    fn(); // Call the function to profile
+    const endTime = performance.now();
+    const executionTime = endTime - startTime;
+    console.log(`Function took ${executionTime} milliseconds to execute.`);
 }

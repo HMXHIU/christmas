@@ -2,6 +2,7 @@ import { crossoverWorldWorlds } from "$lib/crossover";
 import {
     childrenGeohashes,
     geohashNeighbour,
+    geohashToColRow,
     getPlotsAtGeohash,
 } from "$lib/crossover/utils";
 import {
@@ -13,6 +14,8 @@ import {
 import {
     biomeAtGeohash,
     biomesNearbyGeohash,
+    topologyAtGeohash,
+    topologyTile,
 } from "$lib/crossover/world/biomes";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { spawnWorld } from "$lib/server/crossover";
@@ -161,6 +164,11 @@ test("Test World", async () => {
         row: 451413,
         col: 826667,
     });
+
+    // Test geohashToColRow (slightly faster than geohashToGridCell)
+    const [col, row] = geohashToColRow("w61z4m6f");
+    expect(col).to.equal(826667);
+    expect(row).to.equal(451413);
 
     // Test gridCellToGeohash
     var geohash = generateRandomGeohash(8);
@@ -427,4 +435,64 @@ test("Test World", async () => {
     });
     expect(world.loc[0]).toBe("gbsuv7x");
     expect(world.cld[0]).toBe("gbsuve25");
+
+    /*
+     * Test topology
+     */
+
+    // Test topologyTile
+    expect(topologyTile("w2bpbpbp")).toMatchObject({
+        topLeft: "w2bpbpbp",
+        rows: 32768,
+        cols: 32768,
+        col: 0,
+        row: 0,
+    });
+    expect(topologyTile("w2pbpbpb")).toMatchObject({
+        topLeft: "w2bpbpbp",
+        rows: 32768,
+        cols: 32768,
+        col: 32767,
+        row: 32767,
+    });
+
+    // Test topologyAtGeohash
+    await expect(topologyAtGeohash("w2bpbpbp")).resolves.toMatchObject({
+        width: 3507,
+        height: 1753,
+        x: 0,
+        y: 0,
+    });
+    await expect(topologyAtGeohash("w2pbpbpb")).resolves.toMatchObject({
+        width: 3507,
+        height: 1753,
+        x: 3506,
+        y: 1752,
+    });
+
+    var chile = await topologyAtGeohash("67z1ekgt");
+    expect(chile).toMatchObject({
+        width: 3507,
+        height: 1753,
+        x: 3114,
+        y: 347,
+        intensity: 108,
+    });
+
+    var everest = await topologyAtGeohash("tvpjj3cd");
+    expect(everest).toMatchObject({
+        width: 3507,
+        height: 1753,
+        x: 3140,
+        y: 1475,
+        intensity: 183,
+    });
+    var redsea = await topologyAtGeohash("sgekek77");
+    expect(redsea).toMatchObject({
+        width: 3507,
+        height: 1753,
+        x: 1470,
+        y: 622,
+        intensity: 0,
+    });
 });

@@ -25,13 +25,103 @@ export {
     gameActionId,
     generateEvenlySpacedPoints,
     geohashNeighbour,
+    geohashToColRow,
     geohashesNearby,
     getPlotsAtGeohash,
+    gridSizeAtPrecision,
     seededRandom,
     stringToRandomNumber,
 };
 
 const REGEX_STRIP_ENTITY_TYPE = /^(monster_|item_)/;
+
+const gridSizeAtPrecision: Record<number, { rows: number; cols: number }> = {
+    1: { rows: 4, cols: 8 },
+    2: { rows: 4 * 8, cols: 8 * 4 },
+    3: { rows: 4 * 8 * 4, cols: 8 * 4 * 8 },
+    4: { rows: 4 * 8 * 4 * 8, cols: 8 * 4 * 8 * 4 },
+    5: { rows: 4 * 8 * 4 * 8 * 4, cols: 8 * 4 * 8 * 4 * 8 },
+    6: { rows: 4 * 8 * 4 * 8 * 4 * 8, cols: 8 * 4 * 8 * 4 * 8 * 4 },
+    7: { rows: 4 * 8 * 4 * 8 * 4 * 8 * 4, cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 },
+    8: {
+        rows: 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8,
+        cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4,
+    },
+    9: {
+        rows: 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4,
+        cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8,
+    },
+};
+
+const evenColRow: Record<string, [number, number]> = {
+    b: [0, 0],
+    c: [1, 0],
+    f: [2, 0],
+    g: [3, 0],
+    u: [4, 0],
+    v: [5, 0],
+    y: [6, 0],
+    z: [7, 0],
+    "8": [0, 1],
+    "9": [1, 1],
+    d: [2, 1],
+    e: [3, 1],
+    s: [4, 1],
+    t: [5, 1],
+    w: [6, 1],
+    x: [7, 1],
+    "2": [0, 2],
+    "3": [1, 2],
+    "6": [2, 2],
+    "7": [3, 2],
+    k: [4, 2],
+    m: [5, 2],
+    q: [6, 2],
+    r: [7, 2],
+    "0": [0, 3],
+    "1": [1, 3],
+    "4": [2, 3],
+    "5": [3, 3],
+    h: [4, 3],
+    j: [5, 3],
+    n: [6, 3],
+    p: [7, 3],
+};
+
+const oddColRow: Record<string, [number, number]> = {
+    p: [0, 0],
+    r: [1, 0],
+    x: [2, 0],
+    z: [3, 0],
+    n: [0, 1],
+    q: [1, 1],
+    w: [2, 1],
+    y: [3, 1],
+    j: [0, 2],
+    m: [1, 2],
+    t: [2, 2],
+    v: [3, 2],
+    h: [0, 3],
+    k: [1, 3],
+    s: [2, 3],
+    u: [3, 3],
+    "5": [0, 4],
+    "7": [1, 4],
+    e: [2, 4],
+    g: [3, 4],
+    "4": [0, 5],
+    "6": [1, 5],
+    d: [2, 5],
+    f: [3, 5],
+    "1": [0, 6],
+    "3": [1, 6],
+    "9": [2, 6],
+    c: [3, 6],
+    "0": [0, 7],
+    "2": [1, 7],
+    "8": [2, 7],
+    b: [3, 7],
+};
 
 /**
  * Converts a string (seed) to a random number.
@@ -407,4 +497,19 @@ function generateEvenlySpacedPoints(n: number, cellRadius: number) {
     }
 
     return points;
+}
+
+function geohashToColRow(geohash: string): [number, number] {
+    const precision = geohash.length;
+    if (precision === 1) {
+        return evenColRow[geohash];
+    }
+    const [xp, yp] = geohashToColRow(geohash.slice(0, -1));
+    if ((precision - 1) % 2 === 0) {
+        const [x, y] = evenColRow[geohash.slice(-1)];
+        return [x + xp * 8, y + yp * 4];
+    } else {
+        const [x, y] = oddColRow[geohash.slice(-1)];
+        return [x + xp * 4, y + yp * 8];
+    }
 }

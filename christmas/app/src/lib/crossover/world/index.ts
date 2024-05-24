@@ -1,4 +1,5 @@
 import ngeohash from "ngeohash";
+import { gridSizeAtPrecision } from "../utils";
 import { type Tile } from "./biomes";
 import { type EquipmentSlot } from "./compendium";
 
@@ -123,24 +124,6 @@ interface WorldSeed {
         };
     };
 }
-
-const gridSizeAtPrecision: Record<number, { rows: number; cols: number }> = {
-    1: { rows: 4, cols: 8 },
-    2: { rows: 4 * 8, cols: 8 * 4 },
-    3: { rows: 4 * 8 * 4, cols: 8 * 4 * 8 },
-    4: { rows: 4 * 8 * 4 * 8, cols: 8 * 4 * 8 * 4 },
-    5: { rows: 4 * 8 * 4 * 8 * 4, cols: 8 * 4 * 8 * 4 * 8 },
-    6: { rows: 4 * 8 * 4 * 8 * 4 * 8, cols: 8 * 4 * 8 * 4 * 8 * 4 },
-    7: { rows: 4 * 8 * 4 * 8 * 4 * 8 * 4, cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 },
-    8: {
-        rows: 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8,
-        cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4,
-    },
-    9: {
-        rows: 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4,
-        cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8,
-    },
-};
 
 /**
  * Gets the grid cell coordinates for a given geohash.

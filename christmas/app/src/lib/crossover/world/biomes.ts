@@ -1,11 +1,19 @@
-import { seededRandom, stringToRandomNumber } from "$lib/crossover/utils";
+import { PUBLIC_TOPOLOGY_ENDPOINT } from "$env/static/public";
+import {
+    geohashToColRow,
+    seededRandom,
+    stringToRandomNumber,
+} from "$lib/crossover/utils";
 import ngeohash from "ngeohash";
+import { PNG } from "pngjs";
 import { type AssetMetadata, type WorldSeed } from ".";
 import { biomes, worldSeed } from "./settings";
 export {
     biomeAtGeohash,
     biomesNearbyGeohash,
     tileAtGeohash,
+    topologyAtGeohash,
+    topologyTile,
     type Biome,
     type Tile,
 };
@@ -31,6 +39,77 @@ interface Tile {
     geohash: string;
     name: string;
     description: string;
+}
+
+function topologyTile(geohash: string): {
+    url: string;
+    topLeft: string;
+    rows: number;
+    cols: number;
+    row: number;
+    col: number;
+} {
+    // TODO: this can be hardcoded up to precision 9 for speed
+
+    // The topology is stored as 2 precision tiles (4 rows, 8 cols)
+    const tile = geohash.slice(0, 2);
+    let rows = 4;
+    let cols = 8;
+    let topLeft = tile;
+    for (let i = 0; i < geohash.length - 2 - 1; i++) {
+        if (i % 2 === 0) {
+            rows *= 8;
+            cols *= 4;
+            topLeft += "b";
+        } else {
+            rows *= 4;
+            cols *= 8;
+            topLeft += "p";
+        }
+    }
+
+    if (topLeft.slice(-1) === "b") {
+        topLeft += "p";
+    } else {
+        topLeft += "b";
+    }
+
+    const [tlCol, tlRow] = geohashToColRow(topLeft);
+    const [col, row] = geohashToColRow(geohash);
+
+    return {
+        url: `${PUBLIC_TOPOLOGY_ENDPOINT}/${tile}.png`,
+        topLeft,
+        rows,
+        cols,
+        col: col - tlCol,
+        row: row - tlRow,
+    };
+}
+
+async function topologyAtGeohash(geohash: string): Promise<{
+    intensity: number;
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+}> {
+    const { rows, cols, url, row, col } = topologyTile(geohash);
+    const png = PNG.sync.read(
+        Buffer.from(await (await fetch(url)).arrayBuffer()),
+    );
+    const { width, height, data } = png;
+    const x = Math.round((width - 1) * (col / cols)); // x, y is 0 indexed
+    const y = Math.round((height - 1) * (row / rows));
+    const index = 4 * (y * width + x); // there is rgba channels for pngjs
+
+    return {
+        width,
+        height,
+        x,
+        y,
+        intensity: data[index],
+    };
 }
 
 /**
