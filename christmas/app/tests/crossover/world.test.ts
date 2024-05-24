@@ -1,3 +1,4 @@
+import { MemoryCache } from "$lib/caches";
 import { crossoverWorldWorlds } from "$lib/crossover";
 import {
     childrenGeohashes,
@@ -14,11 +15,13 @@ import {
 import {
     biomeAtGeohash,
     biomesNearbyGeohash,
+    heightAtGeohash,
     topologyAtGeohash,
     topologyTile,
 } from "$lib/crossover/world/biomes";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { spawnWorld } from "$lib/server/crossover";
+import { LRUCache } from "lru-cache";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer, generateRandomGeohash } from "./utils";
@@ -495,4 +498,37 @@ test("Test World", async () => {
         y: 622,
         intensity: 0,
     });
+
+    // Test topologyAtGeohash with caching
+    const topologyTileCache = new MemoryCache();
+    expect(
+        topologyAtGeohash("tvpjj3cd", topologyTileCache),
+    ).resolves.toMatchObject(
+        await topologyAtGeohash("tvpjj3cd", topologyTileCache),
+    );
+    expect(
+        topologyAtGeohash("tvpjj3cd", topologyTileCache),
+    ).resolves.toMatchObject(everest);
+
+    // Test heightAtGeohash with LRUCache
+    const lruCache = new LRUCache<string, any>({ max: 100 });
+    var everestHeight = await heightAtGeohash("tvpjj3cd");
+    expect(everestHeight).toBe(6352);
+    await expect(
+        heightAtGeohash("tvpjj3cd", {
+            resultsCache: lruCache,
+            responseCache: topologyTileCache,
+        }),
+    ).resolves.toBe(everestHeight);
+    await expect(
+        heightAtGeohash("tvpjj3cd", {
+            resultsCache: lruCache,
+            responseCache: topologyTileCache,
+        }),
+    ).resolves.toBe(
+        await heightAtGeohash("tvpjj3cd", {
+            resultsCache: lruCache,
+            responseCache: topologyTileCache,
+        }),
+    );
 });

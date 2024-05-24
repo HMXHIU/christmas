@@ -1,22 +1,28 @@
 import { PUBLIC_TOPOLOGY_ENDPOINT } from "$env/static/public";
+import type { CacheInterface } from "$lib/caches";
 import {
     geohashToColRow,
     seededRandom,
     stringToRandomNumber,
 } from "$lib/crossover/utils";
+import type { LRUCache } from "lru-cache";
 import ngeohash from "ngeohash";
 import { PNG } from "pngjs";
 import { type AssetMetadata, type WorldSeed } from ".";
 import { biomes, worldSeed } from "./settings";
 export {
+    INTENSITY_TO_HEIGHT,
     biomeAtGeohash,
     biomesNearbyGeohash,
+    heightAtGeohash,
     tileAtGeohash,
     topologyAtGeohash,
     topologyTile,
     type Biome,
     type Tile,
 };
+
+const INTENSITY_TO_HEIGHT = 8850 / 255;
 
 interface Decoration {
     asset: AssetMetadata;
@@ -49,8 +55,6 @@ function topologyTile(geohash: string): {
     row: number;
     col: number;
 } {
-    // TODO: this can be hardcoded up to precision 9 for speed
-
     // The topology is stored as 2 precision tiles (4 rows, 8 cols)
     const tile = geohash.slice(0, 2);
     let rows = 4;
@@ -87,7 +91,10 @@ function topologyTile(geohash: string): {
     };
 }
 
-async function topologyAtGeohash(geohash: string): Promise<{
+async function topologyAtGeohash(
+    geohash: string,
+    responseCache?: CacheInterface,
+): Promise<{
     intensity: number;
     width: number;
     height: number;
@@ -95,14 +102,20 @@ async function topologyAtGeohash(geohash: string): Promise<{
     y: number;
 }> {
     const { rows, cols, url, row, col } = topologyTile(geohash);
-    const png = PNG.sync.read(
-        Buffer.from(await (await fetch(url)).arrayBuffer()),
-    );
+
+    // Fetch response from cache or network
+    const tileKey = geohash.slice(0, 2);
+    let cachedResponse = await responseCache?.get(tileKey);
+    const response = cachedResponse?.clone() ?? (await fetch(url));
+    if (cachedResponse == null && responseCache != null) {
+        responseCache.set(tileKey, response.clone());
+    }
+
+    const png = PNG.sync.read(Buffer.from(await response.arrayBuffer()));
     const { width, height, data } = png;
     const x = Math.round((width - 1) * (col / cols)); // x, y is 0 indexed
     const y = Math.round((height - 1) * (row / rows));
     const index = 4 * (y * width + x); // there is rgba channels for pngjs
-
     return {
         width,
         height,
@@ -110,6 +123,28 @@ async function topologyAtGeohash(geohash: string): Promise<{
         y,
         intensity: data[index],
     };
+}
+
+/**
+ * Determines the height in meters at the given geohash based on the topology.
+ *
+ * @param geohash - The geohash coordinate string.
+ * @returns The height at the given geohash.
+ */
+async function heightAtGeohash(
+    geohash: string,
+    options?: {
+        responseCache?: CacheInterface;
+        resultsCache?: CacheInterface | LRUCache<string, any>;
+    },
+): Promise<number> {
+    return (
+        (await options?.resultsCache?.get(geohash)) ??
+        Math.ceil(
+            (await topologyAtGeohash(geohash, options?.responseCache))
+                .intensity * INTENSITY_TO_HEIGHT,
+        )
+    );
 }
 
 /**

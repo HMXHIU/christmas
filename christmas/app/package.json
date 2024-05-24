@@ -78,6 +78,7 @@
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
+    "lru-cache": "^10.2.2",
     "lucide": "^0.340.0",
     "lucide-svelte": "^0.334.0",
     "minio": "^7.1.3",
