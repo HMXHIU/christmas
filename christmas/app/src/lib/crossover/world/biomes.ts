@@ -7,7 +7,7 @@ import {
 } from "$lib/crossover/utils";
 import type { LRUCache } from "lru-cache";
 import ngeohash from "ngeohash";
-import { PNG } from "pngjs";
+import { PNG, type PNGWithMetadata } from "pngjs";
 import { type AssetMetadata, type WorldSeed } from ".";
 import { biomes, worldSeed } from "./settings";
 export {
@@ -91,9 +91,41 @@ function topologyTile(geohash: string): {
     };
 }
 
+async function topologyBuffer(
+    url: string,
+    options?: {
+        responseCache?: CacheInterface;
+        bufferCache?: CacheInterface | LRUCache<string, any>;
+    },
+): Promise<PNGWithMetadata> {
+    // Return cached buffer
+    const buffer = await options?.bufferCache?.get(url);
+    if (buffer) {
+        return buffer;
+    }
+
+    // Fetch response from cache or network
+    let cachedResponse = await options?.responseCache?.get(url);
+    const response = cachedResponse?.clone() ?? (await fetch(url));
+    if (cachedResponse == null && options?.responseCache != null) {
+        options.responseCache.set(url, response.clone());
+    }
+
+    // Save buffer to cache
+    var png = PNG.sync.read(Buffer.from(await response.arrayBuffer()));
+    if (options?.bufferCache != null) {
+        await options.bufferCache.set(url, png);
+    }
+
+    return png;
+}
+
 async function topologyAtGeohash(
     geohash: string,
-    responseCache?: CacheInterface,
+    options?: {
+        responseCache?: CacheInterface;
+        bufferCache?: CacheInterface | LRUCache<string, any>;
+    },
 ): Promise<{
     intensity: number;
     width: number;
@@ -102,16 +134,11 @@ async function topologyAtGeohash(
     y: number;
 }> {
     const { rows, cols, url, row, col } = topologyTile(geohash);
+    const png = await topologyBuffer(url, {
+        responseCache: options?.responseCache,
+        bufferCache: options?.bufferCache,
+    });
 
-    // Fetch response from cache or network
-    const tileKey = geohash.slice(0, 2);
-    let cachedResponse = await responseCache?.get(tileKey);
-    const response = cachedResponse?.clone() ?? (await fetch(url));
-    if (cachedResponse == null && responseCache != null) {
-        responseCache.set(tileKey, response.clone());
-    }
-
-    const png = PNG.sync.read(Buffer.from(await response.arrayBuffer()));
     const { width, height, data } = png;
     const x = Math.round((width - 1) * (col / cols)); // x, y is 0 indexed
     const y = Math.round((height - 1) * (row / rows));
@@ -136,13 +163,18 @@ async function heightAtGeohash(
     options?: {
         responseCache?: CacheInterface;
         resultsCache?: CacheInterface | LRUCache<string, any>;
+        bufferCache?: CacheInterface | LRUCache<string, any>;
     },
 ): Promise<number> {
     return (
         (await options?.resultsCache?.get(geohash)) ??
         Math.ceil(
-            (await topologyAtGeohash(geohash, options?.responseCache))
-                .intensity * INTENSITY_TO_HEIGHT,
+            (
+                await topologyAtGeohash(geohash, {
+                    responseCache: options?.responseCache,
+                    bufferCache: options?.bufferCache,
+                })
+            ).intensity * INTENSITY_TO_HEIGHT,
         )
     );
 }
@@ -152,10 +184,9 @@ async function heightAtGeohash(
  *
  * @param geohash - The geohash coordinate string
  * @param seed - Optional world seed to use. Defaults to globally set seed.
- * @returns The name of the biome determined for that geohash.
+ * @returns The name of the biome and strength at that geohash.
  *
  * TODO: Add caching to avoid redundant calls to biomeAtGeohash().
- *
  * TODO: Replace with simplex noise etc..
  *
  * |----(bio)----|
@@ -163,12 +194,32 @@ async function heightAtGeohash(
  * |---dice---|   // bio, strength is taken from mid point 1 - (dice - bio/2) / bio/2
  * |-----------dice-----------|   // water, 1 - ((dice - bio) - water/2) / water/2
  */
-function biomeAtGeohash(geohash: string, seed?: WorldSeed): [string, number] {
-    seed = seed || worldSeed;
+async function biomeAtGeohash(
+    geohash: string,
+    options?: {
+        seed?: WorldSeed;
+        topologyResultCache?: CacheInterface | LRUCache<string, any>;
+        topologyBufferCache?: CacheInterface | LRUCache<string, any>;
+        topologyResponseCache?: CacheInterface;
+    },
+): Promise<[string, number]> {
+    const seed = options?.seed || worldSeed;
 
     // Leave h9* for ice for testing (fully traversable)
     if (geohash.startsWith("h9")) {
         return [biomes.ice.biome, 1];
+    }
+
+    // Get topology
+    const height = await heightAtGeohash(geohash, {
+        responseCache: options?.topologyResponseCache,
+        resultsCache: options?.topologyResultCache,
+        bufferCache: options?.topologyBufferCache,
+    });
+
+    // Below sea level
+    if (height < 1) {
+        return [biomes.water.biome, 1];
     }
 
     const continent = geohash.charAt(0);
@@ -200,12 +251,16 @@ function biomeAtGeohash(geohash: string, seed?: WorldSeed): [string, number] {
  * @param seed - Optional world seed.
  * @returns A record of geohash to biomes generated with biomeAtGeohash().
  */
-function biomesNearbyGeohash(
+async function biomesNearbyGeohash(
     geohash: string,
-    seed?: WorldSeed,
-): Record<string, string> {
-    seed = seed || worldSeed;
-
+    options?: {
+        seed?: WorldSeed;
+        topologyResultCache?: CacheInterface | LRUCache<string, any>;
+        topologyBufferCache?: CacheInterface | LRUCache<string, any>;
+        topologyResponseCache?: CacheInterface;
+    },
+): Promise<Record<string, string>> {
+    const seed = options?.seed || worldSeed;
     const [minlat, minlon, maxlat, maxlon] = ngeohash.decode_bbox(geohash);
 
     // Get all the geohashes 1 precision higher than the geohash
@@ -217,8 +272,15 @@ function biomesNearbyGeohash(
         geohash.length + 1,
     );
 
-    return geohashes.reduce((obj: any, geohash) => {
-        obj[geohash] = biomeAtGeohash(geohash, seed)[0];
+    return geohashes.reduce(async (obj: any, geohash) => {
+        obj[geohash] = (
+            await biomeAtGeohash(geohash, {
+                seed,
+                topologyResponseCache: options?.topologyResponseCache,
+                topologyResultCache: options?.topologyResultCache,
+                topologyBufferCache: options?.topologyBufferCache,
+            })
+        )[0];
         return obj;
     }, {});
 }

@@ -109,11 +109,17 @@ test("Test World", async () => {
         });
 
     // Test biomeAtGeohash
-    expect(biomeAtGeohash("w21z3m6k", worldSeed)[0]).to.equal("forest");
-    expect(biomeAtGeohash("w61z4m6h", worldSeed)[0]).to.equal("water");
+    expect((await biomeAtGeohash("w21z3m6k", { seed: worldSeed }))[0]).to.equal(
+        "forest",
+    );
+    expect((await biomeAtGeohash("w61z4m6h", { seed: worldSeed }))[0]).to.equal(
+        "water",
+    );
 
     // Test biomesNearbyGeohash - 7 digits of precision returns tiles with 8 digits of precision
-    expect(biomesNearbyGeohash("w61z4m6", worldSeed)).to.deep.equal({
+    expect(
+        await biomesNearbyGeohash("w61z4m6", { seed: worldSeed }),
+    ).to.deep.equal({
         w61z4m1z: "forest",
         w61z4m4p: "forest",
         w61z4m4r: "forest",

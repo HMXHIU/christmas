@@ -46,11 +46,18 @@
         worldRecord,
     } from "../../../store";
 
+    import { BrowserCache } from "$lib/caches";
+    import { LRUCache } from "lru-cache";
     import {
         MAX_SHADER_GEOMETRIES,
         loadShaderGeometry,
         updateShaderUniforms,
     } from "./shaders";
+
+    // Caches
+    const topologyResultCache = new LRUCache<string, any>({ max: 1000 });
+    const topologyResponseCache = new BrowserCache("topology");
+    const topologyBufferCache = new LRUCache<string, any>({ max: 100 });
 
     let container: HTMLDivElement;
     let isInitialized = false;
@@ -561,7 +568,11 @@
                 }
 
                 // Get biome asset
-                const [biome, strength] = biomeAtGeohash(geohash);
+                const [biome, strength] = await biomeAtGeohash(geohash, {
+                    topologyResponseCache,
+                    topologyResultCache,
+                    topologyBufferCache,
+                });
                 const asset = biomes[biome].asset;
                 if (!asset) {
                     console.error(`Missing asset for ${biome}`);
