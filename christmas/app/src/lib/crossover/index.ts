@@ -154,17 +154,20 @@ async function handleGC(command: GameCommand) {
 }
 
 async function handleUpdateWorlds(geohash: string) {
-    // Check if worldRecord already has the town
-    if (get(worldRecord)[geohash.slice(0, worldSeed.spatial.town.precision)]) {
+    // Check if worldRecord already has the town (no worlds or {} is valid)
+    if (
+        get(worldRecord)[geohash.slice(0, worldSeed.spatial.town.precision)] !=
+        null
+    ) {
         return;
     }
 
     const { town, worlds } = await crossoverWorldWorlds(geohash);
     worldRecord.update((wr) => {
+        if (wr[town] == null) {
+            wr[town] = {}; // no world in town
+        }
         for (const w of worlds) {
-            if (!wr[town]) {
-                wr[town] = {};
-            }
             wr[town][w.world] = w;
         }
         return wr;
