@@ -946,6 +946,10 @@
     }
 
     function ticker(ticker: Ticker) {
+        if (!isInitialized) {
+            return;
+        }
+
         // Clear depth buffer
         const gl = (app.renderer as WebGLRenderer).gl;
         gl.clear(gl.DEPTH_BUFFER_BIT);
@@ -982,6 +986,11 @@
     }
 
     async function init() {
+        if (isInitialized) {
+            console.log("Already initialized");
+            return;
+        }
+
         await app.init({
             width: CANVAS_WIDTH,
             height: CANVAS_HEIGHT,
@@ -992,9 +1001,9 @@
 
         // Set up depth test
         const gl = (app.renderer as WebGLRenderer).gl;
-        // gl.enable(gl.DEPTH_TEST);
-        // gl.depthFunc(gl.LEQUAL);
-        // gl.depthMask(true);
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);
+        gl.depthMask(true);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -1011,11 +1020,13 @@
         playerSprite = createCreatureSprite(playerTexture, pedestalTexture);
         worldStage.addChild(playerSprite);
 
-        // Ticker
+        // Add ticker
         app.ticker.add(ticker);
 
         // Add the canvas to the DOM
         container.appendChild(app.canvas);
+
+        // Set initialized
         isInitialized = true;
 
         // Resize the canvas

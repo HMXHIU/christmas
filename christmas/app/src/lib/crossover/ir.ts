@@ -375,7 +375,7 @@ function searchPossibleCommands({
     } = entitiesIR({
         queryTokens,
         monsters,
-        players,
+        players: [...players, player],
         items: [...playerItems, ...items], // include player items in the search
     });
 
