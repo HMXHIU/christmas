@@ -31,6 +31,11 @@ import {
     worldSeed,
 } from "$lib/crossover/world/settings";
 import { serverAnchorClient } from "$lib/server";
+import {
+    topologyBufferCache,
+    topologyResponseCache,
+    topologyResultCache,
+} from "$lib/server/crossover/caches";
 import { parseZodErrors, sleep } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
 import lodash from "lodash";
@@ -1236,7 +1241,11 @@ async function isDirectionTraversable(
 
 async function isGeohashTraversable(geohash: string): Promise<boolean> {
     const inWorld = await isGeohashInWorld(geohash);
-    const [biome, strength] = await biomeAtGeohash(geohash);
+    const [biome, strength] = await biomeAtGeohash(geohash, {
+        topologyResultCache,
+        topologyBufferCache,
+        topologyResponseCache,
+    });
 
     // Check if biome is traversable (ignore if user is in a world)
     if (!inWorld && biomes[biome].traversableSpeed <= 0) {

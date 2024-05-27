@@ -1,4 +1,12 @@
-export { BrowserCache, CacheInterface, LocalStorageCache, MemoryCache };
+import { LRUCache } from "lru-cache";
+
+export {
+    BrowserCache,
+    CacheInterface,
+    LRUMemoryCache,
+    LocalStorageCache,
+    MemoryCache,
+};
 
 class CacheInterface {
     // Works with LRUCache
@@ -13,6 +21,27 @@ class MemoryCache extends CacheInterface {
     constructor() {
         super();
         this.cache = new Map();
+    }
+
+    async get(key: string): Promise<any> {
+        return this.cache.get(key);
+    }
+
+    async set(key: string, value: any) {
+        this.cache.set(key, value);
+    }
+
+    async delete(key: string) {
+        this.cache.delete(key);
+    }
+}
+
+class LRUMemoryCache extends CacheInterface {
+    cache: LRUCache<string, any>;
+
+    constructor(options: any) {
+        super();
+        this.cache = new LRUCache(options);
     }
 
     async get(key: string): Promise<any> {

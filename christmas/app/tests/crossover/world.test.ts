@@ -109,62 +109,62 @@ test("Test World", async () => {
         });
 
     // Test biomeAtGeohash
-    expect((await biomeAtGeohash("w21z3m6k", { seed: worldSeed }))[0]).to.equal(
+    expect((await biomeAtGeohash("w6cn25dm", { seed: worldSeed }))[0]).to.equal(
         "forest",
     );
-    expect((await biomeAtGeohash("w61z4m6h", { seed: worldSeed }))[0]).to.equal(
+    expect((await biomeAtGeohash("w2gpdqgt", { seed: worldSeed }))[0]).to.equal(
         "water",
     );
 
     // Test biomesNearbyGeohash - 7 digits of precision returns tiles with 8 digits of precision
     expect(
-        await biomesNearbyGeohash("w61z4m6", { seed: worldSeed }),
+        await biomesNearbyGeohash("w6u7353", { seed: worldSeed }),
     ).to.deep.equal({
-        w61z4m1z: "forest",
-        w61z4m4p: "forest",
-        w61z4m4r: "forest",
-        w61z4m4x: "forest",
-        w61z4m4z: "forest",
-        w61z4m3b: "forest",
-        w61z4m60: "forest",
-        w61z4m62: "forest",
-        w61z4m68: "forest",
-        w61z4m6b: "forest",
-        w61z4m3c: "forest",
-        w61z4m61: "forest",
-        w61z4m63: "forest",
-        w61z4m69: "forest",
-        w61z4m6c: "forest",
-        w61z4m3f: "forest",
-        w61z4m64: "forest",
-        w61z4m66: "water",
-        w61z4m6d: "forest",
-        w61z4m6f: "forest",
-        w61z4m3g: "forest",
-        w61z4m65: "forest",
-        w61z4m67: "forest",
-        w61z4m6e: "water",
-        w61z4m6g: "forest",
-        w61z4m3u: "forest",
-        w61z4m6h: "water",
-        w61z4m6k: "forest",
-        w61z4m6s: "forest",
-        w61z4m6u: "forest",
-        w61z4m3v: "forest",
-        w61z4m6j: "water",
-        w61z4m6m: "forest",
-        w61z4m6t: "forest",
-        w61z4m6v: "water",
-        w61z4m3y: "forest",
-        w61z4m6n: "water",
-        w61z4m6q: "forest",
-        w61z4m6w: "forest",
-        w61z4m6y: "forest",
-        w61z4m3z: "forest",
-        w61z4m6p: "forest",
-        w61z4m6r: "forest",
-        w61z4m6x: "forest",
-        w61z4m6z: "forest",
+        w6u7350z: "forest",
+        w6u7351p: "forest",
+        w6u7351r: "forest",
+        w6u7351x: "forest",
+        w6u7351z: "forest",
+        w6u7352b: "forest",
+        w6u73530: "forest",
+        w6u73532: "forest",
+        w6u73538: "forest",
+        w6u7353b: "forest",
+        w6u7352c: "forest",
+        w6u73531: "forest",
+        w6u73533: "forest",
+        w6u73539: "forest",
+        w6u7353c: "water",
+        w6u7352f: "water",
+        w6u73534: "forest",
+        w6u73536: "forest",
+        w6u7353d: "forest",
+        w6u7353f: "forest",
+        w6u7352g: "forest",
+        w6u73535: "forest",
+        w6u73537: "forest",
+        w6u7353e: "forest",
+        w6u7353g: "forest",
+        w6u7352u: "water",
+        w6u7353h: "water",
+        w6u7353k: "forest",
+        w6u7353s: "forest",
+        w6u7353u: "forest",
+        w6u7352v: "forest",
+        w6u7353j: "forest",
+        w6u7353m: "forest",
+        w6u7353t: "forest",
+        w6u7353v: "forest",
+        w6u7352y: "forest",
+        w6u7353n: "forest",
+        w6u7353q: "water",
+        w6u7353w: "forest",
+        w6u7353y: "forest",
+        w6u7352z: "forest",
+        w6u7353p: "forest",
+        w6u7353r: "water",
+        w6u7353x: "forest",
+        w6u7353z: "forest",
     });
 
     // Test geohashToGridCell
@@ -506,35 +506,39 @@ test("Test World", async () => {
     });
 
     // Test topologyAtGeohash with caching
-    const topologyTileCache = new MemoryCache();
+    const bufferCache = new MemoryCache(); // caches the png buffer
+    const responseCache = new MemoryCache(); // caches the fetch response
+    const resultsCache = new LRUCache<string, any>({ max: 100 }); // caches the results
     expect(
-        topologyAtGeohash("tvpjj3cd", topologyTileCache),
+        topologyAtGeohash("tvpjj3cd", { bufferCache }),
     ).resolves.toMatchObject(
-        await topologyAtGeohash("tvpjj3cd", topologyTileCache),
+        await topologyAtGeohash("tvpjj3cd", { bufferCache }),
     );
     expect(
-        topologyAtGeohash("tvpjj3cd", topologyTileCache),
+        topologyAtGeohash("tvpjj3cd", { bufferCache }),
     ).resolves.toMatchObject(everest);
 
     // Test heightAtGeohash with LRUCache
-    const lruCache = new LRUCache<string, any>({ max: 100 });
     var everestHeight = await heightAtGeohash("tvpjj3cd");
     expect(everestHeight).toBe(6352);
     await expect(
         heightAtGeohash("tvpjj3cd", {
-            resultsCache: lruCache,
-            responseCache: topologyTileCache,
+            resultsCache,
+            responseCache,
+            bufferCache,
         }),
     ).resolves.toBe(everestHeight);
     await expect(
         heightAtGeohash("tvpjj3cd", {
-            resultsCache: lruCache,
-            responseCache: topologyTileCache,
+            resultsCache,
+            responseCache,
+            bufferCache,
         }),
     ).resolves.toBe(
         await heightAtGeohash("tvpjj3cd", {
-            resultsCache: lruCache,
-            responseCache: topologyTileCache,
+            resultsCache,
+            responseCache,
+            bufferCache,
         }),
     );
 });

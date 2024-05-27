@@ -5,7 +5,6 @@ import {
     seededRandom,
     stringToRandomNumber,
 } from "$lib/crossover/utils";
-import type { LRUCache } from "lru-cache";
 import ngeohash from "ngeohash";
 import { PNG, type PNGWithMetadata } from "pngjs";
 import { type AssetMetadata, type WorldSeed } from ".";
@@ -95,7 +94,7 @@ async function topologyBuffer(
     url: string,
     options?: {
         responseCache?: CacheInterface;
-        bufferCache?: CacheInterface | LRUCache<string, any>;
+        bufferCache?: CacheInterface;
     },
 ): Promise<PNGWithMetadata> {
     // Return cached buffer
@@ -124,7 +123,7 @@ async function topologyAtGeohash(
     geohash: string,
     options?: {
         responseCache?: CacheInterface;
-        bufferCache?: CacheInterface | LRUCache<string, any>;
+        bufferCache?: CacheInterface;
     },
 ): Promise<{
     intensity: number;
@@ -162,8 +161,8 @@ async function heightAtGeohash(
     geohash: string,
     options?: {
         responseCache?: CacheInterface;
-        resultsCache?: CacheInterface | LRUCache<string, any>;
-        bufferCache?: CacheInterface | LRUCache<string, any>;
+        resultsCache?: CacheInterface;
+        bufferCache?: CacheInterface;
     },
 ): Promise<number> {
     return (
@@ -198,8 +197,8 @@ async function biomeAtGeohash(
     geohash: string,
     options?: {
         seed?: WorldSeed;
-        topologyResultCache?: CacheInterface | LRUCache<string, any>;
-        topologyBufferCache?: CacheInterface | LRUCache<string, any>;
+        topologyResultCache?: CacheInterface;
+        topologyBufferCache?: CacheInterface;
         topologyResponseCache?: CacheInterface;
     },
 ): Promise<[string, number]> {
@@ -255,8 +254,8 @@ async function biomesNearbyGeohash(
     geohash: string,
     options?: {
         seed?: WorldSeed;
-        topologyResultCache?: CacheInterface | LRUCache<string, any>;
-        topologyBufferCache?: CacheInterface | LRUCache<string, any>;
+        topologyResultCache?: CacheInterface;
+        topologyBufferCache?: CacheInterface;
         topologyResponseCache?: CacheInterface;
     },
 ): Promise<Record<string, string>> {
@@ -272,17 +271,19 @@ async function biomesNearbyGeohash(
         geohash.length + 1,
     );
 
-    return geohashes.reduce(async (obj: any, geohash) => {
-        obj[geohash] = (
-            await biomeAtGeohash(geohash, {
-                seed,
-                topologyResponseCache: options?.topologyResponseCache,
-                topologyResultCache: options?.topologyResultCache,
-                topologyBufferCache: options?.topologyBufferCache,
-            })
-        )[0];
-        return obj;
-    }, {});
+    return Object.fromEntries(
+        await Promise.all(
+            geohashes.map(async (geohash) => {
+                const [biome, _] = await biomeAtGeohash(geohash, {
+                    seed,
+                    topologyResponseCache: options?.topologyResponseCache,
+                    topologyResultCache: options?.topologyResultCache,
+                    topologyBufferCache: options?.topologyBufferCache,
+                });
+                return [geohash, biome];
+            }),
+        ),
+    );
 }
 
 /**

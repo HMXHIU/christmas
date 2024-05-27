@@ -1,5 +1,10 @@
 <script lang="ts">
     import {
+        topologyBufferCache,
+        topologyResponseCache,
+        topologyResultCache,
+    } from "$lib/crossover/caches";
+    import {
         autoCorrectGeohashPrecision,
         cartToIso,
         entityId,
@@ -45,19 +50,11 @@
         playerRecord,
         worldRecord,
     } from "../../../store";
-
-    import { BrowserCache } from "$lib/caches";
-    import { LRUCache } from "lru-cache";
     import {
         MAX_SHADER_GEOMETRIES,
         loadShaderGeometry,
         updateShaderUniforms,
     } from "./shaders";
-
-    // Caches
-    const topologyResultCache = new LRUCache<string, any>({ max: 1000 });
-    const topologyResponseCache = new BrowserCache("topology");
-    const topologyBufferCache = new LRUCache<string, any>({ max: 100 });
 
     let container: HTMLDivElement;
     let isInitialized = false;

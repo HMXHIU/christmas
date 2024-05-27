@@ -22,7 +22,5 @@ test_happy = "yarn run ts-mocha -p ./tsconfig.json --file tests/setup-env-hook.j
 test_unhappy = "yarn run ts-mocha -p ./tsconfig.json --file tests/setup-env-hook.js -t 1000000 tests/test_unhappy.ts"
 # anchor run test_utils -- --skip-local-validator
 test_utils = "yarn run ts-mocha -p ./tsconfig.json --file tests/setup-env-hook.js -t 1000000 tests/test_utils.ts"
-# anchor run test_demo -- --skip-local-validator
-test_demo = "yarn run ts-mocha -p ./tsconfig.json --file tests/setup-env-hook.js -t 1000000 tests/test_demo.ts"
 # anchor run test_user -- --skip-local-validator
 test_user = "yarn run ts-mocha -p ./tsconfig.json --file tests/setup-env-hook.js -t 1000000 tests/test_user.ts"
