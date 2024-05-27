@@ -1,4 +1,4 @@
-import { MemoryCache } from "$lib/caches";
+import { LRUMemoryCache, MemoryCache } from "$lib/caches";
 import { crossoverWorldWorlds } from "$lib/crossover";
 import {
     childrenGeohashes,
@@ -21,7 +21,6 @@ import {
 } from "$lib/crossover/world/biomes";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { spawnWorld } from "$lib/server/crossover";
-import { LRUCache } from "lru-cache";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer, generateRandomGeohash } from "./utils";
@@ -504,11 +503,19 @@ test("Test World", async () => {
         y: 622,
         intensity: 0,
     });
+    var bukittimahhill = await topologyAtGeohash("w21z9qx9");
+    expect(bukittimahhill).toMatchObject({
+        width: 3507,
+        height: 1753,
+        x: 787,
+        y: 1330,
+        intensity: 3,
+    });
 
     // Test topologyAtGeohash with caching
     const bufferCache = new MemoryCache(); // caches the png buffer
     const responseCache = new MemoryCache(); // caches the fetch response
-    const resultsCache = new LRUCache<string, any>({ max: 100 }); // caches the results
+    const resultsCache = new LRUMemoryCache({ max: 100 }); // caches the results
     expect(
         topologyAtGeohash("tvpjj3cd", { bufferCache }),
     ).resolves.toMatchObject(

@@ -9,7 +9,6 @@ export {
 };
 
 class CacheInterface {
-    // Works with LRUCache
     async get(key: string): Promise<any> {}
     async set(key: string, value: any) {}
     async delete(key: string) {}
