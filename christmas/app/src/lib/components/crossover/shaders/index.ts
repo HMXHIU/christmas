@@ -1,4 +1,6 @@
 import { Buffer, BufferUsage, Geometry, Mesh, Shader, Texture } from "pixi.js";
+import biomeFrag from "./biome.frag?raw";
+import biomeVertex from "./biome.vert?raw";
 import grassFrag from "./grass.frag?raw";
 import grassVertex from "./grass.vert?raw";
 import snoise from "./lygia/generative/snoise.glsl?raw";
@@ -43,6 +45,10 @@ const shaders: Record<string, { vertex: string; fragment: string }> = {
         ${grassVertex}
         `,
         fragment: grassFrag,
+    },
+    biome: {
+        vertex: biomeVertex,
+        fragment: biomeFrag,
     },
 };
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { LRUMemoryCache, memoize } from "$lib/caches";
     import {
         topologyBufferCache,
         topologyResponseCache,
@@ -111,7 +112,7 @@
     const app = new Application();
     const worldStage = new Container();
 
-    interface Decoration {
+    interface ShaderTexturePositions {
         texture: Texture;
         positions: number[];
     }
@@ -124,12 +125,24 @@
         row: number; // in cells
         col: number;
         variant?: string;
-        decorations?: Record<string, Decoration>;
+        decorations?: Record<string, ShaderTexturePositions>;
+        positions?: ShaderTexturePositions;
     }
+
+    let biomeTexturePositions: Record<string, ShaderTexturePositions> = {};
+    let biomeDecorationsTexturePositions: Record<
+        string,
+        ShaderTexturePositions
+    > = {};
+
     let entityGridSprites: Record<string, GridSprite> = {};
     let worldGridSprites: Record<string, GridSprite> = {};
     let pivotTarget: { x: number; y: number } = { x: 0, y: 0 };
-    const decorationsInWorld = new Set();
+    const shaderTexturesInWorld = new Set();
+
+    // Caches
+    const biomeCache = new LRUMemoryCache({ max: 1000 });
+    const biomeDecorationsCache = new LRUMemoryCache({ max: 1000 });
 
     $: playerCell = $player && geohashToGridCell($player.location[0]);
     $: updatePlayer(playerCell);
@@ -236,6 +249,7 @@
         );
 
         // /////////////// TEST ADD COLLDIERS (DOES NOT MATCH UP WITH RENDERED TILEMAP)
+        // TODO: add this as a helper function to draw colliders in map
 
         // const pedestalBundle = await Assets.loadBundle("pedestals");
         // const pedestalTexture =
@@ -505,35 +519,22 @@
         }
     }
 
-    async function updateBiomeDecorations() {
-        // Aggregate all decorations from `entityGridSprites`
-        const decorations = Object.values(entityGridSprites).reduce(
-            (acc: Record<string, Decoration>, { decorations }) => {
-                if (decorations != null) {
-                    for (const [
-                        textureUid,
-                        { texture, positions },
-                    ] of Object.entries(decorations)) {
-                        if (acc[textureUid] == null) {
-                            acc[textureUid] = {
-                                texture,
-                                positions: [],
-                            };
-                        }
-                        acc[textureUid].positions.push(...positions);
-                    }
-                }
-                return acc;
-            },
-            {},
-        );
-
+    async function drawShaderTextures({
+        shaderName,
+        shaderTextures,
+        layer,
+        numGeometries,
+    }: {
+        shaderName: string;
+        shaderTextures: Record<string, ShaderTexturePositions>;
+        layer: number;
+        numGeometries: number;
+    }) {
         for (const [textureUid, { texture, positions }] of Object.entries(
-            decorations,
+            shaderTextures,
         )) {
-            // TODO: dont hardcode shader name
             const [shader, { geometry, instancePositions, mesh }] =
-                loadShaderGeometry("grass", texture, MAX_SHADER_GEOMETRIES);
+                loadShaderGeometry(shaderName, texture, numGeometries);
 
             // Update instance positions buffer
             if (instancePositions) {
@@ -542,17 +543,184 @@
             }
 
             // Add mesh with instanced geometry to world
-            if (mesh && !decorationsInWorld.has(textureUid)) {
-                mesh.zIndex = Z_LAYERS.hip + playerSprite.y;
+            if (mesh && !shaderTexturesInWorld.has(textureUid)) {
+                mesh.zIndex = layer + playerSprite.y;
                 worldStage.addChild(mesh);
+                shaderTexturesInWorld.add(textureUid);
             }
         }
     }
+
+    async function calculateBiomeForRowCol(
+        playerCell: GridCell,
+        row: number,
+        col: number,
+    ): Promise<{
+        texture: Texture;
+        isoX: number;
+        isoY: number;
+        topologicalHeight: number;
+        biome: string;
+        geohash: string;
+        strength: number;
+    }> {
+        const geohash = gridCellToGeohash({
+            precision: playerCell.precision,
+            row,
+            col,
+        });
+
+        // Get biome properties and asset
+        const [biome, strength] = await biomeAtGeohash(geohash, {
+            topologyResponseCache,
+            topologyResultCache,
+            topologyBufferCache,
+        });
+        const topologicalHeight =
+            TOPOLOGICAL_HEIGHT_SCALE *
+            (await heightAtGeohash(geohash, {
+                responseCache: topologyResponseCache,
+                resultsCache: topologyResultCache,
+                bufferCache: topologyBufferCache,
+            }));
+
+        const asset = biomes[biome].asset;
+        if (!asset) {
+            throw new Error(`Missing asset for ${biome}`);
+        }
+
+        // Load texture
+        const texture = await loadAssetTexture(asset, {
+            seed: (row << 8) + col, // bit shift by 8 else gridRow + gridCol is the same at diagonals
+        });
+        if (!texture) {
+            throw new Error(`Missing texture for ${biome}`);
+        }
+
+        // TODO: Scale texture and maintain aspect ratio
+        //
+        // sprite.width = CELL_WIDTH; // Biome sprite is scaled to CELL_WIDTH
+        // sprite.height = (texture.height * sprite.width) / texture.width; // maintain aspect ratio
+
+        // Convert cartesian to isometric position
+        const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
+
+        return {
+            geohash,
+            biome,
+            strength,
+            texture,
+            isoX,
+            isoY,
+            topologicalHeight,
+        };
+    }
+
+    async function calculateBiomeDecorationsForRowCol({
+        geohash,
+        biome,
+        strength,
+        row,
+        col,
+        isoX,
+        isoY,
+        topologicalHeight,
+    }: {
+        geohash: string;
+        biome: string;
+        strength: number;
+        row: number;
+        col: number;
+        isoX: number;
+        isoY: number;
+        topologicalHeight: number;
+    }): Promise<Record<string, ShaderTexturePositions>> {
+        const texturePositions: Record<string, ShaderTexturePositions> = {};
+
+        // TODO: Skip decorations in world
+
+        // Get biome decorations
+        const decorations = biomes[biome].decorations;
+        if (!decorations) {
+            return texturePositions;
+        }
+        const geohashSeed = stringToRandomNumber(geohash);
+
+        for (const [
+            name,
+            { asset, probability, minInstances, maxInstances, radius },
+        ] of Object.entries(decorations)) {
+            // Determine if this geohash should have decorations
+            const dice = seededRandom(geohashSeed);
+            if (dice > probability) {
+                continue;
+            }
+
+            // Number of instances depends on the strength of the tile
+            let numInstances = Math.ceil(
+                minInstances + strength * (maxInstances - minInstances),
+            );
+
+            // Get evenly spaced offsets
+            const spacedOffsets = generateEvenlySpacedPoints(
+                numInstances,
+                CELL_WIDTH * radius,
+            );
+
+            for (let i = 0; i < numInstances; i++) {
+                const instanceSeed = seededRandom((row << 8) + col + i);
+                const instanceRv = seededRandom(instanceSeed);
+
+                // Load texture
+                const texture = await loadAssetTexture(asset, {
+                    seed: instanceSeed,
+                });
+                if (!texture) {
+                    console.error(`Missing texture for ${name}`);
+                    continue;
+                }
+
+                // Initialize decorations
+                if (texturePositions[texture.uid] == null) {
+                    texturePositions[texture.uid] = {
+                        texture,
+                        positions: [],
+                    };
+                }
+
+                // Evenly space out decorations and add jitter
+                const jitter = ((instanceRv - 0.5) * CELL_WIDTH) / 2;
+                const x = spacedOffsets[i].x + isoX + jitter;
+                const y =
+                    spacedOffsets[i].y + isoY + jitter - topologicalHeight;
+
+                // Add to decoration positions
+                texturePositions[texture.uid].positions.push(x, y);
+            }
+        }
+        return texturePositions;
+    }
+
+    const memoizedCalculateBiomeForRowCol = memoize(
+        calculateBiomeForRowCol,
+        biomeCache,
+        (playerCell, row, col) => `${row}-${col}`,
+    );
+
+    const memoizedCalculateBiomeDecorationsForRowCol = memoize(
+        calculateBiomeDecorationsForRowCol,
+        biomeDecorationsCache,
+        ({ row, col }) => `${row}-${col}`,
+    );
 
     async function updateBiomes(playerCell: GridCell | null) {
         if (!isInitialized || playerCell == null) {
             return;
         }
+
+        // Clear shader textures
+        biomeTexturePositions = {};
+        biomeDecorationsTexturePositions = {};
 
         // Create biome sprites
         for (
@@ -565,222 +733,71 @@
                 col < playerCell.col + GRID_MID_COL;
                 col++
             ) {
-                const geohash = gridCellToGeohash({
-                    precision: playerCell.precision,
-                    row,
-                    col,
-                });
+                // Get biomeTexturePositions
+                const {
+                    isoX,
+                    isoY,
+                    texture,
+                    topologicalHeight,
+                    biome,
+                    geohash,
+                    strength,
+                } = await memoizedCalculateBiomeForRowCol(playerCell, row, col);
 
-                // Determine biome and load asset
-                const biomeId = `biome-${geohash}`;
-
-                // Skip if already created
-                if (biomeId in entityGridSprites) {
-                    continue;
+                if (biomeTexturePositions[texture.uid] == null) {
+                    biomeTexturePositions[texture.uid] = {
+                        texture,
+                        positions: [],
+                    };
+                } else {
+                    biomeTexturePositions[texture.uid].positions.push(
+                        isoX,
+                        isoY - topologicalHeight,
+                    );
                 }
 
-                // Get biome properties and asset
-                const [biome, strength] = await biomeAtGeohash(geohash, {
-                    topologyResponseCache,
-                    topologyResultCache,
-                    topologyBufferCache,
-                });
-                const topologicalHeight =
-                    TOPOLOGICAL_HEIGHT_SCALE *
-                    (await heightAtGeohash(geohash, {
-                        responseCache: topologyResponseCache,
-                        resultsCache: topologyResultCache,
-                        bufferCache: topologyBufferCache,
-                    }));
-
-                const asset = biomes[biome].asset;
-                if (!asset) {
-                    console.error(`Missing asset for ${biome}`);
-                    continue;
-                }
-
-                // Load texture
-                const texture = await loadAssetTexture(asset, {
-                    seed: (row << 8) + col,
-                }); // bit shift by 8 else gridRow + gridCol is the same at diagonals
-                if (!texture) {
-                    console.error(`Missing texture for ${biome}`);
-                    continue;
-                }
-
-                // Create sprite
-                const sprite = new Sprite(texture);
-                sprite.anchor.set(0.5); // TODO: set anchor in sprite.json not here as each asset is different
-                sprite.width = CELL_WIDTH; // Biome sprite is scaled to CELL_WIDTH
-                sprite.height = (texture.height * sprite.width) / texture.width; // maintain aspect ratio
-
-                // Convert cartesian to isometric position
-                const [isoX, isoY] = cartToIso(
-                    col * CELL_WIDTH,
-                    row * CELL_HEIGHT,
-                );
-                sprite.x = isoX;
-                sprite.y = isoY - topologicalHeight;
-                sprite.zIndex = Z_LAYERS.biome + isoY;
-
-                // Remove old sprite
-                if (
-                    biomeId in entityGridSprites &&
-                    entityGridSprites[biomeId].sprite != null
-                ) {
-                    worldStage.removeChild(entityGridSprites[biomeId].sprite);
-                    entityGridSprites[biomeId].sprite.destroy();
-                }
-
-                // Add to entityGridSprites
-                const gridSprite: GridSprite = {
-                    id: biomeId,
-                    sprite: worldStage.addChild(sprite),
-                    x: sprite.x,
-                    y: sprite.y,
-                    row,
-                    col,
-                };
-
-                entityGridSprites[biomeId] = gridSprite;
-
-                /*
-                 * Create biome decorations
-                 */
-
-                // TODO: Skip decorations in world
-
-                // Get biome decorations
-                const decorations = biomes[biome].decorations;
-                if (!decorations) {
-                    continue;
-                }
-                const geohashSeed = stringToRandomNumber(geohash);
-
+                // Get biomeDecorationsTexturePositions
+                const texturePositions =
+                    await memoizedCalculateBiomeDecorationsForRowCol({
+                        geohash,
+                        biome,
+                        strength,
+                        row,
+                        col,
+                        isoX,
+                        isoY,
+                        topologicalHeight,
+                    });
                 for (const [
-                    name,
-                    { asset, probability, minInstances, maxInstances, radius },
-                ] of Object.entries(decorations)) {
-                    // Determine if this geohash should have decorations
-                    const dice = seededRandom(geohashSeed);
-                    if (dice > probability) {
-                        continue;
-                    }
-
-                    // Initialize the decorations for the biome gridsprite
-                    gridSprite.decorations = {};
-
-                    // Number of instances depends on the strength of the tile
-                    let numInstances = Math.ceil(
-                        minInstances + strength * (maxInstances - minInstances),
-                    );
-
-                    // Get evenly spaced offsets
-                    const spacedOffsets = generateEvenlySpacedPoints(
-                        numInstances,
-                        CELL_WIDTH * radius,
-                    );
-
-                    for (let i = 0; i < numInstances; i++) {
-                        const instanceSeed = seededRandom((row << 8) + col + i);
-                        const instanceRv = seededRandom(instanceSeed);
-
-                        // Load texture
-                        const texture = await loadAssetTexture(asset, {
-                            seed: instanceSeed,
-                        });
-                        if (!texture) {
-                            console.error(`Missing texture for ${name}`);
-                            continue;
-                        }
-
-                        // Initialize decorations
-                        if (gridSprite.decorations[texture.uid] == null) {
-                            gridSprite.decorations[texture.uid] = {
-                                texture,
-                                positions: [],
-                            };
-                        }
-
-                        // M1: Create sprite
-                        //
-                        // const sprite = new Sprite(texture);
-                        // sprite.width = asset.width * CELL_WIDTH;
-                        // sprite.height =
-                        //     (texture.height * sprite.width) / texture.width; // maintain aspect ratio
-
-                        // // M2: Create mesh
-                        // const [shader, geometry] = loadShaderGeometry(
-                        //     "grass",
-                        //     await Assets.load(
-                        //         "https://pixijs.com/assets/bg_scene_rotate.jpg",
-                        //     ),
-                        // );
-                        // const sprite = new Mesh({
-                        //     geometry,
-                        //     shader,
-                        // });
-                        // sprite.width = asset.width * CELL_WIDTH;
-                        // sprite.height =
-                        //     (texture.height * sprite.width) / texture.width; // maintain aspect ratio
-
-                        // M3: Create mesh using instanced geometry
-
-                        // Evenly space out decorations and add jitter
-                        const jitter = ((instanceRv - 0.5) * sprite.width) / 2;
-                        const x = spacedOffsets[i].x + isoX + jitter;
-                        const y = spacedOffsets[i].y + isoY + jitter;
-
-                        // Add to decoration positions
-                        gridSprite.decorations[texture.uid].positions.push(
-                            x,
-                            y,
-                        );
-
-                        // // Add random skew
-                        // const rad = ((instanceRv - 0.5) * Math.PI) / 8;
-                        // sprite.skew = { x: rad, y: rad };
-
-                        // Add random tint
-                        // sprite.tint = 0x9cb409; // tint green
-                        // sprite.tint = 0x587902; // tint green
-
-                        // For debugging instances
-                        // if (i == 1) {
-                        //     sprite.tint = 0xff0000;
-                        // } else if (i == 2) {
-                        //     sprite.tint = 0x0000ff;
-                        // } else if (i == 3) {
-                        //     sprite.tint = 0x00ff00; // tint green
-                        // }
-
-                        // // Remove old sprite
-                        // const decorationId = `${biomeId}-${name}-${i}`;
-                        // if (
-                        //     decorationId in entityGridSprites &&
-                        //     entityGridSprites[decorationId].sprite != null
-                        // ) {
-                        //     worldStage.removeChild(
-                        //         entityGridSprites[decorationId].sprite,
-                        //     );
-                        //     entityGridSprites[decorationId].sprite.destroy();
-                        // }
-
-                        // // Add to entityGridSprites
-                        // entityGridSprites[decorationId] = {
-                        //     id: decorationId,
-                        //     sprite: worldStage.addChild(sprite),
-                        //     x: sprite.x,
-                        //     y: sprite.y,
-                        //     row,
-                        //     col,
-                        // };
+                    textureUid,
+                    { positions, texture },
+                ] of Object.entries(texturePositions)) {
+                    if (biomeDecorationsTexturePositions[textureUid] == null) {
+                        biomeDecorationsTexturePositions[textureUid] = {
+                            texture,
+                            positions: [],
+                        };
+                    } else {
+                        biomeDecorationsTexturePositions[
+                            textureUid
+                        ].positions.push(...positions);
                     }
                 }
             }
         }
-        // Update biome decorations
-        updateBiomeDecorations();
+        // Draw shaders
+        drawShaderTextures({
+            shaderName: "biome",
+            shaderTextures: biomeTexturePositions,
+            layer: Z_LAYERS.biome,
+            numGeometries: MAX_SHADER_GEOMETRIES,
+        });
+        drawShaderTextures({
+            shaderName: "grass",
+            shaderTextures: biomeDecorationsTexturePositions,
+            layer: Z_LAYERS.hip,
+            numGeometries: MAX_SHADER_GEOMETRIES,
+        });
     }
 
     async function updateItems(
@@ -977,9 +994,8 @@
         const gl = (app.renderer as WebGLRenderer).gl;
         gl.clear(gl.DEPTH_BUFFER_BIT);
 
-        const seconds = ticker.elapsedMS / 1000;
-
         // Update shader uniforms
+        const seconds = ticker.elapsedMS / 1000;
         updateShaderUniforms({ deltaTime: seconds });
 
         // Move camera to target position (prevent jitter at the end)

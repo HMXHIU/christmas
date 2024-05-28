@@ -6,7 +6,25 @@ export {
     LRUMemoryCache,
     LocalStorageCache,
     MemoryCache,
+    memoize,
 };
+
+function memoize<T, A extends any[]>(
+    func: (...args: A) => Promise<T>,
+    cache: CacheInterface,
+    resolver: (...args: A) => string,
+): (...args: A) => Promise<T> {
+    return async (...args: A): Promise<T> => {
+        const key = resolver(...args);
+        const cachedResult = await cache.get(key);
+        if (cachedResult !== undefined) {
+            return cachedResult;
+        }
+        const result = await func(...args);
+        await cache.set(key, result);
+        return result;
+    };
+}
 
 class CacheInterface {
     async get(key: string): Promise<any> {}
