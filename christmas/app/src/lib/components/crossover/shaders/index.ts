@@ -61,6 +61,8 @@ function updateShaderUniforms({ deltaTime }: { deltaTime: number }) {
 function loadShaderGeometry(
     s: string,
     texture: Texture,
+    width: number,
+    height: number,
     instanceCount?: number,
 ): [
     Shader,
@@ -86,19 +88,27 @@ function loadShaderGeometry(
     if (geometry == null) {
         if (instanceCount > 1) {
             const [geometry, instancePositions] =
-                createInstancedTexturedQuadGeometry(texture, instanceCount);
+                createInstancedTexturedQuadGeometry(
+                    texture,
+                    instanceCount,
+                    width,
+                    height,
+                );
+
+            const mesh = new Mesh<Geometry, Shader>({
+                geometry,
+                shader: loadedShaders[s]!,
+            });
+
             loadedGeometry[texture.uid] = {
                 geometry,
                 instanceCount,
                 instancePositions,
-                mesh: new Mesh<Geometry, Shader>({
-                    geometry,
-                    shader: loadedShaders[s]!,
-                }),
+                mesh,
             };
         } else {
             loadedGeometry[texture.uid] = {
-                geometry: createTexturedQuadGeometry(texture),
+                geometry: createTexturedQuadGeometry(texture, width, height),
             };
         }
     }
@@ -108,7 +118,7 @@ function loadShaderGeometry(
 
 function createShader(s: string, texture: Texture): Shader {
     const { height, width } = texture.frame;
-    const { x, y } = texture.defaultAnchor || { x: 0, y: 0 };
+    const { x: anchorX, y: anchorY } = texture.defaultAnchor || { x: 0, y: 0 };
 
     return Shader.from({
         gl: shaders[s],
@@ -116,11 +126,11 @@ function createShader(s: string, texture: Texture): Shader {
             uTexture: texture.source,
             uniforms: {
                 uCx: {
-                    value: width * x,
+                    value: width * anchorX,
                     type: "f32",
                 },
                 uCy: {
-                    value: height * y,
+                    value: height * anchorY,
                     type: "f32",
                 },
                 uTime: {
@@ -140,8 +150,11 @@ function createShader(s: string, texture: Texture): Shader {
     });
 }
 
-function createTexturedQuadGeometry(texture: Texture): Geometry {
-    const { width, height } = texture.frame;
+function createTexturedQuadGeometry(
+    texture: Texture,
+    width: number,
+    height: number,
+): Geometry {
     const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
 
     return new Geometry({
@@ -169,8 +182,9 @@ function createTexturedQuadGeometry(texture: Texture): Geometry {
 function createInstancedTexturedQuadGeometry(
     texture: Texture,
     instanceCount: number,
+    width: number,
+    height: number,
 ): [Geometry, Buffer] {
-    const { width, height } = texture.frame;
     const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
 
     if (instanceCount < 1) {
@@ -178,7 +192,7 @@ function createInstancedTexturedQuadGeometry(
     }
 
     const instancePositions = new Buffer({
-        data: new Float32Array(instanceCount * 2), // x, y
+        data: new Float32Array(instanceCount * 3), // x, y, z
         usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
     });
 
@@ -203,6 +217,7 @@ function createInstancedTexturedQuadGeometry(
                 aInstancePosition: {
                     buffer: instancePositions,
                     instance: true,
+                    size: 3,
                 },
             },
             indexBuffer: [0, 1, 2, 2, 3, 0], // quad

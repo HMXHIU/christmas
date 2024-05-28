@@ -1,11 +1,12 @@
 precision mediump float;
 
 attribute vec2 aPosition;
-attribute vec2 aInstancePosition;
+attribute vec3 aInstancePosition;
 attribute vec2 aUV;
 
 varying vec2 vPosition;
 varying vec2 vUV;
+varying vec3 vInstancePosition;
 
 uniform mat3 uProjectionMatrix;
 uniform mat3 uWorldTransformMatrix;
@@ -60,9 +61,8 @@ void main() {
     // Compute the rotation angle based on noise and height factor
     float angle = noiseSample * percentHeight;
 
-    
-
-    gl_Position = vec4(rotationMatrix(angle) * clip.xy, 0, 1.0);
+    gl_Position = vec4(rotationMatrix(angle) * clip.xy, aInstancePosition.z, 1.0);
     vUV = aUV;
     vPosition = aPosition;
+    vInstancePosition = aInstancePosition;
 }

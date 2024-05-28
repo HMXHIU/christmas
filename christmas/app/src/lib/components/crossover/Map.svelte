@@ -105,16 +105,19 @@
         l4: 6 * isoGridY,
     };
 
-    // In WebGL, the gl_Position.z value should be in the range [-1, 1] in normalized device coordinates (NDC)
+    // In WebGL, the gl_Position.z value should be in the range [-1 (closer), 1]
     const Z_SCALE = -1 / (Z_LAYERS.l4 + isoGridY);
     const TOPOLOGICAL_HEIGHT_SCALE = CELL_HEIGHT / 2 / 8; // 1 meter = 1/8 a cell height (on isometric coordinates)
 
-    const app = new Application();
-    const worldStage = new Container();
+    let app: Application | null = null;
+    let worldStage: Container | null = null;
 
     interface ShaderTexturePositions {
         texture: Texture;
-        positions: number[];
+        positions: Float32Array;
+        width: number;
+        height: number;
+        length: number;
     }
 
     interface GridSprite {
@@ -158,7 +161,7 @@
      */
 
     function updatePivot(tween = true) {
-        if (playerSprite) {
+        if (playerSprite && worldStage) {
             const offsetX = Math.floor(
                 playerSprite.x + CELL_WIDTH / 2 - clientWidth / 2,
             );
@@ -184,7 +187,7 @@
     }
 
     function resize(clientHeight: number, clientWidth: number) {
-        if (isInitialized && clientHeight && clientWidth) {
+        if (app && isInitialized && clientHeight && clientWidth) {
             app.renderer.resize(clientWidth, clientHeight);
             updatePivot();
         }
@@ -233,6 +236,10 @@
         town: string;
         origin: GridCell;
     }) {
+        if (!isInitialized || worldStage == null) {
+            return;
+        }
+
         const tilemap = await Assets.load(world.url);
         const { layers, tilesets, tileheight, tilewidth } = tilemap;
         const tileset = await Assets.load(tilesets[0].source);
@@ -438,7 +445,7 @@
      */
 
     async function updatePlayer(playerCell: GridCell | null) {
-        if (!isInitialized || playerCell == null) {
+        if (!isInitialized || playerCell == null || worldStage == null) {
             return;
         }
 
@@ -530,11 +537,22 @@
         layer: number;
         numGeometries: number;
     }) {
-        for (const [textureUid, { texture, positions }] of Object.entries(
-            shaderTextures,
-        )) {
+        if (!isInitialized || worldStage == null) {
+            return;
+        }
+
+        for (const [
+            textureUid,
+            { texture, positions, width, height },
+        ] of Object.entries(shaderTextures)) {
             const [shader, { geometry, instancePositions, mesh }] =
-                loadShaderGeometry(shaderName, texture, numGeometries);
+                loadShaderGeometry(
+                    shaderName,
+                    texture,
+                    width,
+                    height,
+                    numGeometries,
+                );
 
             // Update instance positions buffer
             if (instancePositions) {
@@ -563,6 +581,8 @@
         biome: string;
         geohash: string;
         strength: number;
+        width: number;
+        height: number;
     }> {
         const geohash = gridCellToGeohash({
             precision: playerCell.precision,
@@ -597,10 +617,9 @@
             throw new Error(`Missing texture for ${biome}`);
         }
 
-        // TODO: Scale texture and maintain aspect ratio
-        //
-        // sprite.width = CELL_WIDTH; // Biome sprite is scaled to CELL_WIDTH
-        // sprite.height = (texture.height * sprite.width) / texture.width; // maintain aspect ratio
+        // Scale the width and height of the texture to the cell while maintaining aspect ratio
+        const width = CELL_WIDTH;
+        const height = (texture.height * width) / texture.width;
 
         // Convert cartesian to isometric position
         const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
@@ -613,6 +632,8 @@
             isoX,
             isoY,
             topologicalHeight,
+            width,
+            height,
         };
     }
 
@@ -684,7 +705,12 @@
                 if (texturePositions[texture.uid] == null) {
                     texturePositions[texture.uid] = {
                         texture,
-                        positions: [],
+                        positions: new Float32Array(
+                            MAX_SHADER_GEOMETRIES * 3,
+                        ).fill(-1), // x, y, z
+                        height: texture.height,
+                        width: texture.width,
+                        length: 0,
                     };
                 }
 
@@ -695,7 +721,18 @@
                     spacedOffsets[i].y + isoY + jitter - topologicalHeight;
 
                 // Add to decoration positions
-                texturePositions[texture.uid].positions.push(x, y);
+                texturePositions[texture.uid].positions[
+                    texturePositions[texture.uid].length
+                ] = x;
+                texturePositions[texture.uid].positions[
+                    texturePositions[texture.uid].length + 1
+                ] = y;
+                // TODO: this is a problem because it is cached while the player moves
+                texturePositions[texture.uid].positions[
+                    texturePositions[texture.uid].length + 2
+                ] = (isoY + Z_LAYERS.hip - playerSprite.y) * Z_SCALE;
+
+                texturePositions[texture.uid].length += 3;
             }
         }
         return texturePositions;
@@ -733,7 +770,7 @@
                 col < playerCell.col + GRID_MID_COL;
                 col++
             ) {
-                // Get biomeTexturePositions
+                // Fill biomeTexturePositions
                 const {
                     isoX,
                     isoY,
@@ -742,22 +779,38 @@
                     biome,
                     geohash,
                     strength,
+                    width,
+                    height,
                 } = await memoizedCalculateBiomeForRowCol(playerCell, row, col);
 
                 if (biomeTexturePositions[texture.uid] == null) {
                     biomeTexturePositions[texture.uid] = {
                         texture,
-                        positions: [],
+                        positions: new Float32Array(
+                            MAX_SHADER_GEOMETRIES * 3,
+                        ).fill(-1), // x, y, z
+                        width,
+                        height,
+                        length: 0,
                     };
                 } else {
-                    biomeTexturePositions[texture.uid].positions.push(
-                        isoX,
-                        isoY - topologicalHeight,
-                    );
+                    biomeTexturePositions[texture.uid].positions[
+                        biomeTexturePositions[texture.uid].length
+                    ] = isoX;
+                    biomeTexturePositions[texture.uid].positions[
+                        biomeTexturePositions[texture.uid].length + 1
+                    ] = isoY - topologicalHeight;
+                    biomeTexturePositions[texture.uid].positions[
+                        biomeTexturePositions[texture.uid].length + 2
+                    ] = (isoY + Z_LAYERS.biome - playerSprite.y) * Z_SCALE;
+                    biomeTexturePositions[texture.uid].length += 3;
                 }
 
-                // Get biomeDecorationsTexturePositions
-                const texturePositions =
+                // Fill biomeDecorationsTexturePositions
+                for (const [
+                    textureUid,
+                    { positions, texture, height, width, length },
+                ] of Object.entries(
                     await memoizedCalculateBiomeDecorationsForRowCol({
                         geohash,
                         biome,
@@ -767,20 +820,27 @@
                         isoX,
                         isoY,
                         topologicalHeight,
-                    });
-                for (const [
-                    textureUid,
-                    { positions, texture },
-                ] of Object.entries(texturePositions)) {
+                    }),
+                )) {
                     if (biomeDecorationsTexturePositions[textureUid] == null) {
                         biomeDecorationsTexturePositions[textureUid] = {
                             texture,
-                            positions: [],
+                            positions: new Float32Array(
+                                MAX_SHADER_GEOMETRIES * 3,
+                            ).fill(-1), // x, y, z
+                            width,
+                            height,
+                            length: 0,
                         };
                     } else {
                         biomeDecorationsTexturePositions[
                             textureUid
-                        ].positions.push(...positions);
+                        ].positions.set(
+                            positions.subarray(0, length),
+                            biomeDecorationsTexturePositions[textureUid].length,
+                        );
+                        biomeDecorationsTexturePositions[textureUid].length +=
+                            length;
                     }
                 }
             }
@@ -804,7 +864,7 @@
         ir: Record<string, Item>,
         playerCell: GridCell | null,
     ) {
-        if (!isInitialized || playerCell == null) {
+        if (!isInitialized || playerCell == null || worldStage == null) {
             return;
         }
 
@@ -900,7 +960,7 @@
         er: Record<string, Monster | Player>,
         playerCell: GridCell | null,
     ) {
-        if (!isInitialized || playerCell == null) {
+        if (!isInitialized || playerCell == null || worldStage == null) {
             return;
         }
 
@@ -986,13 +1046,13 @@
     }
 
     function ticker(ticker: Ticker) {
-        if (!isInitialized) {
+        if (!isInitialized || app == null || worldStage == null) {
             return;
         }
 
         // Clear depth buffer
         const gl = (app.renderer as WebGLRenderer).gl;
-        gl.clear(gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // Update shader uniforms
         const seconds = ticker.elapsedMS / 1000;
@@ -1025,8 +1085,7 @@
     }
 
     async function init() {
-        if (isInitialized) {
-            console.log("Already initialized");
+        if (isInitialized || app == null || worldStage == null) {
             return;
         }
 
@@ -1040,11 +1099,12 @@
 
         // Set up depth test
         const gl = (app.renderer as WebGLRenderer).gl;
-        // gl.enable(gl.DEPTH_TEST);
-        // gl.depthFunc(gl.LEQUAL);
-        // gl.depthMask(true);
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);
+        gl.depthMask(true);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // Add world container
         worldStage.width = WORLD_WIDTH;
@@ -1084,7 +1144,16 @@
     }
 
     onMount(() => {
+        app = new Application();
+        worldStage = new Container();
+
         init();
+
+        return () => {
+            if (app != null) {
+                // app?.destroy(false, { children: true, texture: true });
+            }
+        };
     });
 </script>
 
