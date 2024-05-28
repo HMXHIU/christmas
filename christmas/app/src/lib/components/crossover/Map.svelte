@@ -18,7 +18,10 @@
         type AssetMetadata,
         type GridCell,
     } from "$lib/crossover/world";
-    import { biomeAtGeohash } from "$lib/crossover/world/biomes";
+    import {
+        biomeAtGeohash,
+        heightAtGeohash,
+    } from "$lib/crossover/world/biomes";
     import {
         bestiary,
         biomes,
@@ -100,8 +103,10 @@
         l3: 5 * isoGridY,
         l4: 6 * isoGridY,
     };
+
     // In WebGL, the gl_Position.z value should be in the range [-1, 1] in normalized device coordinates (NDC)
     const Z_SCALE = -1 / (Z_LAYERS.l4 + isoGridY);
+    const TOPOLOGICAL_HEIGHT_SCALE = CELL_HEIGHT / 2 / 8; // 1 meter = 1/8 a cell height (on isometric coordinates)
 
     const app = new Application();
     const worldStage = new Container();
@@ -198,6 +203,7 @@
         variant ??= "default";
         const [bundleName, alias] = asset.path.split("/").slice(-2);
         const bundle = await Assets.loadBundle(bundleName);
+
         // Bundle might be a sprite sheet or image
         const frame =
             bundle[alias]?.textures?.[asset.variants?.[variant] || "default"] ||
@@ -432,7 +438,7 @@
         }
 
         // Cull world sprites outside town
-        const town = gridCellToGeohash(playerCell).slice(
+        const town = playerCell.geohash.slice(
             0,
             worldSeed.spatial.town.precision,
         );
@@ -450,9 +456,17 @@
                 playerCell.col * CELL_HEIGHT,
                 playerCell.row * CELL_WIDTH,
             );
+
+            const height = await heightAtGeohash(playerCell.geohash, {
+                responseCache: topologyResponseCache,
+                resultsCache: topologyResultCache,
+                bufferCache: topologyBufferCache,
+            });
+            const topologicalHeight = TOPOLOGICAL_HEIGHT_SCALE * height;
+
             playerSprite.x = isoX;
-            playerSprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-            playerSprite.zIndex = Z_LAYERS.player + playerSprite.y;
+            playerSprite.y = isoY - topologicalHeight - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
+            playerSprite.zIndex = Z_LAYERS.player + isoY - CELL_HEIGHT / 4;
         }
 
         // Move camera to player
@@ -468,7 +482,7 @@
         }
 
         // Get all worlds in town
-        const town = gridCellToGeohash(playerCell).slice(
+        const town = playerCell.geohash.slice(
             0,
             worldSeed.spatial.town.precision,
         );
@@ -551,12 +565,13 @@
                 col < playerCell.col + GRID_MID_COL;
                 col++
             ) {
-                // Determine biome and load asset
                 const geohash = gridCellToGeohash({
                     precision: playerCell.precision,
                     row,
                     col,
                 });
+
+                // Determine biome and load asset
                 const biomeId = `biome-${geohash}`;
 
                 // Skip if already created
@@ -564,12 +579,20 @@
                     continue;
                 }
 
-                // Get biome asset
+                // Get biome properties and asset
                 const [biome, strength] = await biomeAtGeohash(geohash, {
                     topologyResponseCache,
                     topologyResultCache,
                     topologyBufferCache,
                 });
+                const topologicalHeight =
+                    TOPOLOGICAL_HEIGHT_SCALE *
+                    (await heightAtGeohash(geohash, {
+                        responseCache: topologyResponseCache,
+                        resultsCache: topologyResultCache,
+                        bufferCache: topologyBufferCache,
+                    }));
+
                 const asset = biomes[biome].asset;
                 if (!asset) {
                     console.error(`Missing asset for ${biome}`);
@@ -597,8 +620,8 @@
                     row * CELL_HEIGHT,
                 );
                 sprite.x = isoX;
-                sprite.y = isoY;
-                sprite.zIndex = Z_LAYERS.biome + sprite.y;
+                sprite.y = isoY - topologicalHeight;
+                sprite.zIndex = Z_LAYERS.biome + isoY;
 
                 // Remove old sprite
                 if (
@@ -1001,9 +1024,9 @@
 
         // Set up depth test
         const gl = (app.renderer as WebGLRenderer).gl;
-        gl.enable(gl.DEPTH_TEST);
-        gl.depthFunc(gl.LEQUAL);
-        gl.depthMask(true);
+        // gl.enable(gl.DEPTH_TEST);
+        // gl.depthFunc(gl.LEQUAL);
+        // gl.depthMask(true);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 

@@ -171,6 +171,7 @@ test("Test World", async () => {
         precision: 8,
         row: 451413,
         col: 826667,
+        geohash: "w61z4m6f",
     });
 
     // Test geohashToColRow (slightly faster than geohashToGridCell)

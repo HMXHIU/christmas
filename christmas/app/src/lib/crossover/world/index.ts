@@ -80,6 +80,7 @@ type GridCell = {
     precision: number;
     row: number;
     col: number;
+    geohash: string;
 };
 
 interface WorldSeed {
@@ -143,7 +144,7 @@ function geohashToGridCell(geohash: string): GridCell {
         ((longitude + 180) / 360) * gridSizeAtPrecision[precision].cols,
     );
 
-    return { precision, row, col };
+    return { precision, row, col, geohash };
 }
 
 /**
@@ -154,7 +155,15 @@ function geohashToGridCell(geohash: string): GridCell {
  * @param col - The column index of the grid cell.
  * @returns The geohash string representing the grid cell.
  */
-function gridCellToGeohash({ precision, row, col }: GridCell): string {
+function gridCellToGeohash({
+    precision,
+    row,
+    col,
+}: {
+    precision: number;
+    row: number;
+    col: number;
+}): string {
     const lat = -(
         ((row + 0.5) / gridSizeAtPrecision[precision].rows) * 180 -
         90

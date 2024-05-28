@@ -119,6 +119,39 @@ async function topologyBuffer(
     return png;
 }
 
+type Pixel = { x: number; y: number; intensity: number };
+
+function bilinearInterpolation({
+    bl,
+    tl,
+    br,
+    tr,
+    x,
+    y,
+}: {
+    bl: Pixel;
+    tl: Pixel;
+    br: Pixel;
+    tr: Pixel;
+    x: number;
+    y: number;
+}): number {
+    const { x: x1, y: y1, intensity: I11 } = bl; // Bottom-left corner
+    const { x: x1_b, y: y2, intensity: I12 } = tl; // Top-left corner
+    const { x: x2, y: y1_b, intensity: I21 } = br; // Bottom-right corner
+    const { x: x2_b, y: y2_b, intensity: I22 } = tr; // Top-right corner
+
+    // Interpolate in the x-direction
+    const I_x1 = (I11 * (x2 - x)) / (x2 - x1) + (I21 * (x - x1)) / (x2 - x1);
+    const I_x2 = (I12 * (x2 - x)) / (x2 - x1) + (I22 * (x - x1)) / (x2 - x1);
+
+    // Interpolate in the y-direction
+    const I = (I_x1 * (y2 - y)) / (y2 - y1) + (I_x2 * (y - y1)) / (y2 - y1);
+
+    return I;
+}
+
+// TODO: cache the results of this function
 async function topologyAtGeohash(
     geohash: string,
     options?: {
@@ -139,15 +172,82 @@ async function topologyAtGeohash(
     });
 
     const { width, height, data } = png;
-    const x = Math.round((width - 1) * (col / cols)); // x, y is 0 indexed
-    const y = Math.round((height - 1) * (row / rows));
-    const index = 4 * (y * width + x); // there is rgba channels for pngjs
+    const xRaw = (width - 1) * (col / cols); // x, y is 0 indexed
+    const yRaw = (height - 1) * (row / rows);
+    const x = Math.trunc(xRaw);
+    const y = Math.trunc(yRaw);
+    const xPixel = xRaw - Math.floor(xRaw);
+    const yPixel = yRaw - Math.floor(yRaw);
+
+    // Smooth out the intensity by averaging the surrounding pixels
+    const index = y * width + x;
+    const ym = Math.max(y - 1, 0);
+    const yp = Math.min(y + 1, height - 1);
+    const xm = Math.max(x - 1, 0);
+    const xp = Math.min(x + 1, width - 1);
+    const nwIdx = ym * width + xm;
+    const nIdx = ym * width + x;
+    const neIdx = ym * width + xp;
+    const wIdx = y * width + xm;
+    const eIdx = y * width + xp;
+    const swIdx = yp * width + xm;
+    const sIdx = yp * width + x;
+    const seIdx = yp * width + xp;
+
+    let intensity = 0;
+
+    if (xPixel < 0.5) {
+        if (yPixel < 0.5) {
+            // nw, n, w, current
+            intensity = bilinearInterpolation({
+                tl: { x: -0.5, y: -0.5, intensity: data[nwIdx * 4] }, // nw
+                tr: { x: 0.5, y: -0.5, intensity: data[nIdx * 4] }, // n
+                bl: { x: -0.5, y: 0.5, intensity: data[wIdx * 4] }, // w
+                br: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
+                x: xPixel,
+                y: yPixel,
+            });
+        } else {
+            // w, current, sw, s
+            intensity = bilinearInterpolation({
+                tl: { x: -0.5, y: 0.5, intensity: data[wIdx * 4] }, // w
+                tr: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
+                bl: { x: -0.5, y: 1.5, intensity: data[swIdx * 4] }, // sw
+                br: { x: 0.5, y: 1.5, intensity: data[sIdx * 4] }, // s
+                x: xPixel,
+                y: yPixel,
+            });
+        }
+    } else {
+        if (yPixel < 0.5) {
+            // n, ne, current, e
+            intensity = bilinearInterpolation({
+                tl: { x: 0.5, y: -0.5, intensity: data[nIdx * 4] }, // n
+                tr: { x: 1.5, y: -0.5, intensity: data[neIdx * 4] }, // ne
+                bl: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
+                br: { x: 1.5, y: 0.5, intensity: data[eIdx * 4] }, // e
+                x: xPixel,
+                y: yPixel,
+            });
+        } else {
+            // current, e, s, se
+            intensity = bilinearInterpolation({
+                tl: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
+                tr: { x: 1.5, y: 0.5, intensity: data[eIdx * 4] }, // e
+                bl: { x: 0.5, y: 1.5, intensity: data[sIdx * 4] }, // s
+                br: { x: 1.5, y: 1.5, intensity: data[seIdx * 4] }, // se
+                x: xPixel,
+                y: yPixel,
+            });
+        }
+    }
+
     return {
         width,
         height,
         x,
         y,
-        intensity: data[index],
+        intensity,
     };
 }
 
