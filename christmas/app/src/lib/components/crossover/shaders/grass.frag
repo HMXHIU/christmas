@@ -23,6 +23,8 @@ void main() {
 
     // Apply alpha mask (fade out from top to bottom)
     float alpha = mix(1.0, 0.0, vPosition.y/uTextureHeight);
+
+
     textureColor *= alpha;
 
     gl_FragColor = textureColor;

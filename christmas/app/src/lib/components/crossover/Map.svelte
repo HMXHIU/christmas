@@ -727,11 +727,7 @@
                 texturePositions[texture.uid].positions[
                     texturePositions[texture.uid].length + 1
                 ] = y;
-                // TODO: this is a problem because it is cached while the player moves
-                texturePositions[texture.uid].positions[
-                    texturePositions[texture.uid].length + 2
-                ] = (isoY + Z_LAYERS.hip - playerSprite.y) * Z_SCALE;
-
+                // Note: Don't set the z here is it cannot be cached (player moves)
                 texturePositions[texture.uid].length += 3;
             }
         }
@@ -833,6 +829,14 @@
                             length: 0,
                         };
                     } else {
+                        // Fill in z values for positions
+                        for (let i = 0; i < length; i += 3) {
+                            positions[i + 2] =
+                                (positions[i + 1] +
+                                    topologicalHeight -
+                                    playerSprite.y) *
+                                Z_SCALE;
+                        }
                         biomeDecorationsTexturePositions[
                             textureUid
                         ].positions.set(
