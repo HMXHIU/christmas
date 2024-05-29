@@ -39,8 +39,12 @@
     import {
         Application,
         Assets,
+        Buffer,
         Container,
+        Geometry,
         Graphics,
+        Mesh,
+        Shader,
         Sprite,
         Texture,
         Ticker,
@@ -62,10 +66,6 @@
 
     let container: HTMLDivElement;
     let isInitialized = false;
-
-    let playerAvatar = "/sprites/portraits/female_drow.jpeg";
-    let playerTexture: Texture;
-    let playerSprite: Sprite;
 
     let clientWidth: number;
     let clientHeight: number;
@@ -93,6 +93,7 @@
     const Z_LAYERS: Record<string, number> = {
         ground: 0,
         biome: 0,
+        grass: CELL_HEIGHT / 2 / 2, // same layer as ground by above it
         floor: isoGridY,
         hip: 2 * isoGridY,
         item: 2 * isoGridY,
@@ -111,10 +112,15 @@
 
     let app: Application | null = null;
     let worldStage: Container | null = null;
+    // let playerMesh: Mesh<Geometry, Shader> | null = null;
 
-    interface ShaderTexturePositions {
+    interface ShaderTexture {
         texture: Texture;
-        positions: Float32Array;
+        positions?: Float32Array;
+        instancePositions?: Buffer;
+        x?: number;
+        y?: number;
+        z?: number;
         width: number;
         height: number;
         length: number;
@@ -128,15 +134,20 @@
         row: number; // in cells
         col: number;
         variant?: string;
-        decorations?: Record<string, ShaderTexturePositions>;
-        positions?: ShaderTexturePositions;
+        decorations?: Record<string, ShaderTexture>;
+        positions?: ShaderTexture;
     }
 
-    let biomeTexturePositions: Record<string, ShaderTexturePositions> = {};
-    let biomeDecorationsTexturePositions: Record<
-        string,
-        ShaderTexturePositions
-    > = {};
+    interface GridMesh {
+        id: string;
+        mesh: Mesh<Geometry, Shader>;
+        instancePositions: Buffer;
+    }
+
+    let biomeTexturePositions: Record<string, ShaderTexture> = {};
+    let biomeDecorationsTexturePositions: Record<string, ShaderTexture> = {};
+
+    let entityGridMeshes: Record<string, GridMesh> = {};
 
     let entityGridSprites: Record<string, GridSprite> = {};
     let worldGridSprites: Record<string, GridSprite> = {};
@@ -160,12 +171,13 @@
      * Utility functions
      */
 
-    function updatePivot(tween = true) {
-        if (playerSprite && worldStage) {
+    function updateCamera(player: Player, tween = true) {
+        const playerMesh = entityGridMeshes[player.player].mesh;
+        if (playerMesh && worldStage) {
             const offsetX = Math.floor(
-                playerSprite.x + CELL_WIDTH / 2 - clientWidth / 2,
+                playerMesh.x + CELL_WIDTH / 2 - clientWidth / 2,
             );
-            const offsetY = playerSprite.y - Math.floor(clientHeight / 2);
+            const offsetY = playerMesh.y - Math.floor(clientHeight / 2);
             if (tween) {
                 pivotTarget = { x: offsetX, y: offsetY };
             } else {
@@ -187,9 +199,9 @@
     }
 
     function resize(clientHeight: number, clientWidth: number) {
-        if (app && isInitialized && clientHeight && clientWidth) {
+        if (app && isInitialized && clientHeight && clientWidth && $player) {
             app.renderer.resize(clientWidth, clientHeight);
-            updatePivot();
+            updateCamera($player);
         }
     }
 
@@ -445,9 +457,16 @@
      */
 
     async function updatePlayer(playerCell: GridCell | null) {
-        if (!isInitialized || playerCell == null || worldStage == null) {
+        if (
+            !isInitialized ||
+            playerCell == null ||
+            worldStage == null ||
+            $player == null
+        ) {
             return;
         }
+
+        const playerGridMesh = entityGridMeshes[$player.player];
 
         // Cull sprites outside view
         for (const [id, s] of Object.entries(entityGridSprites)) {
@@ -472,12 +491,11 @@
         }
 
         // Player
-        if (playerSprite != null) {
+        if (playerGridMesh.mesh != null) {
             const [isoX, isoY] = cartToIso(
                 playerCell.col * CELL_HEIGHT,
                 playerCell.row * CELL_WIDTH,
             );
-
             const height = await heightAtGeohash(playerCell.geohash, {
                 responseCache: topologyResponseCache,
                 resultsCache: topologyResultCache,
@@ -485,13 +503,20 @@
             });
             const topologicalHeight = TOPOLOGICAL_HEIGHT_SCALE * height;
 
-            playerSprite.x = isoX;
-            playerSprite.y = isoY - topologicalHeight - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-            playerSprite.zIndex = Z_LAYERS.player + isoY - CELL_HEIGHT / 4;
+            // Update position
+            playerGridMesh.mesh.x = isoX;
+            playerGridMesh.mesh.y = isoY - topologicalHeight;
+            playerGridMesh.instancePositions.data.set([
+                playerGridMesh.mesh.x,
+                playerGridMesh.mesh.y,
+                Z_LAYERS.player * Z_SCALE,
+            ]);
+            playerGridMesh.instancePositions.update();
+            playerGridMesh.mesh.zIndex = Z_LAYERS.player + isoY;
         }
 
         // Move camera to player
-        updatePivot();
+        updateCamera($player);
     }
 
     async function updateWorlds(
@@ -533,36 +558,34 @@
         numGeometries,
     }: {
         shaderName: string;
-        shaderTextures: Record<string, ShaderTexturePositions>;
+        shaderTextures: Record<string, ShaderTexture>;
         layer: number;
         numGeometries: number;
     }) {
-        if (!isInitialized || worldStage == null) {
+        if (!isInitialized || worldStage == null || $player == null) {
             return;
         }
 
+        const playerMesh = entityGridMeshes[$player.player].mesh;
+
         for (const [
             textureUid,
-            { texture, positions, width, height },
+            { texture, positions, x, y, z, width, height },
         ] of Object.entries(shaderTextures)) {
             const [shader, { geometry, instancePositions, mesh }] =
-                loadShaderGeometry(
-                    shaderName,
-                    texture,
-                    width,
-                    height,
-                    numGeometries,
-                );
+                loadShaderGeometry(shaderName, texture, width, height, {
+                    instanceCount: numGeometries,
+                });
 
             // Update instance positions buffer
-            if (instancePositions) {
+            if (instancePositions && positions != null) {
                 instancePositions.data.set(positions);
                 instancePositions.update();
             }
 
             // Add mesh with instanced geometry to world
             if (mesh && !shaderTexturesInWorld.has(textureUid)) {
-                mesh.zIndex = layer + playerSprite.y;
+                mesh.zIndex = layer + playerMesh.y;
                 worldStage.addChild(mesh);
                 shaderTexturesInWorld.add(textureUid);
             }
@@ -655,8 +678,8 @@
         isoX: number;
         isoY: number;
         topologicalHeight: number;
-    }): Promise<Record<string, ShaderTexturePositions>> {
-        const texturePositions: Record<string, ShaderTexturePositions> = {};
+    }): Promise<Record<string, ShaderTexture>> {
+        const texturePositions: Record<string, ShaderTexture> = {};
 
         // TODO: Skip decorations in world
 
@@ -721,10 +744,10 @@
                     spacedOffsets[i].y + isoY + jitter - topologicalHeight;
 
                 // Add to decoration positions
-                texturePositions[texture.uid].positions[
+                texturePositions[texture.uid].positions![
                     texturePositions[texture.uid].length
                 ] = x;
-                texturePositions[texture.uid].positions[
+                texturePositions[texture.uid].positions![
                     texturePositions[texture.uid].length + 1
                 ] = y;
                 // Note: Don't set the z here is it cannot be cached (player moves)
@@ -747,9 +770,11 @@
     );
 
     async function updateBiomes(playerCell: GridCell | null) {
-        if (!isInitialized || playerCell == null) {
+        if (!isInitialized || playerCell == null || $player == null) {
             return;
         }
+
+        const playerMesh = entityGridMeshes[$player.player].mesh;
 
         // Clear shader textures
         biomeTexturePositions = {};
@@ -790,15 +815,15 @@
                         length: 0,
                     };
                 } else {
-                    biomeTexturePositions[texture.uid].positions[
+                    biomeTexturePositions[texture.uid].positions![
                         biomeTexturePositions[texture.uid].length
                     ] = isoX;
-                    biomeTexturePositions[texture.uid].positions[
+                    biomeTexturePositions[texture.uid].positions![
                         biomeTexturePositions[texture.uid].length + 1
                     ] = isoY - topologicalHeight;
-                    biomeTexturePositions[texture.uid].positions[
+                    biomeTexturePositions[texture.uid].positions![
                         biomeTexturePositions[texture.uid].length + 2
-                    ] = (isoY + Z_LAYERS.biome - playerSprite.y) * Z_SCALE;
+                    ] = (isoY + Z_LAYERS.biome - playerMesh.y) * Z_SCALE;
                     biomeTexturePositions[texture.uid].length += 3;
                 }
 
@@ -831,16 +856,17 @@
                     } else {
                         // Fill in z values for positions
                         for (let i = 0; i < length; i += 3) {
-                            positions[i + 2] =
-                                (positions[i + 1] +
+                            positions![i + 2] =
+                                (positions![i + 1] +
+                                    Z_LAYERS.grass +
                                     topologicalHeight -
-                                    playerSprite.y) *
+                                    playerMesh.y) *
                                 Z_SCALE;
                         }
                         biomeDecorationsTexturePositions[
                             textureUid
-                        ].positions.set(
-                            positions.subarray(0, length),
+                        ].positions!.set(
+                            positions!.subarray(0, length),
                             biomeDecorationsTexturePositions[textureUid].length,
                         );
                         biomeDecorationsTexturePositions[textureUid].length +=
@@ -859,7 +885,7 @@
         drawShaderTextures({
             shaderName: "grass",
             shaderTextures: biomeDecorationsTexturePositions,
-            layer: Z_LAYERS.hip,
+            layer: Z_LAYERS.grass,
             numGeometries: MAX_SHADER_GEOMETRIES,
         });
     }
@@ -998,7 +1024,9 @@
                     texture = await loadAssetTexture(asset);
                 } else if (entityType === "player") {
                     // TODO: load actual player avatar
-                    texture = await Assets.load(playerAvatar);
+                    texture = await Assets.load(
+                        "/sprites/portraits/female_drow.jpeg",
+                    );
                 }
 
                 if (texture == null) {
@@ -1088,6 +1116,55 @@
         ]);
     }
 
+    async function addEntityMesh(entity: Player | Item | Monster) {
+        if (worldStage == null) {
+            return;
+        }
+
+        const [uid, entityType] = entityId(entity);
+
+        // Check if already created
+        if (uid in entityGridMeshes) {
+            const gridMesh = entityGridMeshes[uid];
+            worldStage.removeChild(gridMesh.mesh);
+            worldStage.addChild(gridMesh.mesh);
+        }
+        // Create gridMesh
+        else {
+            // TODO: read texture from player/entity/monster
+            const texture = await Assets.load(
+                "/sprites/portraits/female_drow.jpeg",
+            );
+
+            // Scale the width and height of the texture to the cell while maintaining aspect ratio
+            const width = (CELL_WIDTH * 6) / 8;
+            const height = (texture.height * width) / texture.width;
+            const [shader, { mesh, instancePositions }] = loadShaderGeometry(
+                "entity",
+                texture,
+                width,
+                height,
+                {
+                    uid,
+                    anchor:
+                        entityType === "player" || entityType === "monster"
+                            ? { x: 0.5, y: 1 }
+                            : { x: 0.5, y: 0.5 },
+                },
+            );
+            const gridMesh = {
+                id: uid,
+                mesh,
+                instancePositions,
+            };
+
+            // Add to entityGridMeshes
+            entityGridMeshes[uid] = gridMesh;
+            worldStage.removeChild(mesh);
+            worldStage.addChild(mesh);
+        }
+    }
+
     async function init() {
         if (isInitialized || app == null || worldStage == null) {
             return;
@@ -1115,13 +1192,10 @@
         worldStage.height = WORLD_HEIGHT;
         app.stage.addChild(worldStage);
 
-        // Player sprite
-        playerTexture = await Assets.load(playerAvatar);
-        const pedestalBundle = await Assets.loadBundle("pedestals");
-        const pedestalTexture =
-            pedestalBundle["pedestals"].textures["square_dirt_high"];
-        playerSprite = createCreatureSprite(playerTexture, pedestalTexture);
-        worldStage.addChild(playerSprite);
+        // Create player mesh
+        if ($player) {
+            await addEntityMesh($player);
+        }
 
         // Add ticker
         app.ticker.add(ticker);
@@ -1136,14 +1210,14 @@
         resize(clientHeight, clientWidth);
 
         // Initial update
-        if (playerCell) {
+        if (playerCell && $player) {
             await updatePlayer(playerCell);
             await updateBiomes(playerCell);
             await updateCreatures($monsterRecord, playerCell);
             await updateCreatures($playerRecord, playerCell);
             await updateItems($itemRecord, playerCell);
             await updateWorlds($worldRecord, playerCell);
-            updatePivot(false);
+            updateCamera($player, false);
         }
     }
 

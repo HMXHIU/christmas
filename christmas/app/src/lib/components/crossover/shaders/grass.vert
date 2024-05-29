@@ -12,19 +12,11 @@ uniform mat3 uProjectionMatrix;
 uniform mat3 uWorldTransformMatrix;
 uniform mat3 uTransformMatrix;
 
-uniform float uCx;
-uniform float uCy;
 uniform float uTextureHeight;
 uniform float uTextureWidth;
 uniform float uTime;
-
-// uniform float uSkewX
-// uniform float uSkewY
-
-// uniform skews {
-//     float uSkewX;
-//     float uSkewY;
-// };
+uniform float uAnchorX;
+uniform float uAnchorY;
 
 // Function to create a 2D rotation matrix
 mat2 rotationMatrix(float angle) {
@@ -35,19 +27,10 @@ mat2 rotationMatrix(float angle) {
 
 void main() {
 
-    // Create a skew transformation matrix
-    mat3 skewMatrix = mat3(
-        1.0, 0.3, 0.0,
-        0.7, 1.0, 0.0,
-        0.0, 0.0, 1.0
-    );
-    
     mat3 mvp = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix;
 
-    vec2 anchor = vec2(uCx, uCy);
-
     // Calculate clip space coordinates
-    vec3 clip = mvp * vec3(aPosition + aInstancePosition.xy - anchor, 1.0);
+    vec3 clip = mvp * vec3(aPosition + aInstancePosition.xy - vec2(uAnchorX, uAnchorY), 1.0);
 
     // Map clip space coordinates to [0, 1] range for noise sampling
     vec2 st = remap(clip.xy, vec2(-1, -1), vec2(1, 1), vec2(0, 0), vec2(1, 1));
