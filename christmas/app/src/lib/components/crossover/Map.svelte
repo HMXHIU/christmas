@@ -42,7 +42,6 @@
         Buffer,
         Container,
         Geometry,
-        Graphics,
         Mesh,
         Shader,
         Sprite,
@@ -179,9 +178,9 @@
     $: updatePlayer(playerPosition);
     $: updateBiomes(playerPosition);
     $: updateWorlds($worldRecord, playerPosition);
-    $: updateCreatures($monsterRecord, playerPosition);
-    $: updateCreatures($playerRecord, playerPosition);
-    $: updateItems($itemRecord, playerPosition);
+    $: updateEntities($monsterRecord, playerPosition);
+    $: updateEntities($playerRecord, playerPosition);
+    $: updateEntities($itemRecord, playerPosition);
     $: resize(clientHeight, clientWidth);
 
     /*
@@ -425,72 +424,6 @@
                 }
             }
         }
-    }
-
-    function createCreatureSprite(
-        texture: Texture,
-        pedestalTexture: Texture,
-    ): Sprite {
-        const sprite = new Sprite(texture);
-        const anchorY = 0.92;
-        sprite.anchor.set(0.5, anchorY);
-
-        const width = texture.height / 3;
-        const yTop = texture.height * anchorY;
-        const yTip = texture.height * (1 - anchorY);
-        const halfW = width / 2;
-        const shape = [
-            {
-                x: -halfW,
-                y: -yTop,
-            },
-            {
-                x: halfW,
-                y: -yTop,
-            },
-            {
-                x: halfW,
-                y: 0,
-            },
-            {
-                x: 0,
-                y: yTip,
-            },
-            {
-                x: -halfW,
-                y: 0,
-            },
-        ];
-
-        // Banner mask
-        const mask = new Graphics();
-        mask.poly(shape);
-        mask.fill();
-        sprite.mask = mask;
-        sprite.addChild(mask);
-
-        // Banner border
-        const bannerBorder = new Graphics();
-        bannerBorder.poly(shape);
-        bannerBorder.stroke({ width: 30, color: 0x000000 });
-        sprite.addChild(bannerBorder);
-
-        // Scale to grid cell (slightly smaller) while maintaining aspect ratio
-        sprite.width = texture.width / (width / (CELL_WIDTH - 20));
-        sprite.height = (texture.height * sprite.width) / texture.width;
-
-        // Pedastal
-        const pedestal = new Sprite(pedestalTexture);
-        pedestal.width = CELL_WIDTH;
-        pedestal.height =
-            (pedestalTexture.height * pedestal.width) / pedestalTexture.width;
-        pedestal.anchor.set(0.5); // TODO: set in sprite.json
-
-        const parent = new Sprite();
-        parent.addChild(pedestal);
-        parent.addChild(sprite);
-
-        return parent;
     }
 
     /*
@@ -953,8 +886,13 @@
                         console.log(`Missing texture for ${item.name}`);
                         return;
                     }
-                    entityMesh.mesh.shader.resources.uniforms.uTexture =
-                        texture;
+                    // Update texture
+                    entityMesh.mesh.shader.resources.uTexture = texture.source;
+                    // Update uvs
+                    const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
+                    const uvBuffer = entityMesh.mesh.geometry.getBuffer("aUV");
+                    uvBuffer.data.set([x0, y0, x1, y1, x2, y2, x3, y3]);
+                    uvBuffer.update();
                     entityMesh.properties!.variant = variant;
                 }
 
@@ -986,23 +924,22 @@
                 texture = await Assets.load(
                     "/sprites/portraits/female_drow.jpeg",
                 );
-                width = (CELL_WIDTH * 6) / 8;
+                width = CELL_WIDTH;
                 anchor = { x: 0.5, y: 1 };
             } else if (entityType === "monster") {
                 const monster = entity as Monster;
                 const asset = bestiary[monster.beast]?.asset;
                 texture = await loadAssetTexture(asset);
-                width = (CELL_WIDTH * 6) / 8;
+                width = asset.width * CELL_WIDTH; // asset.width is the multiplier
                 anchor = { x: 0.5, y: 1 };
             } else if (entityType === "item") {
                 const item = entity as Item;
                 const prop = compendium[item.prop];
                 const asset = prop?.asset;
                 variant = prop.states[item.state].variant;
-                width = asset.width;
+                width = asset.width * CELL_WIDTH; // asset.width is the multiplier
                 texture = await loadAssetTexture(asset, { variant });
             }
-
             if (!texture) {
                 console.log(`Missing texture for ${entity.name}`);
                 return;
@@ -1046,28 +983,15 @@
         }
     }
 
-    async function updateItems(
-        ir: Record<string, Item>,
+    async function updateEntities(
+        er: Record<string, Monster | Player | Item>,
         playerPosition: Position | null,
     ) {
         if (!isInitialized || playerPosition == null || worldStage == null) {
             return;
         }
-        for (const item of Object.values(ir)) {
-            await upsertEntityMesh(item);
-        }
-    }
-
-    async function updateCreatures(
-        er: Record<string, Monster | Player>,
-        playerPosition: Position | null,
-    ) {
-        if (!isInitialized || playerPosition == null || worldStage == null) {
-            return;
-        }
-
-        for (const creature of Object.values(er)) {
-            await upsertEntityMesh(creature);
+        for (const entity of Object.values(er)) {
+            await upsertEntityMesh(entity);
         }
     }
 
@@ -1158,9 +1082,9 @@
         if (playerPosition && $player) {
             await updatePlayer(playerPosition);
             await updateBiomes(playerPosition);
-            await updateCreatures($monsterRecord, playerPosition);
-            await updateCreatures($playerRecord, playerPosition);
-            await updateItems($itemRecord, playerPosition);
+            await updateEntities($monsterRecord, playerPosition);
+            await updateEntities($playerRecord, playerPosition);
+            await updateEntities($itemRecord, playerPosition);
             await updateWorlds($worldRecord, playerPosition);
             updateCamera($player, false);
         }
