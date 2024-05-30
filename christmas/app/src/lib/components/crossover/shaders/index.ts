@@ -85,8 +85,7 @@ function loadShaderGeometry(
 ] {
     const instanceCount = options.instanceCount ?? 1;
     const textureUid = options.uid ?? texture.uid;
-    // For instanced geometries, we need to create a unique shader for each texture
-    const shaderUid = instanceCount > 1 ? `${s}-${textureUid}` : s;
+    const shaderUid = `${s}-${textureUid}`;
     const shader = loadedShaders[shaderUid];
     const geometry = loadedGeometry[textureUid];
 
@@ -185,7 +184,6 @@ function createTexturedQuadGeometry(
     anchor = anchor ?? texture.defaultAnchor ?? { x: 0.5, y: 0.5 };
     const yOff = height * anchor.y;
     const xOff = width * anchor.x;
-
     const instancePositions = new Buffer({
         data: new Float32Array(3).fill(-1), // x, y, z
         usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
