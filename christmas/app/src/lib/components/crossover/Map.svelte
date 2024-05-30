@@ -73,6 +73,7 @@
     // Note: this are cartesian coordinates (CELL_HEIGHT = CELL_WIDTH;)
     const CELL_WIDTH = 64;
     const CELL_HEIGHT = CELL_WIDTH;
+    const ISO_CELL_HEIGHT = CELL_HEIGHT / 2;
     const CANVAS_ROWS = 7;
     const CANVAS_COLS = 7;
     const OVERDRAW_MULTIPLE = 3;
@@ -85,30 +86,38 @@
     const GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
     const GRID_MID_COL = Math.floor(GRID_COLS / 2);
 
-    // Z layers
+    // Depth test scaling and offsets
     const isoGridY = cartToIso(
         GRID_COLS * CELL_WIDTH,
         GRID_ROWS * CELL_HEIGHT,
     )[1];
-    const Z_LAYERS: Record<string, number> = {
+    const Z_SCALE = -1 / isoGridY;
+    const Z_ATOM = ISO_CELL_HEIGHT / 2;
+    const Z_OFF: Record<string, number> = {
         ground: 0,
         biome: 0,
-        grass: CELL_HEIGHT / 2 / 2, // same layer as ground by above it
-        floor: isoGridY,
-        hip: 2 * isoGridY,
-        item: 2 * isoGridY,
-        humanoid: 3 * isoGridY,
-        monster: 3 * isoGridY,
-        player: 3 * isoGridY,
-        wall: 3 * isoGridY,
-        l2: 4 * isoGridY,
-        l3: 5 * isoGridY,
-        l4: 6 * isoGridY,
+        floor: 0,
+        wall: 0,
+        item: 2 * Z_ATOM,
+        monster: 2 * Z_ATOM,
+        player: 10 * Z_ATOM, // TODO: ??? SHOULDNT NEED TO BE 10, COULD BE DUE TO ANCHOR? OR SCALE
+        grass: Z_ATOM,
+    };
+
+    // This is different from depth testing (but used to control when which objects are drawn for alpha blending)
+    const RENDER_ORDER: Record<string, number> = {
+        ground: 0,
+        biome: 0,
+        floor: 0,
+        wall: 0,
+        item: 0,
+        monster: 0,
+        player: 0,
+        grass: 1, // draw last because it has alpha
     };
 
     // In WebGL, the gl_Position.z value should be in the range [-1 (closer), 1]
-    const Z_SCALE = -1 / (Z_LAYERS.l4 + isoGridY);
-    const TOPOLOGICAL_HEIGHT_SCALE = CELL_HEIGHT / 2 / 8; // 1 meter = 1/8 a cell height (on isometric coordinates)
+    const TOPO_SCALE = CELL_HEIGHT / 2 / 8; // 1 meter = 1/8 a cell height (on isometric coordinates)
 
     let app: Application | null = null;
     let worldStage: Container | null = null;
@@ -288,7 +297,7 @@
         // );
         // sprite.x = isoX;
         // sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-        // sprite.zIndex = Z_LAYERS.humanoid + isoY + 1000000000000;
+        // sprite.zIndex = RENDER_ORDER.humanoid + isoY + 1000000000000;
         // worldStage.addChild(sprite);
 
         // for (const cld of world.cld) {
@@ -309,7 +318,7 @@
         //     const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
         //     sprite.x = isoX;
         //     sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-        //     sprite.zIndex = Z_LAYERS.humanoid + isoY + 1000000000000;
+        //     sprite.zIndex = RENDER_ORDER.humanoid + isoY + 1000000000000;
         //     worldStage.addChild(sprite);
         // }
         // ////////////////////
@@ -358,7 +367,8 @@
                     );
                     sprite.x = isoX + (offsetx || 0) + originX + tileOffsetX;
                     sprite.y = isoY + (offsety || 0) + originY + tileOffsetY;
-                    sprite.zIndex = (Z_LAYERS[z] ?? Z_LAYERS.ground) + sprite.y;
+                    sprite.zIndex =
+                        (RENDER_ORDER[z] ?? RENDER_ORDER.ground) + sprite.y;
 
                     // The anchor point is the bottom center of the sprite
                     sprite.anchor.set(0.5, 1 - tileheight / imageheight / 2);
@@ -501,7 +511,7 @@
                 resultsCache: topologyResultCache,
                 bufferCache: topologyBufferCache,
             });
-            const topologicalHeight = TOPOLOGICAL_HEIGHT_SCALE * height;
+            const topologicalHeight = TOPO_SCALE * height;
 
             // Update position
             playerGridMesh.mesh.x = isoX;
@@ -509,10 +519,9 @@
             playerGridMesh.instancePositions.data.set([
                 playerGridMesh.mesh.x,
                 playerGridMesh.mesh.y,
-                Z_LAYERS.player * Z_SCALE,
+                Z_OFF.player * Z_SCALE, // everything is relative to player
             ]);
             playerGridMesh.instancePositions.update();
-            playerGridMesh.mesh.zIndex = Z_LAYERS.player + isoY;
         }
 
         // Move camera to player
@@ -566,8 +575,6 @@
             return;
         }
 
-        const playerMesh = entityGridMeshes[$player.player].mesh;
-
         for (const [
             textureUid,
             { texture, positions, x, y, z, width, height },
@@ -585,7 +592,7 @@
 
             // Add mesh with instanced geometry to world
             if (mesh && !shaderTexturesInWorld.has(textureUid)) {
-                mesh.zIndex = layer + playerMesh.y;
+                mesh.zIndex = layer;
                 worldStage.addChild(mesh);
                 shaderTexturesInWorld.add(textureUid);
             }
@@ -620,7 +627,7 @@
             topologyBufferCache,
         });
         const topologicalHeight =
-            TOPOLOGICAL_HEIGHT_SCALE *
+            TOPO_SCALE *
             (await heightAtGeohash(geohash, {
                 responseCache: topologyResponseCache,
                 resultsCache: topologyResultCache,
@@ -823,7 +830,7 @@
                     ] = isoY - topologicalHeight;
                     biomeTexturePositions[texture.uid].positions![
                         biomeTexturePositions[texture.uid].length + 2
-                    ] = (isoY + Z_LAYERS.biome - playerMesh.y) * Z_SCALE;
+                    ] = (isoY - playerMesh.y + Z_OFF.biome) * Z_SCALE;
                     biomeTexturePositions[texture.uid].length += 3;
                 }
 
@@ -858,9 +865,9 @@
                         for (let i = 0; i < length; i += 3) {
                             positions![i + 2] =
                                 (positions![i + 1] +
-                                    Z_LAYERS.grass +
                                     topologicalHeight -
-                                    playerMesh.y) *
+                                    playerMesh.y +
+                                    Z_OFF.grass) *
                                 Z_SCALE;
                         }
                         biomeDecorationsTexturePositions[
@@ -879,13 +886,13 @@
         drawShaderTextures({
             shaderName: "biome",
             shaderTextures: biomeTexturePositions,
-            layer: Z_LAYERS.biome,
+            layer: RENDER_ORDER.biome,
             numGeometries: MAX_SHADER_GEOMETRIES,
         });
         drawShaderTextures({
             shaderName: "grass",
             shaderTextures: biomeDecorationsTexturePositions,
-            layer: Z_LAYERS.grass,
+            layer: RENDER_ORDER.grass,
             numGeometries: MAX_SHADER_GEOMETRIES,
         });
     }
@@ -937,7 +944,7 @@
                 );
                 sprite.x = isoX;
                 sprite.y = isoY - CELL_HEIGHT / 4; // TODO: Remove and use anchor - isometric cell height is half of cartesian cell height
-                sprite.zIndex = Z_LAYERS.item + sprite.y;
+                sprite.zIndex = RENDER_ORDER.item + sprite.y;
             }
             // Create
             else {
@@ -961,7 +968,7 @@
                 );
                 sprite.x = isoX;
                 sprite.y = isoY - CELL_HEIGHT / 4; //TODO: Remove and use anchor -  isometric cell height is half of cartesian cell height
-                sprite.zIndex = Z_LAYERS.item + sprite.y;
+                sprite.zIndex = RENDER_ORDER.item + sprite.y;
 
                 // Remove old sprite
                 if (
@@ -1013,7 +1020,7 @@
                 );
                 sprite.x = isoX;
                 sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-                sprite.zIndex = Z_LAYERS.monster + sprite.y;
+                sprite.zIndex = RENDER_ORDER.monster + sprite.y;
             }
             // Create
             else {
@@ -1053,7 +1060,7 @@
                 );
                 sprite.x = isoX;
                 sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-                sprite.zIndex = Z_LAYERS[entityType] + sprite.y;
+                sprite.zIndex = RENDER_ORDER[entityType] + sprite.y;
 
                 // Remove old sprite
                 if (
@@ -1159,6 +1166,7 @@
             };
 
             // Add to entityGridMeshes
+            mesh.zIndex = RENDER_ORDER[entityType];
             entityGridMeshes[uid] = gridMesh;
             worldStage.removeChild(mesh);
             worldStage.addChild(mesh);
@@ -1224,12 +1232,15 @@
     onMount(() => {
         app = new Application();
         worldStage = new Container();
+        worldStage.sortableChildren = true;
 
         init();
 
         return () => {
             if (app != null) {
-                // app?.destroy(false, { children: true, texture: true });
+                // app.destroy(true, { children: true, texture: true });
+                // app = null;
+                // const gl = app.canvas.getContext('webgl')
             }
         };
     });
