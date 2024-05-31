@@ -17,7 +17,6 @@
         geohashToGridCell,
         gridCellToGeohash,
         type AssetMetadata,
-        type GridCell,
     } from "$lib/crossover/world";
     import {
         biomeAtGeohash,
@@ -87,7 +86,7 @@
     const Z_OFF: Record<string, number> = {
         ground: 0,
         biome: 0,
-        floor: 0,
+        floor: Z_ATOM,
         wall: 0,
         item: 2 * Z_ATOM,
         monster: 2 * Z_ATOM,
@@ -104,6 +103,7 @@
         item: 0,
         monster: 0,
         player: 0,
+        world: 0,
         grass: 1, // draw last because it has alpha
     };
 
@@ -160,6 +160,7 @@
     let biomeDecorationsTexturePositions: Record<string, ShaderTexture> = {};
 
     let entityMeshes: Record<string, EntityMesh> = {};
+    let worldMeshes: Record<string, EntityMesh> = {};
 
     let playerPosition: Position | null = null;
 
@@ -196,9 +197,17 @@
         });
     }
 
-    async function calculatePosition(geohash: string): Promise<Position> {
+    async function calculatePosition(
+        geohash: string,
+        options?: {
+            cellWidth?: number;
+            cellHeight?: number;
+        },
+    ): Promise<Position> {
+        const width = options?.cellWidth ?? CELL_WIDTH;
+        const height = options?.cellHeight ?? CELL_HEIGHT;
         const { row, col, precision } = geohashToGridCell(geohash);
-        const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
+        const [isoX, isoY] = cartToIso(col * width, row * height);
         const topologicalHeight =
             TOPO_SCALE *
             (await heightAtGeohash(geohash, {
@@ -206,7 +215,6 @@
                 resultsCache: topologyResultCache,
                 bufferCache: topologyBufferCache,
             }));
-
         return { row, col, isoX, isoY, geohash, precision, topologicalHeight };
     }
 
@@ -278,154 +286,6 @@
         return frame || null;
     }
 
-    async function loadWorld({
-        world,
-        origin,
-        town,
-    }: {
-        world: World;
-        town: string;
-        origin: GridCell;
-    }) {
-        if (!isInitialized || worldStage == null) {
-            return;
-        }
-
-        const tilemap = await Assets.load(world.url);
-        const { layers, tilesets, tileheight, tilewidth } = tilemap;
-        const tileset = await Assets.load(tilesets[0].source);
-
-        // Convert cartesian to isometric position
-        const [originX, originY] = cartToIso(
-            origin.col * CELL_WIDTH,
-            origin.row * CELL_HEIGHT,
-        );
-
-        const [tileOffsetX, tileOffsetY] = cartToIso(
-            tilewidth / 2,
-            tilewidth / 2,
-        );
-
-        // /////////////// TEST ADD COLLDIERS (DOES NOT MATCH UP WITH RENDERED TILEMAP)
-        // TODO: add this as a helper function to draw colliders in map
-
-        // const pedestalBundle = await Assets.loadBundle("pedestals");
-        // const pedestalTexture =
-        //     pedestalBundle["pedestals"].textures["square_dirt_high"];
-
-        // // Create ORIGIN sprite
-        // const sprite = new Sprite(pedestalTexture);
-        // sprite.width = CELL_WIDTH;
-        // sprite.height =
-        //     (pedestalTexture.height * sprite.width) / pedestalTexture.width;
-        // sprite.anchor.set(0.5); // TODO: set in sprite.json
-
-        // // Convert cartesian to isometric position
-        // const [isoX, isoY] = cartToIso(
-        //     origin.col * CELL_WIDTH,
-        //     origin.row * CELL_HEIGHT,
-        // );
-        // sprite.x = isoX;
-        // sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-        // sprite.zIndex = RENDER_ORDER.humanoid + isoY + 1000000000000;
-        // worldStage.addChild(sprite);
-
-        // for (const cld of world.cld) {
-        //     const { row, col } = geohashToGridCell(cld);
-
-        //     const pedestalBundle = await Assets.loadBundle("pedestals");
-        //     const pedestalTexture =
-        //         pedestalBundle["pedestals"].textures["square_dirt_high"];
-
-        //     // Create sprite
-        //     const sprite = new Sprite(pedestalTexture);
-        //     sprite.width = CELL_WIDTH;
-        //     sprite.height =
-        //         (pedestalTexture.height * sprite.width) / pedestalTexture.width;
-        //     sprite.anchor.set(0.5); // TODO: set in sprite.json
-
-        //     // Convert cartesian to isometric position
-        //     const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
-        //     sprite.x = isoX;
-        //     sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
-        //     sprite.zIndex = RENDER_ORDER.humanoid + isoY + 1000000000000;
-        //     worldStage.addChild(sprite);
-        // }
-        // ////////////////////
-
-        for (const layer of layers) {
-            const {
-                data, // 1D array of tile indices
-                properties,
-                offsetx, // in pixels
-                offsety,
-                width, // in tiles
-                height,
-                x,
-                y,
-            } = layer;
-
-            // Get properties
-            const { z, collider, interior } = (
-                properties as { name: string; value: any; type: string }[]
-            ).reduce((acc: Record<string, any>, { name, value, type }) => {
-                acc[name] = value;
-                return acc;
-            }, {});
-
-            // Create tile sprites
-            for (let i = 0; i < height; i++) {
-                for (let j = 0; j < width; j++) {
-                    const tileId = data[i * width + j];
-                    if (tileId === 0) {
-                        continue;
-                    }
-                    const id = `${town}-${world.world}-${tileId}-${i}-${j}`;
-
-                    // Skip if already created
-                    if (id in worldGridSprites) {
-                        continue;
-                    }
-
-                    const { image, imageheight, imagewidth } =
-                        tileset.tiles[tileId - 1];
-                    const texture = await Assets.load(image);
-                    const sprite = new Sprite(texture);
-                    const [isoX, isoY] = cartToIso(
-                        j * imagewidth,
-                        i * imagewidth, // Note: imagewidth for cartesian
-                    );
-                    sprite.x = isoX + (offsetx || 0) + originX + tileOffsetX;
-                    sprite.y = isoY + (offsety || 0) + originY + tileOffsetY;
-                    sprite.zIndex =
-                        (RENDER_ORDER[z] ?? RENDER_ORDER.ground) + sprite.y;
-
-                    // The anchor point is the bottom center of the sprite
-                    sprite.anchor.set(0.5, 1 - tileheight / imageheight / 2);
-
-                    // Remove old sprite
-                    if (
-                        id in worldGridSprites &&
-                        worldGridSprites[id].sprite != null
-                    ) {
-                        worldStage.removeChild(worldGridSprites[id].sprite);
-                        worldGridSprites[id].sprite.destroy();
-                    }
-
-                    // Add sprite to worldGridSprites (Note: must start with town, as it is used for culling)
-                    worldGridSprites[id] = {
-                        id,
-                        sprite: worldStage.addChild(sprite),
-                        x: sprite.x,
-                        y: sprite.y,
-                        row: origin.row + i,
-                        col: origin.col + j,
-                    };
-                }
-            }
-        }
-    }
-
     /*
      * Render functions
      */
@@ -440,7 +300,7 @@
             return;
         }
 
-        // Cull sprites outside view
+        // TODO:: Cull sprites outside view
         for (const [id, s] of Object.entries(entityGridSprites)) {
             if (!isCellInView(s, playerPosition)) {
                 worldStage.removeChild(entityGridSprites[id].sprite);
@@ -505,9 +365,12 @@
                 w.loc[0],
                 worldSeed.spatial.unit.precision,
             );
+
+            const position = await calculatePosition(origin);
+
             await loadWorld({
                 world: w,
-                origin: geohashToGridCell(origin),
+                position,
                 town,
             });
         }
@@ -850,6 +713,225 @@
             numGeometries: MAX_SHADER_GEOMETRIES,
         });
     }
+
+    async function loadWorld({
+        world,
+        position,
+        town,
+    }: {
+        world: World;
+        town: string;
+        position: Position;
+    }) {
+        if (!isInitialized || worldStage == null) {
+            return;
+        }
+
+        const tilemap = await Assets.load(world.url);
+        const { layers, tilesets, tileheight, tilewidth } = tilemap;
+        const tileset = await Assets.load(tilesets[0].source);
+
+        // // Convert cartesian to isometric position
+        // const [originX, originY] = cartToIso(
+        //     origin.col * CELL_WIDTH,
+        //     origin.row * CELL_HEIGHT,
+        // );
+
+        const [tileOffsetX, tileOffsetY] = cartToIso(
+            tilewidth / 2,
+            tilewidth / 2,
+        );
+
+        // /////////////// TEST ADD COLLDIERS (DOES NOT MATCH UP WITH RENDERED TILEMAP)
+        // TODO: add this as a helper function to draw colliders in map
+
+        // const pedestalBundle = await Assets.loadBundle("pedestals");
+        // const pedestalTexture =
+        //     pedestalBundle["pedestals"].textures["square_dirt_high"];
+
+        // // Create ORIGIN sprite
+        // const sprite = new Sprite(pedestalTexture);
+        // sprite.width = CELL_WIDTH;
+        // sprite.height =
+        //     (pedestalTexture.height * sprite.width) / pedestalTexture.width;
+        // sprite.anchor.set(0.5); // TODO: set in sprite.json
+
+        // // Convert cartesian to isometric position
+        // const [isoX, isoY] = cartToIso(
+        //     origin.col * CELL_WIDTH,
+        //     origin.row * CELL_HEIGHT,
+        // );
+        // sprite.x = isoX;
+        // sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
+        // sprite.zIndex = RENDER_ORDER.humanoid + isoY + 1000000000000;
+        // worldStage.addChild(sprite);
+
+        // for (const cld of world.cld) {
+        //     const { row, col } = geohashToGridCell(cld);
+
+        //     const pedestalBundle = await Assets.loadBundle("pedestals");
+        //     const pedestalTexture =
+        //         pedestalBundle["pedestals"].textures["square_dirt_high"];
+
+        //     // Create sprite
+        //     const sprite = new Sprite(pedestalTexture);
+        //     sprite.width = CELL_WIDTH;
+        //     sprite.height =
+        //         (pedestalTexture.height * sprite.width) / pedestalTexture.width;
+        //     sprite.anchor.set(0.5); // TODO: set in sprite.json
+
+        //     // Convert cartesian to isometric position
+        //     const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
+        //     sprite.x = isoX;
+        //     sprite.y = isoY - CELL_HEIGHT / 4; // isometric cell height is half of cartesian cell height
+        //     sprite.zIndex = RENDER_ORDER.humanoid + isoY + 1000000000000;
+        //     worldStage.addChild(sprite);
+        // }
+        // ////////////////////
+
+        for (const layer of layers) {
+            const {
+                data, // 1D array of tile indices
+                properties,
+                offsetx, // in pixels
+                offsety,
+                width, // in tiles
+                height,
+                x,
+                y,
+            } = layer;
+
+            // Get properties
+            const { z, collider, interior } = (
+                properties as { name: string; value: any; type: string }[]
+            ).reduce((acc: Record<string, any>, { name, value, type }) => {
+                acc[name] = value;
+                return acc;
+            }, {});
+
+            // Create tile sprites
+            for (let i = 0; i < height; i++) {
+                for (let j = 0; j < width; j++) {
+                    const tileId = data[i * width + j];
+                    if (tileId === 0) {
+                        continue;
+                    }
+                    const id = `${town}-${world.world}-${tileId}-${i}-${j}`;
+
+                    // // Skip if already created
+                    // if (id in worldGridSprites) {
+                    //     continue;
+                    // }
+
+                    const { image, imageheight, imagewidth } =
+                        tileset.tiles[tileId - 1];
+                    const texture = await Assets.load(image);
+
+                    const [isoX, isoY] = cartToIso(
+                        j * imagewidth,
+                        i * imagewidth, // Note: imagewidth for cartesian
+                    );
+
+                    // The anchor point is the bottom center of the sprite
+                    const anchor = {
+                        x: 0.5,
+                        y: 1 - tileheight / imageheight / 2,
+                    };
+
+                    const [shader, { mesh, instancePositions }] =
+                        loadShaderGeometry(
+                            "world",
+                            texture,
+                            imagewidth,
+                            imageheight,
+                            {
+                                uid: id,
+                                anchor,
+                            },
+                        );
+
+                    // Set initial position
+                    const x =
+                        isoX + (offsetx || 0) + position.isoX + tileOffsetX;
+                    const y =
+                        isoY + (offsety || 0) + position.isoY + tileOffsetY;
+                    const zOff = Z_OFF[z] ?? Z_OFF.floor;
+                    mesh.x = x;
+                    mesh.y = y - position.topologicalHeight;
+                    mesh.zIndex = RENDER_ORDER[z] ?? RENDER_ORDER.floor;
+                    instancePositions.data.set([
+                        mesh.x,
+                        mesh.y,
+                        (y + zOff) * Z_SCALE,
+                    ]);
+                    instancePositions.update();
+
+                    // Add to worldMeshes
+                    const worldMesh = {
+                        id,
+                        mesh,
+                        instancePositions,
+                    };
+
+                    worldMeshes[id] = worldMesh;
+                    worldStage.removeChild(mesh);
+                    worldStage.addChild(mesh);
+
+                    // const sprite = new Sprite(texture);
+                    // sprite.x = isoX + (offsetx || 0) + originX + tileOffsetX;
+                    // sprite.y = isoY + (offsety || 0) + originY + tileOffsetY;
+                    // sprite.zIndex =
+                    //     (RENDER_ORDER[z] ?? RENDER_ORDER.ground) + sprite.y;
+
+                    // // The anchor point is the bottom center of the sprite
+                    // sprite.anchor.set(0.5, 1 - tileheight / imageheight / 2);
+
+                    // // Remove old sprite
+                    // if (
+                    //     id in worldGridSprites &&
+                    //     worldGridSprites[id].sprite != null
+                    // ) {
+                    //     worldStage.removeChild(worldGridSprites[id].sprite);
+                    //     worldGridSprites[id].sprite.destroy();
+                    // }
+
+                    // // Add sprite to worldGridSprites (Note: must start with town, as it is used for culling)
+                    // worldGridSprites[id] = {
+                    //     id,
+                    //     sprite: worldStage.addChild(sprite),
+                    //     x: sprite.x,
+                    //     y: sprite.y,
+                    //     row: origin.row + i,
+                    //     col: origin.col + j,
+                    // };
+                }
+            }
+        }
+    }
+
+    // async function upsertWorldMesh({
+    //     image,
+    //     height,
+    //     width,
+    //     row,
+    //     col,
+    // }: {
+    //     image: string;
+    //     height: number;
+    //     width: number;
+    //     row: number;
+    //     col: number;
+    // }) {
+    //     const texture = await Assets.load(image);
+
+    //     const [isoX, isoY] = cartToIso(
+    //         j * width,
+    //         i * width, // Note: imagewidth for cartesian
+    //     );
+    //     sprite.x = isoX + (offsetx || 0) + originX + tileOffsetX;
+    //     sprite.y = isoY + (offsety || 0) + originY + tileOffsetY;
+    //     sprite.zIndex = (RENDER_ORDER[z] ?? RENDER_ORDER.ground) + sprite.y;
+    // }
 
     async function upsertEntityMesh(entity: Player | Item | Monster) {
         if (worldStage == null || playerPosition == null || $player == null) {

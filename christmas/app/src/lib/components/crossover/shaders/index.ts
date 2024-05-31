@@ -56,6 +56,10 @@ const shaders: Record<string, { vertex: string; fragment: string }> = {
         vertex: entityVertex,
         fragment: entityFrag,
     },
+    world: {
+        vertex: entityVertex,
+        fragment: entityFrag,
+    },
 };
 
 function updateShaderUniforms({ deltaTime }: { deltaTime: number }) {
