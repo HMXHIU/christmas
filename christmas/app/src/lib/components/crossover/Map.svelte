@@ -82,16 +82,16 @@
     const { row: brRow, col: brCol } = geohashToGridCell("pbzupuzv");
     const isoBrY = cartToIso(brCol * CELL_WIDTH, brRow * CELL_HEIGHT)[1];
     const Z_SCALE = -1 / isoBrY;
-    const Z_ATOM = ISO_CELL_HEIGHT / 4;
+    const Z_ATOM = ISO_CELL_HEIGHT / 2;
     const Z_OFF: Record<string, number> = {
         ground: 0,
         biome: 0,
-        floor: Z_ATOM,
-        wall: 0,
-        item: 2 * Z_ATOM,
-        monster: 2 * Z_ATOM,
-        player: 2 * Z_ATOM,
-        grass: Z_ATOM,
+        grass: 0,
+        floor: 3 * Z_ATOM,
+        wall: 3 * Z_ATOM,
+        item: 3 * Z_ATOM,
+        monster: 3 * Z_ATOM,
+        player: 4 * Z_ATOM,
     };
 
     // This is different from depth testing (but used to control when which objects are drawn for alpha blending)
@@ -398,6 +398,7 @@
             const [shader, { geometry, instancePositions, mesh }] =
                 loadShaderGeometry(shaderName, texture, width, height, {
                     instanceCount: numGeometries,
+                    depthFactor: Z_SCALE,
                 });
 
             // Update instance positions buffer
@@ -795,7 +796,7 @@
                 properties,
                 offsetx, // in pixels
                 offsety,
-                width, // in tiles
+                width, // in tiles (1 tile might be multiple cells)
                 height,
                 x,
                 y,
@@ -832,7 +833,7 @@
                         i * imagewidth, // Note: imagewidth for cartesian
                     );
 
-                    // The anchor point is the bottom center of the sprite
+                    // The anchor point is the center of the bottom tile (imageheight a multiple of tileheight)
                     const anchor = {
                         x: 0.5,
                         y: 1 - tileheight / imageheight / 2,
@@ -847,22 +848,25 @@
                             {
                                 uid: id,
                                 anchor,
+                                depthFactor: Z_SCALE,
                             },
                         );
 
                     // Set initial position
                     const x =
-                        isoX + (offsetx || 0) + position.isoX + tileOffsetX;
+                        isoX + (offsetx ?? 0) + position.isoX + tileOffsetX;
                     const y =
-                        isoY + (offsety || 0) + position.isoY + tileOffsetY;
+                        isoY + (offsety ?? 0) + position.isoY + tileOffsetY;
                     const zOff = Z_OFF[z] ?? Z_OFF.floor;
+
                     mesh.x = x;
                     mesh.y = y - position.topologicalHeight;
                     mesh.zIndex = RENDER_ORDER[z] ?? RENDER_ORDER.floor;
                     instancePositions.data.set([
                         mesh.x,
                         mesh.y,
-                        (y + zOff) * Z_SCALE,
+                        // The anchor is not at [0.5, 1] so we need to adjust the closest point to the camera
+                        (y + tileheight / 2 + zOff) * Z_SCALE,
                     ]);
                     instancePositions.update();
 
@@ -908,30 +912,6 @@
             }
         }
     }
-
-    // async function upsertWorldMesh({
-    //     image,
-    //     height,
-    //     width,
-    //     row,
-    //     col,
-    // }: {
-    //     image: string;
-    //     height: number;
-    //     width: number;
-    //     row: number;
-    //     col: number;
-    // }) {
-    //     const texture = await Assets.load(image);
-
-    //     const [isoX, isoY] = cartToIso(
-    //         j * width,
-    //         i * width, // Note: imagewidth for cartesian
-    //     );
-    //     sprite.x = isoX + (offsetx || 0) + originX + tileOffsetX;
-    //     sprite.y = isoY + (offsety || 0) + originY + tileOffsetY;
-    //     sprite.zIndex = (RENDER_ORDER[z] ?? RENDER_ORDER.ground) + sprite.y;
-    // }
 
     async function upsertEntityMesh(entity: Player | Item | Monster) {
         if (worldStage == null || playerPosition == null || $player == null) {
@@ -1034,7 +1014,7 @@
                 texture,
                 width,
                 height,
-                { uid: entityUid, anchor },
+                { uid: entityUid, anchor, depthFactor: Z_SCALE },
             );
             entityMesh = {
                 id: entityUid,

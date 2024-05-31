@@ -13,6 +13,8 @@ uniform mat3 uWorldTransformMatrix;
 uniform mat3 uTransformMatrix;
 uniform float uAnchorX;
 uniform float uAnchorY;
+uniform float uTextureHeight;
+uniform float uDepthFactor;
 
 void main() {
     vUV = aUV;
@@ -21,5 +23,6 @@ void main() {
 
     mat3 mvp = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix;
     vec3 clip = mvp * vec3(aPosition + aInstancePosition.xy - vec2(uAnchorX, uAnchorY), 1.0);
+    
     gl_Position = vec4(clip.xy, aInstancePosition.z, 1.0);
 }

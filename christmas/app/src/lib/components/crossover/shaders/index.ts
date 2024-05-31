@@ -77,6 +77,7 @@ function loadShaderGeometry(
         instanceCount?: number;
         uid?: string;
         anchor?: { x: number; y: number };
+        depthFactor?: number;
     } = {},
 ): [
     Shader,
@@ -102,6 +103,7 @@ function loadShaderGeometry(
             height,
             width,
             anchor: options.anchor,
+            depthFactor: options.depthFactor,
         });
     }
 
@@ -114,12 +116,7 @@ function loadShaderGeometry(
                       width,
                       height,
                   )
-                : createTexturedQuadGeometry(
-                      texture,
-                      width,
-                      height,
-                      options.anchor,
-                  );
+                : createTexturedQuadGeometry(texture, width, height);
         loadedGeometry[textureUid] = {
             geometry,
             instanceCount,
@@ -141,12 +138,14 @@ function createShader(
         height?: number;
         width?: number;
         anchor?: { x: number; y: number };
+        depthFactor?: number;
     },
 ): Shader {
     const height = instanceOptions?.height ?? texture.frame.height;
     const width = instanceOptions?.width ?? texture.frame.width;
     const anchor = instanceOptions?.anchor ??
         texture.defaultAnchor ?? { x: 0.5, y: 0.5 };
+    const depthFactor = instanceOptions?.depthFactor ?? 0;
 
     return Shader.from({
         gl: shaders[s],
@@ -173,6 +172,10 @@ function createShader(
                     value: anchor.y * height,
                     type: "f32",
                 },
+                uDepthFactor: {
+                    value: depthFactor,
+                    type: "f32",
+                },
             },
         },
     });
@@ -182,12 +185,8 @@ function createTexturedQuadGeometry(
     texture: Texture,
     width: number,
     height: number,
-    anchor?: { x: number; y: number },
 ): [Geometry, Buffer] {
     const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
-    anchor = anchor ?? texture.defaultAnchor ?? { x: 0.5, y: 0.5 };
-    const yOff = height * anchor.y;
-    const xOff = width * anchor.x;
     const instancePositions = new Buffer({
         data: new Float32Array(3).fill(-1), // x, y, z
         usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
@@ -198,17 +197,17 @@ function createTexturedQuadGeometry(
             attributes: {
                 aPosition: [
                     // tl
-                    0 - xOff,
-                    0 - yOff,
+                    0,
+                    0,
                     // tr
-                    width - xOff,
-                    0 - yOff,
+                    width,
+                    0,
                     // br
-                    width - xOff,
-                    height - yOff,
+                    width,
+                    height,
                     // bl
-                    0 - xOff,
-                    height - yOff,
+                    0,
+                    height,
                 ],
                 aUV: [x0, y0, x1, y1, x2, y2, x3, y3],
                 aInstancePosition: {
