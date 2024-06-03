@@ -25,3 +25,8 @@ test-ledger/
 # draw.io
 *.bkp
 *.dtmp
+
+
+# Ignore everything from /ai except README.md
+/ai/*
+!/ai/README.md

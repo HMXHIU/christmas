@@ -88,10 +88,12 @@
         biome: 0,
         grass: 0,
         floor: 3 * Z_ATOM,
-        wall: 3 * Z_ATOM,
-        item: 3 * Z_ATOM,
-        monster: 3 * Z_ATOM,
+        wall: 4 * Z_ATOM,
+        item: 4 * Z_ATOM,
+        monster: 4 * Z_ATOM,
         player: 4 * Z_ATOM,
+        l2: 8 * Z_ATOM,
+        l3: 12 * Z_ATOM,
     };
 
     // This is different from depth testing (but used to control when which objects are drawn for alpha blending)

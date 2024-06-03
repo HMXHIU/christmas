@@ -21,6 +21,7 @@ export {
     resolveAbilityEntities,
     type Ability,
     type AbilityType,
+    type Attributes,
     type Buff,
     type DamageType,
     type Debuff,
@@ -56,6 +57,15 @@ type Debuff =
     | "silenced"
     | "diseased";
 type Buff = "haste" | "regeneration" | "shield" | "invisibility" | "berserk";
+
+interface Attributes {
+    dex: number;
+    str: number;
+    int: number;
+    con: number;
+    wis: number;
+    cha: number;
+}
 
 interface Ability {
     ability: string;

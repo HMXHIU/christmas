@@ -24,8 +24,6 @@ const abyssTile: Tile = {
 };
 
 interface AssetMetadata {
-    // bundle: string;
-    // name: string;
     path: string; // eg. bundle/name
     animations?: Record<string, string>; // create an animation pointing to an in the sprite.json
     variants?: Record<string, string>; // create a variant pointing to a frame in the sprite.json
