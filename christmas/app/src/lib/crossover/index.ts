@@ -6,13 +6,12 @@ import type {
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
-import type { PlayerMetadataSchema } from "$lib/server/crossover/router";
 import { trpc } from "$lib/trpcClient";
 import { retry, signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
 import type { HTTPHeaders } from "@trpc/client";
 import { get } from "svelte/store";
-import { type z } from "zod";
+import type { z } from "zod";
 import type {
     FeedEvent,
     StreamEvent,
@@ -36,6 +35,7 @@ import {
     type ItemVariables,
     type Utility,
 } from "./world/compendium";
+import type { PlayerMetadataSchema } from "./world/player";
 import { compendium, worldSeed } from "./world/settings";
 
 export {
@@ -580,7 +580,7 @@ async function login(
 
 async function logout(
     headers: HTTPHeaders = {},
-): Promise<{ status: string; player: z.infer<typeof PlayerMetadataSchema> }> {
+): Promise<{ status: string; player: Player }> {
     let response = await trpc({
         headers,
     }).crossover.auth.logout.query();
@@ -591,16 +591,14 @@ async function logout(
     return response;
 }
 
-async function crossoverAuthPlayer(
-    headers: HTTPHeaders = {},
-): Promise<z.infer<typeof PlayerMetadataSchema>> {
+async function crossoverAuthPlayer(headers: HTTPHeaders = {}): Promise<Player> {
     return await trpc({
         headers,
     }).crossover.auth.player.query();
 }
 
 async function signup(
-    { name }: { name: string },
+    playerMetadata: z.infer<typeof PlayerMetadataSchema>,
     options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
     return await trpc({
@@ -609,7 +607,7 @@ async function signup(
             ...(options?.headers || {}),
         },
     })
-        .crossover.auth.signup.query({ name })
+        .crossover.auth.signup.query(playerMetadata)
         .then(({ transaction }) => {
             return signAndSendTransaction({
                 tx: Transaction.from(Buffer.from(transaction, "base64")),

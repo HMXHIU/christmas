@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { AssetMetadata } from ".";
 import type { Attributes } from "./abilities";
 import { worldSeed } from "./settings";
@@ -14,6 +15,7 @@ export {
     HAIR_TYPES,
     MAX_POSSIBLE_AP,
     PERSONALITY_TYPES,
+    PlayerMetadataSchema,
     RACE_TYPES,
     SKIN_TYPES,
     ageTypes,
@@ -509,7 +511,7 @@ const ageTypes = [
 ];
 
 const BODY_TYPES = [
-    "atheletic",
+    "athletic",
     "slim",
     "average",
     "curvy",
@@ -1087,3 +1089,35 @@ const faceTypes = [
         description: "Square with soft edges.",
     },
 ];
+
+const PlayerMetadataSchema = z.object({
+    player: z.string(),
+    name: z.string().min(1).max(100),
+    description: z.string().max(400).optional(),
+    gender: z.enum(GENDER_TYPES),
+    race: z.enum(RACE_TYPES),
+    archetype: z.enum(ARCHETYPE_TYPES),
+    attributes: z.object({
+        str: z.number(),
+        dex: z.number(),
+        con: z.number(),
+        int: z.number(),
+        wis: z.number(),
+        cha: z.number(),
+    }),
+    appearance: z.object({
+        hair: z.object({
+            type: z.enum(HAIR_TYPES),
+            color: z.enum(HAIR_COLORS),
+        }),
+        eye: z.object({
+            type: z.enum(EYE_TYPES),
+            color: z.enum(EYE_COLORS),
+        }),
+        face: z.enum(FACE_TYPES),
+        body: z.enum(BODY_TYPES),
+        skin: z.enum(SKIN_TYPES),
+        personality: z.enum(PERSONALITY_TYPES),
+        age: z.enum(AGE_TYPES),
+    }),
+});

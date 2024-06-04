@@ -40,9 +40,9 @@
 </script>
 
 <!-- Page Content (account for footer(3 rem) header(3.5 rem)) -->
-<main style="height: calc(100dvh - 6.5rem);">
+<main class="h-[calc(100dvh-6.5rem)] overflow-y-auto">
     <!-- Your Page Content Goes Here -->
-    <div class="mx-auto px-0 py-0 h-full">
+    <div class="mx-auto px-0 py-2 h-full">
         <!-- Content Slot -->
         <slot />
     </div>

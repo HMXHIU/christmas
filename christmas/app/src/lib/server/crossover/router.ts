@@ -2,7 +2,7 @@ import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
 import type { GameCommandResponse } from "$lib/crossover";
 import { actions } from "$lib/crossover/actions";
 import { geohashesNearby } from "$lib/crossover/utils";
-import { playerStats } from "$lib/crossover/world/player";
+import { PlayerMetadataSchema, playerStats } from "$lib/crossover/world/player";
 import {
     TILE_HEIGHT,
     TILE_WIDTH,
@@ -62,21 +62,12 @@ import type {
     WorldEntity,
 } from "./redis/entities";
 
-export {
-    PlayerMetadataSchema,
-    PlayerStateSchema,
-    SaySchema,
-    UserMetadataSchema,
-    crossoverRouter,
-};
+export { PlayerStateSchema, SaySchema, UserMetadataSchema, crossoverRouter };
 
 // Initialize redis clients, repositiories, indexes
 initializeClients();
 
 // Schemas - auth
-const SignupSchema = z.object({
-    name: z.string(),
-});
 const LoginSchema = z.object({
     geohash: z.string(),
     region: z.string(),
@@ -153,12 +144,7 @@ const PlayerStateSchema = z.object({
     buffs: z.array(z.string()).optional(),
     debuffs: z.array(z.string()).optional(),
 });
-// PlayerMetadata stores data owned by the player (requires player to sign transactions to modify)
-const PlayerMetadataSchema = z.object({
-    player: z.string(),
-    name: z.string().min(1).max(100),
-    description: z.string().max(400).optional(),
-});
+
 const UserMetadataSchema = z.object({
     publicKey: z.string(),
     crossover: PlayerMetadataSchema.optional(),
@@ -866,7 +852,7 @@ const crossoverRouter = {
     auth: t.router({
         // auth.signup
         signup: authProcedure
-            .input(SignupSchema)
+            .input(PlayerMetadataSchema)
             .query(async ({ ctx, input }) => {
                 // Get user account
                 const user = await serverAnchorClient.getUser(
@@ -879,8 +865,8 @@ const crossoverRouter = {
                     });
                 }
 
-                // Get player name from input
-                const { name } = input;
+                // Parse & validate player metadata
+                const playerMetadata = await PlayerMetadataSchema.parse(input);
 
                 // Check if player already exists
                 const player = await fetchEntity(ctx.user.publicKey);
@@ -905,10 +891,7 @@ const crossoverRouter = {
                 // Update user metadata with player metadata
                 userMetadata = await UserMetadataSchema.parse({
                     ...userMetadata,
-                    crossover: {
-                        player: ctx.user.publicKey,
-                        name,
-                    },
+                    crossover: playerMetadata,
                 });
 
                 // Store new user metadata and get url

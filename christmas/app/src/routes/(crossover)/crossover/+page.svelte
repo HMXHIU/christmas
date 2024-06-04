@@ -142,7 +142,7 @@
 </script>
 
 {#if !$player}
-    <Onboard />
+    <Onboard class="py-4" />
 {:else}
     <GameWindow class="pt-2 h-full" onGameCommand={handleGC} {onMove} />
 {/if}
