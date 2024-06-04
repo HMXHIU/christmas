@@ -3,7 +3,19 @@ import type { Attributes } from "./abilities";
 import { worldSeed } from "./settings";
 
 export {
+    AGE_TYPES,
+    ARCHETYPE_TYPES,
+    BODY_TYPES,
+    EYE_COLORS,
+    EYE_TYPES,
+    FACE_TYPES,
+    GENDER_TYPES,
+    HAIR_COLORS,
+    HAIR_TYPES,
     MAX_POSSIBLE_AP,
+    PERSONALITY_TYPES,
+    RACE_TYPES,
+    SKIN_TYPES,
     ageTypes,
     archetypeTypes,
     bodyTypes,
@@ -87,6 +99,8 @@ const playerAsset: AssetMetadata = {
     precision: worldSeed.spatial.unit.precision,
 };
 
+const GENDER_TYPES = ["male", "female"] as const;
+
 const genderTypes = [
     {
         value: "male",
@@ -100,15 +114,30 @@ const genderTypes = [
     },
 ];
 
+const ARCHETYPE_TYPES = [
+    "fighter",
+    "mage",
+    "rogue",
+    "cleric",
+    "ranger",
+    "paladin",
+    "bard",
+    "druid",
+    "sorcerer",
+    "monk",
+    "barbarian",
+] as const;
+
 const archetypeTypes = [
     {
-        value: "warrior",
-        label: "Warrior",
-        description: "Master of melee combat, strong and resilient.",
+        value: "fighter",
+        label: "Fighter",
+        description:
+            "Skilled combatant with versatile abilities, excels with a variety of weapons and tactics.",
         attributes: {
-            dex: 10,
-            str: 16,
-            int: 8,
+            dex: 12,
+            str: 14,
+            int: 10,
             con: 14,
             wis: 10,
             cha: 10,
@@ -251,21 +280,9 @@ const archetypeTypes = [
             cha: 8,
         },
     },
-    {
-        value: "fighter",
-        label: "Fighter",
-        description:
-            "Skilled combatant with versatile abilities, excels with a variety of weapons and tactics.",
-        attributes: {
-            dex: 12,
-            str: 14,
-            int: 10,
-            con: 14,
-            wis: 10,
-            cha: 10,
-        },
-    },
 ];
+
+const RACE_TYPES = ["human", "elf", "dwarf", "orc", "halfling"] as const;
 
 const raceTypes = [
     {
@@ -296,6 +313,29 @@ const raceTypes = [
             "Friendly and nimble, known for their love of good food and comfort.",
     },
 ];
+
+const PERSONALITY_TYPES = [
+    "introverted",
+    "extroverted",
+    "confident",
+    "shy",
+    "adventurous",
+    "cautious",
+    "optimistic",
+    "pessimistic",
+    "empathetic",
+    "logical",
+    "emotional",
+    "ambitious",
+    "easygoing",
+    "perfectionist",
+    "spontaneous",
+    "organized",
+    "creative",
+    "analytical",
+    "sympathetic",
+    "rebellious",
+] as const;
 
 const personalityTypes = [
     {
@@ -400,6 +440,20 @@ const personalityTypes = [
     },
 ];
 
+const AGE_TYPES = [
+    "teenager",
+    "young_adult",
+    "middle_aged",
+    "elderly",
+    "adult",
+    "senior_citizen",
+    "youthful",
+    "mature",
+    "middle_aged",
+    "golden_years",
+    "prime_of_life",
+] as const;
+
 const ageTypes = [
     {
         value: "teenager",
@@ -453,6 +507,29 @@ const ageTypes = [
         description: "Peak physical and mental condition.",
     },
 ];
+
+const BODY_TYPES = [
+    "atheletic",
+    "slim",
+    "average",
+    "curvy",
+    "stocky",
+    "petite",
+    "tall",
+    "broad_shouldered",
+    "narrow",
+    "full_figured",
+    "muscular",
+    "lean",
+    "plump",
+    "lanky",
+    "hourglass",
+    "rectangular",
+    "pear_shaped",
+    "inverted_triangle",
+    "ectomorph",
+    "endomorph",
+] as const;
 
 const bodyTypes = [
     {
@@ -513,6 +590,29 @@ const bodyTypes = [
     },
 ];
 
+const SKIN_TYPES = [
+    "fair",
+    "light",
+    "medium",
+    "olive",
+    "tan",
+    "dark",
+    "deep",
+    "bronze",
+    "peach",
+    "ebony",
+    "alabaster",
+    "caramel",
+    "golden",
+    "sable",
+    "mocha",
+    "porcelain",
+    "amber",
+    "chestnut",
+    "mahogany",
+    "honey",
+] as const;
+
 const skinTypes = [
     { value: "fair", label: "Fair", description: "Very light complexion." },
     { value: "light", label: "Light", description: "Pale, light tone." },
@@ -563,6 +663,29 @@ const skinTypes = [
     },
     { value: "honey", label: "Honey", description: "Warm, golden undertones." },
 ];
+
+const EYE_TYPES = [
+    "almond",
+    "round",
+    "monolid",
+    "hooded",
+    "upturned",
+    "downturned",
+    "deep_set",
+    "close_set",
+    "wide_set",
+    "protruding",
+    "large",
+    "small",
+    "cat_eye",
+    "droopy",
+    "narrow",
+    "diamond",
+    "oval",
+    "heart",
+    "piercing",
+    "gentle",
+] as const;
 
 const eyeTypes = [
     { value: "almond", label: "Almond", description: "Classic almond shape." },
@@ -619,6 +742,29 @@ const eyeTypes = [
     { value: "gentle", label: "Gentle", description: "Soft, kind expression." },
 ];
 
+const EYE_COLORS = [
+    "blue",
+    "green",
+    "brown",
+    "hazel",
+    "gray",
+    "amber",
+    "violet",
+    "black",
+    "golden",
+    "aquamarine",
+    "turquoise",
+    "amber_green",
+    "light_brown",
+    "dark_brown",
+    "sea_green",
+    "silver",
+    "emerald",
+    "chestnut",
+    "navy_blue",
+    "icy_blue",
+] as const;
+
 const eyeColors = [
     { value: "blue", label: "Blue", description: "Clear, sky-blue shade." },
     { value: "green", label: "Green", description: "Vivid, forest green." },
@@ -669,6 +815,29 @@ const eyeColors = [
     { value: "navy_blue", label: "Navy Blue", description: "Deep, dark blue." },
     { value: "icy_blue", label: "Icy Blue", description: "Pale, frosty blue." },
 ];
+
+const HAIR_TYPES = [
+    "short_straight",
+    "long_curly",
+    "buzz_cut",
+    "bob",
+    "pixie_cut",
+    "long_wavy",
+    "afro",
+    "ponytail",
+    "mohawk",
+    "braids",
+    "dreadlocks",
+    "bun",
+    "long_straight",
+    "medium_wavy",
+    "undercut",
+    "pigtails",
+    "layered",
+    "faux_hawk",
+    "curly_bob",
+    "top_knot",
+] as const;
 
 const hairTypes = [
     {
@@ -764,6 +933,29 @@ const hairTypes = [
         description: "Knot of hair on top.",
     },
 ];
+
+const HAIR_COLORS = [
+    "blonde",
+    "brunette",
+    "black",
+    "red",
+    "auburn",
+    "platinum",
+    "gray",
+    "white",
+    "blue",
+    "green",
+    "pink",
+    "purple",
+    "orange",
+    "teal",
+    "burgundy",
+    "honey",
+    "chestnut",
+    "ash_blonde",
+    "silver",
+    "lavender",
+] as const;
 const hairColors = [
     { value: "blonde", label: "Blonde", description: "Light and golden." },
     { value: "brunette", label: "Brunette", description: "Rich brown shade." },
@@ -799,6 +991,28 @@ const hairColors = [
     },
 ];
 
+const FACE_TYPES = [
+    "oval",
+    "round",
+    "square",
+    "heart",
+    "diamond",
+    "triangular",
+    "rectangular",
+    "oblong",
+    "pear",
+    "inverted_triangle",
+    "chiseled",
+    "soft",
+    "long",
+    "wide",
+    "narrow",
+    "angular",
+    "petite",
+    "gaunt",
+    "strong_jawline",
+    "soft_square",
+] as const;
 const faceTypes = [
     { value: "oval", label: "Oval", description: "Balanced and proportional." },
     {

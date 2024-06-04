@@ -23,10 +23,11 @@
 
 # Styles
 
-# Articles
+# Articles & Tutorials
 
 - https://medium.com/@promptingpixels/how-to-add-controlnets-to-comfyui-960e54106d29
 - https://www.comflowy.com/
+- [How to create depth map in blender](https://youtu.be/7_9uS2ixBCs?si=aRm-TdvY-PiNWFZ_)
 
 # Workflows
 

@@ -8,6 +8,17 @@
     import { Textarea } from "$lib/components/ui/textarea";
     import { login, signup } from "$lib/crossover";
     import {
+        AGE_TYPES,
+        ARCHETYPE_TYPES,
+        BODY_TYPES,
+        EYE_COLORS,
+        EYE_TYPES,
+        FACE_TYPES,
+        GENDER_TYPES,
+        HAIR_COLORS,
+        HAIR_TYPES,
+        PERSONALITY_TYPES,
+        SKIN_TYPES,
         ageTypes,
         archetypeTypes,
         bodyTypes,
@@ -34,6 +45,31 @@
         player: z.string(),
         name: z.string().min(1).max(100),
         description: z.string().max(400).optional(),
+        gender: z.enum(GENDER_TYPES),
+        archetype: z.enum(ARCHETYPE_TYPES),
+        attributes: z.object({
+            str: z.number(),
+            dex: z.number(),
+            con: z.number(),
+            int: z.number(),
+            wis: z.number(),
+            cha: z.number(),
+        }),
+        appearance: z.object({
+            hair: z.object({
+                type: z.enum(HAIR_TYPES),
+                color: z.enum(HAIR_COLORS),
+            }),
+            eye: z.object({
+                type: z.enum(EYE_TYPES),
+                color: z.enum(EYE_COLORS),
+            }),
+            face: z.enum(FACE_TYPES),
+            body: z.enum(BODY_TYPES),
+            skin: z.enum(SKIN_TYPES),
+            personality: z.enum(PERSONALITY_TYPES),
+            age: z.enum(AGE_TYPES),
+        }),
     });
 
     let requireSignup = false;
@@ -52,11 +88,21 @@
     let selectedRaceType = raceTypes[0];
     let selectedGenderType = genderTypes[0];
     let selectedArchetypeType = archetypeTypes[0];
+    let archetypes = archetypeTypes.reduce(
+        (acc: Record<string, typeof cur>, cur) => {
+            acc[cur.value] = cur;
+            return acc;
+        },
+        {},
+    );
 
+    $: attributes = archetypes[selectedArchetypeType.value].attributes;
     $: stats = playerStats({
         level: 1,
-        attributes: selectedArchetypeType.attributes,
+        attributes: attributes,
     });
+
+    console.log(archetypes);
 
     let errors: Record<string, string> = {};
 
@@ -285,27 +331,27 @@
                             <div class="p-2">
                                 <p class="text-xs">
                                     <span class="font-bold">Strength:</span>
-                                    {selectedArchetypeType.attributes.str}
+                                    {attributes.str}
                                 </p>
                                 <p class="text-xs">
                                     <span class="font-bold">Dexterity:</span>
-                                    {selectedArchetypeType.attributes.dex}
+                                    {attributes.dex}
                                 </p>
                                 <p class="text-xs">
                                     <span class="font-bold">Constitution:</span>
-                                    {selectedArchetypeType.attributes.con}
+                                    {attributes.con}
                                 </p>
                                 <p class="text-xs">
                                     <span class="font-bold">Intelligence:</span>
-                                    {selectedArchetypeType.attributes.int}
+                                    {attributes.int}
                                 </p>
                                 <p class="text-xs">
                                     <span class="font-bold">Wisdom:</span>
-                                    {selectedArchetypeType.attributes.wis}
+                                    {attributes.wis}
                                 </p>
                                 <p class="text-xs">
                                     <span class="font-bold">Charisma:</span>
-                                    {selectedArchetypeType.attributes.cha}
+                                    {attributes.cha}
                                 </p>
                             </div>
                         </div>
