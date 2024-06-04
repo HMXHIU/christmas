@@ -7,7 +7,6 @@
         type RedeemCouponParams,
     } from "$lib/community";
     import ClaimedCouponCard from "$lib/components/community/ClaimedCouponCard.svelte";
-    import Footer from "$lib/components/community/Footer.svelte";
     import MarketCouponCard from "$lib/components/community/MarketCouponCard.svelte";
 
     import { generateURL } from "$lib/utils";
@@ -15,7 +14,7 @@
         claimedCoupons,
         marketCoupons,
         redeemedCoupons,
-    } from "../../store";
+    } from "../../../store";
 
     // News
     let news = new Array();
@@ -132,9 +131,6 @@
         </p>
     {/if}
 </div>
-
-<!-- Footer -->
-<Footer />
 
 <!-- Styles -->
 <style>

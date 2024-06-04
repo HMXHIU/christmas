@@ -1,92 +1,17 @@
 <script lang="ts">
-    import {
-        fetchClaimedCoupons,
-        fetchMarketCoupons,
-        fetchStores,
-        verifyRedemption,
-    } from "$lib/community";
     import Wallet from "$lib/components/common/Wallet.svelte";
     import { Toaster } from "$lib/components/ui/sonner";
     import { UserDeviceClient } from "$lib/userDeviceClient";
-    import { extractQueryParams } from "$lib/utils";
     import { onMount } from "svelte";
     import "../app.postcss";
-    import { token, userDeviceClient } from "../store";
-
-    let qrAlertOpen: boolean = false;
-    let verifyRemdeptionParams: any = {};
-
-    async function fetchUserContent() {
-        // TODO: put in their respective pages for more efficiency
-        // Refetch market place coupons
-        if (
-            $userDeviceClient?.location?.country?.code &&
-            $userDeviceClient?.location?.geohash
-        ) {
-            await fetchMarketCoupons({
-                region: $userDeviceClient?.location?.country?.code,
-                geohash: $userDeviceClient?.location?.geohash,
-            });
-        }
-        await fetchClaimedCoupons();
-        await fetchStores();
-    }
+    import { userDeviceClient } from "../store";
 
     onMount(async () => {
-        // Fetch market coupons when userDeviceClient changes
-        userDeviceClient.subscribe(async (dc) => {
-            if (dc && $token) {
-                await fetchUserContent();
-            }
-        });
-        token.subscribe(async (t) => {
-            if (t && $userDeviceClient) {
-                await fetchUserContent();
-            }
-        });
-        // Set userDeviceClient (Note: after subscribe)
         const client = new UserDeviceClient();
         await client.initialize();
         userDeviceClient.set(client);
+        console.log("asdasdasd");
     });
-
-    async function onScanSuccess(decodedText: string, decodedResult: any) {
-        const qrParams = extractQueryParams(decodedText);
-
-        if (qrParams) {
-            const { signature, mint, numTokens, wallet } = qrParams;
-
-            // Verify redemption
-            try {
-                verifyRemdeptionParams = {
-                    signature,
-                    mint,
-                    numTokens,
-                    wallet,
-                    verifyRedemption: await verifyRedemption({
-                        signature,
-                        mint,
-                        numTokens: parseInt(numTokens),
-                        wallet,
-                    }),
-                };
-            } catch (err: any) {
-                verifyRemdeptionParams = {
-                    signature,
-                    mint,
-                    numTokens,
-                    wallet,
-                    verifyRedemption: {
-                        isVerified: false,
-                        err: err.message,
-                    },
-                };
-            }
-
-            // Open alert dialog
-            qrAlertOpen = true;
-        }
-    }
 </script>
 
 <!-- App Shell -->
@@ -107,14 +32,8 @@
         </div>
     </header>
 
-    <!-- Page Content (account for footer(3 rem) header(3.5 rem)) -->
-    <main style="height: calc(100dvh - 6.5rem);">
-        <!-- Your Page Content Goes Here -->
-        <div class="mx-auto px-0 py-0 h-full">
-            <!-- Content Slot -->
-            <slot />
-        </div>
-    </main>
+    <!-- Slot -->
+    <slot></slot>
 
     <!-- Toaster -->
     <Toaster />

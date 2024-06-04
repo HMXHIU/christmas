@@ -1,5 +1,4 @@
 <script lang="ts">
-    import Footer from "$lib/components/crossover/Footer.svelte";
     import GameWindow from "$lib/components/crossover/GameWindow.svelte";
     import Onboard from "$lib/components/crossover/Onboard.svelte";
     import {
@@ -13,11 +12,11 @@
     import { type Direction } from "$lib/crossover/world";
     import { substituteVariables } from "$lib/utils";
     import { onMount } from "svelte";
-    import { player } from "../../store";
+    import { player } from "../../../store";
     import type {
         FeedEvent,
         UpdateEntitiesEvent,
-    } from "../api/crossover/stream/+server";
+    } from "../../api/crossover/stream/+server";
 
     let eventStream: EventTarget | null = null;
     let closeStream: (() => void) | null = null;
@@ -142,12 +141,8 @@
     });
 </script>
 
-<div class="h-full">
-    {#if !$player}
-        <Onboard />
-    {:else}
-        <GameWindow class="pt-2 h-full" onGameCommand={handleGC} {onMove} />
-    {/if}
-    <!-- Footer TODO: Move to seperate svelte layout -->
-    <Footer />
-</div>
+{#if !$player}
+    <Onboard />
+{:else}
+    <GameWindow class="pt-2 h-full" onGameCommand={handleGC} {onMove} />
+{/if}
