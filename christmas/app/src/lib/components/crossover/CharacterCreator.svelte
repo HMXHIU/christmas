@@ -2,8 +2,11 @@
     import { Button } from "$lib/components/ui/button";
     import * as Card from "$lib/components/ui/card/index.js";
     import { Input } from "$lib/components/ui/input";
+    import { Label } from "$lib/components/ui/label";
+    import * as RadioGroup from "$lib/components/ui/radio-group/index.js";
     import * as Select from "$lib/components/ui/select/index.js";
     import { Textarea } from "$lib/components/ui/textarea";
+    import { crossoverGenerateAvatar } from "$lib/crossover";
     import {
         PlayerMetadataSchema,
         ageTypes,
@@ -61,8 +64,11 @@
     });
 
     let errors: Record<string, string> = {};
+    let avatars: [string, string] | null = null;
 
-    async function onCreate() {
+    async function validatePlayerMetadata(): Promise<z.infer<
+        typeof PlayerMetadataSchema
+    > | null> {
         // Validate player metadata
         try {
             const playerMetadata = await PlayerMetadataSchema.parse({
@@ -89,14 +95,31 @@
                     age: selectedAgeType.value,
                 },
             });
-            onCreateCharacter(playerMetadata);
+            return playerMetadata;
         } catch (err) {
             errors = parseZodErrors(err);
+            return null;
+        }
+    }
+
+    async function onGenerateAvatar() {
+        const playerMetadata = await validatePlayerMetadata();
+        if (playerMetadata) {
+            avatars = await crossoverGenerateAvatar(playerMetadata);
+            errors = {};
+        }
+    }
+
+    async function onCreate() {
+        const playerMetadata = await validatePlayerMetadata();
+        if (playerMetadata) {
+            onCreateCharacter(playerMetadata);
+            errors = {};
         }
     }
 </script>
 
-<div class={cn("flex flex-col w-full", $$restProps)}>
+<div class={cn("flex flex-col w-full gap-2", $$restProps)}>
     <!-- Character -->
     <Card.Root>
         <Card.Header>
@@ -486,6 +509,34 @@
                 </p>
             {/if}
         </Card.Footer>
+    </Card.Root>
+
+    <!-- Avatar -->
+    <Card.Root>
+        <Card.Header>
+            <Card.Title>Avatar</Card.Title>
+        </Card.Header>
+        <Card.Content>
+            {#if avatars}
+                <RadioGroup.Root value={avatars[0]}>
+                    {#each avatars as avatar}
+                        <Label
+                            for={avatar}
+                            class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+                        >
+                            <RadioGroup.Item value={avatar} id={avatar} />
+                            <img
+                                src={avatar}
+                                alt="Avatar"
+                                width="200"
+                                height="auto"
+                            />
+                        </Label>
+                    {/each}
+                </RadioGroup.Root>
+            {/if}
+            <Button on:click={onGenerateAvatar}>Generate Avatar</Button>
+        </Card.Content>
     </Card.Root>
 
     <Button on:click={onCreate}>Create Character</Button>

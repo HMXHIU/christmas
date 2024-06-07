@@ -53,6 +53,7 @@ export {
     crossoverCmdTake,
     crossoverCmdUnequip,
     crossoverCmdUseItem,
+    crossoverGenerateAvatar,
     crossoverPlayerInventory,
     crossoverWorldWorlds,
     executeGameCommand,
@@ -735,4 +736,18 @@ function crossoverPlayerInventory(headers: HTTPHeaders = {}) {
 
 function crossoverWorldWorlds(geohash: string, headers: HTTPHeaders = {}) {
     return trpc({ headers }).crossover.world.worlds.query({ geohash });
+}
+
+/*
+ * Character creation
+ */
+
+// TODO: connect to avatar api
+async function crossoverGenerateAvatar(
+    playerMetadata: z.infer<typeof PlayerMetadataSchema>,
+): Promise<[string, string]> {
+    return [
+        "/sprites/portraits/female_elf.jpeg",
+        "/sprites/portraits/female_drow.jpeg",
+    ];
 }

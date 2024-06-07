@@ -46,41 +46,12 @@
     ) {
         try {
             // Try signup crossover player
-            if (playerMetadata) {
-                await signup(playerMetadata);
-                requireSignup = false;
-            }
+            await signup(playerMetadata);
+            requireSignup = false;
         } catch (error) {
-            // If signup failed, user has not been created
-            if (!$userDeviceClient?.location?.country?.code) {
-                const err =
-                    "Location not found. Please enable location services and try again.";
-                toast.error(err, {
-                    action: {
-                        label: "Enable location services",
-                        onClick: () => {
-                            $userDeviceClient?.initialize();
-                        },
-                    },
-                });
-                throw new Error(err);
-            }
-            // Create community user
-            toast.info("Requesting permssion to create Community User.");
-            await createUser({
-                region: String.fromCharCode(
-                    ...$userDeviceClient?.location?.country?.code!,
-                ),
-            });
-            // Signup crossover player
-            toast.info("Requesting permssion to creating Crossover Player.");
-            await signup({ name: "Player" });
-
-            // Login to crossover
+            // Require location services
             const region = $userDeviceClient?.location?.country?.code;
             const geohash = $userDeviceClient?.location?.geohash;
-
-            // Require location services
             if (!region || !geohash) {
                 const err =
                     "Location not found. Please enable location services and try again.";
@@ -94,20 +65,40 @@
                 });
                 throw new Error(err);
             }
+
+            // Try create community user
+            toast.info("Requesting permssion to create Community User.");
+            await createUser({ region: String.fromCharCode(...region) });
+
+            // Try signup crossover player
+            toast.info("Requesting permssion to creating Crossover Player.");
+            await signup(playerMetadata);
+            requireSignup = false;
+
+            // Login to crossover
             await login({ region, geohash, retryWithRefresh: true });
         }
     }
 </script>
 
-<div class={cn("container flex flex-col w-full", $$restProps)}>
-    <div class="flex flex-col mx-auto my-auto text-center gap-4">
-        {#if !$token || window.solana?.publicKey === null}
+<div
+    class={cn(
+        "container flex justify-center items-center h-full overflow-y-auto",
+        $$restProps,
+    )}
+>
+    <div class="flex flex-col mx-auto text-center gap-4">
+        {#if !$token}
             <!-- Connect wallet -->
             <p>Login required</p>
             <Wallet />
+        {:else if window.solana?.publicKey == null}
+            <p>Check that you have downloaded the phantom wallet</p>
         {:else if !requireSignup}
             <!-- Sign up player -->
-            <p>{`Initiate current world seed [${worldSeed.name}]`}</p>
+            <p>
+                {`Initiate current world seed [${worldSeed.name}]`}
+            </p>
             <Button on:click={onEnter}>Enter</Button>
         {:else}
             <p>
