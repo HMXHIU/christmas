@@ -6,7 +6,7 @@ import type {
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
-import type { RequestHandler } from "./$types";
+import type { RequestHandler } from "@sveltejs/kit";
 
 export type StreamEvent = FeedEvent | UpdateEntitiesEvent;
 
