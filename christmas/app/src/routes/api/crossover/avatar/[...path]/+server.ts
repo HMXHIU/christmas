@@ -1,7 +1,11 @@
 import { COMFYUI_REST_ENDPOINT } from "$env/static/private";
-import { requireLogin } from "$lib/server";
+// import { requireLogin } from "$lib/server";
+import type { PlayerMetadataSchema } from "$lib/crossover/world/player";
+import { hashObject } from "$lib/server";
+import { ObjectStorage } from "$lib/server/objectStorage";
 import { sleep } from "$lib/utils";
 import type { RequestHandler } from "@sveltejs/kit";
+import type { z } from "zod";
 import workflow from "./crossover_comfyui_character_creator.json";
 
 /*
@@ -45,23 +49,17 @@ async function getOutputs(promptId: string) {
     return null;
 }
 
-async function createAvatarFromOutputs(outputs: any) {
-    const node_id = "97";
-    const { filename, subfolder, type } = outputs[node_id].images[0];
-    const urlParams = new URLSearchParams({
-        filename,
-        subfolder,
-        type,
-    });
-    const avatarImageUrl = `${COMFYUI_REST_ENDPOINT}/view?${urlParams.toString()}`;
-    return avatarImageUrl;
-}
-
 function createPrompt() {
     return workflow;
 }
 
-async function queuePrompt({ attempts }: { attempts?: number }) {
+async function queuePrompt({
+    attempts,
+    playerMetadata,
+}: {
+    attempts?: number;
+    playerMetadata: z.infer<typeof PlayerMetadataSchema>;
+}) {
     attempts = attempts || 10;
 
     // Queue the prompt
@@ -89,8 +87,83 @@ async function queuePrompt({ attempts }: { attempts?: number }) {
     return result;
 }
 
+/*
+ *Generate a random seed for use in stable diffusion
+ */
+function generateRandomSeed(): number {
+    // Define the range for the seed, e.g., 0 to 2^32 - 1
+    const maxSeed = Math.pow(2, 32) - 1;
+    // Generate a random integer within the range
+    const randomSeed = Math.floor(Math.random() * maxSeed);
+    return randomSeed;
+}
+
+async function createAvatar(
+    playerMetadata: z.infer<typeof PlayerMetadataSchema>,
+): Promise<{ avatarImageUrl: string }> {
+    // Generate random seed for kSampler
+    const samplerSeed = generateRandomSeed();
+
+    // Generate avatar hash
+    const { gender, race, archetype, appearance } = playerMetadata;
+    const avatarHash = hashObject({ gender, race, archetype, appearance });
+
+    // Create filename for the avatar
+    const avatarFilename = `${avatarHash}-${samplerSeed}.png`;
+
+    // Check if avatar already exists in ObjectStorage
+    if (
+        await ObjectStorage.objectExists({
+            owner: null,
+            bucket: "avatar",
+            name: avatarFilename,
+        })
+    ) {
+        return {
+            avatarImageUrl: ObjectStorage.objectUrl({
+                owner: null,
+                bucket: "avatar",
+                name: avatarFilename,
+            }),
+        };
+    }
+
+    // Create and queue the prompt, get the output results
+    const outputs = await queuePrompt({ attempts: 10, playerMetadata });
+
+    // Get the result of the output node
+    const node_id = "97";
+    const { filename, subfolder, type } = outputs[node_id].images[0];
+
+    // Get the temp image url of the output node
+    const urlParams = new URLSearchParams({
+        filename,
+        subfolder,
+        type,
+    });
+    const tempImageUrl = `${COMFYUI_REST_ENDPOINT}/view?${urlParams.toString()}`;
+
+    // Fetch image from tempImageUrl
+    const response = await fetch(tempImageUrl);
+    const imageBuffer = Buffer.from(await response.arrayBuffer());
+
+    // Upload avatar to ObjectStorage
+    const avatarImageUrl = await ObjectStorage.putObject(
+        {
+            owner: null, // public
+            bucket: "avatar",
+            name: avatarFilename,
+            data: imageBuffer,
+        },
+        { "Content-Type": response.headers.get("content-type") || "image/png" },
+    );
+
+    return { avatarImageUrl };
+}
+
 export const GET: RequestHandler = async (event) => {
-    const user = requireLogin(event);
+    // TODO: reenable after testing
+    // const user = requireLogin(event);
 
     const { path } = event.params as { path: string };
     const [operation] = path.split("/");
@@ -103,10 +176,31 @@ export const GET: RequestHandler = async (event) => {
         return Response.json(await getHistory());
     } else if (operation === "workflow") {
         return Response.json(createPrompt());
-    } else if (operation === "create") {
-        const outputs = await queuePrompt({ attempts: 10 });
-        const avatarImageUrl = await createAvatarFromOutputs(outputs);
-        return await fetch(avatarImageUrl);
+    }
+
+    return Response.json(
+        { status: "error", message: "Invalid operation" },
+        { status: 400 },
+    );
+};
+
+export const POST: RequestHandler = async (event) => {
+    // TODO: reenable after testing
+    // const user = requireLogin(event);
+
+    const { path } = event.params as { path: string };
+    const [operation] = path.split("/");
+
+    if (operation === "create") {
+        // TODO: cache and save the image to minio, then return the public url
+        // TODO: set player avatar if he chose it, need to set limits, player cannot set the url from frontend to any image
+        //       it must be the url generated & validated from the character creator
+
+        let playerMetadata = await event.request.json();
+
+        const avatarMetadata = await createAvatar(playerMetadata);
+
+        return Response.json(avatarMetadata);
     }
 
     return Response.json(

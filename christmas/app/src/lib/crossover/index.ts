@@ -745,9 +745,15 @@ function crossoverWorldWorlds(geohash: string, headers: HTTPHeaders = {}) {
 // TODO: connect to avatar api
 async function crossoverGenerateAvatar(
     playerMetadata: z.infer<typeof PlayerMetadataSchema>,
+    headers: any = {},
 ): Promise<[string, string]> {
-    return [
-        "/sprites/portraits/female_elf.jpeg",
-        "/sprites/portraits/female_drow.jpeg",
-    ];
+    const avatarImageUrl = await fetch(
+        `${PUBLIC_HOST}/api/crossover/avatar/create`,
+        {
+            method: "GET",
+            headers,
+        },
+    );
+
+    return [avatarImageUrl, avatarImageUrl];
 }

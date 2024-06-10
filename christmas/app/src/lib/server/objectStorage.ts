@@ -32,6 +32,7 @@ const BUCKETS = {
     store: "store",
     image: "image",
     player: "player",
+    avatar: "avatar",
 };
 
 // Initialize buckets
