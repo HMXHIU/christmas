@@ -747,13 +747,12 @@ async function crossoverGenerateAvatar(
     playerMetadata: z.infer<typeof PlayerMetadataSchema>,
     headers: any = {},
 ): Promise<[string, string]> {
-    const avatarImageUrl = await fetch(
-        `${PUBLIC_HOST}/api/crossover/avatar/create`,
-        {
+    const { avatarImageUrl } = await (
+        await fetch(`${PUBLIC_HOST}/api/crossover/avatar/create`, {
             method: "GET",
             headers,
-        },
-    );
+        })
+    ).json();
 
     return [avatarImageUrl, avatarImageUrl];
 }

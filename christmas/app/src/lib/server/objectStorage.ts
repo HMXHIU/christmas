@@ -1,4 +1,4 @@
-import { Client } from "minio";
+import { Client, type BucketItem } from "minio";
 
 import {
     MINIO_ACCESS_KEY,
@@ -161,6 +161,60 @@ class ObjectStorage {
     }): Promise<object> {
         const readable = await this.getObject({ owner, bucket, name });
         return JSON.parse(await readable.read());
+    }
+
+    static async listObjects({
+        owner,
+        bucket,
+        maxKeys,
+        prefix,
+        recursive,
+    }: {
+        owner: string | null;
+        bucket: string;
+        maxKeys?: number;
+        prefix?: string;
+        recursive?: boolean;
+    }): Promise<BucketItem[]> {
+        const acl = owner ? "private" : "public";
+        prefix = prefix ? `${acl}/${prefix}` : `${acl}/`;
+        maxKeys = maxKeys || 10;
+
+        // Check valid bucket
+        if (!Object.values(BUCKETS).includes(bucket)) {
+            throw new Error(`Invalid bucket: ${bucket}`);
+        }
+
+        const getBucketObjects = new Promise<BucketItem[]>(
+            (resolve, reject) => {
+                const stream = client.listObjectsV2(
+                    bucket,
+                    prefix,
+                    recursive ?? false,
+                );
+                let count = 0;
+                let bucketItems: BucketItem[] = [];
+
+                stream.on("data", function (obj) {
+                    if (count < maxKeys) {
+                        bucketItems.push(obj);
+                        count++;
+                    } else {
+                        stream.emit("end");
+                    }
+                });
+
+                stream.on("error", function (err) {
+                    reject(err);
+                });
+
+                stream.on("end", function () {
+                    resolve(bucketItems);
+                });
+            },
+        );
+
+        return getBucketObjects;
     }
 
     static objectUrl({

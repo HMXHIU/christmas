@@ -161,6 +161,16 @@ async function createAvatar(
     return { avatarImageUrl };
 }
 
+async function getAvatars(
+    playerMetadata: z.infer<typeof PlayerMetadataSchema>,
+) {
+    // Generate avatar hash
+    const { gender, race, archetype, appearance } = playerMetadata;
+    const avatarHash = hashObject({ gender, race, archetype, appearance });
+
+    // Find all avatar's with filename prefix containing the avatarHash
+}
+
 export const GET: RequestHandler = async (event) => {
     // TODO: reenable after testing
     // const user = requireLogin(event);
@@ -192,14 +202,11 @@ export const POST: RequestHandler = async (event) => {
     const [operation] = path.split("/");
 
     if (operation === "create") {
-        // TODO: cache and save the image to minio, then return the public url
         // TODO: set player avatar if he chose it, need to set limits, player cannot set the url from frontend to any image
         //       it must be the url generated & validated from the character creator
 
         let playerMetadata = await event.request.json();
-
         const avatarMetadata = await createAvatar(playerMetadata);
-
         return Response.json(avatarMetadata);
     }
 

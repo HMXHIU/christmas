@@ -1,11 +1,10 @@
 import { Keypair } from "@solana/web3.js";
 
+import { PUBLIC_HOST } from "$env/static/public";
 import { ObjectStorage } from "$lib/server/objectStorage";
 import { expect, test } from "vitest";
-import { PUBLIC_HOST } from "$env/static/public";
 
 test("Test Public Object Storage", async () => {
-    // owner = null for public object
     const publicData = {
         name: "tile1",
     };
@@ -13,10 +12,10 @@ test("Test Public Object Storage", async () => {
         name: "tile2",
     };
 
-    // Create public object
+    // Test putObject, putJSONObject
     await expect(
         ObjectStorage.putObject({
-            owner: null,
+            owner: null, // owner = null for public object
             bucket: "user",
             name: "tile1",
             data: JSON.stringify(publicData),
@@ -32,7 +31,7 @@ test("Test Public Object Storage", async () => {
         }),
     ).resolves.toEqual(`${PUBLIC_HOST}/api/storage/user/public/tile2`);
 
-    // Public object exists
+    // Test objectExists
     await expect(
         ObjectStorage.objectExists({
             owner: null,
@@ -64,6 +63,35 @@ test("Test Public Object Storage", async () => {
             name: "notile",
         }),
     ).resolves.toBe(false);
+
+    // Test listObjects
+    let bucketItems = await ObjectStorage.listObjects({
+        owner: null,
+        bucket: "user",
+        maxKeys: 2,
+    });
+    expect(bucketItems.length).toBe(2);
+
+    bucketItems = await ObjectStorage.listObjects({
+        owner: null,
+        bucket: "user",
+        maxKeys: 2,
+        prefix: "tile",
+    });
+    expect(bucketItems.map((item) => item.name)).toMatchObject([
+        "public/tile1",
+        "public/tile2",
+    ]);
+
+    bucketItems = await ObjectStorage.listObjects({
+        owner: null,
+        bucket: "user",
+        maxKeys: 1,
+        prefix: "tile",
+    });
+    expect(bucketItems.map((item) => item.name)).toMatchObject([
+        "public/tile1",
+    ]);
 });
 
 test("Test Private Object Storage", async () => {
@@ -73,7 +101,7 @@ test("Test Private Object Storage", async () => {
         publicKey: owner,
     };
 
-    // Create private object
+    // Test putObject, putJSONObject
     await expect(
         ObjectStorage.putObject({
             owner,
@@ -83,7 +111,7 @@ test("Test Private Object Storage", async () => {
         }),
     ).resolves.toEqual(`${PUBLIC_HOST}/api/storage/user/private/${owner}`);
 
-    // Private object exists
+    // Test objectExists
     await expect(
         ObjectStorage.objectExists({
             owner,
@@ -108,7 +136,7 @@ test("Test Private Object Storage", async () => {
         }),
     ).rejects.toThrowError();
 
-    // Get object
+    // Test getObject, getJSONObject
     const readable = await ObjectStorage.getObject({
         owner,
         name: owner,
@@ -129,4 +157,14 @@ test("Test Private Object Storage", async () => {
             bucket: "user",
         }),
     ).rejects.toThrowError();
+
+    // Test listObjects
+    let bucketItems = await ObjectStorage.listObjects({
+        owner,
+        bucket: "user",
+        prefix: owner,
+        maxKeys: 2,
+    });
+    expect(bucketItems.length).toBe(1);
+    expect(bucketItems[0].name).toBe(`private/${owner}`);
 });
