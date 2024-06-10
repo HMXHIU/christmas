@@ -163,12 +163,26 @@ async function createAvatar(
 
 async function getAvatars(
     playerMetadata: z.infer<typeof PlayerMetadataSchema>,
-) {
+): Promise<string[]> {
     // Generate avatar hash
     const { gender, race, archetype, appearance } = playerMetadata;
     const avatarHash = hashObject({ gender, race, archetype, appearance });
 
     // Find all avatar's with filename prefix containing the avatarHash
+    const bucketItems = await ObjectStorage.listObjects({
+        owner: null,
+        bucket: "avatar",
+        prefix: avatarHash,
+        maxKeys: 3,
+    });
+
+    return bucketItems.map((item) => {
+        return ObjectStorage.objectUrl({
+            owner: null,
+            bucket: "avatar",
+            name: item.name!.split("/").slice(-1)[0], // remove prefix (public, private)
+        });
+    });
 }
 
 export const GET: RequestHandler = async (event) => {
@@ -208,6 +222,10 @@ export const POST: RequestHandler = async (event) => {
         let playerMetadata = await event.request.json();
         const avatarMetadata = await createAvatar(playerMetadata);
         return Response.json(avatarMetadata);
+    } else if (operation === "avatars") {
+        let playerMetadata = await event.request.json();
+        const avatars = await getAvatars(playerMetadata);
+        return Response.json({ avatars });
     }
 
     return Response.json(
