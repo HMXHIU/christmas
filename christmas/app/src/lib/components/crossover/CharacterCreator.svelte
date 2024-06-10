@@ -6,7 +6,10 @@
     import * as RadioGroup from "$lib/components/ui/radio-group/index.js";
     import * as Select from "$lib/components/ui/select/index.js";
     import { Textarea } from "$lib/components/ui/textarea";
-    import { crossoverGenerateAvatar } from "$lib/crossover";
+    import {
+        crossoverAvailableAvatars,
+        crossoverGenerateAvatar,
+    } from "$lib/crossover";
     import {
         PlayerMetadataSchema,
         ageTypes,
@@ -56,25 +59,54 @@
         },
         {},
     );
+    let availableAvatars: string[] = [];
 
     $: attributes = archetypes[selectedArchetypeType.value].attributes;
     $: stats = playerStats({
         level: 1,
         attributes: attributes,
     });
+    $: selectedHairType &&
+        selectedHairColor &&
+        selectedEyeColor &&
+        selectedEyeType &&
+        selectedFaceType &&
+        selectedBodyType &&
+        selectedSkinType &&
+        selectedAgeType &&
+        selectedPersonalityType &&
+        selectedRaceType &&
+        selectedGenderType &&
+        selectedArchetypeType &&
+        getAvailableAvatars();
 
     let errors: Record<string, string> = {};
-    let avatars: [string, string] | null = null;
 
-    async function validatePlayerMetadata(): Promise<z.infer<
-        typeof PlayerMetadataSchema
-    > | null> {
+    async function getAvailableAvatars() {
+        const playerMetadata = validatePlayerMetadata({
+            name: "name", // not needed for avatar generation
+            description: "description",
+            playerPublicKey: "playerPublicKey",
+        });
+
+        // Get available avatars
+        if (playerMetadata) {
+            availableAvatars =
+                (await crossoverAvailableAvatars(playerMetadata)) || [];
+        }
+    }
+
+    function validatePlayerMetadata(overwrite?: {
+        name?: string;
+        description?: string;
+        playerPublicKey?: string;
+    }): z.infer<typeof PlayerMetadataSchema> | null {
         // Validate player metadata
         try {
-            const playerMetadata = await PlayerMetadataSchema.parse({
-                name,
-                description,
-                player: playerPublicKey,
+            const playerMetadata = PlayerMetadataSchema.parse({
+                name: overwrite?.name ?? name,
+                description: overwrite?.description ?? description,
+                player: overwrite?.playerPublicKey ?? playerPublicKey,
                 gender: selectedGenderType.value,
                 race: selectedRaceType.value,
                 archetype: selectedArchetypeType.value,
@@ -105,13 +137,13 @@
     async function onGenerateAvatar() {
         const playerMetadata = await validatePlayerMetadata();
         if (playerMetadata) {
-            avatars = await crossoverGenerateAvatar(playerMetadata);
+            availableAvatars = await crossoverGenerateAvatar(playerMetadata);
             errors = {};
         }
     }
 
-    async function onCreate() {
-        const playerMetadata = await validatePlayerMetadata();
+    function onCreate() {
+        const playerMetadata = validatePlayerMetadata();
         if (playerMetadata) {
             onCreateCharacter(playerMetadata);
             errors = {};
@@ -514,19 +546,22 @@
     <!-- Avatar -->
     <Card.Root>
         <Card.Header>
-            <Card.Title>Avatar</Card.Title>
+            <Card.Title>Select Your Avatar</Card.Title>
         </Card.Header>
         <Card.Content>
-            {#if avatars}
-                <RadioGroup.Root value={avatars[0]}>
-                    {#each avatars as avatar}
+            {#if availableAvatars.length > 0}
+                <RadioGroup.Root value={availableAvatars[0]}>
+                    {#each availableAvatars as avatarImageUrl}
                         <Label
-                            for={avatar}
+                            for={avatarImageUrl}
                             class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
                         >
-                            <RadioGroup.Item value={avatar} id={avatar} />
+                            <RadioGroup.Item
+                                value={avatarImageUrl}
+                                id={avatarImageUrl}
+                            />
                             <img
-                                src={avatar}
+                                src={avatarImageUrl}
                                 alt="Avatar"
                                 width="200"
                                 height="auto"
@@ -534,8 +569,12 @@
                         </Label>
                     {/each}
                 </RadioGroup.Root>
+            {:else}
+                <p class="text-xs p-4">
+                    There are no available avatars, you may generate one.
+                </p>
+                <Button on:click={onGenerateAvatar}>Generate</Button>
             {/if}
-            <Button on:click={onGenerateAvatar}>Generate Avatar</Button>
         </Card.Content>
     </Card.Root>
 

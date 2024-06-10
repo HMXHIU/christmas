@@ -41,6 +41,7 @@ import { compendium, worldSeed } from "./world/settings";
 export {
     addMessageFeed,
     crossoverAuthPlayer,
+    crossoverAvailableAvatars,
     crossoverCmdConfigureItem,
     crossoverCmdCreateItem,
     crossoverCmdDrop,
@@ -742,15 +743,29 @@ function crossoverWorldWorlds(geohash: string, headers: HTTPHeaders = {}) {
  * Character creation
  */
 
-// TODO: connect to avatar api
+async function crossoverAvailableAvatars(
+    playerMetadata: z.infer<typeof PlayerMetadataSchema>,
+    headers: any = {},
+): Promise<string[]> {
+    const { avatars } = await (
+        await fetch(`${PUBLIC_HOST}/api/crossover/avatar/avatars`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(playerMetadata),
+        })
+    ).json();
+    return avatars;
+}
+
 async function crossoverGenerateAvatar(
     playerMetadata: z.infer<typeof PlayerMetadataSchema>,
     headers: any = {},
 ): Promise<[string, string]> {
     const { avatarImageUrl } = await (
         await fetch(`${PUBLIC_HOST}/api/crossover/avatar/create`, {
-            method: "GET",
+            method: "POST",
             headers,
+            body: JSON.stringify(playerMetadata),
         })
     ).json();
 
