@@ -12,7 +12,6 @@ import type {
     CouponMetadataSchema,
     StoreMetadataSchema,
 } from "$lib/server/community/router";
-import type { UserMetadataSchema } from "$lib/server/crossover/router";
 import { trpc } from "$lib/trpcClient";
 import { signAndSendTransaction } from "$lib/utils";
 import type { HTTPHeaders } from "@trpc/client";
@@ -28,7 +27,6 @@ import {
     stores,
     storesMetadata,
     token,
-    userMetadata,
 } from "../../store";
 import { stringToUint8Array } from "../utils";
 import {
@@ -51,7 +49,6 @@ export {
     fetchStoreMetadata,
     fetchStores,
     fetchUser,
-    fetchUserMetadata,
     login,
     logout,
     mintCoupon,
@@ -383,25 +380,6 @@ async function fetchUser(headers: HTTPHeaders = {}): Promise<User | null> {
             }
             return cleanUser(user);
         });
-}
-
-async function fetchUserMetadata(
-    user: User,
-    headers: HeadersInit = {},
-): Promise<z.infer<typeof UserMetadataSchema>> {
-    const fetchedUserMetadata = await fetch(user.uri, { headers }).then(
-        async (response) => {
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-            return response.json();
-        },
-    );
-
-    // Update `$userMetadata`
-    userMetadata.set(fetchedUserMetadata);
-
-    return fetchedUserMetadata;
 }
 
 async function createUser(

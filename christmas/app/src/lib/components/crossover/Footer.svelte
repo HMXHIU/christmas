@@ -7,8 +7,6 @@
     import BusyBar from "./BusyBar.svelte";
     import Inventory from "./Inventory.svelte";
     import ResourceBars from "./ResourceBars.svelte";
-
-    // TODO: Use player actual portrait
 </script>
 
 <!-- Page Footer -->
@@ -19,10 +17,7 @@
     >
         <!-- Player Avatar -->
         <Avatar.Root class="h-16 w-16 sm:min-h-20 sm:min-w-20">
-            <Avatar.Image
-                src="/sprites/portraits/female_drow.jpeg"
-                alt={$player?.name}
-            />
+            <Avatar.Image src={$player?.avatar} alt={$player?.name} />
             <Avatar.Fallback>{$player?.name.slice(0, 2)}</Avatar.Fallback>
         </Avatar.Root>
     </div>

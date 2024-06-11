@@ -49,6 +49,7 @@ const PlayerEntitySchema = new Schema("Player", {
     player: { type: "string" },
     name: { type: "string" },
     description: { type: "string" },
+    avatar: { type: "string" },
     // Player state
     location: { type: "string[]" },
     locT: { type: "string" },
@@ -68,6 +69,7 @@ interface Player extends EntityState {
     player: string;
     name: string;
     description: string;
+    avatar: string;
     // Player state
     loggedIn: boolean;
 }

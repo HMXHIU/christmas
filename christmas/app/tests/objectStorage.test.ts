@@ -92,6 +92,90 @@ test("Test Public Object Storage", async () => {
     expect(bucketItems.map((item) => item.name)).toMatchObject([
         "public/tile1",
     ]);
+
+    // Test renameObject
+    await expect(
+        ObjectStorage.renameObject({
+            owner: null,
+            bucket: "user",
+            oldName: "tile2",
+            newName: "tile3",
+        }),
+    ).resolves.toBe(`${PUBLIC_HOST}/api/storage/user/public/tile3`);
+    await expect(
+        ObjectStorage.objectExists({
+            owner: null,
+            bucket: "user",
+            name: "tile2",
+        }),
+    ).resolves.toBe(false);
+    await expect(
+        ObjectStorage.objectExists({
+            owner: null,
+            bucket: "user",
+            name: "tile3",
+        }),
+    ).resolves.toBe(true);
+    await expect(
+        ObjectStorage.renameObject({
+            owner: null,
+            bucket: "user",
+            oldName: "tile3",
+            newName: "tile2",
+        }),
+    ).resolves.toBe(`${PUBLIC_HOST}/api/storage/user/public/tile2`);
+    await expect(
+        ObjectStorage.objectExists({
+            owner: null,
+            bucket: "user",
+            name: "tile3",
+        }),
+    ).resolves.toBe(false);
+    await expect(
+        ObjectStorage.objectExists({
+            owner: null,
+            bucket: "user",
+            name: "tile2",
+        }),
+    ).resolves.toBe(true);
+
+    // Test copyObject
+    await ObjectStorage.copyObject({
+        sourceOwner: null,
+        sourceBucket: "user",
+        sourceName: "tile2",
+        destOwner: null,
+        destBucket: "user",
+        destName: "tile3",
+    });
+    await expect(
+        ObjectStorage.objectExists({
+            owner: null,
+            bucket: "user",
+            name: "tile2",
+        }),
+    ).resolves.toBe(true);
+    await expect(
+        ObjectStorage.objectExists({
+            owner: null,
+            bucket: "user",
+            name: "tile3",
+        }),
+    ).resolves.toBe(true);
+
+    // Test deleteObject
+    await ObjectStorage.deleteObject({
+        owner: null,
+        bucket: "user",
+        name: "tile3",
+    });
+    await expect(
+        ObjectStorage.objectExists({
+            owner: null,
+            bucket: "user",
+            name: "tile3",
+        }),
+    ).resolves.toBe(false);
 });
 
 test("Test Private Object Storage", async () => {

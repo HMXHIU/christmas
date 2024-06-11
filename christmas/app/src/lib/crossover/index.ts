@@ -56,6 +56,7 @@ export {
     crossoverCmdUseItem,
     crossoverGenerateAvatar,
     crossoverPlayerInventory,
+    crossoverPlayerMetadata,
     crossoverWorldWorlds,
     executeGameCommand,
     handleGC,
@@ -729,6 +730,10 @@ function crossoverCmdRest(headers: HTTPHeaders = {}) {
 
 function crossoverPlayerInventory(headers: HTTPHeaders = {}) {
     return trpc({ headers }).crossover.player.inventory.query();
+}
+
+function crossoverPlayerMetadata(headers: HTTPHeaders = {}) {
+    return trpc({ headers }).crossover.player.metadata.query();
 }
 
 /*

@@ -135,6 +135,7 @@ const EquipItemSchema = z.object({
 const PlayerStateSchema = z.object({
     location: z.array(z.string()).optional(),
     locT: z.string().optional(),
+    avatar: z.string().optional(),
     loggedIn: z.boolean().optional(),
     hp: z.number().optional(),
     mp: z.number().optional(),
@@ -248,6 +249,10 @@ const crossoverRouter = {
     }),
     // Player
     player: t.router({
+        // player.metadata
+        metadata: authProcedure.query(async ({ ctx }) => {
+            return await getUserMetadata(ctx.user.publicKey);
+        }),
         // player.inventory
         inventory: authProcedure.query(async ({ ctx }) => {
             // Get player
@@ -865,9 +870,6 @@ const crossoverRouter = {
                     });
                 }
 
-                // Parse & validate player metadata
-                const playerMetadata = await PlayerMetadataSchema.parse(input);
-
                 // Check if player already exists
                 const player = await fetchEntity(ctx.user.publicKey);
                 if (player != null) {
@@ -887,6 +889,49 @@ const crossoverRouter = {
                         message: `Player ${ctx.user.publicKey} already exists (storage)`,
                     });
                 }
+
+                // Parse & validate player metadata
+                const playerMetadata = await PlayerMetadataSchema.parse(input);
+
+                // Check that avatar matches the player metadata
+                const { gender, race, archetype, appearance, avatar } =
+                    playerMetadata;
+                const avatarHash = hashObject({
+                    gender,
+                    race,
+                    archetype,
+                    appearance,
+                });
+                const avatarFileName = avatar.split("/").slice(-1)[0];
+                if (!avatarFileName.startsWith(avatarHash)) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `Invalid avatar`,
+                    });
+                }
+
+                // Check that avatar exists
+                if (
+                    !(await ObjectStorage.objectExists({
+                        owner: null,
+                        bucket: "avatar",
+                        name: avatarFileName,
+                    }))
+                ) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `Avatar does not exist`,
+                    });
+                }
+
+                // Reserve the avatar for the player
+                const reservedFileName = await ObjectStorage.renameObject({
+                    owner: null,
+                    bucket: "avatar",
+                    oldName: avatarFileName,
+                    newName: `${ctx.user.publicKey}-${avatarFileName}`,
+                });
+                playerMetadata.avatar = reservedFileName;
 
                 // Update user metadata with player metadata
                 userMetadata = await UserMetadataSchema.parse({
@@ -981,7 +1026,7 @@ const crossoverRouter = {
             return { status: "success", player: player as Player };
         }),
 
-        // auth.player (TODO: move to player.player)
+        // auth.player
         player: authProcedure.query(async ({ ctx }) => {
             // Get or load player
             let player =

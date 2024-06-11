@@ -984,10 +984,7 @@
 
             // Get texture, variant, width, anchor
             if (entityType === "player") {
-                // TODO: read texture from player/entity/monster
-                texture = await Assets.load(
-                    "/sprites/portraits/female_drow.jpeg",
-                );
+                texture = await Assets.load((entity as Player).avatar);
                 width = CELL_WIDTH;
                 anchor = { x: 0.5, y: 1 };
             } else if (entityType === "monster") {

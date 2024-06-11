@@ -1,4 +1,4 @@
-import { Client, type BucketItem } from "minio";
+import { Client, CopyConditions, type BucketItem } from "minio";
 
 import {
     MINIO_ACCESS_KEY,
@@ -44,13 +44,9 @@ initializeBuckets();
  * - Do not expose this to client (only backend)
  * - All operations should be done through ObjectStorage (with permission checks)
  * - If owner is null, the object is public else private
+ * - Caller must ensure that the owner has permission to access the object
  */
 class ObjectStorage {
-    /**
-     * Put object
-     *
-     * - Caller must ensure that the owner has permission to access the object
-     */
     static async putObject(
         {
             owner,
@@ -108,6 +104,166 @@ class ObjectStorage {
             },
             { "Content-Type": "application/json", ...metaData },
         );
+    }
+
+    static async deleteObject({
+        owner,
+        bucket,
+        name,
+    }: {
+        owner: string | null;
+        bucket: string;
+        name: string;
+    }): Promise<void> {
+        const prefix = owner ? "private" : "public";
+
+        // Check valid bucket
+        if (!Object.values(BUCKETS).includes(bucket)) {
+            throw new Error(`Invalid bucket: ${bucket}`);
+        }
+
+        // Check object owner if private
+        if (owner != null) {
+            let ownerTag = await getObjectTag(
+                bucket,
+                `${prefix}/${name}`,
+                "owner",
+            );
+
+            if (ownerTag == null) {
+                throw new Error(
+                    `Private object ${bucket}/${prefix}/${name} missing owner tag`,
+                );
+            }
+
+            if (ownerTag !== owner) {
+                throw new Error(
+                    `Permission denied: ${owner} does not own ${bucket}/${prefix}/${name}`,
+                );
+            }
+        }
+
+        await client.removeObject(bucket, `${prefix}/${name}`);
+    }
+
+    static async copyObject({
+        sourceOwner,
+        sourceBucket,
+        sourceName,
+        destOwner,
+        destBucket,
+        destName,
+    }: {
+        sourceOwner: string | null;
+        sourceBucket: string;
+        sourceName: string;
+        destOwner: string | null;
+        destBucket: string;
+        destName: string;
+    }): Promise<void> {
+        const sourcePrefix = sourceOwner ? "private" : "public";
+        const destPrefix = destOwner ? "private" : "public";
+
+        // Check valid bucket
+        if (!Object.values(BUCKETS).includes(sourceBucket)) {
+            throw new Error(`Invalid source bucket: ${sourceBucket}`);
+        }
+
+        if (!Object.values(BUCKETS).includes(destBucket)) {
+            throw new Error(`Invalid dest bucket: ${destBucket}`);
+        }
+
+        // Check object owner if private
+        if (sourceOwner != null) {
+            let ownerTag = await getObjectTag(
+                sourceBucket,
+                `${sourcePrefix}/${sourceName}`,
+                "owner",
+            );
+
+            if (ownerTag == null) {
+                throw new Error(
+                    `Private object ${sourceBucket}/${sourcePrefix}/${sourceName} missing owner tag`,
+                );
+            }
+
+            if (ownerTag !== sourceOwner) {
+                throw new Error(
+                    `Permission denied: ${sourceOwner} does not own ${sourceBucket}/${sourcePrefix}/${sourceName}`,
+                );
+            }
+        }
+
+        // Copy object
+        await client.copyObject(
+            destBucket,
+            `${destPrefix}/${destName}`,
+            `${sourceBucket}/${sourcePrefix}/${sourceName}`,
+            new CopyConditions(),
+        );
+
+        // Tag private objects
+        if (destOwner != null) {
+            await client.setObjectTagging(
+                destBucket,
+                `${destPrefix}/${destName}`,
+                {
+                    owner: destOwner,
+                },
+            );
+        }
+    }
+
+    static async renameObject({
+        owner,
+        bucket,
+        oldName,
+        newName,
+    }: {
+        owner: string | null;
+        bucket: string;
+        oldName: string;
+        newName: string;
+    }): Promise<string> {
+        const prefix = owner ? "private" : "public";
+
+        // Check valid bucket
+        if (!Object.values(BUCKETS).includes(bucket)) {
+            throw new Error(`Invalid bucket: ${bucket}`);
+        }
+
+        // Check object owner if private
+        if (owner != null) {
+            let ownerTag = await getObjectTag(
+                bucket,
+                `${prefix}/${oldName}`,
+                "owner",
+            );
+
+            if (ownerTag == null) {
+                throw new Error(
+                    `Private object ${bucket}/${prefix}/${oldName} missing owner tag`,
+                );
+            }
+
+            if (ownerTag !== owner) {
+                throw new Error(
+                    `Permission denied: ${owner} does not own ${bucket}/${prefix}/${oldName}`,
+                );
+            }
+        }
+
+        // Rename object
+        await client.copyObject(
+            bucket,
+            `${prefix}/${newName}`,
+            `${bucket}/${prefix}/${oldName}`,
+            new CopyConditions(),
+        );
+
+        await client.removeObject(bucket, `${prefix}/${oldName}`);
+
+        return this.objectUrl({ owner, bucket, name: newName });
     }
 
     static async getObject({

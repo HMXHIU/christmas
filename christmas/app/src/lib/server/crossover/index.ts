@@ -21,7 +21,7 @@ import {
     type EquipmentSlot,
     type ItemVariables,
 } from "$lib/crossover/world/compendium";
-import { playerStats } from "$lib/crossover/world/player";
+import { PlayerMetadataSchema, playerStats } from "$lib/crossover/world/player";
 import {
     MS_PER_TICK,
     abilities,
@@ -59,11 +59,7 @@ import {
     type PlayerEntity,
     type WorldEntity,
 } from "./redis/entities";
-import {
-    PlayerStateSchema,
-    type PlayerMetadataSchema,
-    type UserMetadataSchema,
-} from "./router";
+import { PlayerStateSchema, type UserMetadataSchema } from "./router";
 
 const { uniqBy } = lodash;
 

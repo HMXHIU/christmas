@@ -31,9 +31,9 @@ export let mintedCoupons = writable<
 export let couponsMetadata = writable<
     Record<string, z.infer<typeof CouponMetadataSchema>>
 >({});
-export let userMetadata = writable<
-    Record<string, z.infer<typeof UserMetadataSchema>>
->({});
+export let userMetadata = writable<z.infer<typeof UserMetadataSchema> | null>(
+    null,
+);
 
 // Crossver
 export let player = writable<Player | null>(null);

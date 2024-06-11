@@ -40,6 +40,7 @@
 
     let name: string = "";
     let description: string = "";
+    let avatar: string = "";
     let selectedHairType = hairTypes[0];
     let selectedHairColor = hairColors[0];
     let selectedEyeColor = eyeColors[0];
@@ -87,17 +88,13 @@
             name: "name", // not needed for avatar generation
             description: "description",
             playerPublicKey: "playerPublicKey",
+            avatar: "https://example.com/avatar.png",
         });
 
         // Get available avatars
         if (playerMetadata) {
             availableAvatars =
                 (await crossoverAvailableAvatars(playerMetadata)) || [];
-
-            availableAvatars = [
-                ...availableAvatars,
-                "https://www.onthisday.com/images/people/rebecca-ferguson.jpg?w=360",
-            ];
         }
     }
 
@@ -105,12 +102,14 @@
         name?: string;
         description?: string;
         playerPublicKey?: string;
+        avatar?: string;
     }): z.infer<typeof PlayerMetadataSchema> | null {
         // Validate player metadata
         try {
             const playerMetadata = PlayerMetadataSchema.parse({
                 name: overwrite?.name ?? name,
                 description: overwrite?.description ?? description,
+                avatar: overwrite?.avatar ?? avatar,
                 player: overwrite?.playerPublicKey ?? playerPublicKey,
                 gender: selectedGenderType.value,
                 race: selectedRaceType.value,
@@ -556,7 +555,7 @@
         <Card.Content>
             {#if availableAvatars.length > 0}
                 <RadioGroup.Root
-                    value={availableAvatars[0]}
+                    bind:value={avatar}
                     class="grid grid-cols-3 gap-4"
                 >
                     {#each availableAvatars as avatarImageUrl}
@@ -580,6 +579,13 @@
                 <Button on:click={onGenerateAvatar}>Generate</Button>
             {/if}
         </Card.Content>
+        <Card.Footer>
+            {#if errors.avatar}
+                <p class="text-xs text-destructive">
+                    You must select an avatar
+                </p>
+            {/if}
+        </Card.Footer>
     </Card.Root>
 
     <Button on:click={onCreate}>Create Character</Button>

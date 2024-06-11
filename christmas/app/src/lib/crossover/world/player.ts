@@ -1094,6 +1094,7 @@ const PlayerMetadataSchema = z.object({
     player: z.string(),
     name: z.string().min(1).max(100),
     description: z.string().max(400).optional(),
+    avatar: z.string().url(),
     gender: z.enum(GENDER_TYPES),
     race: z.enum(RACE_TYPES),
     archetype: z.enum(ARCHETYPE_TYPES),
