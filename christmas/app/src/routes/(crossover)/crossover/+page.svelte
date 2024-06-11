@@ -144,5 +144,5 @@
 {#if !$player}
     <Onboard />
 {:else}
-    <GameWindow class="pt-2 h-full" onGameCommand={handleGC} {onMove} />
+    <GameWindow class="pt-2" onGameCommand={handleGC} {onMove} />
 {/if}

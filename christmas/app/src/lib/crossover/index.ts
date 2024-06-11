@@ -609,7 +609,7 @@ async function signup(
             ...(options?.headers || {}),
         },
     })
-        .crossover.auth.signup.query(playerMetadata)
+        .crossover.auth.signup.mutate(playerMetadata)
         .then(({ transaction }) => {
             return signAndSendTransaction({
                 tx: Transaction.from(Buffer.from(transaction, "base64")),

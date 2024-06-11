@@ -84,7 +84,7 @@
 
 <!-- Claimed coupons -->
 <div
-    class="scroll-container snap-x scroll-px-4 snap-mandatory scroll-smooth flex gap-4 overflow-x-auto px-4 py-3"
+    class="container scroll-container snap-x scroll-px-4 snap-mandatory scroll-smooth flex gap-4 overflow-x-auto px-4 py-3"
 >
     {#each $claimedCoupons as [coupon, balance] (coupon.publicKey)}
         <div class="snap-start w-52 shrink-0 flex items-stretch">
@@ -115,7 +115,7 @@
 
 <!-- Market coupons -->
 <div
-    class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 px-4 py-4 mt-2"
+    class="container grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 px-4 py-4 mt-2"
 >
     {#each $marketCoupons as [coupon, balance] (coupon.publicKey)}
         <MarketCouponCard {coupon} {balance} {onClaimCoupon}></MarketCouponCard>

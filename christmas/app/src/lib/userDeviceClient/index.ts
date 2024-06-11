@@ -13,8 +13,5 @@ export class UserDeviceClient {
     async initialize() {
         this.location = await getLocation();
         this.isInitialized = true;
-
-        // Log location for debug
-        console.log(JSON.stringify(this.location, null, 2));
     }
 }

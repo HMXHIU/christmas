@@ -15,6 +15,7 @@
             $userDeviceClient?.location?.country?.code &&
             $userDeviceClient?.location?.geohash
         ) {
+            console.log("Fetching market coupons");
             await fetchMarketCoupons({
                 region: $userDeviceClient?.location?.country?.code,
                 geohash: $userDeviceClient?.location?.geohash,
@@ -39,14 +40,11 @@
     });
 </script>
 
-<!-- Page Content (account for footer(3 rem) header(3.5 rem)) -->
-<main class="h-[calc(100dvh-6.5rem)] overflow-y-auto">
-    <!-- Your Page Content Goes Here -->
-    <div class="mx-auto px-0 py-2 h-full">
-        <!-- Content Slot -->
-        <slot />
-    </div>
-</main>
+<!-- Page Content (account for footer) -->
+<div class="pb-12">
+    <!-- Slot -->
+    <slot></slot>
+</div>
 
 <!-- Footer -->
 <Footer />

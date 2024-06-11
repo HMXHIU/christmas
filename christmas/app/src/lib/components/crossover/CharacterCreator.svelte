@@ -93,6 +93,11 @@
         if (playerMetadata) {
             availableAvatars =
                 (await crossoverAvailableAvatars(playerMetadata)) || [];
+
+            availableAvatars = [
+                ...availableAvatars,
+                "https://www.onthisday.com/images/people/rebecca-ferguson.jpg?w=360",
+            ];
         }
     }
 
@@ -151,7 +156,7 @@
     }
 </script>
 
-<div class={cn("flex flex-col w-full gap-2", $$restProps)}>
+<div class={cn("flex flex-col w-full h-full gap-2", $$restProps)}>
     <!-- Character -->
     <Card.Root>
         <Card.Header>
@@ -550,7 +555,10 @@
         </Card.Header>
         <Card.Content>
             {#if availableAvatars.length > 0}
-                <RadioGroup.Root value={availableAvatars[0]}>
+                <RadioGroup.Root
+                    value={availableAvatars[0]}
+                    class="grid grid-cols-3 gap-4"
+                >
                     {#each availableAvatars as avatarImageUrl}
                         <Label
                             for={avatarImageUrl}
@@ -559,13 +567,9 @@
                             <RadioGroup.Item
                                 value={avatarImageUrl}
                                 id={avatarImageUrl}
+                                class="sr-only"
                             />
-                            <img
-                                src={avatarImageUrl}
-                                alt="Avatar"
-                                width="200"
-                                height="auto"
-                            />
+                            <img src={avatarImageUrl} alt="avatar" />
                         </Label>
                     {/each}
                 </RadioGroup.Root>

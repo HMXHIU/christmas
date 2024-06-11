@@ -1,7 +1,6 @@
 import { COMFYUI_REST_ENDPOINT } from "$env/static/private";
-// import { requireLogin } from "$lib/server";
 import type { PlayerMetadataSchema } from "$lib/crossover/world/player";
-import { hashObject } from "$lib/server";
+import { hashObject, requireLogin } from "$lib/server";
 import { ObjectStorage } from "$lib/server/objectStorage";
 import { sleep } from "$lib/utils";
 import type { RequestHandler } from "@sveltejs/kit";
@@ -186,8 +185,7 @@ async function getAvatars(
 }
 
 export const GET: RequestHandler = async (event) => {
-    // TODO: reenable after testing
-    // const user = requireLogin(event);
+    const user = requireLogin(event);
 
     const { path } = event.params as { path: string };
     const [operation] = path.split("/");
@@ -209,12 +207,11 @@ export const GET: RequestHandler = async (event) => {
 };
 
 export const POST: RequestHandler = async (event) => {
-    // TODO: reenable after testing
-    // const user = requireLogin(event);
-
+    const user = requireLogin(event);
     const { path } = event.params as { path: string };
     const [operation] = path.split("/");
 
+    // Create
     if (operation === "create") {
         // TODO: set player avatar if he chose it, need to set limits, player cannot set the url from frontend to any image
         //       it must be the url generated & validated from the character creator
@@ -222,7 +219,9 @@ export const POST: RequestHandler = async (event) => {
         let playerMetadata = await event.request.json();
         const avatarMetadata = await createAvatar(playerMetadata);
         return Response.json(avatarMetadata);
-    } else if (operation === "avatars") {
+    }
+    // Avatars
+    else if (operation === "avatars") {
         let playerMetadata = await event.request.json();
         const avatars = await getAvatars(playerMetadata);
         return Response.json({ avatars });

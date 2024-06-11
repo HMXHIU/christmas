@@ -10,17 +10,18 @@
         const client = new UserDeviceClient();
         await client.initialize();
         userDeviceClient.set(client);
-        console.log("asdasdasd");
     });
 </script>
 
 <!-- App Shell -->
-<div class="flex flex-col h-dvh">
+<div class="h-dvh">
     <!-- Page Header -->
     <header class="sticky top-0 z-50 w-full border-b bg-secondary h-14">
         <div class="container flex h-14 max-w-screen-2xl items-center">
             <div>
-                <strong class="uppercase"><a href="/">Community</a></strong>
+                <strong class="uppercase"
+                    ><a href="/coupons">Community</a></strong
+                >
                 <strong class="uppercase">///</strong>
                 <strong class="uppercase"
                     ><a href="/crossover">Crossover</a></strong
@@ -32,8 +33,11 @@
         </div>
     </header>
 
-    <!-- Slot -->
-    <slot></slot>
+    <!-- Slot (account for header)-->
+    <main class="py-4">
+        <!-- Slot -->
+        <slot></slot>
+    </main>
 
     <!-- Toaster -->
     <Toaster />

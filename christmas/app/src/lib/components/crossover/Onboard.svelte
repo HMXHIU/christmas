@@ -81,33 +81,24 @@
     }
 </script>
 
-<div
-    class={cn(
-        "container flex justify-center items-center h-full overflow-y-auto",
-        $$restProps,
-    )}
->
-    <div class="flex flex-col mx-auto text-center gap-4">
-        {#if !$token}
-            <!-- Connect wallet -->
-            <p>Login required</p>
-            <Wallet />
-        {:else if window.solana?.publicKey == null}
-            <p>Check that you have downloaded the phantom wallet</p>
-        {:else if !requireSignup}
-            <!-- Sign up player -->
-            <p>
-                {`Initiate current world seed [${worldSeed.name}]`}
-            </p>
-            <Button on:click={onEnter}>Enter</Button>
-        {:else}
-            <p>
-                {`Player undetected, digitizing ${window.solana.publicKey.toString()} ...`}
-            </p>
-            <CharacterCreator
-                {onCreateCharacter}
-                playerPublicKey={window.solana.publicKey.toString()}
-            ></CharacterCreator>
-        {/if}
-    </div>
+<div class={cn("flex flex-col text-center gap-4", $$restProps)}>
+    {#if !$token}
+        <!-- Connect wallet -->
+        <h1>Login required</h1>
+        <Wallet />
+    {:else if !requireSignup}
+        <!-- Sign up player -->
+        <h1>
+            {`Initiate current world seed [${worldSeed.name}]`}
+        </h1>
+        <Button on:click={onEnter}>Enter</Button>
+    {:else}
+        <h1>
+            {`Create your character`}
+        </h1>
+        <CharacterCreator
+            {onCreateCharacter}
+            playerPublicKey={window.solana.publicKey.toString()}
+        ></CharacterCreator>
+    {/if}
 </div>

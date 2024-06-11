@@ -853,7 +853,7 @@ const crossoverRouter = {
         // auth.signup
         signup: authProcedure
             .input(PlayerMetadataSchema)
-            .query(async ({ ctx, input }) => {
+            .mutation(async ({ ctx, input }) => {
                 // Get user account
                 const user = await serverAnchorClient.getUser(
                     new PublicKey(ctx.user.publicKey),

@@ -69,7 +69,12 @@
 
 <svelte:window bind:innerWidth />
 
-<div class={cn("w-full flex flex-col justify-between", $$restProps.class)}>
+<div
+    class={cn(
+        "h-[calc(100dvh-9rem)] w-full flex flex-col justify-between",
+        $$restProps.class,
+    )}
+>
     <div class="h-1/2 shrink">
         {#if innerWidth > LARGE_SCREEN}
             <Resizable.PaneGroup direction="horizontal">
