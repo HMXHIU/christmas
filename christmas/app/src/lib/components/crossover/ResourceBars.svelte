@@ -16,7 +16,7 @@
     onMount(() => {
         const unsubscribe = player.subscribe((p) => {
             if (p != null) {
-                const stats = playerStats({ level: p.level });
+                const stats = playerStats({ level: p.lvl });
 
                 maxHp = stats.hp;
                 maxMp = stats.mp;

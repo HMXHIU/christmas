@@ -16,10 +16,7 @@
     onMount(() => {
         const unsubscribe = itemRecord.subscribe((ir) => {
             const playerItems = Object.values(ir).filter((item) => {
-                return (
-                    item.location.length === 1 &&
-                    item.location[0] === $player?.player
-                );
+                return item.loc.length === 1 && item.loc[0] === $player?.player;
             });
             inventoryItems = playerItems.filter((item) => {
                 return item.locT === "inv";

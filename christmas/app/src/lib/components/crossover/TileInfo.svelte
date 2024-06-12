@@ -17,7 +17,7 @@
     onMount(() => {
         return player.subscribe(async (p) => {
             if (!p) return;
-            const geohash = p.location[0];
+            const geohash = p.loc[0];
             const [biome, strength] = await biomeAtGeohash(geohash, {
                 topologyBufferCache,
                 topologyResponseCache,

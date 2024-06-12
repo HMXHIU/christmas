@@ -311,7 +311,7 @@
                     <div class="p-2">
                         <p class="text-xs">
                             <span class="font-bold">Level:</span>
-                            {$player?.level ?? 1}
+                            {$player?.lvl ?? 1}
                         </p>
                         <p class="text-xs">
                             <span class="font-bold">Health:</span>

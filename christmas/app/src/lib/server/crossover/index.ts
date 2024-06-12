@@ -94,16 +94,16 @@ export {
 type PlayerState = z.infer<typeof PlayerStateSchema>;
 const PlayerStateSchema = z.object({
     avatar: z.string().optional(),
-    loggedIn: z.boolean().optional(),
-    location: z.array(z.string()).optional(),
+    lgn: z.boolean().optional(),
+    loc: z.array(z.string()).optional(),
     locT: z.enum(["geohash"]).optional(),
     hp: z.number().optional(),
     mp: z.number().optional(),
     st: z.number().optional(),
     ap: z.number().optional(),
-    level: z.number().optional(),
-    buffs: z.array(z.string()).optional(),
-    debuffs: z.array(z.string()).optional(),
+    lvl: z.number().optional(),
+    buf: z.array(z.string()).optional(),
+    dbuf: z.array(z.string()).optional(),
 });
 
 /**
@@ -233,33 +233,33 @@ async function loadPlayerEntity(
         player: publicKey,
         name,
         avatar,
-        loggedIn: options.loggedIn,
-        location: [options.geohash],
+        lgn: options.loggedIn,
+        loc: [options.geohash],
         locT: "geohash",
-        level: 1,
+        lvl: 1,
         ...playerStats({ level: 1 }),
         apclk: 0,
         buclk: 0,
-        debuffs: [],
-        buffs: [],
+        dbuf: [],
+        buf: [],
     };
     let player: PlayerEntity = {
         ...defaultState,
         ...playerState,
         ...playerEntity,
-        loggedIn: options.loggedIn,
+        lgn: options.loggedIn,
     };
 
     // Auto correct player's geohash precision
-    if (player.location[0].length !== worldSeed.spatial.unit.precision) {
-        player.location = [
+    if (player.loc[0].length !== worldSeed.spatial.unit.precision) {
+        player.loc = [
             autoCorrectGeohashPrecision(
-                player.location[0],
+                player.loc[0],
                 worldSeed.spatial.unit.precision,
             ),
         ];
         player.locT = "geohash";
-        console.log("Auto corrected player's location", player.location);
+        console.log("Auto corrected player's location", player.loc);
     }
 
     return player;
@@ -322,17 +322,17 @@ async function spawnMonster({
         monster: monsterId, // unique monster id
         name: beast,
         beast,
-        location,
+        loc: location,
         locT: "geohash",
-        level,
+        lvl: level,
         hp,
         mp,
         st,
         ap,
         apclk: Date.now(),
         buclk: 0,
-        buffs: [],
-        debuffs: [],
+        buf: [],
+        dbuf: [],
     };
     return (await monsterRepository.save(monsterId, monster)) as MonsterEntity;
 }
@@ -528,17 +528,17 @@ async function spawnItem({
         item,
         name: defaultName,
         prop,
-        location,
+        loc: location,
         locT: "geohash",
-        owner,
-        configOwner,
-        collider,
-        durability: durability,
-        charges: charges,
+        own: owner,
+        cfg: configOwner,
+        cld: collider,
+        dur: durability,
+        chg: charges,
         state: defaultState,
-        variables: parseItemVariables(variables || {}, prop),
-        debuffs: [],
-        buffs: [],
+        vars: parseItemVariables(variables || {}, prop),
+        dbuf: [],
+        buf: [],
     };
 
     return (await itemRepository.save(item, entity)) as ItemEntity;
@@ -576,8 +576,8 @@ async function configureItem({
     }
 
     // Save item with updated variables
-    item.variables = {
-        ...item.variables,
+    item.vars = {
+        ...item.vars,
         ...parseItemVariables(variables, item.prop),
     };
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
@@ -696,8 +696,8 @@ async function useItem({
 
     // Set item end state, consume charges and durability
     item.state = propUtility.state.end;
-    item.charges -= propUtility.cost.charges;
-    item.durability -= propUtility.cost.durability;
+    item.chg -= propUtility.cost.charges;
+    item.dur -= propUtility.cost.durability;
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
 
     // Publish item state to user (use saved playerId as it might have changed after substitution) (non blocking)
@@ -796,13 +796,13 @@ function canUseItem(
 
     // Check has enough charges or durability
     const propUtility = prop.utilities[utility];
-    if (item.charges < propUtility.cost.charges) {
+    if (item.chg < propUtility.cost.charges) {
         return {
             canUse: false,
             message: `${item.item} has not enough charges to perform ${utility}`,
         };
     }
-    if (item.durability < propUtility.cost.durability) {
+    if (item.dur < propUtility.cost.durability) {
         return {
             canUse: false,
             message: `${item.item} has not enough durability to perform ${utility}`,
@@ -820,9 +820,7 @@ function hasItemOwnerPermissions(
     self: PlayerEntity | MonsterEntity,
 ) {
     return (
-        item.owner === "" ||
-        item.owner === self.player ||
-        item.owner === self.monster
+        item.own === "" || item.own === self.player || item.own === self.monster
     );
 }
 
@@ -831,9 +829,7 @@ function hasItemConfigOwnerPermissions(
     self: PlayerEntity | MonsterEntity,
 ) {
     return (
-        item.configOwner === "" ||
-        item.configOwner === self.player ||
-        item.configOwner === self.monster
+        item.cfg === "" || item.cfg === self.player || item.cfg === self.monster
     );
 }
 
@@ -867,7 +863,7 @@ async function itemVariableValue(
 ): Promise<
     string | number | boolean | PlayerEntity | MonsterEntity | ItemEntity
 > {
-    const itemVariables = item.variables;
+    const itemVariables = item.vars;
     const propVariables = compendium[item.prop].variables;
 
     const { type } = propVariables[key];
@@ -1055,9 +1051,9 @@ async function performEffectOnEntity({
         }
         // Item
         else if (entity.item) {
-            entity.durability = Math.max(
+            entity.dur = Math.max(
                 0,
-                (entity as ItemEntity).durability - effect.damage.amount,
+                (entity as ItemEntity).dur - effect.damage.amount,
             );
         }
     }
@@ -1066,11 +1062,11 @@ async function performEffectOnEntity({
     if (effect.debuffs) {
         const { debuff, op } = effect.debuffs;
         if (op === "push") {
-            if (!entity.debuffs.includes(debuff)) {
-                entity.debuffs.push(debuff);
+            if (!entity.dbuf.includes(debuff)) {
+                entity.dbuf.push(debuff);
             }
         } else if (op === "pop") {
-            entity.debuffs = entity.debuffs.filter((d) => d !== debuff);
+            entity.dbuf = entity.dbuf.filter((d) => d !== debuff);
         }
     }
 
@@ -1087,7 +1083,7 @@ async function performEffectOnEntity({
             }
 
             // Patch location (if the location dimensions have changed beyond the asset's dimensions)
-            if (state === "location") {
+            if (state === "loc") {
                 const { width, height, precision } = entityDimensions(entity);
                 if (entity[state].length !== width * height) {
                     entity[state] = calculateLocation(
@@ -1115,18 +1111,18 @@ function performEffectCheck({
     if (debuffs) {
         const { debuff, op } = debuffs;
         if (op === "contains") {
-            return entity.debuffs.includes(debuff);
+            return entity.dbuf.includes(debuff);
         } else if (op === "doesNotContain") {
-            return !entity.debuffs.includes(debuff);
+            return !entity.dbuf.includes(debuff);
         }
     }
 
     if (buffs) {
         const { buff, op } = buffs;
         if (op === "contains") {
-            return entity.buffs.includes(buff);
+            return entity.buf.includes(buff);
         } else if (op === "doesNotContain") {
-            return !entity.buffs.includes(buff);
+            return !entity.buf.includes(buff);
         }
     }
 
@@ -1176,18 +1172,18 @@ async function isDirectionTraversable(
     let location: string[] = [];
 
     // Check all cells are able to move (location might include more than 1 cell for large entities)
-    for (const geohash of entity.location) {
+    for (const geohash of entity.loc) {
         const nextGeohash = geohashNeighbour(geohash, direction);
 
         // Within own location is always traversable
-        if (entity.location.includes(nextGeohash)) {
+        if (entity.loc.includes(nextGeohash)) {
             location.push(nextGeohash);
             continue;
         }
 
         // Check if geohash is traversable
         if (!(await isGeohashTraversable(nextGeohash))) {
-            return [false, entity.location]; // early return if not traversable
+            return [false, entity.loc]; // early return if not traversable
         } else {
             location.push(nextGeohash);
         }
@@ -1272,9 +1268,9 @@ async function recoverAp(
     entity: PlayerEntity | MonsterEntity,
 ): Promise<PlayerEntity | MonsterEntity> {
     const maxAp = entity.player
-        ? playerStats({ level: entity.level }).ap
+        ? playerStats({ level: entity.lvl }).ap
         : monsterStats({
-              level: entity.level,
+              level: entity.lvl,
               beast: (entity as MonsterEntity).beast,
           }).ap;
 
@@ -1312,9 +1308,9 @@ async function consumeResources(
         st: maxSt,
         mp: maxMp,
     } = entity.player
-        ? playerStats({ level: entity.level })
+        ? playerStats({ level: entity.lvl })
         : monsterStats({
-              level: entity.level,
+              level: entity.lvl,
               beast: (entity as MonsterEntity).beast,
           });
 

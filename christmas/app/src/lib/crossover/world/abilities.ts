@@ -102,7 +102,7 @@ interface ProcedureEffect {
         op: "push" | "pop" | "contains" | "doesNotContain";
     };
     states?: {
-        state: "location" | "ap" | "hp" | "mp" | "st";
+        state: "loc" | "ap" | "hp" | "mp" | "st";
         op: "change" | "subtract" | "add";
         value: number | string | boolean | string[];
     };
@@ -148,10 +148,10 @@ function patchEffectWithVariables({
             self,
             target,
         });
-        // Location requires variable access eg. {{target.location}}
-        if (effectClone.states.state === "location") {
+        // Location requires variable access eg. {{target.loc}}
+        if (effectClone.states.state === "loc") {
             if (!Array.isArray(value)) {
-                throw new Error("Variable is not a location string[]");
+                throw new Error("Variable is not a loc string[]");
             }
             effectClone.states.value = value;
         } else {
@@ -205,8 +205,8 @@ function checkInRange(
     range: number,
 ): boolean {
     // Use only the first geohash in the location
-    const { row: r1, col: c1 } = geohashToGridCell(self.location[0]);
-    const { row: r2, col: c2 } = geohashToGridCell(target.location[0]);
+    const { row: r1, col: c1 } = geohashToGridCell(self.loc[0]);
+    const { row: r2, col: c2 } = geohashToGridCell(target.loc[0]);
     const inRange =
         range < 0 ||
         Math.ceil(Math.sqrt((r1 - r2) ** 2 + (c1 - c2) ** 2)) <= range;

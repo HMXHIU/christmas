@@ -33,7 +33,7 @@ function selectMonsterAbility(
 
     // TODO: cache this using lru-cache
     const { hp: maxHp } = monsterStats({
-        level: monster.level,
+        level: monster.lvl,
         beast: monster.beast,
     });
 
@@ -114,7 +114,7 @@ async function performMonsterActions(
         const monstersNearPlayer =
             monsters ||
             ((await monstersInGeohashQuerySet([
-                player.location[0],
+                player.loc[0],
             ]).return.all()) as MonsterEntity[]);
 
         // Perform monster actions
@@ -139,8 +139,8 @@ async function performMonsterActions(
 async function spawnMonsters(players: PlayerEntity[]) {
     // Get all parent geohashes (only interested with geohashes 1 level above unit precision)
     const parentGeohashes = players
-        .map(({ location }) => {
-            return location[0].slice(0, -1);
+        .map(({ loc }) => {
+            return loc[0].slice(0, -1);
         })
         .filter(
             (geohash) =>

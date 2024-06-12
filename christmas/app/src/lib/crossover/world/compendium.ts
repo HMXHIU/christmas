@@ -98,7 +98,7 @@ function itemAttibutes(item: Item): PropAttributes {
     // Replace variables in description
     state.description = substituteVariables(
         state.description,
-        item.variables,
+        item.vars,
     ) as string;
     return state;
 }

@@ -220,13 +220,13 @@ const crossoverRouter = {
                 }
 
                 // Buff entity
-                fetchedEntity.level = level ?? fetchedEntity.level;
+                fetchedEntity.lvl = level ?? fetchedEntity.lvl;
                 fetchedEntity.hp = hp ?? fetchedEntity.hp;
                 fetchedEntity.mp = mp ?? fetchedEntity.mp;
                 fetchedEntity.st = st ?? fetchedEntity.st;
                 fetchedEntity.ap = ap ?? fetchedEntity.ap;
-                fetchedEntity.buffs = buffs ?? fetchedEntity.buffs;
-                fetchedEntity.debuffs = debuffs ?? fetchedEntity.debuffs;
+                fetchedEntity.buf = buffs ?? fetchedEntity.buf;
+                fetchedEntity.dbuf = debuffs ?? fetchedEntity.dbuf;
 
                 // Save entity
                 return await saveEntity(fetchedEntity);
@@ -283,7 +283,7 @@ const crossoverRouter = {
                 let itemToEquip = (await tryFetchEntity(item)) as ItemEntity;
 
                 // Check if item is in player inventory (can be inventory or equipment slot)
-                if (itemToEquip.location[0] !== player.player) {
+                if (itemToEquip.loc[0] !== player.player) {
                     return {
                         status: "failure",
                         message: `${item} is not in inventory`,
@@ -312,13 +312,13 @@ const crossoverRouter = {
                         .equal(slot)
                         .return.all()) as ItemEntity[];
                 for (const itemEntity of exitingItemsInSlot) {
-                    itemEntity.location = [player.player];
+                    itemEntity.loc = [player.player];
                     itemEntity.locT = "inv";
                     await itemRepository.save(itemEntity.item, itemEntity);
                 }
 
                 // Equip item in slot
-                itemToEquip.location = [player.player];
+                itemToEquip.loc = [player.player];
                 itemToEquip.locT = slot;
                 itemToEquip = (await itemRepository.save(
                     itemToEquip.item,
@@ -361,7 +361,7 @@ const crossoverRouter = {
                 }
 
                 // Check item is on player
-                if (itemEntity.location[0] !== player.player) {
+                if (itemEntity.loc[0] !== player.player) {
                     return {
                         status: "failure",
                         message: `${item} is not equipped`,
@@ -369,7 +369,7 @@ const crossoverRouter = {
                 }
 
                 // Unequip item
-                itemEntity.location = [player.player];
+                itemEntity.loc = [player.player];
                 itemEntity.locT = "inv";
                 itemEntity = (await itemRepository.save(
                     itemEntity.item,
@@ -417,7 +417,7 @@ const crossoverRouter = {
                 let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
 
                 // Check item owner is player or public
-                if (itemEntity.owner !== player.player && itemEntity.owner) {
+                if (itemEntity.own !== player.player && itemEntity.own) {
                     return {
                         status: "failure",
                         message: `${item} is owned by someone else`,
@@ -425,7 +425,7 @@ const crossoverRouter = {
                 }
 
                 // Check if in range
-                if (itemEntity.location[0] !== player.location[0]) {
+                if (itemEntity.loc[0] !== player.loc[0]) {
                     return {
                         status: "failure",
                         message: `${item} is not in range`,
@@ -441,7 +441,7 @@ const crossoverRouter = {
                 }
 
                 // Take item
-                itemEntity.location = [player.player];
+                itemEntity.loc = [player.player];
                 itemEntity.locT = "inv";
                 itemEntity = (await itemRepository.save(
                     itemEntity.item,
@@ -484,7 +484,7 @@ const crossoverRouter = {
 
                 // Check item is in player inventory
                 let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
-                if (itemEntity.location[0] !== player.player) {
+                if (itemEntity.loc[0] !== player.player) {
                     return {
                         status: "failure",
                         message: `${item} is not in inventory`,
@@ -492,7 +492,7 @@ const crossoverRouter = {
                 }
 
                 // Drop item
-                itemEntity.location = player.location;
+                itemEntity.loc = player.loc;
                 itemEntity.locT = "geohash";
                 itemEntity = (await itemRepository.save(
                     itemEntity.item,
@@ -524,7 +524,7 @@ const crossoverRouter = {
                     message: "You are busy at the moment.",
                 } as GameCommandResponse;
             }
-            const parentGeohash = player.location[0].slice(0, -1);
+            const parentGeohash = player.loc[0].slice(0, -1);
 
             // Get logged in players in geohash
             const players = await playersInGeohashQuerySet(
@@ -561,7 +561,7 @@ const crossoverRouter = {
             )) as PlayerEntity;
 
             const { monsters, players, items } = await getNearbyEntities(
-                player.location[0],
+                player.loc[0],
                 LOOK_PAGE_SIZE,
             );
 
@@ -603,21 +603,17 @@ const crossoverRouter = {
 
                 // Check if player moves to a different plot
                 const plotDidChange =
-                    player.location[0].slice(0, -1) !==
-                    location[0].slice(0, -1);
+                    player.loc[0].slice(0, -1) !== location[0].slice(0, -1);
 
                 // Update player location
                 player = entity as PlayerEntity;
-                player.location = location;
+                player.loc = location;
                 await playerRepository.save(player.player, player);
 
                 // Return nearby entities if plot changed
                 if (plotDidChange) {
                     const { monsters, players, items } =
-                        await getNearbyEntities(
-                            player.location[0],
-                            LOOK_PAGE_SIZE,
-                        );
+                        await getNearbyEntities(player.loc[0], LOOK_PAGE_SIZE);
                     return {
                         players,
                         monsters,
@@ -824,9 +820,9 @@ const crossoverRouter = {
             }
 
             // Rest player
-            player.hp = playerStats({ level: player.level }).hp;
-            player.mp = playerStats({ level: player.level }).mp;
-            player.st = playerStats({ level: player.level }).st;
+            player.hp = playerStats({ level: player.lvl }).hp;
+            player.mp = playerStats({ level: player.lvl }).mp;
+            player.st = playerStats({ level: player.lvl }).st;
 
             // Save player
             await playerRepository.save(player.player, player);
@@ -997,8 +993,8 @@ const crossoverRouter = {
                 ctx.user.publicKey,
             )) as PlayerEntity;
 
-            // Set `loggedIn=false` & save player state
-            player.loggedIn = false;
+            // Logout & save player state
+            player.lgn = false;
             await playerRepository.save(player.player, player);
             await savePlayerState(ctx.user.publicKey);
 

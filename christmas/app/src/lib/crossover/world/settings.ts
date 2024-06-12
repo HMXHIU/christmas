@@ -387,8 +387,8 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "self",
                     states: {
-                        state: "location",
-                        value: "{{target.location}}", // {{}} for variable access
+                        state: "loc",
+                        value: "{{target.loc}}", // {{}} for variable access
                         op: "change",
                     },
                     ticks: TICKS_PER_TURN,

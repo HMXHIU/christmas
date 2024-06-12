@@ -291,7 +291,7 @@ async function processGCResponse(
             action.action === actions.move.action ||
             action.action === actions.look.action
         ) {
-            await handleUpdateWorlds(self.location[0]);
+            await handleUpdateWorlds(self.loc[0]);
         }
     }
 }
@@ -415,7 +415,7 @@ async function performAction(
     // create
     else if (action.action === "create" && variables != null) {
         const prop = variables.queryIrrelevant as string;
-        const geohash = self.location[0];
+        const geohash = self.loc[0];
         if (Object.keys(compendium).includes(prop)) {
             return await crossoverCmdCreateItem(
                 {

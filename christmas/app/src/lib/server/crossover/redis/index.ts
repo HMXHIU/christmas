@@ -188,7 +188,7 @@ async function saveEntity(
 async function hasCollidersInGeohash(geohash: string): Promise<boolean> {
     return (
         (await itemsInGeohashQuerySet([geohash])
-            .and("collider")
+            .and("cld")
             .equal(true)
             .count()) > 0 ||
         (await worldRepository
@@ -212,7 +212,7 @@ async function isGeohashInWorld(geohash: string): Promise<boolean> {
  * @returns A search query set for logged in players.
  */
 function loggedInPlayersQuerySet(): Search {
-    return playerRepository.search().where("loggedIn").equal(true);
+    return playerRepository.search().where("lgn").equal(true);
 }
 
 /**
@@ -224,7 +224,7 @@ function playersInGeohashQuerySet(geohashes: string[]): Search {
     return loggedInPlayersQuerySet()
         .where("locT")
         .equal("geohash")
-        .and("location")
+        .and("loc")
         .containOneOf(...geohashes.map((x) => `${x}*`));
 }
 
@@ -238,7 +238,7 @@ function monstersInGeohashQuerySet(geohashes: string[]): Search {
         .search()
         .where("locT")
         .equal("geohash")
-        .and("location")
+        .and("loc")
         .containOneOf(...geohashes.map((x) => `${x}*`));
 }
 
@@ -252,7 +252,7 @@ function itemsInGeohashQuerySet(geohashes: string[]): Search {
         .search()
         .where("locT")
         .equal("geohash")
-        .and("location")
+        .and("loc")
         .containOneOf(...geohashes.map((x) => `${x}*`));
 }
 
@@ -307,5 +307,5 @@ async function hasWorldCollider(geohash: string): Promise<boolean> {
  * @returns A Search object representing the query for player inventory items.
  */
 function crossoverPlayerInventoryQuerySet(player: string): Search {
-    return itemRepository.search().where("location").contains(player);
+    return itemRepository.search().where("loc").contains(player);
 }

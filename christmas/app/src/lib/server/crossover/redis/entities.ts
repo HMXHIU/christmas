@@ -22,19 +22,18 @@ export {
 type EntityType = "player" | "monster" | "item";
 type GameEntity = Monster | Player | Item;
 
-// TODO: change to `loc` `dbuf` `buf`, 'lvl' for lower memory usage
 interface EntityState {
-    location: string[];
+    loc: string[];
     locT: LocationType;
-    level: number;
+    lvl: number;
     ap: number; // action points (require to perform abilities)
     hp: number; // health points
     mp: number; // mana points
     st: number; // stamina points
     apclk: number; // time the last action points was used
     buclk: number; // busy clock (time the entity is busy till)
-    debuffs: string[];
-    buffs: string[];
+    dbuf: string[];
+    buf: string[];
 }
 
 /*
@@ -46,26 +45,26 @@ const PlayerEntitySchema = new Schema("Player", {
     player: { type: "string" },
     name: { type: "string" },
     avatar: { type: "string" },
-    loggedIn: { type: "boolean" },
+    lgn: { type: "boolean" }, // logged in
     // EntityState
-    location: { type: "string[]" },
+    loc: { type: "string[]" },
     locT: { type: "string" },
-    level: { type: "number" },
+    lvl: { type: "number" },
     ap: { type: "number" }, // action points (require to perform abilities)
     hp: { type: "number" }, // health points
     mp: { type: "number" }, // mana points
     st: { type: "number" }, // stamina points
     apclk: { type: "number" }, // time the last action points was used
     buclk: { type: "number" }, //  busy clock (time the entity is busy till)
-    debuffs: { type: "string[]" },
-    buffs: { type: "string[]" },
+    dbuf: { type: "string[]" },
+    buf: { type: "string[]" },
 });
 
 interface Player extends EntityState {
     player: string; // unique publicKey
     name: string;
     avatar: string;
-    loggedIn: boolean;
+    lgn: boolean;
 }
 
 type PlayerEntity = Player & Entity;
@@ -82,17 +81,17 @@ const MonsterEntitySchema = new Schema("Monster", {
     name: { type: "string" },
     beast: { type: "string" },
     // EntityState
-    location: { type: "string[]" },
+    loc: { type: "string[]" },
     locT: { type: "string" },
-    level: { type: "number" },
+    lvl: { type: "number" },
     ap: { type: "number" }, // action points (require to perform abilities)
     hp: { type: "number" }, // health points
     mp: { type: "number" }, // mana points
     st: { type: "number" }, // stamina points
     apclk: { type: "number" }, // time the last action points was used
     buclk: { type: "number" }, //  busy clock (time the entity is busy till)
-    debuffs: { type: "string[]" },
-    buffs: { type: "string[]" },
+    dbuf: { type: "string[]" },
+    buf: { type: "string[]" },
 });
 
 interface Monster extends EntityState {
@@ -115,16 +114,16 @@ const ItemEntitySchema = new Schema("Item", {
     item: { type: "string" },
     name: { type: "string" },
     prop: { type: "string" },
-    owner: { type: "string" }, // who owns or can use the item (player | monster | public (empty) | dm)
-    configOwner: { type: "string" }, // who can configure the item (player | monster | public (empty) | dm)
-    collider: { type: "boolean" },
+    own: { type: "string" }, // who owns or can use the item (player | monster | public (empty) | dm)
+    cfg: { type: "string" }, // who can configure the item (player | monster | public (empty) | dm)
+    cld: { type: "boolean" }, // collider
     // Item state
-    location: { type: "string[]" },
+    loc: { type: "string[]" },
     locT: { type: "string" },
-    durability: { type: "number" },
-    charges: { type: "number" },
-    debuffs: { type: "string[]" },
-    buffs: { type: "string[]" },
+    dur: { type: "number" },
+    chg: { type: "number" }, // charges
+    dbuf: { type: "string[]" },
+    buf: { type: "string[]" },
 });
 
 interface Item {
@@ -132,18 +131,18 @@ interface Item {
     item: string;
     name: string;
     prop: string;
-    variables: Record<string, string | number | boolean>; // not searchable
-    owner: string;
-    configOwner: string;
-    collider: boolean;
+    vars: Record<string, string | number | boolean>; // not searchable
+    own: string;
+    cfg: string; // config owner
+    cld: boolean;
     // Item state
-    location: string[];
+    loc: string[];
     locT: LocationType;
-    durability: number;
-    charges: number;
+    dur: number;
+    chg: number;
     state: string;
-    debuffs: string[];
-    buffs: string[];
+    dbuf: string[];
+    buf: string[];
 }
 
 type ItemEntity = Item & Entity;

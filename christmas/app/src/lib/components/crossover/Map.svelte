@@ -194,7 +194,7 @@
         if (player == null) {
             return;
         }
-        calculatePosition(player.location[0]).then((p) => {
+        calculatePosition(player.loc[0]).then((p) => {
             playerPosition = p;
         });
     }
@@ -924,7 +924,7 @@
 
         // Get position
         const { row, col, isoX, isoY, topologicalHeight } =
-            await calculatePosition(entity.location[0]);
+            await calculatePosition(entity.loc[0]);
 
         // Ignore entities outside player's view
         if (!isCellInView({ row, col }, playerPosition)) {

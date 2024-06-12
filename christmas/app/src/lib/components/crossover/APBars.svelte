@@ -12,7 +12,7 @@
     onMount(() => {
         const unsubscribe = player.subscribe((p) => {
             if (p != null) {
-                maxAp = playerStats({ level: p.level }).ap;
+                maxAp = playerStats({ level: p.lvl }).ap;
                 // Calculate AP progress considering the time passed since the last AP update
                 const ap = Math.min(
                     maxAp,
