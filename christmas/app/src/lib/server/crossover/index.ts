@@ -90,7 +90,7 @@ export {
     type PlayerState,
 };
 
-// PlayerState stores data owned by the game (does not require player permission to modify)
+// PlayerState stores data owned by the game long term (does not require player permission to modify)
 type PlayerState = z.infer<typeof PlayerStateSchema>;
 const PlayerStateSchema = z.object({
     avatar: z.string().optional(),

@@ -968,11 +968,11 @@ const crossoverRouter = {
                 });
 
                 // Save player state & entity
-                await savePlayerState(ctx.user.publicKey);
                 player = (await playerRepository.save(
                     ctx.user.publicKey,
                     player,
                 )) as PlayerEntity;
+                await savePlayerState(ctx.user.publicKey); // must save after player entity
 
                 // Set player cookie (to know if user has signed up for crossover)
                 ctx.cookies.set("player", ctx.user.publicKey, {

@@ -137,7 +137,12 @@
     }
 
     async function onGenerateAvatar() {
-        const playerMetadata = await validatePlayerMetadata();
+        const playerMetadata = await validatePlayerMetadata({
+            name: "name", // not needed for avatar generation
+            description: "description",
+            playerPublicKey: "playerPublicKey",
+            avatar: "https://example.com/avatar.png",
+        });
         if (playerMetadata) {
             availableAvatars = await crossoverGenerateAvatar(playerMetadata);
             errors = {};
