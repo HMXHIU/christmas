@@ -25,18 +25,16 @@
         playerStats,
         raceTypes,
         skinTypes,
+        type PlayerMetadata,
     } from "$lib/crossover/world/player";
     import { cn } from "$lib/shadcn";
     import { parseZodErrors } from "$lib/utils";
-    import { z } from "zod";
     import { player } from "../../../store";
     import LabelField from "../common/LabelField.svelte";
     import SeparatorWithText from "../common/SeparatorWithText.svelte";
 
     export let playerPublicKey: string;
-    export let onCreateCharacter: (
-        playerMetadata: z.infer<typeof PlayerMetadataSchema>,
-    ) => void;
+    export let onCreateCharacter: (playerMetadata: PlayerMetadata) => void;
 
     let name: string = "";
     let description: string = "";
@@ -103,7 +101,7 @@
         description?: string;
         playerPublicKey?: string;
         avatar?: string;
-    }): z.infer<typeof PlayerMetadataSchema> | null {
+    }): PlayerMetadata | null {
         // Validate player metadata
         try {
             const playerMetadata = PlayerMetadataSchema.parse({

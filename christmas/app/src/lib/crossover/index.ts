@@ -11,7 +11,6 @@ import { retry, signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
 import type { HTTPHeaders } from "@trpc/client";
 import { get } from "svelte/store";
-import type { z } from "zod";
 import type {
     FeedEvent,
     StreamEvent,
@@ -35,7 +34,7 @@ import {
     type ItemVariables,
     type Utility,
 } from "./world/compendium";
-import type { PlayerMetadataSchema } from "./world/player";
+import type { PlayerMetadata } from "./world/player";
 import { compendium, worldSeed } from "./world/settings";
 
 export {
@@ -601,7 +600,7 @@ async function crossoverAuthPlayer(headers: HTTPHeaders = {}): Promise<Player> {
 }
 
 async function signup(
-    playerMetadata: z.infer<typeof PlayerMetadataSchema>,
+    playerMetadata: PlayerMetadata,
     options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
     return await trpc({
@@ -749,7 +748,7 @@ function crossoverWorldWorlds(geohash: string, headers: HTTPHeaders = {}) {
  */
 
 async function crossoverAvailableAvatars(
-    playerMetadata: z.infer<typeof PlayerMetadataSchema>,
+    playerMetadata: PlayerMetadata,
     headers: any = {},
 ): Promise<string[]> {
     const { avatars } = await (
@@ -763,7 +762,7 @@ async function crossoverAvailableAvatars(
 }
 
 async function crossoverGenerateAvatar(
-    playerMetadata: z.infer<typeof PlayerMetadataSchema>,
+    playerMetadata: PlayerMetadata,
     headers: any = {},
 ): Promise<[string, string]> {
     const { avatarImageUrl } = await (

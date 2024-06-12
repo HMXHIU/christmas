@@ -21,7 +21,7 @@ import {
     type EquipmentSlot,
     type ItemVariables,
 } from "$lib/crossover/world/compendium";
-import { PlayerMetadataSchema, playerStats } from "$lib/crossover/world/player";
+import { playerStats, type PlayerMetadata } from "$lib/crossover/world/player";
 import {
     MS_PER_TICK,
     abilities,
@@ -43,6 +43,7 @@ import { z } from "zod";
 import type { UpdateEntitiesEvent } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import {
+    fetchEntity,
     hasCollidersInGeohash,
     isGeohashInWorld,
     itemRepository,
@@ -59,18 +60,19 @@ import {
     type PlayerEntity,
     type WorldEntity,
 } from "./redis/entities";
-import { PlayerStateSchema, type UserMetadataSchema } from "./router";
+import { type UserMetadataSchema } from "./router";
 
 const { uniqBy } = lodash;
 
 export {
+    PlayerStateSchema,
     checkAndSetBusy,
     configureItem,
     connectedUsers,
     consumeResources,
     getPlayerMetadata,
+    getPlayerState,
     getUserMetadata,
-    initPlayerEntity,
     isDirectionTraversable,
     isLocationTraversable,
     itemVariableValue,
@@ -78,14 +80,31 @@ export {
     performAbility,
     recoverAp,
     saveEntity,
-    savePlayerEntityState,
+    savePlayerState,
     setPlayerState,
     spawnItem,
     spawnMonster,
     spawnWorld,
     useItem,
     type ConnectedUser,
+    type PlayerState,
 };
+
+// PlayerState stores data owned by the game (does not require player permission to modify)
+type PlayerState = z.infer<typeof PlayerStateSchema>;
+const PlayerStateSchema = z.object({
+    avatar: z.string().optional(),
+    loggedIn: z.boolean().optional(),
+    location: z.array(z.string()).optional(),
+    locT: z.enum(["geohash"]).optional(),
+    hp: z.number().optional(),
+    mp: z.number().optional(),
+    st: z.number().optional(),
+    ap: z.number().optional(),
+    level: z.number().optional(),
+    buffs: z.array(z.string()).optional(),
+    debuffs: z.array(z.string()).optional(),
+});
 
 /**
  * Interface representing a connected user.
@@ -136,7 +155,7 @@ async function getUserMetadata(
  */
 async function getPlayerMetadata(
     publicKey: string,
-): Promise<z.infer<typeof PlayerMetadataSchema> | null> {
+): Promise<PlayerMetadata | null> {
     return (await getUserMetadata(publicKey))?.crossover || null;
 }
 
@@ -146,9 +165,7 @@ async function getPlayerMetadata(
  * @param publicKey The public key of the player.
  * @returns A promise that resolves to the player state or null if not found.
  */
-async function getPlayerState(
-    publicKey: string,
-): Promise<z.infer<typeof PlayerStateSchema> | null> {
+async function getPlayerState(publicKey: string): Promise<PlayerState | null> {
     try {
         return await ObjectStorage.getJSONObject({
             owner: publicKey,
@@ -170,7 +187,7 @@ async function getPlayerState(
  */
 async function setPlayerState(
     publicKey: string,
-    state: z.infer<typeof PlayerStateSchema>,
+    state: PlayerState,
 ): Promise<string> {
     try {
         return await ObjectStorage.putJSONObject({
@@ -192,95 +209,46 @@ async function setPlayerState(
  * Loads the player entity (PlayerMetadata + PlayerState) for a given public key.
  *
  * @param publicKey The public key of the player.
- * @param playerState Upsert player state if provided.
  * @returns A promise that resolves to the loaded player entity.
  * @throws Error if the player is not found.
  */
 async function loadPlayerEntity(
     publicKey: string,
-    playerState: any = {},
+    options: { geohash: string; region: string; loggedIn: boolean },
 ): Promise<PlayerEntity> {
     // Get player metadata
-    const playerMetadata = await getPlayerMetadata(publicKey);
-    if (playerMetadata == null) {
+    const userMetadata = await getUserMetadata(publicKey);
+    if (userMetadata == null) {
         throw new Error(`Player ${publicKey} not found`);
     }
+    if (userMetadata.crossover == null) {
+        throw new Error(`Player ${publicKey} missing crossover metadata`);
+    }
+    const { avatar, name } = userMetadata.crossover;
 
-    // Get & update player state
-    const newPlayerState = {
-        ...((await getPlayerState(publicKey)) || {}),
-        ...playerState,
+    // Merge default, player state, player entity
+    let playerEntity = (await fetchEntity(publicKey)) || {};
+    let playerState = (await getPlayerState(publicKey)) || {};
+    let defaultState: PlayerEntity = {
+        player: publicKey,
+        name,
+        avatar,
+        loggedIn: options.loggedIn,
+        location: [options.geohash],
+        locT: "geohash",
+        level: 1,
+        ...playerStats({ level: 1 }),
+        apclk: 0,
+        buclk: 0,
+        debuffs: [],
+        buffs: [],
     };
-    await setPlayerState(publicKey, newPlayerState);
-
-    return (await playerRepository.save(publicKey, {
-        ...playerMetadata,
-        ...newPlayerState,
-    })) as PlayerEntity;
-}
-
-/**
- * Initializes the player entity.
- *
- * @param player The player entity.
- * @param region The region of the player.
- * @param geohash The geohash of the user (community).
- * @param forceSave Indicates whether to force save the player entity.
- * @returns A promise that resolves to the initialized player entity.
- */
-async function initPlayerEntity(
-    {
-        player,
-        region,
-        geohash,
-    }: {
-        player: PlayerEntity;
-        region: string;
-        geohash: string;
-    },
-    { forceSave }: { forceSave: boolean } = { forceSave: false },
-): Promise<PlayerEntity> {
-    let changed = false;
-
-    // Initialize geohash
-    if (!player.location || !player.locT) {
-        // TODO: Spawn player in region's city center spawn point
-        player.location = [geohash];
-        player.locT = "geohash";
-        changed = true;
-    }
-
-    // Initialize level and stats
-    if (!player.level) {
-        player.level = 1;
-        const { hp, mp, st, ap } = playerStats({ level: player.level });
-        player.hp = hp;
-        player.mp = mp;
-        player.st = st;
-        player.ap = ap;
-        player.debuffs = [];
-        player.buffs = [];
-        changed = true;
-        console.log("Initialized player's level and stats", player.player);
-    }
-
-    // Fix misconfigured player
-    if (
-        player.ap == null ||
-        player.hp == null ||
-        player.st == null ||
-        player.mp == null
-    ) {
-        const { hp, mp, st, ap } = playerStats({ level: player.level });
-        player.hp = hp;
-        player.mp = mp;
-        player.st = st;
-        player.ap = ap;
-        player.debuffs = [];
-        player.buffs = [];
-        changed = true;
-        console.log("Fix misconfigured player", player.player);
-    }
+    let player: PlayerEntity = {
+        ...defaultState,
+        ...playerState,
+        ...playerEntity,
+        loggedIn: options.loggedIn,
+    };
 
     // Auto correct player's geohash precision
     if (player.location[0].length !== worldSeed.spatial.unit.precision) {
@@ -294,27 +262,19 @@ async function initPlayerEntity(
         console.log("Auto corrected player's location", player.location);
     }
 
-    // Save if changed or `forceSave`
-    if (changed || forceSave) {
-        player = (await playerRepository.save(
-            player.player,
-            player,
-        )) as PlayerEntity;
-    }
-
     return player;
 }
 
 /**
- * Saves the player entity state (into s3) for a given public key.
+ * Saves the player state (into s3) for a given public key.
  *
  * @param publicKey The public key of the player.
  * @returns A promise that resolves to a string indicating the success of the operation.
  */
-async function savePlayerEntityState(publicKey: string): Promise<string> {
+async function savePlayerState(publicKey: string): Promise<string> {
     return await setPlayerState(
         publicKey,
-        (await playerRepository.fetch(publicKey)) as PlayerEntity,
+        (await playerRepository.fetch(publicKey)) as PlayerState,
     );
 }
 

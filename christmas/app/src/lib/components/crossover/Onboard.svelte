@@ -3,11 +3,10 @@
     import Wallet from "$lib/components/common/Wallet.svelte";
     import { Button } from "$lib/components/ui/button";
     import { login, signup } from "$lib/crossover";
-    import type { PlayerMetadataSchema } from "$lib/crossover/world/player";
+    import type { PlayerMetadata } from "$lib/crossover/world/player";
     import { worldSeed } from "$lib/crossover/world/settings";
     import { cn } from "$lib/shadcn";
     import { toast } from "svelte-sonner";
-    import { z } from "zod";
     import { token, userDeviceClient } from "../../../store";
     import CharacterCreator from "./CharacterCreator.svelte";
 
@@ -41,9 +40,7 @@
         }
     }
 
-    async function onCreateCharacter(
-        playerMetadata: z.infer<typeof PlayerMetadataSchema>,
-    ) {
+    async function onCreateCharacter(playerMetadata: PlayerMetadata) {
         try {
             // Try signup crossover player
             await signup(playerMetadata);

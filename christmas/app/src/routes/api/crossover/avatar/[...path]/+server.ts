@@ -1,10 +1,9 @@
 import { COMFYUI_REST_ENDPOINT } from "$env/static/private";
-import type { PlayerMetadataSchema } from "$lib/crossover/world/player";
+import type { PlayerMetadata } from "$lib/crossover/world/player";
 import { hashObject, requireLogin } from "$lib/server";
 import { ObjectStorage } from "$lib/server/objectStorage";
 import { sleep } from "$lib/utils";
 import type { RequestHandler } from "@sveltejs/kit";
-import type { z } from "zod";
 import workflow from "./crossover_comfyui_character_creator.json";
 
 /*
@@ -57,7 +56,7 @@ async function queuePrompt({
     playerMetadata,
 }: {
     attempts?: number;
-    playerMetadata: z.infer<typeof PlayerMetadataSchema>;
+    playerMetadata: PlayerMetadata;
 }) {
     attempts = attempts || 10;
 
@@ -98,7 +97,7 @@ function generateRandomSeed(): number {
 }
 
 async function createAvatar(
-    playerMetadata: z.infer<typeof PlayerMetadataSchema>,
+    playerMetadata: PlayerMetadata,
 ): Promise<{ avatarImageUrl: string }> {
     // Generate random seed for kSampler
     const samplerSeed = generateRandomSeed();
@@ -160,9 +159,7 @@ async function createAvatar(
     return { avatarImageUrl };
 }
 
-async function getAvatars(
-    playerMetadata: z.infer<typeof PlayerMetadataSchema>,
-): Promise<string[]> {
+async function getAvatars(playerMetadata: PlayerMetadata): Promise<string[]> {
     // Generate avatar hash
     const { gender, race, archetype, appearance } = playerMetadata;
     const avatarHash = hashObject({ gender, race, archetype, appearance });

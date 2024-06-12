@@ -32,6 +32,7 @@ export {
     playerStats,
     raceTypes,
     skinTypes,
+    type PlayerMetadata,
 };
 
 const MAX_POSSIBLE_AP = 8;
@@ -1089,6 +1090,8 @@ const faceTypes = [
         description: "Square with soft edges.",
     },
 ];
+
+type PlayerMetadata = z.infer<typeof PlayerMetadataSchema>;
 
 const PlayerMetadataSchema = z.object({
     player: z.string(),

@@ -25,13 +25,13 @@ import { z } from "zod";
 import {
     checkAndSetBusy,
     configureItem,
+    getPlayerState,
     getUserMetadata,
-    initPlayerEntity,
     isDirectionTraversable,
     loadPlayerEntity,
     performAbility,
     saveEntity,
-    savePlayerEntityState,
+    savePlayerState,
     spawnItem,
     spawnMonster,
     spawnWorld,
@@ -62,7 +62,7 @@ import type {
     WorldEntity,
 } from "./redis/entities";
 
-export { PlayerStateSchema, SaySchema, UserMetadataSchema, crossoverRouter };
+export { SaySchema, UserMetadataSchema, crossoverRouter };
 
 // Initialize redis clients, repositiories, indexes
 initializeClients();
@@ -129,21 +129,6 @@ const SpawnWorldSchema = z.object({
 const EquipItemSchema = z.object({
     item: z.string(),
     slot: z.enum(["rh", "lh", "ft", "hd", "nk", "ch", "lg", "r1", "r2"]),
-});
-
-// PlayerState stores data owned by the game (does not require player permission to modify)
-const PlayerStateSchema = z.object({
-    location: z.array(z.string()).optional(),
-    locT: z.string().optional(),
-    avatar: z.string().optional(),
-    loggedIn: z.boolean().optional(),
-    hp: z.number().optional(),
-    mp: z.number().optional(),
-    st: z.number().optional(),
-    ap: z.number().optional(),
-    level: z.number().optional(),
-    buffs: z.array(z.string()).optional(),
-    debuffs: z.array(z.string()).optional(),
 });
 
 const UserMetadataSchema = z.object({
@@ -979,20 +964,19 @@ const crossoverRouter = {
             .query(async ({ ctx, input }) => {
                 const { geohash, region } = input;
 
-                // Get or load player
-                let player =
-                    ((await fetchEntity(ctx.user.publicKey)) as PlayerEntity) ||
-                    (await loadPlayerEntity(ctx.user.publicKey));
+                // Get or load player entity
+                let player = await loadPlayerEntity(ctx.user.publicKey, {
+                    geohash,
+                    region,
+                    loggedIn: true,
+                });
 
-                // Init player
-                player.loggedIn = true;
-                player = await initPlayerEntity(
-                    { player, geohash, region },
-                    { forceSave: true },
-                );
-
-                // Save player state
-                await savePlayerEntityState(ctx.user.publicKey);
+                // Save player state & entity
+                await savePlayerState(ctx.user.publicKey);
+                player = (await playerRepository.save(
+                    ctx.user.publicKey,
+                    player,
+                )) as PlayerEntity;
 
                 // Set player cookie (to know if user has signed up for crossover)
                 ctx.cookies.set("player", ctx.user.publicKey, {
@@ -1016,7 +1000,7 @@ const crossoverRouter = {
             // Set `loggedIn=false` & save player state
             player.loggedIn = false;
             await playerRepository.save(player.player, player);
-            await savePlayerEntityState(ctx.user.publicKey);
+            await savePlayerState(ctx.user.publicKey);
 
             // Remove player cookie
             ctx.cookies.delete("player", {
@@ -1031,7 +1015,14 @@ const crossoverRouter = {
             // Get or load player
             let player =
                 (await fetchEntity(ctx.user.publicKey)) ||
-                (await loadPlayerEntity(ctx.user.publicKey));
+                (await getPlayerState(ctx.user.publicKey));
+
+            if (player == null) {
+                throw new TRPCError({
+                    code: "BAD_REQUEST",
+                    message: `Player ${ctx.user.publicKey} is not initialized`,
+                });
+            }
 
             // Set player cookie (to know if user has signed up for crossover)
             ctx.cookies.set("player", ctx.user.publicKey, {

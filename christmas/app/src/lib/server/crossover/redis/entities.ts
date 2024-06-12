@@ -28,11 +28,11 @@ interface EntityState {
     locT: LocationType;
     level: number;
     ap: number; // action points (require to perform abilities)
-    apclk: number; // time the last action points was used
-    buclk: number; // busy clock (time the entity is busy till)
     hp: number; // health points
     mp: number; // mana points
     st: number; // stamina points
+    apclk: number; // time the last action points was used
+    buclk: number; // busy clock (time the entity is busy till)
     debuffs: string[];
     buffs: string[];
 }
@@ -41,36 +41,30 @@ interface EntityState {
  * Player
  */
 
-// TODO: change to `desc` for lower memory usage
-
-// Combines both `PlayerState` and `PlayerMetadata`
 const PlayerEntitySchema = new Schema("Player", {
     // Player metadata
     player: { type: "string" },
     name: { type: "string" },
-    description: { type: "string" },
     avatar: { type: "string" },
-    // Player state
+    loggedIn: { type: "boolean" },
+    // EntityState
     location: { type: "string[]" },
     locT: { type: "string" },
-    loggedIn: { type: "boolean" },
     level: { type: "number" },
     ap: { type: "number" }, // action points (require to perform abilities)
     hp: { type: "number" }, // health points
     mp: { type: "number" }, // mana points
     st: { type: "number" }, // stamina points
     apclk: { type: "number" }, // time the last action points was used
+    buclk: { type: "number" }, //  busy clock (time the entity is busy till)
     debuffs: { type: "string[]" },
     buffs: { type: "string[]" },
 });
 
 interface Player extends EntityState {
-    // Player metadata
-    player: string;
+    player: string; // unique publicKey
     name: string;
-    description: string;
     avatar: string;
-    // Player state
     loggedIn: boolean;
 }
 
@@ -87,7 +81,7 @@ const MonsterEntitySchema = new Schema("Monster", {
     monster: { type: "string" },
     name: { type: "string" },
     beast: { type: "string" },
-    // Monster state
+    // EntityState
     location: { type: "string[]" },
     locT: { type: "string" },
     level: { type: "number" },
@@ -96,6 +90,7 @@ const MonsterEntitySchema = new Schema("Monster", {
     mp: { type: "number" }, // mana points
     st: { type: "number" }, // stamina points
     apclk: { type: "number" }, // time the last action points was used
+    buclk: { type: "number" }, //  busy clock (time the entity is busy till)
     debuffs: { type: "string[]" },
     buffs: { type: "string[]" },
 });
