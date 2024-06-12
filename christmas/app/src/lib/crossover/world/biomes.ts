@@ -174,8 +174,8 @@ async function topologyAtGeohash(
     const { width, height, data } = png;
     const xRaw = (width - 1) * (col / cols); // x, y is 0 indexed
     const yRaw = (height - 1) * (row / rows);
-    const x = Math.trunc(xRaw);
-    const y = Math.trunc(yRaw);
+    const x = Math.round(xRaw);
+    const y = Math.round(yRaw);
     const xPixel = xRaw - Math.floor(xRaw);
     const yPixel = yRaw - Math.floor(yRaw);
 

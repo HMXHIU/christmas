@@ -11,6 +11,7 @@ import {
     crossoverCmdTake,
     crossoverCmdUseItem,
     stream,
+    type GameCommandResponse,
 } from "$lib/crossover";
 import { itemAttibutes } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
@@ -52,8 +53,8 @@ test("Test Player", async () => {
             geohash: playerOneGeohash,
             name: playerOneName,
         });
-    expect(playerOne.location[0].length).toBe(worldSeed.spatial.unit.precision);
-    expect(playerOne.location[0].startsWith(playerOneGeohash)).toBe(true);
+    expect(playerOne.loc[0].length).toBe(worldSeed.spatial.unit.precision);
+    expect(playerOne.loc[0].startsWith(playerOneGeohash)).toBe(true);
 
     const playerTwoName = "Saruman";
     const playerTwoGeohash = generateRandomGeohash(6, "h9");
@@ -63,8 +64,8 @@ test("Test Player", async () => {
             geohash: playerTwoGeohash,
             name: playerTwoName,
         });
-    expect(playerTwo.location[0].length).toBe(worldSeed.spatial.unit.precision);
-    expect(playerTwo.location[0].startsWith(playerTwoGeohash)).toBe(true);
+    expect(playerTwo.loc[0].length).toBe(worldSeed.spatial.unit.precision);
+    expect(playerTwo.loc[0].startsWith(playerTwoGeohash)).toBe(true);
 
     const playerThreeName = "Sauron";
     const playerThreeGeohash = playerOneGeohash;
@@ -74,10 +75,8 @@ test("Test Player", async () => {
             geohash: playerThreeGeohash,
             name: playerThreeName,
         });
-    expect(playerThree.location[0].length).toBe(
-        worldSeed.spatial.unit.precision,
-    );
-    expect(playerThree.location[0].startsWith(playerThreeGeohash)).toBe(true);
+    expect(playerThree.loc[0].length).toBe(worldSeed.spatial.unit.precision);
+    expect(playerThree.loc[0].startsWith(playerThreeGeohash)).toBe(true);
 
     // Create streams
     const [playerOneStream, playerOneCloseStream] = await stream({
@@ -154,12 +153,17 @@ test("Test Player", async () => {
     ]);
 
     // Move
-    const nextLocation = (
-        await crossoverCmdMove({ direction: "n" }, { Cookie: playerOneCookies })
-    ).players?.[0].location!;
-    const northTile = ngeohash.neighbor(playerOne.location[0], [1, 0]);
+    var gcr: GameCommandResponse = await crossoverCmdMove(
+        { direction: "n" },
+        { Cookie: playerOneCookies },
+    );
+    const nextLocation = gcr.players?.filter(
+        (p) => p.player === playerOne.player,
+    )[0].loc!;
+    const northTile = ngeohash.neighbor(playerOne.loc[0], [1, 0]);
+    console.log(nextLocation[0], playerOne.loc[0]);
     expect(nextLocation[0]).toEqual(northTile);
-    playerOne.location = nextLocation;
+    playerOne.loc = nextLocation;
 
     // Stats
     expect(playerStats({ level: 1 })).toMatchObject({
@@ -261,9 +265,9 @@ test("Test Player", async () => {
             {
                 player: playerOne.player,
                 name: "Gandalf",
-                loggedIn: true,
-                location: playerOne.location, // no change yet
-                level: 10,
+                lgn: true,
+                loc: playerOne.loc, // no change yet
+                lvl: 10,
                 mp: playerOne.mp - abilities.teleport.mp,
                 ap: playerOne.ap - abilities.teleport.ap,
             },
@@ -283,8 +287,8 @@ test("Test Player", async () => {
             {
                 player: playerOne.player,
                 name: "Gandalf",
-                location: playerTwo.location,
-                level: 10,
+                loc: playerTwo.loc,
+                lvl: 10,
                 mp: playerOne.mp - abilities.teleport.mp,
                 ap: playerOne.ap - abilities.teleport.ap,
             },
@@ -309,7 +313,7 @@ test("Test Player", async () => {
 
     // Spawn woodendoor at playerOne location
     let woodendoor = (await spawnItem({
-        geohash: playerOne.location[0],
+        geohash: playerOne.loc[0],
         prop: compendium.woodendoor.prop,
         variables: {
             [compendium.woodendoor.variables.doorsign.variable]:
@@ -318,7 +322,7 @@ test("Test Player", async () => {
     })) as Item;
     expect(woodendoor).toMatchObject({
         state: "closed",
-        variables: { doorsign: "A custom door sign" },
+        vars: { doorsign: "A custom door sign" },
     });
 
     // Configure woodendoor
@@ -336,7 +340,7 @@ test("Test Player", async () => {
     ).items?.[0]!;
     expect(woodendoor).toMatchObject({
         state: "closed",
-        variables: { doorsign: "A new door sign" },
+        vars: { doorsign: "A new door sign" },
     });
 
     /*
@@ -398,13 +402,13 @@ test("Test Player", async () => {
      */
 
     // Move playerOne south (to spawn portal without colliding with woodendoor)
-    playerOne.location = (
+    playerOne.loc = (
         await crossoverCmdMove({ direction: "s" }, { Cookie: playerOneCookies })
-    ).players?.[0].location!;
+    ).players?.[0].loc!;
 
     // Spawn portals (dm)
     let portalOne = (await spawnItem({
-        geohash: playerOne.location[0], // spawn at playerOne
+        geohash: playerOne.loc[0], // spawn at playerOne
         prop: compendium.portal.prop,
     })) as Item;
     let portalTwo = (await spawnItem({
@@ -464,7 +468,7 @@ test("Test Player", async () => {
         players: [
             {
                 player: playerOne.player,
-                location: [portalTwo.location[0]],
+                loc: [portalTwo.loc[0]],
                 locT: "geohash",
             },
         ],
@@ -472,8 +476,8 @@ test("Test Player", async () => {
         items: [
             {
                 item: portalTwo.item, // this is the target
-                durability: 100,
-                charges: 100,
+                dur: 100,
+                chg: 100,
                 state: "default",
             },
         ],
@@ -499,8 +503,8 @@ test("Test Player", async () => {
             {
                 item: portalOne.item,
 
-                durability: 100,
-                charges: 99, // -1
+                dur: 100,
+                chg: 99, // -1
             },
         ],
     });
@@ -513,7 +517,7 @@ test("Test Player", async () => {
     }
 
     // Check `playerOne` location after teleport
-    expect(playerOne.location[0]).toBe(portalTwo.location[0]);
+    expect(playerOne.loc[0]).toBe(portalTwo.loc[0]);
 
     // `playerOne` teleport back to `portalOne`
     setTimeout(async () => {
@@ -557,8 +561,8 @@ test("Test Player", async () => {
         items: [
             {
                 item: portalOne.item, // this is thet target
-                durability: 100,
-                charges: 99,
+                dur: 100,
+                chg: 99,
             },
         ],
     });
@@ -582,8 +586,8 @@ test("Test Player", async () => {
         items: [
             {
                 item: portalTwo.item,
-                durability: 100,
-                charges: 99, // -1
+                dur: 100,
+                chg: 99, // -1
             },
         ],
     });
@@ -596,7 +600,7 @@ test("Test Player", async () => {
     }
 
     // Check `playerOne` location after teleport
-    expect(playerOne.location[0]).toBe(portalOne.location[0]);
+    expect(playerOne.loc[0]).toBe(portalOne.loc[0]);
 
     /*
      * Test crossoverCmdCreateItem
@@ -605,7 +609,7 @@ test("Test Player", async () => {
     const woodenclub = (
         await crossoverCmdCreateItem(
             {
-                geohash: playerOne.location[0],
+                geohash: playerOne.loc[0],
                 prop: compendium.woodenclub.prop,
             },
             { Cookie: playerOneCookies },
@@ -615,15 +619,15 @@ test("Test Player", async () => {
     expect(woodenclub).toMatchObject({
         name: "Wooden Club",
         prop: "woodenclub",
-        location: playerOne.location,
-        durability: 100,
-        charges: 0,
-        owner: playerOne.player, // playerOne owns the woodenclub
-        configOwner: playerOne.player, // playerOne can configure the woodenclub
+        loc: playerOne.loc,
+        dur: 100,
+        chg: 0,
+        own: playerOne.player, // playerOne owns the woodenclub
+        cfg: playerOne.player, // playerOne can configure the woodenclub
         state: "default",
-        variables: {},
-        debuffs: [],
-        buffs: [],
+        vars: {},
+        dbuf: [],
+        buf: [],
     });
 
     /*

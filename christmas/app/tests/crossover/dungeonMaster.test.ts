@@ -80,7 +80,7 @@ test("Test DungeonMaster", async () => {
 
     const numMonstersInArea = await Promise.all(
         uninhabitedGeohashes.map((geohash) =>
-            monstersInGeohashQuerySet(geohash).count(),
+            monstersInGeohashQuerySet([geohash]).count(),
         ),
     ).then((monsterCounts) => {
         return monsterCounts.reduce((acc, current) => acc + current, 0);
@@ -134,8 +134,8 @@ test("Test DungeonMaster", async () => {
             mp: 100,
             st: 100,
             ap: 40,
-            buffs: ["haste"],
-            debuffs: ["poisoned"],
+            buf: ["haste"],
+            dbuf: ["poisoned"],
         }),
     });
     await expect(res.json()).resolves.toMatchObject({
@@ -143,15 +143,15 @@ test("Test DungeonMaster", async () => {
             data: {
                 player: playerOne.player,
                 name: "Gandalf",
-                loggedIn: true,
-                location: ["w21z3tss"],
-                level: 1,
+                lgn: true,
+                loc: ["w21z3tss"],
+                lvl: 1,
                 hp: 100,
                 mp: 100,
                 st: 100,
                 ap: 40,
-                debuffs: ["poisoned"],
-                buffs: ["haste"],
+                dbuf: ["poisoned"],
+                buf: ["haste"],
             },
         },
     });

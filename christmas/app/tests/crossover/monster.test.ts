@@ -61,7 +61,7 @@ test("Test Monster", async () => {
         level: 1,
     });
     expect(dragon).toMatchObject({
-        location: [
+        loc: [
             // row 1
             dragonGeohash,
             geohashNeighbour(dragonGeohash, "e"),
@@ -99,14 +99,14 @@ test("Test Monster", async () => {
     expect(goblin).toMatchObject({
         name: "goblin",
         beast: "goblin",
-        location: [playerOneGeohash],
-        level: 1,
+        loc: [playerOneGeohash],
+        lvl: 1,
         hp: 20,
         mp: 20,
         st: 20,
         ap: 11,
-        buffs: [],
-        debuffs: [],
+        buf: [],
+        dbuf: [],
     });
 
     // Test cannot spawn monster on collider
@@ -121,9 +121,7 @@ test("Test Monster", async () => {
             beast: "goblin",
             level: 1,
         }),
-    ).rejects.toThrow(
-        `Cannot spawn goblin, ${woodendoorGeohash} is untraversable`,
-    );
+    ).rejects.toThrow(`Cannot spawn goblin at ${woodendoorGeohash}`);
 
     /*
      * Test `selectMonsterAbility`
@@ -152,12 +150,12 @@ test("Test Monster", async () => {
 
     // Reset `playerOne`, `goblin` stats
     goblin = (await buffEntity(goblin.monster, {
-        level: goblin.level,
-        ...monsterStats({ level: goblin.level, beast: goblin.beast }),
+        level: goblin.lvl,
+        ...monsterStats({ level: goblin.lvl, beast: goblin.beast }),
     })) as MonsterEntity;
     playerOne = (await buffEntity(playerOne.player, {
-        level: playerOne.level,
-        ...playerStats({ level: playerOne.level }),
+        level: playerOne.lvl,
+        ...playerStats({ level: playerOne.lvl }),
     })) as PlayerEntity;
 
     // Test monster attacking player

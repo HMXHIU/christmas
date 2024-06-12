@@ -122,8 +122,8 @@ test("Test Stream", async () => {
                 hp: 9,
                 st: 9, // -1
                 ap: 2, // -2
-                debuffs: [],
-                buffs: [],
+                dbuf: [],
+                buf: [],
             },
         ],
         monsters: [],
@@ -141,8 +141,8 @@ test("Test Stream", async () => {
                 hp: 14, // +5 hp
                 st: 9, // -1
                 ap: 2, // -2
-                debuffs: [],
-                buffs: [],
+                dbuf: [],
+                buf: [],
             },
         ],
         monsters: [],

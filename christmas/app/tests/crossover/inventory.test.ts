@@ -28,16 +28,16 @@ test("Test Inventory", async () => {
 
     // Spawn woodenclub
     let playerOneWoodenClub = await spawnItem({
-        geohash: playerOne.location[0],
+        geohash: playerOne.loc[0],
         prop: compendium.woodenclub.prop,
         owner: playerOne.player,
         configOwner: playerOne.player,
     });
     expect(playerOneWoodenClub).toMatchObject({
-        location: playerOne.location,
+        loc: playerOne.loc,
         locT: "geohash",
-        owner: playerOne.player,
-        configOwner: playerOne.player,
+        own: playerOne.player,
+        cfg: playerOne.player,
     });
 
     /*
@@ -77,7 +77,7 @@ test("Test Inventory", async () => {
         )
     ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
-        location: [playerOne.player],
+        loc: [playerOne.player],
         locT: "inv",
     });
 
@@ -105,10 +105,10 @@ test("Test Inventory", async () => {
         )
     ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
-        location: playerOne.location,
+        loc: playerOne.loc,
         locT: "geohash",
-        owner: playerOne.player,
-        configOwner: playerOne.player,
+        own: playerOne.player,
+        cfg: playerOne.player,
     });
 
     /*
@@ -116,10 +116,10 @@ test("Test Inventory", async () => {
      */
 
     // Move player to a different geohash
-    playerOne.location = (
+    playerOne.loc = (
         await crossoverCmdMove({ direction: "s" }, { Cookie: playerOneCookies })
-    ).players?.[0].location!;
-    expect(playerOne.location[0]).not.equal(playerOneWoodenClub.location[0]);
+    ).players?.[0].loc!;
+    expect(playerOne.loc[0]).not.equal(playerOneWoodenClub.loc[0]);
 
     // Try take item
     await expect(
@@ -133,10 +133,10 @@ test("Test Inventory", async () => {
     });
 
     // Move to item
-    playerOne.location = (
+    playerOne.loc = (
         await crossoverCmdMove({ direction: "n" }, { Cookie: playerOneCookies })
-    ).players?.[0].location!;
-    expect(playerOne.location[0]).equal(playerOneWoodenClub.location[0]);
+    ).players?.[0].loc!;
+    expect(playerOne.loc[0]).equal(playerOneWoodenClub.loc[0]);
 
     // Take item
     playerOneWoodenClub = (
@@ -146,7 +146,7 @@ test("Test Inventory", async () => {
         )
     ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
-        location: [playerOne.player],
+        loc: [playerOne.player],
         locT: "inv",
     });
 
@@ -173,7 +173,7 @@ test("Test Inventory", async () => {
         )
     ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
-        location: [playerOne.player],
+        loc: [playerOne.player],
         locT: "rh",
     });
 
@@ -183,7 +183,7 @@ test("Test Inventory", async () => {
         items: [
             {
                 item: playerOneWoodenClub.item,
-                location: [playerOne.player],
+                loc: [playerOne.player],
                 locT: "rh",
             },
         ],
@@ -199,7 +199,7 @@ test("Test Inventory", async () => {
         )
     ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
-        location: [playerOne.player],
+        loc: [playerOne.player],
         locT: "lh",
     });
 
@@ -209,7 +209,7 @@ test("Test Inventory", async () => {
         items: [
             {
                 item: playerOneWoodenClub.item,
-                location: [playerOne.player],
+                loc: [playerOne.player],
                 locT: "lh",
             },
         ],
@@ -230,7 +230,7 @@ test("Test Inventory", async () => {
     ).items?.[0]!;
     expect(playerOneWoodenClub).toMatchObject({
         item: playerOneWoodenClub.item,
-        location: [playerOne.player],
+        loc: [playerOne.player],
         locT: "inv",
     });
 
@@ -240,7 +240,7 @@ test("Test Inventory", async () => {
         items: [
             {
                 item: playerOneWoodenClub.item,
-                location: [playerOne.player],
+                loc: [playerOne.player],
                 locT: "inv",
             },
         ],
@@ -254,7 +254,7 @@ test("Test Inventory", async () => {
 
     // Spawn potion of health
     let potionofhealth = await spawnItem({
-        geohash: playerOne.location[0],
+        geohash: playerOne.loc[0],
         prop: compendium.potionofhealth.prop,
     });
 
@@ -266,7 +266,7 @@ test("Test Inventory", async () => {
         )
     ).items?.[0]!;
     expect(potionofhealth).toMatchObject({
-        location: [playerOne.player],
+        loc: [playerOne.player],
         locT: "inv",
     });
 
@@ -286,7 +286,7 @@ test("Test Inventory", async () => {
      */
 
     let unpickablePotion = await spawnItem({
-        geohash: playerOne.location[0],
+        geohash: playerOne.loc[0],
         prop: compendium.potionofhealth.prop,
         owner: "anotherPlayer",
     });

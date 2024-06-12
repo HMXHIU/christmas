@@ -2,7 +2,7 @@ import { COMFYUI_REST_ENDPOINT } from "$env/static/private";
 import type { PlayerMetadata } from "$lib/crossover/world/player";
 import { hashObject, requireLogin } from "$lib/server";
 import { ObjectStorage } from "$lib/server/objectStorage";
-import { sleep } from "$lib/utils";
+import { generateRandomSeed, sleep } from "$lib/utils";
 import type { RequestHandler } from "@sveltejs/kit";
 import workflow from "./crossover_comfyui_character_creator.json";
 
@@ -83,17 +83,6 @@ async function queuePrompt({
     }
 
     return result;
-}
-
-/*
- *Generate a random seed for use in stable diffusion
- */
-function generateRandomSeed(): number {
-    // Define the range for the seed, e.g., 0 to 2^32 - 1
-    const maxSeed = Math.pow(2, 32) - 1;
-    // Generate a random integer within the range
-    const randomSeed = Math.floor(Math.random() * maxSeed);
-    return randomSeed;
 }
 
 async function createAvatar(

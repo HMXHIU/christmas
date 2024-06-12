@@ -56,15 +56,15 @@ test("Test Items", async () => {
     expect(woodendoor).toMatchObject({
         name: compendium.woodendoor.defaultName,
         prop: compendium.woodendoor.prop,
-        location: [woodendoorGeohash],
+        loc: [woodendoorGeohash],
         locT: "geohash",
-        durability: compendium.woodendoor.durability,
-        charges: compendium.woodendoor.charges,
+        dur: compendium.woodendoor.durability,
+        chg: compendium.woodendoor.charges,
         state: compendium.woodendoor.defaultState,
-        debuffs: [],
-        buffs: [],
+        dbuf: [],
+        buf: [],
     });
-    expect(woodendoor.variables).toMatchObject({
+    expect(woodendoor.vars).toMatchObject({
         [compendium.woodendoor.variables!.doorsign.variable]:
             "A custom door sign",
     });
@@ -76,7 +76,7 @@ test("Test Items", async () => {
             prop: compendium.woodendoor.prop,
         }),
     ).rejects.toThrowError(
-        `Cannot spawn item at location ${woodendoorGeohash}`,
+        `Cannot spawn ${compendium.woodendoor.prop} at ${woodendoorGeohash}`,
     );
 
     /*
@@ -136,7 +136,7 @@ test("Test Items", async () => {
     })) as ItemEntity;
 
     // Test item location (more than 1 cell)
-    expect(portalTwo.location).toMatchObject([
+    expect(portalTwo.loc).toMatchObject([
         portalTwoGeohash,
         geohashNeighbour(portalTwoGeohash, "e"),
         geohashNeighbour(portalTwoGeohash, "s"),
@@ -197,9 +197,9 @@ test("Test Items", async () => {
      * Test using item ability
      */
 
-    const beforeCharges = portalOne.charges;
-    const beforeDurability = portalOne.durability;
-    expect(playerOne.location[0] === portalTwo.location[0]).toBe(false);
+    const beforeCharges = portalOne.chg;
+    const beforeDurability = portalOne.dur;
+    expect(playerOne.loc[0] === portalTwo.loc[0]).toBe(false);
     let itemResult = await useItem({
         item: portalOne,
         utility: compendium.portal.utilities.teleport.utility,
@@ -208,13 +208,13 @@ test("Test Items", async () => {
     portalOne = itemResult.item;
     playerOne = itemResult.self as PlayerEntity;
 
-    expect(portalOne.charges).toBe(
+    expect(portalOne.chg).toBe(
         beforeCharges - compendium.portal.utilities.teleport.cost.charges,
     );
-    expect(portalOne.durability).toBe(
+    expect(portalOne.dur).toBe(
         beforeDurability - compendium.portal.utilities.teleport.cost.durability,
     );
-    expect(playerOne.location[0] === portalTwo.location[0]).toBe(true);
+    expect(playerOne.loc[0] === portalTwo.loc[0]).toBe(true);
 
     /*
      * Test taking item which is untakeable
@@ -236,7 +236,7 @@ test("Test Items", async () => {
 
     // Test owner permissions
     let playerOneWoodenClub = await spawnItem({
-        geohash: playerOne.location[0],
+        geohash: playerOne.loc[0],
         prop: compendium.woodenclub.prop,
         owner: playerOne.player,
         configOwner: playerOne.player,
@@ -284,7 +284,7 @@ test("Test Items", async () => {
     expect(message).toBe("Target is out of range");
 
     // Test in range and have permissions
-    playerTwo.location[0] = playerOne.location[0];
+    playerTwo.loc[0] = playerOne.loc[0];
     await expect(
         useItem({
             item: playerOneWoodenClub,
@@ -294,10 +294,10 @@ test("Test Items", async () => {
         }),
     ).resolves.toMatchObject({
         item: {
-            owner: playerOne.player,
-            configOwner: playerOne.player,
-            durability: 99,
-            charges: 0,
+            own: playerOne.player,
+            cfg: playerOne.player,
+            dur: 99,
+            chg: 0,
         },
         target: {
             player: playerTwo.player,
@@ -367,6 +367,6 @@ test("Test Items", async () => {
         })
     ).item;
     expect(woodendoor).toMatchObject({
-        variables: { doorsign: "A public door sign" },
+        vars: { doorsign: "A public door sign" },
     });
 });

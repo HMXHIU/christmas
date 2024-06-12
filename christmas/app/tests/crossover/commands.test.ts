@@ -76,7 +76,7 @@ test("Test Commands", async () => {
 
     // Portal
     let portal = (await spawnItem({
-        geohash: playerOne.location[0], // spawn at playerOne
+        geohash: playerOne.loc[0], // spawn at playerOne
         prop: compendium.portal.prop,
     })) as ItemEntity;
 
@@ -297,8 +297,8 @@ test("Test Commands", async () => {
         items: [
             {
                 item: woodenclub.item,
-                durability: 100,
-                charges: 0,
+                dur: 100,
+                chg: 0,
                 state: "default",
             },
         ],
@@ -331,8 +331,8 @@ test("Test Commands", async () => {
         items: [
             {
                 item: woodenclub.item,
-                durability: 99, // -1
-                charges: 0,
+                dur: 99, // -1
+                chg: 0,
                 state: "default",
             },
         ],

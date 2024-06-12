@@ -60,35 +60,35 @@ test("Test Abilities", async () => {
         self: {
             player: playerOneWallet.publicKey.toBase58(),
             name: "Gandalf",
-            loggedIn: true,
-            location: playerOne.location,
-            level: playerOne.level,
+            lgn: true,
+            loc: playerOne.loc,
+            lvl: playerOne.lvl,
             hp: playerOne.hp,
             mp: playerOne.mp,
             st: playerOne.st,
             ap: playerOne.ap,
-            debuffs: [],
-            buffs: [],
+            dbuf: [],
+            buf: [],
         },
         target: {
             player: playerTwoWallet.publicKey.toBase58(),
             name: "Saruman",
-            loggedIn: true,
-            location: playerTwo.location,
-            level: playerOne.level,
+            lgn: true,
+            loc: playerTwo.loc,
+            lvl: playerOne.lvl,
             hp: playerOne.hp,
             mp: playerOne.mp,
             st: playerOne.st,
             ap: playerOne.ap,
-            debuffs: [],
-            buffs: [],
+            dbuf: [],
+            buf: [],
         },
         status: "failure",
         message: "Target is out of range",
     });
 
     // Test ability in range
-    playerTwo.location = playerOne.location;
+    playerTwo.loc = playerOne.loc;
     const playerTwoHp = playerTwo.hp;
     const playerOneSt = playerOne.st;
     const playerOneAp = playerOne.ap;
@@ -102,28 +102,28 @@ test("Test Abilities", async () => {
         self: {
             player: playerOneWallet.publicKey.toBase58(),
             name: "Gandalf",
-            loggedIn: true,
-            location: playerOne.location,
-            level: playerOne.level,
+            lgn: true,
+            loc: playerOne.loc,
+            lvl: playerOne.lvl,
             hp: playerOne.hp,
             mp: playerOne.mp,
             st: playerOneSt - abilities.scratch.st,
             ap: playerOneAp - abilities.scratch.ap,
-            debuffs: [],
-            buffs: [],
+            dbuf: [],
+            buf: [],
         },
         target: {
             player: playerTwoWallet.publicKey.toBase58(),
             name: "Saruman",
-            loggedIn: true,
-            location: playerTwo.location,
-            level: playerTwo.level,
+            lgn: true,
+            loc: playerTwo.loc,
+            lvl: playerTwo.lvl,
             hp: playerTwoHp - 1, // scratch does 1 damage
             mp: playerTwo.mp,
             st: playerTwo.st,
             ap: playerTwo.ap,
-            debuffs: [],
-            buffs: [],
+            dbuf: [],
+            buf: [],
         },
         status: "success",
         message: "",
@@ -142,28 +142,28 @@ test("Test Abilities", async () => {
         self: {
             player: playerOneWallet.publicKey.toBase58(),
             name: "Gandalf",
-            loggedIn: true,
-            location: playerOne.location,
-            level: playerOne.level,
+            lgn: true,
+            loc: playerOne.loc,
+            lvl: playerOne.lvl,
             hp: playerOne.hp,
             mp: playerOne.mp,
             st: playerOne.st,
             ap: playerOne.ap,
-            debuffs: [],
-            buffs: [],
+            dbuf: [],
+            buf: [],
         },
         target: {
             player: playerTwoWallet.publicKey.toBase58(),
             name: "Saruman",
-            loggedIn: true,
-            location: playerTwo.location,
-            level: playerTwo.level,
+            lgn: true,
+            loc: playerTwo.loc,
+            lvl: playerTwo.lvl,
             hp: playerTwo.hp,
             mp: playerTwo.mp,
             st: playerTwo.st,
             ap: playerTwo.ap,
-            debuffs: [],
-            buffs: [],
+            dbuf: [],
+            buf: [],
         },
         status: "failure",
         message: "Not enough action points to scratch.",
@@ -179,8 +179,8 @@ test("Test Abilities", async () => {
     expect(actualEffect).toMatchObject({
         target: "self",
         states: {
-            state: "location",
-            value: playerTwo.location,
+            state: "loc",
+            value: playerTwo.loc,
             op: "change",
         },
     });
@@ -188,7 +188,7 @@ test("Test Abilities", async () => {
     // Test teleport
     playerOne.ap = 20;
     playerOne.mp = 20;
-    playerOne.location = ["gbsuv77w"];
+    playerOne.loc = ["gbsuv77w"];
     await expect(
         performAbility({
             self: playerOne as PlayerEntity,
@@ -199,12 +199,12 @@ test("Test Abilities", async () => {
         self: {
             player: playerOneWallet.publicKey.toBase58(),
             name: "Gandalf",
-            location: playerTwo.location,
+            loc: playerTwo.loc,
         },
         target: {
             player: playerTwoWallet.publicKey.toBase58(),
             name: "Saruman",
-            location: playerTwo.location,
+            loc: playerTwo.loc,
         },
         status: "success",
         message: "",

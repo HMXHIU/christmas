@@ -33,7 +33,7 @@ test("Test Movement", async () => {
 
     const tavernOrigin = geohashNeighbour(playerOneGeohash, "s");
     expect(tavern).toMatchObject({
-        location: [
+        loc: [
             tavernOrigin,
             geohashNeighbour(tavernOrigin, "e"),
             geohashNeighbour(tavernOrigin, "s"),
@@ -49,15 +49,17 @@ test("Test Movement", async () => {
         status: "failure",
         message: "Cannot move s",
     });
-    expect(playerOne.location[0]).toBe(playerOneGeohash); // PlayerOne should not move
+    expect(playerOne.loc[0]).toBe(playerOneGeohash); // PlayerOne should not move
 
     // PlayerOne move each (unobstructed)
-    playerOne.location = (
+    playerOne.loc = (
         await crossoverCmdMove({ direction: "e" }, { Cookie: playerOneCookies })
-    ).players?.[0].location!;
-    const biome = biomeAtGeohash(geohashNeighbour(playerOneGeohash, "e"))[0];
+    ).players?.[0].loc!;
+    const biome = (
+        await biomeAtGeohash(geohashNeighbour(playerOneGeohash, "e"))
+    )[0];
     expect(biomes[biome].traversableSpeed).toBeGreaterThan(0);
-    expect(playerOne.location[0]).toBe(geohashNeighbour(playerOneGeohash, "e"));
+    expect(playerOne.loc[0]).toBe(geohashNeighbour(playerOneGeohash, "e"));
 
     // PlayerOne tries to move south (obstructed by tavern)
     await expect(
@@ -73,9 +75,9 @@ test("Test Movement", async () => {
             { direction: "se" },
             { Cookie: playerOneCookies },
         )
-    ).players?.[0].location!;
-    expect(newLocation[0]).toBe(geohashNeighbour(playerOne.location[0], "se"));
-    playerOne.location = newLocation;
+    ).players?.[0].loc!;
+    expect(newLocation[0]).toBe(geohashNeighbour(playerOne.loc[0], "se"));
+    playerOne.loc = newLocation;
 
     // PlayerOne move west (obstructed by tavern)
     await expect(
@@ -84,5 +86,5 @@ test("Test Movement", async () => {
         status: "failure",
         message: "Cannot move w",
     });
-    expect(playerOne.location[0]).toBe(newLocation[0]); // PlayerOne should not move
+    expect(playerOne.loc[0]).toBe(newLocation[0]); // PlayerOne should not move
 });

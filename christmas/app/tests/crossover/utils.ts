@@ -1,6 +1,13 @@
 import { INTERNAL_SERVICE_KEY } from "$env/static/private";
 import { login as loginCrossover, signup } from "$lib/crossover";
+import {
+    archetypeTypes,
+    type PlayerMetadata,
+} from "$lib/crossover/world/player";
+import { hashObject } from "$lib/server";
 import type { Monster, Player } from "$lib/server/crossover/redis/entities";
+import { ObjectStorage } from "$lib/server/objectStorage";
+import { generateRandomSeed } from "$lib/utils";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import type { StreamEvent } from "../../src/routes/api/crossover/stream/+server";
 import { createRandomUser } from "../utils";
@@ -23,7 +30,48 @@ export async function createRandomPlayer({
 }): Promise<[NodeWallet, string, Player]> {
     const [wallet, cookies] = await createRandomUser({ region });
 
-    await signup({ name }, { headers: { Cookie: cookies }, wallet });
+    const playerMetadata: PlayerMetadata = {
+        player: wallet.publicKey.toBase58(),
+        name,
+        description: "",
+        avatar: "",
+        gender: "male",
+        race: "human",
+        archetype: "fighter",
+        attributes: archetypeTypes[0].attributes,
+        appearance: {
+            hair: {
+                type: "afro",
+                color: "ash_blonde",
+            },
+            eye: {
+                type: "almond",
+                color: "amber",
+            },
+            face: "angular",
+            body: "athletic",
+            skin: "alabaster",
+            personality: "adventurous",
+            age: "adult",
+        },
+    };
+    const avatarHash = hashObject({
+        gender: playerMetadata.gender,
+        race: playerMetadata.race,
+        archetype: playerMetadata.archetype,
+        appearance: playerMetadata.appearance,
+    });
+    const avatarFilename = `${avatarHash}-${generateRandomSeed()}.png`;
+    playerMetadata.avatar = `https://example.com/avatar/${avatarFilename}`;
+
+    await ObjectStorage.putObject({
+        owner: null,
+        bucket: "avatar",
+        name: avatarFilename,
+        data: Buffer.from(""),
+    });
+
+    await signup(playerMetadata, { headers: { Cookie: cookies }, wallet });
     const { status, player } = await loginCrossover(
         { geohash, region },
         { Cookie: cookies },

@@ -1,4 +1,5 @@
-import { createUser, fetchUser, fetchUserMetadata } from "$lib/community";
+import { createUser, fetchUser } from "$lib/community";
+import { crossoverPlayerMetadata } from "$lib/crossover";
 import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
 import { stringToUint8Array } from "$lib/utils";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
@@ -59,7 +60,7 @@ test("Test User", async () => {
     });
 
     // Fetch user metadata
-    const userMetadata = await fetchUserMetadata(createdUser!, {
+    const userMetadata = await crossoverPlayerMetadata({
         Cookie: cookies,
     });
     expect(userMetadata).not.toBe(null);

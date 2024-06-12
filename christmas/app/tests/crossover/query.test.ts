@@ -67,7 +67,7 @@ test("Test Player", async () => {
 
     // Portal
     let portal = (await spawnItem({
-        geohash: playerOne.location[0], // spawn at playerOne
+        geohash: playerOne.loc[0], // spawn at playerOne
         prop: compendium.portal.prop,
     })) as ItemEntity;
 

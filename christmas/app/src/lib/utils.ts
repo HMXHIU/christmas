@@ -18,6 +18,7 @@ export {
     confirmTransaction,
     connection,
     extractQueryParams,
+    generateRandomSeed,
     generateURL,
     getCurrentTimestamp,
     getErrorMessage,
@@ -330,4 +331,15 @@ async function retry<T>({
 
 async function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/*
+ *Generate a random seed for use in stable diffusion
+ */
+function generateRandomSeed(): number {
+    // Define the range for the seed, e.g., 0 to 2^32 - 1
+    const maxSeed = Math.pow(2, 32) - 1;
+    // Generate a random integer within the range
+    const randomSeed = Math.floor(Math.random() * maxSeed);
+    return randomSeed;
 }
