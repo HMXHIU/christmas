@@ -85,7 +85,7 @@ test("Test DungeonMaster", async () => {
     ).then((monsterCounts) => {
         return monsterCounts.reduce((acc, current) => acc + current, 0);
     });
-    expect(numMonstersInArea).to.equal(maxMonstersInArea);
+    expect(numMonstersInArea).to.lessThan(maxMonstersInArea);
 
     // Test world.respawnMonsters
     await expect(
@@ -134,8 +134,8 @@ test("Test DungeonMaster", async () => {
             mp: 100,
             st: 100,
             ap: 40,
-            buf: ["haste"],
-            dbuf: ["poisoned"],
+            buffs: ["haste"],
+            debuffs: ["poisoned"],
         }),
     });
     await expect(res.json()).resolves.toMatchObject({

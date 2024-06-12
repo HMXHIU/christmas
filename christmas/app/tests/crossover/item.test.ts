@@ -12,6 +12,7 @@ import type {
     ItemEntity,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
+import { sleep } from "$lib/utils";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer, generateRandomGeohash } from "./utils";
@@ -70,6 +71,7 @@ test("Test Items", async () => {
     });
 
     // Test cannot spawn item on collider
+    await sleep(100); // why need to wait for item to be indexed ???
     await expect(
         spawnItem({
             geohash: woodendoorGeohash,

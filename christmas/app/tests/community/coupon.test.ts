@@ -236,7 +236,6 @@ test("Test Coupon", async () => {
         },
         { Cookie: cookies },
     );
-
     expect(isVerified).toBe(true);
     expect(err).toBeFalsy();
 

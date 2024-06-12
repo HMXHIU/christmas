@@ -45,8 +45,8 @@ test("Test Abilities", async () => {
         ap: 100,
     })) as PlayerEntity;
     expect(playerOne.ap).toBe(0);
-    playerOne = (await recoverAp(playerOne as PlayerEntity)) as PlayerEntity;
     await sleep(MS_PER_TICK * (TICKS_PER_TURN + 1));
+    playerOne = (await recoverAp(playerOne as PlayerEntity)) as PlayerEntity;
     expect(playerOne.ap).toBe(4);
 
     // Test ability out of range (scratch has 0 range)
