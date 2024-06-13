@@ -12,15 +12,16 @@
 
     let requireSignup = false;
 
+    const askLocation =
+        "Location not found. Please enable location services and try again.";
+
     async function onEnter() {
         const region = $userDeviceClient?.location?.country?.code;
         const geohash = $userDeviceClient?.location?.geohash;
 
         // Require location services
         if (!region || !geohash) {
-            const err =
-                "Location not found. Please enable location services and try again.";
-            toast.error(err, {
+            toast.error(askLocation, {
                 action: {
                     label: "Enable location services",
                     onClick: () => {
@@ -28,7 +29,7 @@
                     },
                 },
             });
-            throw new Error(err);
+            throw new Error(askLocation);
         }
 
         try {
@@ -50,9 +51,7 @@
             const region = $userDeviceClient?.location?.country?.code;
             const geohash = $userDeviceClient?.location?.geohash;
             if (!region || !geohash) {
-                const err =
-                    "Location not found. Please enable location services and try again.";
-                toast.error(err, {
+                toast.error(askLocation, {
                     action: {
                         label: "Enable location services",
                         onClick: () => {
@@ -60,7 +59,7 @@
                         },
                     },
                 });
-                throw new Error(err);
+                throw new Error(askLocation);
             }
 
             // Try create community user

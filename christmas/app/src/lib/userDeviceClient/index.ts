@@ -12,6 +12,7 @@ export class UserDeviceClient {
 
     async initialize() {
         this.location = await getLocation();
+        console.log(this.location);
         this.isInitialized = true;
     }
 }

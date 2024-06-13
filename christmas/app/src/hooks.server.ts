@@ -1,4 +1,8 @@
-import { INTERNAL_SERVICE_KEY, JWT_SECRET_KEY } from "$env/static/private";
+import {
+    ENVIRONMENT,
+    INTERNAL_SERVICE_KEY,
+    JWT_SECRET_KEY,
+} from "$env/static/private";
 import { verifyJWT } from "$lib/server";
 import { createContext } from "$lib/server/trpc/context";
 import { router } from "$lib/server/trpc/router";
@@ -47,6 +51,14 @@ const handleBase: Handle = async ({ event, resolve }) => {
     return await resolve(event);
 };
 
-const handleTRPC: Handle = createTRPCHandle({ router, createContext });
+const handleTRPC: Handle = createTRPCHandle({
+    router,
+    createContext,
+    onError(opts) {
+        if (ENVIRONMENT === "development") {
+            console.error("TRPC Error:", opts.error);
+        }
+    },
+});
 
 export const handle = sequence(handleBase, handleTRPC);

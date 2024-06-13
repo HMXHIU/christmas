@@ -848,15 +848,6 @@ const crossoverRouter = {
                     });
                 }
 
-                // Check if player already exists
-                const player = await fetchEntity(ctx.user.publicKey);
-                if (player != null) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
-                        message: `Player ${ctx.user.publicKey} already exists (loaded)`,
-                    });
-                }
-
                 // Get user metadata
                 let userMetadata = await getUserMetadata(ctx.user.publicKey);
 

@@ -46,7 +46,7 @@
         Ticker,
         WebGLRenderer,
     } from "pixi.js";
-    import { onMount } from "svelte";
+    import { onDestroy, onMount } from "svelte";
     import {
         itemRecord,
         monsterRecord,
@@ -56,6 +56,7 @@
     } from "../../../store";
     import {
         MAX_SHADER_GEOMETRIES,
+        clearShaderCache,
         loadShaderGeometry,
         updateShaderUniforms,
     } from "./shaders";
@@ -102,7 +103,7 @@
         wall: 0,
         item: 0,
         monster: 0,
-        player: 0,
+        player: 2, // draw last because it has alpha
         world: 0,
         grass: 1, // draw last because it has alpha
     };
@@ -993,7 +994,7 @@
                 anchor = { x: 0.5, y: 1 };
             } else if (entityType === "item") {
                 const item = entity as Item;
-                const prop = [item.prop];
+                const prop = compendium[item.prop];
                 const asset = prop?.asset;
                 variant = prop.states[item.state].variant;
                 width = asset.width * CELL_WIDTH; // asset.width is the multiplier
@@ -1154,15 +1155,19 @@
         worldStage = new Container();
         worldStage.sortableChildren = true;
 
+        // Initialize
         init();
+    });
 
-        return () => {
-            if (app != null) {
-                // app.destroy(true, { children: true, texture: true });
-                // app = null;
-                // const gl = app.canvas.getContext('webgl')
-            }
-        };
+    onDestroy(() => {
+        if (app) {
+            clearShaderCache();
+            app.destroy(true, {
+                children: true,
+                texture: true,
+            });
+            app = null;
+        }
     });
 </script>
 

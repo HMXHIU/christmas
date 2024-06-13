@@ -14,6 +14,7 @@ import taylorInvSqrt from "./lygia/math/taylorInvSqrt.glsl?raw";
 
 export {
     MAX_SHADER_GEOMETRIES,
+    clearShaderCache,
     createShader,
     createTexturedQuadGeometry,
     loadShaderGeometry,
@@ -61,6 +62,20 @@ const shaders: Record<string, { vertex: string; fragment: string }> = {
         fragment: entityFrag,
     },
 };
+
+function clearShaderCache() {
+    for (const [key, value] of Object.entries(loadedShaders)) {
+        value.destroy();
+        delete loadedShaders[key];
+    }
+
+    for (const [key, value] of Object.entries(loadedGeometry)) {
+        value.geometry.destroy();
+        value.instancePositions.destroy();
+        value.mesh.destroy();
+        delete loadedGeometry[key];
+    }
+}
 
 function updateShaderUniforms({ deltaTime }: { deltaTime: number }) {
     for (const shader of Object.values(loadedShaders)) {
@@ -128,6 +143,7 @@ function loadShaderGeometry(
         };
     }
 
+    console.log([loadedShaders[shaderUid], loadedGeometry[textureUid]]);
     return [loadedShaders[shaderUid], loadedGeometry[textureUid]];
 }
 
