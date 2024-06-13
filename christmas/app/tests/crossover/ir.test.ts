@@ -4,9 +4,9 @@ import {
     gameActionsIR,
     tokenize,
 } from "$lib/crossover/ir";
-import type { Ability } from "$lib/crossover/world/abilities";
+import { abilities, type Ability } from "$lib/crossover/world/abilities";
 import type { Utility } from "$lib/crossover/world/compendium";
-import { abilities, compendium } from "$lib/crossover/world/settings";
+import { compendium } from "$lib/crossover/world/compendium";
 import { spawnItem, spawnMonster } from "$lib/server/crossover";
 import type { Item, ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";

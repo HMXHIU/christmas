@@ -1,7 +1,8 @@
 import { geohashNeighbour } from "$lib/crossover/utils";
+import { abilities } from "$lib/crossover/world/abilities";
 import { monsterStats } from "$lib/crossover/world/bestiary";
+import { compendium } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
-import { abilities, compendium } from "$lib/crossover/world/settings";
 import { spawnItem, spawnMonster } from "$lib/server/crossover";
 import {
     performMonsterActions,

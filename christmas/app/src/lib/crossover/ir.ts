@@ -7,7 +7,7 @@ import { resolveActionEntities, type Action } from "./actions";
 import { entityId, gameActionId } from "./utils";
 import { resolveAbilityEntities, type Ability } from "./world/abilities";
 import type { Utility } from "./world/compendium";
-import { compendium } from "./world/settings";
+import { compendium } from "./world/compendium";
 
 export {
     entitiesIR,

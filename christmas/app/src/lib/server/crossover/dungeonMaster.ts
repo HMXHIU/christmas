@@ -1,11 +1,15 @@
 import { borderingGeohashes, childrenGeohashes } from "$lib/crossover/utils";
-import { hasResourcesForAbility } from "$lib/crossover/world/abilities";
 import {
+    abilities,
+    hasResourcesForAbility,
+} from "$lib/crossover/world/abilities";
+import {
+    bestiary,
     monsterLimitAtGeohash,
     monsterStats,
     type Beast,
 } from "$lib/crossover/world/bestiary";
-import { abilities, bestiary, worldSeed } from "$lib/crossover/world/settings";
+import { worldSeed } from "$lib/crossover/world/world";
 import { performAbility, spawnMonster } from ".";
 import { monstersInGeohashQuerySet } from "./redis";
 import type { MonsterEntity, PlayerEntity } from "./redis/entities";

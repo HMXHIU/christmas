@@ -26,16 +26,17 @@ import {
 import { actions, type Action } from "./actions";
 import type { GameCommand, GameCommandVariables } from "./ir";
 import { entityId } from "./utils";
-import { Directions, type Direction } from "./world";
 import type { Ability } from "./world/abilities";
 import {
     EquipmentSlots,
+    compendium,
     type EquipmentSlot,
     type ItemVariables,
     type Utility,
 } from "./world/compendium";
 import type { PlayerMetadata } from "./world/player";
-import { compendium, worldSeed } from "./world/settings";
+import { Directions, type Direction } from "./world/types";
+import { worldSeed } from "./world/world";
 
 export {
     addMessageFeed,

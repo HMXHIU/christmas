@@ -3,7 +3,7 @@
     import * as Card from "$lib/components/ui/card/index.js";
     import { ScrollArea } from "$lib/components/ui/scroll-area";
     import * as Tabs from "$lib/components/ui/tabs/index.js";
-    import type { Direction } from "$lib/crossover/world";
+    import type { Direction } from "$lib/crossover/world/types";
     import { cn } from "$lib/shadcn";
     import {
         ArrowDown,

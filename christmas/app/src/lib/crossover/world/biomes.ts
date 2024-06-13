@@ -7,21 +7,158 @@ import {
 } from "$lib/crossover/utils";
 import ngeohash from "ngeohash";
 import { PNG, type PNGWithMetadata } from "pngjs";
-import { type AssetMetadata, type WorldSeed } from ".";
-import { biomes, worldSeed } from "./settings";
+import { type AssetMetadata } from "./types";
+import { worldSeed, type WorldSeed } from "./world";
 export {
     INTENSITY_TO_HEIGHT,
     biomeAtGeohash,
+    biomes,
     biomesNearbyGeohash,
     heightAtGeohash,
     tileAtGeohash,
     topologyAtGeohash,
     topologyTile,
     type Biome,
-    type Tile,
 };
 
 const INTENSITY_TO_HEIGHT = 8850 / 255;
+
+/**
+ * `biomes` is a collection of all the `Biome` available in the game.
+ */
+let biomes: Record<string, Biome> = {
+    forest: {
+        biome: "forest",
+        name: "Forest",
+        description:
+            "A dense collection of trees and vegetation, home to a variety of wildlife.",
+        traversableSpeed: 0.8,
+        asset: {
+            path: "biomes/terrain",
+            variants: {
+                default: "grass1", // frames in the sprite sheet
+                alt1: "grass2",
+                alt2: "grass3",
+            },
+            prob: {
+                default: 0.33,
+                alt1: 0.33,
+                alt2: 0.33,
+            },
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
+        },
+        decorations: {
+            grass: {
+                probability: 0.5, // TODO: to be modified by how strong the perlin noice affects the tile eg. how much "forest" this tile is
+                minInstances: 1,
+                maxInstances: 5,
+                radius: 1,
+                asset: {
+                    path: "biomes/grass",
+                    variants: {
+                        default: "0052",
+                        alt1: "0053",
+                        alt2: "0054",
+                    },
+                    prob: {
+                        default: 0.33,
+                        alt1: 0.33,
+                        alt2: 0.33,
+                    },
+                    width: 0.5,
+                    height: 0.5,
+                    precision: worldSeed.spatial.unit.precision,
+                },
+            },
+        },
+    },
+    desert: {
+        biome: "desert",
+        name: "Desert",
+        description:
+            "A dry, arid region with extreme temperatures, sparse vegetation, and limited wildlife.",
+        traversableSpeed: 1.0,
+    },
+    tundra: {
+        biome: "tundra",
+        name: "Tundra",
+        description:
+            "A cold, treeless area with a frozen subsoil, limited vegetation, and adapted wildlife.",
+        traversableSpeed: 1.0,
+    },
+    grassland: {
+        biome: "grassland",
+        name: "Grassland",
+        description:
+            "A region dominated by grasses, with few trees and a diverse range of wildlife.",
+        traversableSpeed: 1.0,
+    },
+    wetland: {
+        biome: "wetland",
+        name: "Wetland",
+        description:
+            "An area saturated with water, supporting aquatic plants and a rich biodiversity.",
+        traversableSpeed: 0.5,
+    },
+    mountain: {
+        biome: "mountain",
+        name: "Mountain",
+        description:
+            "A high elevation region with steep terrain, diverse ecosystems, and unique wildlife.",
+        traversableSpeed: 0,
+    },
+    hills: {
+        biome: "hills",
+        name: "Hills",
+        description:
+            "A region of elevated terrain, with a variety of wildlife.",
+        traversableSpeed: 0.5,
+    },
+    plains: {
+        biome: "plains",
+        name: "Plains",
+        description: "A large area of flat land, with a variety of wildlife.",
+        traversableSpeed: 1.0,
+    },
+    swamp: {
+        biome: "swamp",
+        name: "Swamp",
+        description:
+            "A wetland area with a variety of vegetation, supporting a diverse range of wildlife.",
+        traversableSpeed: 0.7,
+    },
+    water: {
+        biome: "water",
+        name: "Water",
+        description: "A large body of water, with a variety of aquatic life.",
+        traversableSpeed: 0,
+        asset: {
+            path: "biomes/terrain",
+            variants: {
+                default: "rocks1",
+                alt1: "rocks2",
+                alt2: "rocks3",
+            },
+            prob: {
+                default: 0.33,
+                alt1: 0.33,
+                alt2: 0.33,
+            },
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
+        },
+    },
+    ice: {
+        biome: "ice",
+        name: "Ice",
+        description:
+            "A region covered in ice, with limited vegetation and wildlife.",
+        traversableSpeed: 1.0,
+    },
+};
 
 interface Decoration {
     asset: AssetMetadata;
@@ -38,12 +175,6 @@ interface Biome {
     traversableSpeed: number; // 0.0 - 1.0
     asset?: AssetMetadata;
     decorations?: Record<string, Decoration>;
-}
-
-interface Tile {
-    geohash: string;
-    name: string;
-    description: string;
 }
 
 function topologyTile(geohash: string): {

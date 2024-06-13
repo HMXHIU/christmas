@@ -1,5 +1,6 @@
-import { type Direction, type EntityType } from "$lib/crossover/world";
+import { type Direction } from "$lib/crossover/world/types";
 import type {
+    EntityType,
     Item,
     ItemEntity,
     Monster,
@@ -9,7 +10,9 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import ngeohash from "ngeohash";
 import type { GameAction } from "./ir";
-import { bestiary, compendium, worldSeed } from "./world/settings";
+import { bestiary } from "./world/bestiary";
+import { compendium } from "./world/compendium";
+import { worldSeed } from "./world/world";
 
 export {
     REGEX_STRIP_ENTITY_TYPE,
@@ -28,30 +31,11 @@ export {
     geohashToColRow,
     geohashesNearby,
     getPlotsAtGeohash,
-    gridSizeAtPrecision,
     seededRandom,
     stringToRandomNumber,
 };
 
 const REGEX_STRIP_ENTITY_TYPE = /^(monster_|item_)/;
-
-const gridSizeAtPrecision: Record<number, { rows: number; cols: number }> = {
-    1: { rows: 4, cols: 8 },
-    2: { rows: 4 * 8, cols: 8 * 4 },
-    3: { rows: 4 * 8 * 4, cols: 8 * 4 * 8 },
-    4: { rows: 4 * 8 * 4 * 8, cols: 8 * 4 * 8 * 4 },
-    5: { rows: 4 * 8 * 4 * 8 * 4, cols: 8 * 4 * 8 * 4 * 8 },
-    6: { rows: 4 * 8 * 4 * 8 * 4 * 8, cols: 8 * 4 * 8 * 4 * 8 * 4 },
-    7: { rows: 4 * 8 * 4 * 8 * 4 * 8 * 4, cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 },
-    8: {
-        rows: 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8,
-        cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4,
-    },
-    9: {
-        rows: 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4,
-        cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8,
-    },
-};
 
 const evenColRow: Record<string, [number, number]> = {
     b: [0, 0],

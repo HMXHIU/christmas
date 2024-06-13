@@ -6,8 +6,7 @@
         searchPossibleCommands,
         type GameCommand,
     } from "$lib/crossover/ir";
-    import { type Ability } from "$lib/crossover/world/abilities";
-    import { abilities } from "$lib/crossover/world/settings";
+    import { abilities, type Ability } from "$lib/crossover/world/abilities";
     import type {
         Item,
         Monster,

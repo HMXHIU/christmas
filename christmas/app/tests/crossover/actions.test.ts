@@ -1,6 +1,7 @@
 import { actions } from "$lib/crossover/actions";
 import { searchPossibleCommands } from "$lib/crossover/ir";
-import { abilities, compendium } from "$lib/crossover/world/settings";
+import { abilities } from "$lib/crossover/world/abilities";
+import { compendium } from "$lib/crossover/world/compendium";
 import { spawnItem, spawnMonster } from "$lib/server/crossover";
 import type { ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";

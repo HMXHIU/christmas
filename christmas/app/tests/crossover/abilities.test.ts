@@ -1,9 +1,8 @@
-import { patchEffectWithVariables } from "$lib/crossover/world/abilities";
 import {
-    MS_PER_TICK,
-    TICKS_PER_TURN,
     abilities,
-} from "$lib/crossover/world/settings";
+    patchEffectWithVariables,
+} from "$lib/crossover/world/abilities";
+import { MS_PER_TICK, TICKS_PER_TURN } from "$lib/crossover/world/settings";
 import {
     consumeResources,
     performAbility,
@@ -11,13 +10,9 @@ import {
 } from "$lib/server/crossover";
 import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
-import { expect, test, vi } from "vitest";
+import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer } from "./utils";
-
-vi.mock("$lib/crossover/world", async (module) => {
-    return { ...((await module()) as object), MS_PER_TICK: 10 };
-});
 
 test("Test Abilities", async () => {
     const region = String.fromCharCode(...getRandomRegion());

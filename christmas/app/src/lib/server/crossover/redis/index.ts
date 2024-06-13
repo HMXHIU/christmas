@@ -7,7 +7,7 @@ import {
     REDIS_USERNAME,
 } from "$env/static/private";
 import { expandGeohashes, geohashesNearby } from "$lib/crossover/utils";
-import { worldSeed } from "$lib/crossover/world/settings";
+import { worldSeed } from "$lib/crossover/world/world";
 import type { Search } from "redis-om";
 import { Repository } from "redis-om";
 import {

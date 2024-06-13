@@ -9,7 +9,7 @@ import {
     archetypeTypes,
     type PlayerMetadata,
 } from "$lib/crossover/world/player";
-import { worldSeed } from "$lib/crossover/world/settings";
+import { worldSeed } from "$lib/crossover/world/world";
 import { hashObject } from "$lib/server";
 import { ObjectStorage } from "$lib/server/objectStorage";
 import { generateRandomSeed } from "$lib/utils";

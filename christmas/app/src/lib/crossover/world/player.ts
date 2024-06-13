@@ -1,7 +1,7 @@
 import { z } from "zod";
-import type { AssetMetadata } from ".";
 import type { Attributes } from "./abilities";
-import { worldSeed } from "./settings";
+import type { AssetMetadata } from "./types";
+import { worldSeed } from "./world";
 
 export {
     AGE_TYPES,

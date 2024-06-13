@@ -7,12 +7,6 @@ import {
     getPlotsAtGeohash,
 } from "$lib/crossover/utils";
 import {
-    geohashToGridCell,
-    gridCellToGeohash,
-    type WorldAssetMetadata,
-    type WorldSeed,
-} from "$lib/crossover/world";
-import {
     biomeAtGeohash,
     biomesNearbyGeohash,
     heightAtGeohash,
@@ -20,6 +14,12 @@ import {
     topologyTile,
 } from "$lib/crossover/world/biomes";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
+import type { WorldAssetMetadata } from "$lib/crossover/world/types";
+import {
+    geohashToGridCell,
+    gridCellToGeohash,
+} from "$lib/crossover/world/utils";
+import type { WorldSeed } from "$lib/crossover/world/world";
 import { spawnWorld } from "$lib/server/crossover";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";

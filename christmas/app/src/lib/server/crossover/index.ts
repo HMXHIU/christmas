@@ -8,28 +8,24 @@ import {
     geohashNeighbour,
     getPlotsAtGeohash,
 } from "$lib/crossover/utils";
-import type { Direction, WorldAssetMetadata } from "$lib/crossover/world";
 import {
+    abilities,
     checkInRange,
     hasResourcesForAbility,
     patchEffectWithVariables,
     type ProcedureEffect,
 } from "$lib/crossover/world/abilities";
-import { monsterStats } from "$lib/crossover/world/bestiary";
-import { biomeAtGeohash } from "$lib/crossover/world/biomes";
+import { bestiary, monsterStats } from "$lib/crossover/world/bestiary";
+import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
 import {
+    compendium,
     type EquipmentSlot,
     type ItemVariables,
 } from "$lib/crossover/world/compendium";
 import { playerStats, type PlayerMetadata } from "$lib/crossover/world/player";
-import {
-    MS_PER_TICK,
-    abilities,
-    bestiary,
-    biomes,
-    compendium,
-    worldSeed,
-} from "$lib/crossover/world/settings";
+import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import type { Direction, WorldAssetMetadata } from "$lib/crossover/world/types";
+import { worldSeed } from "$lib/crossover/world/world";
 import { serverAnchorClient } from "$lib/server";
 import {
     topologyBufferCache,

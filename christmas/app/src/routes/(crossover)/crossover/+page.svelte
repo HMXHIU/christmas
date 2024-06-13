@@ -9,7 +9,7 @@
     } from "$lib/crossover";
     import { actions } from "$lib/crossover/actions";
     import { KeyboardController, type GameKey } from "$lib/crossover/keyboard";
-    import { type Direction } from "$lib/crossover/world";
+    import { type Direction } from "$lib/crossover/world/types";
     import { substituteVariables } from "$lib/utils";
     import { onMount } from "svelte";
     import { player } from "../../../store";

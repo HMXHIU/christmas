@@ -4,7 +4,7 @@
     import { Button } from "$lib/components/ui/button";
     import { login, signup } from "$lib/crossover";
     import type { PlayerMetadata } from "$lib/crossover/world/player";
-    import { worldSeed } from "$lib/crossover/world/settings";
+    import { worldSeed } from "$lib/crossover/world/world";
     import { cn } from "$lib/shadcn";
     import { toast } from "svelte-sonner";
     import { token, userDeviceClient } from "../../../store";

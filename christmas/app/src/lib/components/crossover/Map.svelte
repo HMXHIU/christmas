@@ -13,21 +13,19 @@
         seededRandom,
         stringToRandomNumber,
     } from "$lib/crossover/utils";
+    import { bestiary } from "$lib/crossover/world/bestiary";
+    import {
+        biomeAtGeohash,
+        biomes,
+        heightAtGeohash,
+    } from "$lib/crossover/world/biomes";
+    import { compendium } from "$lib/crossover/world/compendium";
+    import type { AssetMetadata } from "$lib/crossover/world/types";
     import {
         geohashToGridCell,
         gridCellToGeohash,
-        type AssetMetadata,
-    } from "$lib/crossover/world";
-    import {
-        biomeAtGeohash,
-        heightAtGeohash,
-    } from "$lib/crossover/world/biomes";
-    import {
-        bestiary,
-        biomes,
-        compendium,
-        worldSeed,
-    } from "$lib/crossover/world/settings";
+    } from "$lib/crossover/world/utils";
+    import { worldSeed } from "$lib/crossover/world/world";
     import type {
         Item,
         Monster,
@@ -995,7 +993,7 @@
                 anchor = { x: 0.5, y: 1 };
             } else if (entityType === "item") {
                 const item = entity as Item;
-                const prop = compendium[item.prop];
+                const prop = [item.prop];
                 const asset = prop?.asset;
                 variant = prop.states[item.state].variant;
                 width = asset.width * CELL_WIDTH; // asset.width is the multiplier

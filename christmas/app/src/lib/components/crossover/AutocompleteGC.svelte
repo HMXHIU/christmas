@@ -7,8 +7,10 @@
         entityId,
         gameActionId,
     } from "$lib/crossover/utils";
-    import type { AbilityType } from "$lib/crossover/world/abilities";
-    import { abilities } from "$lib/crossover/world/settings";
+    import {
+        abilities,
+        type AbilityType,
+    } from "$lib/crossover/world/abilities";
     import { cn } from "$lib/shadcn";
     import { groupBy } from "lodash";
     import {

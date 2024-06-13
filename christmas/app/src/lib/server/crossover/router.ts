@@ -2,13 +2,10 @@ import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
 import type { GameCommandResponse } from "$lib/crossover";
 import { actions } from "$lib/crossover/actions";
 import { geohashesNearby } from "$lib/crossover/utils";
+import { compendium } from "$lib/crossover/world/compendium";
 import { PlayerMetadataSchema, playerStats } from "$lib/crossover/world/player";
-import {
-    TILE_HEIGHT,
-    TILE_WIDTH,
-    compendium,
-    worldSeed,
-} from "$lib/crossover/world/settings";
+import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
+import { worldSeed } from "$lib/crossover/world/world";
 import {
     fetchEntity,
     getNearbyEntities,

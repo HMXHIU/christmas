@@ -1,4 +1,4 @@
-import type { LocationType } from "$lib/crossover/world";
+import type { LocationType } from "$lib/crossover/world/types";
 import { Schema, type Entity } from "redis-om";
 
 export {

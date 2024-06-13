@@ -13,13 +13,10 @@ import {
     stream,
     type GameCommandResponse,
 } from "$lib/crossover";
-import { itemAttibutes } from "$lib/crossover/world/compendium";
+import { abilities } from "$lib/crossover/world/abilities";
+import { compendium, itemAttibutes } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
-import {
-    abilities,
-    compendium,
-    worldSeed,
-} from "$lib/crossover/world/settings";
+import { worldSeed } from "$lib/crossover/world/world";
 import { configureItem, spawnItem } from "$lib/server/crossover";
 import type {
     Item,

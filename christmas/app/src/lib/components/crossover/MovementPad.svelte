@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import * as Card from "$lib/components/ui/card/index.js";
-    import type { Direction } from "$lib/crossover/world";
+    import type { Direction } from "$lib/crossover/world/types";
     import { cn } from "$lib/shadcn";
     import {
         ArrowDown,

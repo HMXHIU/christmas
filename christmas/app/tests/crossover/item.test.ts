@@ -1,7 +1,6 @@
 import { crossoverCmdEquip, crossoverCmdTake } from "$lib/crossover";
 import { geohashNeighbour } from "$lib/crossover/utils";
-import { itemAttibutes } from "$lib/crossover/world/compendium";
-import { compendium } from "$lib/crossover/world/settings";
+import { compendium, itemAttibutes } from "$lib/crossover/world/compendium";
 import {
     configureItem,
     itemVariableValue,

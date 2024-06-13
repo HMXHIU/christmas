@@ -1,0 +1,73 @@
+import { type EquipmentSlot } from "./compendium";
+
+export {
+    Directions,
+    type AssetMetadata,
+    type Direction,
+    type GridCell,
+    type LocationType,
+    type Tile,
+    type WorldAssetMetadata,
+};
+
+interface Tile {
+    geohash: string;
+    name: string;
+    description: string;
+}
+
+interface AssetMetadata {
+    path: string; // eg. bundle/name
+    animations?: Record<string, string>; // create an animation pointing to an in the sprite.json
+    variants?: Record<string, string>; // create a variant pointing to a frame in the sprite.json
+    prob?: Record<string, number>; // probability of each variant
+    width: number; // number of horizontal cells at the geohash precision (origin is always top left)
+    height: number; // number of vertical cells at the geohash precision (origin is always top left)
+    precision: number; // geohash precision
+}
+
+interface WorldAssetMetadata {
+    layers: {
+        data: number[];
+        properties?: { name: string; value: any; type: string }[];
+        offsetx?: number; // offset in pixels
+        offsety?: number;
+        height: number; // height in tiles
+        width: number;
+        name: string;
+        type: "tilelayer";
+        x: number; // x coordinate in tiles
+        y: number;
+    }[];
+    height: number;
+    width: number;
+    tilewidth: number;
+    tileheight: number;
+}
+
+type Direction = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw" | "u" | "d";
+const Directions: Direction[] = [
+    "n",
+    "s",
+    "e",
+    "w",
+    "ne",
+    "nw",
+    "se",
+    "sw",
+    "u",
+    "d",
+];
+
+type LocationType =
+    | "geohash"
+    | "item"
+    | "inv" // inventory
+    | EquipmentSlot;
+
+type GridCell = {
+    precision: number;
+    row: number;
+    col: number;
+    geohash: string;
+};

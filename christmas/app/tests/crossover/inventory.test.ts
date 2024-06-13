@@ -6,7 +6,7 @@ import {
     crossoverCmdUnequip,
     crossoverPlayerInventory,
 } from "$lib/crossover";
-import { compendium } from "$lib/crossover/world/settings";
+import { compendium } from "$lib/crossover/world/compendium";
 import { spawnItem } from "$lib/server/crossover";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";

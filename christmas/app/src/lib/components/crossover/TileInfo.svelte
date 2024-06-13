@@ -4,11 +4,8 @@
         topologyResponseCache,
         topologyResultCache,
     } from "$lib/crossover/caches";
-    import {
-        biomeAtGeohash,
-        tileAtGeohash,
-        type Tile,
-    } from "$lib/crossover/world/biomes";
+    import { biomeAtGeohash, tileAtGeohash } from "$lib/crossover/world/biomes";
+    import type { Tile } from "$lib/crossover/world/types";
     import { onMount } from "svelte";
     import { player } from "../../../store";
 
