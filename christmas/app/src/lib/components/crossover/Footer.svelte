@@ -18,7 +18,14 @@
         >
             <!-- Player Avatar -->
             <Avatar.Root class="h-16 w-16 sm:min-h-20 sm:min-w-20">
-                <Avatar.Image src={$player?.avatar} alt={$player?.name} />
+                <div class="bg-secondary">
+                    <div class="avatar-image">
+                        <Avatar.Image
+                            src={$player?.avatar}
+                            alt={$player?.name}
+                        />
+                    </div>
+                </div>
                 <Avatar.Fallback>{$player?.name.slice(0, 2)}</Avatar.Fallback>
             </Avatar.Root>
         </div>
@@ -59,3 +66,12 @@
         </div>
     </footer>
 {/if}
+
+<style>
+    .avatar-image {
+        margin-top: -15px;
+        margin-left: -22px;
+        width: 128px;
+        height: 256px;
+    }
+</style>
