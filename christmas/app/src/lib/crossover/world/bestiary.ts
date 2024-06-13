@@ -3,7 +3,14 @@ import { abilities, type AbilityType } from "./abilities";
 import type { AssetMetadata } from "./types";
 import { worldSeed, type WorldSeed } from "./world";
 
-export { bestiary, monsterLimitAtGeohash, monsterStats, type Beast };
+export {
+    bestiary,
+    monsterLUReward,
+    monsterLimitAtGeohash,
+    monsterStats,
+    type Alignment,
+    type Beast,
+};
 
 /**
  * `bestiary` is a collection of `Beast` templates used to spawn `Monster` instances.
@@ -27,6 +34,7 @@ const bestiary: Record<string, Beast> = {
             neutral: [],
         },
         behaviours: [],
+        alignment: "evil",
         spawnRate: 1,
         spawnBiomes: [],
         spawnHostileThreshold: 0.1,
@@ -60,6 +68,7 @@ const bestiary: Record<string, Beast> = {
             neutral: [],
         },
         behaviours: [],
+        alignment: "neutral",
         spawnRate: 1,
         spawnBiomes: [],
         spawnHostileThreshold: 0.1,
@@ -93,6 +102,7 @@ const bestiary: Record<string, Beast> = {
             neutral: [],
         },
         behaviours: [],
+        alignment: "evil",
         spawnRate: 10,
         spawnBiomes: [],
         spawnHostileThreshold: 0.5,
@@ -111,6 +121,8 @@ const bestiary: Record<string, Beast> = {
     },
 };
 
+type Alignment = "good" | "neutral" | "evil";
+
 /**
  * `Beast` is a template used to spawn a `Monster` with derived stats from the template.
  */
@@ -126,6 +138,7 @@ interface Beast {
     rarity: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
     abilities: Record<AbilityType, string[]>;
     behaviours: string[];
+    alignment: Alignment;
     spawnRate: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
     spawnBiomes: string[];
     spawnHostileThreshold: number;
@@ -169,4 +182,21 @@ function monsterLimitAtGeohash(geohash: string, seed?: WorldSeed): number {
     const rv = seededRandom(stringToRandomNumber(geohash));
 
     return Math.ceil(rv * maxMonsters);
+}
+
+function monsterLUReward({ level, beast }: { level: number; beast: string }): {
+    lumina: number;
+    umbra: number;
+} {
+    const { rarity, alignment } = bestiary[beast];
+    if (alignment === "evil") {
+        return {
+            lumina: Math.ceil(level * rarity),
+            umbra: 0,
+        };
+    }
+    return {
+        lumina: Math.ceil(level * rarity),
+        umbra: 0,
+    };
 }

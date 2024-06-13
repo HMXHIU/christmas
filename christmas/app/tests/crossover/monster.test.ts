@@ -1,6 +1,6 @@
 import { geohashNeighbour } from "$lib/crossover/utils";
 import { abilities } from "$lib/crossover/world/abilities";
-import { monsterStats } from "$lib/crossover/world/bestiary";
+import { monsterLUReward, monsterStats } from "$lib/crossover/world/bestiary";
 import { compendium } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
 import { spawnItem, spawnMonster } from "$lib/server/crossover";
@@ -33,22 +33,6 @@ test("Test Monster", async () => {
             geohash: playerOneGeohash,
             name: playerOneName,
         });
-
-    /*
-     * Test monster stats
-     */
-    expect(monsterStats({ level: 1, beast: "goblin" })).toMatchObject({
-        ap: 11,
-        hp: 20,
-        mp: 20,
-        st: 20,
-    });
-    expect(monsterStats({ level: 2, beast: "dragon" })).toMatchObject({
-        ap: 20,
-        hp: 370,
-        mp: 296,
-        st: 296,
-    });
 
     /*
      * Test `spawnMonster`
@@ -171,4 +155,50 @@ test("Test Monster", async () => {
 
     expect(playerOne.hp).toBe(hp - 1); // test player hp reduced by scatch damage
     expect(goblin.ap).toBe(ap - abilities.scratch.ap); // test monster ap reduced by scratch ap
+});
+
+test("Test Monster Stats", () => {
+    /*
+     * Test monster stats
+     */
+    expect(monsterStats({ level: 1, beast: "goblin" })).toMatchObject({
+        ap: 11,
+        hp: 20,
+        mp: 20,
+        st: 20,
+    });
+    expect(monsterStats({ level: 2, beast: "dragon" })).toMatchObject({
+        ap: 20,
+        hp: 370,
+        mp: 296,
+        st: 296,
+    });
+
+    /*
+     * Test `monsterLUReward`
+     */
+    expect(monsterLUReward({ level: 1, beast: "goblin" })).toMatchObject({
+        lumina: 1,
+        umbra: 0,
+    });
+    expect(monsterLUReward({ level: 1, beast: "dragon" })).toMatchObject({
+        lumina: 10,
+        umbra: 0,
+    });
+    expect(monsterLUReward({ level: 1, beast: "giantSpider" })).toMatchObject({
+        lumina: 1,
+        umbra: 0,
+    });
+    expect(monsterLUReward({ level: 5, beast: "goblin" })).toMatchObject({
+        lumina: 5,
+        umbra: 0,
+    });
+    expect(monsterLUReward({ level: 5, beast: "dragon" })).toMatchObject({
+        lumina: 50,
+        umbra: 0,
+    });
+    expect(monsterLUReward({ level: 5, beast: "giantSpider" })).toMatchObject({
+        lumina: 5,
+        umbra: 0,
+    });
 });
