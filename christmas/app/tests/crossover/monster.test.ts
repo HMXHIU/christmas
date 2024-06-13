@@ -2,7 +2,6 @@ import { geohashNeighbour } from "$lib/crossover/utils";
 import { abilities } from "$lib/crossover/world/abilities";
 import { monsterLUReward, monsterStats } from "$lib/crossover/world/bestiary";
 import { compendium } from "$lib/crossover/world/compendium";
-import { playerStats } from "$lib/crossover/world/player";
 import { spawnItem, spawnMonster } from "$lib/server/crossover";
 import {
     performMonsterActions,
@@ -136,11 +135,9 @@ test("Test Monster", async () => {
     // Reset `playerOne`, `goblin` stats
     goblin = (await buffEntity(goblin.monster, {
         level: goblin.lvl,
-        ...monsterStats({ level: goblin.lvl, beast: goblin.beast }),
     })) as MonsterEntity;
     playerOne = (await buffEntity(playerOne.player, {
         level: playerOne.lvl,
-        ...playerStats({ level: playerOne.lvl }),
     })) as PlayerEntity;
 
     // Test monster attacking player

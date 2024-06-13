@@ -142,8 +142,6 @@ function loadShaderGeometry(
             instancePositions,
         };
     }
-
-    console.log([loadedShaders[shaderUid], loadedGeometry[textureUid]]);
     return [loadedShaders[shaderUid], loadedGeometry[textureUid]];
 }
 

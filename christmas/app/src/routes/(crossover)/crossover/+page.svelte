@@ -142,7 +142,9 @@
 </script>
 
 {#if !$player}
-    <Onboard />
+    <div class="container">
+        <Onboard />
+    </div>
 {:else}
     <GameWindow class="pt-2" onGameCommand={handleGC} {onMove} />
 {/if}

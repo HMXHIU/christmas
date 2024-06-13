@@ -1,11 +1,8 @@
 import type {
     EntityType,
     Item,
-    ItemEntity,
     Monster,
-    MonsterEntity,
     Player,
-    PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
 import { substituteVariables } from "$lib/utils";
 import lodash from "lodash";
@@ -60,10 +57,36 @@ const abilities: Record<string, Ability> = {
             targetSelfAllowed: true,
         },
     },
+    disintegrate: {
+        ability: "disintegrate",
+        type: "offensive",
+        description: "Disintegrates the target.",
+        procedures: [
+            [
+                "action",
+                {
+                    target: "target",
+                    damage: { amount: 100, damageType: "necrotic" },
+                    ticks: TICKS_PER_TURN / 2,
+                },
+            ],
+        ],
+        ap: 1,
+        st: 0,
+        hp: 0,
+        mp: 1000,
+        range: 0,
+        aoe: 0,
+        predicate: {
+            self: ["player", "monster"],
+            target: ["player", "monster"],
+            targetSelfAllowed: false,
+        },
+    },
     scratch: {
         ability: "scratch",
         type: "offensive",
-        description: "Scratches the player.",
+        description: "Scratches the target.",
         procedures: [
             [
                 "action",
@@ -435,8 +458,8 @@ function patchEffectWithVariables({
     target,
 }: {
     effect: ProcedureEffect;
-    self: PlayerEntity | MonsterEntity | ItemEntity;
-    target: PlayerEntity | MonsterEntity | ItemEntity;
+    self: Player | Monster | Item;
+    target: Player | Monster | Item;
 }): ProcedureEffect {
     const effectClone = cloneDeep(effect); // don't modify the template
 
@@ -479,7 +502,7 @@ function patchEffectWithVariables({
 }
 
 function hasResourcesForAbility(
-    self: PlayerEntity | MonsterEntity,
+    self: Player | Monster,
     ability: string,
 ): { hasResources: boolean; message: string } {
     const { ap, mp, st, hp } = abilities[ability];
@@ -513,8 +536,8 @@ function hasResourcesForAbility(
 }
 
 function checkInRange(
-    self: PlayerEntity | MonsterEntity,
-    target: PlayerEntity | MonsterEntity | ItemEntity,
+    self: Player | Monster,
+    target: Player | Monster | Item,
     range: number,
 ): boolean {
     // Use only the first geohash in the location

@@ -15,7 +15,11 @@ import {
     patchEffectWithVariables,
     type ProcedureEffect,
 } from "$lib/crossover/world/abilities";
-import { bestiary, monsterStats } from "$lib/crossover/world/bestiary";
+import {
+    bestiary,
+    monsterLUReward,
+    monsterStats,
+} from "$lib/crossover/world/bestiary";
 import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
 import {
     compendium,
@@ -50,7 +54,9 @@ import {
     worldRepository,
 } from "./redis";
 import {
+    type Item,
     type ItemEntity,
+    type Monster,
     type MonsterEntity,
     type Player,
     type PlayerEntity,
@@ -66,6 +72,7 @@ export {
     configureItem,
     connectedUsers,
     consumeResources,
+    entityIsBusy,
     getPlayerMetadata,
     getPlayerState,
     getUserMetadata,
@@ -74,6 +81,7 @@ export {
     itemVariableValue,
     loadPlayerEntity,
     performAbility,
+    performEffectOnEntity,
     recoverAp,
     saveEntity,
     savePlayerState,
@@ -615,7 +623,7 @@ async function useItem({
     status: "success" | "failure";
     message: string;
 }> {
-    const playerId = self.player || null; // save the user of the item
+    const selfBefore = { ...self }; // save self before substitution
 
     // Check if can use item
     const { canUse, message } = canUseItem(self, item, utility);
@@ -637,19 +645,11 @@ async function useItem({
     item.state = propUtility.state.start;
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
 
-    // Publish item state to player (non blocking)
+    // Publish item state to player
     // TODO: what about other people in the vincinity?
-    redisClient
-        .publish(
-            (self as PlayerEntity).player,
-            JSON.stringify({
-                event: "entities",
-                players: [],
-                monsters: [],
-                items: [item],
-            } as UpdateEntitiesEvent),
-        )
-        .catch((error) => console.error(error));
+    if (self.player != null) {
+        publishAffectedEntitiesToPlayers([self, item]); // non blocking
+    }
 
     // Overwrite target if specified in item variables
     if (prop.variables.target) {
@@ -700,20 +700,10 @@ async function useItem({
     item.dur -= propUtility.cost.durability;
     item = (await itemRepository.save(item.item, item)) as ItemEntity;
 
-    // Publish item state to user (use saved playerId as it might have changed after substitution) (non blocking)
+    // Publish item state to user (use selfBefore as it might have changed after substitution)
     // TODO: what about other people in the vincinity?
-    if (playerId != null) {
-        redisClient
-            .publish(
-                playerId as string,
-                JSON.stringify({
-                    event: "entities",
-                    players: [],
-                    monsters: [],
-                    items: [item],
-                } as UpdateEntitiesEvent),
-            )
-            .catch((error) => console.error(error));
+    if (selfBefore.player != null) {
+        publishAffectedEntitiesToPlayers([selfBefore, item]); // non blocking
     }
 
     return {
@@ -890,6 +880,64 @@ async function itemVariableValue(
     throw new Error(`Invalid variable type ${type} for item ${item.item}`);
 }
 
+async function performActionConsequences({
+    selfBefore,
+    targetBefore,
+    selfAfter,
+    targetAfter,
+}: {
+    selfBefore: PlayerEntity | MonsterEntity;
+    targetBefore: PlayerEntity | MonsterEntity | ItemEntity;
+    selfAfter: PlayerEntity | MonsterEntity;
+    targetAfter: PlayerEntity | MonsterEntity | ItemEntity;
+}): Promise<{
+    self: PlayerEntity | MonsterEntity;
+    target: PlayerEntity | MonsterEntity | ItemEntity;
+}> {
+    // Player initiated action
+    if (selfBefore.player && selfBefore.player == selfAfter.player) {
+        selfAfter = selfAfter as PlayerEntity;
+        // Target is a player
+        if (targetBefore.player && targetBefore.player == targetAfter.player) {
+        }
+        // Target is a monster
+        else if (
+            targetBefore.monster &&
+            targetBefore.monster == targetAfter.monster
+        ) {
+            targetBefore = targetBefore as MonsterEntity;
+            targetAfter = targetAfter as MonsterEntity;
+            // Player kills monster
+            if (targetBefore.hp > 0 && targetAfter.hp <= 0) {
+                // Give player rewards
+                const { lumina, umbra } = monsterLUReward({
+                    level: targetBefore.lvl,
+                    beast: targetBefore.beast,
+                });
+                selfAfter.lum += lumina;
+                selfAfter.umb += umbra;
+                // Save & publish player
+                selfAfter = (await saveEntity(selfAfter)) as PlayerEntity;
+                publishAffectedEntitiesToPlayers([selfAfter]); // non blocking
+            }
+        }
+    }
+    // Monster initiated action
+    else if (selfBefore.monster && selfBefore.monster == selfAfter.monster) {
+        // Target is a player
+        if (targetBefore.player && targetBefore.player == targetAfter.player) {
+        }
+        // Target is a monster
+        else if (
+            targetBefore.monster &&
+            targetBefore.monster == targetAfter.monster
+        ) {
+        }
+    }
+
+    return { self: selfAfter, target: targetAfter };
+}
+
 async function performAbility({
     self,
     target,
@@ -925,15 +973,16 @@ async function performAbility({
     }
 
     // Check predicate
-    if (!predicate.targetSelfAllowed) {
-        if (entityId(self)[0] === entityId(target)[0]) {
-            return {
-                self,
-                target,
-                status: "failure",
-                message: `You can't ${ability} yourself`,
-            };
-        }
+    if (
+        !predicate.targetSelfAllowed &&
+        entityId(self)[0] === entityId(target)[0]
+    ) {
+        return {
+            self,
+            target,
+            status: "failure",
+            message: `You can't ${ability} yourself`,
+        };
     }
 
     // Check if target is in range
@@ -952,7 +1001,6 @@ async function performAbility({
         ability,
     });
     self = entity; // update `buclk`
-
     if (self.player && busy) {
         return {
             self,
@@ -962,30 +1010,24 @@ async function performAbility({
         };
     }
 
-    // Expend ability costs
+    // Save old self and target
+    const selfBefore = { ...self };
+    const targetBefore = { ...target };
+
+    // Expend ability costs (also caps stats to player level)
     if (!ignoreCost) {
         self = await consumeResources(self, { ap, mp, st, hp });
     }
     target = target.player === self.player ? self : target; // target might be self, in which case update it after save
 
-    // Publish ability costs changes to player (non blocking)
+    // Publish ability costs changes to player
     if (self.player && !ignoreCost) {
-        redisClient
-            .publish(
-                (self as PlayerEntity).player,
-                JSON.stringify({
-                    event: "entities",
-                    players: [self],
-                    monsters: [],
-                    items: [],
-                } as UpdateEntitiesEvent),
-            )
-            .catch((error) => console.error(error));
+        publishAffectedEntitiesToPlayers([self]); // non blocking
     }
 
     // Perform procedures
     for (const [type, effect] of procedures) {
-        // Get effected entity (self or target)
+        // Get affected entity (self or target)
         let entity = effect.target === "self" ? self : target;
 
         // Action
@@ -998,10 +1040,10 @@ async function performAbility({
             });
 
             // Perform effect action (will block for the duration (ticks) of the effect)
-            entity = await performEffectOnEntity({
+            entity = (await performEffectOnEntity({
                 entity,
                 effect: actualEffect,
-            });
+            })) as PlayerEntity | MonsterEntity | ItemEntity;
             await saveEntity(entity);
 
             // Update self or target
@@ -1013,11 +1055,7 @@ async function performAbility({
 
             // Publish effect & effected entities to relevant players (non blocking)
             if (self.player || entity.player) {
-                publishEffectToPlayers({
-                    self,
-                    entities: [self, target],
-                    effect: actualEffect,
-                }).catch((error) => console.error(error));
+                publishAffectedEntitiesToPlayers([self, target]);
             }
         }
         // Check
@@ -1026,6 +1064,16 @@ async function performAbility({
         }
     }
 
+    // Perform action consequences
+    const changes = await performActionConsequences({
+        targetBefore,
+        selfBefore,
+        selfAfter: self,
+        targetAfter: target,
+    });
+    self = changes.self;
+    target = changes.target;
+
     return { self, target, status: "success", message: "" };
 }
 
@@ -1033,27 +1081,28 @@ async function performEffectOnEntity({
     entity,
     effect,
 }: {
-    entity: PlayerEntity | MonsterEntity | ItemEntity;
+    entity: Player | Monster | Item;
     effect: ProcedureEffect;
-}): Promise<PlayerEntity | MonsterEntity | ItemEntity> {
+}): Promise<Player | Monster | Item> {
+    // Note: this will change entity in place
+
     // Sleep for the duration of the effect
     await sleep(effect.ticks * MS_PER_TICK);
 
     // Damage
     if (effect.damage) {
         // Player or monster
-        if (entity.player || entity.monster) {
-            entity.hp = Math.max(
+        if ((entity as Player).player || (entity as Monster).monster) {
+            (entity as Player | Monster).hp = Math.max(
                 0,
-                (entity as PlayerEntity | MonsterEntity).hp -
-                    effect.damage.amount,
+                (entity as Player | Monster).hp - effect.damage.amount,
             );
         }
         // Item
-        else if (entity.item) {
-            entity.dur = Math.max(
+        else if ((entity as Item).item) {
+            (entity as Item).dur = Math.max(
                 0,
-                (entity as ItemEntity).dur - effect.damage.amount,
+                (entity as Item).dur - effect.damage.amount,
             );
         }
     }
@@ -1129,17 +1178,11 @@ function performEffectCheck({
     return false;
 }
 
-async function publishEffectToPlayers({
-    self,
-    entities,
-    effect,
-}: {
-    self: PlayerEntity | MonsterEntity;
-    entities: (PlayerEntity | MonsterEntity | ItemEntity)[];
-    effect: ProcedureEffect;
-}) {
+async function publishAffectedEntitiesToPlayers(
+    entities: (PlayerEntity | MonsterEntity | ItemEntity)[],
+) {
     const effectedPlayers = uniqBy(
-        [self, ...entities].filter((entity) => entity.player),
+        entities.filter((entity) => entity.player),
         "player",
     );
     const effectedMonsters = uniqBy(
@@ -1219,6 +1262,14 @@ async function isLocationTraversable(location: string[]): Promise<boolean> {
     return true;
 }
 
+function entityIsBusy(entity: Player | Monster): [boolean, number] {
+    const now = Date.now();
+    if (entity.buclk > now) {
+        return [true, now];
+    }
+    return [false, now];
+}
+
 async function checkAndSetBusy({
     entity,
     action,
@@ -1229,8 +1280,8 @@ async function checkAndSetBusy({
     ability?: string;
 }): Promise<{ busy: Boolean; entity: PlayerEntity | MonsterEntity }> {
     // Check if entity is busy
-    const now = Date.now();
-    if (entity.buclk > now) {
+    const [isBusy, now] = entityIsBusy(entity);
+    if (isBusy) {
         return { busy: true, entity };
     }
 
@@ -1301,7 +1352,7 @@ async function consumeResources(
         hp?: number;
     },
 ): Promise<PlayerEntity | MonsterEntity> {
-    // Get max stats
+    // Get max stats (also fixes stats when it goes over max)
     const {
         ap: maxAp,
         hp: maxHp,

@@ -123,7 +123,11 @@ test("Test Commands", async () => {
     var openDoorResult = await waitForEventData(eventStreamOne, "entities");
     expect(openDoorResult).toMatchObject({
         event: "entities",
-        players: [],
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
         monsters: [],
         items: [
             {
@@ -136,7 +140,11 @@ test("Test Commands", async () => {
     openDoorResult = await waitForEventData(eventStreamOne, "entities");
     expect(openDoorResult).toMatchObject({
         event: "entities",
-        players: [],
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
         monsters: [],
         items: [
             {
@@ -170,7 +178,11 @@ test("Test Commands", async () => {
     var closeDoorResult = await waitForEventData(eventStreamOne, "entities");
     expect(closeDoorResult).toMatchObject({
         event: "entities",
-        players: [],
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
         monsters: [],
         items: [
             {
@@ -183,7 +195,11 @@ test("Test Commands", async () => {
     closeDoorResult = await waitForEventData(eventStreamOne, "entities");
     expect(closeDoorResult).toMatchObject({
         event: "entities",
-        players: [],
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
         monsters: [],
         items: [
             {
@@ -293,7 +309,11 @@ test("Test Commands", async () => {
     var swingResult = await waitForEventData(eventStreamOne, "entities");
     expect(swingResult).toMatchObject({
         event: "entities",
-        players: [],
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
         monsters: [],
         items: [
             {
@@ -327,7 +347,11 @@ test("Test Commands", async () => {
     swingResult = await waitForEventData(eventStreamOne, "entities");
     expect(swingResult).toMatchObject({
         event: "entities",
-        players: [],
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
         monsters: [],
         items: [
             {

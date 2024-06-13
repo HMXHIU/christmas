@@ -1,4 +1,3 @@
-import { INTERNAL_SERVICE_KEY } from "$env/static/private";
 import {
     crossoverAuthPlayer,
     crossoverCmdConfigureItem,
@@ -21,22 +20,20 @@ import { configureItem, spawnItem } from "$lib/server/crossover";
 import type {
     Item,
     ItemEntity,
+    Player,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
 import { groupBy } from "lodash";
 import ngeohash from "ngeohash";
-import { expect, test, vi } from "vitest";
+import { expect, test } from "vitest";
 import type { UpdateEntitiesEvent } from "../../src/routes/api/crossover/stream/+server";
 import { getRandomRegion } from "../utils";
 import {
+    buffEntity,
     createRandomPlayer,
     generateRandomGeohash,
     waitForEventData,
 } from "./utils";
-
-vi.mock("$lib/crossover/world", async (module) => {
-    return { ...((await module()) as object), MS_PER_TICK: 10 };
-});
 
 test("Test Player", async () => {
     const region = String.fromCharCode(...getRandomRegion());
@@ -217,22 +214,10 @@ test("Test Player", async () => {
     });
 
     // Buff `playerOne` with enough resources to teleport
-    let res = await fetch(
-        "http://localhost:5173/trpc/crossover.world.buffEntity",
-        {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${INTERNAL_SERVICE_KEY}`,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                entity: playerOne.player,
-                level: 10,
-                ...playerStats({ level: 10 }),
-            }),
-        },
-    );
-    expect(res.status).toBe(200);
+    playerOne = (await buffEntity(playerOne.player, {
+        level: 10,
+        ...playerStats({ level: 10 }),
+    })) as Player;
 
     /*
      * Test ability success (`playerOne` teleport to `playerTwo` location)
@@ -361,7 +346,11 @@ test("Test Player", async () => {
         waitForEventData(playerOneStream, "entities"),
     ).resolves.toMatchObject({
         event: "entities",
-        players: [],
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
         monsters: [],
         items: [
             {
@@ -378,7 +367,11 @@ test("Test Player", async () => {
     )) as UpdateEntitiesEvent;
     await expect(useItemRes).toMatchObject({
         event: "entities",
-        players: [],
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
         monsters: [],
         items: [
             {
@@ -447,7 +440,11 @@ test("Test Player", async () => {
         waitForEventData(playerOneStream, "entities"),
     ).resolves.toMatchObject({
         event: "entities",
-        players: [],
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
         monsters: [],
         items: [
             {
@@ -496,7 +493,11 @@ test("Test Player", async () => {
     )) as UpdateEntitiesEvent;
     expect(teleportResult).toMatchObject({
         event: "entities",
-        players: [],
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
         monsters: [],
         items: [
             {
@@ -534,7 +535,11 @@ test("Test Player", async () => {
         waitForEventData(playerOneStream, "entities"),
     ).resolves.toMatchObject({
         event: "entities",
-        players: [],
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
         monsters: [],
         items: [
             {
@@ -580,7 +585,11 @@ test("Test Player", async () => {
     )) as UpdateEntitiesEvent;
     expect(teleportResult).toMatchObject({
         event: "entities",
-        players: [],
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
         monsters: [],
         items: [
             {

@@ -3,10 +3,13 @@ import { borderingGeohashes } from "$lib/crossover/utils";
 import { monsterLimitAtGeohash } from "$lib/crossover/world/bestiary";
 import { spawnMonsters } from "$lib/server/crossover/dungeonMaster";
 import { monstersInGeohashQuerySet } from "$lib/server/crossover/redis";
-import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
+import type {
+    Player,
+    PlayerEntity,
+} from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
-import { createRandomPlayer } from "./utils";
+import { buffEntity, createRandomPlayer } from "./utils";
 
 test("Test DungeonMaster", async () => {
     const region = String.fromCharCode(...getRandomRegion());
@@ -122,37 +125,25 @@ test("Test DungeonMaster", async () => {
     });
 
     // Test world.buffEntity
-    res = await fetch("http://localhost:5173/trpc/crossover.world.buffEntity", {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${INTERNAL_SERVICE_KEY}`,
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            entity: playerOne.player,
-            hp: 100,
-            mp: 100,
-            st: 100,
-            ap: 40,
-            buffs: ["haste"],
-            debuffs: ["poisoned"],
-        }),
-    });
-    await expect(res.json()).resolves.toMatchObject({
-        result: {
-            data: {
-                player: playerOne.player,
-                name: "Gandalf",
-                lgn: true,
-                loc: ["w21z3tss"],
-                lvl: 1,
-                hp: 100,
-                mp: 100,
-                st: 100,
-                ap: 40,
-                dbuf: ["poisoned"],
-                buf: ["haste"],
-            },
-        },
+    playerOne = (await buffEntity(playerOne.player, {
+        hp: 100,
+        mp: 100,
+        st: 100,
+        ap: 40,
+        buffs: ["haste"],
+        debuffs: ["poisoned"],
+    })) as Player;
+    await expect(playerOne).resolves.toMatchObject({
+        player: playerOne.player,
+        name: "Gandalf",
+        lgn: true,
+        loc: ["w21z3tss"],
+        lvl: 1,
+        hp: 100,
+        mp: 100,
+        st: 100,
+        ap: 40,
+        dbuf: ["poisoned"],
+        buf: ["haste"],
     });
 });

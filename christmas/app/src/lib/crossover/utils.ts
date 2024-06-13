@@ -2,11 +2,8 @@ import { type Direction } from "$lib/crossover/world/types";
 import type {
     EntityType,
     Item,
-    ItemEntity,
     Monster,
-    MonsterEntity,
     Player,
-    PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
 import ngeohash from "ngeohash";
 import type { GameAction } from "./ir";
@@ -363,20 +360,20 @@ function childrenGeohashes(geohash: string): string[] {
  * @returns An object containing the width, height, and precision of the entity.
  * @throws {Error} If the entity is invalid.
  */
-function entityDimensions(entity: PlayerEntity | MonsterEntity | ItemEntity) {
-    if (entity.player) {
+function entityDimensions(entity: Player | Monster | Item) {
+    if ((entity as Player).player) {
         return {
             width: 1,
             height: 1,
             precision: worldSeed.spatial.unit.precision,
         };
-    } else if (entity.item) {
+    } else if ((entity as Item).item) {
         const { width, height, precision } =
-            compendium[(entity as ItemEntity).prop].asset;
+            compendium[(entity as Item).prop].asset;
         return { width, height, precision };
-    } else if (entity.monster) {
+    } else if ((entity as Monster).monster) {
         const { width, height, precision } =
-            bestiary[(entity as MonsterEntity).beast].asset;
+            bestiary[(entity as Monster).beast].asset;
         return { width, height, precision };
     }
 

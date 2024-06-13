@@ -108,6 +108,28 @@ export function waitForEventData(
     });
 }
 
+export function collectEventDataForDuration(
+    eventTarget: EventTarget,
+    type: string,
+    duration = 500,
+): Promise<StreamEvent[]> {
+    return new Promise((resolve, reject) => {
+        const events: StreamEvent[] = [];
+        const f = (event: Event) => {
+            events.push((event as MessageEvent).data as StreamEvent);
+        };
+
+        setTimeout(() => {
+            eventTarget.removeEventListener(type, f);
+            resolve(events);
+        }, duration);
+
+        eventTarget.addEventListener(type, (event: Event) => {
+            events.push((event as MessageEvent).data as StreamEvent);
+        });
+    });
+}
+
 export function generateRandomGeohash(
     precision: number,
     startsWith?: string,
@@ -135,7 +157,17 @@ export async function buffEntity(
         mp,
         st,
         ap,
-    }: { level: number; hp: number; mp: number; st: number; ap: number },
+        buffs,
+        debuffs,
+    }: {
+        level?: number;
+        hp?: number;
+        mp?: number;
+        st?: number;
+        ap?: number;
+        buffs?: string[];
+        debuffs?: string[];
+    },
 ): Promise<Player | Monster> {
     const { result } = await (
         await fetch("http://localhost:5173/trpc/crossover.world.buffEntity", {
@@ -151,6 +183,8 @@ export async function buffEntity(
                 mp,
                 st,
                 ap,
+                buffs,
+                debuffs,
             }),
         })
     ).json();
