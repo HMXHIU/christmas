@@ -146,6 +146,8 @@ test("Test Auth", async () => {
         st: 10,
         buf: [],
         dbuf: [],
+        lum: 0,
+        umb: 0,
     });
     expect(player.loc[0].length).toBe(worldSeed.spatial.unit.precision); // test auto correct geohash precision
     expect(player.loc[0].startsWith(geohash)).toBe(true); // should be contained in the user's geohash
@@ -168,6 +170,8 @@ test("Test Auth", async () => {
         st: 10,
         buf: [],
         dbuf: [],
+        lum: 0,
+        umb: 0,
     });
 
     // Logout Crossover

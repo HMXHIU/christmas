@@ -95,6 +95,8 @@ type PlayerState = z.infer<typeof PlayerStateSchema>;
 const PlayerStateSchema = z.object({
     avatar: z.string().optional(),
     lgn: z.boolean().optional(),
+    lum: z.number().optional(),
+    umb: z.number().optional(),
     loc: z.array(z.string()).optional(),
     locT: z.enum(["geohash"]).optional(),
     hp: z.number().optional(),
@@ -242,6 +244,8 @@ async function loadPlayerEntity(
         buclk: 0,
         dbuf: [],
         buf: [],
+        lum: 0,
+        umb: 0,
     };
     let player: PlayerEntity = {
         ...defaultState,

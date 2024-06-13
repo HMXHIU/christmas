@@ -71,7 +71,7 @@ test("Test Items", async () => {
     });
 
     // Test cannot spawn item on collider
-    await sleep(100); // why need to wait for item to be indexed ???
+    await sleep(200); // why need to wait for item to be indexed ???
     await expect(
         spawnItem({
             geohash: woodendoorGeohash,

@@ -270,6 +270,8 @@ test("Test Player", async () => {
                 lvl: 10,
                 mp: playerOne.mp - abilities.teleport.mp,
                 ap: playerOne.ap - abilities.teleport.ap,
+                lum: 0,
+                umb: 0,
             },
         ],
         monsters: [],

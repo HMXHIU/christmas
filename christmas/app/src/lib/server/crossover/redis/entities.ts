@@ -46,6 +46,8 @@ const PlayerEntitySchema = new Schema("Player", {
     name: { type: "string" },
     avatar: { type: "string" },
     lgn: { type: "boolean" }, // logged in
+    lum: { type: "number" }, // lumina
+    umb: { type: "number" }, // umbra
     // EntityState
     loc: { type: "string[]" },
     locT: { type: "string" },
@@ -65,6 +67,8 @@ interface Player extends EntityState {
     name: string;
     avatar: string;
     lgn: boolean;
+    lum: number;
+    umb: number;
 }
 
 type PlayerEntity = Player & Entity;
