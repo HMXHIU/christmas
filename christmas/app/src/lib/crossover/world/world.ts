@@ -1,4 +1,6 @@
-export { worldSeed, type WorldSeed };
+import sanctuaries from "./sanctuaries.json";
+
+export { sanctuariesByRegion, worldSeed, type Sanctuary, type WorldSeed };
 
 /**
  * `worldSeed` is a template used to generate a `World` instance.
@@ -73,6 +75,13 @@ const worldSeed: WorldSeed = {
     },
 };
 
+interface Sanctuary {
+    name: string;
+    description: string;
+    region: string; // SGP, USA, AUS, etc.
+    geohash: string; // unit precision respawn point
+}
+
 interface WorldSeed {
     name: string;
     description: string;
@@ -115,3 +124,11 @@ interface WorldSeed {
         };
     };
 }
+
+const sanctuariesByRegion = sanctuaries.reduce(
+    (acc: Record<string, Sanctuary>, s) => {
+        acc[s.region] = s;
+        return acc;
+    },
+    {},
+);

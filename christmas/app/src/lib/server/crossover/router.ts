@@ -642,33 +642,13 @@ const crossoverRouter = {
             .query(async ({ ctx, input }) => {
                 const { ability, target } = input;
 
-                // Get player
-                const player = (await tryFetchEntity(
-                    ctx.user.publicKey,
-                )) as PlayerEntity;
-
-                // Get target player
-                const targetEntity = await tryFetchEntity(target);
-
                 // Perform ability (non blocking)
                 performAbility({
-                    self: player,
-                    target: targetEntity,
+                    self: (await tryFetchEntity(
+                        ctx.user.publicKey,
+                    )) as PlayerEntity,
+                    target: await tryFetchEntity(target),
                     ability,
-                }).then(async ({ self, status, message }) => {
-                    // Publish feed event on failure
-                    if (status === "failure") {
-                        if (self.player != null) {
-                            await redisClient.publish(
-                                (self as Player).player,
-                                JSON.stringify({
-                                    event: "feed",
-                                    type: "message",
-                                    message,
-                                } as FeedEvent),
-                            );
-                        }
-                    }
                 });
             }),
         // cmd.useItem
@@ -691,20 +671,6 @@ const crossoverRouter = {
                     item: itemEntity,
                     target: target ? await tryFetchEntity(target) : undefined, // get target if provided
                     utility,
-                }).then(async ({ self, status, message }) => {
-                    // Publish feed event on failure
-                    if (status === "failure") {
-                        if (self.player != null) {
-                            await redisClient.publish(
-                                (self as Player).player,
-                                JSON.stringify({
-                                    event: "feed",
-                                    type: "message",
-                                    message,
-                                } as FeedEvent),
-                            );
-                        }
-                    }
                 });
             }),
         // cmd.createItem

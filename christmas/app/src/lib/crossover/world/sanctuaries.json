@@ -1,0 +1,1501 @@
+[
+    {
+        "name": "Kabul Refuge",
+        "description": "A safe haven in the capital city of Afghanistan.",
+        "region": "AFG",
+        "geohash": "tt3jwh8x"
+    },
+    {
+        "name": "Tirana Refuge",
+        "description": "A safe haven in the capital city of Albania.",
+        "region": "ALB",
+        "geohash": "srq0bj3d"
+    },
+    {
+        "name": "Algiers Refuge",
+        "description": "A safe haven in the capital city of Algeria.",
+        "region": "DZA",
+        "geohash": "spfp3jz7"
+    },
+    {
+        "name": "Pago Pago Refuge",
+        "description": "A safe haven in Pago Pago, American Samoa.",
+        "region": "ASM",
+        "geohash": "vnk4r9b8"
+    },
+    {
+        "name": "Andorra la Vella Refuge",
+        "description": "A safe haven in the capital city of Andorra.",
+        "region": "AND",
+        "geohash": "sp3e64r3"
+    },
+    {
+        "name": "Luanda Refuge",
+        "description": "A safe haven in the capital city of Angola.",
+        "region": "AGO",
+        "geohash": "kc3bxxxe"
+    },
+    {
+        "name": "The Valley Refuge",
+        "description": "A safe haven in The Valley, Anguilla.",
+        "region": "AIA",
+        "geohash": "d2hbxb98"
+    },
+    {
+        "name": "McMurdo Station Refuge",
+        "description": "A safe haven in McMurdo Station, Antarctica.",
+        "region": "ATA",
+        "geohash": "4qtjjpbd"
+    },
+    {
+        "name": "Saint John's Refuge",
+        "description": "A safe haven in the capital city of Antigua and Barbuda.",
+        "region": "ATG",
+        "geohash": "d2h8h8hf"
+    },
+    {
+        "name": "Buenos Aires Refuge",
+        "description": "A safe haven in the capital city of Argentina.",
+        "region": "ARG",
+        "geohash": "69y6ryds"
+    },
+    {
+        "name": "Yerevan Refuge",
+        "description": "A safe haven in the capital city of Armenia.",
+        "region": "ARM",
+        "geohash": "sx7kwy7p"
+    },
+    {
+        "name": "Oranjestad Refuge",
+        "description": "A safe haven in Oranjestad, Aruba.",
+        "region": "ABW",
+        "geohash": "d60fw7j4"
+    },
+    {
+        "name": "Sydney Refuge",
+        "description": "A safe haven in Sydney, Australia.",
+        "region": "AUS",
+        "geohash": "r3gx2c9p"
+    },
+    {
+        "name": "Vienna Refuge",
+        "description": "A safe haven in the capital city of Austria.",
+        "region": "AUT",
+        "geohash": "u2edk2wy"
+    },
+    {
+        "name": "Baku Refuge",
+        "description": "A safe haven in the capital city of Azerbaijan.",
+        "region": "AZE",
+        "geohash": "tbbljzg4"
+    },
+    {
+        "name": "Nassau Refuge",
+        "description": "A safe haven in the capital city of The Bahamas.",
+        "region": "BHS",
+        "geohash": "bgbjdg5c"
+    },
+    {
+        "name": "Manama Refuge",
+        "description": "A safe haven in the capital city of Bahrain.",
+        "region": "BHR",
+        "geohash": "thsq3h8f"
+    },
+    {
+        "name": "Dhaka Refuge",
+        "description": "A safe haven in the capital city of Bangladesh.",
+        "region": "BGD",
+        "geohash": "wh8wy7e4"
+    },
+    {
+        "name": "Bridgetown Refuge",
+        "description": "A safe haven in the capital city of Barbados.",
+        "region": "BRB",
+        "geohash": "dhd8p9ph"
+    },
+    {
+        "name": "Minsk Refuge",
+        "description": "A safe haven in the capital city of Belarus.",
+        "region": "BLR",
+        "geohash": "u8cft7wf"
+    },
+    {
+        "name": "Brussels Refuge",
+        "description": "A safe haven in the capital city of Belgium.",
+        "region": "BEL",
+        "geohash": "u151k4hx"
+    },
+    {
+        "name": "Belmopan Refuge",
+        "description": "A safe haven in the capital city of Belize.",
+        "region": "BLZ",
+        "geohash": "d6jh68rq"
+    },
+    {
+        "name": "Cotonou Refuge",
+        "description": "A safe haven in Cotonou, Benin.",
+        "region": "BEN",
+        "geohash": "s1k5cr97"
+    },
+    {
+        "name": "Hamilton Refuge",
+        "description": "A safe haven in Hamilton, Bermuda.",
+        "region": "BMU",
+        "geohash": "dqcwfg3z"
+    },
+    {
+        "name": "Thimphu Refuge",
+        "description": "A safe haven in the capital city of Bhutan.",
+        "region": "BTN",
+        "geohash": "tpb5ff6f"
+    },
+    {
+        "name": "La Paz Refuge",
+        "description": "A safe haven in La Paz, Bolivia.",
+        "region": "BOL",
+        "geohash": "69hxj91y"
+    },
+    {
+        "name": "Kralendijk Refuge",
+        "description": "A safe haven in Kralendijk, Bonaire.",
+        "region": "BES",
+        "geohash": "d5d8c98g"
+    },
+    {
+        "name": "Sarajevo Refuge",
+        "description": "A safe haven in the capital city of Bosnia and Herzegovina.",
+        "region": "BIH",
+        "geohash": "sv8ybzfg"
+    },
+    {
+        "name": "Gaborone Refuge",
+        "description": "A safe haven in the capital city of Botswana.",
+        "region": "BWA",
+        "geohash": "kc2g3szy"
+    },
+    {
+        "name": "Norwegian Refuge",
+        "description": "A safe haven in the Norwegian territory of Bouvet Island.",
+        "region": "BVT",
+        "geohash": "5h7jr5h7"
+    },
+    {
+        "name": "Rio de Janeiro Refuge",
+        "description": "A safe haven in Rio de Janeiro, Brazil.",
+        "region": "BRA",
+        "geohash": "795t9x1g"
+    },
+    {
+        "name": "Diego Garcia Refuge",
+        "description": "A safe haven in the British Indian Ocean Territory.",
+        "region": "IOT",
+        "geohash": "vxv0bbcx"
+    },
+    {
+        "name": "Bandar Seri Begawan Refuge",
+        "description": "A safe haven in the capital city of Brunei.",
+        "region": "BRN",
+        "geohash": "w39v6zdd"
+    },
+    {
+        "name": "Sofia Refuge",
+        "description": "A safe haven in the capital city of Bulgaria.",
+        "region": "BGR",
+        "geohash": "sxj2c4xx"
+    },
+    {
+        "name": "Ouagadougou Refuge",
+        "description": "A safe haven in the capital city of Burkina Faso.",
+        "region": "BFA",
+        "geohash": "ec31wwy9"
+    },
+    {
+        "name": "Bujumbura Refuge",
+        "description": "A safe haven in the capital city of Burundi.",
+        "region": "BDI",
+        "geohash": "mrmxh0yx"
+    },
+    {
+        "name": "Praia Refuge",
+        "description": "A safe haven in the capital city of Cape Verde.",
+        "region": "CPV",
+        "geohash": "ebjkrbz9"
+    },
+    {
+        "name": "Phnom Penh Refuge",
+        "description": "A safe haven in the capital city of Cambodia.",
+        "region": "KHM",
+        "geohash": "w24mhzq5"
+    },
+    {
+        "name": "Yaoundé Refuge",
+        "description": "A safe haven in the capital city of Cameroon.",
+        "region": "CMR",
+        "geohash": "s0d7h8dx"
+    },
+    {
+        "name": "Toronto Refuge",
+        "description": "A safe haven in Toronto, Canada.",
+        "region": "CAN",
+        "geohash": "dpz83zzv"
+    },
+    {
+        "name": "George Town Refuge",
+        "description": "A safe haven in George Town, Cayman Islands.",
+        "region": "CYM",
+        "geohash": "d5xgrx5y"
+    },
+    {
+        "name": "Bangui Refuge",
+        "description": "A safe haven in the capital city of Central African Republic.",
+        "region": "CAF",
+        "geohash": "tdb6cxbc"
+    },
+    {
+        "name": "N'Djamena Refuge",
+        "description": "A safe haven in the capital city of Chad.",
+        "region": "TCD",
+        "geohash": "s5fjzwcg"
+    },
+    {
+        "name": "Santiago Refuge",
+        "description": "A safe haven in the capital city of Chile.",
+        "region": "CHL",
+        "geohash": "69y60yz4"
+    },
+    {
+        "name": "Shanghai Refuge",
+        "description": "A safe haven in Shanghai, China.",
+        "region": "CHN",
+        "geohash": "wtw3sjpy"
+    },
+    {
+        "name": "Flying Fish Cove Refuge",
+        "description": "A safe haven in Flying Fish Cove, Christmas Island.",
+        "region": "CXR",
+        "geohash": "qe8rurx4"
+    },
+    {
+        "name": "West Island Refuge",
+        "description": "A safe haven in West Island, Cocos (Keeling) Islands.",
+        "region": "CCK",
+        "geohash": "qe6jgrx7"
+    },
+    {
+        "name": "Bogotá Refuge",
+        "description": "A safe haven in the capital city of Colombia.",
+        "region": "COL",
+        "geohash": "d29x24rx"
+    },
+    {
+        "name": "Moroni Refuge",
+        "description": "A safe haven in the capital city of Comoros.",
+        "region": "COM",
+        "geohash": "k9h9ryxz"
+    },
+    {
+        "name": "Kinshasa Refuge",
+        "description": "A safe haven in the capital city of the Democratic Republic of the Congo.",
+        "region": "COD",
+        "geohash": "kfwkxxfx"
+    },
+    {
+        "name": "Brazzaville Refuge",
+        "description": "A safe haven in the capital city of the Republic of the Congo.",
+        "region": "COG",
+        "geohash": "kfq88fg5"
+    },
+    {
+        "name": "Avarua Refuge",
+        "description": "A safe haven in Avarua, Cook Islands.",
+        "region": "COK",
+        "geohash": "p6xgrx9f"
+    },
+    {
+        "name": "San José Refuge",
+        "description": "A safe haven in the capital city of Costa Rica.",
+        "region": "CRI",
+        "geohash": "d42xrx3z"
+    },
+    {
+        "name": "Zagreb Refuge",
+        "description": "A safe haven in the capital city of Croatia.",
+        "region": "HRV",
+        "geohash": "srbf0c8d"
+    },
+    {
+        "name": "Havana Refuge",
+        "description": "A safe haven in the capital city of Cuba.",
+        "region": "CUB",
+        "geohash": "d7z4ybj3"
+    },
+    {
+        "name": "Willemstad Refuge",
+        "description": "A safe haven in Willemstad, Curaçao.",
+        "region": "CUW",
+        "geohash": "d8h9z8c5"
+    },
+    {
+        "name": "Nicosia Refuge",
+        "description": "A safe haven in the capital city of Cyprus.",
+        "region": "CYP",
+        "geohash": "sx33k6t5"
+    },
+    {
+        "name": "Prague Refuge",
+        "description": "A safe haven in the capital city of Czech Republic.",
+        "region": "CZE",
+        "geohash": "u2hfbf8g"
+    },
+    {
+        "name": "Abidjan Refuge",
+        "description": "A safe haven in Abidjan, Ivory Coast.",
+        "region": "CIV",
+        "geohash": "s1k5h7t3"
+    },
+    {
+        "name": "Copenhagen Refuge",
+        "description": "A safe haven in the capital city of Denmark.",
+        "region": "DNK",
+        "geohash": "u7y9g4n5"
+    },
+    {
+        "name": "Djibouti Refuge",
+        "description": "A safe haven in the capital city of Djibouti.",
+        "region": "DJI",
+        "geohash": "te9hxwxg"
+    },
+    {
+        "name": "Roseau Refuge",
+        "description": "A safe haven in Roseau, Dominica.",
+        "region": "DMA",
+        "geohash": "d4hb8jz9"
+    },
+    {
+        "name": "Santo Domingo Refuge",
+        "description": "A safe haven in the capital city of Dominican Republic.",
+        "region": "DOM",
+        "geohash": "d4fwj8k7"
+    },
+    {
+        "name": "Quito Refuge",
+        "description": "A safe haven in the capital city of Ecuador.",
+        "region": "ECU",
+        "geohash": "d2h8y8q8"
+    },
+    {
+        "name": "Cairo Refuge",
+        "description": "A safe haven in the capital city of Egypt.",
+        "region": "EGY",
+        "geohash": "sthfghfg"
+    },
+    {
+        "name": "San Salvador Refuge",
+        "description": "A safe haven in the capital city of El Salvador.",
+        "region": "SLV",
+        "geohash": "d25h7d9z"
+    },
+    {
+        "name": "Malabo Refuge",
+        "description": "A safe haven in Malabo, Equatorial Guinea.",
+        "region": "GNQ",
+        "geohash": "s4hw9h8x"
+    },
+    {
+        "name": "Asmara Refuge",
+        "description": "A safe haven in the capital city of Eritrea.",
+        "region": "ERI",
+        "geohash": "te9k9h9y"
+    },
+    {
+        "name": "Tallinn Refuge",
+        "description": "A safe haven in the capital city of Estonia.",
+        "region": "EST",
+        "geohash": "u6fxfg8k"
+    },
+    {
+        "name": "Mbabane Refuge",
+        "description": "A safe haven in the capital city of Eswatini.",
+        "region": "SWZ",
+        "geohash": "khk4txxx"
+    },
+    {
+        "name": "Addis Ababa Refuge",
+        "description": "A safe haven in the capital city of Ethiopia.",
+        "region": "ETH",
+        "geohash": "sfh8d4k5"
+    },
+    {
+        "name": "Stanley Refuge",
+        "description": "A safe haven in Stanley, Falkland Islands.",
+        "region": "FLK",
+        "geohash": "8hfkr6zy"
+    },
+    {
+        "name": "Tórshavn Refuge",
+        "description": "A safe haven in Tórshavn, Faroe Islands.",
+        "region": "FRO",
+        "geohash": "gbs7j8k7"
+    },
+    {
+        "name": "Suva Refuge",
+        "description": "A safe haven in the capital city of Fiji.",
+        "region": "FJI",
+        "geohash": "rh6f9x9p"
+    },
+    {
+        "name": "Helsinki Refuge",
+        "description": "A safe haven in the capital city of Finland.",
+        "region": "FIN",
+        "geohash": "u2s18z9z"
+    },
+    {
+        "name": "Paris Refuge",
+        "description": "A safe haven in the capital city of France.",
+        "region": "FRA",
+        "geohash": "u09tunw6"
+    },
+    {
+        "name": "Cayenne Refuge",
+        "description": "A safe haven in Cayenne, French Guiana.",
+        "region": "GUF",
+        "geohash": "d45r8d7y"
+    },
+    {
+        "name": "Papeete Refuge",
+        "description": "A safe haven in Papeete, French Polynesia.",
+        "region": "PYF",
+        "geohash": "4w9h9c8p"
+    },
+    {
+        "name": "Port-aux-Français Refuge",
+        "description": "A safe haven in Port-aux-Français, French Southern Territories.",
+        "region": "ATF",
+        "geohash": "gcn4r4rp"
+    },
+    {
+        "name": "Libreville Refuge",
+        "description": "A safe haven in the capital city of Gabon.",
+        "region": "GAB",
+        "geohash": "k7d8d4p8"
+    },
+    {
+        "name": "Banjul Refuge",
+        "description": "A safe haven in the capital city of Gambia.",
+        "region": "GMB",
+        "geohash": "ed7h8z4x"
+    },
+    {
+        "name": "Tbilisi Refuge",
+        "description": "A safe haven in the capital city of Georgia.",
+        "region": "GEO",
+        "geohash": "sp9fx4x5"
+    },
+    {
+        "name": "Berlin Refuge",
+        "description": "A safe haven in the capital city of Germany.",
+        "region": "DEU",
+        "geohash": "u33db6m7"
+    },
+    {
+        "name": "Accra Refuge",
+        "description": "A safe haven in the capital city of Ghana.",
+        "region": "GHA",
+        "geohash": "ecfyy5kp"
+    },
+    {
+        "name": "Gibraltar Refuge",
+        "description": "A safe haven in Gibraltar.",
+        "region": "GIB",
+        "geohash": "sp26g8e8"
+    },
+    {
+        "name": "Athens Refuge",
+        "description": "A safe haven in the capital city of Greece.",
+        "region": "GRC",
+        "geohash": "swbb81k4"
+    },
+    {
+        "name": "Nuuk Refuge",
+        "description": "A safe haven in Nuuk, Greenland.",
+        "region": "GRL",
+        "geohash": "fxv9kx9y"
+    },
+    {
+        "name": "Saint George's Refuge",
+        "description": "A safe haven in the capital city of Grenada.",
+        "region": "GRD",
+        "geohash": "d6jb2g9g"
+    },
+    {
+        "name": "Basse-Terre Refuge",
+        "description": "A safe haven in Basse-Terre, Guadeloupe.",
+        "region": "GLP",
+        "geohash": "d8g9d8c9"
+    },
+    {
+        "name": "Hagåtña Refuge",
+        "description": "A safe haven in Hagåtña, Guam.",
+        "region": "GUM",
+        "geohash": "vtfkgz9x"
+    },
+    {
+        "name": "Guatemala City Refuge",
+        "description": "A safe haven in the capital city of Guatemala.",
+        "region": "GTM",
+        "geohash": "d2zj5c8d"
+    },
+    {
+        "name": "Saint Peter Port Refuge",
+        "description": "A safe haven in Saint Peter Port, Guernsey.",
+        "region": "GGY",
+        "geohash": "gbrv0k7z"
+    },
+    {
+        "name": "Conakry Refuge",
+        "description": "A safe haven in the capital city of Guinea.",
+        "region": "GIN",
+        "geohash": "ezu1f6j9"
+    },
+    {
+        "name": "Bissau Refuge",
+        "description": "A safe haven in the capital city of Guinea-Bissau.",
+        "region": "GNB",
+        "geohash": "edp4x7t5"
+    },
+    {
+        "name": "Georgetown Refuge",
+        "description": "A safe haven in the capital city of Guyana.",
+        "region": "GUY",
+        "geohash": "d9fw8c1k"
+    },
+    {
+        "name": "Port-au-Prince Refuge",
+        "description": "A safe haven in the capital city of Haiti.",
+        "region": "HTI",
+        "geohash": "d79h8r8z"
+    },
+    {
+        "name": "Norwegian Refuge",
+        "description": "A safe haven in the Norwegian territory of Heard Island and McDonald Islands.",
+        "region": "HMD",
+        "geohash": "6frcx4k8"
+    },
+    {
+        "name": "Vatican City Refuge",
+        "description": "A safe haven in Vatican City.",
+        "region": "VAT",
+        "geohash": "sr24d7b7"
+    },
+    {
+        "name": "Tegucigalpa Refuge",
+        "description": "A safe haven in the capital city of Honduras.",
+        "region": "HND",
+        "geohash": "d1j5x3g8"
+    },
+    {
+        "name": "Hong Kong Refuge",
+        "description": "A safe haven in Hong Kong.",
+        "region": "HKG",
+        "geohash": "wec10r9x"
+    },
+    {
+        "name": "Budapest Refuge",
+        "description": "A safe haven in the capital city of Hungary.",
+        "region": "HUN",
+        "geohash": "u3mqy2yy"
+    },
+    {
+        "name": "Reykjavik Refuge",
+        "description": "A safe haven in the capital city of Iceland.",
+        "region": "ISL",
+        "geohash": "g3k44d8k"
+    },
+    {
+        "name": "New Delhi Refuge",
+        "description": "A safe haven in the capital city of India.",
+        "region": "IND",
+        "geohash": "t1v74gp5"
+    },
+    {
+        "name": "Jakarta Refuge",
+        "description": "A safe haven in the capital city of Indonesia.",
+        "region": "IDN",
+        "geohash": "qq0v9k9f"
+    },
+    {
+        "name": "Tehran Refuge",
+        "description": "A safe haven in the capital city of Iran.",
+        "region": "IRN",
+        "geohash": "th7wz3p4"
+    },
+    {
+        "name": "Baghdad Refuge",
+        "description": "A safe haven in the capital city of Iraq.",
+        "region": "IRQ",
+        "geohash": "sv8k9s4c"
+    },
+    {
+        "name": "Dublin Refuge",
+        "description": "A safe haven in the capital city of Ireland.",
+        "region": "IRL",
+        "geohash": "gc7xhw3y"
+    },
+    {
+        "name": "Douglas Refuge",
+        "description": "A safe haven in Douglas, Isle of Man.",
+        "region": "IMN",
+        "geohash": "gcw1c1b9"
+    },
+    {
+        "name": "Jerusalem Refuge",
+        "description": "A safe haven in Jerusalem, Israel.",
+        "region": "ISR",
+        "geohash": "sv7f4x1j"
+    },
+    {
+        "name": "Rome Refuge",
+        "description": "A safe haven in the capital city of Italy.",
+        "region": "ITA",
+        "geohash": "sr2f4d1k"
+    },
+    {
+        "name": "Kingston Refuge",
+        "description": "A safe haven in the capital city of Jamaica.",
+        "region": "JAM",
+        "geohash": "d6h8s1v9"
+    },
+    {
+        "name": "Tokyo Refuge",
+        "description": "A safe haven in the capital city of Japan.",
+        "region": "JPN",
+        "geohash": "xn76urq2"
+    },
+    {
+        "name": "Saint Helier Refuge",
+        "description": "A safe haven in Saint Helier, Jersey.",
+        "region": "JEY",
+        "geohash": "gbs5h5r8"
+    },
+    {
+        "name": "Amman Refuge",
+        "description": "A safe haven in the capital city of Jordan.",
+        "region": "JOR",
+        "geohash": "sv9x4b9p"
+    },
+    {
+        "name": "Nur-Sultan Refuge",
+        "description": "A safe haven in the capital city of Kazakhstan.",
+        "region": "KAZ",
+        "geohash": "vgq8d5j7"
+    },
+    {
+        "name": "Nairobi Refuge",
+        "description": "A safe haven in the capital city of Kenya.",
+        "region": "KEN",
+        "geohash": "kzs7x9f5"
+    },
+    {
+        "name": "Tarawa Refuge",
+        "description": "A safe haven in Tarawa, Kiribati.",
+        "region": "KIR",
+        "geohash": "r9k8h9g9"
+    },
+    {
+        "name": "Pyongyang Refuge",
+        "description": "A safe haven in the capital city of North Korea.",
+        "region": "PRK",
+        "geohash": "yg7k9x9y"
+    },
+    {
+        "name": "Seoul Refuge",
+        "description": "A safe haven in the capital city of South Korea.",
+        "region": "KOR",
+        "geohash": "wydk9gjv"
+    },
+    {
+        "name": "Kuwait City Refuge",
+        "description": "A safe haven in the capital city of Kuwait.",
+        "region": "KWT",
+        "geohash": "tht9h1d3"
+    },
+    {
+        "name": "Bishkek Refuge",
+        "description": "A safe haven in the capital city of Kyrgyzstan.",
+        "region": "KGZ",
+        "geohash": "tfrjx2t5"
+    },
+    {
+        "name": "Vientiane Refuge",
+        "description": "A safe haven in the capital city of Laos.",
+        "region": "LAO",
+        "geohash": "w7g8s9d7"
+    },
+    {
+        "name": "Riga Refuge",
+        "description": "A safe haven in the capital city of Latvia.",
+        "region": "LVA",
+        "geohash": "udxjkd5d"
+    },
+    {
+        "name": "Beirut Refuge",
+        "description": "A safe haven in the capital city of Lebanon.",
+        "region": "LBN",
+        "geohash": "swh8x5g4"
+    },
+    {
+        "name": "Maseru Refuge",
+        "description": "A safe haven in the capital city of Lesotho.",
+        "region": "LSO",
+        "geohash": "kds8h7d8"
+    },
+    {
+        "name": "Monrovia Refuge",
+        "description": "A safe haven in the capital city of Liberia.",
+        "region": "LBR",
+        "geohash": "s9d8d4z4"
+    },
+    {
+        "name": "Tripoli Refuge",
+        "description": "A safe haven in the capital city of Libya.",
+        "region": "LBY",
+        "geohash": "s7k7x3d9"
+    },
+    {
+        "name": "Vaduz Refuge",
+        "description": "A safe haven in the capital city of Liechtenstein.",
+        "region": "LIE",
+        "geohash": "u0qn94fz"
+    },
+    {
+        "name": "Vilnius Refuge",
+        "description": "A safe haven in the capital city of Lithuania.",
+        "region": "LTU",
+        "geohash": "u84h8z9r"
+
+
+    },
+    {
+        "name": "Luxembourg City Refuge",
+        "description": "A safe haven in the capital city of Luxembourg.",
+        "region": "LUX",
+        "geohash": "u0uwxh7d"
+    },
+    {
+        "name": "Macau Refuge",
+        "description": "A safe haven in Macau.",
+        "region": "MAC",
+        "geohash": "wecp4b9x"
+    },
+    {
+        "name": "Antananarivo Refuge",
+        "description": "A safe haven in the capital city of Madagascar.",
+        "region": "MDG",
+        "geohash": "lzwk9g8d"
+    },
+    {
+        "name": "Lilongwe Refuge",
+        "description": "A safe haven in the capital city of Malawi.",
+        "region": "MWI",
+        "geohash": "mgjkd8r5"
+    },
+    {
+        "name": "Kuala Lumpur Refuge",
+        "description": "A safe haven in the capital city of Malaysia.",
+        "region": "MYS",
+        "geohash": "w27kj9p5"
+    },
+    {
+        "name": "Malé Refuge",
+        "description": "A safe haven in the capital city of Maldives.",
+        "region": "MDV",
+        "geohash": "tcv9j9z5"
+    },
+    {
+        "name": "Bamako Refuge",
+        "description": "A safe haven in the capital city of Mali.",
+        "region": "MLI",
+        "geohash": "ezg6m1f4"
+    },
+    {
+        "name": "Valletta Refuge",
+        "description": "A safe haven in the capital city of Malta.",
+        "region": "MLT",
+        "geohash": "swem4p9x"
+    },
+    {
+        "name": "Majuro Refuge",
+        "description": "A safe haven in Majuro, Marshall Islands.",
+        "region": "MHL",
+        "geohash": "u5grx5j8"
+    },
+    {
+        "name": "Fort-de-France Refuge",
+        "description": "A safe haven in Fort-de-France, Martinique.",
+        "region": "MTQ",
+        "geohash": "d9zj8h8d"
+    },
+    {
+        "name": "Nouakchott Refuge",
+        "description": "A safe haven in the capital city of Mauritania.",
+        "region": "MRT",
+        "geohash": "ezq9f8d9"
+    },
+    {
+        "name": "Port Louis Refuge",
+        "description": "A safe haven in the capital city of Mauritius.",
+        "region": "MUS",
+        "geohash": "mh7hf8x7"
+    },
+    {
+        "name": "Mamoudzou Refuge",
+        "description": "A safe haven in Mamoudzou, Mayotte.",
+        "region": "MYT",
+        "geohash": "mkr8c9b7"
+    },
+    {
+        "name": "Mexico City Refuge",
+        "description": "A safe haven in the capital city of Mexico.",
+        "region": "MEX",
+        "geohash": "9g3x6x1e"
+    },
+    {
+        "name": "Palikir Refuge",
+        "description": "A safe haven in Palikir, Federated States of Micronesia.",
+        "region": "FSM",
+        "geohash": "wcz87xr5"
+    },
+    {
+        "name": "Chisinau Refuge",
+        "description": "A safe haven in the capital city of Moldova.",
+        "region": "MDA",
+        "geohash": "u8q8m4d5"
+    },
+    {
+        "name": "Monaco Refuge",
+        "description": "A safe haven in Monaco.",
+        "region": "MCO",
+        "geohash": "spb1d4x5"
+    },
+    {
+        "name": "Ulaanbaatar Refuge",
+        "description": "A safe haven in the capital city of Mongolia.",
+        "region": "MNG",
+        "geohash": "wydm4fz5"
+    },
+    {
+        "name": "Podgorica Refuge",
+        "description": "A safe haven in the capital city of Montenegro.",
+        "region": "MNE",
+        "geohash": "sv8r8y3d"
+    },
+    {
+        "name": "Brades Refuge",
+        "description": "A safe haven in Brades, Montserrat.",
+        "region": "MSR",
+        "geohash": "d9x5c9z9"
+    },
+    {
+        "name": "Rabat Refuge",
+        "description": "A safe haven in the capital city of Morocco.",
+        "region": "MAR",
+        "geohash": "esz8h3z7"
+    },
+    {
+        "name": "Maputo Refuge",
+        "description": "A safe haven in the capital city of Mozambique.",
+        "region": "MOZ",
+        "geohash": "kc3z8d7p"
+    },
+    {
+        "name": "Naypyidaw Refuge",
+        "description": "A safe haven in the capital city of Myanmar.",
+        "region": "MMR",
+        "geohash": "w9d8b1j5"
+    },
+    {
+        "name": "Windhoek Refuge",
+        "description": "A safe haven in the capital city of Namibia.",
+        "region": "NAM",
+        "geohash": "kgh8f8t5"
+    },
+    {
+        "name": "Yaren Refuge",
+        "description": "A safe haven in Yaren, Nauru.",
+        "region": "NRU",
+        "geohash": "v9z9h9b5"
+    },
+    {
+        "name": "Kathmandu Refuge",
+        "description": "A safe haven in the capital city of Nepal.",
+        "region": "NPL",
+        "geohash": "t1y2s5g8"
+    },
+    {
+        "name": "Amsterdam Refuge",
+        "description": "A safe haven in the capital city of the Netherlands.",
+        "region": "NLD",
+        "geohash": "u176j9r8"
+    },
+    {
+        "name": "Noumea Refuge",
+        "description": "A safe haven in Noumea, New Caledonia.",
+        "region": "NCL",
+        "geohash": "w9k7x5y5"
+    },
+    {
+        "name": "Wellington Refuge",
+        "description": "A safe haven in the capital city of New Zealand.",
+        "region": "NZL",
+        "geohash": "rck8h8y5"
+    },
+    {
+        "name": "Managua Refuge",
+        "description": "A safe haven in the capital city of Nicaragua.",
+        "region": "NIC",
+        "geohash": "d11j8k4d"
+    },
+    {
+        "name": "Niamey Refuge",
+        "description": "A safe haven in the capital city of Niger.",
+        "region": "NER",
+        "geohash": "ez4j8r7y"
+    },
+    {
+        "name": "Lagos Refuge",
+        "description": "A safe haven in Lagos, Nigeria.",
+        "region": "NGA",
+        "geohash": "skn1d6gz"
+    },
+    {
+        "name": "Alofi Refuge",
+        "description": "A safe haven in Alofi, Niue.",
+        "region": "NIU",
+        "geohash": "tk8k8f4d"
+    },
+    {
+        "name": "Kingston Refuge",
+        "description": "A safe haven in Kingston, Norfolk Island.",
+        "region": "NFK",
+        "geohash": "r6mk8d4c"
+    },
+    {
+        "name": "Saipan Refuge",
+        "description": "A safe haven in Saipan, Northern Mariana Islands.",
+        "region": "MNP",
+        "geohash": "wd9k4g8f"
+    },
+    {
+        "name": "Oslo Refuge",
+        "description": "A safe haven in the capital city of Norway.",
+        "region": "NOR",
+        "geohash": "u4wk8c9d"
+    },
+    {
+        "name": "Muscat Refuge",
+        "description": "A safe haven in the capital city of Oman.",
+        "region": "OMN",
+        "geohash": "thj8x9d5"
+    },
+    {
+        "name": "Karachi Refuge",
+        "description": "A safe haven in Karachi, Pakistan.",
+        "region": "PAK",
+        "geohash": "tv9yzc9p"
+    },
+    {
+        "name": "Ngerulmud Refuge",
+        "description": "A safe haven in Ngerulmud, Palau.",
+        "region": "PLW",
+        "geohash": "v9w9k8d7"
+    },
+    {
+        "name": "Jerusalem Refuge",
+        "description": "A safe haven in Jerusalem, Palestine.",
+        "region": "PSE",
+        "geohash": "sv7f4x1j"
+    },
+    {
+        "name": "Panama City Refuge",
+        "description": "A safe haven in the capital city of Panama.",
+        "region": "PAN",
+        "geohash": "d3w9x5k7"
+    },
+    {
+        "name": "Port Moresby Refuge",
+        "description": "A safe haven in the capital city of Papua New Guinea.",
+        "region": "PNG",
+        "geohash": "r9kx8k7f"
+    },
+    {
+        "name": "Asunción Refuge",
+        "description": "A safe haven in the capital city of Paraguay.",
+        "region": "PRY",
+        "geohash": "69jx9t7d"
+    },
+    {
+        "name": "Lima Refuge",
+       
+
+ "description": "A safe haven in the capital city of Peru.",
+        "region": "PER",
+        "geohash": "6t8k8f4d"
+    },
+    {
+        "name": "Manila Refuge",
+        "description": "A safe haven in the capital city of the Philippines.",
+        "region": "PHL",
+        "geohash": "wd5b8t2c"
+    },
+    {
+        "name": "Adamstown Refuge",
+        "description": "A safe haven in Adamstown, Pitcairn Islands.",
+        "region": "PCN",
+        "geohash": "7v6k8t4x"
+    },
+    {
+        "name": "Warsaw Refuge",
+        "description": "A safe haven in the capital city of Poland.",
+        "region": "POL",
+        "geohash": "u3h9k8r8"
+    },
+    {
+        "name": "Lisbon Refuge",
+        "description": "A safe haven in the capital city of Portugal.",
+        "region": "PRT",
+        "geohash": "ez9k8x7r"
+    },
+    {
+        "name": "San Juan Refuge",
+        "description": "A safe haven in the capital city of Puerto Rico.",
+        "region": "PRI",
+        "geohash": "d9j8t5k4"
+    },
+    {
+        "name": "Doha Refuge",
+        "description": "A safe haven in the capital city of Qatar.",
+        "region": "QAT",
+        "geohash": "tj9k8d5y"
+    },
+    {
+        "name": "Skopje Refuge",
+        "description": "A safe haven in the capital city of North Macedonia.",
+        "region": "MKD",
+        "geohash": "sv8r8y5d"
+    },
+    {
+        "name": "Bucharest Refuge",
+        "description": "A safe haven in the capital city of Romania.",
+        "region": "ROU",
+        "geohash": "sxk8d9r7"
+    },
+    {
+        "name": "Moscow Refuge",
+        "description": "A safe haven in the capital city of Russia.",
+        "region": "RUS",
+        "geohash": "ucftx2d5"
+    },
+    {
+        "name": "Kigali Refuge",
+        "description": "A safe haven in the capital city of Rwanda.",
+        "region": "RWA",
+        "geohash": "k7f8x5c7"
+    },
+    {
+        "name": "Saint-Denis Refuge",
+        "description": "A safe haven in Saint-Denis, Réunion.",
+        "region": "REU",
+        "geohash": "mk8h5d7x"
+    },
+    {
+        "name": "Gustavia Refuge",
+        "description": "A safe haven in Gustavia, Saint Barthélemy.",
+        "region": "BLM",
+        "geohash": "d9h9f8k5"
+    },
+    {
+        "name": "Jamestown Refuge",
+        "description": "A safe haven in Jamestown, Saint Helena.",
+        "region": "SHN",
+        "geohash": "m7x9g9d7"
+    },
+    {
+        "name": "Basseterre Refuge",
+        "description": "A safe haven in Basseterre, Saint Kitts and Nevis.",
+        "region": "KNA",
+        "geohash": "d9x8k9d5"
+    },
+    {
+        "name": "Castries Refuge",
+        "description": "A safe haven in Castries, Saint Lucia.",
+        "region": "LCA",
+        "geohash": "d8x9k9b7"
+    },
+    {
+        "name": "Marigot Refuge",
+        "description": "A safe haven in Marigot, Saint Martin.",
+        "region": "MAF",
+        "geohash": "d9h9d5y8"
+    },
+    {
+        "name": "Saint-Pierre Refuge",
+        "description": "A safe haven in Saint-Pierre, Saint Pierre and Miquelon.",
+        "region": "SPM",
+        "geohash": "f7x8k8d7"
+    },
+    {
+        "name": "Kingstown Refuge",
+        "description": "A safe haven in Kingstown, Saint Vincent and the Grenadines.",
+        "region": "VCT",
+        "geohash": "d6h8t5y4"
+    },
+    {
+        "name": "Apia Refuge",
+        "description": "A safe haven in Apia, Samoa.",
+        "region": "WSM",
+        "geohash": "tkh8k9d7"
+    },
+    {
+        "name": "San Marino Refuge",
+        "description": "A safe haven in San Marino.",
+        "region": "SMR",
+        "geohash": "u5h8t9r5"
+    },
+    {
+        "name": "São Tomé Refuge",
+        "description": "A safe haven in São Tomé, São Tomé and Príncipe.",
+        "region": "STP",
+        "geohash": "k9x9h7f8"
+    },
+    {
+        "name": "Riyadh Refuge",
+        "description": "A safe haven in the capital city of Saudi Arabia.",
+        "region": "SAU",
+        "geohash": "thm8d5r7"
+    },
+    {
+        "name": "Dakar Refuge",
+        "description": "A safe haven in the capital city of Senegal.",
+        "region": "SEN",
+        "geohash": "ezx8h9d5"
+    },
+    {
+        "name": "Belgrade Refuge",
+        "description": "A safe haven in the capital city of Serbia.",
+        "region": "SRB",
+        "geohash": "srm8d5t9"
+    },
+    {
+        "name": "Victoria Refuge",
+        "description": "A safe haven in Victoria, Seychelles.",
+        "region": "SYC",
+        "geohash": "mk8h9t5d"
+    },
+    {
+        "name": "Freetown Refuge",
+        "description": "A safe haven in the capital city of Sierra Leone.",
+        "region": "SLE",
+        "geohash": "ez8h7f5k"
+    },
+    {
+        "name": "Singapore Refuge",
+        "description": "A safe haven in the city-state of Singapore.",
+        "region": "SGP",
+        "geohash": "w21zedw1"
+    },
+    {
+        "name": "Philipsburg Refuge",
+        "description": "A safe haven in Philipsburg, Sint Maarten.",
+        "region": "SXM",
+        "geohash": "d9h8t5r7"
+    },
+    {
+        "name": "Bratislava Refuge",
+        "description": "A safe haven in the capital city of Slovakia.",
+        "region": "SVK",
+        "geohash": "u2h8t5r4"
+    },
+    {
+        "name": "Ljubljana Refuge",
+        "description": "A safe haven in the capital city of Slovenia.",
+        "region": "SVN",
+        "geohash": "u1h8t5r4"
+    },
+    {
+        "name": "Honiara Refuge",
+        "description": "A safe haven in Honiara, Solomon Islands.",
+        "region": "SLB",
+        "geohash": "tk8h8t5y"
+    },
+    {
+        "name": "Mogadishu Refuge",
+        "description": "A safe haven in the capital city of Somalia.",
+        "region": "SOM",
+        "geohash": "s6h8t5x7"
+    },
+    {
+        "name": "Cape Town Refuge",
+        "description": "A safe haven in Cape Town, South Africa.",
+        "region": "ZAF",
+        "geohash": "4frxxw7z"
+    },
+    {
+        "name": "Grytviken Refuge",
+        "description": "A safe haven in Grytviken, South Georgia and the South Sandwich Islands.",
+        "region": "SGS",
+        "geohash": "7f8k8d7x"
+    },
+    {
+        "name": "Juba Refuge",
+        "description": "A safe haven in the capital city of South Sudan.",
+        "region": "SSD",
+        "geohash": "k5x8h8d7"
+    },
+    {
+        "name": "Madrid Refuge",
+        "description": "A safe haven in the capital city of Spain.",
+        "region": "ESP",
+        "geohash": "ezjjn5st"
+    },
+    {
+        "name": "Colombo Refuge",
+        "description": "A safe haven in Colombo, Sri Lanka.",
+        "region": "LKA",
+        "geohash": "srm9f5t8"
+    },
+    {
+        "name": "Khartoum Refuge",
+        "description": "A safe haven in the capital city of Sudan.",
+        "region": "SDN",
+        "geohash": "s5h8r7f5"
+    },
+    {
+        "name": "Paramaribo Refuge",
+        "description": "A safe haven in the capital city of Suriname.",
+        "region": "SUR",
+        "geohash": "d8h9f5d5"
+    },
+    {
+        "name": "Longyearbyen Refuge",
+        "description": "A safe haven in Longyearbyen, Svalbard and Jan Mayen.",
+        "region": "SJM",
+        "geohash": "x6x8d8t5"
+    },
+    {
+        "name": "Stockholm Refuge",
+        "description": "A safe haven in the capital city of Sweden.",
+        "region": "SWE",
+        "geohash": "u60k4yqr"
+    },
+    {
+        "name": "Bern Refuge",
+        "description": "A safe haven in the capital city of Switzerland.",
+        "region": "CHE",
+        "geohash": "u0h8t5r4"
+    },
+    {
+        "name": "Damascus Refuge",
+        "description": "A safe haven in the capital city of Syria.",
+        "region": "SYR",
+        "geohash": "syr8d8t5"
+    },
+    {
+        "name": "Taipei Refuge",
+        "description": "A safe haven in Taipei, Taiwan.",
+        "region": "TWN",
+        "geohash": "wtm8d8t7"
+    },
+    {
+        "name": "Dushanbe Refuge",
+        "description": "A safe haven in the capital city of Tajikistan.",
+        "region": "TJK",
+        "geohash": "td8h7t5y"
+    },
+    {
+        "name": "Dodoma Refuge",
+        "description": "A safe haven in the capital city of Tanzania.",
+        "region": "TZA",
+        "geohash": "k4h8t5d5"
+    },
+    {
+        "name": "Bangkok Refuge",
+        "description": "A safe haven in the capital city of Thailand.",
+        "region": "THA",
+        "geohash": "w8k9x5r7"
+    },
+    {
+        "name": "Dili Refuge",
+        "description": "A safe haven in the capital city of Timor-Leste.",
+        "region": "TLS",
+        "geohash": "tbk8d9r4"
+    },
+    {
+        "name": "Lomé Refuge",
+        "description": "A safe haven in the capital city of Togo.",
+        "region": "TGO",
+        "geohash": "efx8d8t5"
+    },
+    {
+        "name": "Nukunonu Refuge",
+        "description": "A safe haven in Nukunonu, Tokelau.",
+        "region": "TKL",
+        "geohash": "rfh8t5d7"
+    },
+    {
+        "name": "Nukuʻalofa Refuge",
+        "description": "A safe haven in Nukuʻalofa, Tonga.",
+        "region": "TON",
+        "geohash": "s6x8d8r7"
+    },
+    {
+        "name": "Port of Spain Refuge",
+        "description": "A safe haven in the capital city of Trinidad and Tobago.",
+        "region": "TTO",
+        "geohash": "d9j8k5r8"
+    },
+    {
+        "name": "Tunis Refuge",
+        "description": "A safe haven in the capital city of Tunisia.",
+        "region": "TUN",
+        "geohash": "sm8h5r9x"
+    },
+    {
+        "name": "Ankara Refuge",
+        "description": "A safe haven in the capital city of Turkey.",
+        "region": "TUR",
+        "geohash": "sx8k8r7t"
+    },
+    {
+        "name": "Ashgabat Refuge",
+        "description": "A safe haven in the capital city of Turkmenistan.",
+        "region": "TKM",
+        "geohash": "tjk8h8t5"
+    },
+    {
+        "name": "Cockburn Town Refuge",
+        "description": "A safe haven in Cockburn Town, Turks and Caicos Islands.",
+        "region": "TCA",
+        "geohash": "d9x8h8d5"
+    },
+    {
+        "name": "Funafuti Refuge",
+        "description": "A safe haven in Funafuti, Tuvalu.",
+        "region": "TUV",
+        "geohash": "x6k8d8t5"
+    },
+    {
+        "name": "Kampala Refuge",
+        "description": "A safe haven in the capital city of Uganda.",
+        "region": "UGA",
+        "geohash": "kfh8t5r8"
+    },
+    {
+        "name": "Kyiv Refuge",
+        "description": "A safe haven in the capital city of Ukraine.",
+        "region": "UKR",
+        "geohash": "u9k8h8t5"
+    },
+    {
+        "name": "Abu Dhabi Refuge",
+        "description": "A safe haven in the capital city of United Arab Emirates.",
+        "region": "ARE",
+        "geohash": "th8h9t5d"
+    },
+    {
+        "name": "London Refuge",
+        "description": "A safe haven in the capital city of the United Kingdom.",
+        "region": "GBR",
+        "geohash": "gcpuvvg7"
+    },
+    {
+        "name": "Wake Island Refuge",
+        "description": "A safe haven in Wake Island, United States Minor Outlying Islands.",
+        "region": "UMI",
+        "geohash": "2h9k8t5r"
+    },
+    {
+        "name": "New York Refuge",
+        "description": "A safe haven in New York City, USA.",
+        "region": "USA",
+        "geohash": "dr5ru8d1"
+    },
+    {
+        "name": "Montevideo Refuge",
+        "description": "A safe haven in the capital city of Uruguay.",
+        "region": "URY",
+        "geohash": "69y8d8t5"
+    },
+    {
+        "name": "Tashkent Refuge",
+        "description": "A safe haven in the capital city of Uzbekistan.",
+        "region": "UZB",
+        "geohash": "t9k8h8d7"
+    },
+    {
+        "name": "Port Vila Refuge",
+        "description": "A safe haven in Port Vila, Vanuatu.",
+        "region": "VUT",
+        "geohash": "s8x8d8t5"
+    },
+    {
+        "name": "Caracas Refuge",
+        "description": "A safe haven in the capital city of Venezuela.",
+        "region": "VEN",
+        "geohash": "d3h8k9d5"
+    },
+    {
+        "name": "Hanoi Refuge",
+        "description": "A safe haven in the capital city of Vietnam.",
+        "region": "VNM",
+        "geohash": "w8h8d9t7"
+    },
+    {
+        "name": "Road Town Refuge",
+        "description": "A safe haven in Road Town, British Virgin Islands.",
+        "region": "VGB",
+        "geohash": "d9x8d8t5"
+    },
+    {
+        "name": "Charlotte Amalie Refuge",
+        "description": "A safe haven in Charlotte Amalie, United States Virgin Islands.",
+        "region": "VIR",
+        "geohash": "d9h8t5r7"
+    },
+    {
+        "name": "Mata-Utu Refuge",
+        "description": "A safe haven in Mata-Utu, Wallis and Futuna.",
+        "region": "WLF",
+        "geohash": "w9x8h8d5"
+    },
+    {
+        "name": "Laayoune Refuge",
+        "description": "A safe haven in Laayoune, Western Sahara.",
+        "region": "ESH",
+        "geohash": "k5k8h8t7"
+    },
+    {
+        "name": "Sana'a Refuge",
+        "description": "A safe haven in the capital city of Yemen.",
+        "region": "YEM",
+        "geohash": "t8x8d8r5"
+    },
+    {
+        "name": "Lusaka Refuge",
+        "description": "A safe haven in the capital city of Zambia.",
+        "region": "ZMB",
+        "geohash": "k7h8t5r8"
+    },
+    {
+        "name": "Harare Refuge",
+        "description": "A safe haven in the capital city of Zimbabwe.",
+        "region": "ZWE",
+        "geohash": "k8h8d5t5"
+    },
+    {
+        "name": "Mariehamn Refuge",
+        "description": "A safe haven in Mariehamn, Åland Islands.",
+        "region": "ALA",
+        "geohash": "u8k8d8t5"
+    }
+]
+

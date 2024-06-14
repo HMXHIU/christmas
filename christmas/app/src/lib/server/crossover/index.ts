@@ -29,7 +29,7 @@ import {
 import { playerStats, type PlayerMetadata } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import type { Direction, WorldAssetMetadata } from "$lib/crossover/world/types";
-import { worldSeed } from "$lib/crossover/world/world";
+import { sanctuariesByRegion, worldSeed } from "$lib/crossover/world/world";
 import { serverAnchorClient } from "$lib/server";
 import {
     topologyBufferCache,
@@ -40,7 +40,10 @@ import { parseZodErrors, sleep } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
 import lodash from "lodash";
 import { z } from "zod";
-import type { UpdateEntitiesEvent } from "../../../routes/api/crossover/stream/+server";
+import type {
+    FeedEvent,
+    UpdateEntitiesEvent,
+} from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import {
     fetchEntity,
@@ -82,6 +85,7 @@ export {
     loadPlayerEntity,
     performAbility,
     performEffectOnEntity,
+    publishFeedEvent,
     recoverAp,
     saveEntity,
     savePlayerState,
@@ -240,6 +244,7 @@ async function loadPlayerEntity(
         name,
         avatar,
         lgn: options.loggedIn,
+        rgn: options.region,
         loc: [options.geohash],
         locT: "geohash",
         lvl: 1,
@@ -616,25 +621,18 @@ async function useItem({
     utility: string;
     self: PlayerEntity | MonsterEntity; // sell can only be `player` or `monster`
     target?: PlayerEntity | MonsterEntity | ItemEntity; // target can be an `item`
-}): Promise<{
-    self: PlayerEntity | MonsterEntity;
-    target: PlayerEntity | MonsterEntity | ItemEntity | undefined;
-    item: ItemEntity;
-    status: "success" | "failure";
-    message: string;
-}> {
+}) {
     const selfBefore = { ...self }; // save self before substitution
 
     // Check if can use item
     const { canUse, message } = canUseItem(self, item, utility);
-    if (!canUse) {
-        return {
-            item,
-            self,
-            target,
-            status: "failure",
+    if (!canUse && self.player) {
+        publishFeedEvent(self as PlayerEntity, {
+            event: "feed",
+            type: "message",
             message,
-        };
+        });
+        return;
     }
 
     const prop = compendium[item.prop];
@@ -668,30 +666,12 @@ async function useItem({
 
     // Perform ability (ignore cost when using items)
     if (propAbility && target) {
-        const {
-            self: modifiedSelf,
-            target: modifiedTarget,
-            status,
-            message,
-        } = await performAbility({
+        await performAbility({
             self,
             target,
             ability: propAbility,
             ignoreCost: true, // ignore cost when using items
         });
-
-        if (status !== "success") {
-            return {
-                item,
-                self,
-                target,
-                status: "failure",
-                message,
-            };
-        }
-
-        target = modifiedTarget;
-        self = modifiedSelf;
     }
 
     // Set item end state, consume charges and durability
@@ -705,14 +685,6 @@ async function useItem({
     if (selfBefore.player != null) {
         publishAffectedEntitiesToPlayers([selfBefore, item]); // non blocking
     }
-
-    return {
-        item,
-        target,
-        self,
-        status: "success",
-        message: "",
-    };
 }
 
 function canConfigureItem(
@@ -828,7 +800,6 @@ function parseItemVariables(
     prop: string,
 ): ItemVariables {
     const propVariables = compendium[prop].variables;
-
     let itemVariables: ItemVariables = {};
 
     for (const [key, value] of Object.entries(variables)) {
@@ -855,7 +826,6 @@ async function itemVariableValue(
 > {
     const itemVariables = item.vars;
     const propVariables = compendium[item.prop].variables;
-
     const { type } = propVariables[key];
     const variable = itemVariables[key];
 
@@ -880,6 +850,53 @@ async function itemVariableValue(
     throw new Error(`Invalid variable type ${type} for item ${item.item}`);
 }
 
+/**
+ * Handles the event when a player kills a monster.
+ * Note: changes player, monster in place
+ *
+ * @param player - The player entity.
+ * @param monster - The monster entity.
+ */
+async function handlePlayerKillsMonster(
+    player: PlayerEntity,
+    monster: MonsterEntity,
+) {
+    // Note: changes player, monster in place
+    // Give player rewards
+    const { lumina, umbra } = monsterLUReward({
+        level: monster.lvl,
+        beast: monster.beast,
+    });
+    player.lum += lumina;
+    player.umb += umbra;
+    // Save & publish player
+    player = (await saveEntity(player)) as PlayerEntity;
+    publishAffectedEntitiesToPlayers([player]); // non blocking
+}
+
+/**
+ * Handles the scenario where a monster kills a player.
+ * Note: changes player, monster in place
+ *
+ * @param monster - The monster entity.
+ * @param player - The player entity.
+ * @returns A Promise that resolves to an array containing the updated monster and player entities.
+ */
+async function handleMonsterKillsPlayer(
+    monster: MonsterEntity,
+    player: PlayerEntity,
+) {
+    // Get respawn location
+    const respawnGeohash = sanctuariesByRegion[player.rgn].geohash;
+    player.loc = [respawnGeohash];
+    publishFeedEvent(player, {
+        event: "feed",
+        type: "message",
+        message: "You died.",
+    }); // non blocking
+    publishAffectedEntitiesToPlayers([player]); // non blocking
+}
+
 async function performActionConsequences({
     selfBefore,
     targetBefore,
@@ -896,7 +913,6 @@ async function performActionConsequences({
 }> {
     // Player initiated action
     if (selfBefore.player && selfBefore.player == selfAfter.player) {
-        selfAfter = selfAfter as PlayerEntity;
         // Target is a player
         if (targetBefore.player && targetBefore.player == targetAfter.player) {
         }
@@ -905,20 +921,14 @@ async function performActionConsequences({
             targetBefore.monster &&
             targetBefore.monster == targetAfter.monster
         ) {
-            targetBefore = targetBefore as MonsterEntity;
-            targetAfter = targetAfter as MonsterEntity;
-            // Player kills monster
-            if (targetBefore.hp > 0 && targetAfter.hp <= 0) {
-                // Give player rewards
-                const { lumina, umbra } = monsterLUReward({
-                    level: targetBefore.lvl,
-                    beast: targetBefore.beast,
-                });
-                selfAfter.lum += lumina;
-                selfAfter.umb += umbra;
-                // Save & publish player
-                selfAfter = (await saveEntity(selfAfter)) as PlayerEntity;
-                publishAffectedEntitiesToPlayers([selfAfter]); // non blocking
+            if (
+                (targetBefore as MonsterEntity).hp > 0 &&
+                (targetAfter as MonsterEntity).hp <= 0
+            ) {
+                await handlePlayerKillsMonster(
+                    selfAfter as PlayerEntity,
+                    targetAfter as MonsterEntity,
+                );
             }
         }
     }
@@ -926,6 +936,15 @@ async function performActionConsequences({
     else if (selfBefore.monster && selfBefore.monster == selfAfter.monster) {
         // Target is a player
         if (targetBefore.player && targetBefore.player == targetAfter.player) {
+            if (
+                (targetBefore as Player).hp > 0 &&
+                (targetAfter as Player).hp <= 0
+            ) {
+                await handleMonsterKillsPlayer(
+                    selfAfter as MonsterEntity,
+                    targetAfter as PlayerEntity,
+                );
+            }
         }
         // Target is a monster
         else if (
@@ -948,12 +967,7 @@ async function performAbility({
     target: PlayerEntity | MonsterEntity | ItemEntity; // target can be an `item`
     ability: string;
     ignoreCost?: boolean;
-}): Promise<{
-    self: PlayerEntity | MonsterEntity;
-    target: PlayerEntity | MonsterEntity | ItemEntity;
-    status: "success" | "failure";
-    message: string;
-}> {
+}) {
     const { procedures, ap, mp, st, hp, range, predicate } = abilities[ability];
 
     // Recover AP
@@ -962,37 +976,38 @@ async function performAbility({
     // Check if self has enough resources to perform ability
     if (!ignoreCost) {
         const { hasResources, message } = hasResourcesForAbility(self, ability);
-        if (!hasResources) {
-            return {
-                self,
-                target,
-                status: "failure",
+        if (!hasResources && self.player) {
+            publishFeedEvent(self as PlayerEntity, {
+                event: "feed",
+                type: "message",
                 message,
-            };
+            });
+            return;
         }
     }
 
     // Check predicate
     if (
         !predicate.targetSelfAllowed &&
-        entityId(self)[0] === entityId(target)[0]
+        entityId(self)[0] === entityId(target)[0] &&
+        self.player
     ) {
-        return {
-            self,
-            target,
-            status: "failure",
+        publishFeedEvent(self as PlayerEntity, {
+            event: "feed",
+            type: "message",
             message: `You can't ${ability} yourself`,
-        };
+        });
+        return;
     }
 
     // Check if target is in range
-    if (!checkInRange(self, target, range)) {
-        return {
-            self,
-            target,
-            status: "failure",
-            message: "Target is out of range",
-        };
+    if (!checkInRange(self, target, range) && self.player) {
+        publishFeedEvent(self as PlayerEntity, {
+            event: "feed",
+            type: "message",
+            message: `Target is out of range`,
+        });
+        return;
     }
 
     // Check if player is busy
@@ -1002,12 +1017,12 @@ async function performAbility({
     });
     self = entity; // update `buclk`
     if (self.player && busy) {
-        return {
-            self,
-            target,
-            status: "failure",
+        publishFeedEvent(self as PlayerEntity, {
+            event: "feed",
+            type: "message",
             message: "You are busy at the moment.",
-        };
+        });
+        return;
     }
 
     // Save old self and target
@@ -1065,16 +1080,12 @@ async function performAbility({
     }
 
     // Perform action consequences
-    const changes = await performActionConsequences({
-        targetBefore,
+    ({ self, target } = await performActionConsequences({
         selfBefore,
         selfAfter: self,
+        targetBefore,
         targetAfter: target,
-    });
-    self = changes.self;
-    target = changes.target;
-
-    return { self, target, status: "success", message: "" };
+    }));
 }
 
 async function performEffectOnEntity({
@@ -1176,6 +1187,10 @@ function performEffectCheck({
     }
 
     return false;
+}
+
+async function publishFeedEvent(player: PlayerEntity, event: FeedEvent) {
+    await redisClient.publish(player.player, JSON.stringify(event));
 }
 
 async function publishAffectedEntitiesToPlayers(
