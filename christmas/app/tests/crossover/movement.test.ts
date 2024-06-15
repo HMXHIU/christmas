@@ -1,5 +1,9 @@
 import { crossoverCmdMove } from "$lib/crossover";
-import { geohashNeighbour } from "$lib/crossover/utils";
+import {
+    aStarPathfinding,
+    geohashNeighbour,
+    getGeohashesForPath,
+} from "$lib/crossover/utils";
 import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
 import { compendium } from "$lib/crossover/world/compendium";
 import { spawnItem } from "$lib/server/crossover";
@@ -7,6 +11,78 @@ import type { ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer, generateRandomGeohash } from "./utils";
+
+test("Test Pathfinding", async () => {
+    // Test `getGeohashesForPath`
+    expect(getGeohashesForPath("swbb81k4", ["e", "e"])).toMatchObject([
+        "swbb81k4",
+        "swbb81k6",
+        "swbb81kd",
+    ]);
+
+    /*
+     * Test pathfinding without obstacles
+     */
+    var path = aStarPathfinding({
+        rowStart: 0,
+        colStart: 0,
+        rowEnd: 3,
+        colEnd: 3,
+        getTraversalCost: (row, col) => {
+            return 0;
+        },
+    });
+    expect(path).toMatchObject(["se", "se", "se"]);
+    var path = aStarPathfinding({
+        rowStart: 3,
+        colStart: 3,
+        rowEnd: 0,
+        colEnd: 0,
+        getTraversalCost: (row, col) => {
+            return 0;
+        },
+    });
+    expect(path).toMatchObject(["nw", "nw", "nw"]);
+    var path = aStarPathfinding({
+        rowStart: 3,
+        colStart: 3,
+        rowEnd: 3,
+        colEnd: 1,
+        getTraversalCost: (row, col) => {
+            return 0;
+        },
+    });
+    expect(path).toMatchObject(["w", "w"]);
+
+    /*
+     *Test with obstacles
+     */
+
+    /*
+     * s 0 0 0 0
+     * 0 0 0 0 0
+     * 0 1 1 1 0
+     * 0 0 0 0 0
+     * 0 0 0 0 e
+     */
+    var path = aStarPathfinding({
+        rowStart: 0,
+        colStart: 0,
+        rowEnd: 4,
+        colEnd: 4,
+        getTraversalCost: (row, col) => {
+            if (
+                (row == 2 && col == 1) ||
+                (row == 2 && col == 2) ||
+                (row == 2 && col == 3)
+            ) {
+                return 1;
+            }
+            return 0;
+        },
+    });
+    expect(path).toMatchObject(["se", "e", "e", "se", "s", "s"]);
+});
 
 test("Test Movement", async () => {
     // Player one

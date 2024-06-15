@@ -13,6 +13,7 @@ import { worldSeed } from "./world/world";
 
 export {
     REGEX_STRIP_ENTITY_TYPE,
+    aStarPathfinding,
     autoCorrectGeohashPrecision,
     borderingGeohashes,
     calculateLocation,
@@ -27,6 +28,7 @@ export {
     geohashNeighbour,
     geohashToColRow,
     geohashesNearby,
+    getGeohashesForPath,
     getPlotsAtGeohash,
     seededRandom,
     stringToRandomNumber,
@@ -493,4 +495,161 @@ function geohashToColRow(geohash: string): [number, number] {
         const [x, y] = oddColRow[geohash.slice(-1)];
         return [x + xp * 4, y + yp * 8];
     }
+}
+
+interface Node {
+    row: number;
+    col: number;
+    g: number;
+    h: number;
+    f: number;
+    parent: Node | null;
+}
+
+/**
+ * Performs A* pathfinding algorithm to find the optimal path between two points on a map.
+ *
+ * @param rowStart - The starting row index.
+ * @param rowEnd - The ending row index.
+ * @param colStart - The starting column index.
+ * @param colEnd - The ending column index.
+ * @param getTraversalCost - A function that returns the traversal cost for a given cell (0 is walkable, 1 is not).
+ * @returns An array of directions representing the optimal path (eg. [n, s, e, w]).
+ */
+function aStarPathfinding({
+    rowStart,
+    rowEnd,
+    colStart,
+    colEnd,
+    getTraversalCost,
+}: {
+    rowStart: number;
+    rowEnd: number;
+    colStart: number;
+    colEnd: number;
+    getTraversalCost: (row: number, col: number) => number; // 0 is walkable, 1 is not
+}): Direction[] {
+    const directions: { [key: string]: [number, number] } = {
+        n: [-1, 0],
+        s: [1, 0],
+        e: [0, 1],
+        w: [0, -1],
+        ne: [-1, 1],
+        nw: [-1, -1],
+        se: [1, 1],
+        sw: [1, -1],
+        u: [0, 0],
+        d: [0, 0], // Assuming "u" and "d" are placeholders for different layers, ignoring for 2D grid
+    };
+
+    const heuristic = (
+        row: number,
+        col: number,
+        rowEnd: number,
+        colEnd: number,
+    ) => {
+        return Math.abs(row - rowEnd) + Math.abs(col - colEnd); // Manhattan distance
+    };
+
+    const neighbors = (node: Node): Node[] => {
+        const result: Node[] = [];
+        for (const key in directions) {
+            const [dr, dc] = directions[key];
+            const newRow = node.row + dr;
+            const newCol = node.col + dc;
+            if (getTraversalCost(newRow, newCol) === 0) {
+                result.push({
+                    row: newRow,
+                    col: newCol,
+                    g: node.g + 1,
+                    h: heuristic(newRow, newCol, rowEnd, colEnd),
+                    f: 0,
+                    parent: node,
+                });
+            }
+        }
+        return result;
+    };
+
+    const reconstructPath = (node: Node): Direction[] => {
+        const path: Direction[] = [];
+        let current: Node | null = node;
+        while (current && current.parent) {
+            const dr = current.row - current.parent.row;
+            const dc = current.col - current.parent.col;
+            for (const key in directions) {
+                const [dRow, dCol] = directions[key];
+                if (dr === dRow && dc === dCol) {
+                    path.push(key as Direction);
+                    break;
+                }
+            }
+            current = current.parent;
+        }
+        return path.reverse();
+    };
+
+    const openList: Node[] = [];
+    const closedList: Set<string> = new Set();
+
+    const startNode: Node = {
+        row: rowStart,
+        col: colStart,
+        g: 0,
+        h: heuristic(rowStart, colStart, rowEnd, colEnd),
+        f: 0,
+        parent: null,
+    };
+    startNode.f = startNode.g + startNode.h;
+    openList.push(startNode);
+
+    while (openList.length > 0) {
+        openList.sort((a, b) => a.f - b.f); // Sort by f value
+        const currentNode = openList.shift()!;
+        const currentKey = `${currentNode.row},${currentNode.col}`;
+
+        if (currentNode.row === rowEnd && currentNode.col === colEnd) {
+            return reconstructPath(currentNode);
+        }
+
+        closedList.add(currentKey);
+
+        const neighborNodes = neighbors(currentNode);
+        for (const neighbor of neighborNodes) {
+            const neighborKey = `${neighbor.row},${neighbor.col}`;
+            if (closedList.has(neighborKey)) continue;
+
+            const openNode = openList.find(
+                (node) =>
+                    node.row === neighbor.row && node.col === neighbor.col,
+            );
+            if (!openNode) {
+                neighbor.f = neighbor.g + neighbor.h;
+                openList.push(neighbor);
+            } else if (neighbor.g < openNode.g) {
+                openNode.g = neighbor.g;
+                openNode.f = openNode.g + openNode.h;
+                openNode.parent = currentNode;
+            }
+        }
+    }
+
+    return []; // No path found
+}
+
+/**
+ * Retrieves an array of geohashes based on a starting geohash and a path of directions.
+ *
+ * @param geohash The starting geohash.
+ * @param path An array of directions.
+ * @returns An array of geohashes.
+ */
+function getGeohashesForPath(geohash: string, path: Direction[]): string[] {
+    const geohashes: string[] = [geohash];
+    let currentGeohash = geohash;
+    for (const direction of path) {
+        currentGeohash = geohashNeighbour(currentGeohash, direction);
+        geohashes.push(currentGeohash);
+    }
+    return geohashes;
 }
