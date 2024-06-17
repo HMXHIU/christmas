@@ -17,6 +17,7 @@ export interface FeedEvent {
     variables?: Record<string, string | number | boolean>;
 }
 
+// TODO: UNIFY this with GameCommandResponse
 export interface UpdateEntitiesEvent {
     event: "entities";
     players?: Player[];

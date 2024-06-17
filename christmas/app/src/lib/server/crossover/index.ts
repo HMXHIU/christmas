@@ -20,39 +20,19 @@ import {
     monsterLUReward,
     monsterStats,
 } from "$lib/crossover/world/bestiary";
-import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
-import {
-    compendium,
-    type EquipmentSlot,
-    type ItemVariables,
-} from "$lib/crossover/world/compendium";
-import { playerStats, type PlayerMetadata } from "$lib/crossover/world/player";
+import { compendium } from "$lib/crossover/world/compendium";
+import { playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import type { Direction, WorldAssetMetadata } from "$lib/crossover/world/types";
 import { sanctuariesByRegion, worldSeed } from "$lib/crossover/world/world";
-import { serverAnchorClient } from "$lib/server";
-import {
-    topologyBufferCache,
-    topologyResponseCache,
-    topologyResultCache,
-} from "$lib/server/crossover/caches";
-import { parseZodErrors, sleep } from "$lib/utils";
-import { PublicKey } from "@solana/web3.js";
-import lodash from "lodash";
+import { sleep } from "$lib/utils";
 import { z } from "zod";
-import type {
-    FeedEvent,
-    UpdateEntitiesEvent,
-} from "../../../routes/api/crossover/stream/+server";
-import { ObjectStorage } from "../objectStorage";
 import {
     fetchEntity,
-    hasCollidersInGeohash,
-    isGeohashInWorld,
+    getNearbyEntities,
     itemRepository,
     monsterRepository,
     playerRepository,
-    redisClient,
     saveEntity,
     worldRepository,
 } from "./redis";
@@ -65,30 +45,35 @@ import {
     type PlayerEntity,
     type WorldEntity,
 } from "./redis/entities";
-import { type UserMetadataSchema } from "./router";
-
-const { uniqBy } = lodash;
-
-export {
-    PlayerStateSchema,
-    checkAndSetBusy,
-    configureItem,
-    connectedUsers,
-    consumeResources,
+import {
+    canConfigureItem,
+    canUseItem,
     entityIsBusy,
-    getPlayerMetadata,
     getPlayerState,
     getUserMetadata,
     isDirectionTraversable,
     isLocationTraversable,
     itemVariableValue,
+    parseItemVariables,
+    publishAffectedEntitiesToPlayers,
+    publishFeedEvent,
+    setPlayerState,
+} from "./utils";
+
+export {
+    LOOK_PAGE_SIZE,
+    PlayerStateSchema,
+    checkAndSetBusy,
+    configureItem,
+    connectedUsers,
+    consumeResources,
+    getPlayerState,
+    getUserMetadata,
     loadPlayerEntity,
+    movePlayer,
     performAbility,
     performEffectOnEntity,
-    publishFeedEvent,
     recoverAp,
-    saveEntity,
-    savePlayerState,
     setPlayerState,
     spawnItem,
     spawnMonster,
@@ -97,6 +82,8 @@ export {
     type ConnectedUser,
     type PlayerState,
 };
+
+const LOOK_PAGE_SIZE = 20;
 
 // PlayerState stores data owned by the game long term (does not require player permission to modify)
 type PlayerState = z.infer<typeof PlayerStateSchema>;
@@ -116,104 +103,13 @@ const PlayerStateSchema = z.object({
     dbuf: z.array(z.string()).optional(),
 });
 
-/**
- * Interface representing a connected user.
- */
 interface ConnectedUser {
     publicKey: string;
     controller: ReadableStreamDefaultController<any>;
 }
 
-/**
- * Record of connected users on this server instance.
- */
+// Record of connected users on this server instance.
 let connectedUsers: Record<string, ConnectedUser> = {};
-
-/**
- * Retrieves the user metadata for a given public key.
- *
- * @param publicKey The public key of the user.
- * @returns A promise that resolves to the user metadata or null if not found.
- * @throws Error if the user account does not exist or is missing metadata URI.
- */
-async function getUserMetadata(
-    publicKey: string,
-): Promise<z.infer<typeof UserMetadataSchema> | null> {
-    const user = await serverAnchorClient.getUser(new PublicKey(publicKey));
-
-    if (user == null) {
-        throw new Error(`User account ${publicKey} does not exist`);
-    }
-
-    if (!user?.uri) {
-        throw new Error(`User account ${publicKey} missing metadata uri`);
-    }
-
-    // Load metadata
-    let response = await fetch(user.uri);
-    const userMetadata: z.infer<typeof UserMetadataSchema> =
-        await response.json();
-
-    return userMetadata || null;
-}
-
-/**
- * Retrieves the player metadata for a given public key.
- *
- * @param publicKey The public key of the player.
- * @returns A promise that resolves to the player metadata or null if not found.
- */
-async function getPlayerMetadata(
-    publicKey: string,
-): Promise<PlayerMetadata | null> {
-    return (await getUserMetadata(publicKey))?.crossover || null;
-}
-
-/**
- * Retrieves the player state for a given public key.
- *
- * @param publicKey The public key of the player.
- * @returns A promise that resolves to the player state or null if not found.
- */
-async function getPlayerState(publicKey: string): Promise<PlayerState | null> {
-    try {
-        return await ObjectStorage.getJSONObject({
-            owner: publicKey,
-            bucket: "player",
-            name: publicKey,
-        });
-    } catch (error: any) {
-        return null;
-    }
-}
-
-/**
- * Sets the player state for a given public key.
- *
- * @param publicKey The public key of the player.
- * @param state The player state to set.
- * @returns A promise that resolves to a string indicating the success of the operation.
- * @throws Error if there is an error parsing the player state.
- */
-async function setPlayerState(
-    publicKey: string,
-    state: PlayerState,
-): Promise<string> {
-    try {
-        return await ObjectStorage.putJSONObject({
-            owner: publicKey,
-            bucket: "player",
-            name: publicKey,
-            data: PlayerStateSchema.parse(state),
-        });
-    } catch (error: any) {
-        if (error instanceof z.ZodError) {
-            throw new Error(JSON.stringify(parseZodErrors(error)));
-        } else {
-            throw error;
-        }
-    }
-}
 
 /**
  * Loads the player entity (PlayerMetadata + PlayerState) for a given public key.
@@ -226,7 +122,7 @@ async function loadPlayerEntity(
     publicKey: string,
     options: { geohash: string; region: string; loggedIn: boolean },
 ): Promise<PlayerEntity> {
-    // Get player metadata
+    // Get user metadata
     const userMetadata = await getUserMetadata(publicKey);
     if (userMetadata == null) {
         throw new Error(`Player ${publicKey} not found`);
@@ -276,19 +172,6 @@ async function loadPlayerEntity(
     }
 
     return player;
-}
-
-/**
- * Saves the player state (into s3) for a given public key.
- *
- * @param publicKey The public key of the player.
- * @returns A promise that resolves to a string indicating the success of the operation.
- */
-async function savePlayerState(publicKey: string): Promise<string> {
-    return await setPlayerState(
-        publicKey,
-        (await playerRepository.fetch(publicKey)) as PlayerState,
-    );
 }
 
 /**
@@ -687,169 +570,6 @@ async function useItem({
     }
 }
 
-function canConfigureItem(
-    self: PlayerEntity | MonsterEntity,
-    item: ItemEntity,
-): { canConfigure: boolean; message: string } {
-    // Check valid prop
-    if (!compendium.hasOwnProperty(item.prop)) {
-        return {
-            canConfigure: false,
-            message: `${item.prop} not found in compendium`,
-        };
-    }
-
-    // Check if have permissions to configure item
-    if (!hasItemConfigOwnerPermissions(item, self)) {
-        return {
-            canConfigure: false,
-            message: `${self.player || self.monster} does not own ${item.item}`,
-        };
-    }
-
-    return {
-        canConfigure: true,
-        message: "",
-    };
-}
-
-function canUseItem(
-    self: PlayerEntity | MonsterEntity,
-    item: ItemEntity,
-    utility: string,
-): { canUse: boolean; message: string } {
-    // Check valid prop
-    if (!compendium.hasOwnProperty(item.prop)) {
-        return {
-            canUse: false,
-            message: `${item.prop} not found in compendium`,
-        };
-    }
-    const prop = compendium[item.prop];
-
-    // Check valid utility
-    if (!(prop.utilities && prop.utilities[utility])) {
-        return {
-            canUse: false,
-            message: `Invalid utility ${utility} for item ${item.item}`,
-        };
-    }
-
-    // Check if have permissions to use item
-    if (!hasItemOwnerPermissions(item, self)) {
-        return {
-            canUse: false,
-            message: `${self.player || self.monster} does not own ${item.item}`,
-        };
-    }
-
-    // Check if utility requires item to be equipped and is equipped in the correct slot
-    if (
-        prop.utilities[utility].requireEquipped &&
-        !compendium[item.prop].equipmentSlot!.includes(
-            item.locT as EquipmentSlot,
-        )
-    ) {
-        return {
-            canUse: false,
-            message: `${item.item} is not equipped in the required slot`,
-        };
-    }
-
-    // Check has enough charges or durability
-    const propUtility = prop.utilities[utility];
-    if (item.chg < propUtility.cost.charges) {
-        return {
-            canUse: false,
-            message: `${item.item} has not enough charges to perform ${utility}`,
-        };
-    }
-    if (item.dur < propUtility.cost.durability) {
-        return {
-            canUse: false,
-            message: `${item.item} has not enough durability to perform ${utility}`,
-        };
-    }
-
-    return {
-        canUse: true,
-        message: "",
-    };
-}
-
-function hasItemOwnerPermissions(
-    item: ItemEntity,
-    self: PlayerEntity | MonsterEntity,
-) {
-    return (
-        item.own === "" || item.own === self.player || item.own === self.monster
-    );
-}
-
-function hasItemConfigOwnerPermissions(
-    item: ItemEntity,
-    self: PlayerEntity | MonsterEntity,
-) {
-    return (
-        item.cfg === "" || item.cfg === self.player || item.cfg === self.monster
-    );
-}
-
-function parseItemVariables(
-    variables: ItemVariables,
-    prop: string,
-): ItemVariables {
-    const propVariables = compendium[prop].variables;
-    let itemVariables: ItemVariables = {};
-
-    for (const [key, value] of Object.entries(variables)) {
-        if (propVariables.hasOwnProperty(key)) {
-            const { type } = propVariables[key];
-            if (["string", "item", "monster", "player"].includes(type)) {
-                itemVariables[key] = String(value);
-            } else if (type === "number") {
-                itemVariables[key] = Number(value);
-            } else if (type === "boolean") {
-                itemVariables[key] = Boolean(value);
-            }
-        }
-    }
-
-    return itemVariables;
-}
-
-async function itemVariableValue(
-    item: ItemEntity,
-    key: string,
-): Promise<
-    string | number | boolean | PlayerEntity | MonsterEntity | ItemEntity
-> {
-    const itemVariables = item.vars;
-    const propVariables = compendium[item.prop].variables;
-    const { type } = propVariables[key];
-    const variable = itemVariables[key];
-
-    if (type === "item") {
-        return (await itemRepository.fetch(variable as string)) as ItemEntity;
-    } else if (type === "player") {
-        return (await playerRepository.fetch(
-            variable as string,
-        )) as PlayerEntity;
-    } else if (type === "monster") {
-        return (await monsterRepository.fetch(
-            variable as string,
-        )) as MonsterEntity;
-    } else if (type === "string") {
-        return String(variable);
-    } else if (type === "number") {
-        return Number(variable);
-    } else if (type === "boolean") {
-        return Boolean(variable);
-    }
-
-    throw new Error(`Invalid variable type ${type} for item ${item.item}`);
-}
-
 /**
  * Handles the event when a player kills a monster.
  * Note: changes player, monster in place
@@ -1189,102 +909,6 @@ function performEffectCheck({
     return false;
 }
 
-async function publishFeedEvent(player: PlayerEntity, event: FeedEvent) {
-    await redisClient.publish(player.player, JSON.stringify(event));
-}
-
-async function publishAffectedEntitiesToPlayers(
-    entities: (PlayerEntity | MonsterEntity | ItemEntity)[],
-) {
-    const effectedPlayers = uniqBy(
-        entities.filter((entity) => entity.player),
-        "player",
-    );
-    const effectedMonsters = uniqBy(
-        entities.filter((entity) => entity.monster),
-        "monster",
-    );
-    const effectedItems = uniqBy(
-        entities.filter((entity) => entity.item),
-        "item",
-    );
-
-    // Publish effects to players
-    for (const p of effectedPlayers) {
-        await redisClient.publish(
-            (p as Player).player,
-            JSON.stringify({
-                event: "entities",
-                players: effectedPlayers,
-                monsters: effectedMonsters,
-                items: effectedItems,
-            } as UpdateEntitiesEvent),
-        );
-    }
-}
-
-async function isDirectionTraversable(
-    entity: PlayerEntity | MonsterEntity,
-    direction: Direction,
-): Promise<[boolean, string[]]> {
-    let location: string[] = [];
-
-    // Check all cells are able to move (location might include more than 1 cell for large entities)
-    for (const geohash of entity.loc) {
-        const nextGeohash = geohashNeighbour(geohash, direction);
-
-        // Within own location is always traversable
-        if (entity.loc.includes(nextGeohash)) {
-            location.push(nextGeohash);
-            continue;
-        }
-
-        // Check if geohash is traversable
-        if (!(await isGeohashTraversable(nextGeohash))) {
-            return [false, entity.loc]; // early return if not traversable
-        } else {
-            location.push(nextGeohash);
-        }
-    }
-    return [true, location];
-}
-
-async function isGeohashTraversable(geohash: string): Promise<boolean> {
-    const inWorld = await isGeohashInWorld(geohash);
-    const [biome, strength] = await biomeAtGeohash(geohash, {
-        topologyResultCache,
-        topologyBufferCache,
-        topologyResponseCache,
-    });
-
-    // Check if biome is traversable (ignore if user is in a world)
-    if (!inWorld && biomes[biome].traversableSpeed <= 0) {
-        return false;
-    }
-    // Get colliders in geohash
-    if (await hasCollidersInGeohash(geohash)) {
-        return false;
-    }
-    return true;
-}
-
-async function isLocationTraversable(location: string[]): Promise<boolean> {
-    for (const geohash of location) {
-        if (!(await isGeohashTraversable(geohash))) {
-            return false;
-        }
-    }
-    return true;
-}
-
-function entityIsBusy(entity: Player | Monster): [boolean, number] {
-    const now = Date.now();
-    if (entity.buclk > now) {
-        return [true, now];
-    }
-    return [false, now];
-}
-
 async function checkAndSetBusy({
     entity,
     action,
@@ -1399,4 +1023,62 @@ async function consumeResources(
     }
 
     return (await saveEntity(entity)) as PlayerEntity;
+}
+
+async function movePlayer(player: PlayerEntity, path: Direction[]) {
+    for (const direction of path) {
+        // Check if direction is traversable
+        const [isTraversable, location] = await isDirectionTraversable(
+            player,
+            direction,
+        );
+        if (!isTraversable) {
+            publishFeedEvent(player, {
+                event: "feed",
+                type: "error",
+                message: `Cannot move ${direction}`,
+            });
+            break;
+        }
+
+        // Check if player is busy
+        const { busy, entity } = await checkAndSetBusy({
+            entity: player,
+            action: actions.move.action,
+        });
+
+        if (busy) {
+            publishFeedEvent(player, {
+                event: "feed",
+                type: "error",
+                message: "You are busy at the moment.",
+            });
+            break;
+        }
+
+        // Update player location
+        player = entity as PlayerEntity;
+        player.loc = location;
+        await playerRepository.save(player.player, player);
+
+        // Check if player moves to a different plot
+        const plotDidChange =
+            player.loc[0].slice(0, -1) !== location[0].slice(0, -1);
+
+        // Return nearby entities if plot changed
+        if (plotDidChange) {
+            const { monsters, players, items } = await getNearbyEntities(
+                player.loc[0],
+                LOOK_PAGE_SIZE,
+            );
+            publishAffectedEntitiesToPlayers(
+                [player, ...monsters, ...players, ...items],
+                player.player,
+            );
+        }
+        // Just update player
+        else {
+            publishAffectedEntitiesToPlayers([player], player.player);
+        }
+    }
 }

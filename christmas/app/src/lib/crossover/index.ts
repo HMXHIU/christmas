@@ -374,7 +374,7 @@ async function performAction(
     else if (action.action === "move" && variables != null) {
         const direction = variables.queryIrrelevant as Direction;
         if (Directions.includes(direction)) {
-            return await crossoverCmdMove({ direction }, headers);
+            return await crossoverCmdMove({ path: [direction] }, headers);
         }
         throw new Error(`Invalid direction ${direction}`);
     }
@@ -641,11 +641,11 @@ async function crossoverCmdLook(
 }
 
 function crossoverCmdMove(
-    input: { direction: Direction },
+    input: { path: Direction[] },
     headers: HTTPHeaders = {},
 ) {
-    const { direction } = input;
-    return trpc({ headers }).crossover.cmd.move.query({ direction });
+    const { path } = input;
+    return trpc({ headers }).crossover.cmd.move.query({ path });
 }
 
 function crossoverCmdPerformAbility(

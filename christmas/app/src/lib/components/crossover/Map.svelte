@@ -1,5 +1,6 @@
 <script lang="ts">
     import { LRUMemoryCache, memoize } from "$lib/caches";
+    import { crossoverCmdMove } from "$lib/crossover";
     import {
         topologyBufferCache,
         topologyResponseCache,
@@ -24,7 +25,7 @@
         heightAtGeohash,
     } from "$lib/crossover/world/biomes";
     import { compendium } from "$lib/crossover/world/compendium";
-    import type { AssetMetadata } from "$lib/crossover/world/types";
+    import type { AssetMetadata, Direction } from "$lib/crossover/world/types";
     import {
         geohashToGridCell,
         gridCellToGeohash,
@@ -42,6 +43,7 @@
         Assets,
         Buffer,
         Container,
+        FederatedMouseEvent,
         Geometry,
         Mesh,
         Shader,
@@ -91,6 +93,8 @@
     const Z_SCALE =
         -1 /
         cartToIso(bottomRightCol * CELL_WIDTH, bottomRightRow * CELL_HEIGHT)[1];
+
+    // TODO: deprecate
     const Z_ATOM = ISO_CELL_HEIGHT / 2;
     const Z_OFF: Record<string, number> = {
         // shader
@@ -177,6 +181,9 @@
     let worldMeshes: Record<string, EntityMesh> = {};
 
     let playerPosition: Position | null = null;
+    let lastCursorX: number = 0;
+    let lastCursorY: number = 0;
+    let isMouseDown: boolean = false;
 
     // TODO: REMOVE
     let entityGridSprites: Record<string, GridSprite> = {};
@@ -453,7 +460,12 @@
         }
     }
 
-    async function calculateBiomeForRowCol(
+    const calculateBiomeForRowCol = memoize(
+        _calculateBiomeForRowCol,
+        biomeCache,
+        (playerPosition, row, col) => `${row}-${col}`,
+    );
+    async function _calculateBiomeForRowCol(
         playerPosition: Position,
         row: number,
         col: number,
@@ -525,7 +537,12 @@
         };
     }
 
-    async function calculateBiomeDecorationsForRowCol({
+    const calculateBiomeDecorationsForRowCol = memoize(
+        _calculateBiomeDecorationsForRowCol,
+        biomeDecorationsCache,
+        ({ row, col }) => `${row}-${col}`,
+    );
+    async function _calculateBiomeDecorationsForRowCol({
         geohash,
         biome,
         strength,
@@ -623,18 +640,6 @@
         return texturePositions;
     }
 
-    const memoizedCalculateBiomeForRowCol = memoize(
-        calculateBiomeForRowCol,
-        biomeCache,
-        (playerPosition, row, col) => `${row}-${col}`,
-    );
-
-    const memoizedCalculateBiomeDecorationsForRowCol = memoize(
-        calculateBiomeDecorationsForRowCol,
-        biomeDecorationsCache,
-        ({ row, col }) => `${row}-${col}`,
-    );
-
     async function updateBiomes(playerPosition: Position | null) {
         if (!isInitialized || playerPosition == null || $player == null) {
             return;
@@ -666,11 +671,7 @@
                     strength,
                     width,
                     height,
-                } = await memoizedCalculateBiomeForRowCol(
-                    playerPosition,
-                    row,
-                    col,
-                );
+                } = await calculateBiomeForRowCol(playerPosition, row, col);
 
                 // TODO: Can just access and set the shader buffer directly
 
@@ -702,7 +703,7 @@
                     textureUid,
                     { positions, texture, height, width, length },
                 ] of Object.entries(
-                    await memoizedCalculateBiomeDecorationsForRowCol({
+                    await calculateBiomeDecorationsForRowCol({
                         geohash,
                         biome,
                         strength,
@@ -1111,6 +1112,72 @@
         worldStage.pivot.y = Math.round(worldStage.pivot.y + deltaY * seconds);
     }
 
+    function calculateRowColFromIso(
+        isoX: number,
+        isoY: number,
+    ): [number, number] {
+        const [cartX, cartY] = isoToCart(isoX, isoY);
+        const col = Math.round(cartX / CELL_WIDTH);
+        const row = Math.round(cartY / CELL_HEIGHT);
+        return [row, col];
+    }
+
+    function getDirectionsToPosition(
+        playerPosition: Position,
+        target: { x: number; y: number },
+    ): Direction[] {
+        const [rowEnd, colEnd] = calculateRowColFromIso(target.x, target.y);
+        return aStarPathfinding({
+            colStart: playerPosition.col,
+            rowStart: playerPosition.row,
+            colEnd,
+            rowEnd,
+            getTraversalCost: (row, col) => {
+                return 0; // TODO: add actual traversal cost
+            },
+        });
+    }
+
+    function onMouseMove(x: number, y: number) {
+        if (playerPosition == null || !isMouseDown) {
+            return;
+        }
+        const path = getPositionsForPath(
+            { row: playerPosition.row, col: playerPosition.col },
+            getDirectionsToPosition(playerPosition, { x, y }),
+        );
+        const highlights = Object.fromEntries(
+            path.map(({ row, col }) => {
+                const [x, y] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT, {
+                    x: HALF_ISO_CELL_WIDTH,
+                    y: HALF_ISO_CELL_HEIGHT,
+                });
+                return [`${x},${y}`, 1];
+            }),
+        );
+        highlightShaderInstances("biome", highlights);
+    }
+
+    async function onMouseUp(x: number, y: number) {
+        if (playerPosition == null) {
+            return;
+        }
+        // Clear highlights
+        highlightShaderInstances("biome", {});
+
+        // Move command
+        const path = getDirectionsToPosition(playerPosition, { x, y });
+        if (path.length > 0) {
+            await crossoverCmdMove({ path });
+        }
+    }
+
+    function onMouseDown(x: number, y: number) {
+        if (playerPosition == null) {
+            return;
+        }
+    }
+
     /*
      * Initialization
      */
@@ -1157,84 +1224,48 @@
         worldStage.height = WORLD_HEIGHT;
         app.stage.addChild(worldStage);
 
-        function calculateRowCol(
-            isoX: number,
-            isoY: number,
-            precision: number,
-        ): [number, number] {
-            const [cartX, cartY] = isoToCart(isoX, isoY);
-            const col = Math.floor(cartX / CELL_WIDTH);
-            const row = Math.floor(cartY / CELL_HEIGHT);
-            return [row, col];
-        }
-
         // Setup app events
         app.stage.eventMode = "static"; // enable interactivity
         app.stage.interactive = true;
         app.stage.hitArea = app.screen; // ensure whole canvas area is interactive
-        app.stage.addEventListener("pointermove", (e) => {
-            if (playerPosition == null) {
-                return;
-            }
 
-            // Note: mouse position on the screen also includes the topological height
-            // It is hard to do hit testing on shader instances as its only 1 mest
-            // One way is to use the player's topological height to offset the mouse position
-            // and all movement is on the same plane as the player
-            const cursorX = e.global.x + worldStage!.pivot.x;
-            const cursorY =
+        function getMousePosition(e: FederatedMouseEvent) {
+            return snapToGrid(
+                e.global.x + worldStage!.pivot.x,
                 e.global.y +
-                worldStage!.pivot.y +
-                playerPosition.topologicalHeight; // select on the same plane as player
-
-            const [snapCursorX, snapCursorY] = snapToGrid(
-                cursorX,
-                cursorY,
+                    worldStage!.pivot.y +
+                    playerPosition!.topologicalHeight, // select on the same plane as player
                 HALF_ISO_CELL_WIDTH,
                 HALF_ISO_CELL_HEIGHT,
             );
-
-            // highlightShaderInstances("biome", {
-            //     [`${snapCursorX},${snapCursorY}`]: 1,
-            // });
-
-            // Show pathfinding
-            const [rowEnd, colEnd] = calculateRowCol(
-                snapCursorX,
-                snapCursorY,
-                playerPosition.precision,
-            );
-
-            const directions = aStarPathfinding({
-                colStart: playerPosition.col,
-                rowStart: playerPosition.row,
-                colEnd,
-                rowEnd,
-                getTraversalCost: (row, col) => {
-                    return 0;
-                },
-            });
-
-            const path = getPositionsForPath(
-                { row: playerPosition.row, col: playerPosition.col },
-                directions,
-            );
-
-            const highlights = Object.fromEntries(
-                path.map(({ row, col }) => {
-                    const [x, y] = cartToIso(
-                        col * CELL_WIDTH,
-                        row * CELL_HEIGHT,
-                        {
-                            x: HALF_ISO_CELL_WIDTH,
-                            y: HALF_ISO_CELL_HEIGHT,
-                        },
-                    );
-                    return [`${x},${y}`, 1];
-                }),
-            );
-
-            highlightShaderInstances("biome", highlights);
+        }
+        app.stage.addEventListener("pointerup", (e) => {
+            if (playerPosition != null) {
+                const [snapX, snapY] = getMousePosition(e);
+                onMouseUp(snapX, snapY);
+                lastCursorX = snapX;
+                lastCursorY = snapY;
+                isMouseDown = false;
+            }
+        });
+        app.stage.addEventListener("pointerdown", (e) => {
+            if (playerPosition != null) {
+                const [snapX, snapY] = getMousePosition(e);
+                onMouseDown(snapX, snapY);
+                lastCursorX = snapX;
+                lastCursorY = snapY;
+                isMouseDown = true;
+            }
+        });
+        app.stage.addEventListener("pointermove", (e) => {
+            if (playerPosition != null) {
+                const [snapX, snapY] = getMousePosition(e);
+                if (lastCursorX !== snapX || lastCursorY !== snapY) {
+                    onMouseMove(snapX, snapY);
+                    lastCursorX = snapX;
+                    lastCursorY = snapY;
+                }
+            }
         });
 
         // Create player mesh

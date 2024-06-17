@@ -13,6 +13,7 @@ import {
     itemRepository,
     playerRepository,
     redisClient,
+    saveEntity,
     worldsInGeohashQuerySet,
 } from "$lib/server/crossover/redis";
 import { PublicKey } from "@solana/web3.js";
@@ -20,15 +21,14 @@ import { TRPCError } from "@trpc/server";
 import { performance } from "perf_hooks";
 import { z } from "zod";
 import {
+    LOOK_PAGE_SIZE,
     checkAndSetBusy,
     configureItem,
     getPlayerState,
     getUserMetadata,
-    isDirectionTraversable,
     loadPlayerEntity,
+    movePlayer,
     performAbility,
-    saveEntity,
-    savePlayerState,
     spawnItem,
     spawnMonster,
     spawnWorld,
@@ -58,6 +58,7 @@ import type {
     World,
     WorldEntity,
 } from "./redis/entities";
+import { savePlayerState } from "./utils";
 
 export { SaySchema, UserMetadataSchema, crossoverRouter };
 
@@ -77,8 +78,10 @@ const SaySchema = z.object({
 const LookSchema = z.object({
     target: z.string().optional(),
 });
-const MoveSchema = z.object({
-    direction: z.enum(["n", "s", "e", "w", "ne", "nw", "se", "sw", "u", "d"]),
+const PathSchema = z.object({
+    path: z.array(
+        z.enum(["n", "s", "e", "w", "ne", "nw", "se", "sw", "u", "d"]),
+    ),
 });
 const PerformAbilitySchema = z.object({
     ability: z.string(),
@@ -132,8 +135,6 @@ const UserMetadataSchema = z.object({
     publicKey: z.string(),
     crossover: PlayerMetadataSchema.optional(),
 });
-
-const LOOK_PAGE_SIZE = 20;
 
 // Router
 const crossoverRouter = {
@@ -571,70 +572,15 @@ const crossoverRouter = {
             } as GameCommandResponse;
         }),
         // cmd.move
-        move: authProcedure.input(MoveSchema).query(async ({ ctx, input }) => {
-            const { direction } = input;
+        move: authProcedure.input(PathSchema).query(async ({ ctx, input }) => {
+            const { path } = input;
 
             // Get player
             let player = (await tryFetchEntity(
                 ctx.user.publicKey,
             )) as PlayerEntity;
 
-            // Check if direction is traversable
-            const [isTraversable, location] = await isDirectionTraversable(
-                player,
-                direction,
-            );
-
-            if (isTraversable) {
-                // Check if player is busy
-                const { busy, entity } = await checkAndSetBusy({
-                    entity: player,
-                    action: actions.move.action,
-                });
-                if (busy) {
-                    return {
-                        status: "failure",
-                        message: "You are busy at the moment.",
-                    } as GameCommandResponse;
-                }
-
-                // Check if player moves to a different plot
-                const plotDidChange =
-                    player.loc[0].slice(0, -1) !== location[0].slice(0, -1);
-
-                // Update player location
-                player = entity as PlayerEntity;
-                player.loc = location;
-                await playerRepository.save(player.player, player);
-
-                // Return nearby entities if plot changed
-                if (plotDidChange) {
-                    const { monsters, players, items } =
-                        await getNearbyEntities(player.loc[0], LOOK_PAGE_SIZE);
-                    return {
-                        players,
-                        monsters,
-                        items,
-                        status: "success",
-                        op: "replace",
-                    } as GameCommandResponse;
-                }
-                // Just update player
-                else {
-                    return {
-                        players: [player as Player],
-                        op: "upsert",
-                        status: "success",
-                    } as GameCommandResponse;
-                }
-            }
-            // Not traversable
-            else {
-                return {
-                    status: "failure",
-                    message: `Cannot move ${direction}`,
-                } as GameCommandResponse;
-            }
+            movePlayer(player, path);
         }),
         // cmd.performAbility
         performAbility: authProcedure
