@@ -3,6 +3,7 @@ import {
     aStarPathfinding,
     geohashNeighbour,
     getGeohashesForPath,
+    getPositionsForPath,
 } from "$lib/crossover/utils";
 import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
 import { compendium } from "$lib/crossover/world/compendium";
@@ -18,6 +19,14 @@ test("Test Pathfinding", async () => {
         "swbb81k4",
         "swbb81k6",
         "swbb81kd",
+    ]);
+
+    // Test `getPositionsForPath`
+    var positions = getPositionsForPath({ row: 0, col: 0 }, ["e", "e"]);
+    expect(positions).toMatchObject([
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+        { row: 0, col: 2 },
     ]);
 
     /*

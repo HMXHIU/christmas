@@ -6,11 +6,15 @@
         topologyResultCache,
     } from "$lib/crossover/caches";
     import {
+        aStarPathfinding,
         autoCorrectGeohashPrecision,
         cartToIso,
         entityId,
         generateEvenlySpacedPoints,
+        getPositionsForPath,
+        isoToCart,
         seededRandom,
+        snapToGrid,
         stringToRandomNumber,
     } from "$lib/crossover/utils";
     import { bestiary } from "$lib/crossover/world/bestiary";
@@ -58,13 +62,17 @@
         MAX_SHADER_GEOMETRIES,
         clearShaderCache,
         loadShaderGeometry,
+        loadedGeometry,
         updateShaderUniforms,
     } from "./shaders";
 
     // Note: this are cartesian coordinates (CELL_HEIGHT = CELL_WIDTH;)
     const CELL_WIDTH = 64;
     const CELL_HEIGHT = CELL_WIDTH;
+    const ISO_CELL_WIDTH = CELL_WIDTH;
     const ISO_CELL_HEIGHT = CELL_HEIGHT / 2;
+    const HALF_ISO_CELL_WIDTH = ISO_CELL_WIDTH / 2;
+    const HALF_ISO_CELL_HEIGHT = ISO_CELL_HEIGHT / 2;
     const CANVAS_ROWS = 7;
     const CANVAS_COLS = 7;
     const OVERDRAW_MULTIPLE = 3;
@@ -78,13 +86,18 @@
     const GRID_MID_COL = Math.floor(GRID_COLS / 2);
 
     // Depth test scaling and offsets
-    const { row: brRow, col: brCol } = geohashToGridCell("pbzupuzv");
-    const isoBrY = cartToIso(brCol * CELL_WIDTH, brRow * CELL_HEIGHT)[1];
-    const Z_SCALE = -1 / isoBrY;
+    const { row: bottomRightRow, col: bottomRightCol } =
+        geohashToGridCell("pbzupuzv");
+    const Z_SCALE =
+        -1 /
+        cartToIso(bottomRightCol * CELL_WIDTH, bottomRightRow * CELL_HEIGHT)[1];
     const Z_ATOM = ISO_CELL_HEIGHT / 2;
     const Z_OFF: Record<string, number> = {
-        ground: 0,
+        // shader
         biome: 0,
+        entity: 1 * Z_ATOM,
+
+        ground: 0,
         grass: 0,
         floor: 3 * Z_ATOM,
         wall: 4 * Z_ATOM,
@@ -220,12 +233,16 @@
     }
 
     function updateCamera(player: Player, tween = true) {
-        const playerMesh = entityMeshes[player.player].mesh;
-        if (playerMesh && worldStage) {
+        // const playerMesh = entityMeshes[player.player].mesh;
+
+        if (playerPosition != null && worldStage != null) {
             const offsetX = Math.floor(
-                playerMesh.x + CELL_WIDTH / 2 - clientWidth / 2,
+                playerPosition.isoX + CELL_WIDTH / 2 - clientWidth / 2,
             );
-            const offsetY = playerMesh.y - Math.floor(clientHeight / 2);
+            const offsetY =
+                playerPosition.isoY -
+                playerPosition.topologicalHeight -
+                Math.floor(clientHeight / 2);
             if (tween) {
                 pivotTarget = { x: offsetX, y: offsetY };
             } else {
@@ -327,13 +344,10 @@
         const playerMesh = entityMeshes[$player.player];
         if (playerMesh.mesh != null) {
             // Update position
-            playerMesh.mesh.x = playerPosition.isoX;
-            playerMesh.mesh.y =
-                playerPosition.isoY - playerPosition.topologicalHeight;
             playerMesh.instancePositions.data.set([
-                playerMesh.mesh.x,
-                playerMesh.mesh.y,
-                (playerPosition.isoY + Z_OFF.player) * Z_SCALE, // everything is relative to player
+                playerPosition.isoX,
+                playerPosition.isoY,
+                playerPosition.topologicalHeight,
             ]);
             playerMesh.instancePositions.update();
         }
@@ -399,7 +413,7 @@
             const [shader, { geometry, instancePositions, mesh }] =
                 loadShaderGeometry(shaderName, texture, width, height, {
                     instanceCount: numGeometries,
-                    depthFactor: Z_SCALE,
+                    zScale: Z_SCALE,
                 });
 
             // Update instance positions buffer
@@ -413,6 +427,28 @@
                 mesh.zIndex = layer;
                 worldStage.addChild(mesh);
                 shaderTexturesInWorld.add(textureUid);
+            }
+        }
+    }
+
+    function highlightShaderInstances(
+        shaderName: string,
+        highlightPositions: Record<string, number>, // {'x,y': highlight}
+    ) {
+        for (const [
+            _,
+            { shader, instanceHighlights, instancePositions },
+        ] of Object.entries(loadedGeometry)) {
+            if (shader === shaderName) {
+                // Iterate `instancePositions` and compare with `highlightPositions`
+                for (let i = 0; i < instanceHighlights.data.length; i += 1) {
+                    const p = i * 3;
+                    const x = instancePositions.data[p];
+                    const y = instancePositions.data[p + 1];
+                    instanceHighlights.data[i] =
+                        highlightPositions[`${x},${y}`] ?? 0;
+                }
+                instanceHighlights.update();
             }
         }
     }
@@ -470,7 +506,11 @@
         const height = (texture.height * width) / texture.width;
 
         // Convert cartesian to isometric position
-        const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT);
+        // Note: snap to grid for biomes, so that we can do O(1) lookups for highlights
+        const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT, {
+            x: HALF_ISO_CELL_WIDTH,
+            y: HALF_ISO_CELL_HEIGHT,
+        });
 
         return {
             geohash,
@@ -555,7 +595,7 @@
                         texture,
                         positions: new Float32Array(
                             MAX_SHADER_GEOMETRIES * 3,
-                        ).fill(-1), // x, y, z
+                        ).fill(-1), // x, y, h
                         height: texture.height,
                         width: texture.width,
                         length: 0,
@@ -565,8 +605,7 @@
                 // Evenly space out decorations and add jitter
                 const jitter = ((instanceRv - 0.5) * CELL_WIDTH) / 2;
                 const x = spacedOffsets[i].x + isoX + jitter;
-                const y =
-                    spacedOffsets[i].y + isoY + jitter - topologicalHeight;
+                const y = spacedOffsets[i].y + isoY + jitter;
 
                 // Add to decoration positions
                 texturePositions[texture.uid].positions![
@@ -575,7 +614,9 @@
                 texturePositions[texture.uid].positions![
                     texturePositions[texture.uid].length + 1
                 ] = y;
-                // Note: Don't set the z here is it cannot be cached (player moves)
+                texturePositions[texture.uid].positions![
+                    texturePositions[texture.uid].length + 2
+                ] = topologicalHeight;
                 texturePositions[texture.uid].length += 3;
             }
         }
@@ -603,7 +644,7 @@
         biomeTexturePositions = {};
         biomeDecorationsTexturePositions = {};
 
-        // Create biome sprites
+        // Create biome shader instances
         for (
             let row = playerPosition.row - GRID_MID_ROW;
             row < playerPosition.row + GRID_MID_ROW;
@@ -631,12 +672,14 @@
                     col,
                 );
 
+                // TODO: Can just access and set the shader buffer directly
+
                 if (biomeTexturePositions[texture.uid] == null) {
                     biomeTexturePositions[texture.uid] = {
                         texture,
                         positions: new Float32Array(
                             MAX_SHADER_GEOMETRIES * 3,
-                        ).fill(-1), // x, y, z
+                        ).fill(-1), // x, y, h
                         width,
                         height,
                         length: 0,
@@ -647,10 +690,10 @@
                     ] = isoX;
                     biomeTexturePositions[texture.uid].positions![
                         biomeTexturePositions[texture.uid].length + 1
-                    ] = isoY - topologicalHeight;
+                    ] = isoY;
                     biomeTexturePositions[texture.uid].positions![
                         biomeTexturePositions[texture.uid].length + 2
-                    ] = (isoY + Z_OFF.biome) * Z_SCALE;
+                    ] = topologicalHeight;
                     biomeTexturePositions[texture.uid].length += 3;
                 }
 
@@ -681,14 +724,6 @@
                             length: 0,
                         };
                     } else {
-                        // Fill in z values for positions
-                        for (let i = 0; i < length; i += 3) {
-                            positions![i + 2] =
-                                (positions![i + 1] +
-                                    topologicalHeight +
-                                    Z_OFF.grass) *
-                                Z_SCALE;
-                        }
                         biomeDecorationsTexturePositions[
                             textureUid
                         ].positions!.set(
@@ -849,7 +884,7 @@
                             {
                                 uid: id,
                                 anchor,
-                                depthFactor: Z_SCALE,
+                                zScale: Z_SCALE,
                             },
                         );
 
@@ -960,12 +995,10 @@
                 }
 
                 // Set position
-                entityMesh.mesh.x = isoX;
-                entityMesh.mesh.y = isoY - topologicalHeight;
                 entityMesh.instancePositions.data.set([
-                    entityMesh.mesh.x,
-                    entityMesh.mesh.y,
-                    (isoY + Z_OFF[entityType]) * Z_SCALE,
+                    isoX,
+                    isoY,
+                    topologicalHeight,
                 ]);
                 entityMesh.instancePositions.update();
             }
@@ -1012,7 +1045,12 @@
                 texture,
                 width,
                 height,
-                { uid: entityUid, anchor, depthFactor: Z_SCALE },
+                {
+                    uid: entityUid,
+                    anchor,
+                    zScale: Z_SCALE,
+                    zOffset: Z_OFF.entity,
+                },
             );
             entityMesh = {
                 id: entityUid,
@@ -1026,13 +1064,11 @@
             }
 
             // Set initial position
-            mesh.x = isoX;
-            mesh.y = isoY - topologicalHeight;
             mesh.zIndex = RENDER_ORDER[entityType];
             entityMesh.instancePositions.data.set([
-                mesh.x,
-                mesh.y,
-                (isoY + Z_OFF[entityType]) * Z_SCALE,
+                isoX,
+                isoY,
+                topologicalHeight,
             ]);
             entityMesh.instancePositions.update();
 
@@ -1120,6 +1156,86 @@
         worldStage.width = WORLD_WIDTH;
         worldStage.height = WORLD_HEIGHT;
         app.stage.addChild(worldStage);
+
+        function calculateRowCol(
+            isoX: number,
+            isoY: number,
+            precision: number,
+        ): [number, number] {
+            const [cartX, cartY] = isoToCart(isoX, isoY);
+            const col = Math.floor(cartX / CELL_WIDTH);
+            const row = Math.floor(cartY / CELL_HEIGHT);
+            return [row, col];
+        }
+
+        // Setup app events
+        app.stage.eventMode = "static"; // enable interactivity
+        app.stage.interactive = true;
+        app.stage.hitArea = app.screen; // ensure whole canvas area is interactive
+        app.stage.addEventListener("pointermove", (e) => {
+            if (playerPosition == null) {
+                return;
+            }
+
+            // Note: mouse position on the screen also includes the topological height
+            // It is hard to do hit testing on shader instances as its only 1 mest
+            // One way is to use the player's topological height to offset the mouse position
+            // and all movement is on the same plane as the player
+            const cursorX = e.global.x + worldStage!.pivot.x;
+            const cursorY =
+                e.global.y +
+                worldStage!.pivot.y +
+                playerPosition.topologicalHeight; // select on the same plane as player
+
+            const [snapCursorX, snapCursorY] = snapToGrid(
+                cursorX,
+                cursorY,
+                HALF_ISO_CELL_WIDTH,
+                HALF_ISO_CELL_HEIGHT,
+            );
+
+            // highlightShaderInstances("biome", {
+            //     [`${snapCursorX},${snapCursorY}`]: 1,
+            // });
+
+            // Show pathfinding
+            const [rowEnd, colEnd] = calculateRowCol(
+                snapCursorX,
+                snapCursorY,
+                playerPosition.precision,
+            );
+
+            const directions = aStarPathfinding({
+                colStart: playerPosition.col,
+                rowStart: playerPosition.row,
+                colEnd,
+                rowEnd,
+                getTraversalCost: (row, col) => {
+                    return 0;
+                },
+            });
+
+            const path = getPositionsForPath(
+                { row: playerPosition.row, col: playerPosition.col },
+                directions,
+            );
+
+            const highlights = Object.fromEntries(
+                path.map(({ row, col }) => {
+                    const [x, y] = cartToIso(
+                        col * CELL_WIDTH,
+                        row * CELL_HEIGHT,
+                        {
+                            x: HALF_ISO_CELL_WIDTH,
+                            y: HALF_ISO_CELL_HEIGHT,
+                        },
+                    );
+                    return [`${x},${y}`, 1];
+                }),
+            );
+
+            highlightShaderInstances("biome", highlights);
+        });
 
         // Create player mesh
         if ($player) {

@@ -18,6 +18,7 @@ export {
     createShader,
     createTexturedQuadGeometry,
     loadShaderGeometry,
+    loadedGeometry,
     shaders,
     updateShaderUniforms,
 };
@@ -29,9 +30,11 @@ const loadedShaders: Record<string, Shader> = {};
 const loadedGeometry: Record<
     string,
     {
+        shader: string;
         geometry: Geometry;
         instanceCount: number;
         instancePositions: Buffer;
+        instanceHighlights: Buffer;
         mesh: Mesh<Geometry, Shader>;
     }
 > = {};
@@ -92,7 +95,9 @@ function loadShaderGeometry(
         instanceCount?: number;
         uid?: string;
         anchor?: { x: number; y: number };
-        depthFactor?: number;
+        zScale?: number;
+        zOffset?: number;
+        cellHeight?: number;
     } = {},
 ): [
     Shader,
@@ -100,6 +105,7 @@ function loadShaderGeometry(
         geometry: Geometry;
         instanceCount?: number;
         instancePositions: Buffer;
+        instanceHighlights: Buffer;
         mesh: Mesh<Geometry, Shader>; // instanced geometry share a single mesh
     },
 ] {
@@ -118,12 +124,13 @@ function loadShaderGeometry(
             height,
             width,
             anchor: options.anchor,
-            depthFactor: options.depthFactor,
+            zScale: options.zScale,
+            zOffset: options.zOffset,
         });
     }
 
     if (geometry == null) {
-        const [geometry, instancePositions] =
+        const { geometry, instancePositions, instanceHighlights } =
             instanceCount > 1
                 ? createInstancedTexturedQuadGeometry(
                       texture,
@@ -133,6 +140,7 @@ function loadShaderGeometry(
                   )
                 : createTexturedQuadGeometry(texture, width, height);
         loadedGeometry[textureUid] = {
+            shader: s,
             geometry,
             instanceCount,
             mesh: new Mesh<Geometry, Shader>({
@@ -140,6 +148,7 @@ function loadShaderGeometry(
                 shader: loadedShaders[shaderUid]!,
             }),
             instancePositions,
+            instanceHighlights,
         };
     }
     return [loadedShaders[shaderUid], loadedGeometry[textureUid]];
@@ -152,14 +161,16 @@ function createShader(
         height?: number;
         width?: number;
         anchor?: { x: number; y: number };
-        depthFactor?: number;
+        zScale?: number;
+        zOffset?: number;
     },
 ): Shader {
     const height = instanceOptions?.height ?? texture.frame.height;
     const width = instanceOptions?.width ?? texture.frame.width;
     const anchor = instanceOptions?.anchor ??
         texture.defaultAnchor ?? { x: 0.5, y: 0.5 };
-    const depthFactor = instanceOptions?.depthFactor ?? 0;
+    const zScale = instanceOptions?.zScale ?? 0;
+    const zOffset = instanceOptions?.zOffset ?? 0;
 
     return Shader.from({
         gl: shaders[s],
@@ -186,8 +197,12 @@ function createShader(
                     value: anchor.y * height,
                     type: "f32",
                 },
-                uDepthFactor: {
-                    value: depthFactor,
+                uZScale: {
+                    value: zScale,
+                    type: "f32",
+                },
+                uZOffset: {
+                    value: zOffset,
                     type: "f32",
                 },
             },
@@ -199,15 +214,22 @@ function createTexturedQuadGeometry(
     texture: Texture,
     width: number,
     height: number,
-): [Geometry, Buffer] {
+): {
+    geometry: Geometry;
+    instancePositions: Buffer;
+    instanceHighlights: Buffer;
+} {
     const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
     const instancePositions = new Buffer({
-        data: new Float32Array(3).fill(-1), // x, y, z
+        data: new Float32Array(3).fill(-1), // x, y, h
         usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
     });
-
-    return [
-        new Geometry({
+    const instanceHighlights = new Buffer({
+        data: new Float32Array(1).fill(0),
+        usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
+    });
+    return {
+        geometry: new Geometry({
             attributes: {
                 aPosition: [
                     // tl
@@ -224,15 +246,21 @@ function createTexturedQuadGeometry(
                     height,
                 ],
                 aUV: [x0, y0, x1, y1, x2, y2, x3, y3],
+                aZAlongY: [0, 0, 0, 0, 0, 0, 0, 0],
                 aInstancePosition: {
                     buffer: instancePositions,
                     instance: true, // ??? 'Vertex buffer is not big enough for the draw call' if false
+                },
+                aInstanceHighlight: {
+                    buffer: instanceHighlights,
+                    instance: true,
                 },
             },
             indexBuffer: [0, 1, 2, 2, 3, 0], // quad
         }),
         instancePositions,
-    ];
+        instanceHighlights,
+    };
 }
 
 function createInstancedTexturedQuadGeometry(
@@ -240,7 +268,11 @@ function createInstancedTexturedQuadGeometry(
     instanceCount: number,
     width: number,
     height: number,
-): [Geometry, Buffer] {
+): {
+    geometry: Geometry;
+    instancePositions: Buffer;
+    instanceHighlights: Buffer;
+} {
     const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
 
     if (instanceCount < 1) {
@@ -248,12 +280,17 @@ function createInstancedTexturedQuadGeometry(
     }
 
     const instancePositions = new Buffer({
-        data: new Float32Array(instanceCount * 3), // x, y, z
+        data: new Float32Array(instanceCount * 3), // x, y, h
         usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
     });
 
-    return [
-        new Geometry({
+    const instanceHighlights = new Buffer({
+        data: new Float32Array(instanceCount).fill(0),
+        usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
+    });
+
+    return {
+        geometry: new Geometry({
             attributes: {
                 aPosition: [
                     // tl
@@ -270,8 +307,13 @@ function createInstancedTexturedQuadGeometry(
                     height,
                 ],
                 aUV: [x0, y0, x1, y1, x2, y2, x3, y3],
+                aZAlongY: [0, 0, 0, 0, 0, 0, 0, 0],
                 aInstancePosition: {
                     buffer: instancePositions,
+                    instance: true,
+                },
+                aInstanceHighlight: {
+                    buffer: instanceHighlights,
                     instance: true,
                 },
             },
@@ -279,5 +321,6 @@ function createInstancedTexturedQuadGeometry(
             instanceCount,
         }),
         instancePositions,
-    ];
+        instanceHighlights,
+    };
 }

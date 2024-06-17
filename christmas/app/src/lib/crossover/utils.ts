@@ -19,7 +19,7 @@ export {
     calculateLocation,
     cartToIso,
     childrenGeohashes,
-    directionToVector,
+    directionVectors,
     entityDimensions,
     entityId,
     expandGeohashes,
@@ -30,7 +30,10 @@ export {
     geohashesNearby,
     getGeohashesForPath,
     getPlotsAtGeohash,
+    getPositionsForPath,
+    isoToCart,
     seededRandom,
+    snapToGrid,
     stringToRandomNumber,
 };
 
@@ -134,43 +137,57 @@ function seededRandom(seed: number): number {
     return x - Math.floor(x);
 }
 
+function snapToGrid(
+    x: number,
+    y: number,
+    snapX: number,
+    snapY: number,
+): [number, number] {
+    return [Math.round(x / snapX) * snapX, Math.round(y / snapY) * snapY];
+}
+
 /**
  * Rotate clockwise by 45 degrees, scale vertically by 0.5
  *
  * [x, y] * [ 0.5  0.25 ]
  *          [ -0.5 0.25 ]
  */
-function cartToIso(x: number, y: number) {
+function cartToIso(
+    x: number,
+    y: number,
+    snap?: {
+        x: number;
+        y: number;
+    },
+) {
+    if (snap != null) {
+        return snapToGrid(
+            x * 0.5 + y * -0.5,
+            x * 0.25 + y * 0.25,
+            snap.x,
+            snap.y,
+        );
+    }
+
     return [x * 0.5 + y * -0.5, x * 0.25 + y * 0.25];
 }
 
-/**
- * Converts a direction to a vector.
- *
- * @param direction - The direction to convert.
- * @returns The vector representation of the direction.
- * @throws {Error} If the direction is invalid.
- */
-function directionToVector(direction: Direction): [number, number] {
-    if (direction === "n") {
-        return [1, 0];
-    } else if (direction === "s") {
-        return [-1, 0];
-    } else if (direction === "e") {
-        return [0, 1];
-    } else if (direction === "w") {
-        return [0, -1];
-    } else if (direction === "ne") {
-        return [1, 1];
-    } else if (direction === "nw") {
-        return [1, -1];
-    } else if (direction === "se") {
-        return [-1, 1];
-    } else if (direction === "sw") {
-        return [-1, -1];
-    }
-    throw new Error(`Invalid direction: ${direction}`);
+function isoToCart(x: number, y: number) {
+    return [x * 1 + y * 2, x * -1 + y * 2];
 }
+
+const directionVectors: Record<Direction, [number, number]> = {
+    n: [-1, 0],
+    s: [1, 0],
+    e: [0, 1],
+    w: [0, -1],
+    ne: [-1, 1],
+    nw: [-1, -1],
+    se: [1, 1],
+    sw: [1, -1],
+    u: [0, 0],
+    d: [0, 0], // Assuming "u" and "d" are placeholders for different layers, ignoring for 2D grid
+};
 
 /**
  * Auto-corrects the precision of a geohash by either truncating or extending it.
@@ -210,15 +227,36 @@ function geohashNeighbour(
     times?: number,
 ): string {
     times ??= 1;
-    const d = directionToVector(direction);
+    let v: [number, number] = [0, 0];
+
+    if (direction === "n") {
+        v = [1, 0];
+    } else if (direction === "s") {
+        v = [-1, 0];
+    } else if (direction === "e") {
+        v = [0, 1];
+    } else if (direction === "w") {
+        v = [0, -1];
+    } else if (direction === "ne") {
+        v = [1, 1];
+    } else if (direction === "nw") {
+        v = [1, -1];
+    } else if (direction === "se") {
+        v = [-1, 1];
+    } else if (direction === "sw") {
+        v = [-1, -1];
+    } else {
+        throw new Error(`Invalid direction: ${direction}`);
+    }
+
     if (times > 1) {
         return geohashNeighbour(
-            ngeohash.neighbor(geohash, d),
+            ngeohash.neighbor(geohash, v),
             direction,
             times - 1,
         );
     }
-    return ngeohash.neighbor(geohash, d);
+    return ngeohash.neighbor(geohash, v);
 }
 
 /**
@@ -529,19 +567,6 @@ function aStarPathfinding({
     colEnd: number;
     getTraversalCost: (row: number, col: number) => number; // 0 is walkable, 1 is not
 }): Direction[] {
-    const directions: { [key: string]: [number, number] } = {
-        n: [-1, 0],
-        s: [1, 0],
-        e: [0, 1],
-        w: [0, -1],
-        ne: [-1, 1],
-        nw: [-1, -1],
-        se: [1, 1],
-        sw: [1, -1],
-        u: [0, 0],
-        d: [0, 0], // Assuming "u" and "d" are placeholders for different layers, ignoring for 2D grid
-    };
-
     const heuristic = (
         row: number,
         col: number,
@@ -553,8 +578,8 @@ function aStarPathfinding({
 
     const neighbors = (node: Node): Node[] => {
         const result: Node[] = [];
-        for (const key in directions) {
-            const [dr, dc] = directions[key];
+        for (const key in directionVectors) {
+            const [dr, dc] = directionVectors[key as Direction];
             const newRow = node.row + dr;
             const newCol = node.col + dc;
             if (getTraversalCost(newRow, newCol) === 0) {
@@ -577,8 +602,8 @@ function aStarPathfinding({
         while (current && current.parent) {
             const dr = current.row - current.parent.row;
             const dc = current.col - current.parent.col;
-            for (const key in directions) {
-                const [dRow, dCol] = directions[key];
+            for (const key in directionVectors) {
+                const [dRow, dCol] = directionVectors[key as Direction];
                 if (dr === dRow && dc === dCol) {
                     path.push(key as Direction);
                     break;
@@ -635,6 +660,22 @@ function aStarPathfinding({
     }
 
     return []; // No path found
+}
+
+function getPositionsForPath(
+    start: { row: number; col: number },
+    path: Direction[],
+): { row: number; col: number }[] {
+    const positions: { row: number; col: number }[] = [start];
+    let row = start.row;
+    let col = start.col;
+    for (const direction of path) {
+        const [dr, dc] = directionVectors[direction];
+        row += dr;
+        col += dc;
+        positions.push({ row, col });
+    }
+    return positions;
 }
 
 /**
