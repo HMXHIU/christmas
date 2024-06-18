@@ -46,6 +46,7 @@
         FederatedMouseEvent,
         Geometry,
         Mesh,
+        Rectangle,
         Shader,
         Sprite,
         Texture,
@@ -161,6 +162,7 @@
     interface EntityMesh {
         id: string;
         mesh: Mesh<Geometry, Shader>;
+        hitbox?: Container;
         instancePositions: Buffer;
         properties?: {
             variant?: string;
@@ -314,54 +316,6 @@
     /*
      * Render functions
      */
-
-    async function updatePlayer(playerPosition: Position | null) {
-        if (
-            !isInitialized ||
-            playerPosition == null ||
-            worldStage == null ||
-            $player == null
-        ) {
-            return;
-        }
-
-        // TODO:: Cull sprites outside view
-        for (const [id, s] of Object.entries(entityGridSprites)) {
-            if (!isCellInView(s, playerPosition)) {
-                worldStage.removeChild(entityGridSprites[id].sprite);
-                entityGridSprites[id].sprite.destroy();
-                delete entityGridSprites[id];
-            }
-        }
-
-        // Cull world sprites outside town
-        const town = playerPosition.geohash.slice(
-            0,
-            worldSeed.spatial.town.precision,
-        );
-        for (const [id, entity] of Object.entries(worldGridSprites)) {
-            if (!id.startsWith(town)) {
-                worldStage.removeChild(worldGridSprites[id].sprite);
-                worldGridSprites[id].sprite.destroy();
-                delete worldGridSprites[id];
-            }
-        }
-
-        // Player
-        const playerMesh = entityMeshes[$player.player];
-        if (playerMesh.mesh != null) {
-            // Update position
-            playerMesh.instancePositions.data.set([
-                playerPosition.isoX,
-                playerPosition.isoY,
-                playerPosition.topologicalHeight,
-            ]);
-            playerMesh.instancePositions.update();
-        }
-
-        // Move camera to player
-        updateCamera($player);
-    }
 
     async function updateWorlds(
         worldRecord: Record<string, Record<string, World>>,
@@ -950,6 +904,70 @@
         }
     }
 
+    async function updatePlayer(playerPosition: Position | null) {
+        if (
+            !isInitialized ||
+            playerPosition == null ||
+            worldStage == null ||
+            $player == null
+        ) {
+            return;
+        }
+
+        // TODO:: Cull sprites outside view
+        for (const [id, s] of Object.entries(entityGridSprites)) {
+            if (!isCellInView(s, playerPosition)) {
+                worldStage.removeChild(entityGridSprites[id].sprite);
+                entityGridSprites[id].sprite.destroy();
+                delete entityGridSprites[id];
+            }
+        }
+
+        // Cull world sprites outside town
+        const town = playerPosition.geohash.slice(
+            0,
+            worldSeed.spatial.town.precision,
+        );
+        for (const [id, entity] of Object.entries(worldGridSprites)) {
+            if (!id.startsWith(town)) {
+                worldStage.removeChild(worldGridSprites[id].sprite);
+                worldGridSprites[id].sprite.destroy();
+                delete worldGridSprites[id];
+            }
+        }
+
+        // Player
+        const playerMesh = entityMeshes[$player.player];
+        if (playerMesh.mesh != null) {
+            // Update mesh position
+            playerMesh.instancePositions.data.set([
+                playerPosition.isoX,
+                playerPosition.isoY,
+                playerPosition.topologicalHeight,
+            ]);
+            playerMesh.instancePositions.update();
+            // Update hitbox position
+            playerMesh.hitbox!.x = playerPosition.isoX;
+            playerMesh.hitbox!.y =
+                playerPosition.isoY - playerPosition.topologicalHeight;
+        }
+
+        // Move camera to player
+        updateCamera($player);
+    }
+
+    async function updateEntities(
+        er: Record<string, Monster | Player | Item>,
+        playerPosition: Position | null,
+    ) {
+        if (!isInitialized || playerPosition == null || worldStage == null) {
+            return;
+        }
+        for (const entity of Object.values(er)) {
+            await upsertEntityMesh(entity);
+        }
+    }
+
     async function upsertEntityMesh(entity: Player | Item | Monster) {
         if (worldStage == null || playerPosition == null || $player == null) {
             return;
@@ -994,14 +1012,20 @@
                     uvBuffer.update();
                     entityMesh.properties!.variant = variant;
                 }
+            }
 
-                // Set position
-                entityMesh.instancePositions.data.set([
-                    isoX,
-                    isoY,
-                    topologicalHeight,
-                ]);
-                entityMesh.instancePositions.update();
+            // Update mesh position
+            entityMesh.instancePositions.data.set([
+                isoX,
+                isoY,
+                topologicalHeight,
+            ]);
+            entityMesh.instancePositions.update();
+
+            // Update hitbox position
+            if (entityMesh.hitbox != null) {
+                entityMesh.hitbox!.x = isoX;
+                entityMesh.hitbox!.y = isoY - topologicalHeight;
             }
 
             // Add again as it might have been removed during culling
@@ -1041,22 +1065,40 @@
 
             // Create mesh
             const height = (texture.height * width) / texture.width; // Scale height while maintaining aspect ratio
-            const [shader, { mesh, instancePositions }] = loadShaderGeometry(
-                "entity",
-                texture,
-                width,
-                height,
-                {
+            const [shader, { mesh, instancePositions, instanceHighlights }] =
+                loadShaderGeometry("entity", texture, width, height, {
                     uid: entityUid,
                     anchor,
                     zScale: Z_SCALE,
                     zOffset: Z_OFF.entity,
+                });
+
+            // Create a hitbox for cursor events (can't use the mesh directly because the position is set in shaders)
+            const hitbox = new Container({
+                width: width,
+                height: height,
+                x: isoX,
+                y: isoY - topologicalHeight,
+                pivot: {
+                    x: anchor.x * width,
+                    y: anchor.y * height,
                 },
-            );
+                interactive: true,
+                hitArea: new Rectangle(0, 0, width, height),
+                onmouseover: () => {
+                    instanceHighlights.data.fill(1);
+                    instanceHighlights.update();
+                },
+                onmouseleave: () => {
+                    instanceHighlights.data.fill(0);
+                    instanceHighlights.update();
+                },
+            });
             entityMesh = {
                 id: entityUid,
                 mesh,
                 instancePositions,
+                hitbox,
             };
 
             // Set mesh properties
@@ -1076,19 +1118,9 @@
             // Add to entityMeshes
             entityMeshes[entityUid] = entityMesh;
             worldStage.removeChild(mesh);
+            worldStage.removeChild(hitbox);
             worldStage.addChild(mesh);
-        }
-    }
-
-    async function updateEntities(
-        er: Record<string, Monster | Player | Item>,
-        playerPosition: Position | null,
-    ) {
-        if (!isInitialized || playerPosition == null || worldStage == null) {
-            return;
-        }
-        for (const entity of Object.values(er)) {
-            await upsertEntityMesh(entity);
+            worldStage.addChild(hitbox);
         }
     }
 
@@ -1173,7 +1205,7 @@
     }
 
     function onMouseDown(x: number, y: number) {
-        if (playerPosition == null) {
+        if (playerPosition == null || worldStage == null) {
             return;
         }
     }

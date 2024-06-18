@@ -23,7 +23,7 @@ void main() {
     }
 
     if (vInstanceHighlight > 0.0) {
-        color *= vec4(1.0, 0.0, 0.0, 1.0);
+        color *= vec4(1.0, 0.5, 0.5, 1.0);
     }
 
     gl_FragColor = color;
