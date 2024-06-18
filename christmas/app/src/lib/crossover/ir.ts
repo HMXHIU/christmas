@@ -4,7 +4,7 @@ import type {
     Player,
 } from "$lib/server/crossover/redis/entities";
 import { resolveActionEntities, type Action } from "./actions";
-import { entityId, gameActionId } from "./utils";
+import { gameActionId, getEntityId } from "./utils";
 import { resolveAbilityEntities, type Ability } from "./world/abilities";
 import type { Utility } from "./world/compendium";
 import { compendium } from "./world/compendium";
@@ -502,9 +502,9 @@ function commandVariables({
     const { self, target, item } = gameEntities;
 
     const actionId = gameActionId(gameAction);
-    const selfId = entityId(self)[0];
-    const targetId = target != null ? entityId(target)[0] : null;
-    const itemId = item != null ? entityId(item)[0] : null;
+    const selfId = getEntityId(self)[0];
+    const targetId = target != null ? getEntityId(target)[0] : null;
+    const itemId = item != null ? getEntityId(item)[0] : null;
 
     const relevantPositions = [
         ...Object.keys(tokenPositions[actionId] || {}),

@@ -10,8 +10,8 @@
         aStarPathfinding,
         autoCorrectGeohashPrecision,
         cartToIso,
-        entityId,
         generateEvenlySpacedPoints,
+        getEntityId,
         getPositionsForPath,
         isoToCart,
         seededRandom,
@@ -59,6 +59,7 @@
         monsterRecord,
         player,
         playerRecord,
+        target,
         worldRecord,
     } from "../../../store";
     import {
@@ -164,6 +165,7 @@
         mesh: Mesh<Geometry, Shader>;
         hitbox?: Container;
         instancePositions: Buffer;
+        instanceHighlights: Buffer;
         properties?: {
             variant?: string;
         };
@@ -186,6 +188,7 @@
     let lastCursorX: number = 0;
     let lastCursorY: number = 0;
     let isMouseDown: boolean = false;
+    let path: Direction[] | null = null;
 
     // TODO: REMOVE
     let entityGridSprites: Record<string, GridSprite> = {};
@@ -206,6 +209,26 @@
     $: updateEntities($playerRecord, playerPosition);
     $: updateEntities($itemRecord, playerPosition);
     $: resize(clientHeight, clientWidth);
+    $: highlightTarget($target);
+
+    function highlightTarget(target: Player | Monster | Item | null) {
+        if (target == null) {
+            return;
+        }
+        const [targetEntityId, entityType] = getEntityId(target);
+
+        // Highlight target entity and unhighlight others
+        for (const [entityId, { instanceHighlights }] of Object.entries(
+            entityMeshes,
+        )) {
+            if (entityId === targetEntityId) {
+                instanceHighlights.data.fill(1);
+            } else {
+                instanceHighlights.data.fill(0);
+            }
+            instanceHighlights.update();
+        }
+    }
 
     /*
      * Utility functions
@@ -830,18 +853,20 @@
                         y: 1 - tileheight / imageheight / 2,
                     };
 
-                    const [shader, { mesh, instancePositions }] =
-                        loadShaderGeometry(
-                            "world",
-                            texture,
-                            imagewidth,
-                            imageheight,
-                            {
-                                uid: id,
-                                anchor,
-                                zScale: Z_SCALE,
-                            },
-                        );
+                    const [
+                        shader,
+                        { mesh, instancePositions, instanceHighlights },
+                    ] = loadShaderGeometry(
+                        "world",
+                        texture,
+                        imagewidth,
+                        imageheight,
+                        {
+                            uid: id,
+                            anchor,
+                            zScale: Z_SCALE,
+                        },
+                    );
 
                     // Set initial position
                     const x =
@@ -866,6 +891,7 @@
                         id,
                         mesh,
                         instancePositions,
+                        instanceHighlights,
                     };
 
                     worldMeshes[id] = worldMesh;
@@ -973,7 +999,7 @@
             return;
         }
 
-        const [entityUid, entityType] = entityId(entity);
+        const [entityId, entityType] = getEntityId(entity);
 
         // Get position
         const { row, col, isoX, isoY, topologicalHeight } =
@@ -985,7 +1011,7 @@
         }
 
         // Update
-        let entityMesh = entityMeshes[entityUid];
+        let entityMesh = entityMeshes[entityId];
         if (entityMesh != null) {
             if (entityType === "player") {
             } else if (entityType === "monster") {
@@ -1067,7 +1093,7 @@
             const height = (texture.height * width) / texture.width; // Scale height while maintaining aspect ratio
             const [shader, { mesh, instancePositions, instanceHighlights }] =
                 loadShaderGeometry("entity", texture, width, height, {
-                    uid: entityUid,
+                    uid: entityId,
                     anchor,
                     zScale: Z_SCALE,
                     zOffset: Z_OFF.entity,
@@ -1090,14 +1116,24 @@
                     instanceHighlights.update();
                 },
                 onmouseleave: () => {
-                    instanceHighlights.data.fill(0);
-                    instanceHighlights.update();
+                    if (
+                        $target == null ||
+                        getEntityId($target)[0] != entityId
+                    ) {
+                        instanceHighlights.data.fill(0);
+                        instanceHighlights.update();
+                    }
+                },
+                onclick: () => {
+                    // Set target
+                    target.set(entity);
                 },
             });
             entityMesh = {
-                id: entityUid,
+                id: entityId,
                 mesh,
                 instancePositions,
+                instanceHighlights,
                 hitbox,
             };
 
@@ -1116,7 +1152,7 @@
             entityMesh.instancePositions.update();
 
             // Add to entityMeshes
-            entityMeshes[entityUid] = entityMesh;
+            entityMeshes[entityId] = entityMesh;
             worldStage.removeChild(mesh);
             worldStage.removeChild(hitbox);
             worldStage.addChild(mesh);
@@ -1171,23 +1207,33 @@
     }
 
     function onMouseMove(x: number, y: number) {
-        if (playerPosition == null || !isMouseDown) {
+        if (playerPosition == null) {
             return;
         }
-        const path = getPositionsForPath(
-            { row: playerPosition.row, col: playerPosition.col },
-            getDirectionsToPosition(playerPosition, { x, y }),
-        );
-        const highlights = Object.fromEntries(
-            path.map(({ row, col }) => {
-                const [x, y] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT, {
-                    x: HALF_ISO_CELL_WIDTH,
-                    y: HALF_ISO_CELL_HEIGHT,
-                });
-                return [`${x},${y}`, 1];
-            }),
-        );
-        highlightShaderInstances("biome", highlights);
+
+        if (isMouseDown) {
+            // Calculate path (astar)
+            path = getDirectionsToPosition(playerPosition, { x, y });
+
+            // Highlight path
+            const highlights = Object.fromEntries(
+                getPositionsForPath(
+                    { row: playerPosition.row, col: playerPosition.col },
+                    path,
+                ).map(({ row, col }) => {
+                    const [x, y] = cartToIso(
+                        col * CELL_WIDTH,
+                        row * CELL_HEIGHT,
+                        {
+                            x: HALF_ISO_CELL_WIDTH,
+                            y: HALF_ISO_CELL_HEIGHT,
+                        },
+                    );
+                    return [`${x},${y}`, 1];
+                }),
+            );
+            highlightShaderInstances("biome", highlights);
+        }
     }
 
     async function onMouseUp(x: number, y: number) {
@@ -1198,8 +1244,7 @@
         highlightShaderInstances("biome", {});
 
         // Move command
-        const path = getDirectionsToPosition(playerPosition, { x, y });
-        if (path.length > 0) {
+        if (path != null && path.length > 0) {
             await crossoverCmdMove({ path });
         }
     }
@@ -1208,6 +1253,8 @@
         if (playerPosition == null || worldStage == null) {
             return;
         }
+        // Clear path
+        path = null;
     }
 
     /*

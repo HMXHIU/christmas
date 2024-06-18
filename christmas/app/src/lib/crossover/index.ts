@@ -25,7 +25,7 @@ import {
 } from "../../store";
 import { actions, type Action } from "./actions";
 import type { GameCommand, GameCommandVariables } from "./ir";
-import { entityId } from "./utils";
+import { getEntityId } from "./utils";
 import type { Ability } from "./world/abilities";
 import {
     EquipmentSlots,
@@ -359,7 +359,7 @@ async function performAction(
     // look
     if (action.action === "look") {
         return await crossoverCmdLook(
-            { target: target ? entityId(target)[0] : undefined },
+            { target: target ? getEntityId(target)[0] : undefined },
             headers,
         );
     }
@@ -381,14 +381,14 @@ async function performAction(
     // take
     else if (action.action === "take") {
         return await crossoverCmdTake(
-            { item: entityId(target as Item)[0] },
+            { item: getEntityId(target as Item)[0] },
             headers,
         );
     }
     // drop
     else if (action.action === "drop") {
         return await crossoverCmdDrop(
-            { item: entityId(target as Item)[0] },
+            { item: getEntityId(target as Item)[0] },
             headers,
         );
     }
@@ -398,7 +398,7 @@ async function performAction(
         if (EquipmentSlots.includes(slot)) {
             return await crossoverCmdEquip(
                 {
-                    item: entityId(target as Item)[0],
+                    item: getEntityId(target as Item)[0],
                     slot,
                 },
                 headers,
@@ -409,7 +409,7 @@ async function performAction(
     // unequip
     else if (action.action === "unequip") {
         return await crossoverCmdUnequip(
-            { item: entityId(target as Item)[0] },
+            { item: getEntityId(target as Item)[0] },
             headers,
         );
     }
@@ -432,7 +432,7 @@ async function performAction(
     else if (action.action === "configure" && variables != null) {
         const [key, val] = variables.queryIrrelevant.split(":");
         return await crossoverCmdConfigureItem(
-            { item: entityId(target as Item)[0], variables: { [key]: val } },
+            { item: getEntityId(target as Item)[0], variables: { [key]: val } },
             headers,
         );
     }

@@ -7,11 +7,6 @@
         type GameCommand,
     } from "$lib/crossover/ir";
     import { abilities, type Ability } from "$lib/crossover/world/abilities";
-    import type {
-        Item,
-        Monster,
-        Player,
-    } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
     import {
         itemRecord,
@@ -28,7 +23,6 @@
     const LARGE_SCREEN = 800;
     let innerWidth: number; // window.innerWidth
 
-    export let target: Player | Monster | Item | null = null;
     export let onGameCommand: (command: GameCommand) => Promise<void>;
 
     let commands: GameCommand[] = [];
@@ -106,7 +100,7 @@
     </div>
 
     <!-- Chat Input -->
-    <ChatInput class="m-2" bind:target {onEnter} {onPartial}></ChatInput>
+    <ChatInput class="m-2" {onEnter} {onPartial}></ChatInput>
 
     <!-- Map (60px is size of ChatInput) -->
     <div style="height: calc(50% - 60px); flex-shrink-0" class="shrink-0">

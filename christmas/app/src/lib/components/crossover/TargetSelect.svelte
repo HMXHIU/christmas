@@ -10,15 +10,17 @@
     import { cn } from "$lib/shadcn";
     import { Crosshair } from "lucide-svelte";
     import { onMount, tick } from "svelte";
-    import { itemRecord, monsterRecord, playerRecord } from "../../../store";
+    import {
+        itemRecord,
+        monsterRecord,
+        playerRecord,
+        target,
+    } from "../../../store";
 
-    export let value: Player | Monster | Item | null = null;
-
+    let open = false;
     let monsters: Monster[] = [];
     let players: Player[] = [];
     let items: Item[] = [];
-
-    let open = false;
 
     function closeAndFocusTrigger(triggerId: string) {
         open = false;
@@ -56,8 +58,8 @@
             class={cn("flex flex-row gap-2 p-2", $$restProps.class)}
         >
             <Crosshair></Crosshair>
-            {#if value}
-                <span>{value.name || ""}</span>
+            {#if $target}
+                <span>{$target.name || ""}</span>
             {/if}
         </Button>
     </Popover.Trigger>
@@ -72,7 +74,7 @@
                             <Command.Item
                                 value={player.player}
                                 onSelect={(selected) => {
-                                    value = player;
+                                    target.set(player);
                                     closeAndFocusTrigger(ids.trigger);
                                 }}
                                 class="flex flex-row justify-between"
@@ -92,7 +94,7 @@
                             <Command.Item
                                 value={monster.monster}
                                 onSelect={(selected) => {
-                                    value = monster;
+                                    target.set(monster);
                                     closeAndFocusTrigger(ids.trigger);
                                 }}
                                 class="flex flex-row justify-between"
@@ -112,7 +114,7 @@
                             <Command.Item
                                 value={item.item}
                                 onSelect={(selected) => {
-                                    value = item;
+                                    target.set(item);
                                     closeAndFocusTrigger(ids.trigger);
                                 }}
                                 class="flex flex-row justify-between"

@@ -21,13 +21,13 @@ export {
     childrenGeohashes,
     directionVectors,
     entityDimensions,
-    entityId,
     expandGeohashes,
     gameActionId,
     generateEvenlySpacedPoints,
     geohashNeighbour,
     geohashToColRow,
     geohashesNearby,
+    getEntityId,
     getGeohashesForPath,
     getPlotsAtGeohash,
     getPositionsForPath,
@@ -458,7 +458,7 @@ function calculateLocation(
  * @param entity - The entity (Player, Monster, or Item) for which to get the ID.
  * @returns The ID of the entity and its type.
  */
-function entityId(entity: Player | Monster | Item): [string, EntityType] {
+function getEntityId(entity: Player | Monster | Item): [string, EntityType] {
     if ("player" in entity) {
         return [entity.player, "player"];
     } else if ("monster" in entity) {

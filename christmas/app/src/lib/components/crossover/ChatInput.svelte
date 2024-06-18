@@ -2,11 +2,6 @@
     // Components
     import { Button } from "$lib/components/ui/button";
     import { Textarea } from "$lib/components/ui/textarea";
-    import type {
-        Item,
-        Monster,
-        Player,
-    } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
     import { debounce } from "lodash";
     import { Send } from "lucide-svelte";
@@ -14,7 +9,6 @@
 
     export let onEnter: (message: string) => void;
     export let onPartial: (message: string) => void;
-    export let target: Player | Monster | Item | null = null;
 
     let message: string = "";
 
@@ -44,10 +38,7 @@
     )}
 >
     <!-- Target Select -->
-    <TargetSelect
-        class="h-full border-0 text-muted-foreground"
-        bind:value={target}
-    ></TargetSelect>
+    <TargetSelect class="h-full border-0 text-muted-foreground"></TargetSelect>
     <!-- Chat Input -->
     <Textarea
         bind:value={message}

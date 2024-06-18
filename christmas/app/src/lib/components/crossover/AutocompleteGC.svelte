@@ -4,8 +4,8 @@
     import type { GameCommand } from "$lib/crossover/ir";
     import {
         REGEX_STRIP_ENTITY_TYPE,
-        entityId,
         gameActionId,
+        getEntityId,
     } from "$lib/crossover/utils";
     import {
         abilities,
@@ -50,7 +50,10 @@
         const [action, { target }] = gc;
 
         if (target) {
-            let id = entityId(target)[0].replace(REGEX_STRIP_ENTITY_TYPE, "");
+            let id = getEntityId(target)[0].replace(
+                REGEX_STRIP_ENTITY_TYPE,
+                "",
+            );
             id = id.length > 13 ? id.slice(0, 13) + "..." : id;
             return `${target.name} (${id})`;
         }
@@ -61,7 +64,7 @@
         const [action, { item }] = gc;
 
         if (item) {
-            let id = entityId(item)[0].replace(REGEX_STRIP_ENTITY_TYPE, "");
+            let id = getEntityId(item)[0].replace(REGEX_STRIP_ENTITY_TYPE, "");
             id = id.length > 13 ? id.slice(0, 13) + "..." : id;
             return `${item.name} (${id})`;
         }

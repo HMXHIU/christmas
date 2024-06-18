@@ -4,8 +4,8 @@ import {
     calculateLocation,
     childrenGeohashes,
     entityDimensions,
-    entityId,
     geohashNeighbour,
+    getEntityId,
     getPlotsAtGeohash,
 } from "$lib/crossover/utils";
 import {
@@ -709,7 +709,7 @@ async function performAbility({
     // Check predicate
     if (
         !predicate.targetSelfAllowed &&
-        entityId(self)[0] === entityId(target)[0] &&
+        getEntityId(self)[0] === getEntityId(target)[0] &&
         self.player
     ) {
         publishFeedEvent(self as PlayerEntity, {
