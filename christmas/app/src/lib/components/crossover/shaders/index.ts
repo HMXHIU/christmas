@@ -142,8 +142,14 @@ function loadShaderGeometry(
                       instanceCount,
                       width,
                       height,
+                      options.cellHeight,
                   )
-                : createTexturedQuadGeometry(texture, width, height);
+                : createTexturedQuadGeometry(
+                      texture,
+                      width,
+                      height,
+                      options.cellHeight,
+                  );
         loadedGeometry[shaderUid] = {
             shader: s,
             geometry,
@@ -220,6 +226,7 @@ function createTexturedQuadGeometry(
     texture: Texture,
     width: number,
     height: number,
+    cellHeight?: number,
 ): {
     geometry: Geometry;
     instancePositions: Buffer;
@@ -234,6 +241,11 @@ function createTexturedQuadGeometry(
         data: new Float32Array(1).fill(0),
         usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
     });
+
+    const zAlongY = cellHeight
+        ? [1, 1, 1, 1, 1, 1, 1, 1]
+        : [0, 0, 0, 0, 0, 0, 0, 0];
+
     return {
         geometry: new Geometry({
             attributes: {
@@ -252,7 +264,7 @@ function createTexturedQuadGeometry(
                     height,
                 ],
                 aUV: [x0, y0, x1, y1, x2, y2, x3, y3],
-                aZAlongY: [0, 0, 0, 0, 0, 0, 0, 0],
+                aZAlongY: zAlongY,
                 aInstancePosition: {
                     buffer: instancePositions,
                     instance: true, // ??? 'Vertex buffer is not big enough for the draw call' if false
@@ -274,6 +286,7 @@ function createInstancedTexturedQuadGeometry(
     instanceCount: number,
     width: number,
     height: number,
+    cellHeight?: number,
 ): {
     geometry: Geometry;
     instancePositions: Buffer;
@@ -295,6 +308,10 @@ function createInstancedTexturedQuadGeometry(
         usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
     });
 
+    const zAlongY = cellHeight
+        ? [1, 1, 1, 1, 1, 1, 1, 1]
+        : [0, 0, 0, 0, 0, 0, 0, 0];
+
     return {
         geometry: new Geometry({
             attributes: {
@@ -313,7 +330,7 @@ function createInstancedTexturedQuadGeometry(
                     height,
                 ],
                 aUV: [x0, y0, x1, y1, x2, y2, x3, y3],
-                aZAlongY: [0, 0, 0, 0, 0, 0, 0, 0],
+                aZAlongY: zAlongY,
                 aInstancePosition: {
                     buffer: instancePositions,
                     instance: true,

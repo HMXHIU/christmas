@@ -35,11 +35,12 @@ void main() {
         aPosition.y,
         1.0
     );
+    float zAlongY = (uTextureHeight - aPosition.y) * aZAlongY;
 
     gl_Position = vec4(
         clip.xy,
         // Entities use instancePosition to determine the Z position
-        (aInstancePosition.y + uZOffset - (uTextureHeight - aPosition.y) * aZAlongY) * uZScale,
+        (aInstancePosition.y + uZOffset - zAlongY) * uZScale,
         1.0
     );
 }
