@@ -1,4 +1,3 @@
-import { actions, type Actions } from "$lib/crossover/actions";
 import {
     autoCorrectGeohashPrecision,
     calculateLocation,
@@ -15,6 +14,7 @@ import {
     patchEffectWithVariables,
     type ProcedureEffect,
 } from "$lib/crossover/world/abilities";
+import { actions, type Actions } from "$lib/crossover/world/actions";
 import {
     bestiary,
     monsterLUReward,
@@ -55,6 +55,7 @@ import {
     isLocationTraversable,
     itemVariableValue,
     parseItemVariables,
+    publishActionEvent,
     publishAffectedEntitiesToPlayers,
     publishFeedEvent,
     setPlayerState,
@@ -1056,6 +1057,13 @@ async function movePlayer(player: PlayerEntity, path: Direction[]) {
             break;
         }
 
+        // Publish action
+        publishActionEvent(player, {
+            event: "action",
+            action: actions.move.action,
+            source: player.player,
+        });
+
         // Update player location
         player = entity as PlayerEntity;
         player.loc = location;
@@ -1076,7 +1084,7 @@ async function movePlayer(player: PlayerEntity, path: Direction[]) {
                 player.player,
             );
         }
-        // Just update player
+        // Just update player (TODO: update players in vincinity)
         else {
             publishAffectedEntitiesToPlayers([player], player.player);
         }

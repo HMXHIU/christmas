@@ -17,6 +17,7 @@ export {
     hasResourcesForAbility,
     patchEffectWithVariables,
     resolveAbilityEntities,
+    type Abilities,
     type Ability,
     type AbilityType,
     type Attributes,
@@ -26,6 +27,97 @@ export {
     type Procedure,
     type ProcedureEffect,
 };
+
+type AbilityType = "offensive" | "defensive" | "healing" | "neutral"; // to allow AI to choose abilities based on the situation
+type DamageType =
+    | "slashing"
+    | "blunt"
+    | "piercing"
+    | "fire"
+    | "ice"
+    | "lightning"
+    | "poison"
+    | "necrotic"
+    | "radiant"
+    | "healing";
+type Debuff =
+    | "paralyzed"
+    | "blinded"
+    | "wet"
+    | "burning"
+    | "poisoned"
+    | "frozen"
+    | "bleeding"
+    | "stunned"
+    | "confused"
+    | "charmed"
+    | "frightened"
+    | "exhausted"
+    | "silenced"
+    | "diseased";
+type Buff = "haste" | "regeneration" | "shield" | "invisibility" | "berserk";
+
+interface Attributes {
+    dex: number;
+    str: number;
+    int: number;
+    con: number;
+    wis: number;
+    cha: number;
+}
+type Abilities =
+    | "bandage"
+    | "disintegrate"
+    | "scratch"
+    | "swing"
+    | "doubleSlash"
+    | "eyePoke"
+    | "bite"
+    | "breathFire"
+    | "paralyze"
+    | "blind"
+    | "teleport";
+
+interface Ability {
+    ability: Abilities;
+    type: AbilityType;
+    description: string;
+    procedures: Procedure[];
+    ap: number; // AP cost of the ability
+    hp: number; // HP cost of the ability
+    mp: number; // MP cost of the ability
+    st: number; // ST cost of the ability
+    range: number; // range of the ability (number of unit precision geohashes)
+    aoe: number; // area of effect (number of unit precision geohashes)
+    predicate: {
+        self: EntityType[];
+        target: EntityType[];
+        targetSelfAllowed: boolean;
+    };
+}
+
+type Procedure = ["action" | "check", ProcedureEffect];
+interface ProcedureEffect {
+    target: "self" | "target";
+    ticks: number;
+    damage?: {
+        amount: number;
+        damageType: DamageType;
+    };
+    debuffs?: {
+        debuff: Debuff;
+        op: "push" | "pop" | "contains" | "doesNotContain";
+    };
+    buffs?: {
+        buff: Buff;
+        op: "push" | "pop" | "contains" | "doesNotContain";
+    };
+    states?: {
+        state: "loc" | "ap" | "hp" | "mp" | "st";
+        op: "change" | "subtract" | "add";
+        value: number | string | boolean | string[];
+    };
+}
 
 /**
  * `abilities` is a collection of all the `Ability` available in the game.
@@ -364,85 +456,6 @@ const abilities: Record<string, Ability> = {
         },
     },
 };
-
-type AbilityType = "offensive" | "defensive" | "healing" | "neutral"; // to allow AI to choose abilities based on the situation
-type DamageType =
-    | "slashing"
-    | "blunt"
-    | "piercing"
-    | "fire"
-    | "ice"
-    | "lightning"
-    | "poison"
-    | "necrotic"
-    | "radiant"
-    | "healing";
-type Debuff =
-    | "paralyzed"
-    | "blinded"
-    | "wet"
-    | "burning"
-    | "poisoned"
-    | "frozen"
-    | "bleeding"
-    | "stunned"
-    | "confused"
-    | "charmed"
-    | "frightened"
-    | "exhausted"
-    | "silenced"
-    | "diseased";
-type Buff = "haste" | "regeneration" | "shield" | "invisibility" | "berserk";
-
-interface Attributes {
-    dex: number;
-    str: number;
-    int: number;
-    con: number;
-    wis: number;
-    cha: number;
-}
-
-interface Ability {
-    ability: string;
-    type: AbilityType;
-    description: string;
-    procedures: Procedure[];
-    ap: number; // AP cost of the ability
-    hp: number; // HP cost of the ability
-    mp: number; // MP cost of the ability
-    st: number; // ST cost of the ability
-    range: number; // range of the ability (number of unit precision geohashes)
-    aoe: number; // area of effect (number of unit precision geohashes)
-    predicate: {
-        self: EntityType[];
-        target: EntityType[];
-        targetSelfAllowed: boolean;
-    };
-}
-
-type Procedure = ["action" | "check", ProcedureEffect];
-interface ProcedureEffect {
-    target: "self" | "target";
-    ticks: number;
-    damage?: {
-        amount: number;
-        damageType: DamageType;
-    };
-    debuffs?: {
-        debuff: Debuff;
-        op: "push" | "pop" | "contains" | "doesNotContain";
-    };
-    buffs?: {
-        buff: Buff;
-        op: "push" | "pop" | "contains" | "doesNotContain";
-    };
-    states?: {
-        state: "loc" | "ap" | "hp" | "mp" | "st";
-        op: "change" | "subtract" | "add";
-        value: number | string | boolean | string[];
-    };
-}
 
 /**
  * Patch the effect using `self` and `target` variables.

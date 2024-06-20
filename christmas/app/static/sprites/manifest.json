@@ -31,6 +31,15 @@
             ]
         },
         {
+            "name": "actions",
+            "assets":[
+                {
+                    "alias": "actions",
+                    "src": "/sprites/actions/sprite.json"
+                }
+            ]
+        },
+        {
             "name": "pedestals",
             "assets":[
                 {

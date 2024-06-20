@@ -1,13 +1,14 @@
 <script lang="ts">
     import * as Resizable from "$lib/components/ui/resizable";
     import { ScrollArea } from "$lib/components/ui/scroll-area";
-    import { playerActions } from "$lib/crossover/actions";
     import {
         searchPossibleCommands,
         type GameCommand,
     } from "$lib/crossover/ir";
     import { abilities, type Ability } from "$lib/crossover/world/abilities";
+    import { playerActions } from "$lib/crossover/world/actions";
     import { cn } from "$lib/shadcn";
+    import type { ActionEvent } from "../../../routes/api/crossover/stream/+server";
     import {
         itemRecord,
         monsterRecord,
@@ -20,15 +21,15 @@
     import Look from "./Look.svelte";
     import Map from "./Map.svelte";
 
-    const LARGE_SCREEN = 800;
-    let innerWidth: number; // window.innerWidth
-
     export let onGameCommand: (command: GameCommand) => Promise<void>;
 
+    const LARGE_SCREEN = 800;
+    let innerWidth: number; // window.innerWidth
     let commands: GameCommand[] = [];
     let command: GameCommand | null = null;
+    let mapRef: Map;
 
-    async function onEnter(message: string) {
+    async function onEnterKeyPress(message: string) {
         // Clear game commands
         commands = [];
 
@@ -36,6 +37,10 @@
         if (command) {
             onGameCommand(command);
         }
+    }
+
+    export async function handleActionEvent(event: ActionEvent) {
+        mapRef.drawActionEvent(event);
     }
 
     async function onPartial(message: string) {
@@ -100,10 +105,10 @@
     </div>
 
     <!-- Chat Input -->
-    <ChatInput class="m-2" {onEnter} {onPartial}></ChatInput>
+    <ChatInput class="m-2" {onEnterKeyPress} {onPartial}></ChatInput>
 
     <!-- Map (60px is size of ChatInput) -->
     <div style="height: calc(50% - 60px); flex-shrink-0" class="shrink-0">
-        <Map></Map>
+        <Map bind:this={mapRef}></Map>
     </div>
 </div>

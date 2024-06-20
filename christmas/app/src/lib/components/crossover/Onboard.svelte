@@ -15,7 +15,7 @@
     const askLocation =
         "Location not found. Please enable location services and try again.";
 
-    async function onEnter() {
+    async function onEnterKeyPress() {
         const region = $userDeviceClient?.location?.country?.code;
         const geohash = $userDeviceClient?.location?.geohash;
 
@@ -87,7 +87,7 @@
         <h1>
             {`Initiate current world seed [${worldSeed.name}]`}
         </h1>
-        <Button on:click={onEnter}>Enter</Button>
+        <Button on:click={onEnterKeyPress}>Enter</Button>
     {:else}
         <h1>
             {`Create your character`}

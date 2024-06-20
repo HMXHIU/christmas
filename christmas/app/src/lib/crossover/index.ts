@@ -23,10 +23,10 @@ import {
     playerRecord,
     worldRecord,
 } from "../../store";
-import { actions, type Action } from "./actions";
 import type { GameCommand, GameCommandVariables } from "./ir";
 import { getEntityId } from "./utils";
 import type { Ability } from "./world/abilities";
+import { actions, type Action } from "./world/actions";
 import {
     EquipmentSlots,
     compendium,
@@ -142,9 +142,10 @@ function addMessageFeed({
 
 async function handleGC(command: GameCommand) {
     try {
-        const gcResponse = await executeGameCommand(command);
-        if (gcResponse != null) {
-            await processGCResponse(command, gcResponse);
+        const gcr = await executeGameCommand(command);
+
+        if (gcr != null) {
+            await processGCResponse(command, gcr);
         }
     } catch (error: any) {
         console.error(error);

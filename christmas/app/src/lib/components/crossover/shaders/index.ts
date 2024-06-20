@@ -5,6 +5,8 @@ import entityFrag from "./entity.frag?raw";
 import entityVertex from "./entity.vert?raw";
 import grassFrag from "./grass.frag?raw";
 import grassVertex from "./grass.vert?raw";
+import iconFrag from "./icon.frag?raw";
+import iconVertex from "./icon.vert?raw";
 import snoise from "./lygia/generative/snoise.glsl?raw";
 import grad4 from "./lygia/math/grad4.glsl?raw";
 import mod289 from "./lygia/math/mod289.glsl?raw";
@@ -60,6 +62,10 @@ const shaders: Record<string, { vertex: string; fragment: string }> = {
         vertex: entityVertex,
         fragment: entityFrag,
     },
+    icon: {
+        vertex: iconVertex,
+        fragment: iconFrag,
+    },
     world: {
         vertex: entityVertex,
         fragment: entityFrag,
@@ -110,10 +116,9 @@ function loadShaderGeometry(
     },
 ] {
     const instanceCount = options.instanceCount ?? 1;
-    const textureUid = options.uid ?? texture.uid;
-    const shaderUid = `${s}-${textureUid}`;
+    const shaderUid = `${s}-${options.uid ?? texture.uid}`;
     const shader = loadedShaders[shaderUid];
-    const geometry = loadedGeometry[textureUid];
+    const geometry = loadedGeometry[shaderUid];
 
     if (shader && geometry) {
         return [shader, geometry];
@@ -139,7 +144,7 @@ function loadShaderGeometry(
                       height,
                   )
                 : createTexturedQuadGeometry(texture, width, height);
-        loadedGeometry[textureUid] = {
+        loadedGeometry[shaderUid] = {
             shader: s,
             geometry,
             instanceCount,
@@ -151,7 +156,8 @@ function loadShaderGeometry(
             instanceHighlights,
         };
     }
-    return [loadedShaders[shaderUid], loadedGeometry[textureUid]];
+
+    return [loadedShaders[shaderUid], loadedGeometry[shaderUid]];
 }
 
 function createShader(

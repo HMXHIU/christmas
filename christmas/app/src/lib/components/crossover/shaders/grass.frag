@@ -11,10 +11,6 @@ uniform float uTextureWidth;
 
 void main() {
 
-    if (vInstancePosition.x < 0.0) {
-        discard;
-    }
-
     vec4 textureColor = texture2D(uTexture, vUV);
 
     if (textureColor.a < 0.1) {

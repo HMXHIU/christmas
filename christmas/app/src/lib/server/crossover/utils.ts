@@ -18,6 +18,7 @@ import { z } from "zod";
 import { PlayerStateSchema, type PlayerState } from ".";
 import { serverAnchorClient } from "..";
 import type {
+    ActionEvent,
     FeedEvent,
     UpdateEntitiesEvent,
 } from "../../../routes/api/crossover/stream/+server";
@@ -53,6 +54,7 @@ export {
     isLocationTraversable,
     itemVariableValue,
     parseItemVariables,
+    publishActionEvent,
     publishAffectedEntitiesToPlayers,
     publishFeedEvent,
     savePlayerState,
@@ -62,6 +64,10 @@ export {
 const { uniqBy } = lodash;
 
 async function publishFeedEvent(player: PlayerEntity, event: FeedEvent) {
+    await redisClient.publish(player.player, JSON.stringify(event));
+}
+
+async function publishActionEvent(player: PlayerEntity, event: ActionEvent) {
     await redisClient.publish(player.player, JSON.stringify(event));
 }
 

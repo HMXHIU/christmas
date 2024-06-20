@@ -7,13 +7,14 @@
         handleUpdateEntities,
         stream,
     } from "$lib/crossover";
-    import { actions } from "$lib/crossover/actions";
     import { KeyboardController, type GameKey } from "$lib/crossover/keyboard";
+    import { actions } from "$lib/crossover/world/actions";
     import { type Direction } from "$lib/crossover/world/types";
     import { substituteVariables } from "$lib/utils";
     import { onMount } from "svelte";
     import { player } from "../../../store";
     import type {
+        ActionEvent,
         FeedEvent,
         UpdateEntitiesEvent,
     } from "../../api/crossover/stream/+server";
@@ -21,6 +22,7 @@
     let eventStream: EventTarget | null = null;
     let closeStream: (() => void) | null = null;
     let streamStarted = false;
+    let gameWindow: GameWindow;
 
     async function onMove(direction: Direction) {
         if ($player != null) {
@@ -66,6 +68,11 @@
         }
     }
 
+    function processActions(event: Event) {
+        const actionEvent = (event as MessageEvent).data as ActionEvent;
+        gameWindow.handleActionEvent(actionEvent);
+    }
+
     function processUpdateEntities(event: Event) {
         const { players, items, monsters } = (event as MessageEvent)
             .data as UpdateEntitiesEvent;
@@ -97,12 +104,14 @@
         [eventStream, closeStream] = await stream();
         eventStream.addEventListener("feed", processFeedEvent);
         eventStream.addEventListener("entities", processUpdateEntities);
+        eventStream.addEventListener("action", processActions);
     }
 
     function stopStream() {
         if (eventStream != null) {
             eventStream.removeEventListener("feed", processFeedEvent);
             eventStream.removeEventListener("entities", processUpdateEntities);
+            eventStream.addEventListener("action", processActions);
         }
         if (closeStream != null) {
             closeStream();
@@ -146,5 +155,10 @@
         <Onboard />
     </div>
 {:else}
-    <GameWindow class="pt-2" onGameCommand={handleGC} {onMove} />
+    <GameWindow
+        class="pt-2"
+        onGameCommand={handleGC}
+        {onMove}
+        bind:this={gameWindow}
+    />
 {/if}

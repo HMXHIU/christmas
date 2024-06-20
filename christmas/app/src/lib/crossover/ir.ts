@@ -3,9 +3,9 @@ import type {
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
-import { resolveActionEntities, type Action } from "./actions";
 import { gameActionId, getEntityId } from "./utils";
 import { resolveAbilityEntities, type Ability } from "./world/abilities";
+import { resolveActionEntities, type Action } from "./world/actions";
 import type { Utility } from "./world/compendium";
 import { compendium } from "./world/compendium";
 
@@ -13,10 +13,12 @@ export {
     entitiesIR,
     fuzzyMatch,
     gameActionsIR,
+    getGameActionId,
     searchPossibleCommands,
     tokenize,
     type GameAction,
     type GameActionEntities,
+    type GameActionType,
     type GameCommand,
     type GameCommandVariables,
     type TokenPositions,
@@ -33,8 +35,19 @@ type GameActionEntities = {
     target?: Player | Monster | Item;
     item?: Item;
 };
+type GameActionType = "ability" | "utility" | "action";
 type GameAction = Ability | Utility | Action;
 type GameCommand = [GameAction, GameActionEntities, GameCommandVariables?];
+
+function getGameActionId(gameAction: GameAction): [string, GameActionType] {
+    if ("utility" in gameAction) {
+        return [gameAction.utility, "utility"];
+    } else if ("ability" in gameAction) {
+        return [gameAction.ability, "ability"];
+    } else {
+        return [gameAction.action, "action"];
+    }
+}
 
 /**
  * Retrieves abilities and utilities based on the given query tokens.

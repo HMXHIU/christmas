@@ -18,6 +18,8 @@
         snapToGrid,
         stringToRandomNumber,
     } from "$lib/crossover/utils";
+    import { abilities } from "$lib/crossover/world/abilities";
+    import { actions } from "$lib/crossover/world/actions";
     import { bestiary } from "$lib/crossover/world/bestiary";
     import {
         biomeAtGeohash,
@@ -25,6 +27,7 @@
         heightAtGeohash,
     } from "$lib/crossover/world/biomes";
     import { compendium } from "$lib/crossover/world/compendium";
+    import { MS_PER_TICK } from "$lib/crossover/world/settings";
     import type { AssetMetadata, Direction } from "$lib/crossover/world/types";
     import {
         geohashToGridCell,
@@ -54,6 +57,7 @@
         WebGLRenderer,
     } from "pixi.js";
     import { onDestroy, onMount } from "svelte";
+    import type { ActionEvent } from "../../../routes/api/crossover/stream/+server";
     import {
         itemRecord,
         monsterRecord,
@@ -121,10 +125,11 @@
         floor: 0,
         wall: 0,
         item: 0,
-        monster: 0,
-        player: 2, // draw last because it has alpha
         world: 0,
-        grass: 1, // draw last because it has alpha
+        // draw last because it has alpha
+        grass: 1,
+        player: 1,
+        monster: 1,
     };
 
     // In WebGL, the gl_Position.z value should be in the range [-1 (closer), 1]
@@ -163,9 +168,11 @@
     interface EntityMesh {
         id: string;
         mesh: Mesh<Geometry, Shader>;
-        hitbox?: Container;
+        hitbox: Container; // meshes are added to the hitbox so they can be moved together
         instancePositions: Buffer;
         instanceHighlights: Buffer;
+        entity?: Player | Monster | Item;
+        actionIcon?: Mesh<Geometry, Shader>;
         properties?: {
             variant?: string;
         };
@@ -211,25 +218,6 @@
     $: resize(clientHeight, clientWidth);
     $: highlightTarget($target);
 
-    function highlightTarget(target: Player | Monster | Item | null) {
-        if (target == null) {
-            return;
-        }
-        const [targetEntityId, entityType] = getEntityId(target);
-
-        // Highlight target entity and unhighlight others
-        for (const [entityId, { instanceHighlights }] of Object.entries(
-            entityMeshes,
-        )) {
-            if (entityId === targetEntityId) {
-                instanceHighlights.data.fill(1);
-            } else {
-                instanceHighlights.data.fill(0);
-            }
-            instanceHighlights.update();
-        }
-    }
-
     /*
      * Utility functions
      */
@@ -265,8 +253,6 @@
     }
 
     function updateCamera(player: Player, tween = true) {
-        // const playerMesh = entityMeshes[player.player].mesh;
-
         if (playerPosition != null && worldStage != null) {
             const offsetX = Math.floor(
                 playerPosition.isoX + CELL_WIDTH / 2 - clientWidth / 2,
@@ -340,6 +326,72 @@
      * Render functions
      */
 
+    /**
+     * Server should notify entity perform action on entity to all clients involved for rendering
+     * TODO: change game command responses to a message feed not REST response
+     */
+    export async function drawActionEvent(event: ActionEvent) {
+        if (!isInitialized || worldStage == null) {
+            return;
+        }
+        const { source, target, action, ability, utility, prop } = event;
+
+        // Get source entity
+        const sourceEntity = entityMeshes[source];
+        const targetEntity = target ? entityMeshes[target] : null;
+
+        // Render action/ability/utility
+        if (action != null && sourceEntity != null) {
+            const { ticks, icon } = actions[action];
+            // Show action icon for duration
+            const [bundleName, alias] = icon.path.split("/").slice(-2);
+            const bundle = await Assets.loadBundle(bundleName);
+            const texture = bundle[alias].textures[icon.icon];
+            if (sourceEntity.actionIcon != null) {
+                swapMeshTexture(sourceEntity.actionIcon, texture);
+                sourceEntity.actionIcon.visible = true;
+                setTimeout(
+                    () => {
+                        if (sourceEntity.actionIcon != null) {
+                            sourceEntity.actionIcon.visible = false;
+                        }
+                    },
+                    Math.max(ticks * MS_PER_TICK, 1000),
+                );
+            }
+            console.log(source, "performing action on", target);
+        } else if (ability != null) {
+            const abilityRecord = abilities[ability];
+            console.log(source, "performing ability on", target);
+        } else if (
+            utility != null &&
+            prop != null &&
+            compendium[prop]?.utilities[utility] != null
+        ) {
+            const utilityRecord = compendium[prop]?.utilities[utility];
+            console.log(source, "performing utility on", target);
+        }
+    }
+
+    function highlightTarget(target: Player | Monster | Item | null) {
+        if (target == null) {
+            return;
+        }
+        const [targetEntityId, entityType] = getEntityId(target);
+
+        // Highlight target entity and unhighlight others
+        for (const [entityId, { instanceHighlights }] of Object.entries(
+            entityMeshes,
+        )) {
+            if (entityId === targetEntityId) {
+                instanceHighlights.data.fill(1);
+            } else {
+                instanceHighlights.data.fill(0);
+            }
+            instanceHighlights.update();
+        }
+    }
+
     async function updateWorlds(
         worldRecord: Record<string, Record<string, World>>,
         playerPosition: Position | null,
@@ -392,13 +444,16 @@
 
         for (const [
             textureUid,
-            { texture, positions, width, height },
+            { texture, positions, width, height, length },
         ] of Object.entries(shaderTextures)) {
             const [shader, { geometry, instancePositions, mesh }] =
                 loadShaderGeometry(shaderName, texture, width, height, {
                     instanceCount: numGeometries,
                     zScale: Z_SCALE,
                 });
+
+            // Set geometry instance count
+            geometry.instanceCount = length / 3; // x, y, h
 
             // Update instance positions buffer
             if (instancePositions && positions != null) {
@@ -650,8 +705,6 @@
                     height,
                 } = await calculateBiomeForRowCol(playerPosition, row, col);
 
-                // TODO: Can just access and set the shader buffer directly
-
                 if (biomeTexturePositions[texture.uid] == null) {
                     biomeTexturePositions[texture.uid] = {
                         texture,
@@ -696,7 +749,7 @@
                             texture,
                             positions: new Float32Array(
                                 MAX_SHADER_GEOMETRIES * 3,
-                            ).fill(-1), // x, y, z
+                            ).fill(-1), // x, y, h
                             width,
                             height,
                             length: 0,
@@ -714,6 +767,7 @@
                 }
             }
         }
+
         // Draw shaders
         drawShaderTextures({
             shaderName: "biome",
@@ -892,6 +946,7 @@
                         mesh,
                         instancePositions,
                         instanceHighlights,
+                        hitbox: new Container(), // TODO: implement
                     };
 
                     worldMeshes[id] = worldMesh;
@@ -940,15 +995,16 @@
             return;
         }
 
-        // TODO:: Cull sprites outside view
-        for (const [id, s] of Object.entries(entityGridSprites)) {
-            if (!isCellInView(s, playerPosition)) {
-                worldStage.removeChild(entityGridSprites[id].sprite);
-                entityGridSprites[id].sprite.destroy();
-                delete entityGridSprites[id];
-            }
-        }
+        // TODO: Cull meshes outside view
+        // for (const [id, s] of Object.entries(entityGridSprites)) {
+        //     if (!isCellInView(s, playerPosition)) {
+        //         worldStage.removeChild(entityGridSprites[id].sprite);
+        //         entityGridSprites[id].sprite.destroy();
+        //         delete entityGridSprites[id];
+        //     }
+        // }
 
+        // TODO: change to meshes
         // Cull world sprites outside town
         const town = playerPosition.geohash.slice(
             0,
@@ -973,8 +1029,8 @@
             ]);
             playerMesh.instancePositions.update();
             // Update hitbox position
-            playerMesh.hitbox!.x = playerPosition.isoX;
-            playerMesh.hitbox!.y =
+            playerMesh.hitbox.x = playerPosition.isoX;
+            playerMesh.hitbox.y =
                 playerPosition.isoY - playerPosition.topologicalHeight;
         }
 
@@ -992,6 +1048,43 @@
         for (const entity of Object.values(er)) {
             await upsertEntityMesh(entity);
         }
+    }
+
+    function swapMeshTexture(mesh: Mesh<Geometry, Shader>, texture: Texture) {
+        mesh.shader.resources.uTexture = texture.source;
+        const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
+        const uvBuffer = mesh.geometry.getBuffer("aUV");
+        uvBuffer.data.set([x0, y0, x1, y1, x2, y2, x3, y3]);
+        uvBuffer.update();
+    }
+
+    async function swapEntityVariant(entityMesh: EntityMesh, variant: string) {
+        if (entityMesh.entity == null) {
+            return;
+        }
+
+        let texture: Texture | null = null;
+
+        if (entityMesh.properties!.variant !== variant) {
+            if ((entityMesh.entity as Item).prop) {
+                const item = entityMesh.entity as Item;
+                const prop = compendium[item.prop];
+                const variant = prop.states[item.state].variant;
+                texture = await loadAssetTexture(prop.asset, {
+                    variant,
+                });
+            }
+        }
+
+        if (!texture) {
+            console.error(
+                `Missing texture for ${entityMesh.entity.name}:${variant}`,
+            );
+            return;
+        }
+
+        entityMesh.properties!.variant = variant;
+        swapMeshTexture(entityMesh.mesh, texture);
     }
 
     async function upsertEntityMesh(entity: Player | Item | Monster) {
@@ -1019,25 +1112,7 @@
                 const item = entity as Item;
                 const prop = compendium[item.prop];
                 const variant = prop.states[item.state].variant;
-
-                // Check variant changed (when item.state changes)
-                if (entityMesh.properties!.variant !== variant) {
-                    const texture = await loadAssetTexture(prop.asset, {
-                        variant,
-                    });
-                    if (!texture) {
-                        console.log(`Missing texture for ${item.name}`);
-                        return;
-                    }
-                    // Update texture
-                    entityMesh.mesh.shader.resources.uTexture = texture.source;
-                    // Update uvs
-                    const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
-                    const uvBuffer = entityMesh.mesh.geometry.getBuffer("aUV");
-                    uvBuffer.data.set([x0, y0, x1, y1, x2, y2, x3, y3]);
-                    uvBuffer.update();
-                    entityMesh.properties!.variant = variant;
-                }
+                await swapEntityVariant(entityMesh, variant);
             }
 
             // Update mesh position
@@ -1049,14 +1124,13 @@
             entityMesh.instancePositions.update();
 
             // Update hitbox position
-            if (entityMesh.hitbox != null) {
-                entityMesh.hitbox!.x = isoX;
-                entityMesh.hitbox!.y = isoY - topologicalHeight;
-            }
+            entityMesh.hitbox.x = isoX;
+            entityMesh.hitbox.y = isoY - topologicalHeight;
+            entityMesh.hitbox.zIndex = RENDER_ORDER[entityType] * isoY;
 
             // Add again as it might have been removed during culling
-            worldStage.removeChild(entityMesh.mesh);
-            worldStage.addChild(entityMesh.mesh);
+            worldStage.removeChild(entityMesh.hitbox);
+            worldStage.addChild(entityMesh.hitbox);
         }
         // Create
         else {
@@ -1089,7 +1163,7 @@
                 return;
             }
 
-            // Create mesh
+            // Create entity mesh
             const height = (texture.height * width) / texture.width; // Scale height while maintaining aspect ratio
             const [shader, { mesh, instancePositions, instanceHighlights }] =
                 loadShaderGeometry("entity", texture, width, height, {
@@ -1129,21 +1203,20 @@
                     target.set(entity);
                 },
             });
+            hitbox.zIndex = RENDER_ORDER[entityType] * isoY;
+            hitbox.addChild(mesh);
+
+            // Create entity mesh
             entityMesh = {
                 id: entityId,
                 mesh,
                 instancePositions,
                 instanceHighlights,
                 hitbox,
+                entity,
             };
 
-            // Set mesh properties
-            if (variant != null) {
-                entityMesh.properties = { variant };
-            }
-
-            // Set initial position
-            mesh.zIndex = RENDER_ORDER[entityType];
+            // Set initial position (entities only use instancePositions for calculuation z)
             entityMesh.instancePositions.data.set([
                 isoX,
                 isoY,
@@ -1151,11 +1224,36 @@
             ]);
             entityMesh.instancePositions.update();
 
-            // Add to entityMeshes
+            // Set mesh properties
+            if (variant != null) {
+                entityMesh.properties = { variant };
+            }
+
+            // Create action icon
+            if (entityType === "player" || entityType === "monster") {
+                const [shader, { mesh: iconMesh }] = loadShaderGeometry(
+                    "icon",
+                    Texture.EMPTY, // use texture swap to change icon
+                    CELL_WIDTH / 2,
+                    CELL_HEIGHT / 2,
+                    {
+                        uid: entityId, // use entityId as texture uid
+                        zScale: Z_SCALE,
+                        zOffset: Z_OFF.icon,
+                    },
+                );
+
+                // Set icon position to bottom of entity mesh
+                iconMesh.pivot.set(iconMesh.width / 2, iconMesh.height / 2);
+                iconMesh.position.set(hitbox.width / 2, hitbox.height * 0.9);
+
+                hitbox.addChild(iconMesh);
+                entityMesh.actionIcon = iconMesh;
+            }
+
+            // Add to worldStage
             entityMeshes[entityId] = entityMesh;
-            worldStage.removeChild(mesh);
             worldStage.removeChild(hitbox);
-            worldStage.addChild(mesh);
             worldStage.addChild(hitbox);
         }
     }
@@ -1273,6 +1371,7 @@
             "bestiary",
             "props",
             "pedestals",
+            "actions",
         ]);
     }
 

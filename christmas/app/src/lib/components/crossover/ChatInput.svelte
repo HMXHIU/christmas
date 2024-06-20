@@ -7,7 +7,7 @@
     import { Send } from "lucide-svelte";
     import TargetSelect from "./TargetSelect.svelte";
 
-    export let onEnter: (message: string) => void;
+    export let onEnterKeyPress: (message: string) => void;
     export let onPartial: (message: string) => void;
 
     let message: string = "";
@@ -26,7 +26,7 @@
     }
 
     function onSubmit(): void {
-        onEnter(message);
+        onEnterKeyPress(message);
         message = ""; // clear message on Enter/Submit
     }
 </script>

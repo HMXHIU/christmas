@@ -28,7 +28,7 @@ void main() {
     vInstanceHighlight = aInstanceHighlight;
     vInstancePosition = aInstancePosition;
 
-    // Entities positions are set in mesh.position not via instancePosition
+    // Icon positions are set in mesh.position not via instancePosition
     mat3 mvp = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix;
     vec3 clip = mvp * vec3(
         aPosition.x,
@@ -38,8 +38,7 @@ void main() {
 
     gl_Position = vec4(
         clip.xy,
-        // Entities use instancePosition to determine the Z position
-        (aInstancePosition.y + uZOffset - (uTextureHeight - aPosition.y) * aZAlongY) * uZScale,
+        -1, // Icons are always in front
         1.0
     );
 }

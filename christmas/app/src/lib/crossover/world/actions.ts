@@ -4,8 +4,8 @@ import type {
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
-import type { GameActionEntities, TokenPositions } from "./ir";
-import { TICKS_PER_TURN } from "./world/settings";
+import type { GameActionEntities, TokenPositions } from "../ir";
+import { TICKS_PER_TURN } from "./settings";
 
 export {
     actions,
@@ -13,6 +13,7 @@ export {
     resolveActionEntities,
     type Action,
     type Actions,
+    type IconAssetMetadata,
 };
 
 type Actions =
@@ -38,6 +39,12 @@ interface Action {
         tokenPositions: Record<string, number>;
     };
     ticks: number;
+    icon: IconAssetMetadata;
+}
+
+interface IconAssetMetadata {
+    path: string; // eg. bundle/alias
+    icon: string;
 }
 
 const actions: Record<Actions, Action> = {
@@ -47,6 +54,10 @@ const actions: Record<Actions, Action> = {
         predicate: {
             target: ["player", "monster", "item", "none"],
             tokenPositions: { action: 0, target: 1 },
+        },
+        icon: {
+            path: "actions/actions",
+            icon: "look-at",
         },
         ticks: 0,
     },
@@ -58,6 +69,10 @@ const actions: Record<Actions, Action> = {
             tokenPositions: { action: 0, target: 1 },
         },
         ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "talk",
+        },
     },
     move: {
         action: "move",
@@ -67,6 +82,10 @@ const actions: Record<Actions, Action> = {
             tokenPositions: { action: 0 },
         },
         ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "walk",
+        },
     },
     take: {
         action: "take",
@@ -76,6 +95,10 @@ const actions: Record<Actions, Action> = {
             tokenPositions: { action: 0, target: 1 },
         },
         ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "drop-weapon",
+        },
     },
     drop: {
         action: "drop",
@@ -85,6 +108,10 @@ const actions: Record<Actions, Action> = {
             tokenPositions: { action: 0, target: 1 },
         },
         ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "drop-weapon",
+        },
     },
     equip: {
         action: "equip",
@@ -94,6 +121,10 @@ const actions: Record<Actions, Action> = {
             tokenPositions: { action: 0, target: 1 },
         },
         ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "switch-weapon",
+        },
     },
     unequip: {
         action: "unequip",
@@ -103,6 +134,10 @@ const actions: Record<Actions, Action> = {
             tokenPositions: { action: 0, target: 1 },
         },
         ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "switch-weapon",
+        },
     },
     create: {
         action: "create",
@@ -112,6 +147,10 @@ const actions: Record<Actions, Action> = {
             tokenPositions: { action: 0 },
         },
         ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "stone-crafting",
+        },
     },
     configure: {
         action: "configure",
@@ -121,6 +160,10 @@ const actions: Record<Actions, Action> = {
             tokenPositions: { action: 0, target: 1 },
         },
         ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "stone-crafting",
+        },
     },
     inventory: {
         action: "inventory",
@@ -130,6 +173,10 @@ const actions: Record<Actions, Action> = {
             tokenPositions: { action: 0 },
         },
         ticks: 0,
+        icon: {
+            path: "actions/actions",
+            icon: "stick-splitting",
+        },
     },
     rest: {
         action: "rest",
@@ -139,6 +186,10 @@ const actions: Record<Actions, Action> = {
             tokenPositions: { action: 0 },
         },
         ticks: TICKS_PER_TURN * 4,
+        icon: {
+            path: "actions/actions",
+            icon: "night-sleep",
+        },
     },
 };
 

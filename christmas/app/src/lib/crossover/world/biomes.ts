@@ -7,7 +7,7 @@ import {
 } from "$lib/crossover/utils";
 import ngeohash from "ngeohash";
 import { PNG, type PNGWithMetadata } from "pngjs";
-import { type AssetMetadata } from "./types";
+import { type AssetMetadata, type Tile } from "./types";
 import { worldSeed, type WorldSeed } from "./world";
 export {
     INTENSITY_TO_HEIGHT,
@@ -156,7 +156,47 @@ let biomes: Record<string, Biome> = {
         name: "Ice",
         description:
             "A region covered in ice, with limited vegetation and wildlife.",
-        traversableSpeed: 1.0,
+        traversableSpeed: 0.8,
+        asset: {
+            path: "biomes/terrain",
+            variants: {
+                default: "desert1", // frames in the sprite sheet
+                alt1: "desert2",
+                alt2: "desert3",
+            },
+            prob: {
+                default: 0.33,
+                alt1: 0.33,
+                alt2: 0.33,
+            },
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
+        },
+        decorations: {
+            grass: {
+                probability: 0.5, // TODO: to be modified by how strong the perlin noice affects the tile eg. how much "forest" this tile is
+                minInstances: 1,
+                maxInstances: 5,
+                radius: 1,
+                asset: {
+                    path: "biomes/grass",
+                    variants: {
+                        default: "0052",
+                        alt1: "0053",
+                        alt2: "0054",
+                    },
+                    prob: {
+                        default: 0.33,
+                        alt1: 0.33,
+                        alt2: 0.33,
+                    },
+                    width: 0.5,
+                    height: 0.5,
+                    precision: worldSeed.spatial.unit.precision,
+                },
+            },
+        },
     },
 };
 
@@ -525,40 +565,9 @@ async function biomesNearbyGeohash(
  * @returns The tile information including geohash, name, and description.
  */
 function tileAtGeohash(geohash: string, biome: string): Tile {
-    let description = "";
-
-    switch (biome) {
-        case "forest":
-            description =
-                "A dense collection of trees and vegetation, home to a variety of wildlife.";
-            break;
-        case "desert":
-            description =
-                "A dry, arid region with extreme temperatures, sparse vegetation, and limited wildlife.";
-            break;
-        case "tundra":
-            description =
-                "A cold, treeless area with a frozen subsoil, limited vegetation, and adapted wildlife.";
-            break;
-        case "grassland":
-            description =
-                "A region dominated by grasses, with few trees and a diverse range of wildlife.";
-            break;
-        case "wetland":
-            description =
-                "An area saturated with water, supporting aquatic plants and a rich biodiversity.";
-            break;
-        case "mountain":
-            description =
-                "A high elevation region with steep terrain, diverse ecosystems, and unique wildlife.";
-            break;
-        default:
-            description = "Unknown biome";
-            break;
-    }
     return {
         geohash,
         name: geohash, // TODO: get name from POI
-        description: description,
+        description: biomes[biome].description,
     };
 }

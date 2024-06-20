@@ -1,3 +1,5 @@
+import type { Abilities } from "$lib/crossover/world/abilities";
+import type { Actions } from "$lib/crossover/world/actions";
 import { requireLogin } from "$lib/server";
 import { connectedUsers } from "$lib/server/crossover";
 import { redisSubscribeClient } from "$lib/server/crossover/redis";
@@ -17,12 +19,21 @@ export interface FeedEvent {
     variables?: Record<string, string | number | boolean>;
 }
 
-// TODO: UNIFY this with GameCommandResponse
 export interface UpdateEntitiesEvent {
     event: "entities";
     players?: Player[];
     monsters?: Monster[];
     items?: Item[];
+}
+
+export interface ActionEvent {
+    event: "action";
+    source: string;
+    target?: string;
+    action?: Actions;
+    ability?: Abilities;
+    utility?: string;
+    prop?: string;
 }
 
 function sendStreamEvent(
