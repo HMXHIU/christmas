@@ -1,4 +1,4 @@
-import { Buffer, BufferUsage, Geometry, Mesh, Shader, Texture } from "pixi.js";
+import { Buffer, BufferUsage, Geometry, Shader, Texture } from "pixi.js";
 import biomeFrag from "./biome.frag?raw";
 import biomeVertex from "./biome.vert?raw";
 import entityFrag from "./entity.frag?raw";
@@ -16,9 +16,10 @@ import taylorInvSqrt from "./lygia/math/taylorInvSqrt.glsl?raw";
 
 export {
     MAX_SHADER_GEOMETRIES,
-    clearShaderCache,
     createShader,
     createTexturedQuadGeometry,
+    destroyShader,
+    destroyShaders,
     loadShaderGeometry,
     loadedGeometry,
     shaders,
@@ -37,7 +38,6 @@ const loadedGeometry: Record<
         instanceCount: number;
         instancePositions: Buffer;
         instanceHighlights: Buffer;
-        mesh: Mesh<Geometry, Shader>;
     }
 > = {};
 
@@ -72,7 +72,21 @@ const shaders: Record<string, { vertex: string; fragment: string }> = {
     },
 };
 
-function clearShaderCache() {
+function destroyShader(shader: string, uid: string) {
+    const shaderUid = `${shader}-${uid}`;
+
+    // Destroy shader
+    loadedShaders[shaderUid].destroy();
+    delete loadedShaders[shaderUid];
+
+    // Destroy geometry
+    loadedGeometry[shaderUid].geometry.destroy();
+    loadedGeometry[shaderUid].instancePositions.destroy();
+    loadedGeometry[shaderUid].instanceHighlights.destroy();
+    delete loadedGeometry[shaderUid];
+}
+
+function destroyShaders() {
     for (const [key, value] of Object.entries(loadedShaders)) {
         value.destroy();
         delete loadedShaders[key];
@@ -81,7 +95,7 @@ function clearShaderCache() {
     for (const [key, value] of Object.entries(loadedGeometry)) {
         value.geometry.destroy();
         value.instancePositions.destroy();
-        value.mesh.destroy();
+        value.instanceHighlights.destroy();
         delete loadedGeometry[key];
     }
 }
@@ -112,7 +126,6 @@ function loadShaderGeometry(
         instanceCount?: number;
         instancePositions: Buffer;
         instanceHighlights: Buffer;
-        mesh: Mesh<Geometry, Shader>; // instanced geometry share a single mesh
     },
 ] {
     const instanceCount = options.instanceCount ?? 1;
@@ -154,10 +167,6 @@ function loadShaderGeometry(
             shader: s,
             geometry,
             instanceCount,
-            mesh: new Mesh<Geometry, Shader>({
-                geometry,
-                shader: loadedShaders[shaderUid]!,
-            }),
             instancePositions,
             instanceHighlights,
         };

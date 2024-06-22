@@ -30,3 +30,6 @@ test-ledger/
 # Ignore everything from /ai except README.md
 /ai/*
 !/ai/README.md
+# Ignore everything from /tiled except README.md
+/tiled/*
+!/tiled/README.md

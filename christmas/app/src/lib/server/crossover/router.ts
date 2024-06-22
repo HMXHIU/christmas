@@ -122,7 +122,7 @@ const BuffEntitySchema = z.object({
 });
 const SpawnWorldSchema = z.object({
     geohash: z.string(),
-    url: z.string(),
+    tilemap: z.string(), // tilemap in `PUBLIC_TILED_MINIO_BUCKET` bucket
 });
 
 // Schemas - player
@@ -179,10 +179,15 @@ const crossoverRouter = {
         spawnWorld: internalServiceProcedure
             .input(SpawnWorldSchema)
             .mutation(async ({ input }) => {
-                const { geohash, url } = input;
+                const { geohash, tilemap } = input;
+                const assetUrl = ObjectStorage.objectUrl({
+                    owner: null,
+                    bucket: "tiled",
+                    name: `tilemaps/${tilemap}`,
+                });
                 const world = await spawnWorld({
                     geohash,
-                    assetUrl: url,
+                    assetUrl,
                     tileHeight: TILE_HEIGHT,
                     tileWidth: TILE_WIDTH,
                 });

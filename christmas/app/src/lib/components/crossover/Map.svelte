@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { PUBLIC_TILED_MINIO_BUCKET } from "$env/static/public";
     import { LRUMemoryCache, memoize } from "$lib/caches";
     import { crossoverCmdMove } from "$lib/crossover";
     import {
@@ -68,7 +69,7 @@
     } from "../../../store";
     import {
         MAX_SHADER_GEOMETRIES,
-        clearShaderCache,
+        destroyShaders,
         loadShaderGeometry,
         loadedGeometry,
         updateShaderUniforms,
@@ -100,7 +101,7 @@
         -1 /
         cartToIso(bottomRightCol * CELL_WIDTH, bottomRightRow * CELL_HEIGHT)[1];
 
-    // TODO: deprecate
+    // Z layer offsets
     const Z_LAYER = ISO_CELL_HEIGHT;
     const Z_OFF: Record<string, number> = {
         // shader
@@ -142,7 +143,7 @@
     };
 
     // In WebGL, the gl_Position.z value should be in the range [-1 (closer), 1]
-    const TOPO_SCALE = CELL_HEIGHT / 2 / 8; // 1 meter = 1/8 a cell height (on isometric coordinates)
+    const ELEVATION_TO_CELL_HEIGHT = CELL_HEIGHT / 2 / 8; // 1 meter = 1/8 a cell height (on isometric coordinates)
 
     interface Position {
         row: number;
@@ -162,27 +163,18 @@
         length: number;
     }
 
-    interface GridSprite {
-        id: string;
-        sprite: Sprite | Container;
-        x: number; // in isometric
-        y: number;
-        row: number; // in cells
-        col: number;
-        variant?: string;
-        decorations?: Record<string, ShaderTexture>;
-        positions?: ShaderTexture;
-    }
-
     interface EntityMesh {
         id: string;
         mesh: Mesh<Geometry, Shader>;
         hitbox: Container; // meshes are added to the hitbox so they can be moved together
         instancePositions: Buffer;
         instanceHighlights: Buffer;
-        x: number; // isometric, before adding topological height
-        y: number;
-        topologicalHeight: number;
+        position: Position;
+        // row: number;
+        // col: number;
+        // x: number; // isometric, before adding topologicalHeight
+        // y: number;
+        // topologicalHeight: number;
         entity?: Player | Monster | Item;
         actionIcon?: Mesh<Geometry, Shader>;
         properties?: {
@@ -209,10 +201,6 @@
     let isMouseDown: boolean = false;
     let path: Direction[] | null = null;
 
-    // TODO: REMOVE
-    let entityGridSprites: Record<string, GridSprite> = {};
-
-    let worldGridSprites: Record<string, GridSprite> = {};
     let pivotTarget: { x: number; y: number } = { x: 0, y: 0 };
     const shaderTexturesInWorld = new Set();
 
@@ -255,7 +243,7 @@
         const { row, col, precision } = geohashToGridCell(geohash);
         const [isoX, isoY] = cartToIso(col * width, row * height);
         const topologicalHeight =
-            TOPO_SCALE *
+            ELEVATION_TO_CELL_HEIGHT *
             (await heightAtGeohash(geohash, {
                 responseCache: topologyResponseCache,
                 resultsCache: topologyResultCache,
@@ -457,11 +445,13 @@
             textureUid,
             { texture, positions, width, height, length },
         ] of Object.entries(shaderTextures)) {
-            const [shader, { geometry, instancePositions, mesh }] =
+            const [shader, { geometry, instancePositions }] =
                 loadShaderGeometry(shaderName, texture, width, height, {
                     instanceCount: numGeometries,
                     zScale: Z_SCALE,
                 });
+
+            const mesh = new Mesh<Geometry, Shader>({ geometry, shader });
 
             // Set geometry instance count
             geometry.instanceCount = length / 3; // x, y, h
@@ -536,7 +526,7 @@
             topologyBufferCache,
         });
         const topologicalHeight =
-            TOPO_SCALE *
+            ELEVATION_TO_CELL_HEIGHT *
             (await heightAtGeohash(geohash, {
                 responseCache: topologyResponseCache,
                 resultsCache: topologyResultCache,
@@ -834,6 +824,50 @@
         }
     }
 
+    function decodeTiledSource(path: string): string {
+        const source = decodeURIComponent(path) // strip '../'
+            .split("/")
+            .slice(1)
+            .join("/");
+        return `/api/storage/${PUBLIC_TILED_MINIO_BUCKET}/public/${source}`;
+    }
+
+    async function getTilesetForTile(
+        tileId: number,
+        sortedTilesets: { firstgid: number; source: string }[],
+    ): Promise<{ firstgid: number; tileset: any }> {
+        for (const ts of sortedTilesets) {
+            if (tileId >= ts.firstgid) {
+                return {
+                    tileset: await Assets.load(decodeTiledSource(ts.source)), // this is cached
+                    firstgid: ts.firstgid,
+                };
+            }
+        }
+        throw new Error(`Missing tileset for tileId ${tileId}`);
+    }
+
+    async function getImageForTile(
+        tiles: {
+            id: number;
+            image: string;
+            imagewidth: number;
+            imageheight: number;
+        }[],
+        tileId: number,
+    ): Promise<{ texture: Texture; imagewidth: number; imageheight: number }> {
+        for (const tile of tiles) {
+            if (tile.id === tileId) {
+                return {
+                    texture: await Assets.load(decodeTiledSource(tile.image)),
+                    imagewidth: tile.imagewidth,
+                    imageheight: tile.imageheight,
+                }; // this is cached
+            }
+        }
+        throw new Error(`Missing image for tileId ${tileId}`);
+    }
+
     async function loadWorld({
         world,
         position,
@@ -851,7 +885,6 @@
 
         const tilemap = await Assets.load(world.url);
         const { layers, tilesets, tileheight, tilewidth } = tilemap;
-        const tileset = await Assets.load(tilesets[0].source);
         const [tileOffsetX, tileOffsetY] = cartToIso(
             tilewidth / 2,
             tilewidth / 2,
@@ -868,14 +901,21 @@
                 x,
                 y,
             } = layer;
+            const props: { name: string; value: any; type: string }[] =
+                properties ?? [];
 
             // Get properties
-            const { z, collider, interior } = (
-                properties as { name: string; value: any; type: string }[]
-            ).reduce((acc: Record<string, any>, { name, value, type }) => {
-                acc[name] = value;
-                return acc;
-            }, {});
+            const { z, collider, interior } = props.reduce(
+                (acc: Record<string, any>, { name, value, type }) => {
+                    acc[name] = value;
+                    return acc;
+                },
+                {},
+            );
+
+            const sortedTilesets = tilesets
+                .sort((a: any, b: any) => a.firstgid - b.firstgid)
+                .reverse();
 
             // Create tile sprites
             for (let i = 0; i < height; i++) {
@@ -891,17 +931,31 @@
                         continue;
                     }
 
-                    const { image, imageheight, imagewidth } =
-                        tileset.tiles[tileId - 1];
-                    const texture = await Assets.load(image);
-                    const [isoX, isoY] = cartToIso(
-                        j * imagewidth,
-                        i * imagewidth, // use imagewidth for cartesian
+                    // Get tileset for tileId
+                    const { tileset, firstgid } = await getTilesetForTile(
+                        tileId,
+                        sortedTilesets,
                     );
+
+                    // Get image for tileId
+                    const { texture, imageheight, imagewidth } =
+                        await getImageForTile(tileset.tiles, tileId - firstgid);
+
+                    console.log(tileheight, tilewidth, imageheight, imagewidth);
+
+                    const [isoX, isoY] = cartToIso(
+                        j * tilewidth,
+                        i * tilewidth, // use imagewidth for cartesian
+                    );
+
+                    // const [isoX, isoY] = cartToIso(
+                    //     j * imagewidth,
+                    //     i * imagewidth, // use imagewidth for cartesian
+                    // );
 
                     const [
                         shader,
-                        { mesh, instancePositions, instanceHighlights },
+                        { geometry, instancePositions, instanceHighlights },
                     ] = loadShaderGeometry(
                         "world",
                         texture,
@@ -915,6 +969,11 @@
                             cellHeight: tileheight / ISO_CELL_HEIGHT,
                         },
                     );
+
+                    const mesh = new Mesh<Geometry, Shader>({
+                        geometry,
+                        shader,
+                    });
 
                     // Center of the bottom tile (imageheight a multiple of tileheight)
                     const anchor = {
@@ -951,10 +1010,8 @@
                         mesh,
                         instancePositions,
                         instanceHighlights,
-                        hitbox: new Container(), // TODO: implement
-                        x,
-                        y,
-                        topologicalHeight: position.topologicalHeight,
+                        hitbox: new Container(), // Not used for world meshes
+                        position: position, // Not used for world meshes
                     };
 
                     worldMeshes[id] = worldMesh;
@@ -1007,12 +1064,28 @@
             return;
         }
         const [_, entityType] = getEntityId(entityMesh.entity);
-        const zIndex = RENDER_ORDER[entityType] * entityMesh.y;
+        const zIndex = RENDER_ORDER[entityType] * entityMesh.position.isoY; // TODO: this does not work during tweening
         entityMesh.mesh.zIndex = zIndex;
         if (entityMesh.actionIcon != null) {
             entityMesh.actionIcon.zIndex = zIndex;
         }
         entityMesh.hitbox.zIndex = zIndex;
+    }
+
+    function destroyEntityMesh(entityMesh: EntityMesh) {
+        if (worldStage == null) {
+            return;
+        }
+        worldStage.removeChild(entityMesh.mesh);
+        entityMesh.mesh.destroy();
+        if (entityMesh.actionIcon != null) {
+            worldStage.removeChild(entityMesh.actionIcon);
+            entityMesh.actionIcon.destroy();
+        }
+        worldStage.removeChild(entityMesh.hitbox);
+        entityMesh.hitbox.destroy();
+
+        // TODO: Destroy shaders & geometry
     }
 
     async function updatePlayer(playerPosition: Position | null) {
@@ -1025,43 +1098,40 @@
             return;
         }
 
-        // TODO: Cull meshes outside view
-        // for (const [id, s] of Object.entries(entityGridSprites)) {
-        //     if (!isCellInView(s, playerPosition)) {
-        //         worldStage.removeChild(entityGridSprites[id].sprite);
-        //         entityGridSprites[id].sprite.destroy();
-        //         delete entityGridSprites[id];
-        //     }
-        // }
+        // Cull entity meshes outside view
+        for (const [id, entityMesh] of Object.entries(entityMeshes)) {
+            if (!isCellInView(entityMesh.position, playerPosition)) {
+                destroyEntityMesh(entityMesh);
+                delete entityMeshes[id];
+            }
+        }
 
-        // TODO: change to meshes
-        // Cull world sprites outside town
+        // Cull world meshes outside town
         const town = playerPosition.geohash.slice(
             0,
             worldSeed.spatial.town.precision,
         );
-        for (const [id, entity] of Object.entries(worldGridSprites)) {
+        for (const [id, entityMesh] of Object.entries(worldMeshes)) {
             if (!id.startsWith(town)) {
-                worldStage.removeChild(worldGridSprites[id].sprite);
-                worldGridSprites[id].sprite.destroy();
-                delete worldGridSprites[id];
+                destroyEntityMesh(entityMesh);
+                delete worldMeshes[id];
             }
         }
 
         // Player
         const playerMesh = entityMeshes[$player.player];
-        if (playerMesh.mesh != null) {
-            // Update mesh position
+        if (playerMesh != null && playerMesh.mesh != null) {
+            // Update
             playerMesh.instancePositions.data.set([
                 playerPosition.isoX,
                 playerPosition.isoY,
                 playerPosition.topologicalHeight,
             ]);
             playerMesh.instancePositions.update();
-            // Update hitbox position
             playerMesh.hitbox.x = playerPosition.isoX;
             playerMesh.hitbox.y =
                 playerPosition.isoY - playerPosition.topologicalHeight;
+            playerMesh.position = playerPosition;
 
             // Set render order
             updateEntityMeshRenderOrder(playerMesh);
@@ -1091,8 +1161,8 @@
         const [entityId, entityType] = getEntityId(entity);
 
         // Get position
-        const { row, col, isoX, isoY, topologicalHeight } =
-            await calculatePosition(entity.loc[0]);
+        const position = await calculatePosition(entity.loc[0]);
+        const { row, col, isoX, isoY, topologicalHeight } = position;
 
         // Ignore entities outside player's view
         if (!isCellInView({ row, col }, playerPosition)) {
@@ -1111,17 +1181,16 @@
                 await swapEntityVariant(entityMesh, variant);
             }
 
-            // Update mesh position
+            // Update
             entityMesh.instancePositions.data.set([
                 isoX,
                 isoY,
                 topologicalHeight,
             ]);
             entityMesh.instancePositions.update();
-
-            // Update hitbox position
             entityMesh.hitbox.x = isoX;
             entityMesh.hitbox.y = isoY - topologicalHeight;
+            entityMesh.position = position;
 
             // Set render order
             updateEntityMeshRenderOrder(entityMesh);
@@ -1163,13 +1232,16 @@
 
             // Create entity mesh
             const height = (texture.height * width) / texture.width; // Scale height while maintaining aspect ratio
-            const [shader, { mesh, instancePositions, instanceHighlights }] =
-                loadShaderGeometry("entity", texture, width, height, {
-                    uid: entityId,
-                    anchor,
-                    zScale: Z_SCALE,
-                    zOffset: Z_OFF.entity,
-                });
+            const [
+                shader,
+                { geometry, instancePositions, instanceHighlights },
+            ] = loadShaderGeometry("entity", texture, width, height, {
+                uid: entityId,
+                anchor,
+                zScale: Z_SCALE,
+                zOffset: Z_OFF.entity,
+            });
+            const mesh = new Mesh<Geometry, Shader>({ geometry, shader });
 
             // Create a hitbox for cursor events (can't use the mesh directly because the position is set in shaders)
             const hitbox = new Container({
@@ -1211,9 +1283,7 @@
                 instanceHighlights,
                 hitbox,
                 entity,
-                x: isoX,
-                y: isoY,
-                topologicalHeight,
+                position,
             };
 
             // Set initial position (entities only use instancePositions for calculuation z)
@@ -1231,7 +1301,7 @@
 
             // Create action icon
             if (entityType === "player" || entityType === "monster") {
-                const [shader, { mesh: iconMesh }] = loadShaderGeometry(
+                const [shader, { geometry }] = loadShaderGeometry(
                     "icon",
                     Texture.EMPTY, // use texture swap to change icon
                     CELL_WIDTH / 2,
@@ -1242,13 +1312,17 @@
                         zOffset: Z_OFF.icon,
                     },
                 );
+                const iconMesh = new Mesh<Geometry, Shader>({
+                    geometry,
+                    shader,
+                });
                 iconMesh.visible = false; // hide by default
 
                 // Set icon position to bottom of entity mesh
+                hitbox.addChild(iconMesh);
                 iconMesh.pivot.set(iconMesh.width / 2, iconMesh.height / 2);
                 iconMesh.position.set(hitbox.width / 2, hitbox.height * 0.9);
 
-                hitbox.addChild(iconMesh);
                 entityMesh.actionIcon = iconMesh;
             }
 
@@ -1490,7 +1564,7 @@
 
     onDestroy(() => {
         if (app) {
-            clearShaderCache();
+            destroyShaders();
             app.destroy(true, {
                 children: true,
                 texture: true,

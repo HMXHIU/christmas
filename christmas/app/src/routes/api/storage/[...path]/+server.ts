@@ -5,7 +5,8 @@ import { json } from "@sveltejs/kit";
 // Get storage (api/storage/{bucket}/{acl=public|private}/{name})
 export async function GET(event) {
     const { path } = event.params as { path: string };
-    const [bucket, acl, filename] = path.split("/");
+    const [bucket, acl, ...pathParts] = path.split("/");
+    const filename = pathParts.join("/");
 
     // Check valid bucket
     if (!Object.values(BUCKETS).includes(bucket)) {
@@ -32,16 +33,7 @@ export async function GET(event) {
 
     // Get redirect url
     try {
-        if (
-            [
-                BUCKETS.coupon,
-                BUCKETS.store,
-                BUCKETS.user,
-                BUCKETS.image,
-                BUCKETS.player,
-                BUCKETS.avatar,
-            ].includes(bucket)
-        ) {
+        if (Object.values(BUCKETS).includes(bucket)) {
             const redirectUrl = await ObjectStorage.redirectObjectUrl({
                 owner,
                 bucket,
