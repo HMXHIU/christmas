@@ -25,7 +25,7 @@
     import {
         biomeAtGeohash,
         biomes,
-        heightAtGeohash,
+        elevationAtGeohash,
     } from "$lib/crossover/world/biomes";
     import { compendium } from "$lib/crossover/world/compendium";
     import { MS_PER_TICK } from "$lib/crossover/world/settings";
@@ -102,7 +102,7 @@
         cartToIso(bottomRightCol * CELL_WIDTH, bottomRightRow * CELL_HEIGHT)[1];
 
     // Z layer offsets
-    const Z_LAYER = ISO_CELL_HEIGHT;
+    const Z_LAYER = ISO_CELL_HEIGHT * 2;
     const Z_OFF: Record<string, number> = {
         // shader
         biome: 0 * Z_LAYER,
@@ -134,8 +134,8 @@
         biome: 0,
         floor: 0,
         wall: 0,
-        item: 0,
         // draw last because it has alpha
+        item: 1,
         grass: 1,
         player: 1,
         monster: 1,
@@ -143,7 +143,7 @@
     };
 
     // In WebGL, the gl_Position.z value should be in the range [-1 (closer), 1]
-    const ELEVATION_TO_CELL_HEIGHT = CELL_HEIGHT / 2 / 8; // 1 meter = 1/8 a cell height (on isometric coordinates)
+    const ELEVATION_TO_CELL_HEIGHT = CELL_HEIGHT / 2 / 8; // 1 meter = 1/8 a cell elevation (on isometric coordinates)
 
     interface Position {
         row: number;
@@ -152,7 +152,7 @@
         isoY: number;
         geohash: string;
         precision: number;
-        topologicalHeight: number;
+        elevation: number;
     }
 
     interface ShaderTexture {
@@ -170,11 +170,6 @@
         instancePositions: Buffer;
         instanceHighlights: Buffer;
         position: Position;
-        // row: number;
-        // col: number;
-        // x: number; // isometric, before adding topologicalHeight
-        // y: number;
-        // topologicalHeight: number;
         entity?: Player | Monster | Item;
         actionIcon?: Mesh<Geometry, Shader>;
         properties?: {
@@ -242,14 +237,14 @@
         const height = options?.cellHeight ?? CELL_HEIGHT;
         const { row, col, precision } = geohashToGridCell(geohash);
         const [isoX, isoY] = cartToIso(col * width, row * height);
-        const topologicalHeight =
+        const elevation =
             ELEVATION_TO_CELL_HEIGHT *
-            (await heightAtGeohash(geohash, {
+            (await elevationAtGeohash(geohash, {
                 responseCache: topologyResponseCache,
                 resultsCache: topologyResultCache,
                 bufferCache: topologyBufferCache,
             }));
-        return { row, col, isoX, isoY, geohash, precision, topologicalHeight };
+        return { row, col, isoX, isoY, geohash, precision, elevation };
     }
 
     function updateCamera(player: Player, tween = true) {
@@ -259,7 +254,7 @@
             );
             const offsetY =
                 playerPosition.isoY -
-                playerPosition.topologicalHeight -
+                playerPosition.elevation -
                 Math.floor(clientHeight / 2);
             if (tween) {
                 pivotTarget = { x: offsetX, y: offsetY };
@@ -506,7 +501,7 @@
         texture: Texture;
         isoX: number;
         isoY: number;
-        topologicalHeight: number;
+        elevation: number;
         biome: string;
         geohash: string;
         strength: number;
@@ -525,9 +520,9 @@
             topologyResultCache,
             topologyBufferCache,
         });
-        const topologicalHeight =
+        const elevation =
             ELEVATION_TO_CELL_HEIGHT *
-            (await heightAtGeohash(geohash, {
+            (await elevationAtGeohash(geohash, {
                 responseCache: topologyResponseCache,
                 resultsCache: topologyResultCache,
                 bufferCache: topologyBufferCache,
@@ -564,7 +559,7 @@
             texture,
             isoX,
             isoY,
-            topologicalHeight,
+            elevation,
             width,
             height,
         };
@@ -583,7 +578,7 @@
         col,
         isoX,
         isoY,
-        topologicalHeight,
+        elevation,
     }: {
         geohash: string;
         biome: string;
@@ -592,7 +587,7 @@
         col: number;
         isoX: number;
         isoY: number;
-        topologicalHeight: number;
+        elevation: number;
     }): Promise<Record<string, ShaderTexture>> {
         const texturePositions: Record<string, ShaderTexture> = {};
 
@@ -666,7 +661,7 @@
                 ] = y;
                 texturePositions[texture.uid].positions![
                     texturePositions[texture.uid].length + 2
-                ] = topologicalHeight;
+                ] = elevation;
                 texturePositions[texture.uid].length += 3;
             }
         }
@@ -698,7 +693,7 @@
                     isoX,
                     isoY,
                     texture,
-                    topologicalHeight,
+                    elevation,
                     biome,
                     geohash,
                     strength,
@@ -725,7 +720,7 @@
                     ] = isoY;
                     biomeTexturePositions[texture.uid].positions![
                         biomeTexturePositions[texture.uid].length + 2
-                    ] = topologicalHeight;
+                    ] = elevation;
                     biomeTexturePositions[texture.uid].length += 3;
                 }
 
@@ -742,7 +737,7 @@
                         col,
                         isoX,
                         isoY,
-                        topologicalHeight,
+                        elevation,
                     }),
                 )) {
                     if (biomeDecorationsTexturePositions[textureUid] == null) {
@@ -817,7 +812,7 @@
                         row * CELL_HEIGHT,
                     );
                     sprite.x = isoX;
-                    sprite.y = isoY - position.topologicalHeight;
+                    sprite.y = isoY - position.elevation;
                     worldStage.addChild(sprite);
                 }
             }
@@ -941,17 +936,10 @@
                     const { texture, imageheight, imagewidth } =
                         await getImageForTile(tileset.tiles, tileId - firstgid);
 
-                    console.log(tileheight, tilewidth, imageheight, imagewidth);
-
                     const [isoX, isoY] = cartToIso(
                         j * tilewidth,
-                        i * tilewidth, // use imagewidth for cartesian
+                        i * tilewidth, // use tilewidth for cartesian
                     );
-
-                    // const [isoX, isoY] = cartToIso(
-                    //     j * imagewidth,
-                    //     i * imagewidth, // use imagewidth for cartesian
-                    // );
 
                     const [
                         shader,
@@ -995,12 +983,12 @@
                         tileOffsetY -
                         anchor.y * imageheight;
                     mesh.x = x;
-                    mesh.y = y - position.topologicalHeight;
+                    mesh.y = y - position.elevation;
                     mesh.zIndex = RENDER_ORDER[z] || RENDER_ORDER.world;
                     instancePositions.data.set([
                         x,
                         y + imageheight, // this is only used to calculate z
-                        position.topologicalHeight, // this is not used to calculate z
+                        position.elevation, // this is not used to calculate z
                     ]);
                     instancePositions.update();
 
@@ -1125,12 +1113,12 @@
             playerMesh.instancePositions.data.set([
                 playerPosition.isoX,
                 playerPosition.isoY,
-                playerPosition.topologicalHeight,
+                playerPosition.elevation,
             ]);
             playerMesh.instancePositions.update();
             playerMesh.hitbox.x = playerPosition.isoX;
             playerMesh.hitbox.y =
-                playerPosition.isoY - playerPosition.topologicalHeight;
+                playerPosition.isoY - playerPosition.elevation;
             playerMesh.position = playerPosition;
 
             // Set render order
@@ -1166,7 +1154,7 @@
 
         // Get position
         const position = await calculatePosition(entity.loc[0]);
-        const { row, col, isoX, isoY, topologicalHeight } = position;
+        const { row, col, isoX, isoY, elevation } = position;
 
         // Ignore entities outside player's view
         if (!isCellInView({ row, col }, playerPosition)) {
@@ -1186,14 +1174,10 @@
             }
 
             // Update
-            entityMesh.instancePositions.data.set([
-                isoX,
-                isoY,
-                topologicalHeight,
-            ]);
+            entityMesh.instancePositions.data.set([isoX, isoY, elevation]);
             entityMesh.instancePositions.update();
             entityMesh.hitbox.x = isoX;
-            entityMesh.hitbox.y = isoY - topologicalHeight;
+            entityMesh.hitbox.y = isoY - elevation;
             entityMesh.position = position;
 
             // Set render order
@@ -1252,7 +1236,7 @@
                 width: width,
                 height: height,
                 x: isoX,
-                y: isoY - topologicalHeight,
+                y: isoY - elevation,
                 pivot: {
                     x: anchor.x * width,
                     y: anchor.y * height,
@@ -1291,11 +1275,7 @@
             };
 
             // Set initial position (entities only use instancePositions for calculuation z)
-            entityMesh.instancePositions.data.set([
-                isoX,
-                isoY,
-                topologicalHeight,
-            ]);
+            entityMesh.instancePositions.data.set([isoX, isoY, elevation]);
             entityMesh.instancePositions.update();
 
             // Set mesh properties
@@ -1492,9 +1472,7 @@
         function getMousePosition(e: FederatedMouseEvent) {
             return snapToGrid(
                 e.global.x + worldStage!.pivot.x,
-                e.global.y +
-                    worldStage!.pivot.y +
-                    playerPosition!.topologicalHeight, // select on the same plane as player
+                e.global.y + worldStage!.pivot.y + playerPosition!.elevation, // select on the same plane as player
                 HALF_ISO_CELL_WIDTH,
                 HALF_ISO_CELL_HEIGHT,
             );
@@ -1569,10 +1547,6 @@
     onDestroy(() => {
         if (app) {
             destroyShaders();
-            // app.destroy(true, {
-            //     children: true,
-            //     texture: true,
-            // });
             app = null;
         }
     });

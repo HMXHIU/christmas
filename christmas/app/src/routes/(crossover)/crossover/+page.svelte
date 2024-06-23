@@ -6,6 +6,7 @@
         executeGameCommand,
         handleUpdateEntities,
         stream,
+        updateWorlds,
     } from "$lib/crossover";
     import { KeyboardController, type GameKey } from "$lib/crossover/keyboard";
     import { actions } from "$lib/crossover/world/actions";
@@ -128,6 +129,7 @@
                 streamStarted = true;
 
                 // Look at surroundings & update inventory
+                await updateWorlds(p.loc[0]);
                 await executeGameCommand([actions.look, { self: p }]);
                 await executeGameCommand([actions.inventory, { self: p }]);
             }

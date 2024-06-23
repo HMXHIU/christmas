@@ -14,7 +14,7 @@ export {
     biomeAtGeohash,
     biomes,
     biomesNearbyGeohash,
-    heightAtGeohash,
+    elevationAtGeohash,
     tileAtGeohash,
     topologyAtGeohash,
     topologyTile,
@@ -428,7 +428,7 @@ async function topologyAtGeohash(
  * @param geohash - The geohash coordinate string.
  * @returns The height at the given geohash.
  */
-async function heightAtGeohash(
+async function elevationAtGeohash(
     geohash: string,
     options?: {
         responseCache?: CacheInterface;
@@ -481,7 +481,7 @@ async function biomeAtGeohash(
     }
 
     // Get topology
-    const height = await heightAtGeohash(geohash, {
+    const height = await elevationAtGeohash(geohash, {
         responseCache: options?.topologyResponseCache,
         resultsCache: options?.topologyResultCache,
         bufferCache: options?.topologyBufferCache,

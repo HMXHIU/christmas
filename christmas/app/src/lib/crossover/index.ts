@@ -64,6 +64,7 @@ export {
     logout,
     signup,
     stream,
+    updateWorlds,
     type MessageFeed,
 };
 
@@ -129,18 +130,15 @@ function addMessageFeed({
     });
 }
 
-async function handleUpdateWorlds(geohash: string) {
-    // Check if worldRecord already has the town (no worlds or {} is valid)
-    if (
-        get(worldRecord)[geohash.slice(0, worldSeed.spatial.town.precision)] !=
-        null
-    ) {
+async function updateWorlds(geohash: string) {
+    const t = geohash.slice(0, worldSeed.spatial.town.precision);
+    if (get(worldRecord)[t] != null) {
         return;
     }
     const { town, worlds } = await crossoverWorldWorlds(geohash);
     worldRecord.update((wr) => {
         if (wr[town] == null) {
-            wr[town] = {}; // no world in town
+            wr[town] = {}; // no world in town ({} is valid)
         }
         for (const w of worlds) {
             wr[town][w.world] = w;
@@ -152,7 +150,7 @@ async function handleUpdateWorlds(geohash: string) {
 async function handleUpdatePlayer(before: Player, after: Player) {
     // Location changed
     if (before.loc[0] !== after.loc[0]) {
-        await handleUpdateWorlds(after.loc[0]);
+        await updateWorlds(after.loc[0]);
     }
 }
 
