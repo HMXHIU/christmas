@@ -63,12 +63,12 @@ export {
 
 const { uniqBy } = lodash;
 
-async function publishFeedEvent(player: PlayerEntity, event: FeedEvent) {
-    await redisClient.publish(player.player, JSON.stringify(event));
+async function publishFeedEvent(player: string, event: FeedEvent) {
+    await redisClient.publish(player, JSON.stringify(event));
 }
 
-async function publishActionEvent(player: PlayerEntity, event: ActionEvent) {
-    await redisClient.publish(player.player, JSON.stringify(event));
+async function publishActionEvent(player: string, event: ActionEvent) {
+    await redisClient.publish(player, JSON.stringify(event));
 }
 
 async function publishAffectedEntitiesToPlayers(
@@ -88,17 +88,20 @@ async function publishAffectedEntitiesToPlayers(
         "item",
     );
 
-    // Publish effects to players
-    for (const p of effectedPlayers) {
-        await redisClient.publish(
-            publishTo ?? (p as Player).player,
-            JSON.stringify({
-                event: "entities",
-                players: effectedPlayers,
-                monsters: effectedMonsters,
-                items: effectedItems,
-            } as UpdateEntitiesEvent),
-        );
+    const event = JSON.stringify({
+        event: "entities",
+        players: effectedPlayers,
+        monsters: effectedMonsters,
+        items: effectedItems,
+    } as UpdateEntitiesEvent);
+
+    if (publishTo != null) {
+        await redisClient.publish(publishTo, event);
+    } else {
+        // Publish effects to all players
+        for (const p of effectedPlayers) {
+            await redisClient.publish((p as Player).player, event);
+        }
     }
 }
 

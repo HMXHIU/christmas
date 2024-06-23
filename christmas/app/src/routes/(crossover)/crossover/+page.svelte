@@ -3,7 +3,7 @@
     import Onboard from "$lib/components/crossover/Onboard.svelte";
     import {
         addMessageFeed,
-        handleGC,
+        executeGameCommand,
         handleUpdateEntities,
         stream,
     } from "$lib/crossover";
@@ -26,7 +26,7 @@
 
     async function onMove(direction: Direction) {
         if ($player != null) {
-            await handleGC([
+            await executeGameCommand([
                 actions.move,
                 { self: $player },
                 { queryIrrelevant: direction, query: "" },
@@ -128,8 +128,8 @@
                 streamStarted = true;
 
                 // Look at surroundings & update inventory
-                await handleGC([actions.look, { self: p }]);
-                await handleGC([actions.inventory, { self: p }]);
+                await executeGameCommand([actions.look, { self: p }]);
+                await executeGameCommand([actions.inventory, { self: p }]);
             }
 
             // Stop streaming on logout
@@ -157,7 +157,7 @@
 {:else}
     <GameWindow
         class="pt-2"
-        onGameCommand={handleGC}
+        onGameCommand={executeGameCommand}
         {onMove}
         bind:this={gameWindow}
     />

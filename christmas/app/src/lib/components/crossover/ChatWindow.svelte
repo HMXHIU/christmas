@@ -51,8 +51,10 @@
         bind:this={chatWindow}
         class="px-4 py-0 overflow-y-auto space-y-2 scroll-container"
     >
+        <!-- Look Message -->
+        <Look class="px-2"></Look>
         {#each $messageFeed as message}
-            {#if message.messageFeedType === "look" || message.messageFeedType === "message"}
+            {#if message.messageFeedType === "message"}
                 <div class="flex flex-row text-left">
                     <div class="flex flex-col w-16 shrink-0">
                         <p class="italic text-sm">{message.name}</p>
@@ -60,15 +62,10 @@
                             >{getCurrentTimestamp(message.timestamp)}</small
                         >
                     </div>
-                    {#if message.messageFeedType === "look"}
-                        <!-- Look Message -->
-                        <Look class="px-2"></Look>
-                    {:else if message.messageFeedType === "message"}
-                        <!-- Normal Messages -->
-                        <p class="text-sm font-extralight px-2 text-left">
-                            {message.message}
-                        </p>
-                    {/if}
+                    <!-- Normal Messages -->
+                    <p class="text-sm font-extralight px-2 text-left">
+                        {message.message}
+                    </p>
                 </div>
             {/if}
         {/each}

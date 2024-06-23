@@ -25,12 +25,12 @@ import {
 
 // Exports
 export {
-    crossoverPlayerInventoryQuerySet,
     fetchEntity,
     getNearbyEntities,
     hasCollidersInGeohash,
     hasWorldCollider,
     initializeClients,
+    inventoryQuerySet,
     isGeohashInWorld,
     itemRepository,
     itemsInGeohashQuerySet,
@@ -306,6 +306,6 @@ async function hasWorldCollider(geohash: string): Promise<boolean> {
  * @param player - The name of the player.
  * @returns A Search object representing the query for player inventory items.
  */
-function crossoverPlayerInventoryQuerySet(player: string): Search {
+function inventoryQuerySet(player: string): Search {
     return itemRepository.search().where("loc").contains(player);
 }

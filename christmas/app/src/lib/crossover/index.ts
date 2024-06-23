@@ -26,7 +26,7 @@ import {
 import type { GameCommand, GameCommandVariables } from "./ir";
 import { getEntityId } from "./utils";
 import type { Ability } from "./world/abilities";
-import { actions, type Action } from "./world/actions";
+import { type Action } from "./world/actions";
 import {
     EquipmentSlots,
     compendium,
@@ -59,26 +59,15 @@ export {
     crossoverPlayerMetadata,
     crossoverWorldWorlds,
     executeGameCommand,
-    handleGC,
     handleUpdateEntities,
     login,
     logout,
     signup,
     stream,
-    type GameCommandResponse,
     type MessageFeed,
 };
 
-interface GameCommandResponse {
-    status: "success" | "failure";
-    op?: "upsert" | "replace";
-    message?: string;
-    players?: Player[];
-    monsters?: Monster[];
-    items?: Item[];
-}
-
-type MessageFeedType = "error" | "message" | "look" | "system";
+type MessageFeedType = "error" | "message" | "system";
 
 interface MessageFeed {
     id: number;
@@ -140,23 +129,6 @@ function addMessageFeed({
     });
 }
 
-async function handleGC(command: GameCommand) {
-    try {
-        const gcr = await executeGameCommand(command);
-
-        if (gcr != null) {
-            await processGCResponse(command, gcr);
-        }
-    } catch (error: any) {
-        console.error(error);
-        addMessageFeed({
-            message: error.message,
-            name: "Error",
-            messageFeedType: "error",
-        });
-    }
-}
-
 async function handleUpdateWorlds(geohash: string) {
     // Check if worldRecord already has the town (no worlds or {} is valid)
     if (
@@ -165,7 +137,6 @@ async function handleUpdateWorlds(geohash: string) {
     ) {
         return;
     }
-
     const { town, worlds } = await crossoverWorldWorlds(geohash);
     worldRecord.update((wr) => {
         if (wr[town] == null) {
@@ -176,6 +147,13 @@ async function handleUpdateWorlds(geohash: string) {
         }
         return wr;
     });
+}
+
+async function handleUpdatePlayer(before: Player, after: Player) {
+    // Location changed
+    if (before.loc[0] !== after.loc[0]) {
+        await handleUpdateWorlds(after.loc[0]);
+    }
 }
 
 function handleUpdateEntities(
@@ -202,6 +180,7 @@ function handleUpdateEntities(
             for (const p of players) {
                 // Update self (player)
                 if (p.player === self?.player) {
+                    handleUpdatePlayer(self, p);
                     player.set(p);
                 } else {
                     pr[p.player] = p;
@@ -241,104 +220,55 @@ function handleUpdateEntities(
     }
 }
 
-async function processGCResponse(
-    command: GameCommand,
-    response: GameCommandResponse,
-) {
-    const { players, monsters, items, op, status, message } = response;
-    const self = get(player);
-
-    // Update message feed
-    if (status === "failure" && message != null) {
-        addMessageFeed({ message, name: "Error", messageFeedType: "error" });
-    }
-
-    // Update entities
-    handleUpdateEntities({ players, items, monsters }, op);
-
-    // Perform secondary effects
-    const [action, entities, variables] = command;
-    if (self?.player != null && "action" in action) {
-        // Update inventory on equip, unequip, take, drop
-        if (
-            [
-                actions.equip.action,
-                actions.unequip.action,
-                actions.take.action,
-                actions.drop.action,
-            ].includes(action.action)
-        ) {
-            await handleGC([actions.inventory, { self }]);
-        }
-        // Look at surroundings on take, drop, create
-        if (
-            [
-                actions.take.action,
-                actions.drop.action,
-                actions.create.action,
-            ].includes(action.action)
-        ) {
-            await handleGC([actions.look, { self }]);
-        }
-        // Add look to message feed
-        if (action.action === actions.look.action) {
-            addMessageFeed({
-                message: "",
-                name: "",
-                messageFeedType: "look",
-            });
-        }
-        // Update worlds on move into new town
-        if (
-            action.action === actions.move.action ||
-            action.action === actions.look.action
-        ) {
-            await handleUpdateWorlds(self.loc[0]);
-        }
-    }
-}
-
 async function executeGameCommand(
     command: GameCommand,
     headers: HTTPHeaders = {},
-): Promise<GameCommandResponse | void> {
+): Promise<void> {
     const [action, { self, target, item }, variables] = command;
 
-    // Use Item
-    if (item != null) {
-        return await crossoverCmdUseItem(
-            {
-                target:
-                    (target as Player)?.player ||
-                    (target as Monster)?.monster ||
-                    (target as Item)?.item ||
-                    undefined,
-                item: item.item,
-                utility: (action as Utility).utility,
-            },
-            headers,
-        );
-    }
-    // Perform ability
-    else if ("ability" in action) {
-        return await crossoverCmdPerformAbility(
-            {
-                target:
-                    (target as Player)?.player ||
-                    (target as Monster)?.monster ||
-                    (target as Item)?.item,
-                ability: (action as Ability).ability,
-            },
-            headers,
-        );
-    }
-    // Action (variables are required)
-    else if ("action" in action) {
-        return await performAction({
-            self,
-            action,
-            target,
-            variables,
+    try {
+        // Use Item
+        if (item != null) {
+            return await crossoverCmdUseItem(
+                {
+                    target:
+                        (target as Player)?.player ||
+                        (target as Monster)?.monster ||
+                        (target as Item)?.item ||
+                        undefined,
+                    item: item.item,
+                    utility: (action as Utility).utility,
+                },
+                headers,
+            );
+        }
+        // Perform ability
+        else if ("ability" in action) {
+            return await crossoverCmdPerformAbility(
+                {
+                    target:
+                        (target as Player)?.player ||
+                        (target as Monster)?.monster ||
+                        (target as Item)?.item,
+                    ability: (action as Ability).ability,
+                },
+                headers,
+            );
+        }
+        // Action (variables are required)
+        else if ("action" in action) {
+            return await performAction({
+                self,
+                action,
+                target,
+                variables,
+            });
+        }
+    } catch (error: any) {
+        addMessageFeed({
+            message: error.message,
+            name: "Error",
+            messageFeedType: "error",
         });
     }
 }
@@ -356,7 +286,7 @@ async function performAction(
         variables?: GameCommandVariables;
     },
     headers: HTTPHeaders = {},
-): Promise<GameCommandResponse | void> {
+): Promise<void> {
     // look
     if (action.action === "look") {
         return await crossoverCmdLook(
@@ -628,7 +558,7 @@ async function signup(
 function crossoverCmdSay(
     input: { message: string },
     headers: HTTPHeaders = {},
-): Promise<GameCommandResponse> {
+) {
     const { message } = input;
     return trpc({ headers }).crossover.cmd.say.query({ message });
 }

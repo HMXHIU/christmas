@@ -1158,6 +1158,10 @@
             return;
         }
 
+        if (entity.locT !== "geohash") {
+            return;
+        }
+
         const [entityId, entityType] = getEntityId(entity);
 
         // Get position
@@ -1565,10 +1569,10 @@
     onDestroy(() => {
         if (app) {
             destroyShaders();
-            app.destroy(true, {
-                children: true,
-                texture: true,
-            });
+            // app.destroy(true, {
+            //     children: true,
+            //     texture: true,
+            // });
             app = null;
         }
     });

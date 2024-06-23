@@ -1,5 +1,4 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
-import type { GameCommandResponse } from "$lib/crossover";
 import { geohashesNearby } from "$lib/crossover/utils";
 import { actions } from "$lib/crossover/world/actions";
 import { compendium } from "$lib/crossover/world/compendium";
@@ -8,11 +7,9 @@ import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/world";
 import {
     fetchEntity,
-    getNearbyEntities,
     initializeClients,
     itemRepository,
     playerRepository,
-    redisClient,
     saveEntity,
     worldsInGeohashQuerySet,
 } from "$lib/server/crossover/redis";
@@ -29,6 +26,8 @@ import {
     loadPlayerEntity,
     movePlayer,
     performAbility,
+    performInventory,
+    performLook,
     spawnItem,
     spawnMonster,
     spawnWorld,
@@ -45,12 +44,11 @@ import { ObjectStorage } from "../objectStorage";
 import { authProcedure, internalServiceProcedure, t } from "../trpc";
 import { performMonsterActions, spawnMonsters } from "./dungeonMaster";
 import {
-    crossoverPlayerInventoryQuerySet,
+    inventoryQuerySet,
     loggedInPlayersQuerySet,
     playersInGeohashQuerySet,
 } from "./redis";
 import type {
-    Item,
     ItemEntity,
     MonsterEntity,
     Player,
@@ -58,7 +56,11 @@ import type {
     World,
     WorldEntity,
 } from "./redis/entities";
-import { savePlayerState } from "./utils";
+import {
+    publishAffectedEntitiesToPlayers,
+    publishFeedEvent,
+    savePlayerState,
+} from "./utils";
 
 export { SaySchema, UserMetadataSchema, crossoverRouter };
 
@@ -248,16 +250,7 @@ const crossoverRouter = {
                 ctx.user.publicKey,
             )) as PlayerEntity;
 
-            // Note: Inventory doesn't cost any ticks
-            const inventoryItems = (await crossoverPlayerInventoryQuerySet(
-                player.player,
-            ).return.all()) as ItemEntity[];
-
-            return {
-                items: inventoryItems as Item[],
-                status: "success",
-                op: "upsert",
-            } as GameCommandResponse;
+            performInventory(player);
         }),
         // player.equip
         equip: authProcedure
@@ -277,43 +270,52 @@ const crossoverRouter = {
                 });
                 player = entity as PlayerEntity;
                 if (busy) {
-                    return {
-                        status: "failure",
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: "You are busy at the moment.",
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
 
                 let itemToEquip = (await tryFetchEntity(item)) as ItemEntity;
 
                 // Check if item is in player inventory (can be inventory or equipment slot)
                 if (itemToEquip.loc[0] !== player.player) {
-                    return {
-                        status: "failure",
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: `${item} is not in inventory`,
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
 
                 // Check equipment slot
                 const slots = compendium[itemToEquip.prop].equipmentSlot;
                 if (!slots) {
-                    return {
-                        status: "failure",
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: `${item} is not equippable`,
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
                 if (!slots.includes(slot)) {
-                    return {
-                        status: "failure",
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: `${item} cannot be equipped in ${slot}`,
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
 
                 // Unequip existing item in slot
-                const exitingItemsInSlot =
-                    (await crossoverPlayerInventoryQuerySet(player.player)
-                        .and("locT")
-                        .equal(slot)
-                        .return.all()) as ItemEntity[];
+                const exitingItemsInSlot = (await inventoryQuerySet(
+                    player.player,
+                )
+                    .and("locT")
+                    .equal(slot)
+                    .return.all()) as ItemEntity[];
                 for (const itemEntity of exitingItemsInSlot) {
                     itemEntity.loc = [player.player];
                     itemEntity.locT = "inv";
@@ -328,11 +330,8 @@ const crossoverRouter = {
                     itemToEquip,
                 )) as ItemEntity;
 
-                return {
-                    status: "success",
-                    op: "upsert",
-                    items: [itemToEquip as Item],
-                } as GameCommandResponse;
+                // Perform inventory
+                performInventory(player);
             }),
         // player.unequip
         unequip: authProcedure
@@ -357,18 +356,22 @@ const crossoverRouter = {
                 });
                 player = entity as PlayerEntity;
                 if (busy) {
-                    return {
-                        status: "failure",
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: "You are busy at the moment.",
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
 
                 // Check item is on player
                 if (itemEntity.loc[0] !== player.player) {
-                    return {
-                        status: "failure",
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: `${item} is not equipped`,
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
 
                 // Unequip item
@@ -379,11 +382,8 @@ const crossoverRouter = {
                     itemEntity,
                 )) as ItemEntity;
 
-                return {
-                    status: "success",
-                    op: "upsert",
-                    items: [itemEntity as Item],
-                } as GameCommandResponse;
+                // Perform inventory
+                performInventory(player);
             }),
     }),
     // Commands
@@ -410,10 +410,12 @@ const crossoverRouter = {
                 });
                 player = entity as PlayerEntity;
                 if (busy) {
-                    return {
-                        status: "failure",
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: "You are busy at the moment.",
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
 
                 // Get item
@@ -421,26 +423,32 @@ const crossoverRouter = {
 
                 // Check item owner is player or public
                 if (itemEntity.own !== player.player && itemEntity.own) {
-                    return {
-                        status: "failure",
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: `${item} is owned by someone else`,
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
 
                 // Check if in range
                 if (itemEntity.loc[0] !== player.loc[0]) {
-                    return {
-                        status: "failure",
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: `${item} is not in range`,
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
 
                 // Check if item is takeable
                 if (compendium[itemEntity.prop].weight < 0) {
-                    return {
-                        status: "failure",
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: `${item} cannot be taken`,
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
 
                 // Take item
@@ -451,11 +459,8 @@ const crossoverRouter = {
                     itemEntity,
                 )) as ItemEntity;
 
-                return {
-                    status: "success",
-                    op: "upsert",
-                    items: [itemEntity as Item],
-                } as GameCommandResponse;
+                // Perform look
+                performLook(player, { inventory: true });
             }),
         // cmd.drop
         drop: authProcedure
@@ -479,19 +484,23 @@ const crossoverRouter = {
                 });
                 player = entity as PlayerEntity;
                 if (busy) {
-                    return {
-                        status: "failure",
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: "You are busy at the moment.",
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
 
                 // Check item is in player inventory
                 let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
                 if (itemEntity.loc[0] !== player.player) {
-                    return {
-                        status: "failure",
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: `${item} is not in inventory`,
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
 
                 // Drop item
@@ -502,11 +511,8 @@ const crossoverRouter = {
                     itemEntity,
                 )) as ItemEntity;
 
-                return {
-                    status: "success",
-                    op: "upsert",
-                    items: [itemEntity as Item],
-                } as GameCommandResponse;
+                // Perform look
+                performLook(player, { inventory: true });
             }),
         // cmd.say
         say: authProcedure.input(SaySchema).query(async ({ ctx, input }) => {
@@ -522,10 +528,12 @@ const crossoverRouter = {
             });
             player = entity as PlayerEntity;
             if (busy) {
-                return {
-                    status: "failure",
+                publishFeedEvent(player.player, {
+                    event: "feed",
+                    type: "error",
                     message: "You are busy at the moment.",
-                } as GameCommandResponse;
+                });
+                return;
             }
             const parentGeohash = player.loc[0].slice(0, -1);
 
@@ -548,13 +556,17 @@ const crossoverRouter = {
 
             // Send message to all players in the geohash (non blocking)
             for (const publicKey of players) {
-                redisClient.publish(publicKey, JSON.stringify(messageFeed));
+                publishFeedEvent(publicKey, {
+                    event: "feed",
+                    type: "message",
+                    message: "${origin} says ${message}",
+                    variables: {
+                        cmd: "say",
+                        origin: ctx.user.publicKey,
+                        message: input.message,
+                    },
+                });
             }
-
-            return {
-                status: "success",
-                message: "",
-            } as GameCommandResponse;
         }),
         // cmd.look
         look: authProcedure.input(LookSchema).query(async ({ ctx, input }) => {
@@ -563,18 +575,8 @@ const crossoverRouter = {
                 ctx.user.publicKey,
             )) as PlayerEntity;
 
-            const { monsters, players, items } = await getNearbyEntities(
-                player.loc[0],
-                LOOK_PAGE_SIZE,
-            );
-
-            return {
-                players,
-                monsters,
-                items,
-                status: "success",
-                op: "replace",
-            } as GameCommandResponse;
+            // Perform look
+            performLook(player, { inventory: true });
         }),
         // cmd.move
         move: authProcedure.input(PathSchema).query(async ({ ctx, input }) => {
@@ -640,33 +642,37 @@ const crossoverRouter = {
                     entity: player,
                     action: actions.create.action,
                 });
-                player = entity as PlayerEntity;
+
                 if (busy) {
-                    return {
-                        status: "failure",
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: "You are busy at the moment.",
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
+
+                player = entity as PlayerEntity;
 
                 try {
                     // Create item
-                    const item = (await spawnItem({
+                    await spawnItem({
                         geohash,
                         prop,
                         variables,
                         owner: player.player, // owner is player
                         configOwner: player.player,
-                    })) as Item;
-                    return {
-                        items: [item],
-                        status: "success",
-                        op: "upsert",
-                    } as GameCommandResponse;
+                    });
+
+                    // Perform look
+                    performLook(player, { inventory: true });
                 } catch (error: any) {
-                    return {
-                        status: "failure",
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: error.message,
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
             }),
         // cmd.configureItem
@@ -687,10 +693,12 @@ const crossoverRouter = {
                 });
                 player = entity as PlayerEntity;
                 if (busy) {
-                    return {
-                        status: "failure",
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: "You are busy at the moment.",
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
 
                 // Get & configure item
@@ -700,17 +708,15 @@ const crossoverRouter = {
                     variables,
                 });
                 if (result.status === "success") {
-                    return {
-                        items: [result.item as Item],
-                        op: "upsert",
-                        status: result.status,
-                        message: result.message,
-                    } as GameCommandResponse;
+                    // Perform look
+                    performLook(player, { inventory: true });
                 } else {
-                    return {
-                        status: result.status,
+                    publishFeedEvent(player.player, {
+                        event: "feed",
+                        type: "error",
                         message: result.message,
-                    } as GameCommandResponse;
+                    });
+                    return;
                 }
             }),
         // cmd.rest
@@ -727,10 +733,12 @@ const crossoverRouter = {
             });
             player = entity as PlayerEntity;
             if (busy) {
-                return {
-                    status: "failure",
+                publishFeedEvent(player.player, {
+                    event: "feed",
+                    type: "error",
                     message: "You are busy at the moment.",
-                } as GameCommandResponse;
+                } as FeedEvent);
+                return;
             }
 
             // Rest player
@@ -741,11 +749,8 @@ const crossoverRouter = {
             // Save player
             await playerRepository.save(player.player, player);
 
-            return {
-                players: [player as Player],
-                op: "upsert",
-                status: "success",
-            } as GameCommandResponse;
+            // Publish update event
+            publishAffectedEntitiesToPlayers([player], player.player);
         }),
     }),
     // Authentication

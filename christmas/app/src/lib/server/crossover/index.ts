@@ -30,6 +30,7 @@ import { z } from "zod";
 import {
     fetchEntity,
     getNearbyEntities,
+    inventoryQuerySet,
     itemRepository,
     monsterRepository,
     playerRepository,
@@ -74,6 +75,8 @@ export {
     movePlayer,
     performAbility,
     performEffectOnEntity,
+    performInventory,
+    performLook,
     recoverAp,
     setPlayerState,
     spawnItem,
@@ -511,7 +514,7 @@ async function useItem({
     // Check if can use item
     const { canUse, message } = canUseItem(self, item, utility);
     if (!canUse && self.player) {
-        publishFeedEvent(self as PlayerEntity, {
+        publishFeedEvent((self as PlayerEntity).player, {
             event: "feed",
             type: "message",
             message,
@@ -610,7 +613,7 @@ async function handleMonsterKillsPlayer(
     // Get respawn location
     const respawnGeohash = sanctuariesByRegion[player.rgn].geohash;
     player.loc = [respawnGeohash];
-    publishFeedEvent(player, {
+    publishFeedEvent(player.player, {
         event: "feed",
         type: "message",
         message: "You died.",
@@ -698,7 +701,7 @@ async function performAbility({
     if (!ignoreCost) {
         const { hasResources, message } = hasResourcesForAbility(self, ability);
         if (!hasResources && self.player) {
-            publishFeedEvent(self as PlayerEntity, {
+            publishFeedEvent((self as PlayerEntity).player, {
                 event: "feed",
                 type: "message",
                 message,
@@ -713,7 +716,7 @@ async function performAbility({
         getEntityId(self)[0] === getEntityId(target)[0] &&
         self.player
     ) {
-        publishFeedEvent(self as PlayerEntity, {
+        publishFeedEvent((self as PlayerEntity).player, {
             event: "feed",
             type: "message",
             message: `You can't ${ability} yourself`,
@@ -723,7 +726,7 @@ async function performAbility({
 
     // Check if target is in range
     if (!checkInRange(self, target, range) && self.player) {
-        publishFeedEvent(self as PlayerEntity, {
+        publishFeedEvent((self as PlayerEntity).player, {
             event: "feed",
             type: "message",
             message: `Target is out of range`,
@@ -738,7 +741,7 @@ async function performAbility({
     });
     self = entity; // update `buclk`
     if (self.player && busy) {
-        publishFeedEvent(self as PlayerEntity, {
+        publishFeedEvent((self as PlayerEntity).player, {
             event: "feed",
             type: "message",
             message: "You are busy at the moment.",
@@ -1034,7 +1037,7 @@ async function movePlayer(player: PlayerEntity, path: Direction[]) {
             direction,
         );
         if (!isTraversable) {
-            publishFeedEvent(player, {
+            publishFeedEvent(player.player, {
                 event: "feed",
                 type: "error",
                 message: `Cannot move ${direction}`,
@@ -1049,7 +1052,7 @@ async function movePlayer(player: PlayerEntity, path: Direction[]) {
         });
 
         if (busy) {
-            publishFeedEvent(player, {
+            publishFeedEvent(player.player, {
                 event: "feed",
                 type: "error",
                 message: "You are busy at the moment.",
@@ -1058,7 +1061,7 @@ async function movePlayer(player: PlayerEntity, path: Direction[]) {
         }
 
         // Publish action
-        publishActionEvent(player, {
+        publishActionEvent(player.player, {
             event: "action",
             action: actions.move.action,
             source: player.player,
@@ -1089,4 +1092,34 @@ async function movePlayer(player: PlayerEntity, path: Direction[]) {
             publishAffectedEntitiesToPlayers([player], player.player);
         }
     }
+}
+
+async function performLook(
+    player: PlayerEntity,
+    options?: { inventory?: boolean },
+) {
+    const { monsters, players, items } = await getNearbyEntities(
+        player.loc[0],
+        LOOK_PAGE_SIZE,
+    );
+
+    const inventoryItems = options?.inventory
+        ? ((await inventoryQuerySet(
+              player.player,
+          ).return.all()) as ItemEntity[])
+        : [];
+
+    // TODO: should there be replace and upsert op?
+    publishAffectedEntitiesToPlayers(
+        [player, ...monsters, ...players, ...items, ...inventoryItems],
+        player.player,
+    );
+}
+
+async function performInventory(player: PlayerEntity) {
+    const inventoryItems = (await inventoryQuerySet(
+        player.player,
+    ).return.all()) as ItemEntity[];
+
+    publishAffectedEntitiesToPlayers(inventoryItems, player.player);
 }
