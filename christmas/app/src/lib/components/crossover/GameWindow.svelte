@@ -18,8 +18,8 @@
     import AutocompleteGC from "./AutocompleteGC.svelte";
     import ChatInput from "./ChatInput.svelte";
     import ChatWindow from "./ChatWindow.svelte";
+    import Game from "./Game";
     import Look from "./Look.svelte";
-    import Map from "./Map.svelte";
 
     export let onGameCommand: (command: GameCommand) => Promise<void>;
 
@@ -27,7 +27,7 @@
     let innerWidth: number; // window.innerWidth
     let commands: GameCommand[] = [];
     let command: GameCommand | null = null;
-    let mapRef: Map;
+    let gameRef: Game;
 
     async function onEnterKeyPress(message: string) {
         // Clear game commands
@@ -40,7 +40,7 @@
     }
 
     export async function handleActionEvent(event: ActionEvent) {
-        mapRef.drawActionEvent(event);
+        gameRef.drawActionEvent(event);
     }
 
     async function onPartial(message: string) {
@@ -107,8 +107,8 @@
     <!-- Chat Input -->
     <ChatInput class="m-2" {onEnterKeyPress} {onPartial}></ChatInput>
 
-    <!-- Map (60px is size of ChatInput) -->
+    <!-- Game (60px is size of ChatInput) -->
     <div style="height: calc(50% - 60px); flex-shrink-0" class="shrink-0">
-        <Map bind:this={mapRef}></Map>
+        <Game bind:this={gameRef}></Game>
     </div>
 </div>
