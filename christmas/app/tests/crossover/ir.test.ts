@@ -8,12 +8,15 @@ import { abilities, type Ability } from "$lib/crossover/world/abilities";
 import type { Utility } from "$lib/crossover/world/compendium";
 import { compendium } from "$lib/crossover/world/compendium";
 import { spawnItem, spawnMonster } from "$lib/server/crossover";
+import { initializeClients } from "$lib/server/crossover/redis";
 import type { Item, ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer, generateRandomGeohash } from "./utils";
 
 test("Test IR", async () => {
+    await initializeClients(); // create redis repositories
+
     const region = String.fromCharCode(...getRandomRegion());
 
     // Player - playerOne
@@ -48,6 +51,18 @@ test("Test IR", async () => {
 
     // Item - woodenclub
     let woodenclub = await spawnItem({
+        geohash: generateRandomGeohash(8, "h9"),
+        prop: compendium.woodenclub.prop,
+    });
+
+    // Item - woodenclub2
+    let woodenclub2 = await spawnItem({
+        geohash: generateRandomGeohash(8, "h9"),
+        prop: compendium.woodenclub.prop,
+    });
+
+    // Item - woodenclub3
+    let woodenclub3 = await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
         prop: compendium.woodenclub.prop,
     });
@@ -313,6 +328,7 @@ test("Test IR", async () => {
     /**
      * Test search multiple entities `entitiesIR`
      */
+
     expect(
         entitiesIR({
             // subtracted one letter
@@ -343,6 +359,51 @@ test("Test IR", async () => {
             [playerOne.player]: {
                 "0": {
                     token: "gandaf",
+                    score: 0.8,
+                },
+            },
+        },
+    });
+
+    // Test multiple of the same props
+    expect(
+        entitiesIR({
+            // subtracted one letter
+            queryTokens: tokenize(`take ${woodenclub.item}`),
+            monsters: [dragon, goblin],
+            players: [playerOne],
+            items: [woodenclub, woodenclub2, woodenclub3],
+        }),
+    ).to.toMatchObject({
+        monsters: [],
+        players: [],
+        items: [
+            {
+                item: woodenclub.item,
+            },
+            {
+                item: woodenclub2.item,
+            },
+            {
+                item: woodenclub3.item,
+            },
+        ],
+        tokenPositions: {
+            [woodenclub.item]: {
+                "1": {
+                    token: woodenclub.item,
+                    score: 1,
+                },
+            },
+            [woodenclub2.item]: {
+                "1": {
+                    token: woodenclub.item,
+                    score: 0.8,
+                },
+            },
+            [woodenclub3.item]: {
+                "1": {
+                    token: woodenclub.item,
                     score: 0.8,
                 },
             },

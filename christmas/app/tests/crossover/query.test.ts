@@ -9,14 +9,18 @@ import {
     resolveAbilityEntities,
     type Ability,
 } from "$lib/crossover/world/abilities";
+import { actions } from "$lib/crossover/world/actions";
 import { compendium, type Utility } from "$lib/crossover/world/compendium";
 import { spawnItem, spawnMonster } from "$lib/server/crossover";
+import { initializeClients } from "$lib/server/crossover/redis";
 import type { Item, ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer, generateRandomGeohash } from "./utils";
 
-test("Test Player", async () => {
+test("Test Query", async () => {
+    await initializeClients(); // create redis repositories
+
     const region = String.fromCharCode(...getRandomRegion());
 
     // Player one
@@ -61,6 +65,18 @@ test("Test Player", async () => {
 
     // Wooden club
     let woodenclub = (await spawnItem({
+        geohash: generateRandomGeohash(8, "h9"),
+        prop: compendium.woodenclub.prop,
+    })) as ItemEntity;
+
+    // Wooden club
+    let woodenclub2 = (await spawnItem({
+        geohash: generateRandomGeohash(8, "h9"),
+        prop: compendium.woodenclub.prop,
+    })) as ItemEntity;
+
+    // Wooden club
+    let woodenclub3 = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
@@ -525,6 +541,38 @@ test("Test Player", async () => {
                 item: {
                     item: woodendoor.item,
                 },
+            },
+        ],
+    ]);
+
+    // Test in presence of multiple of the same props
+    gameCommands = searchPossibleCommands({
+        query: `take ${woodenclub3.item}`,
+        // Player
+        player: playerOne,
+        playerAbilities: [],
+        playerItems: [],
+        actions: [actions.take],
+        // Environment
+        monsters: [goblin, dragon],
+        players: [playerOne], // Note: need to include self to bandage
+        items: [woodenclub, woodenclub2, woodenclub3],
+    }).commands;
+    expect(gameCommands).toMatchObject([
+        [
+            {
+                action: "take",
+            },
+            {
+                self: {
+                    player: playerOne.player,
+                },
+                target: {
+                    item: woodenclub3.item,
+                },
+            },
+            {
+                query: `take ${woodenclub3.item}`,
             },
         ],
     ]);

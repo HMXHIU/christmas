@@ -21,6 +21,7 @@ export {
     type GameActionType,
     type GameCommand,
     type GameCommandVariables,
+    type MatchedTokenPosition,
     type TokenPositions,
 };
 

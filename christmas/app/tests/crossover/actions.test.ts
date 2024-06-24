@@ -1,14 +1,17 @@
-import { actions } from "$lib/crossover/actions";
 import { searchPossibleCommands } from "$lib/crossover/ir";
 import { abilities } from "$lib/crossover/world/abilities";
+import { actions } from "$lib/crossover/world/actions";
 import { compendium } from "$lib/crossover/world/compendium";
 import { spawnItem, spawnMonster } from "$lib/server/crossover";
+import { initializeClients } from "$lib/server/crossover/redis";
 import type { ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer, generateRandomGeohash } from "./utils";
 
 test("Test Actions", async () => {
+    await initializeClients(); // create redis repositories
+
     const region = String.fromCharCode(...getRandomRegion());
 
     // Player one
@@ -70,6 +73,7 @@ test("Test Actions", async () => {
     /**
      * Test positive case
      */
+
     var commands = searchPossibleCommands({
         query: "look",
         player: playerOne,
@@ -139,6 +143,7 @@ test("Test Actions", async () => {
     /**
      * Test negative case
      */
+
     commands = searchPossibleCommands({
         query: "rejected look", // token position must be 0
         player: playerOne,

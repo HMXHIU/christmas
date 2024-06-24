@@ -5,6 +5,7 @@ import type {
     Player,
 } from "$lib/server/crossover/redis/entities";
 import type { GameActionEntities, TokenPositions } from "../ir";
+import { getEntityId } from "../utils";
 import { TICKS_PER_TURN } from "./settings";
 
 export {
@@ -192,7 +193,6 @@ const actions: Record<Actions, Action> = {
         },
     },
 };
-
 function resolveActionEntities({
     queryTokens,
     tokenPositions,
@@ -218,51 +218,49 @@ function resolveActionEntities({
     // Check action token position
     if (
         actionTokenPosition != null &&
-        (!(action.action in tokenPositions) ||
-            !(actionTokenPosition in tokenPositions[action.action]))
+        !(
+            action.action in tokenPositions &&
+            actionTokenPosition in tokenPositions[action.action]
+        )
     ) {
         return null;
     }
 
-    // Find target type in monsters
-    if (targetTypes.includes("monster")) {
-        for (const m of monsters) {
-            // Check target token position
-            if (
-                targetTokenPosition != null &&
-                !(targetTokenPosition in tokenPositions[m.monster])
-            ) {
-                continue;
-            }
-            return { self, target: m }; // early return
-        }
-    }
+    // Find target type in monsters, players, and items
+    for (const targetType of targetTypes) {
+        let highestScoringItem = null;
+        let score = 0;
+        let targetList: (Player | Monster | Item)[] = [];
 
-    // Find target type in players
-    if (targetTypes.includes("player")) {
-        for (const p of players) {
-            // Check target token position
-            if (
-                targetTokenPosition != null &&
-                !(targetTokenPosition in tokenPositions[p.player])
-            ) {
-                continue;
-            }
-            return { self, target: p }; // early return
+        if (targetType === "monster") {
+            targetList = monsters;
+        } else if (targetType === "player") {
+            targetList = players;
+        } else if (targetType === "item") {
+            targetList = items;
+        } else {
+            continue;
         }
-    }
 
-    // Find target type in items
-    if (targetTypes.includes("item")) {
-        for (const i of items) {
+        for (const target of targetList) {
+            const [entityId, entityType] = getEntityId(target);
+
             // Check target token position
             if (
                 targetTokenPosition != null &&
-                !(targetTokenPosition in tokenPositions[i.item])
+                !(targetTokenPosition in tokenPositions[entityId])
             ) {
                 continue;
             }
-            return { self, target: i }; // early return
+            // Find the highest scoring item
+            if (tokenPositions[entityId][targetTokenPosition].score > score) {
+                highestScoringItem = target;
+                score = tokenPositions[entityId][targetTokenPosition].score;
+            }
+        }
+
+        if (highestScoringItem != null) {
+            return { self, target: highestScoringItem };
         }
     }
 
