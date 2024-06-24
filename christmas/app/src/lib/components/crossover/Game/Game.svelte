@@ -157,22 +157,21 @@
         const [targetEntityId, entityType] = getEntityId(target);
 
         // Highlight target entity and unhighlight others
-        for (const [entityId, { instanceHighlights }] of Object.entries(
+        for (const [entityId, { shaderGeometry }] of Object.entries(
             entityMeshes,
         )) {
             if (entityId === targetEntityId) {
-                instanceHighlights.data.fill(1);
+                shaderGeometry.instanceHighlights.data.fill(1);
             } else {
-                instanceHighlights.data.fill(0);
+                shaderGeometry.instanceHighlights.data.fill(0);
             }
-            instanceHighlights.update();
+            shaderGeometry.instanceHighlights.update();
         }
     }
 
     export async function drawActionEvent(event: ActionEvent) {
         /**
-         * Server should notify entity perform action on entity to all clients involved for rendering
-         * TODO: change game command responses to a message feed not REST response
+         * TODO: Server should notify entity perform action on entity to all clients involved for rendering
          */
         if (!isInitialized || worldStage == null) {
             return;
@@ -446,10 +445,7 @@
                         i * tilewidth, // use tilewidth for cartesian
                     );
 
-                    const [
-                        shader,
-                        { geometry, instancePositions, instanceHighlights },
-                    ] = loadShaderGeometry(
+                    const shaderGeometry = loadShaderGeometry(
                         "world",
                         texture,
                         imagewidth,
@@ -464,8 +460,8 @@
                     );
 
                     const mesh = new Mesh<Geometry, Shader>({
-                        geometry,
-                        shader,
+                        geometry: shaderGeometry.geometry,
+                        shader: shaderGeometry.shader,
                     });
 
                     // Center of the bottom tile (imageheight a multiple of tileheight)
@@ -490,19 +486,18 @@
                     mesh.x = x;
                     mesh.y = y - position.elevation;
                     mesh.zIndex = RENDER_ORDER[z] || RENDER_ORDER.world;
-                    instancePositions.data.set([
+                    shaderGeometry.instancePositions.data.set([
                         x,
                         y + imageheight, // this is only used to calculate z
                         position.elevation, // this is not used to calculate z
                     ]);
-                    instancePositions.update();
+                    shaderGeometry.instancePositions.update();
 
                     // Add to worldMeshes
                     const worldMesh = {
                         id,
                         mesh,
-                        instancePositions,
-                        instanceHighlights,
+                        shaderGeometry,
                         hitbox: new Container(), // Not used for world meshes
                         position: position, // Not used for world meshes
                     };
@@ -552,12 +547,12 @@
         const playerMesh = entityMeshes[$player.player];
         if (playerMesh != null && playerMesh.mesh != null) {
             // Update
-            playerMesh.instancePositions.data.set([
+            playerMesh.shaderGeometry.instancePositions.data.set([
                 playerPosition.isoX,
                 playerPosition.isoY,
                 playerPosition.elevation,
             ]);
-            playerMesh.instancePositions.update();
+            playerMesh.shaderGeometry.instancePositions.update();
             playerMesh.position = playerPosition;
 
             // Tween position
@@ -646,8 +641,12 @@
             }
 
             // Update
-            entityMesh.instancePositions.data.set([isoX, isoY, elevation]);
-            entityMesh.instancePositions.update();
+            entityMesh.shaderGeometry.instancePositions.data.set([
+                isoX,
+                isoY,
+                elevation,
+            ]);
+            entityMesh.shaderGeometry.instancePositions.update();
             entityMesh.position = position;
 
             // Tween position
@@ -698,16 +697,23 @@
 
             // Create entity mesh
             const height = (texture.height * width) / texture.width; // Scale height while maintaining aspect ratio
-            const [
-                shader,
-                { geometry, instancePositions, instanceHighlights },
-            ] = loadShaderGeometry("entity", texture, width, height, {
-                uid: entityId,
-                anchor,
-                zScale: Z_SCALE,
-                zOffset: Z_OFF.entity,
+            const shaderGeometry = loadShaderGeometry(
+                "entity",
+                texture,
+                width,
+                height,
+                {
+                    uid: entityId,
+                    anchor,
+                    zScale: Z_SCALE,
+                    zOffset: Z_OFF.entity,
+                },
+            );
+
+            const mesh = new Mesh<Geometry, Shader>({
+                geometry: shaderGeometry.geometry,
+                shader: shaderGeometry.shader,
             });
-            const mesh = new Mesh<Geometry, Shader>({ geometry, shader });
 
             // Create a hitbox for cursor events (can't use the mesh directly because the position is set in shaders)
             const hitbox = new Container({
@@ -722,16 +728,16 @@
                 interactive: true,
                 hitArea: new Rectangle(0, 0, width, height),
                 onmouseover: () => {
-                    instanceHighlights.data.fill(1);
-                    instanceHighlights.update();
+                    shaderGeometry.instanceHighlights.data.fill(1);
+                    shaderGeometry.instanceHighlights.update();
                 },
                 onmouseleave: () => {
                     if (
                         $target == null ||
                         getEntityId($target)[0] != entityId
                     ) {
-                        instanceHighlights.data.fill(0);
-                        instanceHighlights.update();
+                        shaderGeometry.instanceHighlights.data.fill(0);
+                        shaderGeometry.instanceHighlights.update();
                     }
                 },
                 onclick: () => {
@@ -745,16 +751,19 @@
             entityMesh = {
                 id: entityId,
                 mesh,
-                instancePositions,
-                instanceHighlights,
+                shaderGeometry,
                 hitbox,
                 entity,
                 position,
             };
 
             // Set initial position (entities only use instancePositions for calculuation z)
-            entityMesh.instancePositions.data.set([isoX, isoY, elevation]);
-            entityMesh.instancePositions.update();
+            entityMesh.shaderGeometry.instancePositions.data.set([
+                isoX,
+                isoY,
+                elevation,
+            ]);
+            entityMesh.shaderGeometry.instancePositions.update();
 
             // Set mesh properties
             if (variant != null) {
@@ -763,7 +772,7 @@
 
             // Create action icon
             if (entityType === "player" || entityType === "monster") {
-                const [shader, { geometry }] = loadShaderGeometry(
+                const { shader, geometry } = loadShaderGeometry(
                     "icon",
                     Texture.EMPTY, // use texture swap to change icon
                     CELL_WIDTH / 2,
@@ -1007,6 +1016,7 @@
         if (app) {
             destroyShaders();
             clearInstancedShaderMeshes(worldStage!);
+            app.stage.removeAllListeners();
             app = null;
         }
     });

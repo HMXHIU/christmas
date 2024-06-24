@@ -18,28 +18,28 @@ export {
     MAX_SHADER_GEOMETRIES,
     createShader,
     createTexturedQuadGeometry,
-    destroyShader,
+    destroyShaderGeometry,
     destroyShaders,
     loadShaderGeometry,
-    loadedGeometry,
+    loadedShaderGeometries,
     shaders,
     updateShaderUniforms,
+    type ShaderGeometry,
 };
 
 const MAX_SHADER_GEOMETRIES = 1000;
 
-// So that we can reuse
-const loadedShaders: Record<string, Shader> = {};
-const loadedGeometry: Record<
-    string,
-    {
-        shader: string;
-        geometry: Geometry;
-        instanceCount: number;
-        instancePositions: Buffer;
-        instanceHighlights: Buffer;
-    }
-> = {};
+interface ShaderGeometry {
+    shaderUid: string;
+    shaderName: string;
+    shader: Shader;
+    geometry: Geometry;
+    instanceCount: number;
+    instancePositions: Buffer;
+    instanceHighlights: Buffer;
+}
+
+const loadedShaderGeometries: Record<string, ShaderGeometry> = {};
 
 const shaders: Record<string, { vertex: string; fragment: string }> = {
     grass: {
@@ -72,42 +72,30 @@ const shaders: Record<string, { vertex: string; fragment: string }> = {
     },
 };
 
-function destroyShader(shader: string, uid: string) {
-    const shaderUid = `${shader}-${uid}`;
-
-    // Destroy shader
-    loadedShaders[shaderUid].destroy();
-    delete loadedShaders[shaderUid];
-
-    // Destroy geometry
-    loadedGeometry[shaderUid].geometry.destroy();
-    loadedGeometry[shaderUid].instancePositions.destroy();
-    loadedGeometry[shaderUid].instanceHighlights.destroy();
-    delete loadedGeometry[shaderUid];
+function destroyShaderGeometry(shaderUid: string) {
+    if (loadedShaderGeometries[shaderUid] != null) {
+        loadedShaderGeometries[shaderUid].instancePositions.destroy();
+        loadedShaderGeometries[shaderUid].instanceHighlights.destroy();
+        loadedShaderGeometries[shaderUid].geometry.destroy();
+        loadedShaderGeometries[shaderUid].shader.destroy();
+        delete loadedShaderGeometries[shaderUid];
+    }
 }
 
 function destroyShaders() {
-    for (const [key, value] of Object.entries(loadedShaders)) {
-        value.destroy();
-        delete loadedShaders[key];
-    }
-
-    for (const [key, value] of Object.entries(loadedGeometry)) {
-        value.geometry.destroy();
-        value.instancePositions.destroy();
-        value.instanceHighlights.destroy();
-        delete loadedGeometry[key];
+    for (const shaderUid of Object.keys(loadedShaderGeometries)) {
+        destroyShaderGeometry(shaderUid);
     }
 }
 
 function updateShaderUniforms({ deltaTime }: { deltaTime: number }) {
-    for (const shader of Object.values(loadedShaders)) {
-        shader.resources.uniforms.uniforms.uTime += deltaTime;
+    for (const shaderGeometry of Object.values(loadedShaderGeometries)) {
+        shaderGeometry.shader.resources.uniforms.uniforms.uTime += deltaTime;
     }
 }
 
 function loadShaderGeometry(
-    s: string,
+    shaderName: string,
     texture: Texture,
     width: number,
     height: number,
@@ -119,35 +107,12 @@ function loadShaderGeometry(
         zOffset?: number;
         cellHeight?: number;
     } = {},
-): [
-    Shader,
-    {
-        geometry: Geometry;
-        instanceCount?: number;
-        instancePositions: Buffer;
-        instanceHighlights: Buffer;
-    },
-] {
+): ShaderGeometry {
     const instanceCount = options.instanceCount ?? 1;
-    const shaderUid = `${s}-${options.uid ?? texture.uid}`;
-    const shader = loadedShaders[shaderUid];
-    const geometry = loadedGeometry[shaderUid];
+    const shaderUid = `${shaderName}-${options.uid ?? texture.uid}`;
+    const shaderGeometry = loadedShaderGeometries[shaderUid];
 
-    if (shader && geometry) {
-        return [shader, geometry];
-    }
-
-    if (shader == null) {
-        loadedShaders[shaderUid] = createShader(s, texture, {
-            height,
-            width,
-            anchor: options.anchor,
-            zScale: options.zScale,
-            zOffset: options.zOffset,
-        });
-    }
-
-    if (geometry == null) {
+    if (shaderGeometry == null) {
         const { geometry, instancePositions, instanceHighlights } =
             instanceCount > 1
                 ? createInstancedTexturedQuadGeometry(
@@ -163,16 +128,25 @@ function loadShaderGeometry(
                       height,
                       options.cellHeight,
                   );
-        loadedGeometry[shaderUid] = {
-            shader: s,
-            geometry,
+
+        loadedShaderGeometries[shaderUid] = {
+            shaderUid,
+            shaderName,
             instanceCount,
             instancePositions,
             instanceHighlights,
+            shader: createShader(shaderName, texture, {
+                height,
+                width,
+                anchor: options.anchor,
+                zScale: options.zScale,
+                zOffset: options.zOffset,
+            }),
+            geometry,
         };
     }
 
-    return [loadedShaders[shaderUid], loadedGeometry[shaderUid]];
+    return loadedShaderGeometries[shaderUid];
 }
 
 function createShader(

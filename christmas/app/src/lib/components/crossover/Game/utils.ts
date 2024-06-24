@@ -35,7 +35,6 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import {
     Assets,
-    Buffer,
     Container,
     Mesh,
     Sprite,
@@ -45,8 +44,10 @@ import {
 } from "pixi.js";
 import {
     MAX_SHADER_GEOMETRIES,
+    destroyShaderGeometry,
     loadShaderGeometry,
-    loadedGeometry,
+    loadedShaderGeometries,
+    type ShaderGeometry,
 } from "./shaders";
 
 export {
@@ -111,10 +112,9 @@ interface ShaderTexture {
 
 interface EntityMesh {
     id: string;
-    mesh: Mesh<Geometry, Shader>;
     hitbox: Container; // meshes are added to the hitbox so they can be moved together
-    instancePositions: Buffer;
-    instanceHighlights: Buffer;
+    mesh: Mesh<Geometry, Shader>;
+    shaderGeometry: ShaderGeometry;
     position: Position;
     entity?: Player | Monster | Item;
     actionIcon?: Mesh<Geometry, Shader>;
@@ -371,13 +371,14 @@ async function getImageForTile(
 }
 
 function highlightShaderInstances(
-    shaderName: string,
+    shader: string,
     highlightPositions: Record<string, number>, // {'x,y': highlight}
 ) {
-    for (const [
-        _,
-        { shader, instanceHighlights, instancePositions },
-    ] of Object.entries(loadedGeometry)) {
+    for (const {
+        shaderName,
+        instanceHighlights,
+        instancePositions,
+    } of Object.values(loadedShaderGeometries)) {
         if (shader === shaderName) {
             // Iterate `instancePositions` and compare with `highlightPositions`
             for (let i = 0; i < instanceHighlights.data.length; i += 1) {
@@ -655,7 +656,7 @@ async function drawShaderTextures({
         textureUid,
         { texture, positions, width, height, length },
     ] of Object.entries(shaderTextures)) {
-        const [shader, { geometry, instancePositions }] = loadShaderGeometry(
+        const { shader, geometry, instancePositions } = loadShaderGeometry(
             shaderName,
             texture,
             width,
@@ -708,5 +709,6 @@ function destroyEntityMesh(entityMesh: EntityMesh, stage: Container) {
         entityMesh.actionIcon.destroy();
     }
 
-    // TODO: Destroy shaders & geometry
+    // Destroy shader geometry
+    destroyShaderGeometry(entityMesh.shaderGeometry.shaderUid);
 }
