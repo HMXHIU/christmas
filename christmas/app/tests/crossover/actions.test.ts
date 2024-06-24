@@ -49,6 +49,14 @@ test("Test Actions", async () => {
         geohash: generateRandomGeohash(8, "h9"),
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
+    let woodenclub2 = (await spawnItem({
+        geohash: generateRandomGeohash(8, "h9"),
+        prop: compendium.woodenclub.prop,
+    })) as ItemEntity;
+    let woodenclub3 = (await spawnItem({
+        geohash: generateRandomGeohash(8, "h9"),
+        prop: compendium.woodenclub.prop,
+    })) as ItemEntity;
 
     // Portal
     let portal = (await spawnItem({
@@ -176,4 +184,41 @@ test("Test Actions", async () => {
         query: "say saruman thou shall not pass",
         queryIrrelevant: "thou shall not pass",
     });
+
+    /**
+     * Test can only drop items in inventory
+     */
+
+    woodenclub2.locT = "inv";
+    woodenclub2.loc = [playerOne.player];
+    commands = searchPossibleCommands({
+        query: `drop ${woodenclub3.item}`,
+        player: playerOne,
+        actions: [actions.drop],
+        playerAbilities: [],
+        playerItems: [woodenclub2],
+        monsters: [],
+        players: [],
+        items: [woodenclub3, woodenclub],
+    }).commands;
+    expect(commands).length(1);
+    expect(commands).toMatchObject([
+        [
+            {
+                action: "drop",
+            },
+            {
+                self: {
+                    player: playerOne.player,
+                },
+                target: {
+                    item: woodenclub2.item,
+                },
+            },
+            {
+                query: `drop ${woodenclub3.item}`,
+                queryIrrelevant: "",
+            },
+        ],
+    ]);
 });

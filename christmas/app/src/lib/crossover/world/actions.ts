@@ -238,6 +238,26 @@ function resolveActionEntities({
             targetList = players;
         } else if (targetType === "item") {
             targetList = items;
+
+            // Can't drop/equip/unquip an item if it's not in the inventory
+            if (
+                [
+                    actions.drop.action,
+                    actions.equip.action,
+                    actions.unequip.action,
+                ].includes(action.action)
+            ) {
+                targetList = targetList.filter(
+                    (item) =>
+                        item.locT === "inv" &&
+                        item.loc[0] === getEntityId(self)[0],
+                );
+            }
+
+            // Can't take an item in the inventory
+            if (action.action === actions.take.action) {
+                targetList = targetList.filter((item) => item.locT !== "inv");
+            }
         } else {
             continue;
         }
