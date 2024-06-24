@@ -21,6 +21,7 @@ export interface FeedEvent {
 
 export interface UpdateEntitiesEvent {
     event: "entities";
+    op: "upsert" | "replace";
     players?: Player[];
     monsters?: Monster[];
     items?: Item[];

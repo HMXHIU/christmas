@@ -73,6 +73,7 @@ export {
     clearInstancedShaderMeshes,
     debugColliders,
     decodeTiledSource,
+    destroyEntityMesh,
     drawShaderTextures,
     getDirectionsToPosition,
     getImageForTile,
@@ -690,4 +691,22 @@ function clearInstancedShaderMeshes(stage: Container) {
         mesh.destroy();
     }
     instancedShaderMeshes = {};
+}
+
+function destroyEntityMesh(entityMesh: EntityMesh, stage: Container) {
+    // Remove event listeners
+    entityMesh.hitbox.removeAllListeners();
+
+    // Remove children
+    entityMesh.hitbox.removeChildren();
+    stage.removeChild(entityMesh.hitbox);
+
+    // Destroy mesh & containers
+    entityMesh.hitbox.destroy();
+    entityMesh.mesh.destroy();
+    if (entityMesh.actionIcon != null) {
+        entityMesh.actionIcon.destroy();
+    }
+
+    // TODO: Destroy shaders & geometry
 }

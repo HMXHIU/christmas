@@ -180,7 +180,7 @@ function entitiesIR({
     });
 
     items = items.filter((item) => {
-        return [item.name, item.item].some((document) => {
+        return [item.prop, item.name, item.item].some((document) => {
             const { score, matchedTokens } = documentScore(
                 queryTokens,
                 document,
@@ -481,6 +481,7 @@ function searchPossibleCommands({
                 players: playersRetrieved,
                 items: itemsRetrieved,
             });
+
             if (entities != null) {
                 const variables = commandVariables({
                     gameAction: action,

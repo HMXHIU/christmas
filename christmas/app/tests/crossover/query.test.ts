@@ -576,4 +576,59 @@ test("Test Query", async () => {
             },
         ],
     ]);
+
+    // Test should show multiple similar items
+    gameCommands = searchPossibleCommands({
+        query: `take item_woodenclub`,
+        // Player
+        player: playerOne,
+        playerAbilities: [],
+        playerItems: [],
+        actions: [actions.take],
+        // Environment
+        monsters: [goblin, dragon],
+        players: [playerOne], // Note: need to include self to bandage
+        items: [woodenclub, woodenclub2, woodenclub3],
+    }).commands;
+    expect(gameCommands).toMatchObject([
+        [
+            {
+                action: actions.take.action,
+            },
+            {
+                self: {
+                    player: playerOne.player,
+                },
+                target: {
+                    item: woodenclub.item,
+                },
+            },
+        ],
+        [
+            {
+                action: actions.take.action,
+            },
+            {
+                self: {
+                    player: playerOne.player,
+                },
+                target: {
+                    item: woodenclub2.item,
+                },
+            },
+        ],
+        [
+            {
+                action: actions.take.action,
+            },
+            {
+                self: {
+                    player: playerOne.player,
+                },
+                target: {
+                    item: woodenclub3.item,
+                },
+            },
+        ],
+    ]);
 });

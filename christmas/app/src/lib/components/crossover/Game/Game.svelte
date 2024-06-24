@@ -16,6 +16,7 @@
     import { worldSeed } from "$lib/crossover/world/world";
 
     import type {
+        EntityType,
         Item,
         Monster,
         Player,
@@ -72,6 +73,7 @@
         calculateBiomeForRowCol,
         calculatePosition,
         clearInstancedShaderMeshes,
+        destroyEntityMesh,
         drawShaderTextures,
         getDirectionsToPosition,
         getImageForTile,
@@ -107,15 +109,9 @@
     let isMouseDown: boolean = false;
     let path: Direction[] | null = null;
 
-    $: updatePlayerPosition($player);
     $: updatePlayer(playerPosition);
     $: updateBiomes(playerPosition);
-    $: updateWorlds($worldRecord, playerPosition);
-    $: updateEntities($monsterRecord, playerPosition);
-    $: updateEntities($playerRecord, playerPosition);
-    $: updateEntities($itemRecord, playerPosition);
     $: resize(clientHeight, clientWidth);
-    $: highlightTarget($target);
 
     function updatePlayerPosition(player: Player | null) {
         if (player == null) {
@@ -167,7 +163,6 @@
             if (entityId === targetEntityId) {
                 instanceHighlights.data.fill(1);
             } else {
-                console.log("unhighlighting", entityId);
                 instanceHighlights.data.fill(0);
             }
             instanceHighlights.update();
@@ -513,27 +508,14 @@
                     };
 
                     worldMeshes[id] = worldMesh;
-                    worldStage.removeChild(mesh);
-                    worldStage.addChild(mesh);
+
+                    // Add to worldStage
+                    if (!worldStage.children.includes(mesh)) {
+                        worldStage.addChild(mesh);
+                    }
                 }
             }
         }
-    }
-
-    function destroyEntityMesh(entityMesh: EntityMesh) {
-        if (worldStage == null) {
-            return;
-        }
-        worldStage.removeChild(entityMesh.mesh);
-        entityMesh.mesh.destroy();
-        if (entityMesh.actionIcon != null) {
-            worldStage.removeChild(entityMesh.actionIcon);
-            entityMesh.actionIcon.destroy();
-        }
-        worldStage.removeChild(entityMesh.hitbox);
-        entityMesh.hitbox.destroy();
-
-        // TODO: Destroy shaders & geometry
     }
 
     async function updatePlayer(playerPosition: Position | null) {
@@ -549,7 +531,7 @@
         // Cull entity meshes outside view
         for (const [id, entityMesh] of Object.entries(entityMeshes)) {
             if (!isCellInView(entityMesh.position, playerPosition)) {
-                destroyEntityMesh(entityMesh);
+                destroyEntityMesh(entityMesh, worldStage);
                 delete entityMeshes[id];
             }
         }
@@ -561,7 +543,7 @@
         );
         for (const [id, entityMesh] of Object.entries(worldMeshes)) {
             if (!id.startsWith(town)) {
-                destroyEntityMesh(entityMesh);
+                destroyEntityMesh(entityMesh, worldStage);
                 delete worldMeshes[id];
             }
         }
@@ -596,12 +578,38 @@
     async function updateEntities(
         er: Record<string, Monster | Player | Item>,
         playerPosition: Position | null,
+        entityType: EntityType,
     ) {
-        if (!isInitialized || playerPosition == null || worldStage == null) {
+        if (
+            !isInitialized ||
+            playerPosition == null ||
+            worldStage == null ||
+            $player == null
+        ) {
             return;
         }
+
+        // Upsert entities (only locT = geohash)
+        let upserted = new Set<string>();
         for (const entity of Object.values(er)) {
-            await upsertEntityMesh(entity);
+            if (entity.locT === "geohash") {
+                await upsertEntityMesh(entity);
+                upserted.add(getEntityId(entity)[0]);
+            }
+        }
+
+        // Destroy entities not in record
+        for (const [id, entityMesh] of Object.entries(entityMeshes)) {
+            if (
+                entityMesh.entity == null ||
+                id === $player.player ||
+                upserted.has(id) ||
+                getEntityId(entityMesh.entity)[1] !== entityType
+            ) {
+                continue;
+            }
+            destroyEntityMesh(entityMesh, worldStage);
+            delete entityMeshes[id];
         }
     }
 
@@ -652,9 +660,10 @@
             // Set render order
             updateEntityMeshRenderOrder(entityMesh);
 
-            // Add again as it might have been removed during culling
-            worldStage.removeChild(entityMesh.hitbox);
-            worldStage.addChild(entityMesh.hitbox);
+            // Add to worldStage (might have been culled)
+            if (!worldStage.children.includes(entityMesh.hitbox)) {
+                worldStage.addChild(entityMesh.hitbox);
+            }
         }
         // Create
         else {
@@ -728,7 +737,6 @@
                 onclick: () => {
                     // Set target
                     target.set(entity);
-                    console.log("Target set to", entity);
                 },
             });
             hitbox.addChild(mesh);
@@ -780,13 +788,15 @@
                 entityMesh.actionIcon = iconMesh;
             }
 
+            entityMeshes[entityId] = entityMesh;
+
             // Set render order
             updateEntityMeshRenderOrder(entityMesh);
 
-            // Add to worldStage
-            entityMeshes[entityId] = entityMesh;
-            worldStage.removeChild(hitbox);
-            worldStage.addChild(hitbox);
+            // Add to worldStage (might have been culled)
+            if (!worldStage.children.includes(entityMesh.hitbox)) {
+                worldStage.addChild(entityMesh.hitbox);
+            }
         }
     }
 
@@ -951,9 +961,9 @@
         if (playerPosition && $player) {
             await updatePlayer(playerPosition);
             await updateBiomes(playerPosition);
-            await updateEntities($monsterRecord, playerPosition);
-            await updateEntities($playerRecord, playerPosition);
-            await updateEntities($itemRecord, playerPosition);
+            await updateEntities($monsterRecord, playerPosition, "monster");
+            await updateEntities($playerRecord, playerPosition, "player");
+            await updateEntities($itemRecord, playerPosition, "item");
             await updateWorlds($worldRecord, playerPosition);
             updateCamera($player, false);
         }
@@ -964,6 +974,33 @@
         worldStage = new Container();
         worldStage.sortableChildren = true;
         init();
+
+        const subscriptions = [
+            monsterRecord.subscribe((mr) => {
+                updateEntities(mr, playerPosition, "monster");
+            }),
+            playerRecord.subscribe((pr) => {
+                updateEntities(pr, playerPosition, "player");
+            }),
+            itemRecord.subscribe((ir) => {
+                updateEntities(ir, playerPosition, "item");
+            }),
+            worldRecord.subscribe((wr) => {
+                updateWorlds(wr, playerPosition);
+            }),
+            player.subscribe((p) => {
+                updatePlayerPosition(p);
+            }),
+            target.subscribe((t) => {
+                highlightTarget(t);
+            }),
+        ];
+
+        return () => {
+            for (const s of subscriptions) {
+                s();
+            }
+        };
     });
 
     onDestroy(() => {

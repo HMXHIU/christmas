@@ -9,6 +9,7 @@ import { geohashNeighbour } from "$lib/crossover/utils";
 import { abilities } from "$lib/crossover/world/abilities";
 import { compendium } from "$lib/crossover/world/compendium";
 import { spawnItem, spawnMonster } from "$lib/server/crossover";
+import { initializeClients } from "$lib/server/crossover/redis";
 import type { ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
@@ -19,6 +20,8 @@ import {
 } from "./utils";
 
 test("Test Commands", async () => {
+    await initializeClients(); // create redis repositories
+
     const region = String.fromCharCode(...getRandomRegion());
 
     // Create Players
@@ -71,6 +74,16 @@ test("Test Commands", async () => {
 
     // Wooden club
     let woodenclub = (await spawnItem({
+        geohash: playerOneGeohash,
+        prop: compendium.woodenclub.prop,
+    })) as ItemEntity;
+
+    let woodenclub2 = (await spawnItem({
+        geohash: playerOneGeohash,
+        prop: compendium.woodenclub.prop,
+    })) as ItemEntity;
+
+    let woodenclub3 = (await spawnItem({
         geohash: playerOneGeohash,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;

@@ -73,8 +73,10 @@ async function publishActionEvent(player: string, event: ActionEvent) {
 
 async function publishAffectedEntitiesToPlayers(
     entities: (Player | Monster | Item)[],
-    publishTo?: string,
+    options?: { publishTo?: string; op?: "replace" | "upsert" },
 ) {
+    const op = options?.op || "upsert";
+
     const effectedPlayers = uniqBy(
         entities.filter((entity) => (entity as Player).player),
         "player",
@@ -93,10 +95,11 @@ async function publishAffectedEntitiesToPlayers(
         players: effectedPlayers,
         monsters: effectedMonsters,
         items: effectedItems,
+        op,
     } as UpdateEntitiesEvent);
 
-    if (publishTo != null) {
-        await redisClient.publish(publishTo, event);
+    if (options?.publishTo != null) {
+        await redisClient.publish(options?.publishTo, event);
     } else {
         // Publish effects to all players
         for (const p of effectedPlayers) {

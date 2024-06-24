@@ -75,9 +75,9 @@
     }
 
     function processUpdateEntities(event: Event) {
-        const { players, items, monsters } = (event as MessageEvent)
+        const { players, items, monsters, op } = (event as MessageEvent)
             .data as UpdateEntitiesEvent;
-        handleUpdateEntities({ players, items, monsters });
+        handleUpdateEntities({ players, items, monsters }, op);
     }
 
     function onKeys(keys: GameKey[]) {

@@ -1084,13 +1084,15 @@ async function movePlayer(player: PlayerEntity, path: Direction[]) {
             );
             publishAffectedEntitiesToPlayers(
                 [player, ...monsters, ...players, ...items],
-                player.player,
+                { publishTo: player.player },
             );
         }
 
         // Just update player (TODO: update players in vincinity)
         else {
-            publishAffectedEntitiesToPlayers([player], player.player);
+            publishAffectedEntitiesToPlayers([player], {
+                publishTo: player.player,
+            });
         }
 
         // Sleep for the duration of the effect
@@ -1113,10 +1115,9 @@ async function performLook(
           ).return.all()) as ItemEntity[])
         : [];
 
-    // TODO: should there be replace and upsert op?
     publishAffectedEntitiesToPlayers(
         [player, ...monsters, ...players, ...items, ...inventoryItems],
-        player.player,
+        { publishTo: player.player, op: "replace" },
     );
 }
 
@@ -1125,5 +1126,7 @@ async function performInventory(player: PlayerEntity) {
         player.player,
     ).return.all()) as ItemEntity[];
 
-    publishAffectedEntitiesToPlayers(inventoryItems, player.player);
+    publishAffectedEntitiesToPlayers(inventoryItems, {
+        publishTo: player.player,
+    });
 }

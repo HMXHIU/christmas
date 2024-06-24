@@ -750,7 +750,9 @@ const crossoverRouter = {
             await playerRepository.save(player.player, player);
 
             // Publish update event
-            publishAffectedEntitiesToPlayers([player], player.player);
+            publishAffectedEntitiesToPlayers([player], {
+                publishTo: player.player,
+            });
         }),
     }),
     // Authentication
