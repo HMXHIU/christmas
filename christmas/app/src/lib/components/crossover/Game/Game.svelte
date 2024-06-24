@@ -14,6 +14,7 @@
     import { MS_PER_TICK } from "$lib/crossover/world/settings";
     import type { Direction } from "$lib/crossover/world/types";
     import { worldSeed } from "$lib/crossover/world/world";
+
     import type {
         Item,
         Monster,
@@ -21,6 +22,8 @@
         World,
     } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
+    import { gsap } from "gsap";
+    import PixiPlugin from "gsap/PixiPlugin";
     import {
         Application,
         Assets,
@@ -68,12 +71,12 @@
         calculateBiomeDecorationsForRowCol,
         calculateBiomeForRowCol,
         calculatePosition,
+        clearInstancedShaderMeshes,
         drawShaderTextures,
         getDirectionsToPosition,
         getImageForTile,
         getTilesetForTile,
         highlightShaderInstances,
-        highlightTarget,
         initAssetManager,
         isCellInView,
         loadAssetTexture,
@@ -104,8 +107,6 @@
     let isMouseDown: boolean = false;
     let path: Direction[] | null = null;
 
-    let pivotTarget: { x: number; y: number } = { x: 0, y: 0 };
-
     $: updatePlayerPosition($player);
     $: updatePlayer(playerPosition);
     $: updateBiomes(playerPosition);
@@ -114,8 +115,7 @@
     $: updateEntities($playerRecord, playerPosition);
     $: updateEntities($itemRecord, playerPosition);
     $: resize(clientHeight, clientWidth);
-    $: ($target: Player | Monster | Item | null) =>
-        highlightTarget($target, entityMeshes);
+    $: highlightTarget($target);
 
     function updatePlayerPosition(player: Player | null) {
         if (player == null) {
@@ -136,7 +136,11 @@
                 playerPosition.elevation -
                 Math.floor(clientHeight / 2);
             if (tween) {
-                pivotTarget = { x: offsetX, y: offsetY };
+                gsap.to(worldStage.pivot, {
+                    x: offsetX,
+                    y: offsetY,
+                    duration: 2,
+                });
             } else {
                 worldStage.pivot = { x: offsetX, y: offsetY };
             }
@@ -147,6 +151,26 @@
         if (app && isInitialized && clientHeight && clientWidth && $player) {
             app.renderer.resize(clientWidth, clientHeight);
             updateCamera($player);
+        }
+    }
+
+    function highlightTarget(target: Player | Monster | Item | null) {
+        if (target == null) {
+            return;
+        }
+        const [targetEntityId, entityType] = getEntityId(target);
+
+        // Highlight target entity and unhighlight others
+        for (const [entityId, { instanceHighlights }] of Object.entries(
+            entityMeshes,
+        )) {
+            if (entityId === targetEntityId) {
+                instanceHighlights.data.fill(1);
+            } else {
+                console.log("unhighlighting", entityId);
+                instanceHighlights.data.fill(0);
+            }
+            instanceHighlights.update();
         }
     }
 
@@ -552,10 +576,14 @@
                 playerPosition.elevation,
             ]);
             playerMesh.instancePositions.update();
-            playerMesh.hitbox.x = playerPosition.isoX;
-            playerMesh.hitbox.y =
-                playerPosition.isoY - playerPosition.elevation;
             playerMesh.position = playerPosition;
+
+            // Tween position
+            gsap.to(playerMesh.hitbox, {
+                x: playerPosition.isoX,
+                y: playerPosition.isoY - playerPosition.elevation,
+                duration: (actions.move.ticks * MS_PER_TICK) / 1000,
+            });
 
             // Set render order
             updateEntityMeshRenderOrder(playerMesh);
@@ -612,9 +640,14 @@
             // Update
             entityMesh.instancePositions.data.set([isoX, isoY, elevation]);
             entityMesh.instancePositions.update();
-            entityMesh.hitbox.x = isoX;
-            entityMesh.hitbox.y = isoY - elevation;
             entityMesh.position = position;
+
+            // Tween position
+            gsap.to(entityMesh.hitbox, {
+                x: isoX,
+                y: isoY - elevation,
+                duration: (actions.move.ticks * MS_PER_TICK) / 1000,
+            });
 
             // Set render order
             updateEntityMeshRenderOrder(entityMesh);
@@ -695,6 +728,7 @@
                 onclick: () => {
                     // Set target
                     target.set(entity);
+                    console.log("Target set to", entity);
                 },
             });
             hitbox.addChild(mesh);
@@ -756,26 +790,6 @@
         }
     }
 
-    function ticker(ticker: Ticker) {
-        if (!isInitialized || app == null || worldStage == null) {
-            return;
-        }
-
-        // Clear depth buffer
-        const gl = (app.renderer as WebGLRenderer).gl;
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        // Update shader uniforms
-        const seconds = ticker.elapsedMS / 1000;
-        updateShaderUniforms({ deltaTime: seconds });
-
-        // Move camera to target position (prevent jitter at the end)
-        const deltaX = pivotTarget.x - worldStage.pivot.x;
-        worldStage.pivot.x = Math.round(worldStage.pivot.x + deltaX * seconds);
-        const deltaY = pivotTarget.y - worldStage.pivot.y;
-        worldStage.pivot.y = Math.round(worldStage.pivot.y + deltaY * seconds);
-    }
-
     function onMouseMove(x: number, y: number) {
         if (playerPosition == null) {
             return;
@@ -827,6 +841,20 @@
         path = null;
     }
 
+    function ticker(ticker: Ticker) {
+        if (!isInitialized || app == null || worldStage == null) {
+            return;
+        }
+
+        // Clear depth buffer
+        const gl = (app.renderer as WebGLRenderer).gl;
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        // Update shader uniforms
+        const seconds = ticker.elapsedMS / 1000;
+        updateShaderUniforms({ deltaTime: seconds });
+    }
+
     /*
      * Initialization
      */
@@ -842,6 +870,9 @@
             preference: "webgl",
         });
         await initAssetManager();
+
+        // GSAP
+        gsap.registerPlugin(PixiPlugin);
 
         // Set up depth test
         const gl = (app.renderer as WebGLRenderer).gl;
@@ -938,6 +969,7 @@
     onDestroy(() => {
         if (app) {
             destroyShaders();
+            clearInstancedShaderMeshes(worldStage!);
             app = null;
         }
     });

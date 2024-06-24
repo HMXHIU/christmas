@@ -1030,6 +1030,21 @@ async function consumeResources(
 }
 
 async function movePlayer(player: PlayerEntity, path: Direction[]) {
+    // Check if player is busy
+    const { busy, entity } = await checkAndSetBusy({
+        entity: player,
+        action: actions.move.action,
+    });
+
+    if (busy) {
+        publishFeedEvent(player.player, {
+            event: "feed",
+            type: "error",
+            message: "You are busy at the moment.",
+        });
+        return;
+    }
+
     for (const direction of path) {
         // Check if direction is traversable
         const [isTraversable, location] = await isDirectionTraversable(
@@ -1041,21 +1056,6 @@ async function movePlayer(player: PlayerEntity, path: Direction[]) {
                 event: "feed",
                 type: "error",
                 message: `Cannot move ${direction}`,
-            });
-            break;
-        }
-
-        // Check if player is busy
-        const { busy, entity } = await checkAndSetBusy({
-            entity: player,
-            action: actions.move.action,
-        });
-
-        if (busy) {
-            publishFeedEvent(player.player, {
-                event: "feed",
-                type: "error",
-                message: "You are busy at the moment.",
             });
             break;
         }
@@ -1087,10 +1087,14 @@ async function movePlayer(player: PlayerEntity, path: Direction[]) {
                 player.player,
             );
         }
+
         // Just update player (TODO: update players in vincinity)
         else {
             publishAffectedEntitiesToPlayers([player], player.player);
         }
+
+        // Sleep for the duration of the effect
+        await sleep(actions.move.ticks * MS_PER_TICK);
     }
 }
 

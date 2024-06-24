@@ -70,6 +70,7 @@ export {
     calculateBiomeDecorationsForRowCol,
     calculateBiomeForRowCol,
     calculatePosition,
+    clearInstancedShaderMeshes,
     debugColliders,
     decodeTiledSource,
     drawShaderTextures,
@@ -77,8 +78,8 @@ export {
     getImageForTile,
     getTilesetForTile,
     highlightShaderInstances,
-    highlightTarget,
     initAssetManager,
+    instancedShaderMeshes,
     isCellInView,
     loadAssetTexture,
     swapEntityVariant,
@@ -121,7 +122,7 @@ interface EntityMesh {
     };
 }
 
-const instancedShaders = new Set();
+let instancedShaderMeshes: Record<string, Mesh<Geometry, Shader>> = {};
 
 // Caches
 const biomeCache = new LRUMemoryCache({ max: 1000 });
@@ -387,28 +388,6 @@ function highlightShaderInstances(
             }
             instanceHighlights.update();
         }
-    }
-}
-
-function highlightTarget(
-    target: Player | Monster | Item | null,
-    entityMeshes: Record<string, EntityMesh>,
-) {
-    if (target == null) {
-        return;
-    }
-    const [targetEntityId, entityType] = getEntityId(target);
-
-    // Highlight target entity and unhighlight others
-    for (const [entityId, { instanceHighlights }] of Object.entries(
-        entityMeshes,
-    )) {
-        if (entityId === targetEntityId) {
-            instanceHighlights.data.fill(1);
-        } else {
-            instanceHighlights.data.fill(0);
-        }
-        instanceHighlights.update();
     }
 }
 
@@ -686,9 +665,6 @@ async function drawShaderTextures({
             },
         );
 
-        const mesh = new Mesh<Geometry, Shader>({ geometry, shader });
-        mesh.zIndex = renderOrder;
-
         // Set geometry instance count
         geometry.instanceCount = length / 3; // x, y, elevation
 
@@ -698,10 +674,20 @@ async function drawShaderTextures({
             instancePositions.update();
         }
 
-        // Instanced geometry should only be added once
-        if (mesh && !instancedShaders.has(textureUid)) {
+        const meshUid = `${shaderName}-${textureUid}`;
+        if (instancedShaderMeshes[meshUid] == null) {
+            const mesh = new Mesh<Geometry, Shader>({ geometry, shader });
+            mesh.zIndex = renderOrder;
+            instancedShaderMeshes[meshUid] = mesh;
             stage.addChild(mesh);
-            instancedShaders.add(textureUid);
         }
     }
+}
+
+function clearInstancedShaderMeshes(stage: Container) {
+    for (const mesh of Object.values(instancedShaderMeshes)) {
+        stage.removeChild(mesh);
+        mesh.destroy();
+    }
+    instancedShaderMeshes = {};
 }

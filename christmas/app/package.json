@@ -74,6 +74,7 @@
     "clsx": "^2.1.0",
     "cmdk-sv": "^0.0.13",
     "countries-and-timezones": "^3.6.0",
+    "gsap": "^3.12.5",
     "html5-qrcode": "^2.3.8",
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
