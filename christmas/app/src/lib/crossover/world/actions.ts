@@ -221,7 +221,7 @@ function resolveActionEntities({
     monsters: Monster[];
     players: Player[];
     items: Item[];
-}): null | GameActionEntities {
+}): GameActionEntities[] {
     const { target: targetTypes, tokenPositions: predicateTokenPositions } =
         actions[action.action].predicate;
     const { action: actionTokenPosition, target: targetTokenPosition } =
@@ -235,22 +235,22 @@ function resolveActionEntities({
             actionTokenPosition in tokenPositions[action.action]
         )
     ) {
-        return null;
+        return [];
     }
+
+    let gameActionEntitiesScores: [GameActionEntities, number][] = [];
 
     // Find target type in monsters, players, and items
     for (const targetType of targetTypes) {
-        let highestScoringItem = null;
-        let score = 0;
         let targetList: (Player | Monster | Item)[] = [];
 
+        // Filter target list based on target type
         if (targetType === "monster") {
             targetList = monsters;
         } else if (targetType === "player") {
             targetList = players;
         } else if (targetType === "item") {
             targetList = items;
-
             // Can't drop/equip/unquip an item if it's not in the inventory
             if (
                 [
@@ -274,9 +274,9 @@ function resolveActionEntities({
             continue;
         }
 
+        // Find target entities
         for (const target of targetList) {
             const [entityId, entityType] = getEntityId(target);
-
             // Check target token position
             if (
                 targetTokenPosition != null &&
@@ -284,24 +284,25 @@ function resolveActionEntities({
             ) {
                 continue;
             }
-            // Find the highest scoring item
-            if (tokenPositions[entityId][targetTokenPosition].score > score) {
-                highestScoringItem = target;
-                score = tokenPositions[entityId][targetTokenPosition].score;
-            }
-        }
-
-        if (highestScoringItem != null) {
-            return { self, target: highestScoringItem };
+            gameActionEntitiesScores.push([
+                {
+                    self,
+                    target,
+                },
+                tokenPositions[entityId][targetTokenPosition].score,
+            ]);
         }
     }
 
     // If no target is allowed
     if (targetTypes.includes("none")) {
-        return { self };
+        return [{ self }];
     }
 
-    return null;
+    // Sort by score
+    return gameActionEntitiesScores
+        .sort((a, b) => b[1] - a[1])
+        .map((a) => a[0]);
 }
 
 const playerActions = [

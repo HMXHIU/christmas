@@ -500,9 +500,9 @@ function searchPossibleCommands({
         })
         .filter((x) => x != null) as GameCommand[];
 
-    const actionCommands = actionsPossible
-        .map((action) => {
-            const entities = resolveActionEntities({
+    const actionCommands: GameCommand[] = actionsPossible
+        .flatMap((action) => {
+            return resolveActionEntities({
                 queryTokens,
                 tokenPositions: allTokenPositions,
                 action,
@@ -510,21 +510,19 @@ function searchPossibleCommands({
                 monsters: monstersRetrieved,
                 players: playersRetrieved,
                 items: itemsRetrieved,
+            }).map((entities) => {
+                return { action, entities };
             });
-
-            if (entities != null) {
-                const variables = commandVariables({
-                    gameAction: action,
-                    gameEntities: entities,
-                    queryTokens,
-                    tokenPositions: allTokenPositions,
-                });
-                return [action, entities, variables];
-            } else {
-                return null;
-            }
         })
-        .filter((x) => x != null) as GameCommand[];
+        .map(({ action, entities }) => {
+            const variables = commandVariables({
+                gameAction: action,
+                gameEntities: entities,
+                queryTokens,
+                tokenPositions: allTokenPositions,
+            });
+            return [action, entities, variables];
+        });
 
     return {
         commands: [...abilityCommands, ...utilityCommands, ...actionCommands],

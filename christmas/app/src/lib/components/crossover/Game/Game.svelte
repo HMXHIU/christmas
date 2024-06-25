@@ -192,18 +192,18 @@
 
     function updateCamera(player: Player, tween = true) {
         if (playerPosition != null && worldStage != null) {
-            const offsetX = Math.floor(
-                playerPosition.isoX + CELL_WIDTH / 2 - clientWidth / 2,
-            );
+            const offsetX =
+                playerPosition.isoX + CELL_WIDTH / 2 - clientWidth / 2;
             const offsetY =
                 playerPosition.isoY -
                 playerPosition.elevation -
-                Math.floor(clientHeight / 2);
+                clientHeight / 2;
             if (tween) {
-                gsap.to(worldStage.pivot, {
+                const t = gsap.to(worldStage.pivot, {
                     x: offsetX,
                     y: offsetY,
-                    duration: 2,
+                    duration: 1,
+                    ease: "power2.out",
                 });
             } else {
                 worldStage.pivot = { x: offsetX, y: offsetY };

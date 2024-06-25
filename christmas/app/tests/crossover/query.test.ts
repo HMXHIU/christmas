@@ -558,28 +558,26 @@ test("Test Query", async () => {
         players: [playerOne], // Note: need to include self to bandage
         items: [woodenclub, woodenclub2, woodenclub3],
     }).commands;
-    expect(gameCommands).toMatchObject([
-        [
-            {
-                action: "take",
+    expect(gameCommands[0]).toMatchObject([
+        {
+            action: "take",
+        },
+        {
+            self: {
+                player: playerOne.player,
             },
-            {
-                self: {
-                    player: playerOne.player,
-                },
-                target: {
-                    item: woodenclub3.item,
-                },
+            target: {
+                item: woodenclub3.item,
             },
-            {
-                query: `take ${woodenclub3.item}`,
-            },
-        ],
+        },
+        {
+            query: `take ${woodenclub3.item}`,
+        },
     ]);
 
-    // Test should show multiple similar items
+    // Test should show multiple similar items (sorted by relevance)
     gameCommands = searchPossibleCommands({
-        query: `take item_woodenclub`,
+        query: `take woodenclub`,
         // Player
         player: playerOne,
         playerAbilities: [],
@@ -603,6 +601,9 @@ test("Test Query", async () => {
                     item: woodenclub.item,
                 },
             },
+            {
+                query: `take woodenclub`,
+            },
         ],
         [
             {
@@ -616,6 +617,9 @@ test("Test Query", async () => {
                     item: woodenclub2.item,
                 },
             },
+            {
+                query: `take woodenclub`,
+            },
         ],
         [
             {
@@ -628,6 +632,9 @@ test("Test Query", async () => {
                 target: {
                     item: woodenclub3.item,
                 },
+            },
+            {
+                query: `take woodenclub`,
             },
         ],
     ]);

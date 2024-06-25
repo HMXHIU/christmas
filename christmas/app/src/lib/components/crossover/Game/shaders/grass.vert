@@ -51,7 +51,8 @@ void main() {
     vec2 st = remap(clip.xy, vec2(-1, -1), vec2(1, 1), vec2(0, 0), vec2(1, 1));
 
     // Sample noise to get the wind effect
-    float noiseSample = snoise(vec2(st * 2. + uTime)) * 0.05;
+    float windSpeed = 0.02;
+    float noiseSample = snoise(vec2(st * 2. + uTime)) * windSpeed;
 
     // Calculate the height factor (1.0 at the base, 0.0 at the top)
     float percentHeight = (uTextureHeight - aPosition.y) / uTextureHeight;
