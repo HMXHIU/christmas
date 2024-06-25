@@ -39,6 +39,7 @@ interface Action {
         target: ActionTargets[];
         tokenPositions: Record<string, number>;
     };
+    range: number;
     ticks: number;
     icon: IconAssetMetadata;
 }
@@ -61,6 +62,7 @@ const actions: Record<Actions, Action> = {
             icon: "look-at",
         },
         ticks: 0,
+        range: 0,
     },
     say: {
         action: "say",
@@ -74,6 +76,7 @@ const actions: Record<Actions, Action> = {
             path: "actions/actions",
             icon: "talk",
         },
+        range: 0,
     },
     move: {
         action: "move",
@@ -87,6 +90,7 @@ const actions: Record<Actions, Action> = {
             path: "actions/actions",
             icon: "walk",
         },
+        range: 0,
     },
     take: {
         action: "take",
@@ -100,6 +104,7 @@ const actions: Record<Actions, Action> = {
             path: "actions/actions",
             icon: "drop-weapon",
         },
+        range: 1,
     },
     drop: {
         action: "drop",
@@ -113,6 +118,7 @@ const actions: Record<Actions, Action> = {
             path: "actions/actions",
             icon: "drop-weapon",
         },
+        range: 0,
     },
     equip: {
         action: "equip",
@@ -126,6 +132,7 @@ const actions: Record<Actions, Action> = {
             path: "actions/actions",
             icon: "switch-weapon",
         },
+        range: 0,
     },
     unequip: {
         action: "unequip",
@@ -139,6 +146,7 @@ const actions: Record<Actions, Action> = {
             path: "actions/actions",
             icon: "switch-weapon",
         },
+        range: 0,
     },
     create: {
         action: "create",
@@ -152,6 +160,7 @@ const actions: Record<Actions, Action> = {
             path: "actions/actions",
             icon: "stone-crafting",
         },
+        range: 0,
     },
     configure: {
         action: "configure",
@@ -165,6 +174,7 @@ const actions: Record<Actions, Action> = {
             path: "actions/actions",
             icon: "stone-crafting",
         },
+        range: 1,
     },
     inventory: {
         action: "inventory",
@@ -178,6 +188,7 @@ const actions: Record<Actions, Action> = {
             path: "actions/actions",
             icon: "stick-splitting",
         },
+        range: 0,
     },
     rest: {
         action: "rest",
@@ -191,6 +202,7 @@ const actions: Record<Actions, Action> = {
             path: "actions/actions",
             icon: "night-sleep",
         },
+        range: 0,
     },
 };
 function resolveActionEntities({

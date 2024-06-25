@@ -24,10 +24,16 @@
     export let onGameCommand: (command: GameCommand) => Promise<void>;
 
     const LARGE_SCREEN = 800;
+
     let innerWidth: number; // window.innerWidth
     let commands: GameCommand[] = [];
     let command: GameCommand | null = null;
+    let previewCommand: GameCommand | null = null;
     let gameRef: Game;
+
+    export async function handleActionEvent(event: ActionEvent) {
+        gameRef.drawActionEvent(event);
+    }
 
     async function onEnterKeyPress(message: string) {
         // Clear game commands
@@ -37,10 +43,6 @@
         if (command) {
             onGameCommand(command);
         }
-    }
-
-    export async function handleActionEvent(event: ActionEvent) {
-        gameRef.drawActionEvent(event);
     }
 
     async function onPartial(message: string) {
@@ -101,6 +103,7 @@
             {commands}
             {onGameCommand}
             bind:command
+            bind:previewCommand
         ></AutocompleteGC>
     </div>
 
@@ -109,6 +112,6 @@
 
     <!-- Game (60px is size of ChatInput) -->
     <div style="height: calc(50% - 60px); flex-shrink-0" class="shrink-0">
-        <Game bind:this={gameRef}></Game>
+        <Game bind:this={gameRef} {previewCommand}></Game>
     </div>
 </div>

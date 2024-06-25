@@ -7,14 +7,15 @@
         getPositionsForPath,
         snapToGrid,
     } from "$lib/crossover/utils";
-    import { abilities } from "$lib/crossover/world/abilities";
-    import { actions } from "$lib/crossover/world/actions";
+    import { abilities, type Ability } from "$lib/crossover/world/abilities";
+    import { actions, type Action } from "$lib/crossover/world/actions";
     import { bestiary } from "$lib/crossover/world/bestiary";
-    import { compendium } from "$lib/crossover/world/compendium";
+    import { compendium, type Utility } from "$lib/crossover/world/compendium";
     import { MS_PER_TICK } from "$lib/crossover/world/settings";
     import type { Direction } from "$lib/crossover/world/types";
     import { worldSeed } from "$lib/crossover/world/world";
 
+    import { getGameActionId, type GameCommand } from "$lib/crossover/ir";
     import type {
         EntityType,
         Item,
@@ -90,6 +91,8 @@
         type ShaderTexture,
     } from "./utils";
 
+    export let previewCommand: GameCommand | null = null;
+
     let container: HTMLDivElement;
     let isInitialized = false;
     let clientWidth: number;
@@ -112,6 +115,45 @@
     $: updatePlayer(playerPosition);
     $: updateBiomes(playerPosition);
     $: resize(clientHeight, clientWidth);
+    $: handlePreviewCommand(previewCommand);
+
+    function handlePreviewCommand(command: GameCommand | null) {
+        if (!isInitialized || command == null || playerPosition == null) {
+            return;
+        }
+        const [ga, { self, target, item }] = command;
+        const [gaId, gaType] = getGameActionId(ga);
+
+        if (gaType === "ability") {
+            const ability = ga as Ability;
+        } else if (gaType === "utility") {
+            const utility = ga as Utility;
+        } else if (gaType === "action") {
+            const action = ga as Action;
+            const highlightPositions: Record<string, number> = {}; // {'x,y': highlight}
+
+            // Get all cells in range of playerPosition.rol/col
+            for (
+                let i = playerPosition.row - action.range;
+                i <= playerPosition.row + action.range;
+                i++
+            ) {
+                for (
+                    let j = playerPosition.col - action.range;
+                    j <= playerPosition.col + action.range;
+                    j++
+                ) {
+                    const [x, y] = cartToIso(j * CELL_WIDTH, i * CELL_HEIGHT, {
+                        x: HALF_ISO_CELL_WIDTH,
+                        y: HALF_ISO_CELL_HEIGHT,
+                    });
+                    highlightPositions[`${x},${y}`] = 1;
+                }
+            }
+
+            highlightShaderInstances("biome", highlightPositions);
+        }
+    }
 
     function updatePlayerPosition(player: Player | null) {
         if (player == null) {

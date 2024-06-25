@@ -738,14 +738,10 @@ async function performAbility({
     const { busy, entity } = await checkAndSetBusy({
         entity: self as PlayerEntity,
         ability,
+        publishEvent: true,
     });
     self = entity; // update `buclk`
     if (self.player && busy) {
-        publishFeedEvent((self as PlayerEntity).player, {
-            event: "feed",
-            type: "message",
-            message: "You are busy at the moment.",
-        });
         return;
     }
 
@@ -917,14 +913,24 @@ async function checkAndSetBusy({
     entity,
     action,
     ability,
+    publishEvent,
 }: {
     entity: PlayerEntity | MonsterEntity;
     action?: Actions;
     ability?: string;
+    publishEvent?: boolean;
 }): Promise<{ busy: Boolean; entity: PlayerEntity | MonsterEntity }> {
     // Check if entity is busy
     const [isBusy, now] = entityIsBusy(entity);
     if (isBusy) {
+        // Publish event to player
+        if (publishEvent && entity.player != null) {
+            publishFeedEvent((entity as Player).player, {
+                event: "feed",
+                type: "error",
+                message: "You are busy at the moment.",
+            });
+        }
         return { busy: true, entity };
     }
 
@@ -1034,14 +1040,9 @@ async function movePlayer(player: PlayerEntity, path: Direction[]) {
     const { busy, entity } = await checkAndSetBusy({
         entity: player,
         action: actions.move.action,
+        publishEvent: true,
     });
-
     if (busy) {
-        publishFeedEvent(player.player, {
-            event: "feed",
-            type: "error",
-            message: "You are busy at the moment.",
-        });
         return;
     }
 

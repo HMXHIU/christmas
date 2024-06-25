@@ -1,5 +1,6 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
 import { geohashesNearby } from "$lib/crossover/utils";
+import { checkInRange } from "$lib/crossover/world/abilities";
 import { actions } from "$lib/crossover/world/actions";
 import { compendium } from "$lib/crossover/world/compendium";
 import { PlayerMetadataSchema, playerStats } from "$lib/crossover/world/player";
@@ -267,16 +268,12 @@ const crossoverRouter = {
                 const { busy, entity } = await checkAndSetBusy({
                     entity: player,
                     action: actions.equip.action,
+                    publishEvent: true,
                 });
-                player = entity as PlayerEntity;
                 if (busy) {
-                    publishFeedEvent(player.player, {
-                        event: "feed",
-                        type: "error",
-                        message: "You are busy at the moment.",
-                    });
                     return;
                 }
+                player = entity as PlayerEntity;
 
                 let itemToEquip = (await tryFetchEntity(item)) as ItemEntity;
 
@@ -353,16 +350,12 @@ const crossoverRouter = {
                 const { busy, entity } = await checkAndSetBusy({
                     entity: player,
                     action: actions.unequip.action,
+                    publishEvent: true,
                 });
-                player = entity as PlayerEntity;
                 if (busy) {
-                    publishFeedEvent(player.player, {
-                        event: "feed",
-                        type: "error",
-                        message: "You are busy at the moment.",
-                    });
                     return;
                 }
+                player = entity as PlayerEntity;
 
                 // Check item is on player
                 if (itemEntity.loc[0] !== player.player) {
@@ -407,16 +400,12 @@ const crossoverRouter = {
                 const { busy, entity } = await checkAndSetBusy({
                     entity: player,
                     action: actions.take.action,
+                    publishEvent: true,
                 });
-                player = entity as PlayerEntity;
                 if (busy) {
-                    publishFeedEvent(player.player, {
-                        event: "feed",
-                        type: "error",
-                        message: "You are busy at the moment.",
-                    });
                     return;
                 }
+                player = entity as PlayerEntity;
 
                 // Get item
                 let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
@@ -432,7 +421,7 @@ const crossoverRouter = {
                 }
 
                 // Check if in range
-                if (itemEntity.loc[0] !== player.loc[0]) {
+                if (!checkInRange(player, itemEntity, actions.take.range)) {
                     publishFeedEvent(player.player, {
                         event: "feed",
                         type: "error",
@@ -481,16 +470,12 @@ const crossoverRouter = {
                 const { busy, entity } = await checkAndSetBusy({
                     entity: player,
                     action: actions.drop.action,
+                    publishEvent: true,
                 });
-                player = entity as PlayerEntity;
                 if (busy) {
-                    publishFeedEvent(player.player, {
-                        event: "feed",
-                        type: "error",
-                        message: "You are busy at the moment.",
-                    });
                     return;
                 }
+                player = entity as PlayerEntity;
 
                 // Check item is in player inventory
                 let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
@@ -525,16 +510,12 @@ const crossoverRouter = {
             const { busy, entity } = await checkAndSetBusy({
                 entity: player,
                 action: actions.say.action,
+                publishEvent: true,
             });
-            player = entity as PlayerEntity;
             if (busy) {
-                publishFeedEvent(player.player, {
-                    event: "feed",
-                    type: "error",
-                    message: "You are busy at the moment.",
-                });
                 return;
             }
+            player = entity as PlayerEntity;
             const parentGeohash = player.loc[0].slice(0, -1);
 
             // Get logged in players in geohash
@@ -641,14 +622,9 @@ const crossoverRouter = {
                 const { busy, entity } = await checkAndSetBusy({
                     entity: player,
                     action: actions.create.action,
+                    publishEvent: true,
                 });
-
                 if (busy) {
-                    publishFeedEvent(player.player, {
-                        event: "feed",
-                        type: "error",
-                        message: "You are busy at the moment.",
-                    });
                     return;
                 }
 
@@ -690,13 +666,23 @@ const crossoverRouter = {
                 const { busy, entity } = await checkAndSetBusy({
                     entity: player,
                     action: actions.configure.action,
+                    publishEvent: true,
                 });
-                player = entity as PlayerEntity;
                 if (busy) {
+                    return;
+                }
+
+                player = entity as PlayerEntity;
+                const itemEntity = (await tryFetchEntity(item)) as ItemEntity;
+
+                // Check in range
+                if (
+                    !checkInRange(player, itemEntity, actions.configure.range)
+                ) {
                     publishFeedEvent(player.player, {
                         event: "feed",
                         type: "error",
-                        message: "You are busy at the moment.",
+                        message: `${item} is not in range`,
                     });
                     return;
                 }
@@ -704,7 +690,7 @@ const crossoverRouter = {
                 // Get & configure item
                 const result = await configureItem({
                     self: player,
-                    item: (await tryFetchEntity(item)) as ItemEntity,
+                    item: itemEntity,
                     variables,
                 });
                 if (result.status === "success") {
@@ -730,16 +716,12 @@ const crossoverRouter = {
             const { busy, entity } = await checkAndSetBusy({
                 entity: player,
                 action: actions.rest.action,
+                publishEvent: true,
             });
-            player = entity as PlayerEntity;
             if (busy) {
-                publishFeedEvent(player.player, {
-                    event: "feed",
-                    type: "error",
-                    message: "You are busy at the moment.",
-                } as FeedEvent);
                 return;
             }
+            player = entity as PlayerEntity;
 
             // Rest player
             player.hp = playerStats({ level: player.lvl }).hp;

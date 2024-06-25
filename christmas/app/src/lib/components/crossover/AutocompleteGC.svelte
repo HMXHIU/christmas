@@ -25,6 +25,7 @@
     export let commands: GameCommand[] = [];
     export let command: GameCommand | null = null;
     export let onGameCommand: (command: GameCommand) => Promise<void>;
+    export let previewCommand: GameCommand | null = null;
 
     let value: string = "0-0";
 
@@ -119,6 +120,9 @@
                                     onSelect={() => {
                                         command = gc;
                                         value = `${groupIdx}-${commandIdx}`;
+
+                                        // TODO: change to on focus to support cycling
+                                        previewCommand = gc;
                                     }}
                                 >
                                     <div class="flex flex-row items-center">
