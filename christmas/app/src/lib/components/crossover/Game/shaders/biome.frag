@@ -18,7 +18,10 @@ void main() {
         discard;
     }
 
-    if (vInstanceHighlight > 0.0) {
+    if (vInstanceHighlight > 1.0) {
+        color *= vec4(0.5, 1.0, 0.5, 1.0);
+    }
+    else if (vInstanceHighlight > 0.0) {
         color *= vec4(1.0, 0.5, 0.5, 1.0);
     }
 

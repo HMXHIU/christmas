@@ -141,7 +141,7 @@ const abilities: Record<string, Ability> = {
         st: 1,
         hp: 0,
         mp: 0,
-        range: 0,
+        range: 1,
         aoe: 0,
         predicate: {
             self: ["player", "monster"],
@@ -167,7 +167,7 @@ const abilities: Record<string, Ability> = {
         st: 0,
         hp: 0,
         mp: 1000,
-        range: 0,
+        range: 1,
         aoe: 0,
         predicate: {
             self: ["player", "monster"],
@@ -193,7 +193,7 @@ const abilities: Record<string, Ability> = {
         st: 1,
         hp: 0,
         mp: 0,
-        range: 0,
+        range: 1,
         aoe: 0,
         predicate: {
             self: ["player", "monster"],
@@ -219,7 +219,7 @@ const abilities: Record<string, Ability> = {
         st: 1,
         hp: 0,
         mp: 0,
-        range: 0,
+        range: 1,
         aoe: 0,
         predicate: {
             self: ["player", "monster"],
@@ -253,7 +253,7 @@ const abilities: Record<string, Ability> = {
         st: 1,
         hp: 0,
         mp: 0,
-        range: 0,
+        range: 1,
         aoe: 0,
         predicate: {
             self: ["player", "monster"],
@@ -296,7 +296,7 @@ const abilities: Record<string, Ability> = {
         st: 2,
         hp: 0,
         mp: 0,
-        range: 0,
+        range: 1,
         aoe: 0,
         predicate: {
             self: ["player", "monster"],
@@ -391,7 +391,7 @@ const abilities: Record<string, Ability> = {
         st: 1,
         hp: 0,
         mp: 2,
-        range: 0,
+        range: 1,
         aoe: 0,
         predicate: {
             self: ["player", "monster"],
@@ -417,7 +417,7 @@ const abilities: Record<string, Ability> = {
         st: 1,
         hp: 0,
         mp: 2,
-        range: 0,
+        range: 1,
         aoe: 0,
         predicate: {
             self: ["player", "monster"],

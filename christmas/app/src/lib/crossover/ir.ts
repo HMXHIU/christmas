@@ -131,6 +131,7 @@ function gameActionsIR({
  * @param entities - The entities to search within.
  * @returns An object containing the filtered monsters, players, and items.
  */
+
 function entitiesIR({
     queryTokens,
     monsters,
@@ -147,56 +148,52 @@ function entitiesIR({
     items: Item[];
     tokenPositions: TokenPositions;
 } {
-    let tokenPositions: TokenPositions = {};
+    const tokenPositions: TokenPositions = {};
 
-    monsters = monsters.filter((monster) => {
-        return [monster.beast, monster.name, monster.monster].some(
-            (document) => {
+    const filterEntities = (
+        entities: any[],
+        getDocuments: (entity: any) => string[],
+    ) =>
+        entities.filter((entity) => {
+            let highestScore = 0;
+            let highestMatchedTokens: MatchedTokenPosition | null = null;
+
+            getDocuments(entity).forEach((document) => {
                 const { score, matchedTokens } = documentScore(
                     queryTokens,
                     document,
                 );
-                if (score > 0.6) {
-                    tokenPositions[monster.monster] = matchedTokens;
-                    return true;
+                if (score > highestScore) {
+                    highestScore = score;
+                    highestMatchedTokens = matchedTokens;
                 }
-                return false;
-            },
-        );
-    });
+            });
 
-    players = players.filter((player) => {
-        return [player.name, player.player].some((document) => {
-            const { score, matchedTokens } = documentScore(
-                queryTokens,
-                document,
-            );
-            if (score > 0.6) {
-                tokenPositions[player.player] = matchedTokens;
+            if (highestScore > 0.6 && highestMatchedTokens != null) {
+                tokenPositions[entity.monster || entity.player || entity.item] =
+                    highestMatchedTokens;
                 return true;
             }
             return false;
         });
-    });
-
-    items = items.filter((item) => {
-        return [item.prop, item.name, item.item].some((document) => {
-            const { score, matchedTokens } = documentScore(
-                queryTokens,
-                document,
-            );
-            if (score > 0.6) {
-                tokenPositions[item.item] = matchedTokens;
-                return true;
-            }
-            return false;
-        });
-    });
 
     return {
-        monsters: monsters || [],
-        players: players || [],
-        items: items || [],
+        monsters: filterEntities(monsters, (monster) => [
+            monster.beast,
+            monster.name,
+            monster.monster,
+            monster.monster.slice("monster_".length),
+        ]),
+        players: filterEntities(players, (player) => [
+            player.name,
+            player.player,
+        ]),
+        items: filterEntities(items, (item) => [
+            item.prop,
+            item.name,
+            item.item,
+            item.item.slice("item_".length),
+        ]),
         tokenPositions,
     };
 }
@@ -223,14 +220,13 @@ function tokenMatchAny(token: string, matchAny: string[]): number {
     }
     // Try to find a fuzzy match
     for (let document of matchAny) {
-        if (
-            fuzzyMatch(
-                token.toLowerCase(),
-                document.toLowerCase(),
-                maxLevenshteinDistance(document),
-            )
-        ) {
-            return 0.8;
+        const { normalizedScore, isMatch } = fuzzyMatch(
+            token.toLowerCase(),
+            document.toLowerCase(),
+            maxLevenshteinDistance(document),
+        );
+        if (isMatch) {
+            return normalizedScore;
         }
     }
     return 0;
@@ -265,6 +261,7 @@ function documentScore(
     for (let i = 0; i < queryTokens.length; i++) {
         const token = queryTokens[i];
         const tokenScore = tokenMatchAny(token, documentTokens);
+
         if (tokenScore > 0.5) {
             matchedTokens[i] = {
                 token,
@@ -291,16 +288,32 @@ function documentScore(
  * @param str1 - The first string to compare.
  * @param str2 - The second string to compare.
  * @param maxErrors - The maximum number of errors allowed for a match.
- * @returns True if the strings match within the specified error threshold, false otherwise.
+ * @returns An object containing a boolean indicating if the strings match within the specified error threshold,
+ *          the Levenshtein distance score, and the normalized score.
  */
-function fuzzyMatch(str1: string, str2: string, maxErrors: number): boolean {
+function fuzzyMatch(
+    str1: string,
+    str2: string,
+    maxErrors: number,
+): { isMatch: boolean; score: number; normalizedScore: number } {
     const m = str1.length;
     const n = str2.length;
 
     // Base cases
-    if (m === 0) return n <= maxErrors; // If either of the strings is empty, it checks if the length of the non-empty string is less than or equal to maxErrors.
-    if (n === 0) return m <= maxErrors;
-    if (Math.abs(m - n) > maxErrors) return false; // difference between the lengths of str1 and str2 is greater than maxErrors
+    if (m === 0)
+        return {
+            isMatch: n <= maxErrors,
+            score: n,
+            normalizedScore: n === 0 ? 1 : 0,
+        }; // If either of the strings is empty, it checks if the length of the non-empty string is less than or equal to maxErrors.
+    if (n === 0)
+        return {
+            isMatch: m <= maxErrors,
+            score: m,
+            normalizedScore: m === 0 ? 1 : 0,
+        };
+    if (Math.abs(m - n) > maxErrors)
+        return { isMatch: false, score: Math.abs(m - n), normalizedScore: 0 }; // difference between the lengths of str1 and str2 is greater than maxErrors
 
     // Create a 2D array to store the Levenshtein distances
     const dp = Array.from({ length: m + 1 }, () =>
@@ -342,14 +355,31 @@ function fuzzyMatch(str1: string, str2: string, maxErrors: number): boolean {
                 // the total Levenshtein distance will still be greater than the allowed error threshold.
                 const remainingLength = m - i + n - j;
                 if (dp[i][j] > maxErrors + remainingLength) {
-                    return false;
+                    return {
+                        isMatch: false,
+                        score: dp[i][j],
+                        normalizedScore: 0,
+                    };
                 }
             }
         }
     }
 
+    // Calculate the final Levenshtein distance
+    const finalScore = dp[m][n];
+
+    // Calculate the maximum possible distance (length of the longer string)
+    const maxLength = Math.max(m, n);
+
+    // Normalize the score
+    const normalizedScore = 1 - finalScore / maxLength;
+
     // Check if the final Levenshtein distance is within the allowed error threshold
-    return dp[m][n] <= maxErrors;
+    return {
+        isMatch: finalScore <= maxErrors,
+        score: finalScore,
+        normalizedScore,
+    };
 }
 
 function searchPossibleCommands({

@@ -27,7 +27,7 @@ export {
     type ShaderGeometry,
 };
 
-const MAX_SHADER_GEOMETRIES = 1000;
+const MAX_SHADER_GEOMETRIES = 2000;
 
 interface ShaderGeometry {
     shaderUid: string;

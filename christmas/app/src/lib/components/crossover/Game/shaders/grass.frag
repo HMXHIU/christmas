@@ -13,12 +13,12 @@ void main() {
 
     vec4 textureColor = texture2D(uTexture, vUV);
 
-    if (textureColor.a < 0.1) {
-        discard;
-    }
+    // if (textureColor.a < 0.1) {
+    //     discard;
+    // }
 
     // Apply alpha mask (fade out from top to bottom)
-    float alpha = mix(1.0, 0.0, vPosition.y/uTextureHeight);
+    float alpha = mix(1.0, 0.0, vPosition.y / uTextureHeight);
 
 
     textureColor *= alpha;

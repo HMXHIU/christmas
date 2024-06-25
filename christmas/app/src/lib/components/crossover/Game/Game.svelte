@@ -83,6 +83,7 @@
         initAssetManager,
         isCellInView,
         loadAssetTexture,
+        positionsInRange,
         swapEntityVariant,
         swapMeshTexture,
         updateEntityMeshRenderOrder,
@@ -118,40 +119,65 @@
     $: handlePreviewCommand(previewCommand);
 
     function handlePreviewCommand(command: GameCommand | null) {
-        if (!isInitialized || command == null || playerPosition == null) {
+        if (
+            !isInitialized ||
+            playerPosition == null ||
+            worldStage == null ||
+            app == null
+        ) {
             return;
         }
+        if (command == null) {
+            // Clear highlights
+            highlightShaderInstances("biome", {});
+            return;
+        }
+
         const [ga, { self, target, item }] = command;
         const [gaId, gaType] = getGameActionId(ga);
 
         if (gaType === "ability") {
             const ability = ga as Ability;
+
+            // Highlight cells in range
+            highlightShaderInstances(
+                "biome",
+                positionsInRange(ability, playerPosition),
+            );
         } else if (gaType === "utility") {
             const utility = ga as Utility;
         } else if (gaType === "action") {
             const action = ga as Action;
-            const highlightPositions: Record<string, number> = {}; // {'x,y': highlight}
 
-            // Get all cells in range of playerPosition.rol/col
-            for (
-                let i = playerPosition.row - action.range;
-                i <= playerPosition.row + action.range;
-                i++
-            ) {
-                for (
-                    let j = playerPosition.col - action.range;
-                    j <= playerPosition.col + action.range;
-                    j++
-                ) {
-                    const [x, y] = cartToIso(j * CELL_WIDTH, i * CELL_HEIGHT, {
-                        x: HALF_ISO_CELL_WIDTH,
-                        y: HALF_ISO_CELL_HEIGHT,
-                    });
-                    highlightPositions[`${x},${y}`] = 1;
+            // Highlight cells in range
+            highlightShaderInstances(
+                "biome",
+                positionsInRange(action, playerPosition),
+            );
+
+            if (target) {
+                const targetEntityId = getEntityId(target)[0];
+                const targetEntityMesh = entityMeshes[targetEntityId];
+                if (targetEntityMesh != null) {
+                    // Highlight target
+                    highlightTarget(target, 2);
+
+                    // TODO: Draw line to target
+                    // const startX = playerPosition.isoX;
+                    // const startY =
+                    //     playerPosition.isoY - playerPosition.elevation;
+                    // const endX = targetEntityMesh.position.isoX;
+                    // const endY =
+                    //     targetEntityMesh.position.isoY -
+                    //     targetEntityMesh.position.elevation;
+                    // const line = new Graphics();
+                    // line.zIndex = 10000;
+                    // line.moveTo(startX, startY);
+                    // line.lineTo(endX, endY);
+                    // line.stroke({ width: 4, color: 0xffd900 });
+                    // worldStage.addChild(line);
                 }
             }
-
-            highlightShaderInstances("biome", highlightPositions);
         }
     }
 
@@ -192,7 +218,10 @@
         }
     }
 
-    function highlightTarget(target: Player | Monster | Item | null) {
+    function highlightTarget(
+        target: Player | Monster | Item | null,
+        highlight: number = 1,
+    ) {
         if (target == null) {
             return;
         }
@@ -203,7 +232,7 @@
             entityMeshes,
         )) {
             if (entityId === targetEntityId) {
-                shaderGeometry.instanceHighlights.data.fill(1);
+                shaderGeometry.instanceHighlights.data.fill(highlight);
             } else {
                 shaderGeometry.instanceHighlights.data.fill(0);
             }
@@ -396,14 +425,14 @@
         drawShaderTextures({
             shaderName: "biome",
             shaderTextures: biomeTexturePositions,
-            renderOrder: RENDER_ORDER.biome,
+            renderOrder: RENDER_ORDER.biome * playerPosition.isoY,
             numGeometries: MAX_SHADER_GEOMETRIES,
             stage: worldStage,
         });
         drawShaderTextures({
             shaderName: "grass",
             shaderTextures: biomeDecorationsTexturePositions,
-            renderOrder: RENDER_ORDER.grass,
+            renderOrder: RENDER_ORDER.grass * playerPosition.isoY,
             numGeometries: MAX_SHADER_GEOMETRIES,
             stage: worldStage,
         });
@@ -909,6 +938,7 @@
 
         // Clear depth buffer
         const gl = (app.renderer as WebGLRenderer).gl;
+        gl.clearDepth(1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // Update shader uniforms

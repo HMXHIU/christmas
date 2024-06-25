@@ -15,6 +15,8 @@ import {
     seededRandom,
     stringToRandomNumber,
 } from "$lib/crossover/utils";
+import type { Ability } from "$lib/crossover/world/abilities";
+import type { Action } from "$lib/crossover/world/actions";
 import {
     biomeAtGeohash,
     biomes,
@@ -84,6 +86,7 @@ export {
     instancedShaderMeshes,
     isCellInView,
     loadAssetTexture,
+    positionsInRange,
     swapEntityVariant,
     swapMeshTexture,
     updateEntityMeshRenderOrder,
@@ -153,11 +156,11 @@ const Z_LAYER = ISO_CELL_HEIGHT * 2;
 const Z_OFF: Record<string, number> = {
     // shader
     biome: 0 * Z_LAYER,
-    entity: 1 * Z_LAYER,
+    entity: 0 * Z_LAYER,
     // entities
-    item: 1 * Z_LAYER,
-    monster: 1 * Z_LAYER,
-    player: 1 * Z_LAYER,
+    item: 0 * Z_LAYER,
+    monster: 0 * Z_LAYER,
+    player: 0 * Z_LAYER,
     // layers
     ground: 0 * Z_LAYER,
     grass: 0 * Z_LAYER,
@@ -183,7 +186,7 @@ const RENDER_ORDER: Record<string, number> = {
     wall: 0,
     // draw last because it has alpha
     item: 1,
-    grass: 1,
+    grass: 2,
     player: 1,
     monster: 1,
     world: 1,
@@ -398,7 +401,9 @@ function updateEntityMeshRenderOrder(entityMesh: EntityMesh) {
         return;
     }
     const [_, entityType] = getEntityId(entityMesh.entity);
-    const zIndex = RENDER_ORDER[entityType] * entityMesh.position.isoY; // TODO: this does not work during tweening
+    // TODO: this does not work during tweening
+    const zIndex = RENDER_ORDER[entityType] * entityMesh.position.isoY;
+
     entityMesh.mesh.zIndex = zIndex;
     if (entityMesh.actionIcon != null) {
         entityMesh.actionIcon.zIndex = zIndex;
@@ -639,6 +644,27 @@ async function _calculateBiomeDecorationsForRowCol({
     return texturePositions;
 }
 
+function sortFlatArrayByY(array: Float32Array, length: number): Float32Array {
+    // Create an array of objects
+    const points: { x: number; y: number; h: number }[] = [];
+
+    for (let i = 0; i < length; i += 3) {
+        points.push({ x: array[i], y: array[i + 1], h: array[i + 2] });
+    }
+
+    // Sort the array of objects by y value
+    points.sort((a, b) => a.y - b.y);
+
+    // Flatten the sorted array of objects back into the original format
+    for (let i = 0; i < points.length; i++) {
+        array[i * 3] = points[i].x;
+        array[i * 3 + 1] = points[i].y;
+        array[i * 3 + 2] = points[i].h;
+    }
+
+    return array;
+}
+
 async function drawShaderTextures({
     shaderName,
     shaderTextures,
@@ -672,6 +698,9 @@ async function drawShaderTextures({
 
         // Update instance positions buffer
         if (instancePositions && positions != null) {
+            // Sort the positions by y in place
+            sortFlatArrayByY(positions, length);
+
             instancePositions.data.set(positions);
             instancePositions.update();
         }
@@ -711,4 +740,29 @@ function destroyEntityMesh(entityMesh: EntityMesh, stage: Container) {
 
     // Destroy shader geometry
     destroyShaderGeometry(entityMesh.shaderGeometry.shaderUid);
+}
+
+function positionsInRange(
+    action: Action | Ability,
+    playerPosition: Position,
+): Record<string, number> {
+    const highlightPositions: Record<string, number> = {};
+    for (
+        let i = playerPosition.row - action.range;
+        i <= playerPosition.row + action.range;
+        i++
+    ) {
+        for (
+            let j = playerPosition.col - action.range;
+            j <= playerPosition.col + action.range;
+            j++
+        ) {
+            const [x, y] = cartToIso(j * CELL_WIDTH, i * CELL_HEIGHT, {
+                x: HALF_ISO_CELL_WIDTH,
+                y: HALF_ISO_CELL_HEIGHT,
+            });
+            highlightPositions[`${x},${y}`] = 2;
+        }
+    }
+    return highlightPositions;
 }
