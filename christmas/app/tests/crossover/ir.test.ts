@@ -91,9 +91,20 @@ test("Test IR", async () => {
      * Test `fuzzyMatch`
      */
 
-    expect(fuzzyMatch("Gandalf", "Gandalf", 1)).toBe(true);
-    expect(fuzzyMatch("bandage", "gandalf", 1)).toBe(false);
-    expect(fuzzyMatch("bandage", "gandalf", 3)).toBe(true);
+    expect(fuzzyMatch("Gandalf", "Gandalf", 1)).toMatchObject({
+        isMatch: true,
+        score: 0,
+        normalizedScore: 1,
+    });
+    expect(fuzzyMatch("bandage", "gandalf", 1)).toMatchObject({
+        isMatch: false,
+        score: 3,
+        normalizedScore: 0,
+    });
+    expect(fuzzyMatch("bandage", "gandalf", 3)).toMatchObject({
+        isMatch: true,
+        score: 3,
+    });
 
     /**
      * Test exact match `entitiesIR`
@@ -286,14 +297,14 @@ test("Test IR", async () => {
     /**
      * Test search by partial match `entitiesIR`
      */
-    expect(
-        entitiesIR({
-            queryTokens: tokenize("Gandaf"), // subtracted one letter
-            monsters: [dragon, goblin],
-            players: [playerOne, playerTwo],
-            items: [woodendoor, woodenclub],
-        }),
-    ).to.toMatchObject({
+
+    var res = entitiesIR({
+        queryTokens: tokenize("Gandaf"), // subtracted one letter
+        monsters: [dragon, goblin],
+        players: [playerOne, playerTwo],
+        items: [woodendoor, woodenclub],
+    });
+    expect(res).toMatchObject({
         monsters: [],
         players: [
             {
@@ -305,11 +316,13 @@ test("Test IR", async () => {
             [playerOne.player]: {
                 "0": {
                     token: "gandaf",
-                    score: 0.8,
                 },
             },
         },
     });
+    expect(res.tokenPositions[playerOne.player]["0"].score).toBeGreaterThan(
+        0.8,
+    );
 
     expect(
         entitiesIR({
@@ -329,15 +342,14 @@ test("Test IR", async () => {
      * Test search multiple entities `entitiesIR`
      */
 
-    expect(
-        entitiesIR({
-            // subtracted one letter
-            queryTokens: tokenize("Gandaf attacks gobli"),
-            monsters: [dragon, goblin],
-            players: [playerOne, playerTwo],
-            items: [woodendoor, woodenclub],
-        }),
-    ).to.toMatchObject({
+    res = entitiesIR({
+        // subtracted one letter
+        queryTokens: tokenize("Gandaf attacks gobli"),
+        monsters: [dragon, goblin],
+        players: [playerOne, playerTwo],
+        items: [woodendoor, woodenclub],
+    });
+    expect(res).toMatchObject({
         monsters: [
             {
                 monster: goblin.monster,
@@ -353,28 +365,29 @@ test("Test IR", async () => {
             [goblin.monster]: {
                 "2": {
                     token: "gobli",
-                    score: 0.8,
                 },
             },
             [playerOne.player]: {
                 "0": {
                     token: "gandaf",
-                    score: 0.8,
                 },
             },
         },
     });
+    expect(res.tokenPositions[goblin.monster]["2"].score).toBeGreaterThan(0.8);
+    expect(res.tokenPositions[playerOne.player]["0"].score).toBeGreaterThan(
+        0.8,
+    );
 
     // Test multiple of the same props
-    expect(
-        entitiesIR({
-            // subtracted one letter
-            queryTokens: tokenize(`take ${woodenclub.item}`),
-            monsters: [dragon, goblin],
-            players: [playerOne],
-            items: [woodenclub, woodenclub2, woodenclub3],
-        }),
-    ).to.toMatchObject({
+    res = entitiesIR({
+        // subtracted one letter
+        queryTokens: tokenize(`take ${woodenclub.item}`),
+        monsters: [dragon, goblin],
+        players: [playerOne],
+        items: [woodenclub, woodenclub2, woodenclub3],
+    });
+    expect(res).to.toMatchObject({
         monsters: [],
         players: [],
         items: [
@@ -392,23 +405,27 @@ test("Test IR", async () => {
             [woodenclub.item]: {
                 "1": {
                     token: woodenclub.item,
-                    score: 1,
                 },
             },
             [woodenclub2.item]: {
                 "1": {
                     token: woodenclub.item,
-                    score: 0.8,
                 },
             },
             [woodenclub3.item]: {
                 "1": {
                     token: woodenclub.item,
-                    score: 0.8,
                 },
             },
         },
     });
+    expect(res.tokenPositions[woodenclub.item]["1"].score).toBe(1);
+    expect(res.tokenPositions[woodenclub2.item]["1"].score).toBeGreaterThan(
+        0.8,
+    );
+    expect(res.tokenPositions[woodenclub3.item]["1"].score).toBeGreaterThan(
+        0.8,
+    );
 
     /**
      * Test exact match `gameActionsIR`
@@ -459,14 +476,13 @@ test("Test IR", async () => {
     });
 
     // Test ability
-    expect(
-        gameActionsIR({
-            queryTokens: tokenize("eyepok goblin"), // subtracted one letter
-            abilities: playerAbilities,
-            itemUtilities,
-            actions: [],
-        }),
-    ).to.toMatchObject({
+    var gas = gameActionsIR({
+        queryTokens: tokenize("eyepok goblin"), // subtracted one letter
+        abilities: playerAbilities,
+        itemUtilities,
+        actions: [],
+    });
+    expect(gas).to.toMatchObject({
         abilities: [
             {
                 ability: "eyePoke",
@@ -479,11 +495,11 @@ test("Test IR", async () => {
             eyePoke: {
                 "0": {
                     token: "eyepok",
-                    score: 0.8,
                 },
             },
         },
     });
+    expect(gas.tokenPositions["eyePoke"]["0"].score).toBeGreaterThan(0.8);
 
     // Test token exists in abilities and actions
     expect(
