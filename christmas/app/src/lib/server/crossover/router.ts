@@ -1,6 +1,5 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
-import { geohashesNearby } from "$lib/crossover/utils";
-import { checkInRange } from "$lib/crossover/world/abilities";
+import { checkInRange, geohashesNearby } from "$lib/crossover/utils";
 import { actions } from "$lib/crossover/world/actions";
 import { compendium } from "$lib/crossover/world/compendium";
 import { PlayerMetadataSchema, playerStats } from "$lib/crossover/world/player";
@@ -421,7 +420,7 @@ const crossoverRouter = {
                 }
 
                 // Check if in range
-                if (!checkInRange(player, itemEntity, actions.take.range)) {
+                if (!checkInRange(player, itemEntity, actions.take.range)[0]) {
                     publishFeedEvent(player.player, {
                         event: "feed",
                         type: "error",
@@ -677,7 +676,11 @@ const crossoverRouter = {
 
                 // Check in range
                 if (
-                    !checkInRange(player, itemEntity, actions.configure.range)
+                    !checkInRange(
+                        player,
+                        itemEntity,
+                        actions.configure.range,
+                    )[0]
                 ) {
                     publishFeedEvent(player.player, {
                         event: "feed",

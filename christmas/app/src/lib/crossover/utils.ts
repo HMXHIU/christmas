@@ -9,6 +9,7 @@ import ngeohash from "ngeohash";
 import type { GameAction } from "./ir";
 import { bestiary } from "./world/bestiary";
 import { compendium } from "./world/compendium";
+import { geohashToGridCell } from "./world/utils";
 import { worldSeed } from "./world/world";
 
 export {
@@ -18,10 +19,12 @@ export {
     borderingGeohashes,
     calculateLocation,
     cartToIso,
+    checkInRange,
     childrenGeohashes,
     directionVectors,
     entityDimensions,
     expandGeohashes,
+    filterSortEntitiesInRange,
     gameActionId,
     generateEvenlySpacedPoints,
     geohashNeighbour,
@@ -693,4 +696,57 @@ function getGeohashesForPath(geohash: string, path: Direction[]): string[] {
         geohashes.push(currentGeohash);
     }
     return geohashes;
+}
+
+function checkInRange(
+    self: Player | Monster,
+    target: Player | Monster | Item,
+    range: number,
+    diagonal: boolean = true,
+): [boolean, number] {
+    // If the target is not a geohash, check if the target is on self
+    if (target.locT !== "geohash") {
+        // Allow targeting items on self
+        if (target.loc[0] === getEntityId(self)[0]) {
+            return [true, 0];
+        }
+        // Not allowed to target items on other entities
+        else {
+            // TODO: should targetting other player's items be supported ???
+            return [false, 0];
+        }
+    }
+
+    const { row: r1, col: c1 } = geohashToGridCell(self.loc[0]);
+    const { row: r2, col: c2 } = geohashToGridCell(target.loc[0]);
+
+    if (diagonal) {
+        const deltaX = Math.abs(r1 - r2);
+        const deltaY = Math.abs(c1 - c2);
+        const chebyshevDistance = Math.max(deltaX, deltaY);
+        return [range < 0 || chebyshevDistance <= range, deltaX + deltaY];
+    } else {
+        const deltaX = r1 - r2;
+        const deltaY = c1 - c2;
+        const squaredDistance = deltaX * deltaX + deltaY * deltaY;
+        const squaredRange = range * range;
+        return [range < 0 || squaredDistance <= squaredRange, squaredDistance];
+    }
+}
+
+function filterSortEntitiesInRange(
+    self: Player | Monster,
+    entities: (Player | Monster | Item)[],
+    range: number,
+) {
+    return entities
+        .map((entity) => {
+            const [inRange, distance] = checkInRange(self, entity, range);
+            return { inRange, distance, entity };
+        })
+        .filter(({ inRange }) => inRange)
+        .sort((a, b) => {
+            return a.distance - b.distance; // ascending order
+        })
+        .map(({ entity }) => entity);
 }

@@ -7,13 +7,11 @@ import type {
 import { substituteVariables } from "$lib/utils";
 import lodash from "lodash";
 import type { GameActionEntities, TokenPositions } from "../ir";
-import { geohashToGridCell } from "../world/utils";
 import { TICKS_PER_TURN } from "./settings";
-const { cloneDeep, uniqBy } = lodash;
+const { cloneDeep } = lodash;
 
 export {
     abilities,
-    checkInRange,
     hasResourcesForAbility,
     patchEffectWithVariables,
     resolveAbilityEntities,
@@ -546,20 +544,6 @@ function hasResourcesForAbility(
         hasResources: true,
         message: "",
     };
-}
-
-function checkInRange(
-    self: Player | Monster,
-    target: Player | Monster | Item,
-    range: number,
-): boolean {
-    // Use only the first geohash in the location
-    const { row: r1, col: c1 } = geohashToGridCell(self.loc[0]);
-    const { row: r2, col: c2 } = geohashToGridCell(target.loc[0]);
-    const inRange =
-        range < 0 ||
-        Math.ceil(Math.sqrt((r1 - r2) ** 2 + (c1 - c2) ** 2)) <= range;
-    return inRange;
 }
 
 /**

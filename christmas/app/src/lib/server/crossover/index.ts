@@ -1,6 +1,7 @@
 import {
     autoCorrectGeohashPrecision,
     calculateLocation,
+    checkInRange,
     childrenGeohashes,
     entityDimensions,
     geohashNeighbour,
@@ -9,7 +10,6 @@ import {
 } from "$lib/crossover/utils";
 import {
     abilities,
-    checkInRange,
     hasResourcesForAbility,
     patchEffectWithVariables,
     type ProcedureEffect,
@@ -725,7 +725,7 @@ async function performAbility({
     }
 
     // Check if target is in range
-    if (!checkInRange(self, target, range) && self.player) {
+    if (!checkInRange(self, target, range)[0] && self.player) {
         publishFeedEvent((self as PlayerEntity).player, {
             event: "feed",
             type: "message",
