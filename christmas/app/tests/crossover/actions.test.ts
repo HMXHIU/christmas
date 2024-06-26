@@ -3,39 +3,50 @@ import { abilities } from "$lib/crossover/world/abilities";
 import { actions } from "$lib/crossover/world/actions";
 import { compendium } from "$lib/crossover/world/compendium";
 import { spawnItem, spawnMonster } from "$lib/server/crossover";
-import { initializeClients } from "$lib/server/crossover/redis";
-import type { ItemEntity } from "$lib/server/crossover/redis/entities";
-import { expect, test } from "vitest";
+import { initializeClients, saveEntity } from "$lib/server/crossover/redis";
+import type {
+    Item,
+    ItemEntity,
+    Monster,
+    MonsterEntity,
+    Player,
+} from "$lib/server/crossover/redis/entities";
+import { beforeAll, describe, expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer, generateRandomGeohash } from "./utils";
 
-test("Test Actions", async () => {
+const region = String.fromCharCode(...getRandomRegion());
+
+let playerOne: Player;
+let playerTwo: Player;
+let woodendoor: Item;
+let woodenclub: Item;
+let woodenclub2: Item;
+let woodenclub3: Item;
+let portal: Item;
+let dragon: Monster;
+let goblin: Monster;
+
+beforeAll(async () => {
     await initializeClients(); // create redis repositories
 
-    const region = String.fromCharCode(...getRandomRegion());
-
     // Player one
-    const playerOneName = "Gandalf";
     const playerOneGeohash = generateRandomGeohash(8, "h9");
-    let [playerOneWallet, playerOneCookies, playerOne] =
-        await createRandomPlayer({
-            region,
-            geohash: playerOneGeohash,
-            name: playerOneName,
-        });
+    [, , playerOne] = await createRandomPlayer({
+        region,
+        geohash: playerOneGeohash,
+        name: "Gandalf",
+    });
 
     // Player two
-    const playerTwoName = "Saruman";
-    const playerTwoGeohash = playerOneGeohash;
-    let [playerTwoWallet, playerTwoCookies, playerTwo] =
-        await createRandomPlayer({
-            region,
-            geohash: playerTwoGeohash,
-            name: playerTwoName,
-        });
+    [, , playerTwo] = await createRandomPlayer({
+        region,
+        geohash: playerOneGeohash,
+        name: "Saruman",
+    });
 
-    // Wooden Door
-    let woodendoor = (await spawnItem({
+    // Spawn items
+    woodendoor = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
         prop: compendium.woodendoor.prop,
         variables: {
@@ -44,181 +55,186 @@ test("Test Actions", async () => {
         },
     })) as ItemEntity;
 
-    // Wooden club
-    let woodenclub = (await spawnItem({
-        geohash: generateRandomGeohash(8, "h9"),
-        prop: compendium.woodenclub.prop,
-    })) as ItemEntity;
-    let woodenclub2 = (await spawnItem({
-        geohash: generateRandomGeohash(8, "h9"),
-        prop: compendium.woodenclub.prop,
-    })) as ItemEntity;
-    let woodenclub3 = (await spawnItem({
+    woodenclub = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
-    // Portal
-    let portal = (await spawnItem({
-        geohash: playerOne.loc[0], // spawn at playerOne
+    woodenclub2 = (await spawnItem({
+        geohash: generateRandomGeohash(8, "h9"),
+        prop: compendium.woodenclub.prop,
+    })) as ItemEntity;
+
+    woodenclub3 = (await spawnItem({
+        geohash: generateRandomGeohash(8, "h9"),
+        prop: compendium.woodenclub.prop,
+    })) as ItemEntity;
+
+    portal = (await spawnItem({
+        geohash: playerOne.loc[0],
         prop: compendium.portal.prop,
     })) as ItemEntity;
 
-    // Dragon
-    let dragon = await spawnMonster({
+    // Spawn Monsters
+    dragon = await spawnMonster({
         geohash: generateRandomGeohash(8, "h9"),
         beast: "dragon",
         level: 1,
     });
 
-    // Goblin
-    let goblin = await spawnMonster({
+    goblin = await spawnMonster({
         geohash: generateRandomGeohash(8, "h9"),
         beast: "goblin",
         level: 1,
     });
+});
 
-    /**
-     * Test positive case
-     */
+describe("Actions Tests", () => {
+    test("Look action without target", () => {
+        const commands = searchPossibleCommands({
+            query: "look",
+            player: playerOne,
+            actions: [actions.look, actions.say],
+            playerAbilities: [abilities.scratch],
+            playerItems: [woodenclub],
+            monsters: [dragon],
+            players: [playerTwo],
+            items: [woodendoor, woodenclub, portal],
+        }).commands;
 
-    var commands = searchPossibleCommands({
-        query: "look",
-        player: playerOne,
-        actions: [actions.look, actions.say],
-        playerAbilities: [abilities.scratch],
-        playerItems: [woodenclub],
-        monsters: [dragon],
-        players: [playerTwo],
-        items: [woodendoor, woodenclub, portal],
-    }).commands;
-    expect(commands).toMatchObject([
-        [
-            {
-                action: "look",
-                description: "Look at the surroundings.",
-                predicate: {
-                    target: ["player", "monster", "item", "none"],
-                    tokenPositions: {
-                        action: 0,
-                        target: 1,
+        expect(commands).toMatchObject([
+            [
+                {
+                    action: "look",
+                    description: actions.look.description,
+                    predicate: {
+                        target: ["player", "monster", "item", "none"],
+                        tokenPositions: {
+                            action: 0,
+                            target: 1,
+                        },
                     },
                 },
-            },
-            {
-                self: {
-                    player: playerOne.player,
+                {
+                    self: {
+                        player: playerOne.player,
+                    },
                 },
-            },
-            {
-                query: "look",
-                queryIrrelevant: "",
-            },
-        ],
-    ]);
-
-    // Test optional target
-    commands = searchPossibleCommands({
-        query: "look goblin",
-        player: playerOne,
-        actions: [actions.look, actions.say],
-        playerAbilities: [abilities.scratch],
-        playerItems: [woodenclub],
-        monsters: [dragon, goblin],
-        players: [playerTwo],
-        items: [woodendoor, woodenclub, portal],
-    }).commands;
-    expect(commands).toMatchObject([
-        [
-            {
-                action: "look",
-            },
-            {
-                self: {
-                    player: playerOne.player,
+                {
+                    query: "look",
+                    queryIrrelevant: "",
                 },
-                target: {
-                    monster: goblin.monster,
-                },
-            },
-            {
-                query: "look goblin",
-                queryIrrelevant: "",
-            },
-        ],
-    ]);
-
-    /**
-     * Test negative case
-     */
-
-    commands = searchPossibleCommands({
-        query: "rejected look", // token position must be 0
-        player: playerOne,
-        actions: [actions.look, actions.say],
-        playerAbilities: [abilities.scratch],
-        playerItems: [woodenclub],
-        monsters: [dragon],
-        players: [playerTwo],
-        items: [woodendoor, woodenclub, portal],
-    }).commands;
-    expect(commands.length).toBe(0);
-    expect(commands).toMatchObject([]);
-
-    /**
-     * Test GameCommandVariables
-     */
-
-    var { queryTokens, tokenPositions, commands } = searchPossibleCommands({
-        query: "say saruman thou shall not pass",
-        player: playerOne,
-        actions: [actions.look, actions.say],
-        playerAbilities: [abilities.scratch],
-        playerItems: [woodenclub],
-        monsters: [dragon],
-        players: [playerTwo],
-        items: [woodendoor, woodenclub, portal],
-    });
-    const [action, entities, variables] = commands[0];
-    expect(variables).toMatchObject({
-        query: "say saruman thou shall not pass",
-        queryIrrelevant: "thou shall not pass",
+            ],
+        ]);
     });
 
-    /**
-     * Test can only drop items in inventory
-     */
+    test("Look action with target", async () => {
+        goblin.loc = [playerOne.loc[0]];
+        dragon.loc = [playerOne.loc[0]];
+        goblin = (await saveEntity(goblin as MonsterEntity)) as Monster;
+        dragon = (await saveEntity(dragon as MonsterEntity)) as Monster;
 
-    woodenclub2.locT = "inv";
-    woodenclub2.loc = [playerOne.player];
-    commands = searchPossibleCommands({
-        query: `drop ${woodenclub3.item}`,
-        player: playerOne,
-        actions: [actions.drop],
-        playerAbilities: [],
-        playerItems: [woodenclub2],
-        monsters: [],
-        players: [],
-        items: [woodenclub3, woodenclub],
-    }).commands;
-    expect(commands).length(1);
-    expect(commands).toMatchObject([
-        [
-            {
-                action: "drop",
-            },
-            {
-                self: {
-                    player: playerOne.player,
+        const commands = searchPossibleCommands({
+            query: `look ${goblin.monster}`,
+            player: playerOne,
+            actions: [actions.look, actions.say],
+            playerAbilities: [abilities.scratch],
+            playerItems: [woodenclub],
+            monsters: [dragon, goblin],
+            players: [playerTwo],
+            items: [woodendoor, woodenclub, portal],
+        }).commands;
+
+        expect(commands).toMatchObject([
+            [
+                {
+                    action: "look",
                 },
-                target: {
-                    item: woodenclub2.item,
+                {
+                    self: {
+                        player: playerOne.player,
+                    },
+                    target: {
+                        monster: goblin.monster,
+                    },
                 },
-            },
-            {
-                query: `drop ${woodenclub3.item}`,
-                queryIrrelevant: "",
-            },
-        ],
-    ]);
+                {
+                    query: `look ${goblin.monster}`,
+                    queryIrrelevant: "",
+                },
+            ],
+        ]);
+    });
+
+    test("Invalid action (wrong token position)", () => {
+        const commands = searchPossibleCommands({
+            query: "rejected look",
+            player: playerOne,
+            actions: [actions.look, actions.say],
+            playerAbilities: [abilities.scratch],
+            playerItems: [woodenclub],
+            monsters: [dragon],
+            players: [playerTwo],
+            items: [woodendoor, woodenclub, portal],
+        }).commands;
+
+        expect(commands.length).toBe(0);
+        expect(commands).toMatchObject([]);
+    });
+
+    test("Say action with message", () => {
+        const { commands } = searchPossibleCommands({
+            query: "say saruman thou shall not pass",
+            player: playerOne,
+            actions: [actions.look, actions.say],
+            playerAbilities: [abilities.scratch],
+            playerItems: [woodenclub],
+            monsters: [dragon],
+            players: [playerTwo],
+            items: [woodendoor, woodenclub, portal],
+        });
+
+        const [, , variables] = commands[0];
+        expect(variables).toMatchObject({
+            query: "say saruman thou shall not pass",
+            queryIrrelevant: "thou shall not pass",
+        });
+    });
+
+    test("Drop action only for inventory items", () => {
+        woodenclub2.locT = "inv";
+        woodenclub2.loc = [playerOne.player];
+
+        const commands = searchPossibleCommands({
+            query: `drop ${woodenclub3.item}`,
+            player: playerOne,
+            actions: [actions.drop],
+            playerAbilities: [],
+            playerItems: [woodenclub2],
+            monsters: [],
+            players: [],
+            items: [woodenclub3, woodenclub],
+        }).commands;
+
+        expect(commands).toHaveLength(1);
+        expect(commands).toMatchObject([
+            [
+                {
+                    action: "drop",
+                },
+                {
+                    self: {
+                        player: playerOne.player,
+                    },
+                    target: {
+                        item: woodenclub2.item,
+                    },
+                },
+                {
+                    query: `drop ${woodenclub3.item}`,
+                    queryIrrelevant: "",
+                },
+            ],
+        ]);
+    });
 });

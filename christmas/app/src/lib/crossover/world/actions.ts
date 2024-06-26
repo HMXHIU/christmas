@@ -307,7 +307,7 @@ function resolveActionEntities({
     }
 
     // If no target is allowed
-    if (targetTypes.includes("none")) {
+    if (gameActionEntitiesScores.length === 0 && targetTypes.includes("none")) {
         return [{ self }];
     }
 
