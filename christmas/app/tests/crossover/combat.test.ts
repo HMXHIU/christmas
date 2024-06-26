@@ -1,14 +1,16 @@
 import { stream } from "$lib/crossover";
 import { abilities } from "$lib/crossover/world/abilities";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
+import { sanctuariesByRegion } from "$lib/crossover/world/world";
 import { spawnMonster } from "$lib/server/crossover";
-import { fetchEntity, initializeClients } from "$lib/server/crossover/redis";
+import { initializeClients } from "$lib/server/crossover/redis";
 import type {
+    Monster,
     MonsterEntity,
     Player,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
-import { expect, test } from "vitest";
+import { beforeAll, describe, expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import {
     buffEntity,
@@ -19,23 +21,25 @@ import {
     waitForEventData,
 } from "./utils";
 
-test("Test Combat", async () => {
+const region = String.fromCharCode(...getRandomRegion());
+const playerOneGeohash = generateRandomGeohash(6, "h9");
+let playerOne: Player;
+let playerOneCookies: string;
+let goblin: Monster;
+let playerOneStream: any;
+
+beforeAll(async () => {
     await initializeClients(); // create redis repositories
 
-    const region = String.fromCharCode(...getRandomRegion());
+    // Create player
+    [, playerOneCookies, playerOne] = await createRandomPlayer({
+        region,
+        geohash: playerOneGeohash,
+        name: "Gandalf",
+    });
 
-    // Create players
-    const playerOneName = "Gandalf";
-    const playerOneGeohash = generateRandomGeohash(6, "h9");
-    let [playerOneWallet, playerOneCookies, playerOne] =
-        await createRandomPlayer({
-            region,
-            geohash: playerOneGeohash,
-            name: playerOneName,
-        });
-
-    // Create streams
-    const [playerOneStream, playerOneCloseStream] = await stream({
+    // Create stream
+    [playerOneStream] = await stream({
         Cookie: playerOneCookies,
     });
     await expect(
@@ -46,65 +50,70 @@ test("Test Combat", async () => {
     });
 
     // Spawn monsters
-    let goblin = await spawnMonster({
+    goblin = await spawnMonster({
         geohash: playerOneGeohash,
         beast: "goblin",
         level: 1,
     });
+});
 
-    /*
-     * Test gain LUs after killing monster
-     */
+describe("Combat Tests", () => {
+    test("Player gains LUs after killing monster", async () => {
+        // Give player enough mana to cast disintegrate
+        playerOne = (await buffEntity(playerOne.player, {
+            mp: 2000,
+            level: 1000,
+        })) as PlayerEntity;
 
-    // Give player enough mana to cast disintegrate
-    playerOne = (await buffEntity(playerOne.player, {
-        mp: 2000,
-        level: 1000,
-    })) as PlayerEntity;
+        var [res, { player, playerBefore, monster, monsterBefore }] =
+            await testPlayerPerformAbilityOnMonster({
+                player: playerOne,
+                monster: goblin,
+                ability: abilities.disintegrate.ability,
+                cookies: playerOneCookies,
+                stream: playerOneStream,
+            });
 
-    // Perform ability on target
-    let playerBefore = { ...playerOne };
-    await testPlayerPerformAbilityOnMonster({
-        player: playerOne,
-        monster: goblin,
-        ability: abilities.disintegrate.ability,
-        cookies: playerOneCookies,
-        stream: playerOneStream,
+        expect(res).toBe("success");
+
+        // Check player gained LUs
+        const { lumina, umbra } = monsterLUReward({
+            level: goblin.lvl,
+            beast: goblin.beast,
+        });
+
+        expect(player).toMatchObject({
+            player: playerOne.player,
+            lum: playerBefore.lum + lumina,
+            umb: playerBefore.umb + umbra,
+        });
     });
 
-    // Check player gained LUs
-    playerOne = (await fetchEntity(playerOne.player)) as Player;
-    const { lumina, umbra } = monsterLUReward({
-        level: goblin.lvl,
-        beast: goblin.beast,
-    });
-    expect(playerOne).toMatchObject({
-        player: playerOne.player,
-        lum: playerBefore.lum + lumina,
-        umb: playerBefore.umb + umbra,
-    });
+    test("Player respawns when killed by monster", async () => {
+        // Reset playerOne to level 1
+        playerOne = (await buffEntity(playerOne.player, {
+            level: 1,
+        })) as PlayerEntity;
 
-    /*
-     * Test player respawn when monster kills player
-     */
+        // Give monster enough mana to cast disintegrate
+        goblin = (await buffEntity(goblin.monster, {
+            mp: 2000,
+            level: 1000,
+        })) as MonsterEntity;
 
-    // Rest playerOne to level 1
-    playerOne = (await buffEntity(playerOne.player, {
-        level: 1,
-    })) as PlayerEntity;
+        var [res, { player, playerBefore, monster, monsterBefore }] =
+            await testMonsterPerformAbilityOnPlayer({
+                monster: goblin as MonsterEntity,
+                player: playerOne as PlayerEntity,
+                ability: abilities.disintegrate.ability,
+                stream: playerOneStream,
+            });
 
-    // Give monster enough mana to cast disintegrate
-    goblin = (await buffEntity(goblin.monster, {
-        mp: 2000,
-        level: 1000,
-    })) as MonsterEntity;
+        // Should respawn at sanctuary
+        const respawnGeohash = sanctuariesByRegion[player.rgn].geohash;
+        expect(player.loc).toMatchObject([respawnGeohash]);
 
-    // Perform ability on target
-    playerBefore = { ...playerOne };
-    await testMonsterPerformAbilityOnPlayer({
-        monster: goblin,
-        player: playerOne as PlayerEntity,
-        ability: abilities.disintegrate.ability,
-        stream: playerOneStream,
+        // TODO: Should respawn with full health after death timer
+        // expect(player.hp).toBeGreaterThan(0);
     });
 });

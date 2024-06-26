@@ -240,7 +240,17 @@ export async function testMonsterPerformAbilityOnPlayer({
     player: PlayerEntity;
     ability: string;
     stream: EventTarget; // player's stream
-}) {
+}): Promise<
+    [
+        PerformAbilityTestResults,
+        {
+            player: Player;
+            monster: Monster;
+            playerBefore: Player;
+            monsterBefore: Monster;
+        },
+    ]
+> {
     // Assume that monster is able to perform ability (in range, enough resources etc..)
     const { procedures, mp, st, hp } = abilities[ability];
     const playerBefore: PlayerEntity = { ...player };
@@ -255,10 +265,10 @@ export async function testMonsterPerformAbilityOnPlayer({
     });
 
     let feedEvents: StreamEvent[] = [];
-    let entitiesEvents: StreamEvent[] = [];
+    let entitiesEvents: UpdateEntitiesEvent[] = [];
     let entitiesEventsCnt = 0;
     collectEventDataForDuration(stream, "entities").then((events) => {
-        entitiesEvents = events;
+        entitiesEvents = events as UpdateEntitiesEvent[];
     });
     collectEventDataForDuration(stream, "feed").then((events) => {
         feedEvents = events;
@@ -316,7 +326,17 @@ export async function testMonsterPerformAbilityOnPlayer({
                 },
             ],
         });
+
+        // Update player
+        for (const p of entitiesEvents[entitiesEventsCnt]?.players!) {
+            if (p.player === player.player) {
+                player = p as PlayerEntity;
+                break;
+            }
+        }
     }
+
+    return ["success", { player, monster, playerBefore, monsterBefore }];
 }
 
 /**
@@ -340,7 +360,17 @@ export async function testPlayerPerformAbilityOnMonster({
     ability: string;
     cookies: string;
     stream: EventTarget;
-}) {
+}): Promise<
+    [
+        PerformAbilityTestResults,
+        {
+            player: Player;
+            monster: Monster;
+            playerBefore: Player;
+            monsterBefore: Monster;
+        },
+    ]
+> {
     const { procedures, ap, mp, st, hp, range, predicate } = abilities[ability];
     const playerBefore = { ...player };
     const monsterBefore = { ...monster };
@@ -365,6 +395,11 @@ export async function testPlayerPerformAbilityOnMonster({
             type: "error",
             message: resourceInsufficientMessage,
         });
+
+        return [
+            "insufficientResources",
+            { player, monster, playerBefore, monsterBefore },
+        ];
     }
     // Check received feed event if target predicate is not met
     else if (
@@ -376,6 +411,10 @@ export async function testPlayerPerformAbilityOnMonster({
             type: "error",
             message: `You can't ${ability} yourself`,
         });
+        return [
+            "targetPredicateNotMet",
+            { player, monster, playerBefore, monsterBefore },
+        ];
     }
     // Check received feed event if out of range
     else if (!inRange) {
@@ -384,6 +423,7 @@ export async function testPlayerPerformAbilityOnMonster({
             type: "error",
             message: "Target is out of range",
         });
+        return ["outOfRange", { player, monster, playerBefore, monsterBefore }];
     }
     // Check received feed event if self is busy
     else if (isBusy) {
@@ -392,6 +432,7 @@ export async function testPlayerPerformAbilityOnMonster({
             type: "error",
             message: "You are busy at the moment.",
         });
+        return ["busy", { player, monster, playerBefore, monsterBefore }];
     }
     // Check procedure effects
     else {
@@ -415,7 +456,7 @@ export async function testPlayerPerformAbilityOnMonster({
         });
         entitiesEventsCnt += 1;
 
-        // Update self
+        // Update player
         for (const p of entitiesEvents[entitiesEventsCnt]?.players!) {
             if (p.player === player.player) {
                 player = p;
@@ -478,7 +519,17 @@ export async function testPlayerPerformAbilityOnMonster({
                     },
                 ],
             });
+
+            // Update player
+            for (const p of entitiesEvents[entitiesEventsCnt]?.players!) {
+                if (p.player === player.player) {
+                    player = p;
+                    break;
+                }
+            }
         }
+
+        return ["success", { player, monster, playerBefore, monsterBefore }];
     }
 }
 

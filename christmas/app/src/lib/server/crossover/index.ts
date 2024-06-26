@@ -610,9 +610,21 @@ async function handleMonsterKillsPlayer(
     monster: MonsterEntity,
     player: PlayerEntity,
 ) {
-    // Get respawn location
+    // Set respawn location
     const respawnGeohash = sanctuariesByRegion[player.rgn].geohash;
-    player.loc = [respawnGeohash];
+
+    // TODO: Handle player death after a timer not here
+    // // Recover all stats
+    // const attributes = (await getUserMetadata(player.player))?.crossover
+    //     ?.attributes;
+
+    // Note: don't save here
+    player = {
+        ...player,
+        // ...playerStats({ level: player.lvl, attributes }),
+        loc: [respawnGeohash],
+    };
+
     publishFeedEvent(player.player, {
         event: "feed",
         type: "message",
