@@ -1,16 +1,47 @@
 import { INTERNAL_SERVICE_KEY } from "$env/static/private";
-import { login as loginCrossover, signup } from "$lib/crossover";
+import {
+    crossoverCmdPerformAbility,
+    login as loginCrossover,
+    signup,
+} from "$lib/crossover";
+import { checkInRange } from "$lib/crossover/utils";
+import {
+    abilities,
+    hasResourcesForAbility,
+    patchEffectWithVariables,
+} from "$lib/crossover/world/abilities";
+import { monsterLUReward } from "$lib/crossover/world/bestiary";
 import {
     archetypeTypes,
     type PlayerMetadata,
 } from "$lib/crossover/world/player";
+import { sanctuariesByRegion } from "$lib/crossover/world/world";
 import { hashObject } from "$lib/server";
-import type { Monster, Player } from "$lib/server/crossover/redis/entities";
+import { performAbility, performEffectOnEntity } from "$lib/server/crossover";
+import type {
+    Monster,
+    MonsterEntity,
+    Player,
+    PlayerEntity,
+} from "$lib/server/crossover/redis/entities";
+import { entityIsBusy } from "$lib/server/crossover/utils";
 import { ObjectStorage } from "$lib/server/objectStorage";
-import { generateRandomSeed } from "$lib/utils";
+import { generateRandomSeed, sleep } from "$lib/utils";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
-import type { StreamEvent } from "../../src/routes/api/crossover/stream/+server";
+import { uniqBy } from "lodash";
+import { expect } from "vitest";
+import type {
+    StreamEvent,
+    UpdateEntitiesEvent,
+} from "../../src/routes/api/crossover/stream/+server";
 import { createRandomUser } from "../utils";
+
+export type PerformAbilityTestResults =
+    | "outOfRange"
+    | "busy"
+    | "insufficientResources"
+    | "targetPredicateNotMet"
+    | "success";
 
 /**
  * Creates a random player with the specified geohash, region, and name.
@@ -189,4 +220,432 @@ export async function buffEntity(
         })
     ).json();
     return result.data as Player | Monster;
+}
+
+/**
+ * Tests the ability of a monster to perform an ability on a player.
+ *
+ * @param monster - The monster entity performing the ability.
+ * @param player - The player entity on which the ability is performed.
+ * @param ability - The ability being performed.
+ * @param stream - The event stream for the player.
+ */
+export async function testMonsterPerformAbilityOnPlayer({
+    monster,
+    player,
+    ability,
+    stream,
+}: {
+    monster: MonsterEntity;
+    player: PlayerEntity;
+    ability: string;
+    stream: EventTarget; // player's stream
+}) {
+    // Assume that monster is able to perform ability (in range, enough resources etc..)
+    const { procedures, mp, st, hp } = abilities[ability];
+    const playerBefore: PlayerEntity = { ...player };
+    const monsterBefore: MonsterEntity = { ...monster };
+    const sanctuary = sanctuariesByRegion[player.rgn];
+
+    // Perform ability on player
+    await performAbility({
+        self: monster,
+        target: player, // this will change player in place
+        ability,
+    });
+
+    let feedEvents: StreamEvent[] = [];
+    let entitiesEvents: StreamEvent[] = [];
+    let entitiesEventsCnt = 0;
+    collectEventDataForDuration(stream, "entities").then((events) => {
+        entitiesEvents = events;
+    });
+    collectEventDataForDuration(stream, "feed").then((events) => {
+        feedEvents = events;
+    });
+    await sleep(500); // wait for events to be collected
+
+    // Check received 'entities' event for procedures effecting target
+    for (const [type, effect] of procedures) {
+        if (type === "action") {
+            const actualEffect = patchEffectWithVariables({
+                effect,
+                self: monster,
+                target: player,
+            });
+            // Check if effect is applied to self
+            if (effect.target === "self") {
+                console.log(`Checking effect applied to self`);
+            }
+            // Check if effect is applied to target
+            else {
+                console.log(`Checking effect applied to target`);
+                expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
+                    players: [
+                        await performEffectOnEntity({
+                            entity: { ...playerBefore },
+                            effect: actualEffect,
+                        }),
+                    ],
+                    monsters: [
+                        {
+                            monster: monster.monster,
+                            mp: monsterBefore.mp - mp,
+                            st: monsterBefore.st - st,
+                            hp: monsterBefore.hp - hp,
+                        },
+                    ],
+                });
+            }
+            entitiesEventsCnt += 1;
+        }
+    }
+
+    if (playerBefore.hp > 0 && player.hp <= 0) {
+        console.log("Checking for death feed");
+        expect(feedEvents).toMatchObject([
+            { event: "feed", type: "message", message: "You died." },
+        ]);
+        console.log("Checking event for player respawn");
+        expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
+            players: [
+                {
+                    player: player.player,
+                    hp: 0,
+                    loc: [sanctuary.geohash],
+                },
+            ],
+        });
+    }
+}
+
+/**
+ * Performs an ability on a monster and checks the expected results.
+ *
+ * @param player - The player performing the ability.
+ * @param monster - The monster on which the ability is performed.
+ * @param ability - The ability to perform.
+ * @param cookies - The cookies for authentication.
+ * @param stream - The event stream to listen for events.
+ */
+export async function testPlayerPerformAbilityOnMonster({
+    player,
+    monster,
+    ability,
+    cookies,
+    stream,
+}: {
+    player: Player;
+    monster: Monster;
+    ability: string;
+    cookies: string;
+    stream: EventTarget;
+}) {
+    const { procedures, ap, mp, st, hp, range, predicate } = abilities[ability];
+    const playerBefore = { ...player };
+    const monsterBefore = { ...monster };
+    const inRange = checkInRange(player, monster, range)[0];
+    const [isBusy, now] = entityIsBusy(player);
+    const { hasResources, message: resourceInsufficientMessage } =
+        hasResourcesForAbility(player, ability);
+
+    // Perform ability on monster
+    await crossoverCmdPerformAbility(
+        {
+            target: monster.monster,
+            ability,
+        },
+        { Cookie: cookies },
+    );
+
+    // Check received feed event if not enough resources
+    if (!hasResources) {
+        console.log("Checking feed event for insufficient resources");
+        await expect(waitForEventData(stream, "feed")).resolves.toMatchObject({
+            type: "error",
+            message: resourceInsufficientMessage,
+        });
+    }
+    // Check received feed event if target predicate is not met
+    else if (
+        !predicate.targetSelfAllowed &&
+        player.player === monster.monster
+    ) {
+        console.log("Checking feed event for target predicate not met");
+        await expect(waitForEventData(stream, "feed")).resolves.toMatchObject({
+            type: "error",
+            message: `You can't ${ability} yourself`,
+        });
+    }
+    // Check received feed event if out of range
+    else if (!inRange) {
+        console.log("Checking feed event for out of range");
+        await expect(waitForEventData(stream, "feed")).resolves.toMatchObject({
+            type: "error",
+            message: "Target is out of range",
+        });
+    }
+    // Check received feed event if self is busy
+    else if (isBusy) {
+        console.log("Checking feed event for self is busy");
+        await expect(waitForEventData(stream, "feed")).resolves.toMatchObject({
+            type: "error",
+            message: "You are busy at the moment.",
+        });
+    }
+    // Check procedure effects
+    else {
+        const entitiesEvents = (await collectEventDataForDuration(
+            stream,
+            "entities",
+        )) as UpdateEntitiesEvent[];
+        let entitiesEventsCnt = 0;
+
+        // Check received 'entities' event consuming player resources
+        expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
+            players: [
+                {
+                    player: player.player,
+                    mp: playerBefore.mp - mp,
+                    st: playerBefore.st - st,
+                    hp: playerBefore.hp - hp,
+                    // skip ap because it recovers over time and hard to test
+                },
+            ],
+        });
+        entitiesEventsCnt += 1;
+
+        // Update self
+        for (const p of entitiesEvents[entitiesEventsCnt]?.players!) {
+            if (p.player === player.player) {
+                player = p;
+                break;
+            }
+        }
+
+        // Check received 'entities' event for procedures effecting target
+        for (const [type, effect] of procedures) {
+            if (type === "action") {
+                const actualEffect = patchEffectWithVariables({
+                    effect,
+                    self: player,
+                    target: monster,
+                });
+
+                // Check if effect is applied to self
+                if (effect.target === "self") {
+                    console.log(`Checking effect applied to self`);
+                    player = (await performEffectOnEntity({
+                        entity: player,
+                        effect: actualEffect,
+                    })) as Player;
+                    expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
+                        players: [self],
+                        monsters: [],
+                    });
+                }
+                // Check if effect is applied to target
+                else {
+                    console.log(
+                        `Checking effect applied to monster ${monster.name}`,
+                    );
+                    monster = (await performEffectOnEntity({
+                        entity: monster,
+                        effect: actualEffect,
+                    })) as Monster;
+                    expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
+                        players: [{ player: player.player }],
+                        monsters: [monster],
+                    });
+                }
+                entitiesEventsCnt += 1;
+            }
+        }
+
+        // Check received 'entities' event for monster reward
+        if (monsterBefore.hp > 0 && monster.hp <= 0) {
+            console.log("Checking event for LUs gain after killing monster");
+            const { lumina, umbra } = monsterLUReward({
+                level: monster.lvl,
+                beast: monster.beast,
+            });
+            expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
+                players: [
+                    {
+                        player: player.player,
+                        lum: playerBefore.lum + lumina,
+                        umb: playerBefore.umb + umbra,
+                    },
+                ],
+            });
+        }
+    }
+}
+
+export async function testPlayerPerformAbilityOnPlayer({
+    self,
+    target,
+    ability,
+    selfCookies,
+    selfStream,
+    targetStream,
+}: {
+    self: Player;
+    target: Player;
+    ability: string;
+    selfCookies: string;
+    selfStream: EventTarget;
+    targetStream: EventTarget;
+}): Promise<
+    [
+        PerformAbilityTestResults,
+        {
+            self: Player;
+            target: Player;
+            selfBefore: Player;
+            targetBefore: Player;
+        },
+    ]
+> {
+    const { procedures, ap, mp, st, hp, range, predicate } = abilities[ability];
+    const selfBefore = { ...self };
+    const targetBefore = { ...target };
+    const inRange = checkInRange(self, target, range)[0];
+    const [isBusy, now] = entityIsBusy(self);
+    const { hasResources, message: resourceInsufficientMessage } =
+        hasResourcesForAbility(self, ability);
+
+    // Perform ability on target
+    await crossoverCmdPerformAbility(
+        {
+            target: target.player,
+            ability,
+        },
+        { Cookie: selfCookies },
+    );
+
+    // Check received feed event if not enough resources
+    if (!hasResources) {
+        console.log("Checking feed event for insufficient resources");
+        await expect(
+            waitForEventData(selfStream, "feed"),
+        ).resolves.toMatchObject({
+            type: "error",
+            message: resourceInsufficientMessage,
+        });
+        return [
+            "insufficientResources",
+            { self, target, selfBefore, targetBefore },
+        ];
+    }
+    // Check received feed event if target predicate is not met
+    else if (!predicate.targetSelfAllowed && self.player === target.player) {
+        console.log("Checking feed event for target predicate not met");
+        await expect(
+            waitForEventData(selfStream, "feed"),
+        ).resolves.toMatchObject({
+            type: "error",
+            message: `You can't ${ability} yourself`,
+        });
+        return [
+            "targetPredicateNotMet",
+            { self, target, selfBefore, targetBefore },
+        ];
+    }
+    // Check received feed event if out of range
+    else if (!inRange) {
+        console.log("Checking feed event for out of range");
+        await expect(
+            waitForEventData(selfStream, "feed"),
+        ).resolves.toMatchObject({
+            type: "error",
+            message: "Target is out of range",
+        });
+        return ["outOfRange", { self, target, selfBefore, targetBefore }];
+    }
+    // Check received feed event if self is busy
+    else if (isBusy) {
+        console.log("Checking feed event for self is busy");
+        await expect(
+            waitForEventData(selfStream, "feed"),
+        ).resolves.toMatchObject({
+            type: "error",
+            message: "You are busy at the moment.",
+        });
+
+        return ["busy", { self, target, selfBefore, targetBefore }];
+    }
+    // Check procedure effects
+    else {
+        const entitiesEvents = (await collectEventDataForDuration(
+            selfStream,
+            "entities",
+        )) as UpdateEntitiesEvent[];
+        let entitiesEventsCnt = 0;
+
+        // Check received 'entities' event consuming player resources
+        expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
+            players: [
+                {
+                    player: self.player,
+                    mp: selfBefore.mp - mp,
+                    st: selfBefore.st - st,
+                    hp: selfBefore.hp - hp,
+                    // skip ap because it recovers over time and hard to test
+                },
+            ],
+        });
+        entitiesEventsCnt += 1;
+
+        // Update self
+        for (const p of entitiesEvents[entitiesEventsCnt]?.players!) {
+            if (p.player === self.player) {
+                self = p;
+                break;
+            }
+        }
+
+        // Check received 'entities' event for procedures effecting target
+        for (const [type, effect] of procedures) {
+            if (type === "action") {
+                const actualEffect = patchEffectWithVariables({
+                    effect,
+                    self,
+                    target,
+                });
+
+                // Check if effect is applied to self
+                if (effect.target === "self") {
+                    console.log(`Checking effect applied to self`);
+                    self = (await performEffectOnEntity({
+                        entity: self,
+                        effect: actualEffect,
+                    })) as Player;
+                    expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
+                        players: uniqBy([self, target], "player"),
+                        monsters: [],
+                    });
+                }
+                // Check if effect is applied to target
+                else {
+                    console.log(
+                        `Checking effect applied to target ${target.name}`,
+                    );
+                    target = (await performEffectOnEntity({
+                        entity: target,
+                        effect: actualEffect,
+                    })) as Player;
+                    expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
+                        players: [
+                            { player: self.player },
+                            { player: target.player },
+                        ],
+                    });
+                }
+                entitiesEventsCnt += 1;
+            }
+        }
+
+        return ["success", { self, target, selfBefore, targetBefore }];
+    }
 }

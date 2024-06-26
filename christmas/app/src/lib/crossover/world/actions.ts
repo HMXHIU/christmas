@@ -6,6 +6,7 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import type { GameActionEntities, TokenPositions } from "../ir";
 import { getEntityId } from "../utils";
+import { EquipmentSlots, type EquipmentSlot } from "./compendium";
 import { TICKS_PER_TURN } from "./settings";
 
 export {
@@ -251,24 +252,35 @@ function resolveActionEntities({
             targetList = players;
         } else if (targetType === "item") {
             targetList = items;
-            // Can't drop/equip/unquip an item if it's not in the inventory
-            if (
-                [
-                    actions.drop.action,
-                    actions.equip.action,
-                    actions.unequip.action,
-                ].includes(action.action)
-            ) {
+            // Can only equip an item in inventory
+            if (action.action === actions.equip.action) {
                 targetList = targetList.filter(
                     (item) =>
                         item.locT === "inv" &&
                         item.loc[0] === getEntityId(self)[0],
                 );
             }
-
-            // Can't take an item in the inventory
-            if (action.action === actions.take.action) {
-                targetList = targetList.filter((item) => item.locT !== "inv");
+            // Can only unequip an item already equipped
+            else if (action.action === actions.unequip.action) {
+                targetList = targetList.filter(
+                    (item) =>
+                        EquipmentSlots.includes(item.locT as EquipmentSlot) &&
+                        item.loc[0] === getEntityId(self)[0],
+                );
+            }
+            // Can only take an item from environment
+            else if (action.action === actions.take.action) {
+                targetList = targetList.filter(
+                    (item) => item.locT === "geohash",
+                );
+            }
+            // Can only drop an item from inventory/equipped
+            else if (action.action === actions.drop.action) {
+                targetList = targetList.filter(
+                    (item) =>
+                        item.locT === "inv" ||
+                        EquipmentSlots.includes(item.locT as EquipmentSlot),
+                );
             }
         } else {
             continue;

@@ -1,210 +1,197 @@
+import { stream } from "$lib/crossover";
 import {
     abilities,
     patchEffectWithVariables,
 } from "$lib/crossover/world/abilities";
+import { playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK, TICKS_PER_TURN } from "$lib/crossover/world/settings";
-import {
-    consumeResources,
-    performAbility,
-    recoverAp,
-} from "$lib/server/crossover";
-import { initializeClients } from "$lib/server/crossover/redis";
-import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
+import { consumeResources, recoverAp } from "$lib/server/crossover";
+import { initializeClients, saveEntity } from "$lib/server/crossover/redis";
+import type {
+    Player,
+    PlayerEntity,
+} from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
-import { expect, test } from "vitest";
+import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
+import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
-import { createRandomPlayer } from "./utils";
+import {
+    createRandomPlayer,
+    testPlayerPerformAbilityOnPlayer,
+    waitForEventData,
+} from "./utils";
 
-test("Test Abilities", async () => {
+let region = String.fromCharCode(...getRandomRegion());
+const playerOneName = "Gandalf";
+const playerOneGeohash = "gbsuv777";
+const playerTwoName = "Saruman";
+const playerTwoGeohash = "gbsuv77g";
+let playerOne: Player, playerTwo: Player;
+let playerOneWallet: NodeWallet, playerTwoWallet: NodeWallet;
+let playerOneCookies: string, playerTwoCookies: string;
+let playerOneStream: EventTarget, playerTwoStream: EventTarget;
+let playerOneCloseStream: () => void, playerTwoCloseStream: () => void;
+
+beforeAll(async () => {
     await initializeClients(); // create redis repositories
 
-    const region = String.fromCharCode(...getRandomRegion());
-
     // Create players
-    const playerOneName = "Gandalf";
-    const playerOneGeohash = "gbsuv777";
-    let [playerOneWallet, playerOneCookies, playerOne] =
-        await createRandomPlayer({
-            region,
-            geohash: playerOneGeohash,
-            name: playerOneName,
+    [playerOneWallet, playerOneCookies, playerOne] = await createRandomPlayer({
+        region,
+        geohash: playerOneGeohash,
+        name: playerOneName,
+    });
+
+    [playerTwoWallet, playerTwoCookies, playerTwo] = await createRandomPlayer({
+        region,
+        geohash: playerTwoGeohash,
+        name: playerTwoName,
+    });
+
+    // Create streams
+    [playerOneStream, playerOneCloseStream] = await stream({
+        Cookie: playerOneCookies,
+    });
+    await expect(
+        waitForEventData(playerOneStream, "feed"),
+    ).resolves.toMatchObject({
+        type: "system",
+        message: "started",
+    });
+    [playerTwoStream, playerTwoCloseStream] = await stream({
+        Cookie: playerTwoCookies,
+    });
+    await expect(
+        waitForEventData(playerTwoStream, "feed"),
+    ).resolves.toMatchObject({
+        type: "system",
+        message: "started",
+    });
+});
+
+beforeEach(async () => {
+    // Reset players' state if necessary
+    playerOne = {
+        ...playerOne,
+        loc: [playerOneGeohash],
+        ...playerStats({ level: playerOne.lvl }),
+    };
+    playerTwo = {
+        ...playerTwo,
+        loc: [playerTwoGeohash],
+        ...playerStats({ level: playerTwo.lvl }),
+    };
+    playerOne = (await saveEntity(playerOne as PlayerEntity)) as Player;
+    playerTwo = (await saveEntity(playerTwo as PlayerEntity)) as Player;
+});
+
+describe("Abilities Tests", () => {
+    test("AP Recovery", async () => {
+        playerOne = (await consumeResources(playerOne as PlayerEntity, {
+            ap: 100,
+        })) as PlayerEntity;
+        expect(playerOne.ap).toBe(0);
+        await sleep(MS_PER_TICK * (TICKS_PER_TURN + 1));
+        playerOne = (await recoverAp(
+            playerOne as PlayerEntity,
+        )) as PlayerEntity;
+        expect(playerOne.ap).toBe(4);
+    });
+
+    test("Ability out of range", async () => {
+        var [result, { selfBefore, targetBefore }] =
+            await testPlayerPerformAbilityOnPlayer({
+                self: playerOne as PlayerEntity,
+                target: playerTwo as PlayerEntity,
+                ability: abilities.scratch.ability,
+                selfCookies: playerOneCookies,
+                selfStream: playerOneStream,
+                targetStream: playerTwoStream,
+            });
+
+        expect(result).toBe("outOfRange");
+        expect(selfBefore).toMatchObject(playerOne);
+        expect(targetBefore).toMatchObject(playerTwo);
+    });
+
+    test("Ability in range", async () => {
+        playerTwo.loc = playerOne.loc;
+        playerTwo = (await saveEntity(playerTwo as PlayerEntity)) as Player;
+
+        var [result, { self, target, selfBefore, targetBefore }] =
+            await testPlayerPerformAbilityOnPlayer({
+                self: playerOne as PlayerEntity,
+                target: playerTwo as PlayerEntity,
+                ability: abilities.scratch.ability,
+                selfCookies: playerOneCookies,
+                selfStream: playerOneStream,
+                targetStream: playerTwoStream,
+            });
+
+        expect(result).toBe("success");
+        expect(self).toMatchObject({
+            st: selfBefore.st - abilities.scratch.st,
+            mp: selfBefore.mp - abilities.scratch.mp,
+            hp: selfBefore.hp - abilities.scratch.hp,
         });
-    const playerTwoName = "Saruman";
-    const playerTwoGeohash = "gbsuv77e";
-    let [playerTwoWallet, playerTwoCookies, playerTwo] =
-        await createRandomPlayer({
-            region,
-            geohash: playerTwoGeohash,
-            name: playerTwoName,
+        expect(target).toMatchObject({
+            hp: targetBefore.hp - 1, // scratch does 1 damage
         });
+    });
 
-    // Test AP recovery
-    playerOne = (await consumeResources(playerOne as PlayerEntity, {
-        ap: 100,
-    })) as PlayerEntity;
-    expect(playerOne.ap).toBe(0);
-    await sleep(MS_PER_TICK * (TICKS_PER_TURN + 1));
-    playerOne = (await recoverAp(playerOne as PlayerEntity)) as PlayerEntity;
-    expect(playerOne.ap).toBe(4);
+    test("Not enough action points", async () => {
+        playerOne.ap = 0;
+        playerOne.apclk = Date.now();
+        playerOne = (await saveEntity(playerOne as PlayerEntity)) as Player;
 
-    // Test ability out of range (scratch has 0 range)
-    expect(
-        await performAbility({
+        var [result, { self, target, selfBefore, targetBefore }] =
+            await testPlayerPerformAbilityOnPlayer({
+                self: playerOne as PlayerEntity,
+                target: playerTwo as PlayerEntity,
+                ability: abilities.scratch.ability,
+                selfCookies: playerOneCookies,
+                selfStream: playerOneStream,
+                targetStream: playerTwoStream,
+            });
+
+        expect(result).toBe("insufficientResources");
+        expect(selfBefore).toMatchObject(playerOne);
+        expect(targetBefore).toMatchObject(playerTwo);
+    });
+
+    test("Teleport ability", async () => {
+        playerOne.ap = 20;
+        playerOne.mp = 20;
+        playerOne = (await saveEntity(playerOne as PlayerEntity)) as Player;
+
+        var [result, { self, target, selfBefore, targetBefore }] =
+            await testPlayerPerformAbilityOnPlayer({
+                self: playerOne as PlayerEntity,
+                target: playerTwo as PlayerEntity,
+                ability: abilities.teleport.ability,
+                selfCookies: playerOneCookies,
+                selfStream: playerOneStream,
+                targetStream: playerTwoStream,
+            });
+
+        expect(result).toBe("success");
+        expect(self.loc[0]).toBe(target.loc[0]);
+    });
+
+    test("Patch effect with variables", () => {
+        const teleportEffect = abilities.teleport.procedures[0][1];
+        const actualEffect = patchEffectWithVariables({
             self: playerOne as PlayerEntity,
             target: playerTwo as PlayerEntity,
-            ability: abilities.scratch.ability,
-        }),
-    ).toMatchObject({
-        self: {
-            player: playerOneWallet.publicKey.toBase58(),
-            name: "Gandalf",
-            lgn: true,
-            loc: playerOne.loc,
-            lvl: playerOne.lvl,
-            hp: playerOne.hp,
-            mp: playerOne.mp,
-            st: playerOne.st,
-            ap: playerOne.ap,
-            dbuf: [],
-            buf: [],
-        },
-        target: {
-            player: playerTwoWallet.publicKey.toBase58(),
-            name: "Saruman",
-            lgn: true,
-            loc: playerTwo.loc,
-            lvl: playerOne.lvl,
-            hp: playerOne.hp,
-            mp: playerOne.mp,
-            st: playerOne.st,
-            ap: playerOne.ap,
-            dbuf: [],
-            buf: [],
-        },
-        status: "failure",
-        message: "Target is out of range",
-    });
-
-    // Test ability in range
-    playerTwo.loc = playerOne.loc;
-    const playerTwoHp = playerTwo.hp;
-    const playerOneSt = playerOne.st;
-    const playerOneAp = playerOne.ap;
-    await expect(
-        performAbility({
-            self: playerOne as PlayerEntity,
-            target: playerTwo as PlayerEntity,
-            ability: abilities.scratch.ability,
-        }),
-    ).resolves.toMatchObject({
-        self: {
-            player: playerOneWallet.publicKey.toBase58(),
-            name: "Gandalf",
-            lgn: true,
-            loc: playerOne.loc,
-            lvl: playerOne.lvl,
-            hp: playerOne.hp,
-            mp: playerOne.mp,
-            st: playerOneSt - abilities.scratch.st,
-            ap: playerOneAp - abilities.scratch.ap,
-            dbuf: [],
-            buf: [],
-        },
-        target: {
-            player: playerTwoWallet.publicKey.toBase58(),
-            name: "Saruman",
-            lgn: true,
-            loc: playerTwo.loc,
-            lvl: playerTwo.lvl,
-            hp: playerTwoHp - 1, // scratch does 1 damage
-            mp: playerTwo.mp,
-            st: playerTwo.st,
-            ap: playerTwo.ap,
-            dbuf: [],
-            buf: [],
-        },
-        status: "success",
-        message: "",
-    });
-
-    // Test not enough action points
-    playerOne.ap = 0;
-    playerOne.apclk = Date.now();
-    await expect(
-        performAbility({
-            self: playerOne as PlayerEntity,
-            target: playerTwo as PlayerEntity,
-            ability: abilities.scratch.ability,
-        }),
-    ).resolves.toMatchObject({
-        self: {
-            player: playerOneWallet.publicKey.toBase58(),
-            name: "Gandalf",
-            lgn: true,
-            loc: playerOne.loc,
-            lvl: playerOne.lvl,
-            hp: playerOne.hp,
-            mp: playerOne.mp,
-            st: playerOne.st,
-            ap: playerOne.ap,
-            dbuf: [],
-            buf: [],
-        },
-        target: {
-            player: playerTwoWallet.publicKey.toBase58(),
-            name: "Saruman",
-            lgn: true,
-            loc: playerTwo.loc,
-            lvl: playerTwo.lvl,
-            hp: playerTwo.hp,
-            mp: playerTwo.mp,
-            st: playerTwo.st,
-            ap: playerTwo.ap,
-            dbuf: [],
-            buf: [],
-        },
-        status: "failure",
-        message: "Not enough action points to scratch.",
-    });
-
-    // Test patchEffectWithVariables
-    const teleportEffect = abilities.teleport.procedures[0][1];
-    const actualEffect = patchEffectWithVariables({
-        self: playerOne as PlayerEntity,
-        target: playerTwo as PlayerEntity,
-        effect: teleportEffect,
-    });
-    expect(actualEffect).toMatchObject({
-        target: "self",
-        states: {
-            state: "loc",
-            value: playerTwo.loc,
-            op: "change",
-        },
-    });
-
-    // Test teleport
-    playerOne.ap = 20;
-    playerOne.mp = 20;
-    playerOne.loc = ["gbsuv77w"];
-    await expect(
-        performAbility({
-            self: playerOne as PlayerEntity,
-            target: playerTwo as PlayerEntity,
-            ability: abilities.teleport.ability,
-        }),
-    ).resolves.toMatchObject({
-        self: {
-            player: playerOneWallet.publicKey.toBase58(),
-            name: "Gandalf",
-            loc: playerTwo.loc,
-        },
-        target: {
-            player: playerTwoWallet.publicKey.toBase58(),
-            name: "Saruman",
-            loc: playerTwo.loc,
-        },
-        status: "success",
-        message: "",
+            effect: teleportEffect,
+        });
+        expect(actualEffect).toMatchObject({
+            target: "self",
+            states: {
+                state: "loc",
+                value: playerTwo.loc,
+                op: "change",
+            },
+        });
     });
 });

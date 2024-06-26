@@ -60,10 +60,10 @@ const Directions: Direction[] = [
 ];
 
 type LocationType =
-    | "geohash"
-    | "item"
+    | "geohash" // environment
+    | "item" // inside an item
     | "inv" // inventory
-    | EquipmentSlot;
+    | EquipmentSlot; // equiped
 
 type GridCell = {
     precision: number;

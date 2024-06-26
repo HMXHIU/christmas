@@ -703,7 +703,7 @@ async function performAbility({
         if (!hasResources && self.player) {
             publishFeedEvent((self as PlayerEntity).player, {
                 event: "feed",
-                type: "message",
+                type: "error",
                 message,
             });
             return;
@@ -718,7 +718,7 @@ async function performAbility({
     ) {
         publishFeedEvent((self as PlayerEntity).player, {
             event: "feed",
-            type: "message",
+            type: "error",
             message: `You can't ${ability} yourself`,
         });
         return;
@@ -728,7 +728,7 @@ async function performAbility({
     if (!checkInRange(self, target, range)[0] && self.player) {
         publishFeedEvent((self as PlayerEntity).player, {
             event: "feed",
-            type: "message",
+            type: "error",
             message: `Target is out of range`,
         });
         return;
