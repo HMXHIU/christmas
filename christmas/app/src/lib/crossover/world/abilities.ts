@@ -9,7 +9,7 @@ import lodash from "lodash";
 import type { GameActionEntities, TokenPositions } from "../ir";
 import { geohashToGridCell } from "../world/utils";
 import { TICKS_PER_TURN } from "./settings";
-const { cloneDeep } = lodash;
+const { cloneDeep, uniqBy } = lodash;
 
 export {
     abilities,
@@ -589,47 +589,61 @@ function resolveAbilityEntities({
     monsters: Monster[];
     players: Player[];
     items: Item[];
-}): null | GameActionEntities {
+}): GameActionEntities[] {
     const {
         target: targetTypes,
         self: selfTypes,
         targetSelfAllowed,
     } = abilities[ability].predicate;
 
-    // Check self types (e.g. player, monster, item in self)
-    if (!selfTypes.some((type) => ((self as any)[type] as string) != null)) {
-        return null;
+    // Check if self matches any allowed self type
+    if (!selfTypes.some((type) => (self as any)[type] != null)) {
+        return [];
     }
 
-    // Find target type in monsters
-    if (targetTypes.includes("monster")) {
-        for (const m of monsters) {
-            if (!targetSelfAllowed && m.monster === (self as any).monster) {
+    let gameActionEntitiesScores: [GameActionEntities, number][] = [];
+
+    const entities = { monster: monsters, player: players, item: items };
+    const addedTargets: Record<string, boolean> = {};
+    for (const type of targetTypes) {
+        for (const entity of entities[type]) {
+            const targetId = (entity as any)[type];
+            const selfId = (self as any)[type];
+
+            // Check if target is self if targetSelfAllowed is false
+            if (!targetSelfAllowed && targetId === selfId) {
                 continue;
             }
-            return { self, target: m }; // early return
+
+            // Check for identical targets (eg. self targeting abilities have both self and target in entities)
+            if (addedTargets[targetId]) {
+                continue;
+            }
+            gameActionEntitiesScores.push([
+                { self, target: entity },
+                highestScoreForToken(targetId, tokenPositions),
+            ]);
+            addedTargets[targetId] = true;
         }
     }
 
-    // Find target type in players
-    if (targetTypes.includes("player")) {
-        for (const p of players) {
-            if (!targetSelfAllowed && p.player === (self as any).player) {
-                continue;
+    // Sort by score
+    return gameActionEntitiesScores
+        .sort((a, b) => b[1] - a[1])
+        .map((a) => a[0]);
+}
+
+function highestScoreForToken(
+    entityId: string,
+    tokenPositions: TokenPositions,
+): number {
+    let score = 0;
+    if (tokenPositions[entityId] != null) {
+        for (const tokenScore of Object.values(tokenPositions[entityId])) {
+            if (tokenScore.score > score) {
+                score = tokenScore.score;
             }
-            return { self, target: p }; // early return
         }
     }
-
-    // Find target type in items
-    if (targetTypes.includes("item")) {
-        for (const i of items) {
-            if (!targetSelfAllowed && i.item === (self as any).item) {
-                continue;
-            }
-            return { self, target: i }; // early return
-        }
-    }
-
-    return null;
+    return score;
 }

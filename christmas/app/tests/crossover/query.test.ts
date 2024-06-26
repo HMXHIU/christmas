@@ -23,6 +23,10 @@ test("Test Query", async () => {
 
     const region = String.fromCharCode(...getRandomRegion());
 
+    /*
+     * Create Entities
+     */
+
     // Player one
     const playerOneName = "Gandalf";
     const playerOneGeohash = generateRandomGeohash(8, "h9");
@@ -101,6 +105,18 @@ test("Test Query", async () => {
         level: 1,
     });
 
+    let goblin2 = await spawnMonster({
+        geohash: generateRandomGeohash(8, "h9"),
+        beast: "goblin",
+        level: 1,
+    });
+
+    let goblin3 = await spawnMonster({
+        geohash: generateRandomGeohash(8, "h9"),
+        beast: "goblin",
+        level: 1,
+    });
+
     // Actions & Abilities
     const itemUtilities: [Item, Utility][] = [
         woodenclub,
@@ -115,11 +131,10 @@ test("Test Query", async () => {
     });
     const playerAbilities: Ability[] = Object.values(abilities);
 
-    /**
-     * Test query flow (player scratch goblin)
+    /*
+     * Test Abilities (player scratch goblin)
      */
 
-    // Tokenize query
     let query = "scratch goblin";
     let queryTokens = tokenize(query);
 
@@ -149,23 +164,20 @@ test("Test Query", async () => {
     });
 
     // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
-    let abilityEntities = abilitiesPossible
-        .map((ability) => [
-            ability,
-            resolveAbilityEntities({
-                queryTokens,
-                tokenPositions: {
-                    ...entityTokenPositions,
-                    ...abilityTokenPositions,
-                },
-                ability: ability.ability,
-                self: playerOne,
-                monsters,
-                players,
-                items,
-            }),
-        ])
-        .filter(([ability, entities]) => entities != null);
+    let abilityEntities = abilitiesPossible.flatMap((ability) => {
+        return resolveAbilityEntities({
+            queryTokens,
+            tokenPositions: {
+                ...entityTokenPositions,
+                ...abilityTokenPositions,
+            },
+            ability: ability.ability,
+            self: playerOne,
+            monsters,
+            players,
+            items,
+        }).map((entities) => [ability, entities]);
+    });
     expect(abilityEntities).to.toMatchObject([
         [
             {
@@ -183,7 +195,7 @@ test("Test Query", async () => {
     ]);
 
     /**
-     * Test query flow (dragon breathe fire on goblin)
+     * Test Abilities (dragon breathe fire on goblin)
      */
 
     // Tokenize query
@@ -216,23 +228,20 @@ test("Test Query", async () => {
     });
 
     // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
-    abilityEntities = abilitiesPossible
-        .map((ability) => [
-            ability,
-            resolveAbilityEntities({
-                queryTokens,
-                tokenPositions: {
-                    ...entityTokenPositions,
-                    ...abilityTokenPositions,
-                },
-                ability: ability.ability,
-                self: dragon, // self is dragon
-                monsters,
-                players,
-                items,
-            }),
-        ])
-        .filter(([ability, entities]) => entities != null);
+    abilityEntities = abilitiesPossible.flatMap((ability) => {
+        return resolveAbilityEntities({
+            queryTokens,
+            tokenPositions: {
+                ...entityTokenPositions,
+                ...abilityTokenPositions,
+            },
+            ability: ability.ability,
+            self: dragon, // self is dragon
+            monsters,
+            players,
+            items,
+        }).map((entities) => [ability, entities]);
+    });
     expect(abilityEntities).to.toMatchObject([
         [
             {
@@ -283,23 +292,20 @@ test("Test Query", async () => {
     });
 
     // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
-    abilityEntities = abilitiesPossible
-        .map((ability) => [
-            ability,
-            resolveAbilityEntities({
-                queryTokens,
-                tokenPositions: {
-                    ...entityTokenPositions,
-                    ...abilityTokenPositions,
-                },
-                ability: ability.ability,
-                self: playerOne,
-                monsters,
-                players,
-                items,
-            }),
-        ])
-        .filter(([ability, entities]) => entities != null);
+    abilityEntities = abilitiesPossible.flatMap((ability) => {
+        return resolveAbilityEntities({
+            queryTokens,
+            tokenPositions: {
+                ...entityTokenPositions,
+                ...abilityTokenPositions,
+            },
+            ability: ability.ability,
+            self: playerOne,
+            monsters,
+            players,
+            items,
+        }).map((entities) => [ability, entities]);
+    });
     expect(abilityEntities).to.toMatchObject([
         [
             {
@@ -350,23 +356,20 @@ test("Test Query", async () => {
     });
 
     // Resolve abilities relevant to retrieved entities (may have multiple resolutions - allow selection by user)
-    abilityEntities = abilitiesPossible
-        .map((ability) => [
-            ability,
-            resolveAbilityEntities({
-                queryTokens,
-                tokenPositions: {
-                    ...entityTokenPositions,
-                    ...abilityTokenPositions,
-                },
-                ability: ability.ability,
-                self: playerOne,
-                monsters,
-                players,
-                items,
-            }),
-        ])
-        .filter(([ability, entities]) => entities != null);
+    abilityEntities = abilitiesPossible.flatMap((ability) => {
+        return resolveAbilityEntities({
+            queryTokens,
+            tokenPositions: {
+                ...entityTokenPositions,
+                ...abilityTokenPositions,
+            },
+            ability: ability.ability,
+            self: playerOne,
+            monsters,
+            players,
+            items,
+        }).map((entities) => [ability, entities]);
+    });
 
     // Should not resolve - cant scratch self
     expect(abilityEntities.length).toBe(0);
@@ -426,7 +429,6 @@ test("Test Query", async () => {
         players: [playerOne], // Note: need to include self to bandage
         items: [woodendoor],
     }).commands;
-
     expect(gameCommands).toMatchObject([
         [
             {
@@ -635,6 +637,61 @@ test("Test Query", async () => {
             },
             {
                 query: `take woodenclub`,
+            },
+        ],
+    ]);
+
+    // Test abilities should show multiple targets
+    gameCommands = searchPossibleCommands({
+        query: `scratch goblin`,
+        // Player
+        player: playerOne,
+        playerAbilities: [abilities.scratch],
+        playerItems: [],
+        actions: [],
+        // Environment
+        monsters: [goblin, goblin2, goblin3],
+        players: [],
+        items: [],
+    }).commands;
+    expect(gameCommands).toMatchObject([
+        [
+            {
+                ability: "scratch",
+            },
+            {
+                self: {
+                    player: playerOne.player,
+                },
+                target: {
+                    monster: goblin.monster,
+                },
+            },
+        ],
+        [
+            {
+                ability: "scratch",
+            },
+            {
+                self: {
+                    player: playerOne.player,
+                },
+                target: {
+                    monster: goblin2.monster,
+                },
+            },
+        ],
+        [
+            {
+                ability: "scratch",
+            },
+            {
+                self: {
+                    player: playerOne.player,
+                },
+                target: {
+                    monster: goblin3.monster,
+                },
             },
         ],
     ]);

@@ -459,9 +459,31 @@ function searchPossibleCommands({
         ...gameActionsTokenPositions,
     };
 
-    const abilityCommands = abilitiesPosssible
-        .map((ability) => {
-            const entities = resolveAbilityEntities({
+    const utilityCommands = itemUtilitiesPossible.flatMap(([item, utility]) => {
+        // Check if the utility performs an ability
+        if (utility.ability) {
+            return resolveAbilityEntities({
+                queryTokens,
+                tokenPositions: allTokenPositions,
+                ability: utility.ability,
+                self: player, // Note: self is still the player when performing an ability from an item
+                monsters: monstersRetrieved,
+                players: playersRetrieved,
+                items: itemsRetrieved,
+            }).map((entities) => {
+                return [utility, { ...entities, item }]; // Insert the item being used into the entities
+            });
+        }
+        // Utilities that dont have an ability (eg. open door)
+        else {
+            // Note: there is no target for such item utilities, use ability if target is needed
+            return [[utility, { self: player, item }]];
+        }
+    });
+
+    const abilityCommands: GameCommand[] = abilitiesPosssible.flatMap(
+        (ability) => {
+            return resolveAbilityEntities({
                 queryTokens,
                 tokenPositions: allTokenPositions,
                 ability: ability.ability,
@@ -469,36 +491,11 @@ function searchPossibleCommands({
                 monsters: monstersRetrieved,
                 players: playersRetrieved,
                 items: itemsRetrieved,
+            }).map((entities) => {
+                return [ability, entities] as GameCommand;
             });
-            return entities ? [ability, entities] : null;
-        })
-        .filter((x) => x != null) as GameCommand[];
-
-    const utilityCommands = itemUtilitiesPossible
-        .map(([item, utility]) => {
-            let entities = null;
-            // Check if the utility performs an ability
-            if (utility.ability) {
-                entities = resolveAbilityEntities({
-                    queryTokens,
-                    tokenPositions: allTokenPositions,
-                    ability: utility.ability,
-                    self: player, // Note: self is still the player when performing an ability from an item
-                    monsters: monstersRetrieved,
-                    players: playersRetrieved,
-                    items: itemsRetrieved,
-                });
-            }
-            // Utilities that dont have an ability (eg. open door)
-            else {
-                // Note: there is no target for such item utilities, use ability if target is needed
-                entities = { self: player };
-            }
-
-            // Insert the item being used into the entities
-            return entities ? [utility, { ...entities, item: item }] : null;
-        })
-        .filter((x) => x != null) as GameCommand[];
+        },
+    );
 
     const actionCommands: GameCommand[] = actionsPossible
         .flatMap((action) => {

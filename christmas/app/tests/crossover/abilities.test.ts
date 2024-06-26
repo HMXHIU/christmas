@@ -8,6 +8,7 @@ import {
     performAbility,
     recoverAp,
 } from "$lib/server/crossover";
+import { initializeClients } from "$lib/server/crossover/redis";
 import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import { expect, test } from "vitest";
@@ -15,6 +16,8 @@ import { getRandomRegion } from "../utils";
 import { createRandomPlayer } from "./utils";
 
 test("Test Abilities", async () => {
+    await initializeClients(); // create redis repositories
+
     const region = String.fromCharCode(...getRandomRegion());
 
     // Create players
