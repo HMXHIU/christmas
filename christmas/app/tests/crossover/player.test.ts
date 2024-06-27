@@ -1,5 +1,4 @@
 import {
-    crossoverAuthPlayer,
     crossoverCmdConfigureItem,
     crossoverCmdCreateItem,
     crossoverCmdEquip,
@@ -10,20 +9,21 @@ import {
     crossoverCmdTake,
     crossoverCmdUseItem,
     stream,
-    type GameCommandResponse,
 } from "$lib/crossover";
 import { abilities } from "$lib/crossover/world/abilities";
 import { compendium, itemAttibutes } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
+import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/world";
 import { configureItem, spawnItem } from "$lib/server/crossover";
+import { fetchEntity, initializeClients } from "$lib/server/crossover/redis";
 import type {
     Item,
     ItemEntity,
     Player,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
-import { groupBy } from "lodash";
+import { sleep } from "$lib/utils";
 import ngeohash from "ngeohash";
 import { expect, test } from "vitest";
 import type { UpdateEntitiesEvent } from "../../src/routes/api/crossover/stream/+server";
@@ -31,11 +31,14 @@ import { getRandomRegion } from "../utils";
 import {
     buffEntity,
     createRandomPlayer,
+    flushEventChannel,
     generateRandomGeohash,
     waitForEventData,
 } from "./utils";
 
 test("Test Player", async () => {
+    await initializeClients(); // create redis repositories
+
     const region = String.fromCharCode(...getRandomRegion());
 
     // Create players
@@ -140,24 +143,36 @@ test("Test Player", async () => {
     ).rejects.toThrowError("Timeout occurred while waiting for event");
 
     // Look - no target
-    let lookAtResult = await crossoverCmdLook({}, { Cookie: playerOneCookies });
-    expect(groupBy(lookAtResult.players, "player")).contains.keys([
-        playerOneWallet.publicKey.toBase58(),
-        playerThreeWallet.publicKey.toBase58(),
-    ]);
+    await crossoverCmdLook({}, { Cookie: playerOneCookies });
+    await expect(
+        waitForEventData(playerOneStream, "entities"),
+    ).resolves.toMatchObject({
+        players: [
+            {
+                player: playerOne.player,
+            },
+            {
+                player: playerThree.player,
+            },
+        ],
+    });
+    await sleep(MS_PER_TICK * 2);
 
     // Move
-    var gcr: GameCommandResponse = await crossoverCmdMove(
-        { direction: "n" },
-        { Cookie: playerOneCookies },
-    );
-    const nextLocation = gcr.players?.filter(
-        (p) => p.player === playerOne.player,
-    )[0].loc!;
+    await crossoverCmdMove({ path: ["n"] }, { Cookie: playerOneCookies });
     const northTile = ngeohash.neighbor(playerOne.loc[0], [1, 0]);
-    console.log(nextLocation[0], playerOne.loc[0]);
-    expect(nextLocation[0]).toEqual(northTile);
-    playerOne.loc = nextLocation;
+    await expect(
+        waitForEventData(playerOneStream, "entities"),
+    ).resolves.toMatchObject({
+        players: [
+            {
+                player: playerOne.player,
+                loc: [northTile],
+            },
+        ],
+    });
+    await sleep(MS_PER_TICK * 2);
+    playerOne = (await fetchEntity(playerOne.player)) as Player;
 
     // Stats
     expect(playerStats({ level: 1 })).toMatchObject({
@@ -178,40 +193,38 @@ test("Test Player", async () => {
      */
 
     // Test out of range
-    setTimeout(async () => {
-        await crossoverCmdPerformAbility(
-            {
-                target: playerTwo.player,
-                ability: abilities.scratch.ability,
-            },
-            { Cookie: playerOneCookies },
-        );
-    }, 0);
+    await crossoverCmdPerformAbility(
+        {
+            target: playerTwo.player,
+            ability: abilities.scratch.ability,
+        },
+        { Cookie: playerOneCookies },
+    );
     await expect(
         waitForEventData(playerOneStream, "feed"),
     ).resolves.toMatchObject({
         event: "feed",
-        type: "message",
+        type: "error",
         message: "Target is out of range",
     });
+    await sleep(MS_PER_TICK * 2);
 
     // Test out of resources
-    setTimeout(async () => {
-        await crossoverCmdPerformAbility(
-            {
-                target: playerTwo.player,
-                ability: abilities.teleport.ability,
-            },
-            { Cookie: playerOneCookies },
-        );
-    }, 0);
+    await crossoverCmdPerformAbility(
+        {
+            target: playerTwo.player,
+            ability: abilities.teleport.ability,
+        },
+        { Cookie: playerOneCookies },
+    );
     await expect(
         waitForEventData(playerOneStream, "feed"),
     ).resolves.toMatchObject({
         event: "feed",
-        type: "message",
+        type: "error",
         message: "Not enough mana points to teleport.",
     });
+    await sleep(MS_PER_TICK * 2);
 
     // Buff `playerOne` with enough resources to teleport
     playerOne = (await buffEntity(playerOne.player, {
@@ -224,20 +237,13 @@ test("Test Player", async () => {
      *
      * Note: `playerTwo` is not a target and does not get events
      */
-    setTimeout(async () => {
-        await crossoverCmdPerformAbility(
-            {
-                target: playerTwo.player,
-                ability: abilities.teleport.ability,
-            },
-            { Cookie: playerOneCookies },
-        );
-    }, 0);
-
-    // `playerOne` update resources
-    playerOne = (await crossoverAuthPlayer({
-        Cookie: playerOneCookies,
-    })) as PlayerEntity;
+    await crossoverCmdPerformAbility(
+        {
+            target: playerTwo.player,
+            ability: abilities.teleport.ability,
+        },
+        { Cookie: playerOneCookies },
+    );
 
     await expect(
         waitForEventData(playerOneStream, "entities"),
@@ -261,11 +267,9 @@ test("Test Player", async () => {
     });
 
     // `playerOne` update effect
-    var abilityResult = (await waitForEventData(
-        playerOneStream,
-        "entities",
-    )) as UpdateEntitiesEvent;
-    expect(abilityResult).toMatchObject({
+    await expect(
+        waitForEventData(playerOneStream, "entities"),
+    ).resolves.toMatchObject({
         event: "entities",
         players: [
             {
@@ -284,12 +288,8 @@ test("Test Player", async () => {
         monsters: [],
         items: [],
     });
-    // Update `playerOne`
-    for (const p of abilityResult.players || []) {
-        if (p.player === playerOne.player) {
-            playerOne = p;
-        }
-    }
+    await sleep(MS_PER_TICK * 2);
+    playerOne = (await fetchEntity(playerOne.player)) as Player;
 
     /*
      * Test crossoverCmdConfigureItem
@@ -310,18 +310,18 @@ test("Test Player", async () => {
     });
 
     // Configure woodendoor
-    woodendoor = (
-        await crossoverCmdConfigureItem(
-            {
-                item: woodendoor.item,
-                variables: {
-                    [compendium.woodendoor.variables.doorsign.variable]:
-                        "A new door sign",
-                },
+    await crossoverCmdConfigureItem(
+        {
+            item: woodendoor.item,
+            variables: {
+                [compendium.woodendoor.variables.doorsign.variable]:
+                    "A new door sign",
             },
-            { Cookie: playerOneCookies },
-        )
-    ).items?.[0]!;
+        },
+        { Cookie: playerOneCookies },
+    );
+    await sleep(MS_PER_TICK * 2);
+    woodendoor = (await fetchEntity(woodendoor.item)) as Item;
     expect(woodendoor).toMatchObject({
         state: "closed",
         vars: { doorsign: "A new door sign" },
@@ -331,15 +331,13 @@ test("Test Player", async () => {
      * Test `crossoverCmdUseItem` (open woodendoor)
      */
 
-    setTimeout(async () => {
-        await crossoverCmdUseItem(
-            {
-                item: woodendoor.item,
-                utility: compendium.woodendoor.utilities.open.utility,
-            },
-            { Cookie: playerOneCookies },
-        );
-    }, 0);
+    await crossoverCmdUseItem(
+        {
+            item: woodendoor.item,
+            utility: compendium.woodendoor.utilities.open.utility,
+        },
+        { Cookie: playerOneCookies },
+    );
 
     // Check `playerOne` received `entities` event setting woodendoor state to `state` state
     await expect(
@@ -361,11 +359,10 @@ test("Test Player", async () => {
     });
 
     // Check `playerOne` received `entities` event setting woodendoor state to `end` state
-    var useItemRes = (await waitForEventData(
-        playerOneStream,
-        "entities",
-    )) as UpdateEntitiesEvent;
-    await expect(useItemRes).toMatchObject({
+
+    await expect(
+        waitForEventData(playerOneStream, "entities"),
+    ).resolves.toMatchObject({
         event: "entities",
         players: [
             {
@@ -380,7 +377,8 @@ test("Test Player", async () => {
             },
         ],
     });
-    woodendoor = useItemRes.items?.[0]!;
+    await sleep(MS_PER_TICK * 2);
+    woodendoor = (await fetchEntity(woodendoor.item)) as Item;
 
     // Check item attributes
     expect(itemAttibutes(woodendoor)).toMatchObject({
@@ -394,9 +392,9 @@ test("Test Player", async () => {
      */
 
     // Move playerOne south (to spawn portal without colliding with woodendoor)
-    playerOne.loc = (
-        await crossoverCmdMove({ direction: "s" }, { Cookie: playerOneCookies })
-    ).players?.[0].loc!;
+    await crossoverCmdMove({ path: ["s"] }, { Cookie: playerOneCookies });
+    await sleep(MS_PER_TICK * 2);
+    playerOne = (await fetchEntity(playerOne.player)) as Player;
 
     // Spawn portals (dm)
     let portalOne = (await spawnItem({
@@ -416,6 +414,7 @@ test("Test Player", async () => {
             target: portalTwo.item,
         },
     });
+    await sleep(MS_PER_TICK * 2);
     await configureItem({
         self: playerOne as PlayerEntity,
         item: portalTwo as ItemEntity,
@@ -423,17 +422,16 @@ test("Test Player", async () => {
             target: portalOne.item,
         },
     });
+    await sleep(MS_PER_TICK * 2);
 
     // `playerOne` use `portalOne` to teleport to `portalTwo`
-    setTimeout(async () => {
-        await crossoverCmdUseItem(
-            {
-                item: portalOne.item,
-                utility: compendium.portal.utilities.teleport.utility,
-            },
-            { Cookie: playerOneCookies },
-        );
-    }, 0);
+    await crossoverCmdUseItem(
+        {
+            item: portalOne.item,
+            utility: compendium.portal.utilities.teleport.utility,
+        },
+        { Cookie: playerOneCookies },
+    );
 
     // Check `playerOne` received `portalOne` start state
     await expect(
@@ -455,11 +453,9 @@ test("Test Player", async () => {
     });
 
     // Check `playerOne` received effect
-    var teleportResult = (await waitForEventData(
-        playerOneStream,
-        "entities",
-    )) as UpdateEntitiesEvent;
-    expect(teleportResult).toMatchObject({
+    expect(
+        waitForEventData(playerOneStream, "entities"),
+    ).resolves.toMatchObject({
         event: "entities",
         players: [
             {
@@ -479,19 +475,28 @@ test("Test Player", async () => {
         ],
     });
 
-    // Update `playerOne`
-    for (const p of teleportResult.players || []) {
-        if (p.player === playerOne.player) {
-            playerOne = p;
-        }
-    }
+    console.log(
+        JSON.stringify(
+            await waitForEventData(playerOneStream, "entities"),
+            null,
+            2,
+        ),
+    );
+
+    console.log(
+        JSON.stringify(
+            await waitForEventData(playerOneStream, "entities"),
+            null,
+            2,
+        ),
+    );
+
+    // TODO: investigate why there is an extra event
 
     // Check `playerOne` received `portalTwo` end state
-    teleportResult = (await waitForEventData(
-        playerOneStream,
-        "entities",
-    )) as UpdateEntitiesEvent;
-    expect(teleportResult).toMatchObject({
+    await expect(
+        waitForEventData(playerOneStream, "entities"),
+    ).resolves.toMatchObject({
         event: "entities",
         players: [
             {
@@ -502,19 +507,19 @@ test("Test Player", async () => {
         items: [
             {
                 item: portalOne.item,
-
                 dur: 100,
                 chg: 99, // -1
             },
         ],
     });
 
+    await sleep(MS_PER_TICK * 2);
+
+    // Update `playerOne`
+    playerOne = (await fetchEntity(playerOne.player)) as Player;
+
     // Update `portalOne`
-    for (const i of teleportResult.items || []) {
-        if (i.item === portalOne.item) {
-            portalOne = i;
-        }
-    }
+    portalOne = (await fetchEntity(portalOne.item)) as Item;
 
     // Check `playerOne` location after teleport
     expect(playerOne.loc[0]).toBe(portalTwo.loc[0]);
@@ -550,11 +555,9 @@ test("Test Player", async () => {
     });
 
     // Check `playerOne` received effect
-    teleportResult = (await waitForEventData(
-        playerOneStream,
-        "entities",
-    )) as UpdateEntitiesEvent;
-    expect(teleportResult).toMatchObject({
+    await expect(
+        waitForEventData(playerOneStream, "entities"),
+    ).resolves.toMatchObject({
         event: "entities",
         players: [
             {
@@ -571,19 +574,10 @@ test("Test Player", async () => {
         ],
     });
 
-    // Update `playerOne`
-    for (const p of teleportResult.players || []) {
-        if (p.player === playerOne.player) {
-            playerOne = p;
-        }
-    }
-
     // Check `playerOne` received `portalTwo` end state
-    teleportResult = (await waitForEventData(
-        playerOneStream,
-        "entities",
-    )) as UpdateEntitiesEvent;
-    expect(teleportResult).toMatchObject({
+    await expect(
+        waitForEventData(playerOneStream, "entities"),
+    ).resolves.toMatchObject({
         event: "entities",
         players: [
             {
@@ -600,29 +594,37 @@ test("Test Player", async () => {
         ],
     });
 
+    // Update `playerOne`
+    playerOne = (await fetchEntity(playerOne.player)) as Player;
+
     // Update `portalTwo`
-    for (const i of teleportResult.items || []) {
-        if (i.item === portalTwo.item) {
-            portalTwo = i;
-        }
-    }
+    portalTwo = (await fetchEntity(portalTwo.item)) as Item;
 
     // Check `playerOne` location after teleport
     expect(playerOne.loc[0]).toBe(portalOne.loc[0]);
 
+    console.log("asd");
+
     /*
      * Test crossoverCmdCreateItem
      */
+    await flushEventChannel(playerOneStream, "entities");
+    await flushEventChannel(playerOneStream, "feed");
+    await sleep(MS_PER_TICK * 2);
 
+    await crossoverCmdCreateItem(
+        {
+            geohash: playerOne.loc[0],
+            prop: compendium.woodenclub.prop,
+        },
+        { Cookie: playerOneCookies },
+    );
+    await sleep(MS_PER_TICK * 2);
+
+    // Check `playerOne` received `entities` event
     const woodenclub = (
-        await crossoverCmdCreateItem(
-            {
-                geohash: playerOne.loc[0],
-                prop: compendium.woodenclub.prop,
-            },
-            { Cookie: playerOneCookies },
-        )
-    ).items?.[0]!;
+        (await waitForEventData(playerOneStream, "entities")) as any
+    ).items[0];
 
     expect(woodenclub).toMatchObject({
         name: "Wooden Club",
@@ -696,16 +698,14 @@ test("Test Player", async () => {
     let stBefore = playerOne.st;
     let apBefore = playerOne.ap;
 
-    setTimeout(async () => {
-        crossoverCmdUseItem(
-            {
-                item: woodenclub.item,
-                utility: compendium.woodenclub.utilities.swing.utility,
-                target: playerTwo.player,
-            },
-            { Cookie: playerOneCookies },
-        );
-    }, 0);
+    await crossoverCmdUseItem(
+        {
+            item: woodenclub.item,
+            utility: compendium.woodenclub.utilities.swing.utility,
+            target: playerTwo.player,
+        },
+        { Cookie: playerOneCookies },
+    );
 
     // Consume item state event
     await waitForEventData(playerOneStream, "entities");
