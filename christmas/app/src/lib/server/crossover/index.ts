@@ -516,7 +516,7 @@ async function useItem({
     if (!canUse && self.player) {
         publishFeedEvent((self as PlayerEntity).player, {
             event: "feed",
-            type: "message",
+            type: "error",
             message,
         });
         return;

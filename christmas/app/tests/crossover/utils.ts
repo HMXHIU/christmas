@@ -15,6 +15,7 @@ import {
     archetypeTypes,
     type PlayerMetadata,
 } from "$lib/crossover/world/player";
+import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { sanctuariesByRegion } from "$lib/crossover/world/world";
 import { hashObject } from "$lib/server";
 import { performAbility, performEffectOnEntity } from "$lib/server/crossover";
@@ -159,6 +160,13 @@ export function collectEventDataForDuration(
             events.push((event as MessageEvent).data as StreamEvent);
         });
     });
+}
+
+export async function flushEventChannel(
+    eventTarget: EventTarget,
+    type: string,
+) {
+    await collectEventDataForDuration(eventTarget, type, MS_PER_TICK * 2);
 }
 
 export function generateRandomGeohash(

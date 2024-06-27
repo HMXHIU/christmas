@@ -1,18 +1,24 @@
-import { crossoverCmdEquip, crossoverCmdTake } from "$lib/crossover";
+import { crossoverCmdEquip, crossoverCmdTake, stream } from "$lib/crossover";
 import { geohashNeighbour } from "$lib/crossover/utils";
 import { compendium, itemAttibutes } from "$lib/crossover/world/compendium";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { configureItem, spawnItem, useItem } from "$lib/server/crossover";
-import { initializeClients } from "$lib/server/crossover/redis";
+import { fetchEntity, initializeClients } from "$lib/server/crossover/redis";
 import type {
     ItemEntity,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
 import { itemVariableValue } from "$lib/server/crossover/utils";
 import { sleep } from "$lib/utils";
+import { cloneDeep } from "lodash";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
-import { createRandomPlayer, generateRandomGeohash } from "./utils";
+import {
+    createRandomPlayer,
+    flushEventChannel,
+    generateRandomGeohash,
+    waitForEventData,
+} from "./utils";
 
 test("Test Items", async () => {
     await initializeClients(); // create redis repositories
@@ -37,6 +43,26 @@ test("Test Items", async () => {
             geohash: playerTwoGeohash,
             name: playerTwoName,
         });
+
+    // Create streams
+    const [playerOneStream, playerOneCloseStream] = await stream({
+        Cookie: playerOneCookies,
+    });
+    await expect(
+        waitForEventData(playerOneStream, "feed"),
+    ).resolves.toMatchObject({
+        type: "system",
+        message: "started",
+    });
+    const [playerTwoStream, playerTwoCloseStream] = await stream({
+        Cookie: playerTwoCookies,
+    });
+    await expect(
+        waitForEventData(playerTwoStream, "feed"),
+    ).resolves.toMatchObject({
+        type: "system",
+        message: "started",
+    });
 
     /*
      * Test spawn item
@@ -67,9 +93,9 @@ test("Test Items", async () => {
         [compendium.woodendoor.variables!.doorsign.variable]:
             "A custom door sign",
     });
+    await sleep(MS_PER_TICK * 2); // wait for item to be spanwed
 
     // Test cannot spawn item on collider
-    await sleep(MS_PER_TICK * 2); // why need to wait for item to be indexed ???
     await expect(
         spawnItem({
             geohash: woodendoorGeohash,
@@ -92,23 +118,26 @@ test("Test Items", async () => {
     /*
      * Test `useItem`
      */
-    const woodendoorProp = compendium[woodendoor.prop];
-    const { item: openedWoodenDoor } = await useItem({
-        item: woodendoor,
-        utility: woodendoorProp.utilities.open.utility,
-        self: playerOne as PlayerEntity,
-    });
 
-    // Test state change
-    expect(openedWoodenDoor).toMatchObject({
-        state: "open",
-    });
-    const { item: closedWoodenDoor } = await useItem({
-        item: openedWoodenDoor,
-        utility: woodendoorProp.utilities.close.utility,
+    // Open door
+    await useItem({
+        item: woodendoor,
+        utility: compendium[woodendoor.prop].utilities.open.utility,
         self: playerOne as PlayerEntity,
     });
-    expect(closedWoodenDoor).toMatchObject({
+    await sleep(MS_PER_TICK * 2); // wait for item to be updated
+    woodendoor = (await fetchEntity(woodendoor.item)) as ItemEntity;
+    expect(woodendoor).toMatchObject({ state: "open" });
+
+    // Close door
+    await useItem({
+        item: woodendoor,
+        utility: compendium[woodendoor.prop].utilities.close.utility,
+        self: playerOne as PlayerEntity,
+    });
+    await sleep(MS_PER_TICK * 2); // wait for item to be updated
+    woodendoor = (await fetchEntity(woodendoor.item)) as ItemEntity;
+    expect(woodendoor).toMatchObject({
         state: "closed",
     });
 
@@ -124,6 +153,7 @@ test("Test Items", async () => {
             [compendium.portal.variables!.description.variable]: "Portal One",
         },
     })) as ItemEntity;
+    await sleep(MS_PER_TICK * 2); // wait for item to be updated
 
     // Spawn portalTwo at random location
     const portalTwoGeohash = generateRandomGeohash(8, "h9");
@@ -197,22 +227,23 @@ test("Test Items", async () => {
      * Test using item ability
      */
 
-    const beforeCharges = portalOne.chg;
-    const beforeDurability = portalOne.dur;
+    const portalOneBefore = cloneDeep(portalOne);
+
     expect(playerOne.loc[0] === portalTwo.loc[0]).toBe(false);
-    let itemResult = await useItem({
+    await useItem({
         item: portalOne,
         utility: compendium.portal.utilities.teleport.utility,
         self: playerOne as PlayerEntity,
     });
-    portalOne = itemResult.item;
-    playerOne = itemResult.self as PlayerEntity;
-
+    await sleep(MS_PER_TICK * 2); // wait for item to be updated
+    portalOne = (await fetchEntity(portalOne.item)) as ItemEntity;
+    playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
     expect(portalOne.chg).toBe(
-        beforeCharges - compendium.portal.utilities.teleport.cost.charges,
+        portalOneBefore.chg - compendium.portal.utilities.teleport.cost.charges,
     );
     expect(portalOne.dur).toBe(
-        beforeDurability - compendium.portal.utilities.teleport.cost.durability,
+        portalOneBefore.dur -
+            compendium.portal.utilities.teleport.cost.durability,
     );
     expect(playerOne.loc[0] === portalTwo.loc[0]).toBe(true);
 
@@ -220,19 +251,24 @@ test("Test Items", async () => {
      * Test taking item which is untakeable
      */
 
+    await crossoverCmdTake(
+        { item: portalTwo.item },
+        { Cookie: playerOneCookies },
+    );
     await expect(
-        crossoverCmdTake(
-            { item: portalTwo.item },
-            { Cookie: playerOneCookies },
-        ),
+        waitForEventData(playerOneStream, "feed"),
     ).resolves.toMatchObject({
-        status: "failure",
+        type: "error",
         message: `${portalTwo.item} cannot be taken`,
     });
+    await sleep(MS_PER_TICK * 2); // wait for item to be updated
 
     /*
      * Test item permissions
      */
+    await flushEventChannel(playerOneStream, "feed");
+    await flushEventChannel(playerOneStream, "entities");
+    await sleep(MS_PER_TICK * 4); // wait for flush
 
     // Test owner permissions
     let playerOneWoodenClub = await spawnItem({
@@ -243,86 +279,122 @@ test("Test Items", async () => {
     });
 
     // Take item
-    playerOneWoodenClub = (
-        await crossoverCmdTake(
-            { item: playerOneWoodenClub.item },
-            { Cookie: playerOneCookies },
-        )
-    ).items?.[0]!;
+    await crossoverCmdTake(
+        { item: playerOneWoodenClub.item },
+        { Cookie: playerOneCookies },
+    );
+    await sleep(MS_PER_TICK * 2); // wait for item to be updated
+    playerOneWoodenClub = (await fetchEntity(
+        playerOneWoodenClub.item,
+    )) as ItemEntity;
 
     // Test cannot use item without equipping
-    var { status, message } = await useItem({
+    await useItem({
         item: playerOneWoodenClub,
         utility: compendium.woodenclub.utilities.swing.utility,
         self: playerOne as PlayerEntity,
         target: playerTwo as PlayerEntity,
     });
-    expect(status).toBe("failure");
-    expect(message).toBe(
-        `${playerOneWoodenClub.item} is not equipped in the required slot`,
-    );
+    await expect(
+        waitForEventData(playerOneStream, "feed"),
+    ).resolves.toMatchObject({
+        type: "error",
+        message: `${playerOneWoodenClub.item} is not equipped in the required slot`,
+    });
 
     // Equip item
-    playerOneWoodenClub = (
-        await crossoverCmdEquip(
-            {
-                item: playerOneWoodenClub.item,
-                slot: "rh",
-            },
-            { Cookie: playerOneCookies },
-        )
-    ).items?.[0]!;
+    await crossoverCmdEquip(
+        {
+            item: playerOneWoodenClub.item,
+            slot: "rh",
+        },
+        { Cookie: playerOneCookies },
+    );
+    await sleep(MS_PER_TICK * 2); // wait for item to be updated
+    playerOneWoodenClub = (await fetchEntity(
+        playerOneWoodenClub.item,
+    )) as ItemEntity;
 
     // Test target out of range
-    var { status, message } = await useItem({
+    await useItem({
         item: playerOneWoodenClub,
         utility: compendium.woodenclub.utilities.swing.utility,
         self: playerOne as PlayerEntity,
         target: playerTwo as PlayerEntity,
     });
-    expect(status).toBe("failure");
-    expect(message).toBe("Target is out of range");
+    await expect(
+        waitForEventData(playerOneStream, "feed"),
+    ).resolves.toMatchObject({
+        type: "error",
+        message: "Target is out of range",
+    });
 
     // Test in range and have permissions
     playerTwo.loc[0] = playerOne.loc[0];
-    await expect(
-        useItem({
-            item: playerOneWoodenClub,
-            utility: compendium.woodenclub.utilities.swing.utility,
-            self: playerOne as PlayerEntity,
-            target: playerTwo as PlayerEntity,
-        }),
-    ).resolves.toMatchObject({
-        item: {
-            own: playerOne.player,
-            cfg: playerOne.player,
-            dur: 99,
-            chg: 0,
-        },
-        target: {
-            player: playerTwo.player,
-            hp: 9, // take one damage
-        },
-        self: {
-            player: playerOne.player,
-            ap: 4, // item uses charges instead of user's resources
-            st: 10, // item uses charges instead of user's resources
-        },
-        status: "success",
-        message: "",
+    await useItem({
+        item: playerOneWoodenClub,
+        utility: compendium.woodenclub.utilities.swing.utility,
+        self: playerOne as PlayerEntity,
+        target: playerTwo as PlayerEntity,
     });
 
+    await expect(
+        waitForEventData(playerOneStream, "entities"),
+    ).resolves.toMatchObject({
+        event: "entities",
+        players: [
+            {
+                player: playerOne.player,
+                ap: 4, // item uses charges instead of user's resources
+                st: 10, // item uses charges instead of user's resources
+            },
+            {
+                player: playerTwo.player,
+                hp: 9, // take one damage
+            },
+        ],
+        monsters: [],
+        items: [],
+        op: "upsert",
+    });
+    await expect(
+        waitForEventData(playerOneStream, "entities"),
+    ).resolves.toMatchObject({
+        event: "entities",
+        players: [
+            {
+                player: playerOne.player,
+            },
+        ],
+        monsters: [],
+        items: [
+            {
+                item: playerOneWoodenClub.item,
+                dur: 99,
+                chg: 0,
+                state: "default",
+            },
+        ],
+        op: "upsert",
+    });
+    await sleep(MS_PER_TICK * 2); // wait for item to be updated
+    playerOneWoodenClub = (await fetchEntity(
+        playerOneWoodenClub.item,
+    )) as ItemEntity;
+
     // Test negative permissions
-    var { status, message } = await useItem({
+    await useItem({
         item: playerOneWoodenClub,
         utility: compendium.woodenclub.utilities.swing.utility,
         self: playerTwo as PlayerEntity,
         target: playerOne as PlayerEntity,
     });
-    expect(status).toBe("failure");
-    expect(message).toBe(
-        `${playerTwo.player} does not own ${playerOneWoodenClub.item}`,
-    );
+    await expect(
+        waitForEventData(playerTwoStream, "feed"),
+    ).resolves.toMatchObject({
+        type: "error",
+        message: `${playerTwo.player} does not own ${playerOneWoodenClub.item}`,
+    });
 
     // Test config permissions
     playerOneWoodenClub = (
