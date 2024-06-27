@@ -16,14 +16,13 @@ import { buffEntity, createRandomPlayer } from "./utils";
 
 const RESPAWN_ENDPOINT =
     "http://localhost:5173/trpc/crossover.world.respawnMonsters";
+const region = String.fromCharCode(...getRandomRegion());
 let playerOne: Player, playerTwo: Player, playerThree: Player;
 let uninhabitedGeohashes: string[];
 let maxMonstersInArea: number;
 
 beforeAll(async () => {
     await initializeClients(); // create redis repositories
-
-    const region = String.fromCharCode(...getRandomRegion());
 
     // Create players
     [, , playerOne] = await createRandomPlayer({
@@ -59,7 +58,7 @@ beforeAll(async () => {
 });
 
 describe("DungeonMaster Tests", () => {
-    test("Uninhabited neighbouring geohashes", () => {
+    test("Test `borderingGeohashes`", () => {
         expect(uninhabitedGeohashes.sort()).to.deep.equal(
             [
                 "w21z3tg",
@@ -76,10 +75,6 @@ describe("DungeonMaster Tests", () => {
                 "w21z3tj",
             ].sort(),
         );
-    });
-
-    test("Monster limit in area", () => {
-        expect(maxMonstersInArea).to.equal(41);
     });
 
     test("Spawn monsters cannot exceed monster limit", async () => {
@@ -108,6 +103,9 @@ describe("DungeonMaster Tests", () => {
         );
 
         expect(numMonstersInArea).to.lessThan(maxMonstersInArea);
+
+        // Monster limit in area
+        expect(maxMonstersInArea).to.equal(41);
     });
 
     test("world.respawnMonsters - authorized", async () => {

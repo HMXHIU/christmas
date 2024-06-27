@@ -1,22 +1,21 @@
 import { crossoverCmdEquip, crossoverCmdTake } from "$lib/crossover";
 import { geohashNeighbour } from "$lib/crossover/utils";
 import { compendium, itemAttibutes } from "$lib/crossover/world/compendium";
-import {
-    configureItem,
-    itemVariableValue,
-    spawnItem,
-    useItem,
-} from "$lib/server/crossover";
+import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { configureItem, spawnItem, useItem } from "$lib/server/crossover";
+import { initializeClients } from "$lib/server/crossover/redis";
 import type {
     ItemEntity,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
+import { itemVariableValue } from "$lib/server/crossover/utils";
 import { sleep } from "$lib/utils";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer, generateRandomGeohash } from "./utils";
 
 test("Test Items", async () => {
+    await initializeClients(); // create redis repositories
     const region = String.fromCharCode(...getRandomRegion());
 
     // Player one
@@ -70,7 +69,7 @@ test("Test Items", async () => {
     });
 
     // Test cannot spawn item on collider
-    await sleep(200); // why need to wait for item to be indexed ???
+    await sleep(MS_PER_TICK * 2); // why need to wait for item to be indexed ???
     await expect(
         spawnItem({
             geohash: woodendoorGeohash,
