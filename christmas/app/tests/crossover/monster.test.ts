@@ -8,6 +8,7 @@ import {
     selectMonsterAbility,
 } from "$lib/server/crossover/dungeonMaster";
 import {
+    initializeClients,
     monsterRepository,
     playerRepository,
 } from "$lib/server/crossover/redis";
@@ -21,6 +22,8 @@ import { getRandomRegion } from "../utils";
 import { buffEntity, createRandomPlayer, generateRandomGeohash } from "./utils";
 
 test("Test Monster", async () => {
+    await initializeClients(); // create redis repositories
+
     const region = String.fromCharCode(...getRandomRegion());
 
     // Player one
