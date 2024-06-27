@@ -167,7 +167,7 @@ test("Test Stream", async () => {
         waitForEventData(eventStreamOne, "feed"),
     ).resolves.toMatchObject({
         event: "feed",
-        type: "message",
+        type: "error",
         message: "You can't scratch yourself",
     });
 });

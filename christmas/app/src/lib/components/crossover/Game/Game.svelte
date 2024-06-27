@@ -136,9 +136,32 @@
         const [ga, { self, target, item }] = command;
         const [gaId, gaType] = getGameActionId(ga);
 
+        // Highlight target
+        if (target != null) {
+            const targetEntityId = getEntityId(target)[0];
+            const targetEntityMesh = entityMeshes[targetEntityId];
+            if (targetEntityMesh != null) {
+                highlightTarget(target, 2);
+            }
+        }
+
+        // TODO: Draw line to target
+        // const startX = playerPosition.isoX;
+        // const startY =
+        //     playerPosition.isoY - playerPosition.elevation;
+        // const endX = targetEntityMesh.position.isoX;
+        // const endY =
+        //     targetEntityMesh.position.isoY -
+        //     targetEntityMesh.position.elevation;
+        // const line = new Graphics();
+        // line.zIndex = 10000;
+        // line.moveTo(startX, startY);
+        // line.lineTo(endX, endY);
+        // line.stroke({ width: 4, color: 0xffd900 });
+        // worldStage.addChild(line);
+
         if (gaType === "ability") {
             const ability = ga as Ability;
-
             // Highlight cells in range
             highlightShaderInstances(
                 "biome",
@@ -148,36 +171,11 @@
             const utility = ga as Utility;
         } else if (gaType === "action") {
             const action = ga as Action;
-
             // Highlight cells in range
             highlightShaderInstances(
                 "biome",
                 positionsInRange(action, playerPosition),
             );
-
-            if (target) {
-                const targetEntityId = getEntityId(target)[0];
-                const targetEntityMesh = entityMeshes[targetEntityId];
-                if (targetEntityMesh != null) {
-                    // Highlight target
-                    highlightTarget(target, 2);
-
-                    // TODO: Draw line to target
-                    // const startX = playerPosition.isoX;
-                    // const startY =
-                    //     playerPosition.isoY - playerPosition.elevation;
-                    // const endX = targetEntityMesh.position.isoX;
-                    // const endY =
-                    //     targetEntityMesh.position.isoY -
-                    //     targetEntityMesh.position.elevation;
-                    // const line = new Graphics();
-                    // line.zIndex = 10000;
-                    // line.moveTo(startX, startY);
-                    // line.lineTo(endX, endY);
-                    // line.stroke({ width: 4, color: 0xffd900 });
-                    // worldStage.addChild(line);
-                }
-            }
         }
     }
 

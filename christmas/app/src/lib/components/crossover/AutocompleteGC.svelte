@@ -123,6 +123,8 @@
 
                                         // TODO: change to on focus to support cycling
                                         previewCommand = gc;
+
+                                        console.log(previewCommand);
                                     }}
                                 >
                                     <div class="flex flex-row items-center">
