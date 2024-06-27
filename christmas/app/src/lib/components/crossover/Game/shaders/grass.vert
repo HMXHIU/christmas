@@ -62,7 +62,7 @@ void main() {
 
     gl_Position = vec4(
         rotationMatrix(angle) * clip.xy,
-        (aInstancePosition.y + uZOffset) * uZScale,
+        0.5 + (aInstancePosition.y + uZOffset) * uZScale,
         1.0
     );
 }

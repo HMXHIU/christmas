@@ -40,7 +40,7 @@ void main() {
     gl_Position = vec4(
         clip.xy,
         // Entities use instancePosition to determine the Z position
-        (aInstancePosition.y + uZOffset - zAlongY) * uZScale,
+        0.5 + (aInstancePosition.y + uZOffset - zAlongY) * uZScale,
         1.0
     );
 }

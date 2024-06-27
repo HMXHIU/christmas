@@ -190,17 +190,26 @@ const RENDER_ORDER: Record<string, number> = {
     player: 1,
     monster: 1,
     world: 1,
+    effects: 3,
 };
 
 // In WebGL, the gl_Position.z value should be in the range [-1 (closer), 1]
 const ELEVATION_TO_CELL_HEIGHT = CELL_HEIGHT / 2 / 8; // 1 meter = 1/8 a cell elevation (on isometric coordinates)
 
-// Depth test scaling and offsets
+/*
+ * Depth test scaling and offsets
+ * Note: Map the range from [-1, 1] to [-0.5, 0.5], then in the shader add 0.5 to map it to [0, 1]
+ *       Leave [-1, 0] alone so that we can display sprites above the depth tested meshes
+ */
 const { row: bottomRightRow, col: bottomRightCol } =
     geohashToGridCell("pbzupuzv");
 const Z_SCALE =
     -1 /
-    cartToIso(bottomRightCol * CELL_WIDTH, bottomRightRow * CELL_HEIGHT)[1];
+    (4 *
+        cartToIso(
+            bottomRightCol * CELL_WIDTH,
+            bottomRightRow * CELL_HEIGHT,
+        )[1]);
 
 async function calculatePosition(
     geohash: string,

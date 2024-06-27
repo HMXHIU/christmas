@@ -33,11 +33,14 @@
         FederatedMouseEvent,
         Geometry,
         Mesh,
+        MeshRope,
+        Point,
         Rectangle,
         Shader,
         Texture,
         Ticker,
         WebGLRenderer,
+        type PointData,
     } from "pixi.js";
     import { onDestroy, onMount } from "svelte";
     import type { ActionEvent } from "../../../../routes/api/crossover/stream/+server";
@@ -118,7 +121,7 @@
     $: resize(clientHeight, clientWidth);
     $: handlePreviewCommand(previewCommand);
 
-    function handlePreviewCommand(command: GameCommand | null) {
+    async function handlePreviewCommand(command: GameCommand | null) {
         if (
             !isInitialized ||
             playerPosition == null ||
@@ -143,22 +146,124 @@
             if (targetEntityMesh != null) {
                 highlightTarget(target, 2);
             }
-        }
 
-        // TODO: Draw line to target
-        // const startX = playerPosition.isoX;
-        // const startY =
-        //     playerPosition.isoY - playerPosition.elevation;
-        // const endX = targetEntityMesh.position.isoX;
-        // const endY =
-        //     targetEntityMesh.position.isoY -
-        //     targetEntityMesh.position.elevation;
-        // const line = new Graphics();
-        // line.zIndex = 10000;
-        // line.moveTo(startX, startY);
-        // line.lineTo(endX, endY);
-        // line.stroke({ width: 4, color: 0xffd900 });
-        // worldStage.addChild(line);
+            /**
+             * Test attack trail
+             */
+
+            // Load the texture for rope.
+            const trailTexture = await Assets.load(
+                "https://pixijs.com/assets/trail.png",
+            );
+
+            const ropeSize = 20;
+            const points: PointData[] = [];
+
+            const startX = playerPosition.isoX;
+            const startY = playerPosition.isoY - playerPosition.elevation;
+            const endX = targetEntityMesh.position.isoX;
+            const endY =
+                targetEntityMesh.position.isoY -
+                targetEntityMesh.position.elevation;
+
+            function getAngle(
+                h: number,
+                k: number,
+                x: number,
+                y: number,
+            ): number {
+                const dx = x - h;
+                const dy = y - k;
+                return Math.atan2(dy, dx);
+            }
+
+            const radius = Math.sqrt(
+                Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2),
+            );
+            const angleToTarget = getAngle(startX, startY, endX, endY);
+            const arc = Math.PI / 4;
+            const halfArc = arc / 2;
+            const deltaTheta = arc / ropeSize;
+
+            // Create rope points (arc)
+            for (let i = 0; i < ropeSize; i++) {
+                const theta = angleToTarget - halfArc + deltaTheta * i;
+                points.push(
+                    new Point(
+                        startX + Math.cos(theta) * radius,
+                        startY + Math.sin(theta) * radius,
+                    ),
+                );
+            }
+
+            const rope = new MeshRope({ texture: trailTexture, points });
+            worldStage.addChild(rope);
+            rope.zIndex = RENDER_ORDER.effects * playerPosition.isoY;
+
+            // Animation function
+            function animateSlash() {
+                const animationDuration = 0.5; // seconds
+                const fadeOutDuration = 0.2; // seconds
+
+                // Create a timeline for the animation
+                const tl = gsap.timeline();
+
+                // Store the original positions
+                const originalPositions = points.map((p) => ({
+                    x: p.x,
+                    y: p.y,
+                }));
+
+                // Animate the rope appearance and extension
+                tl.to(rope, {
+                    alpha: 1,
+                    duration: animationDuration,
+                    onUpdate: () => {
+                        const progress = tl.progress();
+                        const positions =
+                            rope.geometry.getBuffer("aVertexPosition");
+                        for (let i = 0; i < ropeSize; i++) {
+                            const index = i * 2;
+                            positions.data[index] =
+                                startX * (1 - progress) +
+                                originalPositions[i].x * progress;
+                            positions.data[index + 1] =
+                                startY * (1 - progress) +
+                                originalPositions[i].y * progress;
+                        }
+                        positions.update();
+                    },
+                });
+
+                // Fade out the rope
+                tl.to(rope, {
+                    alpha: 0,
+                    duration: fadeOutDuration,
+                    onComplete: () => {
+                        // worldStage!.removeChild(rope);
+                    },
+                });
+            }
+
+            animateSlash();
+
+            ////////////////////////
+
+            // TODO: Draw line to target
+            // const startX = playerPosition.isoX;
+            // const startY =
+            //     playerPosition.isoY - playerPosition.elevation;
+            // const endX = targetEntityMesh.position.isoX;
+            // const endY =
+            //     targetEntityMesh.position.isoY -
+            //     targetEntityMesh.position.elevation;
+            // const line = new Graphics();
+            // line.zIndex = 10000;
+            // line.moveTo(startX, startY);
+            // line.lineTo(endX, endY);
+            // line.stroke({ width: 4, color: 0xffd900 });
+            // worldStage.addChild(line);
+        }
 
         if (gaType === "ability") {
             const ability = ga as Ability;
@@ -794,7 +899,7 @@
                     x: anchor.x * width,
                     y: anchor.y * height,
                 },
-                interactive: true,
+                eventMode: "static",
                 hitArea: new Rectangle(0, 0, width, height),
                 onmouseover: () => {
                     shaderGeometry.instanceHighlights.data.fill(1);
@@ -979,8 +1084,9 @@
 
         // Setup app events
         app.stage.eventMode = "static"; // enable interactivity
-        app.stage.interactive = true;
         app.stage.hitArea = app.screen; // ensure whole canvas area is interactive
+
+        console.log(app.screen);
 
         function getMousePosition(e: FederatedMouseEvent) {
             return snapToGrid(
@@ -990,26 +1096,26 @@
                 HALF_ISO_CELL_HEIGHT,
             );
         }
-        app.stage.addEventListener("pointerup", (e) => {
-            if (playerPosition != null) {
+        app.stage.onmouseup = (e) => {
+            if (playerPosition != null && e.global != null) {
                 const [snapX, snapY] = getMousePosition(e);
                 onMouseUp(snapX, snapY);
                 lastCursorX = snapX;
                 lastCursorY = snapY;
                 isMouseDown = false;
             }
-        });
-        app.stage.addEventListener("pointerdown", (e) => {
-            if (playerPosition != null) {
+        };
+        app.stage.onmousedown = (e) => {
+            if (playerPosition != null && e.global != null) {
                 const [snapX, snapY] = getMousePosition(e);
                 onMouseDown(snapX, snapY);
                 lastCursorX = snapX;
                 lastCursorY = snapY;
                 isMouseDown = true;
             }
-        });
-        app.stage.addEventListener("pointermove", (e) => {
-            if (playerPosition != null) {
+        };
+        app.stage.onmousemove = (e) => {
+            if (playerPosition != null && e.global != null) {
                 const [snapX, snapY] = getMousePosition(e);
                 if (lastCursorX !== snapX || lastCursorY !== snapY) {
                     onMouseMove(snapX, snapY);
@@ -1017,7 +1123,7 @@
                     lastCursorY = snapY;
                 }
             }
-        });
+        };
 
         // Create player mesh
         if ($player) {
