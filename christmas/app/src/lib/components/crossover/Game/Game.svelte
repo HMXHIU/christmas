@@ -33,14 +33,11 @@
         FederatedMouseEvent,
         Geometry,
         Mesh,
-        MeshRope,
-        Point,
         Rectangle,
         Shader,
         Texture,
         Ticker,
         WebGLRenderer,
-        type PointData,
     } from "pixi.js";
     import { onDestroy, onMount } from "svelte";
     import type { ActionEvent } from "../../../../routes/api/crossover/stream/+server";
@@ -73,6 +70,7 @@
         WORLD_WIDTH,
         Z_OFF,
         Z_SCALE,
+        animateSlash,
         calculateBiomeDecorationsForRowCol,
         calculateBiomeForRowCol,
         calculatePosition,
@@ -151,14 +149,6 @@
              * Test attack trail
              */
 
-            // Load the texture for rope.
-            const trailTexture = await Assets.load(
-                "https://pixijs.com/assets/trail.png",
-            );
-
-            const ropeSize = 20;
-            const points: PointData[] = [];
-
             const startX = playerPosition.isoX;
             const startY = playerPosition.isoY - playerPosition.elevation;
             const endX = targetEntityMesh.position.isoX;
@@ -166,86 +156,7 @@
                 targetEntityMesh.position.isoY -
                 targetEntityMesh.position.elevation;
 
-            function getAngle(
-                h: number,
-                k: number,
-                x: number,
-                y: number,
-            ): number {
-                const dx = x - h;
-                const dy = y - k;
-                return Math.atan2(dy, dx);
-            }
-
-            const radius = Math.sqrt(
-                Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2),
-            );
-            const angleToTarget = getAngle(startX, startY, endX, endY);
-            const arc = Math.PI / 4;
-            const halfArc = arc / 2;
-            const deltaTheta = arc / ropeSize;
-
-            // Create rope points (arc)
-            for (let i = 0; i < ropeSize; i++) {
-                const theta = angleToTarget - halfArc + deltaTheta * i;
-                points.push(
-                    new Point(
-                        startX + Math.cos(theta) * radius,
-                        startY + Math.sin(theta) * radius,
-                    ),
-                );
-            }
-
-            const rope = new MeshRope({ texture: trailTexture, points });
-            worldStage.addChild(rope);
-            rope.zIndex = RENDER_ORDER.effects * playerPosition.isoY;
-
-            // Animation function
-            function animateSlash() {
-                const animationDuration = 0.5; // seconds
-                const fadeOutDuration = 0.2; // seconds
-
-                // Create a timeline for the animation
-                const tl = gsap.timeline();
-
-                // Store the original positions
-                const originalPositions = points.map((p) => ({
-                    x: p.x,
-                    y: p.y,
-                }));
-
-                // Animate the rope appearance and extension
-                tl.to(rope, {
-                    alpha: 1,
-                    duration: animationDuration,
-                    onUpdate: () => {
-                        const progress = tl.progress();
-                        const positions =
-                            rope.geometry.getBuffer("aVertexPosition");
-                        for (let i = 0; i < ropeSize; i++) {
-                            const index = i * 2;
-                            positions.data[index] =
-                                startX * (1 - progress) +
-                                originalPositions[i].x * progress;
-                            positions.data[index + 1] =
-                                startY * (1 - progress) +
-                                originalPositions[i].y * progress;
-                        }
-                        positions.update();
-                    },
-                });
-
-                // Fade out the rope
-                tl.to(rope, {
-                    alpha: 0,
-                    duration: fadeOutDuration,
-                    onComplete: () => {
-                        // worldStage!.removeChild(rope);
-                    },
-                });
-            }
-
-            animateSlash();
+            animateSlash(worldStage, startX, startY, endX, endY);
 
             ////////////////////////
 
