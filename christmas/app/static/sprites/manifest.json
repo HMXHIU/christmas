@@ -65,6 +65,28 @@
                     "src": "/sprites/props/gothic/sprite.json"
                 }
             ]
+        },
+        {
+            "name": "animation-effects",
+            "assets": [
+                {
+                    "alias": "trail",
+                    "src": "https://pixijs.com/assets/trail.png"
+                }
+            ]
+        },
+        {
+            "name": "sound-effects",
+            "assets": [
+                {
+                    "alias": "slashing",
+                    "src": "https://cdn.pixabay.com/audio/2024/01/11/audio_f5a8065509.mp3"
+                },
+                {
+                    "alias": "blood",
+                    "src": "https://cdn.pixabay.com/audio/2022/10/09/audio_11c9a721fe.mp3"
+                }
+            ]
         }
     ]
 }

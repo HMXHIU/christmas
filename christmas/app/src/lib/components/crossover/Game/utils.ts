@@ -471,6 +471,7 @@ async function initAssetManager() {
         "props",
         "pedestals",
         "actions",
+        "sound-effects",
     ]);
 }
 

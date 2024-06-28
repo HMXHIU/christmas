@@ -278,9 +278,9 @@
             }
             console.log(source, `performing ${action} on`, target);
         } else if (ability != null) {
-            animateAbility(worldStage, {
+            await animateAbility(worldStage, {
                 source: sourceEntity,
-                targets: targetEntity ? [targetEntity] : [],
+                target: targetEntity ?? undefined,
                 ability,
             });
 

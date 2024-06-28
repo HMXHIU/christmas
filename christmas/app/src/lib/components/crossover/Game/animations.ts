@@ -1,47 +1,95 @@
-import { abilities, type Abilities } from "$lib/crossover/world/abilities";
+import {
+    abilities,
+    type Abilities,
+    type Procedure,
+} from "$lib/crossover/world/abilities";
+import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { sleep } from "$lib/utils";
+import { Sound } from "@pixi/sound";
 import { gsap } from "gsap";
 import { Assets, Container, MeshRope, Point, type PointData } from "pixi.js";
 import { RENDER_ORDER, getAngle, type EntityMesh } from "./utils";
 
 export { animateAbility, animateSlash };
 
+type Timeline = any;
+
 async function animateAbility(
     stage: Container,
     {
         source,
-        targets,
+        target,
         ability,
     }: {
         source: EntityMesh;
-        targets: EntityMesh[];
+        target?: EntityMesh;
         ability: Abilities;
     },
 ) {
     const { procedures, type } = abilities[ability];
+    for (let procedure of procedures) {
+        const [ptype, effect] = procedure;
+        const { ticks, damage, buffs, debuffs } = effect;
+        await addVisualEffects(gsap.timeline(), stage, {
+            source,
+            target,
+            procedure,
+        });
+        await addSoundEffects(gsap.timeline(), procedure);
+        await sleep(ticks * MS_PER_TICK);
+    }
+}
 
-    if (type === "offensive") {
-        for (let target of targets) {
-            for (let [ptype, effect] of procedures) {
-                if (ptype === "action") {
-                    const { ticks, damage, buffs, debuffs } = effect;
-                    // Animate offensive damage abilities
-                    if (damage != null) {
-                        const { damageType, amount } = damage;
-                        if (damageType === "slashing") {
-                            console.log("Slashing damage", amount);
-                            animateSlash(stage, {
-                                startX: source.position.isoX,
-                                startY:
-                                    source.position.isoY -
-                                    source.position.elevation,
-                                endX: target.position.isoX,
-                                endY:
-                                    target.position.isoY -
-                                    target.position.elevation,
-                            });
-                        }
-                    }
-                }
+async function addVisualEffects(
+    tl: Timeline,
+    stage: Container,
+    {
+        source,
+        target,
+        procedure,
+    }: { source: EntityMesh; target?: EntityMesh; procedure: Procedure },
+) {
+    const [ptype, effect] = procedure;
+    const { ticks, damage, buffs, debuffs } = effect;
+    if (ptype === "action") {
+        // Animate offensive damage abilities
+        if (damage != null && target != null) {
+            const { damageType, amount } = damage;
+            if (damageType === "slashing") {
+                tl.add(
+                    await animateSlash(stage, tl, {
+                        startX: source.position.isoX,
+                        startY:
+                            source.position.isoY - source.position.elevation,
+                        endX: target.position.isoX,
+                        endY: target.position.isoY - target.position.elevation,
+                    }),
+                );
+            }
+        }
+    }
+}
+
+async function addSoundEffects(tl: Timeline, procedure: Procedure) {
+    const soundEffects = await Assets.loadBundle("sound-effects");
+    const [ptype, effect] = procedure;
+    const { ticks, damage, buffs, debuffs } = effect;
+    if (ptype === "action") {
+        // Offensive damage abilities
+        if (damage != null) {
+            const { damageType, amount } = damage;
+            // Slashing
+            if (damageType === "slashing") {
+                // const duration = slashing.duration / 0.5;
+                tl.add(() => {
+                    Sound.from(soundEffects.slashing).play();
+                });
+            }
+            // Blood
+            if (amount > 0) {
+                tl.add(() => {
+                    Sound.from(soundEffects.blood).play();
+                });
             }
         }
     }
@@ -49,6 +97,7 @@ async function animateAbility(
 
 async function animateSlash(
     stage: Container,
+    tl: Timeline,
     {
         startX,
         startY,
@@ -56,11 +105,7 @@ async function animateSlash(
         endY,
     }: { startX: number; startY: number; endX: number; endY: number },
 ) {
-    // Load the texture for rope.
-    const trailTexture = await Assets.load(
-        "https://pixijs.com/assets/trail.png",
-    );
-
+    const trailTexture = (await Assets.loadBundle("animation-effects")).trail;
     const ropeSize = 20;
     let arc: PointData[] = [];
     const arcRadius = Math.PI / 4;
@@ -93,9 +138,6 @@ async function animateSlash(
     // Animation
     const animationDuration = 0.7; // seconds
     const fadeOutDuration = 0.2; // seconds
-
-    // Create a timeline for the animation
-    const tl = gsap.timeline();
 
     // Animate the rope appearance and extension
     tl.to(rope, {
