@@ -38,7 +38,7 @@ void main() {
 
     gl_Position = vec4(
         clip.xy,
-        0.5, // Icons are always in front
+        0.1, // Icons are always in front ???
         1.0
     );
 }

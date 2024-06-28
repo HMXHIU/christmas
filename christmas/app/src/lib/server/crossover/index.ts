@@ -12,6 +12,7 @@ import {
     abilities,
     hasResourcesForAbility,
     patchEffectWithVariables,
+    type Abilities,
     type ProcedureEffect,
 } from "$lib/crossover/world/abilities";
 import { actions, type Actions } from "$lib/crossover/world/actions";
@@ -515,7 +516,6 @@ async function useItem({
     const { canUse, message } = canUseItem(self, item, utility);
     if (!canUse && self.player) {
         publishFeedEvent((self as PlayerEntity).player, {
-            event: "feed",
             type: "error",
             message,
         });
@@ -626,7 +626,6 @@ async function handleMonsterKillsPlayer(
     };
 
     publishFeedEvent(player.player, {
-        event: "feed",
         type: "message",
         message: "You died.",
     }); // non blocking
@@ -706,6 +705,9 @@ async function performAbility({
 }) {
     const { procedures, ap, mp, st, hp, range, predicate } = abilities[ability];
 
+    const [selfEntityId, selfEntityType] = getEntityId(self);
+    const [targetEntityId, targetEntityType] = getEntityId(target);
+
     // Recover AP
     self = await recoverAp(self);
 
@@ -713,8 +715,7 @@ async function performAbility({
     if (!ignoreCost) {
         const { hasResources, message } = hasResourcesForAbility(self, ability);
         if (!hasResources && self.player) {
-            publishFeedEvent((self as PlayerEntity).player, {
-                event: "feed",
+            publishFeedEvent(selfEntityId, {
                 type: "error",
                 message,
             });
@@ -725,11 +726,10 @@ async function performAbility({
     // Check predicate
     if (
         !predicate.targetSelfAllowed &&
-        getEntityId(self)[0] === getEntityId(target)[0] &&
+        selfEntityId === targetEntityId &&
         self.player
     ) {
-        publishFeedEvent((self as PlayerEntity).player, {
-            event: "feed",
+        publishFeedEvent(selfEntityId, {
             type: "error",
             message: `You can't ${ability} yourself`,
         });
@@ -737,9 +737,8 @@ async function performAbility({
     }
 
     // Check if target is in range
-    if (!checkInRange(self, target, range)[0] && self.player) {
-        publishFeedEvent((self as PlayerEntity).player, {
-            event: "feed",
+    if (!checkInRange(self, target, range)[0] && selfEntityType === "player") {
+        publishFeedEvent(selfEntityId, {
             type: "error",
             message: `Target is out of range`,
         });
@@ -768,8 +767,17 @@ async function performAbility({
     target = target.player === self.player ? self : target; // target might be self, in which case update it after save
 
     // Publish ability costs changes to player
-    if (self.player && !ignoreCost) {
+    if (selfEntityType === "player" && !ignoreCost) {
         publishAffectedEntitiesToPlayers([self]); // non blocking
+    }
+
+    // Publish action event (TODO: what about other people in the vincinity?)
+    if (selfEntityType === "player") {
+        publishActionEvent(selfEntityId, {
+            ability: ability as Abilities,
+            source: selfEntityId,
+            target: targetEntityId,
+        });
     }
 
     // Perform procedures
@@ -938,7 +946,6 @@ async function checkAndSetBusy({
         // Publish event to player
         if (publishEvent && entity.player != null) {
             publishFeedEvent((entity as Player).player, {
-                event: "feed",
                 type: "error",
                 message: "You are busy at the moment.",
             });
@@ -1066,7 +1073,6 @@ async function movePlayer(player: PlayerEntity, path: Direction[]) {
         );
         if (!isTraversable) {
             publishFeedEvent(player.player, {
-                event: "feed",
                 type: "error",
                 message: `Cannot move ${direction}`,
             });
@@ -1075,7 +1081,6 @@ async function movePlayer(player: PlayerEntity, path: Direction[]) {
 
         // Publish action
         publishActionEvent(player.player, {
-            event: "action",
             action: actions.move.action,
             source: player.player,
         });

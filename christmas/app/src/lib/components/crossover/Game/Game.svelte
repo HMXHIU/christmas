@@ -7,7 +7,7 @@
         getPositionsForPath,
         snapToGrid,
     } from "$lib/crossover/utils";
-    import { abilities, type Ability } from "$lib/crossover/world/abilities";
+    import { type Ability } from "$lib/crossover/world/abilities";
     import { actions, type Action } from "$lib/crossover/world/actions";
     import { bestiary } from "$lib/crossover/world/bestiary";
     import { compendium, type Utility } from "$lib/crossover/world/compendium";
@@ -49,6 +49,7 @@
         target,
         worldRecord,
     } from "../../../../store";
+    import { animateAbility } from "./animations";
     import {
         MAX_SHADER_GEOMETRIES,
         destroyShaders,
@@ -70,7 +71,6 @@
         WORLD_WIDTH,
         Z_OFF,
         Z_SCALE,
-        animateSlash,
         calculateBiomeDecorationsForRowCol,
         calculateBiomeForRowCol,
         calculatePosition,
@@ -144,19 +144,6 @@
             if (targetEntityMesh != null) {
                 highlightTarget(target, 2);
             }
-
-            /**
-             * Test attack trail
-             */
-
-            const startX = playerPosition.isoX;
-            const startY = playerPosition.isoY - playerPosition.elevation;
-            const endX = targetEntityMesh.position.isoX;
-            const endY =
-                targetEntityMesh.position.isoY -
-                targetEntityMesh.position.elevation;
-
-            animateSlash(worldStage, startX, startY, endX, endY);
 
             ////////////////////////
 
@@ -270,11 +257,14 @@
         // Render action/ability/utility
         if (action != null && sourceEntity != null) {
             const { ticks, icon } = actions[action];
+
             // Show action icon for duration
             const [bundleName, alias] = icon.path.split("/").slice(-2);
             const bundle = await Assets.loadBundle(bundleName);
             const texture = bundle[alias].textures[icon.icon];
             if (sourceEntity.actionIcon != null) {
+                // TODO: use gsap move to animations
+
                 swapMeshTexture(sourceEntity.actionIcon, texture);
                 sourceEntity.actionIcon.visible = true;
                 setTimeout(
@@ -286,17 +276,22 @@
                     Math.max(ticks * MS_PER_TICK, 1000),
                 );
             }
-            console.log(source, "performing action on", target);
+            console.log(source, `performing ${action} on`, target);
         } else if (ability != null) {
-            const abilityRecord = abilities[ability];
-            console.log(source, "performing ability on", target);
+            animateAbility(worldStage, {
+                source: sourceEntity,
+                targets: targetEntity ? [targetEntity] : [],
+                ability,
+            });
+
+            console.log(source, `performing ${ability} on`, target);
         } else if (
             utility != null &&
             prop != null &&
             compendium[prop]?.utilities[utility] != null
         ) {
             const utilityRecord = compendium[prop]?.utilities[utility];
-            console.log(source, "performing utility on", target);
+            console.log(source, `performing ${utility} on`, target);
         }
     }
 
@@ -996,8 +991,6 @@
         // Setup app events
         app.stage.eventMode = "static"; // enable interactivity
         app.stage.hitArea = app.screen; // ensure whole canvas area is interactive
-
-        console.log(app.screen);
 
         function getMousePosition(e: FederatedMouseEvent) {
             return snapToGrid(

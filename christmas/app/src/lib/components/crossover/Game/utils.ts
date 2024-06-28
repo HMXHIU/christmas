@@ -39,11 +39,8 @@ import {
     Assets,
     Container,
     Mesh,
-    MeshRope,
-    Point,
     Sprite,
     type Geometry,
-    type PointData,
     type Shader,
     type Texture,
 } from "pixi.js";
@@ -73,7 +70,6 @@ export {
     Z_LAYER,
     Z_OFF,
     Z_SCALE,
-    animateSlash,
     calculateBiomeDecorationsForRowCol,
     calculateBiomeForRowCol,
     calculatePosition,
@@ -82,6 +78,7 @@ export {
     decodeTiledSource,
     destroyEntityMesh,
     drawShaderTextures,
+    getAngle,
     getDirectionsToPosition,
     getImageForTile,
     getTilesetForTile,
@@ -784,82 +781,4 @@ function getAngle(h: number, k: number, x: number, y: number): number {
     const dx = x - h;
     const dy = y - k;
     return Math.atan2(dy, dx);
-}
-
-async function animateSlash(
-    stage: Container,
-    startX: number,
-    startY: number,
-    endX: number,
-    endY: number,
-) {
-    // Load the texture for rope.
-    const trailTexture = await Assets.load(
-        "https://pixijs.com/assets/trail.png",
-    );
-
-    const ropeSize = 20;
-    let arc: PointData[] = [];
-    const arcRadius = Math.PI / 4;
-    const halfArcRadius = arcRadius / 2;
-
-    const radius = Math.sqrt(
-        Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2),
-    );
-    const angleToTarget = getAngle(startX, startY, endX, endY);
-    const deltaTheta = arcRadius / ropeSize;
-
-    // Create arc
-    for (let i = 0; i < ropeSize; i++) {
-        const theta = angleToTarget - halfArcRadius + deltaTheta * i;
-        arc.push(
-            new Point(
-                startX + Math.cos(theta) * radius,
-                startY + Math.sin(theta) * radius,
-            ),
-        );
-    }
-
-    const rope = new MeshRope({ texture: trailTexture, points: arc });
-    rope.autoUpdate = true;
-
-    rope.zIndex = RENDER_ORDER.effects * endY;
-
-    stage.addChild(rope);
-
-    // Animation
-    const animationDuration = 0.5; // seconds
-    const fadeOutDuration = 0.2; // seconds
-
-    // Create a timeline for the animation
-    const tl = gsap.timeline();
-
-    // Animate the rope appearance and extension
-    tl.to(rope, {
-        alpha: 1,
-        duration: animationDuration,
-        onUpdate: function () {
-            const progress = tl.progress();
-            let newArc: PointData[] = []; // updating the points directly doesn't work
-            for (let i = 0; i < ropeSize; i++) {
-                newArc.push(
-                    new Point(
-                        startX * (1 - progress) + arc[i].x * progress,
-                        startY * (1 - progress) + arc[i].y * progress,
-                    ),
-                );
-            }
-            arc = newArc;
-        },
-    });
-
-    // Fade out the rope
-    tl.to(rope, {
-        alpha: 0,
-        duration: fadeOutDuration,
-        onComplete: () => {
-            stage.removeChild(rope);
-            rope.destroy();
-        },
-    });
 }

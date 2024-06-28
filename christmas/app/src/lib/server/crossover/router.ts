@@ -279,7 +279,6 @@ const crossoverRouter = {
                 // Check if item is in player inventory (can be inventory or equipment slot)
                 if (itemToEquip.loc[0] !== player.player) {
                     publishFeedEvent(player.player, {
-                        event: "feed",
                         type: "error",
                         message: `${item} is not in inventory`,
                     });
@@ -290,7 +289,6 @@ const crossoverRouter = {
                 const slots = compendium[itemToEquip.prop].equipmentSlot;
                 if (!slots) {
                     publishFeedEvent(player.player, {
-                        event: "feed",
                         type: "error",
                         message: `${item} is not equippable`,
                     });
@@ -298,7 +296,6 @@ const crossoverRouter = {
                 }
                 if (!slots.includes(slot)) {
                     publishFeedEvent(player.player, {
-                        event: "feed",
                         type: "error",
                         message: `${item} cannot be equipped in ${slot}`,
                     });
@@ -359,7 +356,6 @@ const crossoverRouter = {
                 // Check item is on player
                 if (itemEntity.loc[0] !== player.player) {
                     publishFeedEvent(player.player, {
-                        event: "feed",
                         type: "error",
                         message: `${item} is not equipped`,
                     });
@@ -412,7 +408,6 @@ const crossoverRouter = {
                 // Check item owner is player or public
                 if (itemEntity.own !== player.player && itemEntity.own) {
                     publishFeedEvent(player.player, {
-                        event: "feed",
                         type: "error",
                         message: `${item} is owned by someone else`,
                     });
@@ -422,7 +417,6 @@ const crossoverRouter = {
                 // Check if in range
                 if (!checkInRange(player, itemEntity, actions.take.range)[0]) {
                     publishFeedEvent(player.player, {
-                        event: "feed",
                         type: "error",
                         message: `${item} is not in range`,
                     });
@@ -432,7 +426,6 @@ const crossoverRouter = {
                 // Check if item is takeable
                 if (compendium[itemEntity.prop].weight < 0) {
                     publishFeedEvent(player.player, {
-                        event: "feed",
                         type: "error",
                         message: `${item} cannot be taken`,
                     });
@@ -480,7 +473,6 @@ const crossoverRouter = {
                 let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
                 if (itemEntity.loc[0] !== player.player) {
                     publishFeedEvent(player.player, {
-                        event: "feed",
                         type: "error",
                         message: `${item} is not in inventory`,
                     });
@@ -524,7 +516,6 @@ const crossoverRouter = {
 
             // Create message feed
             const messageFeed: FeedEvent = {
-                event: "feed",
                 type: "message",
                 message: "${origin} says ${message}",
                 variables: {
@@ -537,7 +528,6 @@ const crossoverRouter = {
             // Send message to all players in the geohash (non blocking)
             for (const publicKey of players) {
                 publishFeedEvent(publicKey, {
-                    event: "feed",
                     type: "message",
                     message: "${origin} says ${message}",
                     variables: {
@@ -643,7 +633,6 @@ const crossoverRouter = {
                     performLook(player, { inventory: true });
                 } catch (error: any) {
                     publishFeedEvent(player.player, {
-                        event: "feed",
                         type: "error",
                         message: error.message,
                     });
@@ -683,7 +672,6 @@ const crossoverRouter = {
                     )[0]
                 ) {
                     publishFeedEvent(player.player, {
-                        event: "feed",
                         type: "error",
                         message: `${item} is not in range`,
                     });
@@ -701,7 +689,6 @@ const crossoverRouter = {
                     performLook(player, { inventory: true });
                 } else {
                     publishFeedEvent(player.player, {
-                        event: "feed",
                         type: "error",
                         message: result.message,
                     });

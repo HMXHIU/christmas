@@ -63,11 +63,19 @@ export {
 
 const { uniqBy } = lodash;
 
-async function publishFeedEvent(player: string, event: FeedEvent) {
+async function publishFeedEvent(
+    player: string,
+    event: Omit<FeedEvent, "event">,
+) {
+    (event as FeedEvent).event = "feed";
     await redisClient.publish(player, JSON.stringify(event));
 }
 
-async function publishActionEvent(player: string, event: ActionEvent) {
+async function publishActionEvent(
+    player: string,
+    event: Omit<ActionEvent, "event">,
+) {
+    (event as ActionEvent).event = "action";
     await redisClient.publish(player, JSON.stringify(event));
 }
 
