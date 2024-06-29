@@ -1312,3 +1312,100 @@ export async function testPlayerUseItemOnPlayer({
         ];
     }
 }
+
+export async function testPlayerUseItem({
+    self,
+    item,
+    utility,
+    cookies,
+    stream,
+}: {
+    self: Player;
+    item: Item;
+    utility: string;
+    cookies: string;
+    stream: EventTarget;
+}): Promise<
+    [
+        PerformAbilityTestResults,
+        {
+            self: Player;
+            item: Item;
+            selfBefore: Player;
+            itemBefore: Item;
+        },
+    ]
+> {
+    const selfBefore = { ...self };
+    const itemBefore = { ...item };
+    const prop = compendium[item.prop];
+    const propUtility = prop.utilities![utility];
+
+    // Self use item on target
+    await crossoverCmdUseItem(
+        {
+            item: item.item,
+            utility,
+        },
+        { Cookie: cookies },
+    );
+
+    // Check if can use item
+    const { canUse, message } = canUseItem(
+        self as PlayerEntity,
+        item as ItemEntity,
+        utility,
+    );
+
+    // Check received feed event if can't use item
+    if (!canUse) {
+        console.log("Checking feed event for can't use item");
+        await expect(waitForEventData(stream, "feed")).resolves.toMatchObject({
+            type: "error",
+            message,
+        });
+        return ["itemConditionsNotMet", { self, item, selfBefore, itemBefore }];
+    }
+
+    const entitiesEvents = (await collectEventDataForDuration(
+        stream,
+        "entities",
+    )) as UpdateEntitiesEvent[];
+    let entitiesEventsCnt = 0;
+
+    // Check received item start state event
+    console.log("Checking event for item start state");
+    await expect(entitiesEvents[entitiesEventsCnt++]).toMatchObject({
+        players: [{ player: self.player }],
+        monsters: [],
+        items: [
+            {
+                item: item.item,
+                state: propUtility.state.start,
+            },
+        ],
+    });
+
+    // Check received item end state event
+    console.log("Checking event for item end state");
+    await expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
+        items: [
+            {
+                item: item.item,
+                state: propUtility.state.end,
+                chg: itemBefore.chg - propUtility.cost.charges,
+                dur: itemBefore.dur - propUtility.cost.durability,
+            },
+        ],
+    });
+
+    // Update item
+    for (const i of entitiesEvents[entitiesEventsCnt]?.items!) {
+        if (i.item === item.item) {
+            item = i as ItemEntity;
+            break;
+        }
+    }
+
+    return ["success", { self, selfBefore, item, itemBefore }];
+}

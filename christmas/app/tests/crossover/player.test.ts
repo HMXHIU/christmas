@@ -33,6 +33,7 @@ import {
     createRandomPlayer,
     flushEventChannel,
     generateRandomGeohash,
+    testPlayerUseItem,
     waitForEventData,
 } from "./utils";
 
@@ -331,57 +332,18 @@ test("Test Player", async () => {
      * Test `crossoverCmdUseItem` (open woodendoor)
      */
 
-    await crossoverCmdUseItem(
-        {
-            item: woodendoor.item,
+    var [result, { self, selfBefore, item, itemBefore }] =
+        await testPlayerUseItem({
+            self: playerOne,
+            item: woodendoor,
             utility: compendium.woodendoor.utilities.open.utility,
-        },
-        { Cookie: playerOneCookies },
-    );
-
-    // Check `playerOne` received `entities` event setting woodendoor state to `state` state
-    await expect(
-        waitForEventData(playerOneStream, "entities"),
-    ).resolves.toMatchObject({
-        event: "entities",
-        players: [
-            {
-                player: playerOne.player,
-            },
-        ],
-        monsters: [],
-        items: [
-            {
-                item: woodendoor.item,
-                state: "closed",
-            },
-        ],
-    });
-
-    // Check `playerOne` received `entities` event setting woodendoor state to `end` state
-
-    await expect(
-        waitForEventData(playerOneStream, "entities"),
-    ).resolves.toMatchObject({
-        event: "entities",
-        players: [
-            {
-                player: playerOne.player,
-            },
-        ],
-        monsters: [],
-        items: [
-            {
-                item: woodendoor.item,
-                state: "open",
-            },
-        ],
-    });
+            cookies: playerOneCookies,
+            stream: playerOneStream,
+        });
     await sleep(MS_PER_TICK * 2);
-    woodendoor = (await fetchEntity(woodendoor.item)) as Item;
 
     // Check item attributes
-    expect(itemAttibutes(woodendoor)).toMatchObject({
+    expect(itemAttibutes(item)).toMatchObject({
         destructible: false,
         description: "A new door sign. The door is open.",
         variant: "default",
