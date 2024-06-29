@@ -570,7 +570,9 @@ async function useItem({
     // Publish item state to user (use selfBefore as it might have changed after substitution)
     // TODO: what about other people in the vincinity?
     if (selfBefore.player != null) {
-        publishAffectedEntitiesToPlayers([selfBefore, item]); // non blocking
+        publishAffectedEntitiesToPlayers([item], {
+            publishTo: (selfBefore as Player).player,
+        }); // non blocking
     }
 }
 

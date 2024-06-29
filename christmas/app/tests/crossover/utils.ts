@@ -1,6 +1,7 @@
 import { INTERNAL_SERVICE_KEY } from "$env/static/private";
 import {
     crossoverCmdPerformAbility,
+    crossoverCmdUseItem,
     login as loginCrossover,
     signup,
 } from "$lib/crossover";
@@ -11,6 +12,7 @@ import {
     patchEffectWithVariables,
 } from "$lib/crossover/world/abilities";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
+import { compendium } from "$lib/crossover/world/compendium";
 import {
     archetypeTypes,
     type PlayerMetadata,
@@ -20,12 +22,18 @@ import { sanctuariesByRegion } from "$lib/crossover/world/world";
 import { hashObject } from "$lib/server";
 import { performAbility, performEffectOnEntity } from "$lib/server/crossover";
 import type {
+    Item,
+    ItemEntity,
     Monster,
     MonsterEntity,
     Player,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
-import { entityIsBusy } from "$lib/server/crossover/utils";
+import {
+    canUseItem,
+    entityIsBusy,
+    itemVariableValue,
+} from "$lib/server/crossover/utils";
 import { ObjectStorage } from "$lib/server/objectStorage";
 import { generateRandomSeed, sleep } from "$lib/utils";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
@@ -42,6 +50,7 @@ export type PerformAbilityTestResults =
     | "busy"
     | "insufficientResources"
     | "targetPredicateNotMet"
+    | "itemConditionsNotMet"
     | "success";
 
 /**
@@ -706,5 +715,325 @@ export async function testPlayerPerformAbilityOnPlayer({
         }
 
         return ["success", { self, target, selfBefore, targetBefore }];
+    }
+}
+
+export async function testPlayerUseItemOnMonster({
+    player,
+    monster,
+    item,
+    utility,
+    stream,
+    cookies,
+}: {
+    player: Player;
+    monster: Monster;
+    item: Item;
+    utility: string;
+    stream: EventTarget;
+    cookies: string;
+}): Promise<
+    [
+        PerformAbilityTestResults,
+        {
+            player: Player;
+            monster: Monster;
+            item: Item;
+            playerBefore: Player;
+            monsterBefore: Monster;
+            itemBefore: Item;
+        },
+    ]
+> {
+    const monsterBefore = { ...monster };
+    const playerBefore = { ...player };
+    const itemBefore = { ...item };
+    const prop = compendium[item.prop];
+    const propUtility = prop.utilities![utility];
+    const propAbility = propUtility.ability;
+
+    // Self use item on monster
+    await crossoverCmdUseItem(
+        {
+            target: monster.monster,
+            item: item.item,
+            utility,
+        },
+        { Cookie: cookies },
+    );
+
+    // Check if can use item
+    const { canUse, message } = canUseItem(
+        player as PlayerEntity,
+        item as ItemEntity,
+        utility,
+    );
+
+    // Check received feed event if can't use item
+    if (!canUse) {
+        console.log("Checking feed event for can't use item");
+        await expect(waitForEventData(stream, "feed")).resolves.toMatchObject({
+            type: "error",
+            message,
+        });
+        return [
+            "itemConditionsNotMet",
+            { player, monster, item, playerBefore, monsterBefore, itemBefore },
+        ];
+    }
+
+    // Check received item start state event
+    console.log("Checking event for item start state");
+    await expect(waitForEventData(stream, "entities")).resolves.toMatchObject({
+        players: [{ player: player.player }],
+        monsters: [],
+        items: [
+            {
+                item: item.item,
+                state: propUtility.state.start,
+            },
+        ],
+    });
+
+    // Check if item has ability
+    if (propAbility != null) {
+        let target: MonsterEntity | PlayerEntity | ItemEntity =
+            monster as MonsterEntity;
+        let self: MonsterEntity | PlayerEntity = player as PlayerEntity;
+
+        // Get target if specified in item variables
+        if (prop.variables.target) {
+            target = (await itemVariableValue(item as ItemEntity, "target")) as
+                | PlayerEntity
+                | MonsterEntity
+                | ItemEntity;
+        }
+
+        // Get self if specified in item variables (can only be `player` or `monster`)
+        if (prop.variables.self) {
+            self = (await itemVariableValue(item as ItemEntity, "self")) as
+                | PlayerEntity
+                | MonsterEntity;
+        }
+        console.log(
+            `${self!.name} performing ${propAbility} on ${target!.name}`,
+        );
+
+        let targetBefore = { ...target };
+        let selfBefore = { ...self };
+
+        // Perform ability on target
+        if (self?.player && target?.monster) {
+            const { procedures, ap, mp, st, hp, range, predicate } =
+                abilities[propAbility];
+            const inRange = checkInRange(self, target, range)[0];
+            const [isBusy, now] = entityIsBusy(self);
+
+            // Check received feed event if target predicate is not met
+            if (
+                !predicate.targetSelfAllowed &&
+                self.player === target.monster &&
+                self.player === player.player
+            ) {
+                console.log("Checking feed event for target predicate not met");
+                await expect(
+                    waitForEventData(stream, "feed"),
+                ).resolves.toMatchObject({
+                    type: "error",
+                    message: `You can't ${propAbility} yourself`,
+                });
+                return [
+                    "targetPredicateNotMet",
+                    {
+                        player,
+                        monster,
+                        playerBefore,
+                        monsterBefore,
+                        item,
+                        itemBefore,
+                    },
+                ];
+            }
+            // Check received feed event if out of range
+            else if (!inRange && self.player === player.player) {
+                console.log("Checking feed event for out of range");
+                await expect(
+                    waitForEventData(stream, "feed"),
+                ).resolves.toMatchObject({
+                    type: "error",
+                    message: "Target is out of range",
+                });
+                return [
+                    "outOfRange",
+                    {
+                        player,
+                        monster,
+                        playerBefore,
+                        monsterBefore,
+                        item,
+                        itemBefore,
+                    },
+                ];
+            }
+            // Check received feed event if self is busy
+            else if (isBusy && self.player === player.player) {
+                console.log("Checking feed event for self is busy");
+                await expect(
+                    waitForEventData(stream, "feed"),
+                ).resolves.toMatchObject({
+                    type: "error",
+                    message: "You are busy at the moment.",
+                });
+                return [
+                    "busy",
+                    {
+                        player,
+                        monster,
+                        playerBefore,
+                        monsterBefore,
+                        item,
+                        itemBefore,
+                    },
+                ];
+            }
+            // Check procedure effects
+            else {
+                // Even if self != player, the player should still receive the event updates
+                const entitiesEvents = (await collectEventDataForDuration(
+                    stream,
+                    "entities",
+                )) as UpdateEntitiesEvent[];
+                let entitiesEventsCnt = 0;
+
+                // Check received 'entities' event for procedures effecting target
+                for (const [type, effect] of procedures) {
+                    if (type === "action") {
+                        const actualEffect = patchEffectWithVariables({
+                            effect,
+                            self,
+                            target,
+                        });
+
+                        // Check if effect is applied to self
+                        if (effect.target === "self") {
+                            console.log(`Checking effect applied to self`);
+                            self = (await performEffectOnEntity({
+                                entity: player,
+                                effect: actualEffect,
+                            })) as Player;
+                            expect(
+                                entitiesEvents[entitiesEventsCnt],
+                            ).toMatchObject({
+                                players: [self],
+                                monsters: [],
+                            });
+                        }
+                        // Check if effect is applied to target
+                        else {
+                            console.log(
+                                `Checking effect applied to monster ${target.name}`,
+                            );
+                            target = (await performEffectOnEntity({
+                                entity: monster,
+                                effect: actualEffect,
+                            })) as Monster;
+                            expect(
+                                entitiesEvents[entitiesEventsCnt],
+                            ).toMatchObject({
+                                players: [{ player: player.player }],
+                                monsters: [monster],
+                            });
+                        }
+                        entitiesEventsCnt += 1;
+                    }
+                }
+
+                // Check received 'entities' event for monster reward
+                if (
+                    target.monster != null &&
+                    (targetBefore as Monster).hp > 0 &&
+                    (target as Monster).hp <= 0 &&
+                    self.player === player.player
+                ) {
+                    console.log(
+                        "Checking event for LUs gain after killing monster",
+                    );
+                    const { lumina, umbra } = monsterLUReward({
+                        level: (target as Monster).lvl,
+                        beast: (target as Monster).beast,
+                    });
+                    expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
+                        players: [
+                            {
+                                player: self.player,
+                                lum: (selfBefore as Player).lum + lumina,
+                                umb: (selfBefore as Player).umb + umbra,
+                            },
+                        ],
+                    });
+                    entitiesEventsCnt += 1;
+
+                    // Update self
+                    for (const p of entitiesEvents[entitiesEventsCnt]
+                        ?.players!) {
+                        if (p.player === self.player) {
+                            self = p;
+                            break;
+                        }
+                    }
+                }
+
+                // Check received item end state event
+                console.log("Checking event for item end state");
+                expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
+                    items: [
+                        {
+                            item: item.item,
+                            state: propUtility.state.end,
+                            chg: itemBefore.chg - propUtility.cost.charges,
+                            dur: itemBefore.dur - propUtility.cost.durability,
+                        },
+                    ],
+                });
+
+                // Update item
+                for (const i of entitiesEvents[entitiesEventsCnt]?.items!) {
+                    if (i.item === item.item) {
+                        item = i as ItemEntity;
+                        break;
+                    }
+                }
+
+                // Update monster
+                if (target.monster == monster.monster) {
+                    monster = target as MonsterEntity;
+                }
+                // Update player
+                if (self.player == player.player) {
+                    player = self as PlayerEntity;
+                }
+
+                return [
+                    "success",
+                    {
+                        player,
+                        monster,
+                        playerBefore,
+                        monsterBefore,
+                        item,
+                        itemBefore,
+                    },
+                ];
+            }
+        } else {
+            throw new Error(
+                "Test not implemented for this case (self != player && target != monster)",
+            );
+        }
+    } else {
+        return [
+            "success",
+            { player, monster, playerBefore, monsterBefore, item, itemBefore },
+        ];
     }
 }

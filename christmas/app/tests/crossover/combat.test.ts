@@ -1,15 +1,20 @@
-import { stream } from "$lib/crossover";
+import { crossoverCmdEquip, crossoverCmdTake, stream } from "$lib/crossover";
 import { abilities } from "$lib/crossover/world/abilities";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
+import { compendium } from "$lib/crossover/world/compendium";
+import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { sanctuariesByRegion } from "$lib/crossover/world/world";
-import { spawnMonster } from "$lib/server/crossover";
-import { initializeClients } from "$lib/server/crossover/redis";
+import { spawnItem, spawnMonster } from "$lib/server/crossover";
+import { fetchEntity, initializeClients } from "$lib/server/crossover/redis";
 import type {
+    Item,
+    ItemEntity,
     Monster,
     MonsterEntity,
     Player,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
+import { sleep } from "$lib/utils";
 import { beforeAll, describe, expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import {
@@ -18,6 +23,7 @@ import {
     generateRandomGeohash,
     testMonsterPerformAbilityOnPlayer,
     testPlayerPerformAbilityOnMonster,
+    testPlayerUseItemOnMonster,
     waitForEventData,
 } from "./utils";
 
@@ -26,6 +32,7 @@ const playerOneGeohash = generateRandomGeohash(6, "h9");
 let playerOne: Player;
 let playerOneCookies: string;
 let goblin: Monster;
+let woodenClub: Item;
 let playerOneStream: any;
 
 beforeAll(async () => {
@@ -55,9 +62,66 @@ beforeAll(async () => {
         beast: "goblin",
         level: 1,
     });
+
+    // Spawn weapon
+    woodenClub = await spawnItem({
+        geohash: playerOne.loc[0],
+        prop: compendium.woodenclub.prop,
+        owner: playerOne.player,
+        configOwner: playerOne.player,
+    });
+
+    // Take & equip weapon
+    await crossoverCmdTake(
+        { item: woodenClub.item },
+        { Cookie: playerOneCookies },
+    );
+    await sleep(MS_PER_TICK * 2); // wait for item to be updated
+    await crossoverCmdEquip(
+        {
+            item: woodenClub.item,
+            slot: "rh",
+        },
+        { Cookie: playerOneCookies },
+    );
+    await sleep(MS_PER_TICK * 2); // wait for item to be updated
+    woodenClub = (await fetchEntity(woodenClub.item)) as ItemEntity;
 });
 
 describe("Combat Tests", () => {
+    test("Player use item on monster", async () => {
+        var [
+            result,
+            { player, monster, playerBefore, monsterBefore, item, itemBefore },
+        ] = await testPlayerUseItemOnMonster({
+            player: playerOne as Player,
+            monster: goblin as Monster,
+            item: woodenClub as Item,
+            utility: compendium[woodenClub.prop].utilities.swing.utility,
+            cookies: playerOneCookies,
+            stream: playerOneStream,
+        });
+
+        // Check item used charges and durability
+        expect(item).toMatchObject({
+            item: woodenClub.item,
+            chg:
+                itemBefore.chg -
+                compendium[woodenClub.prop].utilities.swing.cost.charges,
+            dur:
+                itemBefore.dur -
+                compendium[woodenClub.prop].utilities.swing.cost.durability,
+        });
+
+        // Check monster damaged
+        expect(monster).toMatchObject({
+            monster: goblin.monster,
+            hp: monsterBefore.hp - 1, // swing does 1 damage
+        });
+
+        expect(result).toBe("success");
+    });
+
     test("Player gains LUs after killing monster", async () => {
         // Give player enough mana to cast disintegrate
         playerOne = (await buffEntity(playerOne.player, {
