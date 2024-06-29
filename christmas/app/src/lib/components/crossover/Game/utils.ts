@@ -46,7 +46,6 @@ import {
 } from "pixi.js";
 import {
     MAX_SHADER_GEOMETRIES,
-    destroyShaderGeometry,
     loadShaderGeometry,
     loadedShaderGeometries,
     type ShaderGeometry,
@@ -88,6 +87,7 @@ export {
     isCellInView,
     loadAssetTexture,
     positionsInRange,
+    scaleToFitAndMaintainAspectRatio,
     swapEntityVariant,
     swapMeshTexture,
     updateEntityMeshRenderOrder,
@@ -118,10 +118,10 @@ interface EntityMesh {
     id: string;
     hitbox: Container; // meshes are added to the hitbox so they can be moved together
     mesh: Mesh<Geometry, Shader>;
-    shaderGeometry: ShaderGeometry;
+    actionIcon?: Sprite; // added to the hitbox so it can be moved together
+    shaderGeometry: ShaderGeometry; // mesh shader and geometry
     position: Position;
     entity?: Player | Monster | Item;
-    actionIcon?: Mesh<Geometry, Shader>;
     properties?: {
         variant?: string;
     };
@@ -192,6 +192,7 @@ const RENDER_ORDER: Record<string, number> = {
     monster: 1,
     world: 1,
     effects: 3,
+    icon: 3,
 };
 
 // In WebGL, the gl_Position.z value should be in the range [-1 (closer), 1]
@@ -411,13 +412,12 @@ function updateEntityMeshRenderOrder(entityMesh: EntityMesh) {
         return;
     }
     const [_, entityType] = getEntityId(entityMesh.entity);
-    // TODO: this does not work during tweening
-    const zIndex = RENDER_ORDER[entityType] * entityMesh.position.isoY;
-
-    entityMesh.mesh.zIndex = zIndex;
+    const zIndex = RENDER_ORDER[entityType] * entityMesh.position.isoY; // TODO: this does not work during tweening
     if (entityMesh.actionIcon != null) {
-        entityMesh.actionIcon.zIndex = zIndex;
+        entityMesh.actionIcon.zIndex =
+            RENDER_ORDER.icon * entityMesh.position.isoY;
     }
+    entityMesh.mesh.zIndex = zIndex;
     entityMesh.hitbox.zIndex = zIndex;
 }
 
@@ -726,31 +726,36 @@ async function drawShaderTextures({
     }
 }
 
-function clearInstancedShaderMeshes(stage: Container) {
-    for (const mesh of Object.values(instancedShaderMeshes)) {
-        stage.removeChild(mesh);
-        mesh.destroy();
+function destroy(thing: Sprite | Mesh<Geometry, Shader> | Container) {
+    // Destroy children
+    for (const child of thing.children) {
+        destroy(child);
     }
-    instancedShaderMeshes = {};
+
+    // Destroy self
+    thing.destroy();
+    thing.removeAllListeners();
+    thing.eventMode = "none";
+    if (thing.parent) {
+        thing.parent.removeChild(thing);
+    }
+    thing.destroy();
 }
 
 function destroyEntityMesh(entityMesh: EntityMesh, stage: Container) {
-    // Remove event listeners
-    entityMesh.hitbox.removeAllListeners();
+    // Destroy hitbox and children
+    destroy(entityMesh.hitbox);
 
-    // Remove children
-    entityMesh.hitbox.removeChildren();
-    stage.removeChild(entityMesh.hitbox);
-
-    // Destroy mesh & containers
-    entityMesh.hitbox.destroy();
-    entityMesh.mesh.destroy();
-    if (entityMesh.actionIcon != null) {
-        entityMesh.actionIcon.destroy();
-    }
-
+    // TODO: causes mesh has no shader program
     // Destroy shader geometry
-    destroyShaderGeometry(entityMesh.shaderGeometry.shaderUid);
+    // destroyShaderGeometry(entityMesh.shaderGeometry.shaderUid);
+}
+
+function clearInstancedShaderMeshes(stage: Container) {
+    for (const mesh of Object.values(instancedShaderMeshes)) {
+        destroy(mesh);
+    }
+    instancedShaderMeshes = {};
 }
 
 function positionsInRange(
@@ -782,4 +787,38 @@ function getAngle(h: number, k: number, x: number, y: number): number {
     const dx = x - h;
     const dy = y - k;
     return Math.atan2(dy, dx);
+}
+
+function scaleToFitAndMaintainAspectRatio(
+    w: number,
+    h: number,
+    targetWidth: number,
+    targetHeight: number,
+): [number, number] {
+    const aspectRatio = w / h;
+    const targetAspectRatio = targetWidth / targetHeight;
+
+    let newWidth, newHeight;
+
+    if (aspectRatio > targetAspectRatio) {
+        // Width is the limiting factor
+        newWidth = targetWidth;
+        newHeight = newWidth / aspectRatio;
+    } else {
+        // Height is the limiting factor
+        newHeight = targetHeight;
+        newWidth = newHeight * aspectRatio;
+    }
+
+    // Ensure neither dimension exceeds its target
+    if (newWidth > targetWidth) {
+        newWidth = targetWidth;
+        newHeight = newWidth / aspectRatio;
+    }
+    if (newHeight > targetHeight) {
+        newHeight = targetHeight;
+        newWidth = newHeight * aspectRatio;
+    }
+
+    return [newWidth, newHeight];
 }

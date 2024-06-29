@@ -32,9 +32,11 @@
         Container,
         FederatedMouseEvent,
         Geometry,
+        Graphics,
         Mesh,
         Rectangle,
         Shader,
+        Sprite,
         Texture,
         Ticker,
         WebGLRenderer,
@@ -86,7 +88,6 @@
         loadAssetTexture,
         positionsInRange,
         swapEntityVariant,
-        swapMeshTexture,
         updateEntityMeshRenderOrder,
         type EntityMesh,
         type Position,
@@ -205,6 +206,7 @@
                     y: offsetY,
                     duration: 1,
                     ease: "power2.out",
+                    overwrite: true, // overwrite previous tweens
                 });
             } else {
                 worldStage.pivot = { x: offsetX, y: offsetY };
@@ -261,20 +263,29 @@
             // Show action icon for duration
             const [bundleName, alias] = icon.path.split("/").slice(-2);
             const bundle = await Assets.loadBundle(bundleName);
-            const texture = bundle[alias].textures[icon.icon];
-            if (sourceEntity.actionIcon != null) {
-                // TODO: use gsap move to animations
+            const texture: Texture = bundle[alias].textures[icon.icon];
+            const actionIcon = sourceEntity.actionIcon;
+            if (actionIcon != null) {
+                actionIcon.texture = texture;
+                actionIcon.visible = true;
+                actionIcon.alpha = 1;
+                actionIcon.width = texture.width;
+                actionIcon.height = texture.height;
+                actionIcon.scale.x = HALF_ISO_CELL_WIDTH / actionIcon.width;
+                actionIcon.scale.y = HALF_ISO_CELL_WIDTH / actionIcon.height;
 
-                swapMeshTexture(sourceEntity.actionIcon, texture);
-                sourceEntity.actionIcon.visible = true;
-                setTimeout(
-                    () => {
-                        if (sourceEntity.actionIcon != null) {
-                            sourceEntity.actionIcon.visible = false;
+                // Tween alpha
+                gsap.to(actionIcon, {
+                    duration: Math.max((ticks * MS_PER_TICK) / 1000, 1),
+                    alpha: 0,
+                    ease: "power2.in",
+                    overwrite: true,
+                    onComplete: () => {
+                        if (actionIcon != null) {
+                            actionIcon.visible = false;
                         }
                     },
-                    Math.max(ticks * MS_PER_TICK, 1000),
-                );
+                });
             }
             console.log(source, `performing ${action} on`, target);
         } else if (ability != null) {
@@ -850,31 +861,42 @@
                 entityMesh.properties = { variant };
             }
 
-            // Create action icon
+            // Create action icon (sprite)
             if (entityType === "player" || entityType === "monster") {
-                const { shader, geometry } = loadShaderGeometry(
-                    "icon",
-                    Texture.EMPTY, // use texture swap to change icon
-                    CELL_WIDTH / 2,
-                    CELL_HEIGHT / 2,
-                    {
-                        uid: entityId, // use entityId as texture uid
-                        zScale: Z_SCALE,
-                        zOffset: Z_OFF.icon,
+                // Default move icon (to get dimensions)
+                const [bundleName, alias] = actions.move.icon.path
+                    .split("/")
+                    .slice(-2);
+                const bundle = await Assets.loadBundle(bundleName);
+                const texture: Texture =
+                    bundle[alias].textures[actions.move.icon.icon];
+
+                const icon = new Sprite({
+                    texture: Texture.EMPTY,
+                    visible: false,
+                    height: texture.height,
+                    width: texture.width,
+                    anchor: { x: 0.5, y: 0.5 },
+                    position: {
+                        x: hitbox.width / 2,
+                        y: -0.5 * ISO_CELL_HEIGHT,
                     },
-                );
-                const iconMesh = new Mesh<Geometry, Shader>({
-                    geometry,
-                    shader,
                 });
-                iconMesh.visible = false; // hide by default
 
-                // Set icon position to bottom of entity mesh
-                hitbox.addChild(iconMesh);
-                iconMesh.pivot.set(iconMesh.width / 2, iconMesh.height / 2);
-                iconMesh.position.set(hitbox.width / 2, hitbox.height * 0.9);
+                // Create a circular mask
+                const mask = new Graphics();
+                mask.circle(0, 0, Math.max(icon.width, icon.height) / 2);
+                mask.fill({ color: 0xffffff });
+                mask.position = { x: icon.width / 2, y: icon.height / 2 };
+                mask.pivot = { x: icon.width / 2, y: icon.height / 2 };
 
-                entityMesh.actionIcon = iconMesh;
+                // Apply mask
+                icon.mask = mask;
+                icon.addChild(mask);
+
+                // Set icon position to bottom of hitbox
+                entityMesh.actionIcon = icon;
+                hitbox.addChild(icon);
             }
 
             entityMeshes[entityId] = entityMesh;
