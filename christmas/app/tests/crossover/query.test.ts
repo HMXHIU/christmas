@@ -417,6 +417,7 @@ test("Test Query", async () => {
     ]);
 
     // Test item utility on monster
+    goblin.loc = playerOne.loc;
     gameCommands = searchPossibleCommands({
         query: "swing at goblin",
         // Player
@@ -506,6 +507,7 @@ test("Test Query", async () => {
     ]);
 
     // Test non ability utility
+    playerOne.loc = woodendoor.loc;
     gameCommands = searchPossibleCommands({
         query: "open woodendoor",
         // Player
@@ -548,6 +550,7 @@ test("Test Query", async () => {
     ]);
 
     // Test in presence of multiple of the same props
+    woodenclub.loc = woodenclub2.loc = woodenclub3.loc = playerOne.loc;
     gameCommands = searchPossibleCommands({
         query: `take ${woodenclub3.item}`,
         // Player
@@ -642,6 +645,7 @@ test("Test Query", async () => {
     ]);
 
     // Test abilities should show multiple targets
+    goblin.loc = goblin2.loc = goblin3.loc = playerOne.loc;
     gameCommands = searchPossibleCommands({
         query: `scratch goblin`,
         // Player
