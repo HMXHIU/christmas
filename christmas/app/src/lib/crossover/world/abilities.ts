@@ -150,7 +150,7 @@ const abilities: Record<string, Ability> = {
     disintegrate: {
         ability: "disintegrate",
         type: "offensive",
-        description: "Disintegrates the target.",
+        description: "Disintegrates the target. [FOR TESTING ONLY]",
         procedures: [
             [
                 "action",
@@ -164,7 +164,7 @@ const abilities: Record<string, Ability> = {
         ap: 1,
         st: 0,
         hp: 0,
-        mp: 1000,
+        mp: 1,
         range: 1,
         aoe: 0,
         predicate: {

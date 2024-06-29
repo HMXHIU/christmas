@@ -2,10 +2,15 @@ import { crossoverCmdEquip, crossoverCmdTake, stream } from "$lib/crossover";
 import { abilities } from "$lib/crossover/world/abilities";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
 import { compendium } from "$lib/crossover/world/compendium";
+import { playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { sanctuariesByRegion } from "$lib/crossover/world/world";
 import { spawnItem, spawnMonster } from "$lib/server/crossover";
-import { fetchEntity, initializeClients } from "$lib/server/crossover/redis";
+import {
+    fetchEntity,
+    initializeClients,
+    saveEntity,
+} from "$lib/server/crossover/redis";
 import type {
     Item,
     ItemEntity,
@@ -15,7 +20,7 @@ import type {
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
-import { beforeAll, describe, expect, test } from "vitest";
+import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import {
     buffEntity,
@@ -24,25 +29,34 @@ import {
     testMonsterPerformAbilityOnPlayer,
     testPlayerPerformAbilityOnMonster,
     testPlayerUseItemOnMonster,
+    testPlayerUseItemOnPlayer,
     waitForEventData,
 } from "./utils";
 
 const region = String.fromCharCode(...getRandomRegion());
-const playerOneGeohash = generateRandomGeohash(6, "h9");
+const playerOneGeohash = generateRandomGeohash(8, "h9");
 let playerOne: Player;
+let playerTwo: Player;
 let playerOneCookies: string;
+let playerTwoCookies: string;
 let goblin: Monster;
 let woodenClub: Item;
 let playerOneStream: any;
+let playerTwoStream: any;
 
 beforeAll(async () => {
     await initializeClients(); // create redis repositories
 
-    // Create player
+    // Create players
     [, playerOneCookies, playerOne] = await createRandomPlayer({
         region,
         geohash: playerOneGeohash,
         name: "Gandalf",
+    });
+    [, playerTwoCookies, playerTwo] = await createRandomPlayer({
+        region,
+        geohash: playerOneGeohash,
+        name: "Saruman",
     });
 
     // Create stream
@@ -51,6 +65,15 @@ beforeAll(async () => {
     });
     await expect(
         waitForEventData(playerOneStream, "feed"),
+    ).resolves.toMatchObject({
+        type: "system",
+        message: "started",
+    });
+    [playerTwoStream] = await stream({
+        Cookie: playerTwoCookies,
+    });
+    await expect(
+        waitForEventData(playerTwoStream, "feed"),
     ).resolves.toMatchObject({
         type: "system",
         message: "started",
@@ -88,7 +111,61 @@ beforeAll(async () => {
     woodenClub = (await fetchEntity(woodenClub.item)) as ItemEntity;
 });
 
+beforeEach(async () => {
+    // Reset items' state if necessary
+    woodenClub.chg = compendium[woodenClub.prop].charges;
+    woodenClub.dur = compendium[woodenClub.prop].durability;
+    woodenClub = (await saveEntity(woodenClub as ItemEntity)) as Item;
+
+    // Reset players' state if necessary
+    playerOne = {
+        ...playerOne,
+        loc: [playerOneGeohash],
+        ...playerStats({ level: playerOne.lvl }),
+    };
+    playerTwo = {
+        ...playerTwo,
+        loc: [playerOneGeohash],
+        ...playerStats({ level: playerTwo.lvl }),
+    };
+    playerOne = (await saveEntity(playerOne as PlayerEntity)) as Player;
+    playerTwo = (await saveEntity(playerTwo as PlayerEntity)) as Player;
+});
+
 describe("Combat Tests", () => {
+    test("Player use item on player", async () => {
+        var [
+            result,
+            { self, target, selfBefore, targetBefore, item, itemBefore },
+        ] = await testPlayerUseItemOnPlayer({
+            self: playerOne as Player,
+            target: playerTwo as Player,
+            item: woodenClub as Item,
+            utility: compendium[woodenClub.prop].utilities.swing.utility,
+            selfCookies: playerOneCookies,
+            selfStream: playerOneStream,
+            targetStream: playerTwoStream,
+        });
+        expect(result).toBe("success");
+
+        // Check item used charges and durability
+        expect(item).toMatchObject({
+            item: woodenClub.item,
+            chg:
+                itemBefore.chg -
+                compendium[woodenClub.prop].utilities.swing.cost.charges,
+            dur:
+                itemBefore.dur -
+                compendium[woodenClub.prop].utilities.swing.cost.durability,
+        });
+
+        // Check monster damaged
+        expect(target).toMatchObject({
+            player: target.player,
+            hp: targetBefore.hp - 1, // swing does 1 damage
+        });
+    });
+
     test("Player use item on monster", async () => {
         var [
             result,
@@ -101,6 +178,7 @@ describe("Combat Tests", () => {
             cookies: playerOneCookies,
             stream: playerOneStream,
         });
+        expect(result).toBe("success");
 
         // Check item used charges and durability
         expect(item).toMatchObject({
@@ -118,17 +196,9 @@ describe("Combat Tests", () => {
             monster: goblin.monster,
             hp: monsterBefore.hp - 1, // swing does 1 damage
         });
-
-        expect(result).toBe("success");
     });
 
     test("Player gains LUs after killing monster", async () => {
-        // Give player enough mana to cast disintegrate
-        playerOne = (await buffEntity(playerOne.player, {
-            mp: 2000,
-            level: 1000,
-        })) as PlayerEntity;
-
         var [res, { player, playerBefore, monster, monsterBefore }] =
             await testPlayerPerformAbilityOnMonster({
                 player: playerOne,
@@ -154,10 +224,7 @@ describe("Combat Tests", () => {
     });
 
     test("Player respawns when killed by monster", async () => {
-        // Reset playerOne to level 1
-        playerOne = (await buffEntity(playerOne.player, {
-            level: 1,
-        })) as PlayerEntity;
+        console.log(JSON.stringify(playerOne, null, 2));
 
         // Give monster enough mana to cast disintegrate
         goblin = (await buffEntity(goblin.monster, {
