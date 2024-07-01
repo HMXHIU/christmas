@@ -25,7 +25,7 @@ import {
     worldRecord,
 } from "../../store";
 import type { GameCommand, GameCommandVariables } from "./ir";
-import { geohashToColRow, getEntityId } from "./utils";
+import { entityInRange, geohashToColRow, getEntityId } from "./utils";
 import type { Ability } from "./world/abilities";
 import { actions, type Action } from "./world/actions";
 import {
@@ -223,17 +223,26 @@ function handleUpdateEntities(
 async function moveInRangeOfTarget({
     range,
     target,
+    retries,
 }: {
     range: number;
     target: Player | Monster | Item;
+    retries?: number;
 }) {
-    const targetGeohash = target.loc[0]; // TODO: consider entities with loc more than 1 cell
-    const sourceGeohash = get(player)?.loc[0];
+    retries ??= 1;
 
-    if (sourceGeohash == null) {
-        throw new Error("Player location is unknown");
+    let playerEntity = get(player);
+    if (playerEntity == null) {
+        throw new Error("Player is not defined");
     }
 
+    if (entityInRange(playerEntity, target, range)[0]) {
+        return;
+    }
+
+    // Move in range of target
+    const targetGeohash = target.loc[0]; // TODO: consider entities with loc more than 1 cell
+    const sourceGeohash = playerEntity.loc[0];
     const [targetCol, targetRow] = geohashToColRow(targetGeohash);
     const [sourceCol, sourceRow] = geohashToColRow(sourceGeohash);
     const path = getDirectionsToPosition(
@@ -247,13 +256,22 @@ async function moveInRangeOfTarget({
         },
         range,
     );
-
     await crossoverCmdMove({ path });
 
     // Wait for player to move the path
     await sleep(
         SERVER_LATENCY + path.length * actions.move.ticks * MS_PER_TICK,
     );
+
+    // Retry if is still not in range (target might have moved)
+    playerEntity = get(player);
+    if (
+        retries > 0 &&
+        playerEntity != null &&
+        !entityInRange(playerEntity, target, range)[0]
+    ) {
+        await moveInRangeOfTarget({ range, target, retries: retries - 1 });
+    }
 }
 
 async function executeGameCommand(
@@ -287,7 +305,7 @@ async function executeGameCommand(
                 range: ability.range,
                 target: target as Player | Monster | Item,
             });
-
+            // Perform ability
             return await crossoverCmdPerformAbility(
                 {
                     target:
