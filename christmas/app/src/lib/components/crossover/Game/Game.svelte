@@ -961,7 +961,7 @@
 
         // Move command
         if (path != null && path.length > 0) {
-            await crossoverCmdMove({ path });
+            await crossoverCmdMove({ path }); // TODO: should funnel everything through executeGameCommand
         }
     }
 

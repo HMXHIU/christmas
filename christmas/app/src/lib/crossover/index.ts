@@ -1,13 +1,14 @@
 import { PUBLIC_HOST } from "$env/static/public";
 import type { TransactionResult } from "$lib/anchorClient/types";
 import { refresh } from "$lib/community";
+import { getDirectionsToPosition } from "$lib/components/crossover/Game/utils";
 import type {
     Item,
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
 import { trpc } from "$lib/trpcClient";
-import { retry, signAndSendTransaction } from "$lib/utils";
+import { retry, signAndSendTransaction, sleep } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
 import type { HTTPHeaders } from "@trpc/client";
 import { get } from "svelte/store";
@@ -24,9 +25,9 @@ import {
     worldRecord,
 } from "../../store";
 import type { GameCommand, GameCommandVariables } from "./ir";
-import { getEntityId } from "./utils";
+import { geohashToColRow, getEntityId } from "./utils";
 import type { Ability } from "./world/abilities";
-import { type Action } from "./world/actions";
+import { actions, type Action } from "./world/actions";
 import {
     EquipmentSlots,
     compendium,
@@ -35,6 +36,7 @@ import {
     type Utility,
 } from "./world/compendium";
 import type { PlayerMetadata } from "./world/player";
+import { MS_PER_TICK, SERVER_LATENCY } from "./world/settings";
 import { Directions, type Direction } from "./world/types";
 import { worldSeed } from "./world/world";
 
@@ -218,6 +220,42 @@ function handleUpdateEntities(
     }
 }
 
+async function moveInRangeOfTarget({
+    range,
+    target,
+}: {
+    range: number;
+    target: Player | Monster | Item;
+}) {
+    const targetGeohash = target.loc[0]; // TODO: consider entities with loc more than 1 cell
+    const sourceGeohash = get(player)?.loc[0];
+
+    if (sourceGeohash == null) {
+        throw new Error("Player location is unknown");
+    }
+
+    const [targetCol, targetRow] = geohashToColRow(targetGeohash);
+    const [sourceCol, sourceRow] = geohashToColRow(sourceGeohash);
+    const path = getDirectionsToPosition(
+        {
+            row: sourceRow,
+            col: sourceCol,
+        },
+        {
+            row: targetRow,
+            col: targetCol,
+        },
+        range,
+    );
+
+    await crossoverCmdMove({ path });
+
+    // Wait for player to move the path
+    await sleep(
+        SERVER_LATENCY + path.length * actions.move.ticks * MS_PER_TICK,
+    );
+}
+
 async function executeGameCommand(
     command: GameCommand,
     headers: HTTPHeaders = {},
@@ -242,13 +280,21 @@ async function executeGameCommand(
         }
         // Perform ability
         else if ("ability" in action) {
+            const ability = action as Ability;
+
+            // Move in range of target
+            await moveInRangeOfTarget({
+                range: ability.range,
+                target: target as Player | Monster | Item,
+            });
+
             return await crossoverCmdPerformAbility(
                 {
                     target:
                         (target as Player)?.player ||
                         (target as Monster)?.monster ||
                         (target as Item)?.item,
-                    ability: (action as Ability).ability,
+                    ability: ability.ability,
                 },
                 headers,
             );

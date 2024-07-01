@@ -39,7 +39,6 @@ import {
     hashObject,
     serverAnchorClient,
 } from "..";
-import type { FeedEvent } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, internalServiceProcedure, t } from "../trpc";
 import { performMonsterActions, spawnMonsters } from "./dungeonMaster";
@@ -513,17 +512,6 @@ const crossoverRouter = {
             const players = await playersInGeohashQuerySet(
                 geohashesNearby(parentGeohash),
             ).return.allIds({ pageSize: LOOK_PAGE_SIZE }); // limit players using page size
-
-            // Create message feed
-            const messageFeed: FeedEvent = {
-                type: "message",
-                message: "${origin} says ${message}",
-                variables: {
-                    cmd: "say",
-                    origin: ctx.user.publicKey,
-                    message: input.message,
-                },
-            };
 
             // Send message to all players in the geohash (non blocking)
             for (const publicKey of players) {

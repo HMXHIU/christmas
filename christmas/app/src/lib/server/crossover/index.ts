@@ -34,7 +34,6 @@ import {
     inventoryQuerySet,
     itemRepository,
     monsterRepository,
-    playerRepository,
     saveEntity,
     worldRepository,
 } from "./redis";
@@ -706,7 +705,6 @@ async function performAbility({
     ignoreCost?: boolean;
 }) {
     const { procedures, ap, mp, st, hp, range, predicate } = abilities[ability];
-
     const [selfEntityId, selfEntityType] = getEntityId(self);
     const [targetEntityId, targetEntityType] = getEntityId(target);
 
@@ -1087,10 +1085,13 @@ async function movePlayer(player: PlayerEntity, path: Direction[]) {
             source: player.player,
         });
 
+        // Sleep for the duration of the effect
+        await sleep(actions.move.ticks * MS_PER_TICK);
+
         // Update player location
         player = entity as PlayerEntity;
         player.loc = location;
-        await playerRepository.save(player.player, player);
+        player = (await saveEntity(player)) as PlayerEntity;
 
         // Check if player moves to a different plot
         const plotDidChange =
@@ -1114,9 +1115,6 @@ async function movePlayer(player: PlayerEntity, path: Direction[]) {
                 publishTo: player.player,
             });
         }
-
-        // Sleep for the duration of the effect
-        await sleep(actions.move.ticks * MS_PER_TICK);
     }
 }
 
