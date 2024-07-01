@@ -1,9 +1,9 @@
 import {
     autoCorrectGeohashPrecision,
     calculateLocation,
-    checkInRange,
     childrenGeohashes,
     entityDimensions,
+    entityInRange,
     geohashNeighbour,
     getEntityId,
     getPlotsAtGeohash,
@@ -739,7 +739,7 @@ async function performAbility({
     }
 
     // Check if target is in range
-    if (!checkInRange(self, target, range)[0] && selfEntityType === "player") {
+    if (!entityInRange(self, target, range)[0] && selfEntityType === "player") {
         publishFeedEvent(selfEntityId, {
             type: "error",
             message: `Target is out of range`,

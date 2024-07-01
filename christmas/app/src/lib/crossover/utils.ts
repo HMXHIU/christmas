@@ -19,10 +19,10 @@ export {
     borderingGeohashes,
     calculateLocation,
     cartToIso,
-    checkInRange,
     childrenGeohashes,
     directionVectors,
     entityDimensions,
+    entityInRange,
     expandGeohashes,
     filterSortEntitiesInRange,
     gameActionId,
@@ -34,6 +34,7 @@ export {
     getGeohashesForPath,
     getPlotsAtGeohash,
     getPositionsForPath,
+    inRange,
     isoToCart,
     seededRandom,
     snapToGrid,
@@ -563,12 +564,14 @@ function aStarPathfinding({
     colStart,
     colEnd,
     getTraversalCost,
+    range,
 }: {
     rowStart: number;
     rowEnd: number;
     colStart: number;
     colEnd: number;
     getTraversalCost: (row: number, col: number) => number; // 0 is walkable, 1 is not
+    range?: number;
 }): Direction[] {
     const heuristic = (
         row: number,
@@ -631,12 +634,28 @@ function aStarPathfinding({
     startNode.f = startNode.g + startNode.h;
     openList.push(startNode);
 
+    const isWithinRange = (
+        row: number,
+        col: number,
+        range: number,
+    ): boolean => {
+        return heuristic(row, col, rowEnd, colEnd) <= range;
+    };
+
     while (openList.length > 0) {
         openList.sort((a, b) => a.f - b.f); // Sort by f value
         const currentNode = openList.shift()!;
         const currentKey = `${currentNode.row},${currentNode.col}`;
 
         if (currentNode.row === rowEnd && currentNode.col === colEnd) {
+            return reconstructPath(currentNode);
+        }
+
+        // Early exit if in range
+        if (
+            range != null &&
+            isWithinRange(currentNode.row, currentNode.col, range)
+        ) {
             return reconstructPath(currentNode);
         }
 
@@ -698,7 +717,7 @@ function getGeohashesForPath(geohash: string, path: Direction[]): string[] {
     return geohashes;
 }
 
-function checkInRange(
+function entityInRange(
     self: Player | Monster,
     target: Player | Monster | Item,
     range: number,
@@ -720,6 +739,24 @@ function checkInRange(
     const { row: r1, col: c1 } = geohashToGridCell(self.loc[0]);
     const { row: r2, col: c2 } = geohashToGridCell(target.loc[0]);
 
+    return inRange({ r1, c1, r2, c2, range, diagonal });
+}
+
+function inRange({
+    r1,
+    c1,
+    r2,
+    c2,
+    range,
+    diagonal,
+}: {
+    r1: number;
+    c1: number;
+    r2: number;
+    c2: number;
+    range: number;
+    diagonal?: boolean;
+}): [boolean, number] {
     if (diagonal) {
         const deltaX = Math.abs(r1 - r2);
         const deltaY = Math.abs(c1 - c2);
@@ -741,7 +778,7 @@ function filterSortEntitiesInRange(
 ) {
     return entities
         .map((entity) => {
-            const [inRange, distance] = checkInRange(self, entity, range);
+            const [inRange, distance] = entityInRange(self, entity, range);
             return { inRange, distance, entity };
         })
         .filter(({ inRange }) => inRange)

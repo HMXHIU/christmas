@@ -72,6 +72,7 @@ export {
     calculateBiomeDecorationsForRowCol,
     calculateBiomeForRowCol,
     calculatePosition,
+    calculateRowColFromIso,
     clearInstancedShaderMeshes,
     debugColliders,
     decodeTiledSource,
@@ -80,6 +81,7 @@ export {
     getAngle,
     getDirectionsToPosition,
     getImageForTile,
+    getPathHighlights,
     getTilesetForTile,
     highlightShaderInstances,
     initAssetManager,
@@ -254,15 +256,16 @@ function calculateRowColFromIso(isoX: number, isoY: number): [number, number] {
 }
 
 function getDirectionsToPosition(
-    playerPosition: Position,
-    target: { x: number; y: number },
+    source: { row: number; col: number },
+    target: { row: number; col: number },
+    range?: number, // in row col coordinates
 ): Direction[] {
-    const [rowEnd, colEnd] = calculateRowColFromIso(target.x, target.y);
     return aStarPathfinding({
-        colStart: playerPosition.col,
-        rowStart: playerPosition.row,
-        colEnd,
-        rowEnd,
+        colStart: source.col,
+        rowStart: source.row,
+        colEnd: target.col,
+        rowEnd: target.row,
+        range,
         getTraversalCost: (row, col) => {
             return 0; // TODO: add actual traversal cost
         },
@@ -760,19 +763,11 @@ function clearInstancedShaderMeshes(stage: Container) {
 
 function positionsInRange(
     action: Action | Ability,
-    playerPosition: Position,
+    { row, col }: { row: number; col: number },
 ): Record<string, number> {
     const highlightPositions: Record<string, number> = {};
-    for (
-        let i = playerPosition.row - action.range;
-        i <= playerPosition.row + action.range;
-        i++
-    ) {
-        for (
-            let j = playerPosition.col - action.range;
-            j <= playerPosition.col + action.range;
-            j++
-        ) {
+    for (let i = row - action.range; i <= row + action.range; i++) {
+        for (let j = col - action.range; j <= col + action.range; j++) {
             const [x, y] = cartToIso(j * CELL_WIDTH, i * CELL_HEIGHT, {
                 x: HALF_ISO_CELL_WIDTH,
                 y: HALF_ISO_CELL_HEIGHT,
@@ -821,4 +816,21 @@ function scaleToFitAndMaintainAspectRatio(
     }
 
     return [newWidth, newHeight];
+}
+
+function getPathHighlights(
+    pathPositions: { row: number; col: number }[],
+    highlight: number,
+) {
+    const highlights = Object.fromEntries(
+        pathPositions.map(({ row, col }) => {
+            const [x, y] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT, {
+                x: HALF_ISO_CELL_WIDTH,
+                y: HALF_ISO_CELL_HEIGHT,
+            });
+            return [`${x},${y}`, highlight];
+        }),
+    );
+
+    return highlights;
 }

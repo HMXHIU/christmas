@@ -58,10 +58,10 @@
         loadShaderGeometry,
         updateShaderUniforms,
     } from "./shaders";
+    import { clearHighlights, drawTargetUI, highlightEntity } from "./ui";
     import {
         CANVAS_HEIGHT,
         CANVAS_WIDTH,
-        CELL_HEIGHT,
         CELL_WIDTH,
         GRID_MID_COL,
         GRID_MID_ROW,
@@ -76,11 +76,13 @@
         calculateBiomeDecorationsForRowCol,
         calculateBiomeForRowCol,
         calculatePosition,
+        calculateRowColFromIso,
         clearInstancedShaderMeshes,
         destroyEntityMesh,
         drawShaderTextures,
         getDirectionsToPosition,
         getImageForTile,
+        getPathHighlights,
         getTilesetForTile,
         highlightShaderInstances,
         initAssetManager,
@@ -125,7 +127,8 @@
             !isInitialized ||
             playerPosition == null ||
             worldStage == null ||
-            app == null
+            app == null ||
+            $player == null
         ) {
             return;
         }
@@ -135,51 +138,71 @@
             return;
         }
 
-        const [ga, { self, target, item }] = command;
+        const [ga, { self, target: commandTarget, item }] = command;
         const [gaId, gaType] = getGameActionId(ga);
 
-        // Highlight target
-        if (target != null) {
-            const targetEntityId = getEntityId(target)[0];
-            const targetEntityMesh = entityMeshes[targetEntityId];
-            if (targetEntityMesh != null) {
-                highlightTarget(target, 2);
+        // Highlight target (prevent commandTarget from overriding target)
+        drawTargetUI({
+            target: $target,
+            entityMeshes,
+            highlight: 2,
+            stage: worldStage,
+            source: $player,
+        });
+
+        if (commandTarget != null) {
+            const [commandTargetId, commandTargetType] =
+                getEntityId(commandTarget);
+            const commandTargetEntityMesh = entityMeshes[commandTargetId];
+
+            if (commandTargetEntityMesh == null) {
+                return;
             }
 
-            ////////////////////////
+            // Highlight command target
+            drawTargetUI({
+                target: commandTarget,
+                entityMeshes,
+                highlight: 3,
+                stage: worldStage,
+                source: $player,
+            });
 
-            // TODO: Draw line to target
-            // const startX = playerPosition.isoX;
-            // const startY =
-            //     playerPosition.isoY - playerPosition.elevation;
-            // const endX = targetEntityMesh.position.isoX;
-            // const endY =
-            //     targetEntityMesh.position.isoY -
-            //     targetEntityMesh.position.elevation;
-            // const line = new Graphics();
-            // line.zIndex = 10000;
-            // line.moveTo(startX, startY);
-            // line.lineTo(endX, endY);
-            // line.stroke({ width: 4, color: 0xffd900 });
-            // worldStage.addChild(line);
-        }
+            if (gaType === "ability") {
+                const ability = ga as Ability;
 
-        if (gaType === "ability") {
-            const ability = ga as Ability;
-            // Highlight cells in range
-            highlightShaderInstances(
-                "biome",
-                positionsInRange(ability, playerPosition),
-            );
-        } else if (gaType === "utility") {
-            const utility = ga as Utility;
-        } else if (gaType === "action") {
-            const action = ga as Action;
-            // Highlight cells in range
-            highlightShaderInstances(
-                "biome",
-                positionsInRange(action, playerPosition),
-            );
+                // Get movement required to get in range
+                const path = getDirectionsToPosition(
+                    playerPosition,
+                    entityMeshes[commandTargetId].position,
+                    ability.range,
+                );
+                const pathPositions = getPositionsForPath(playerPosition, path);
+                const destination = pathPositions[pathPositions.length - 1];
+
+                // Get path highlights
+                const pathHighlights = getPathHighlights(pathPositions, 1);
+                highlightShaderInstances("biome", pathHighlights);
+
+                // Get cells in range highlights
+                const rangeCellsHighlights = positionsInRange(
+                    ability,
+                    destination,
+                );
+                highlightShaderInstances("biome", {
+                    ...rangeCellsHighlights,
+                    ...pathHighlights,
+                });
+            } else if (gaType === "utility") {
+                const utility = ga as Utility;
+            } else if (gaType === "action") {
+                const action = ga as Action;
+                // Highlight cells in range
+                highlightShaderInstances(
+                    "biome",
+                    positionsInRange(action, playerPosition),
+                );
+            }
         }
     }
 
@@ -221,28 +244,6 @@
         }
     }
 
-    function highlightTarget(
-        target: Player | Monster | Item | null,
-        highlight: number = 1,
-    ) {
-        if (target == null) {
-            return;
-        }
-        const [targetEntityId, entityType] = getEntityId(target);
-
-        // Highlight target entity and unhighlight others
-        for (const [entityId, { shaderGeometry }] of Object.entries(
-            entityMeshes,
-        )) {
-            if (entityId === targetEntityId) {
-                shaderGeometry.instanceHighlights.data.fill(highlight);
-            } else {
-                shaderGeometry.instanceHighlights.data.fill(0);
-            }
-            shaderGeometry.instanceHighlights.update();
-        }
-    }
-
     export async function drawActionEvent(event: ActionEvent) {
         /**
          * TODO: Server should notify entity perform action on entity to all clients involved for rendering
@@ -274,9 +275,11 @@
                 actionIcon.scale.x = HALF_ISO_CELL_WIDTH / actionIcon.width;
                 actionIcon.scale.y = HALF_ISO_CELL_WIDTH / actionIcon.height;
 
+                const duration = Math.max((ticks * MS_PER_TICK) / 1000, 1) * 2;
+
                 // Tween alpha
                 gsap.to(actionIcon, {
-                    duration: Math.max((ticks * MS_PER_TICK) / 1000, 1),
+                    duration,
                     alpha: 0,
                     ease: "power2.in",
                     overwrite: true,
@@ -285,6 +288,15 @@
                             actionIcon.visible = false;
                         }
                     },
+                });
+
+                // Tween scale
+                gsap.to(actionIcon.scale, {
+                    duration,
+                    x: actionIcon.scale.x * 1.2,
+                    y: actionIcon.scale.y * 1.2,
+                    overwrite: true,
+                    ease: "power2.out",
                 });
             }
             console.log(source, `performing ${action} on`, target);
@@ -819,16 +831,25 @@
                 eventMode: "static",
                 hitArea: new Rectangle(0, 0, width, height),
                 onmouseover: () => {
-                    shaderGeometry.instanceHighlights.data.fill(1);
-                    shaderGeometry.instanceHighlights.update();
+                    const entityMesh = entityMeshes[entityId];
+                    if (
+                        ($target == null ||
+                            // Highlight if entity is not target (already highlighted)
+                            getEntityId($target)[0] != entityId) &&
+                        entityMesh != null
+                    ) {
+                        highlightEntity(entityMesh, 1);
+                    }
                 },
                 onmouseleave: () => {
+                    // Clear highlight if entity is not target
+                    const entityMesh = entityMeshes[entityId];
                     if (
-                        $target == null ||
-                        getEntityId($target)[0] != entityId
+                        ($target == null ||
+                            getEntityId($target)[0] != entityId) &&
+                        entityMesh != null
                     ) {
-                        shaderGeometry.instanceHighlights.data.fill(0);
-                        shaderGeometry.instanceHighlights.update();
+                        clearHighlights(entityMesh);
                     }
                 },
                 onclick: () => {
@@ -918,26 +939,16 @@
 
         if (isMouseDown) {
             // Calculate path (astar)
-            path = getDirectionsToPosition(playerPosition, { x, y });
-
-            // Highlight path
-            const highlights = Object.fromEntries(
-                getPositionsForPath(
-                    { row: playerPosition.row, col: playerPosition.col },
-                    path,
-                ).map(({ row, col }) => {
-                    const [x, y] = cartToIso(
-                        col * CELL_WIDTH,
-                        row * CELL_HEIGHT,
-                        {
-                            x: HALF_ISO_CELL_WIDTH,
-                            y: HALF_ISO_CELL_HEIGHT,
-                        },
-                    );
-                    return [`${x},${y}`, 1];
-                }),
+            const [rowEnd, colEnd] = calculateRowColFromIso(x, y);
+            path = getDirectionsToPosition(playerPosition, {
+                row: rowEnd,
+                col: colEnd,
+            });
+            const pathPositions = getPositionsForPath(playerPosition, path);
+            highlightShaderInstances(
+                "biome",
+                getPathHighlights(pathPositions, 1),
             );
-            highlightShaderInstances("biome", highlights);
         }
     }
 
@@ -1103,7 +1114,16 @@
                 updatePlayerPosition(p);
             }),
             target.subscribe((t) => {
-                highlightTarget(t);
+                if ($player == null || worldStage == null) {
+                    return;
+                }
+                drawTargetUI({
+                    target: t,
+                    entityMeshes,
+                    highlight: 2,
+                    source: $player,
+                    stage: worldStage!,
+                });
             }),
         ];
 
@@ -1115,11 +1135,11 @@
     });
 
     onDestroy(() => {
-        if (app) {
-            destroyShaders();
-            clearInstancedShaderMeshes(worldStage!);
+        if (app && worldStage) {
             app.stage.removeAllListeners();
-            app = null;
+            app = null; // set this so ticker stops before removing other things
+            destroyShaders();
+            clearInstancedShaderMeshes(worldStage);
         }
     });
 </script>

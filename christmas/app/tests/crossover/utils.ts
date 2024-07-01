@@ -5,7 +5,7 @@ import {
     login as loginCrossover,
     signup,
 } from "$lib/crossover";
-import { checkInRange } from "$lib/crossover/utils";
+import { entityInRange } from "$lib/crossover/utils";
 import {
     abilities,
     hasResourcesForAbility,
@@ -391,7 +391,7 @@ export async function testPlayerPerformAbilityOnMonster({
     const { procedures, ap, mp, st, hp, range, predicate } = abilities[ability];
     const playerBefore = { ...player };
     const monsterBefore = { ...monster };
-    const inRange = checkInRange(player, monster, range)[0];
+    const inRange = entityInRange(player, monster, range)[0];
     const [isBusy, now] = entityIsBusy(player);
     const { hasResources, message: resourceInsufficientMessage } =
         hasResourcesForAbility(player, ability);
@@ -578,7 +578,7 @@ export async function testPlayerPerformAbilityOnPlayer({
     const { procedures, ap, mp, st, hp, range, predicate } = abilities[ability];
     const selfBefore = { ...self };
     const targetBefore = { ...target };
-    const inRange = checkInRange(self, target, range)[0];
+    const inRange = entityInRange(self, target, range)[0];
     const [isBusy, now] = entityIsBusy(self);
     const { hasResources, message: resourceInsufficientMessage } =
         hasResourcesForAbility(self, ability);
@@ -826,7 +826,7 @@ export async function testPlayerUseItemOnMonster({
         if (self?.player && target?.monster) {
             const { procedures, ap, mp, st, hp, range, predicate } =
                 abilities[propAbility];
-            const inRange = checkInRange(self, target, range)[0];
+            const inRange = entityInRange(self, target, range)[0];
             const [isBusy, now] = entityIsBusy(self);
 
             // Check received feed event if target predicate is not met
@@ -1154,7 +1154,7 @@ export async function testPlayerUseItemOnPlayer({
         // Perform ability on target
         const { procedures, ap, mp, st, hp, range, predicate } =
             abilities[propAbility];
-        const inRange = checkInRange(self, target, range)[0];
+        const inRange = entityInRange(self, target, range)[0];
         const [isBusy, now] = entityIsBusy(self);
 
         // Check received feed event if target predicate is not met
