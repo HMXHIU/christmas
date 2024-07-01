@@ -28,7 +28,6 @@
     let innerWidth: number; // window.innerWidth
     let commands: GameCommand[] = [];
     let command: GameCommand | null = null;
-    let previewCommand: GameCommand | null = null;
     let gameRef: Game;
 
     export async function handleActionEvent(event: ActionEvent) {
@@ -103,7 +102,6 @@
             {commands}
             {onGameCommand}
             bind:command
-            bind:previewCommand
         ></AutocompleteGC>
     </div>
 
@@ -112,6 +110,6 @@
 
     <!-- Game (60px is size of ChatInput) -->
     <div style="height: calc(50% - 60px); flex-shrink-0" class="shrink-0">
-        <Game bind:this={gameRef} {previewCommand}></Game>
+        <Game bind:this={gameRef} previewCommand={command}></Game>
     </div>
 </div>
