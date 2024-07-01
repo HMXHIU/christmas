@@ -8,7 +8,6 @@
         stream,
         updateWorlds,
     } from "$lib/crossover";
-    import { KeyboardController, type GameKey } from "$lib/crossover/keyboard";
     import { actions } from "$lib/crossover/world/actions";
     import { type Direction } from "$lib/crossover/world/types";
     import { substituteVariables } from "$lib/utils";
@@ -80,27 +79,6 @@
         handleUpdateEntities({ players, items, monsters }, op);
     }
 
-    function onKeys(keys: GameKey[]) {
-        // Movement (isometric)
-        if (keys.includes("up")) {
-            if (keys.includes("left")) onMove("w");
-            else if (keys.includes("right")) onMove("n");
-            else onMove("nw");
-        } else if (keys.includes("down")) {
-            if (keys.includes("left")) onMove("s");
-            else if (keys.includes("right")) onMove("e");
-            else onMove("se");
-        } else if (keys.includes("left")) {
-            if (keys.includes("up")) onMove("sw");
-            else if (keys.includes("down")) onMove("s");
-            else onMove("sw");
-        } else if (keys.includes("right")) {
-            if (keys.includes("up")) onMove("n");
-            else if (keys.includes("down")) onMove("ne");
-            else onMove("ne");
-        }
-    }
-
     async function startStream() {
         [eventStream, closeStream] = await stream();
         eventStream.addEventListener("feed", processFeedEvent);
@@ -140,14 +118,9 @@
             }
         });
 
-        // Keyboard keys
-        const keyboardController = new KeyboardController();
-        const unsubscribeKeyboard = keyboardController.subscribe(onKeys);
-
         return () => {
             stopStream();
             unsubscribePlayer();
-            unsubscribeKeyboard();
         };
     });
 </script>
@@ -160,7 +133,6 @@
     <GameWindow
         class="pt-2"
         onGameCommand={executeGameCommand}
-        {onMove}
         bind:this={gameWindow}
     />
 {/if}

@@ -2,6 +2,7 @@
     import { Button } from "$lib/components/ui/button";
     import * as Command from "$lib/components/ui/command/index.js";
     import type { GameCommand } from "$lib/crossover/ir";
+    import { KeyboardController, type GameKey } from "$lib/crossover/keyboard";
     import {
         REGEX_STRIP_ENTITY_TYPE,
         gameActionId,
@@ -21,31 +22,28 @@
         Sword,
         Wrench,
     } from "lucide-svelte";
+    import { onMount } from "svelte";
 
     export let commands: GameCommand[] = [];
     export let command: GameCommand | null = null;
     export let onGameCommand: (command: GameCommand) => Promise<void>;
     export let previewCommand: GameCommand | null = null;
 
-    let value: string = "0-0";
-
-    $: groupedCommandsEntries = Object.entries(
-        groupBy(commands, (gc: GameCommand) => {
-            if ("utility" in gc[0]) {
-                return "Items";
-            } else if ("ability" in gc[0]) {
-                return "Abilities";
-            } else if ("action" in gc[0]) {
-                return "Actions";
-            } else {
-                return "Other";
-            }
-        }),
+    $: commandGroups = Object.entries(
+        groupBy(commands, (gc: GameCommand) => groupName(gc)),
     );
+    $: command = commands[0] || null; // Default to first command
 
-    // Default to first command
-    $: command = commands[0] || null;
-    $: value = commands.length > 0 ? "0-0" : "0-0";
+    function groupName(gc: GameCommand): string {
+        const [action, entities] = gc;
+        return "utility" in action
+            ? "Items"
+            : "ability" in action
+              ? "Abilities"
+              : "action" in action
+                ? "Actions"
+                : "Other";
+    }
 
     function targetName(gc: GameCommand): string {
         const [action, { target }] = gc;
@@ -104,22 +102,50 @@
             await onGameCommand(command);
         }
     }
+
+    function onKeys(keys: GameKey[]) {
+        // Cycle through commands
+        if (keys.includes("up") && commands.length > 0) {
+            if (command === null) {
+                command = commands[0];
+            } else {
+                const idx = commands.indexOf(command);
+                command =
+                    commands[(idx - 1 + commands.length) % commands.length];
+            }
+        } else if (keys.includes("down")) {
+            if (command === null) {
+                command = commands[0];
+            } else {
+                const idx = commands.indexOf(command);
+                command = commands[(idx + 1) % commands.length];
+            }
+        }
+    }
+
+    onMount(() => {
+        // Keyboard events
+        const keyboardController = new KeyboardController();
+        const unsubscribeKeyboard = keyboardController.subscribe(onKeys);
+
+        return () => {
+            unsubscribeKeyboard();
+        };
+    });
 </script>
 
-{#key groupedCommandsEntries}
-    {#if groupedCommandsEntries.length > 0}
+{#key commandGroups}
+    {#if commandGroups.length > 0}
         <div class={cn($$restProps.class)}>
-            <Command.Root class="rounded-lg border shadow-md" {value}>
+            <Command.Root class="rounded-lg border shadow-md">
                 <Command.List>
-                    {#each groupedCommandsEntries as [group, gcs], groupIdx}
+                    {#each commandGroups as [group, gcs], groupIdx}
                         <Command.Group heading={group}>
                             {#each gcs as gc, commandIdx}
                                 <Command.Item
                                     class="justify-between"
-                                    value={`${groupIdx}-${commandIdx}`}
                                     onSelect={() => {
                                         command = gc;
-                                        value = `${groupIdx}-${commandIdx}`;
 
                                         // TODO: change to on focus to support cycling
                                         previewCommand = gc;
@@ -136,7 +162,9 @@
                                         {:else if abilityType(gc) === "neutral"}
                                             <Wrench class="mr-3 h-4 w-4" />
                                         {/if}
+                                        <!-- Command Name -->
                                         <span>{commandName(gc)}</span>
+                                        <!-- Others -->
                                         {#each [itemName(gc), targetName(gc), commandInfo(gc)] as s}
                                             {#if s}
                                                 <ChevronRight class="w-4 h-4"
@@ -146,7 +174,7 @@
                                         {/each}
                                     </div>
                                     <!-- Default [Enter] -->
-                                    {#if `${groupIdx}-${commandIdx}` === value}
+                                    {#if command === gc}
                                         <Button
                                             variant="secondary"
                                             class="h-5 px-2"

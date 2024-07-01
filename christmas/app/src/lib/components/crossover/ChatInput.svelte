@@ -1,10 +1,10 @@
 <script lang="ts">
     // Components
     import { Button } from "$lib/components/ui/button";
-    import { Textarea } from "$lib/components/ui/textarea";
     import { cn } from "$lib/shadcn";
     import { debounce } from "lodash";
     import { Send } from "lucide-svelte";
+    import Input from "../ui/input/input.svelte";
     import TargetSelect from "./TargetSelect.svelte";
 
     export let onEnterKeyPress: (message: string) => void;
@@ -23,6 +23,10 @@
         if (["Enter"].includes(event.code)) {
             onSubmit();
         }
+        // Disable arrow up/down key scrolling (reserve for AutocompleteGC)
+        else if (["ArrowUp", "ArrowDown"].includes(event.code)) {
+            event.preventDefault();
+        }
     }
 
     function onSubmit(): void {
@@ -40,14 +44,22 @@
     <!-- Target Select -->
     <TargetSelect class="h-full border-0 text-muted-foreground"></TargetSelect>
     <!-- Chat Input -->
-    <Textarea
+    <Input
+        type="text"
+        id="prompt"
+        class="bg-transparent ring-0 border-0 border-l border-r rounded-none min-h-[45px]"
+        bind:value={message}
+        on:keydown={onKeyDown}
+        autocomplete="off"
+    />
+    <!-- <Textarea
         bind:value={message}
         class="bg-transparent ring-0 border-0 border-l border-r rounded-none min-h-[60px]"
         name="prompt"
         id="prompt"
         rows={1}
         on:keydown={onKeyDown}
-    />
+    /> -->
     <!-- Send Button -->
     <Button
         variant="ghost"
