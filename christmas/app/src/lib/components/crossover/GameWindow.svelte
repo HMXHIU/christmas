@@ -27,7 +27,8 @@
     const LARGE_SCREEN = 800;
 
     let innerWidth: number; // window.innerWidth
-    let overlayTop = "0px";
+    let gameTop = "0px";
+    let gameBottom = "0px";
     let commands: GameCommand[] = [];
     let command: GameCommand | null = null;
     let gameRef: Game;
@@ -69,9 +70,11 @@
     }
 
     onMount(() => {
-        const gameRect = gameContainer.getBoundingClientRect();
-        console.log(gameRect.top);
-        overlayTop = `${gameRect.top}px`;
+        // Compute game container top/bottom
+        const rect = gameContainer.getBoundingClientRect();
+        gameTop = `${rect.top}px`;
+        gameBottom = `${window.innerHeight - rect.bottom}px`;
+        console.log(rect);
     });
 </script>
 
@@ -85,16 +88,30 @@
 >
     <!-- Game (50px is size of ChatInput) -->
     <div
-        style="height: calc(75% - 50px); flex-shrink-0"
+        style="height: calc(80% - 50px); flex-shrink-0"
         class="shrink-0"
         bind:this={gameContainer}
     >
         <Game bind:this={gameRef} previewCommand={command}></Game>
     </div>
 
-    <!-- Look Overlay -->
-    <div id="overlay" class="p-2" style="--overlay-top: {overlayTop};">
+    <!-- Environment Overlay -->
+    <div
+        id="environment-overlay"
+        class="p-2 bg-background bg-opacity-75"
+        style="--game-top: {gameTop};"
+    >
         <Look></Look>
+    </div>
+
+    <!-- Narrator Overlay -->
+    <div
+        id="narrator-overlay"
+        class="p-2 bg-background bg-opacity-50"
+        style="--game-bottom: {gameBottom};"
+    >
+        <!-- Chat Window -->
+        <ChatWindow></ChatWindow>
     </div>
 
     <!-- Chat Input -->
@@ -111,7 +128,7 @@
     </div>
 
     <!-- Toolbar -->
-    <div class="h-1/4 shrink">
+    <div class="h-1/5 shrink">
         {#if innerWidth > LARGE_SCREEN}
             <Resizable.PaneGroup direction="horizontal">
                 <!-- Chat Window -->
@@ -134,17 +151,29 @@
 </div>
 
 <style>
-    #overlay {
+    #environment-overlay {
         position: absolute;
-        top: var(--overlay-top); /* Set dynamically in onMount */
-        width: 400px;
-        @apply bg-background;
-        opacity: 0.75;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 1.5em;
-        left: 50%;
-        transform: translateX(-50%);
+        top: var(--game-top); /* computed on mount */
+        width: 50%;
+        max-width: 600px;
+        left: 0;
+        right: 0;
+        margin-left: auto;
+        margin-right: auto;
+        border-bottom-left-radius: 20px;
+        border-bottom-right-radius: 20px;
+    }
+    #narrator-overlay {
+        position: absolute;
+        bottom: var(--game-bottom); /* computed on mount */
+        width: 75%;
+        max-width: 1000px;
+        left: 0;
+        right: 0;
+        margin-left: auto;
+        margin-right: auto;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        height: 120px;
     }
 </style>

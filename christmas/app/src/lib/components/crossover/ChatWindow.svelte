@@ -4,7 +4,6 @@
     import { getCurrentTimestamp } from "$lib/utils";
     import { onMount } from "svelte";
     import { messageFeed } from "../../../store";
-    import Look from "./Look.svelte";
 
     const ERROR_TIMESPAN = 5000;
 
@@ -51,8 +50,6 @@
         bind:this={chatWindow}
         class="px-4 py-0 overflow-y-auto space-y-2 scroll-container"
     >
-        <!-- Look Message -->
-        <Look class="px-2"></Look>
         {#each $messageFeed as message}
             {#if message.messageFeedType === "message"}
                 <div class="flex flex-row text-left">
