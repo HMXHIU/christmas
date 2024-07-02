@@ -9,7 +9,6 @@
         updateWorlds,
     } from "$lib/crossover";
     import { actions } from "$lib/crossover/world/actions";
-    import { type Direction } from "$lib/crossover/world/types";
     import { substituteVariables } from "$lib/utils";
     import { onMount } from "svelte";
     import { player } from "../../../store";
@@ -23,16 +22,6 @@
     let closeStream: (() => void) | null = null;
     let streamStarted = false;
     let gameWindow: GameWindow;
-
-    async function onMove(direction: Direction) {
-        if ($player != null) {
-            await executeGameCommand([
-                actions.move,
-                { self: $player },
-                { queryIrrelevant: direction, query: "" },
-            ]);
-        }
-    }
 
     function processFeedEvent(event: Event) {
         const { data } = event as MessageEvent;

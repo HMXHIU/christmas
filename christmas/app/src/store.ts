@@ -36,6 +36,7 @@ export let userMetadata = writable<z.infer<typeof UserMetadataSchema> | null>(
 );
 
 // Crossver
+export let inGame = writable<boolean>(false);
 export let player = writable<Player | null>(null);
 export let playerRecord = writable<Record<string, Player>>({});
 export let itemRecord = writable<Record<string, Item>>({});

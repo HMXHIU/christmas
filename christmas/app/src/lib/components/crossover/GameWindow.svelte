@@ -11,6 +11,7 @@
     import { onMount } from "svelte";
     import type { ActionEvent } from "../../../routes/api/crossover/stream/+server";
     import {
+        inGame,
         itemRecord,
         monsterRecord,
         player,
@@ -70,11 +71,13 @@
     }
 
     onMount(() => {
+        // Go into game mode
+        inGame.set(true);
+
         // Compute game container top/bottom
         const rect = gameContainer.getBoundingClientRect();
         gameTop = `${rect.top}px`;
         gameBottom = `${window.innerHeight - rect.bottom}px`;
-        console.log(rect);
     });
 </script>
 

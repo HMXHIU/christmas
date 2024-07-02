@@ -6,8 +6,9 @@
     import type { PlayerMetadata } from "$lib/crossover/world/player";
     import { worldSeed } from "$lib/crossover/world/world";
     import { cn } from "$lib/shadcn";
+    import { onMount } from "svelte";
     import { toast } from "svelte-sonner";
-    import { token, userDeviceClient } from "../../../store";
+    import { inGame, token, userDeviceClient } from "../../../store";
     import CharacterCreator from "./CharacterCreator.svelte";
 
     let requireSignup = false;
@@ -75,6 +76,11 @@
             await login({ region, geohash, retryWithRefresh: true });
         }
     }
+
+    onMount(() => {
+        // Out of game mode
+        inGame.set(false);
+    });
 </script>
 
 <div class={cn("flex flex-col text-center gap-4", $$restProps)}>
