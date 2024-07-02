@@ -7,9 +7,23 @@
     import * as Dialog from "$lib/components/ui/dialog";
     import { extractQueryParams, getErrorMessage } from "$lib/utils";
     import { Dialog as BitsDialog } from "bits-ui";
+    import gsap from "gsap";
+    import { onMount } from "svelte";
+    import { inGame } from "../../../store";
 
     let qrAlertOpen: boolean = false;
     let verifyRemdeptionParams: any = {};
+
+    let footerElement: HTMLElement;
+
+    function animateFooter(inGame: boolean) {
+        gsap.to(footerElement, {
+            height: inGame ? "0rem" : "3rem",
+            padding: inGame ? "0" : "0.75rem 0", // py-3
+            duration: 0.5,
+            ease: "power1.inOut",
+        });
+    }
 
     async function onScanSuccess(decodedText: string, decodedResult: any) {
         const qrParams = extractQueryParams(decodedText);
@@ -48,10 +62,23 @@
             qrAlertOpen = true;
         }
     }
+
+    onMount(() => {
+        let unsubscribeGameMode = inGame.subscribe((inGameValue) => {
+            animateFooter(inGameValue);
+        });
+
+        return () => {
+            unsubscribeGameMode();
+        };
+    });
 </script>
 
 <!-- Page Footer -->
-<footer class="py-3 fixed w-full bottom-0 z-50 bg-secondary pl-2 h-12">
+<footer
+    class="py-3 fixed w-full bottom-0 z-50 bg-secondary pl-2 h-12"
+    bind:this={footerElement}
+>
     <!-- QR Scanner -->
     <div class="relative h-0 flex justify-center">
         <Dialog.Root>

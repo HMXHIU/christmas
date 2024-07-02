@@ -4,7 +4,7 @@
         fetchMarketCoupons,
         fetchStores,
     } from "$lib/community";
-    import Footer from "$lib/components/community/Footer.svelte";
+
     import { onMount } from "svelte";
     import "../../app.postcss";
     import { token, userDeviceClient } from "../../store";
@@ -42,9 +42,5 @@
 
 <!-- Page Content (account for footer) -->
 <div class="pb-12 pt-4">
-    <!-- Slot -->
     <slot></slot>
 </div>
-
-<!-- Footer -->
-<Footer />

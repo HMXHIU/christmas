@@ -1,5 +1,6 @@
 <script lang="ts">
     import Wallet from "$lib/components/common/Wallet.svelte";
+    import Footer from "$lib/components/community/Footer.svelte";
     import { Toaster } from "$lib/components/ui/sonner";
     import { UserDeviceClient } from "$lib/userDeviceClient";
     import gsap from "gsap";
@@ -8,22 +9,24 @@
     import { inGame, userDeviceClient } from "../store";
 
     let headerElement: HTMLElement;
-    let headerExpanded = false;
+    let headerExpanded = true;
 
     function toggleHeader() {
         headerExpanded = !headerExpanded;
-        animateHeader($inGame, headerExpanded);
+        animateHeader(headerExpanded);
     }
 
-    function animateHeader(inGameValue: boolean, expanded: boolean) {
-        const targetWidth = !inGameValue || expanded ? "100%" : "56px";
+    function animateHeader(expanded: boolean) {
+        const targetWidth = expanded ? "100%" : "56px";
         const targetHeight = "56px";
         const targetOpacity = expanded ? 1 : 0.3;
+        const targetRadius = expanded ? "0px" : "20px";
 
         gsap.to(headerElement, {
             width: targetWidth,
             height: targetHeight,
             opacity: targetOpacity,
+            borderBottomRightRadius: targetRadius,
             duration: 0.5,
             ease: "power1.inOut",
         });
@@ -39,8 +42,8 @@
         init();
 
         let unsubscribeGameMode = inGame.subscribe((inGameValue) => {
-            headerExpanded = false;
-            animateHeader(inGameValue, headerExpanded);
+            headerExpanded = !inGameValue;
+            animateHeader(headerExpanded);
         });
 
         return () => {
@@ -54,14 +57,12 @@
     <!-- Page Header -->
     <header
         bind:this={headerElement}
-        class="top-0 left-0 z-50 bg-secondary overflow-hidden"
-        class:sticky={!$inGame}
-        class:fixed={$inGame}
-        class:w-full={!$inGame || headerExpanded}
-        class:w-14={$inGame && !headerExpanded}
-        class:h-14={$inGame || !headerExpanded}
+        class="fixed top-0 left-0 z-50 bg-secondary overflow-hidden"
+        class:w-full={headerExpanded}
+        class:w-14={!headerExpanded}
+        class:h-14={!headerExpanded}
     >
-        {#if $inGame && !headerExpanded}
+        {#if !headerExpanded}
             <button
                 on:click={toggleHeader}
                 class="h-14 w-14 flex items-center justify-center"
@@ -115,24 +116,9 @@
         <slot></slot>
     </main>
 
+    <!-- Footer -->
+    <Footer />
+
     <!-- Toaster -->
     <Toaster />
 </div>
-
-<!-- 
-<header
-    class="sticky top-0 z-50 w-full border-b bg-secondary h-14"
-    bind:this={headerElement}
->
-    <div class="container flex h-14 max-w-screen-2xl items-center">
-        <div>
-            <strong class="uppercase"><a href="/coupons">Community</a></strong>
-            <strong class="uppercase">///</strong>
-            <strong class="uppercase"><a href="/crossover">Crossover</a></strong
-            >
-        </div>
-        <div class="flex flex-1 items-center justify-end space-x-2">
-            <Wallet></Wallet>
-        </div>
-    </div>
-</header> -->

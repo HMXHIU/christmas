@@ -8,7 +8,7 @@
     import { abilities, type Ability } from "$lib/crossover/world/abilities";
     import { playerActions } from "$lib/crossover/world/actions";
     import { cn } from "$lib/shadcn";
-    import { onMount } from "svelte";
+    import { onDestroy, onMount } from "svelte";
     import type { ActionEvent } from "../../../routes/api/crossover/stream/+server";
     import {
         inGame,
@@ -18,9 +18,11 @@
         playerRecord,
     } from "../../../store";
     import AutocompleteGC from "./AutocompleteGC.svelte";
+    import AvatarSigil from "./AvatarSigil.svelte";
     import ChatInput from "./ChatInput.svelte";
     import ChatWindow from "./ChatWindow.svelte";
     import Game from "./Game";
+    import Inventory from "./Inventory.svelte";
     import Look from "./Look.svelte";
 
     export let onGameCommand: (command: GameCommand) => Promise<void>;
@@ -79,13 +81,18 @@
         gameTop = `${rect.top}px`;
         gameBottom = `${window.innerHeight - rect.bottom}px`;
     });
+
+    onDestroy(() => {
+        // Exit game mode
+        inGame.set(false);
+    });
 </script>
 
 <svelte:window bind:innerWidth />
 
 <div
     class={cn(
-        "h-[calc(100dvh-9rem)] w-full flex flex-col justify-between",
+        "h-[calc(100dvh)] w-full flex flex-col justify-between",
         $$restProps.class,
     )}
 >
@@ -117,6 +124,11 @@
         <ChatWindow></ChatWindow>
     </div>
 
+    <!-- Player Sigil Overlay -->
+    <div id="player-overlay" class="p-3" style="--game-bottom: {gameBottom};">
+        <AvatarSigil player={$player} />
+    </div>
+
     <!-- Chat Input -->
     <ChatInput class="m-2" {onEnterKeyPress} {onPartial}></ChatInput>
 
@@ -134,15 +146,17 @@
     <div class="h-1/5 shrink">
         {#if innerWidth > LARGE_SCREEN}
             <Resizable.PaneGroup direction="horizontal">
-                <!-- Chat Window -->
-                <Resizable.Pane class="px-2 pt-2">
-                    <ChatWindow></ChatWindow>
-                </Resizable.Pane>
-                <Resizable.Handle withHandle />
-                <!-- Look (TODO: doesnt seem to scroll inside resizable) -->
+                <!-- Inventory -->
                 <Resizable.Pane class="px-2 pt-2">
                     <ScrollArea orientation="vertical">
-                        <Look></Look>
+                        <Inventory></Inventory>
+                    </ScrollArea>
+                </Resizable.Pane>
+                <Resizable.Handle withHandle />
+                <!-- TODO: Abilities/Actions -->
+                <Resizable.Pane class="px-2 pt-2">
+                    <ScrollArea orientation="vertical">
+                        <Inventory></Inventory>
                     </ScrollArea>
                 </Resizable.Pane>
             </Resizable.PaneGroup>
@@ -178,5 +192,9 @@
         border-top-left-radius: 20px;
         border-top-right-radius: 20px;
         height: 120px;
+    }
+    #player-overlay {
+        position: absolute;
+        bottom: var(--game-bottom); /* computed on mount */
     }
 </style>
