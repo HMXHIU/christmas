@@ -41,7 +41,7 @@
 </script>
 
 <!-- Page Content (account for footer) -->
-<div class="pb-12">
+<div class="pb-12 pt-4">
     <!-- Slot -->
     <slot></slot>
 </div>

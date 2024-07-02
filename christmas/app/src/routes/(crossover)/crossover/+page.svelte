@@ -126,12 +126,12 @@
 </script>
 
 {#if !$player}
-    <div class="container">
+    <div class="container py-16">
         <Onboard />
     </div>
 {:else}
     <GameWindow
-        class="pt-2"
+        class="pt-0"
         onGameCommand={executeGameCommand}
         bind:this={gameWindow}
     />

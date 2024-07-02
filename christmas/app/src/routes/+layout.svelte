@@ -34,7 +34,7 @@
     </header>
 
     <!-- Slot (account for header)-->
-    <main class="py-4">
+    <main class="py-0">
         <!-- Slot -->
         <slot></slot>
     </main>

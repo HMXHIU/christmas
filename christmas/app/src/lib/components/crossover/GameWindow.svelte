@@ -8,6 +8,7 @@
     import { abilities, type Ability } from "$lib/crossover/world/abilities";
     import { playerActions } from "$lib/crossover/world/actions";
     import { cn } from "$lib/shadcn";
+    import { onMount } from "svelte";
     import type { ActionEvent } from "../../../routes/api/crossover/stream/+server";
     import {
         itemRecord,
@@ -26,9 +27,11 @@
     const LARGE_SCREEN = 800;
 
     let innerWidth: number; // window.innerWidth
+    let overlayTop = "0px";
     let commands: GameCommand[] = [];
     let command: GameCommand | null = null;
     let gameRef: Game;
+    let gameContainer: HTMLDivElement;
 
     export async function handleActionEvent(event: ActionEvent) {
         gameRef.drawActionEvent(event);
@@ -64,6 +67,12 @@
             commands = [];
         }
     }
+
+    onMount(() => {
+        const gameRect = gameContainer.getBoundingClientRect();
+        console.log(gameRect.top);
+        overlayTop = `${gameRect.top}px`;
+    });
 </script>
 
 <svelte:window bind:innerWidth />
@@ -74,7 +83,35 @@
         $$restProps.class,
     )}
 >
-    <div class="h-1/2 shrink">
+    <!-- Game (50px is size of ChatInput) -->
+    <div
+        style="height: calc(75% - 50px); flex-shrink-0"
+        class="shrink-0"
+        bind:this={gameContainer}
+    >
+        <Game bind:this={gameRef} previewCommand={command}></Game>
+    </div>
+
+    <!-- Look Overlay -->
+    <div id="overlay" class="p-2" style="--overlay-top: {overlayTop};">
+        <Look></Look>
+    </div>
+
+    <!-- Chat Input -->
+    <ChatInput class="m-2" {onEnterKeyPress} {onPartial}></ChatInput>
+
+    <!-- Autocomplete Game Commands -->
+    <div class="relative">
+        <AutocompleteGC
+            class="pb-2 px-2 bottom-0 absolute"
+            {commands}
+            {onGameCommand}
+            bind:command
+        ></AutocompleteGC>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="h-1/4 shrink">
         {#if innerWidth > LARGE_SCREEN}
             <Resizable.PaneGroup direction="horizontal">
                 <!-- Chat Window -->
@@ -94,22 +131,20 @@
             <ChatWindow></ChatWindow>
         {/if}
     </div>
-
-    <!-- Autocomplete Game Commands -->
-    <div class="relative">
-        <AutocompleteGC
-            class="pb-2 px-2 bottom-0 absolute"
-            {commands}
-            {onGameCommand}
-            bind:command
-        ></AutocompleteGC>
-    </div>
-
-    <!-- Chat Input -->
-    <ChatInput class="m-2" {onEnterKeyPress} {onPartial}></ChatInput>
-
-    <!-- Game (60px is size of ChatInput) -->
-    <div style="height: calc(50% - 60px); flex-shrink-0" class="shrink-0">
-        <Game bind:this={gameRef} previewCommand={command}></Game>
-    </div>
 </div>
+
+<style>
+    #overlay {
+        position: absolute;
+        top: var(--overlay-top); /* Set dynamically in onMount */
+        width: 400px;
+        @apply bg-background;
+        opacity: 0.75;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.5em;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+</style>

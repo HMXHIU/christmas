@@ -120,6 +120,10 @@
                 command = commands[(idx + 1) % commands.length];
             }
         }
+        // Submit command (if focus is not in the input field)
+        else if (keys.includes("enter")) {
+            onSubmit();
+        }
     }
 
     onMount(() => {
@@ -138,11 +142,13 @@
         <div class={cn($$restProps.class)}>
             <Command.Root class="rounded-lg border shadow-md">
                 <Command.List>
-                    {#each commandGroups as [group, gcs], groupIdx}
+                    {#each commandGroups as [group, gcs]}
                         <Command.Group heading={group}>
-                            {#each gcs as gc, commandIdx}
+                            {#each gcs as gc}
                                 <Command.Item
-                                    class="justify-between"
+                                    class={command === gc
+                                        ? "justify-between bg-accent"
+                                        : "justify-between"}
                                     onSelect={() => {
                                         command = gc;
                                     }}

@@ -9,6 +9,7 @@ type GameKey =
     | "alt"
     | "ctrl"
     | "shift"
+    | "enter"
     | "tab";
 
 const EVENT_INTERVAL = 20;
@@ -26,6 +27,7 @@ const keyMap: Record<string, GameKey> = {
     AltLeft: "alt",
     AltRight: "alt",
     Tab: "tab",
+    Enter: "enter",
 };
 
 class KeyboardController {
