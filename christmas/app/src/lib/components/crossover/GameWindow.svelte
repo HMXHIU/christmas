@@ -28,7 +28,8 @@
 
     export let onGameCommand: (command: GameCommand) => Promise<void>;
 
-    const LARGE_SCREEN = 800;
+    const LARGE_SCREEN = 1000;
+    const MEDIUM_SCREEN = 800;
 
     let innerWidth: number; // window.innerWidth
     let gameTop = "0px";
@@ -127,9 +128,6 @@
         <AvatarSigil player={$player} />
     </div>
 
-    <!-- Chat Input -->
-    <ChatInput class="m-2" {onEnterKeyPress} {onPartial}></ChatInput>
-
     <!-- Autocomplete Game Commands -->
     <div class="relative">
         <AutocompleteGC
@@ -139,6 +137,9 @@
             bind:command
         ></AutocompleteGC>
     </div>
+
+    <!-- Chat Input -->
+    <ChatInput class="m-2" {onEnterKeyPress} {onPartial}></ChatInput>
 
     <!-- Toolbar -->
     <div class="h-1/5 shrink">
@@ -159,6 +160,19 @@
                     <Tool tool="actions"></Tool>
                 </Resizable.Pane>
             </Resizable.PaneGroup>
+        {:else if innerWidth > MEDIUM_SCREEN}
+            <Resizable.PaneGroup direction="horizontal">
+                <!-- Inventory/Utilities -->
+                <Resizable.Pane class="px-2">
+                    <Tool tool="inventory"></Tool>
+                </Resizable.Pane>
+                <Resizable.Handle />
+                <!-- Abilities/ -->
+                <Resizable.Pane class="px-2">
+                    <Tool tool="abilities"></Tool>
+                </Resizable.Pane>
+                <Resizable.Handle />
+            </Resizable.PaneGroup>
         {:else}
             <!-- Inventory -->
             <ScrollArea orientation="vertical">
@@ -178,8 +192,8 @@
         right: 0;
         margin-left: auto;
         margin-right: auto;
-        border-bottom-left-radius: 20px;
-        border-bottom-right-radius: 20px;
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
     }
     #narrator-overlay {
         position: absolute;
@@ -190,8 +204,8 @@
         right: 0;
         margin-left: auto;
         margin-right: auto;
-        border-top-left-radius: 20px;
-        border-top-right-radius: 20px;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
         height: 120px;
     }
     #player-overlay {

@@ -22,17 +22,17 @@
         >
     </Tabs.List>
     <div class="flex-grow">
-        <Tabs.Content value="inventory">
+        <Tabs.Content value="inventory" class="m-0">
             <ScrollArea orientation="vertical" class="h-full">
                 <Inventory></Inventory>
             </ScrollArea>
         </Tabs.Content>
-        <Tabs.Content value="abilities"
+        <Tabs.Content value="abilities" class="m-0"
             ><ScrollArea orientation="vertical" class="h-full">
                 <Abilities></Abilities>
             </ScrollArea></Tabs.Content
         >
-        <Tabs.Content value="actions"
+        <Tabs.Content value="actions" class="m-0"
             ><ScrollArea orientation="vertical" class="h-full">
                 <Actions></Actions>
             </ScrollArea></Tabs.Content

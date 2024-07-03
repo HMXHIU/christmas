@@ -35,7 +35,7 @@
             </div>
             <!-- Inventory Items -->
             <div class="space-y-1">
-                <Label for="new">Bag</Label>
+                <Label for="new">Inventory</Label>
                 <div class="text-xs">
                     {#if $playerInventoryItems.length > 0}
                         {#each $playerInventoryItems as item (item.item)}
