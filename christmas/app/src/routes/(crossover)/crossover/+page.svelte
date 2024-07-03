@@ -3,15 +3,18 @@
     import Onboard from "$lib/components/crossover/Onboard.svelte";
     import {
         addMessageFeed,
+        crossoverPlayerMetadata,
         executeGameCommand,
         handleUpdateEntities,
         stream,
         updateWorlds,
     } from "$lib/crossover";
+    import { getPlayerAbilities } from "$lib/crossover/world/abilities";
     import { actions } from "$lib/crossover/world/actions";
+    import type { Player } from "$lib/server/crossover/redis/entities";
     import { substituteVariables } from "$lib/utils";
-    import { onMount } from "svelte";
-    import { player } from "../../../store";
+    import { onDestroy } from "svelte";
+    import { player, playerAbilities, userMetadata } from "../../../store";
     import type {
         ActionEvent,
         FeedEvent,
@@ -20,7 +23,6 @@
 
     let eventStream: EventTarget | null = null;
     let closeStream: (() => void) | null = null;
-    let streamStarted = false;
     let gameWindow: GameWindow;
 
     function processFeedEvent(event: Event) {
@@ -86,37 +88,31 @@
         }
     }
 
-    onMount(() => {
-        // TODO: DANGEROUS look will change player which will call look -> change player
-        const unsubscribePlayer = player.subscribe(async (p) => {
-            // Start streaming on login
-            if (p != null && !streamStarted) {
-                stopStream();
-                await startStream();
-                streamStarted = true;
+    async function onLogin(player: Player) {
+        // Fetch player metadata
+        userMetadata.set(await crossoverPlayerMetadata());
 
-                // Look at surroundings & update inventory
-                await updateWorlds(p.loc[0]);
-                await executeGameCommand([actions.look, { self: p }]);
-                await executeGameCommand([actions.inventory, { self: p }]);
-            }
+        // Fetch player abilities
+        playerAbilities.set(getPlayerAbilities(player));
 
-            // Stop streaming on logout
-            else if (p == null) {
-                stopStream();
-            }
-        });
+        // Start streaming on login
+        stopStream();
+        await startStream();
 
-        return () => {
-            stopStream();
-            unsubscribePlayer();
-        };
+        // Look at surroundings & update inventory
+        await updateWorlds(player.loc[0]);
+        await executeGameCommand([actions.look, { self: player }]);
+        await executeGameCommand([actions.inventory, { self: player }]);
+    }
+
+    onDestroy(() => {
+        stopStream();
     });
 </script>
 
 {#if !$player}
     <div class="container py-16">
-        <Onboard />
+        <Onboard {onLogin} />
     </div>
 {:else}
     <GameWindow

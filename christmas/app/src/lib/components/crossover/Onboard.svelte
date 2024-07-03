@@ -5,6 +5,7 @@
     import { login, signup } from "$lib/crossover";
     import type { PlayerMetadata } from "$lib/crossover/world/player";
     import { worldSeed } from "$lib/crossover/world/world";
+    import type { Player } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
     import { onMount } from "svelte";
     import { toast } from "svelte-sonner";
@@ -12,6 +13,7 @@
     import CharacterCreator from "./CharacterCreator.svelte";
 
     let requireSignup = false;
+    export let onLogin: (player: Player) => void;
 
     const askLocation =
         "Location not found. Please enable location services and try again.";
@@ -35,7 +37,12 @@
 
         try {
             // Try login to crossover
-            await login({ region, geohash, retryWithRefresh: true });
+            const { status, player } = await login({
+                region,
+                geohash,
+                retryWithRefresh: true,
+            });
+            onLogin(player);
         } catch (error) {
             // If login failed, player has not signed up
             requireSignup = true;
@@ -73,7 +80,12 @@
             requireSignup = false;
 
             // Login to crossover
-            await login({ region, geohash, retryWithRefresh: true });
+            const { status, player } = await login({
+                region,
+                geohash,
+                retryWithRefresh: true,
+            });
+            onLogin(player);
         }
     }
 

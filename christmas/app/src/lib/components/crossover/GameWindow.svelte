@@ -5,7 +5,6 @@
         searchPossibleCommands,
         type GameCommand,
     } from "$lib/crossover/ir";
-    import { abilities, type Ability } from "$lib/crossover/world/abilities";
     import { playerActions } from "$lib/crossover/world/actions";
     import { cn } from "$lib/shadcn";
     import { onDestroy, onMount } from "svelte";
@@ -15,6 +14,7 @@
         itemRecord,
         monsterRecord,
         player,
+        playerAbilities,
         playerRecord,
     } from "../../../store";
     import AutocompleteGC from "./AutocompleteGC.svelte";
@@ -53,13 +53,10 @@
 
     async function onPartial(message: string) {
         if (message.length > 2) {
-            // TODO: replace with actual player's Actions & Abilities
-            const playerAbilities: Ability[] = Object.values(abilities);
-
             // Autocomplete game commands
             commands = searchPossibleCommands({
                 query: message,
-                playerAbilities,
+                playerAbilities: $playerAbilities,
                 playerItems: [], // TODO: replace with actual player's Items
                 actions: playerActions,
                 monsters: Object.values($monsterRecord),
@@ -96,9 +93,9 @@
         $$restProps.class,
     )}
 >
-    <!-- Game (50px is size of ChatInput) -->
+    <!-- Game (account for chat input) -->
     <div
-        style="height: calc(80% - 50px); flex-shrink-0"
+        style="height: calc(80% - 65px)"
         class="shrink-0"
         bind:this={gameContainer}
     >
@@ -147,14 +144,14 @@
         {#if innerWidth > LARGE_SCREEN}
             <Resizable.PaneGroup direction="horizontal">
                 <!-- Inventory -->
-                <Resizable.Pane class="px-2 pt-2">
+                <Resizable.Pane class="px-2">
                     <ScrollArea orientation="vertical">
                         <Inventory></Inventory>
                     </ScrollArea>
                 </Resizable.Pane>
                 <Resizable.Handle withHandle />
                 <!-- TODO: Abilities/Actions -->
-                <Resizable.Pane class="px-2 pt-2">
+                <Resizable.Pane class="px-2">
                     <ScrollArea orientation="vertical">
                         <Inventory></Inventory>
                     </ScrollArea>
@@ -183,7 +180,7 @@
     #narrator-overlay {
         position: absolute;
         bottom: var(--game-bottom); /* computed on mount */
-        width: 75%;
+        width: 70%;
         max-width: 1000px;
         left: 0;
         right: 0;

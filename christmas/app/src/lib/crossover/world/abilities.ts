@@ -12,6 +12,7 @@ const { cloneDeep } = lodash;
 
 export {
     abilities,
+    getPlayerAbilities,
     hasResourcesForAbility,
     patchEffectWithVariables,
     resolveAbilityEntities,
@@ -630,4 +631,11 @@ function highestScoreForToken(
         }
     }
     return score;
+}
+
+function getPlayerAbilities(player: Player): Ability[] {
+    // TODO: to be implemented based on level etc ... (to also include check in backend)
+    const playerAbilities: Ability[] = Object.values(abilities);
+
+    return playerAbilities;
 }
