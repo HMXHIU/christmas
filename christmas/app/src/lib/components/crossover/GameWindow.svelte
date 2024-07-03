@@ -23,8 +23,8 @@
     import ChatInput from "./ChatInput.svelte";
     import ChatWindow from "./ChatWindow.svelte";
     import Game from "./Game";
-    import Inventory from "./Inventory.svelte";
     import Look from "./Look.svelte";
+    import Tool from "./Tool.svelte";
 
     export let onGameCommand: (command: GameCommand) => Promise<void>;
 
@@ -144,23 +144,26 @@
     <div class="h-1/5 shrink">
         {#if innerWidth > LARGE_SCREEN}
             <Resizable.PaneGroup direction="horizontal">
-                <!-- Inventory -->
+                <!-- Inventory/Utilities -->
                 <Resizable.Pane class="px-2">
-                    <ScrollArea orientation="vertical">
-                        <Inventory></Inventory>
-                    </ScrollArea>
+                    <Tool tool="inventory"></Tool>
                 </Resizable.Pane>
-                <Resizable.Handle withHandle />
-                <!-- TODO: Abilities/Actions -->
+                <Resizable.Handle />
+                <!-- Abilities/ -->
                 <Resizable.Pane class="px-2">
-                    <ScrollArea orientation="vertical">
-                        <Inventory></Inventory>
-                    </ScrollArea>
+                    <Tool tool="abilities"></Tool>
+                </Resizable.Pane>
+                <Resizable.Handle />
+                <!-- Actions -->
+                <Resizable.Pane class="px-2">
+                    <Tool tool="actions"></Tool>
                 </Resizable.Pane>
             </Resizable.PaneGroup>
         {:else}
-            <!-- Chat Window -->
-            <ChatWindow></ChatWindow>
+            <!-- Inventory -->
+            <ScrollArea orientation="vertical">
+                <Tool tool="inventory"></Tool>
+            </ScrollArea>
         {/if}
     </div>
 </div>
