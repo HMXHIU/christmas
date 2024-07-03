@@ -40,6 +40,9 @@ export let userMetadata = writable<z.infer<typeof UserMetadataSchema> | null>(
 export let inGame = writable<boolean>(false);
 export let player = writable<Player | null>(null);
 export let playerAbilities = writable<Ability[]>([]);
+export let playerInventoryItems = writable<Item[]>([]);
+export let playerEquippedItems = writable<Item[]>([]);
+
 export let playerRecord = writable<Record<string, Player>>({});
 export let itemRecord = writable<Record<string, Item>>({});
 export let monsterRecord = writable<Record<string, Monster>>({});

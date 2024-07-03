@@ -15,6 +15,7 @@
         monsterRecord,
         player,
         playerAbilities,
+        playerEquippedItems,
         playerRecord,
     } from "../../../store";
     import AutocompleteGC from "./AutocompleteGC.svelte";
@@ -57,7 +58,7 @@
             commands = searchPossibleCommands({
                 query: message,
                 playerAbilities: $playerAbilities,
-                playerItems: [], // TODO: replace with actual player's Items
+                playerItems: $playerEquippedItems, // Only search on equiped items
                 actions: playerActions,
                 monsters: Object.values($monsterRecord),
                 players: Object.values($playerRecord),
