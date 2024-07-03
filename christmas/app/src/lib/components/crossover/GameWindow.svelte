@@ -24,6 +24,7 @@
     import ChatWindow from "./ChatWindow.svelte";
     import Game from "./Game";
     import Look from "./Look.svelte";
+    import Map from "./Map.svelte";
     import Tool from "./Tool.svelte";
 
     export let onGameCommand: (command: GameCommand) => Promise<void>;
@@ -97,7 +98,7 @@
 >
     <!-- Game (account for chat input) -->
     <div
-        style="height: calc(80% - 65px)"
+        style="height: calc(80% - 52px)"
         class="shrink-0"
         bind:this={gameContainer}
     >
@@ -128,6 +129,11 @@
         <AvatarSigil player={$player} />
     </div>
 
+    <!-- Map Overlay -->
+    <div id="map-overlay" class="p-3" style="--game-bottom: {gameBottom};">
+        <Map></Map>
+    </div>
+
     <!-- Autocomplete Game Commands -->
     <div class="relative">
         <AutocompleteGC
@@ -139,7 +145,7 @@
     </div>
 
     <!-- Chat Input -->
-    <ChatInput class="m-2" {onEnterKeyPress} {onPartial}></ChatInput>
+    <ChatInput class="mb-1 mt-0 py-0" {onEnterKeyPress} {onPartial}></ChatInput>
 
     <!-- Toolbar -->
     <div class="h-1/5 shrink">
@@ -206,10 +212,15 @@
         margin-right: auto;
         border-top-left-radius: 10px;
         border-top-right-radius: 10px;
-        height: 120px;
+        height: 100px;
     }
     #player-overlay {
         position: absolute;
         bottom: var(--game-bottom); /* computed on mount */
+    }
+    #map-overlay {
+        position: absolute;
+        bottom: var(--game-bottom); /* computed on mount */
+        right: 0;
     }
 </style>
