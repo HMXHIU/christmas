@@ -18,13 +18,42 @@
     let app: Application | null = null;
     let geohash: string | null = null;
     let mapMeshes: Record<string, MapMesh> = {};
+    let clientHeight: number;
+    let clientWidth: number;
+
+    $: resize(clientHeight, clientWidth);
+
+    function resize(height: number, width: number) {
+        if (app == null || geohash == null) {
+            return;
+        }
+
+        console.log("resize", width, height);
+        app.renderer.resize(width, height);
+        updateCamera(geohash);
+    }
+    function updateCamera(geohash: string) {
+        if (app === null) {
+            return;
+        }
+        // Center map on player location (in pixel coordinates)
+        const mapId = geohash.slice(0, 2);
+        if (mapMeshes[mapId] == null) {
+            return;
+        }
+        const { texelX, texelY } = mapMeshes[mapId];
+        const [col, row] = geohashToColRow(geohash);
+        app.stage.pivot.set(
+            col * texelX - clientWidth / 2,
+            row * texelY - clientHeight / 2,
+        );
+        console.log(col * texelX, row * texelY);
+    }
 
     async function init() {
         app = new Application();
         await initAssetManager();
         await app.init({
-            width: 200,
-            height: 200,
             antialias: false,
             preference: "webgl",
         });
@@ -81,16 +110,18 @@
                 return;
             }
 
+            // Check if player location has changed
+            if (geohash === p.loc[0]) {
+                return;
+            }
+
             geohash = p.loc[0];
 
             // Update map mesh
             await updateMapMesh(geohash);
 
             // Center map on player location (in pixel coordinates)
-            const mapId = geohash.slice(0, 2);
-            const { texelX, texelY } = mapMeshes[mapId];
-            const [col, row] = geohashToColRow(geohash);
-            app.stage.pivot.set(col * texelX, row * texelY);
+            updateCamera(geohash);
         });
 
         return () => {
@@ -106,17 +137,19 @@
     });
 </script>
 
-<div class="flex flex-col gap-2">
+<div class="h-full w-full" bind:clientHeight bind:clientWidth>
     <div
         id="map-container"
         class={cn(
-            "h-36 w-36 rounded-full overflow-hidden mx-auto",
+            "rounded-full overflow-hidden aspect-square",
             $$restProps.class,
         )}
         bind:this={containerElement}
     ></div>
     <!-- TODO: Add copy button to copy geohash -->
-    <p class="text-muted-foreground text-xs mx-auto">{geohash ?? ""}</p>
+    <p class="pt-2 text-muted-foreground text-xs text-center">
+        {geohash ?? ""}
+    </p>
 </div>
 
 <style>

@@ -7,6 +7,7 @@
     } from "$lib/crossover/ir";
     import { playerActions } from "$lib/crossover/world/actions";
     import { cn } from "$lib/shadcn";
+    import { gsap } from "gsap";
     import { onDestroy, onMount } from "svelte";
     import type { ActionEvent } from "../../../routes/api/crossover/stream/+server";
     import {
@@ -31,14 +32,44 @@
 
     const LARGE_SCREEN = 1000;
     const MEDIUM_SCREEN = 800;
+    const MAP_SIZE = 150;
 
-    let innerWidth: number; // window.innerWidth
-    let gameTop = "0px";
-    let gameBottom = "0px";
+    let innerWidth: number; // bound to window.innerWidth
+    let innerHeight: number; // bound to window.innerHeight
+    let gameTop = 0;
+    let gameBottom = 0;
+    let mapSizeExpanded = 0;
     let commands: GameCommand[] = [];
     let command: GameCommand | null = null;
     let gameRef: Game;
     let gameContainer: HTMLDivElement;
+    let isMapExpanded = false;
+
+    function toggleMapSize(event: MouseEvent) {
+        const mapElement = event.currentTarget as HTMLElement;
+
+        if (isMapExpanded) {
+            gsap.to(mapElement, {
+                duration: 1.0,
+                width: MAP_SIZE,
+                height: MAP_SIZE,
+                right: 0,
+                top: gameTop,
+                ease: "power2.out",
+            });
+        } else {
+            gsap.to(mapElement, {
+                duration: 1.0,
+                width: mapSizeExpanded,
+                height: mapSizeExpanded,
+                right: Math.round((innerWidth - mapSizeExpanded) / 2),
+                top: Math.round((innerHeight - mapSizeExpanded) / 3),
+                ease: "power2.out",
+            });
+        }
+
+        isMapExpanded = !isMapExpanded;
+    }
 
     export async function handleActionEvent(event: ActionEvent) {
         gameRef.drawActionEvent(event);
@@ -78,8 +109,13 @@
 
         // Compute game container top/bottom
         const rect = gameContainer.getBoundingClientRect();
-        gameTop = `${rect.top}px`;
-        gameBottom = `${window.innerHeight - rect.bottom}px`;
+        gameTop = rect.top;
+        gameBottom = window.innerHeight - rect.bottom;
+
+        // Computer map size expanded
+        mapSizeExpanded = Math.round(
+            Math.min(window.innerWidth, window.innerHeight) * 0.9,
+        );
     });
 
     onDestroy(() => {
@@ -88,7 +124,7 @@
     });
 </script>
 
-<svelte:window bind:innerWidth />
+<svelte:window bind:innerWidth bind:innerHeight />
 
 <div
     class={cn(
@@ -109,7 +145,7 @@
     <div
         id="environment-overlay"
         class="p-2 bg-background bg-opacity-75"
-        style="--game-top: {gameTop};"
+        style="--game-top: {gameTop}px;"
     >
         <Look></Look>
     </div>
@@ -118,21 +154,26 @@
     <div
         id="narrator-overlay"
         class="p-2 bg-background bg-opacity-50"
-        style="--game-bottom: {gameBottom};"
+        style="--game-bottom: {gameBottom}px;"
     >
         <!-- Chat Window -->
         <ChatWindow></ChatWindow>
     </div>
 
     <!-- Player Sigil Overlay -->
-    <div id="player-overlay" class="p-3" style="--game-bottom: {gameBottom};">
+    <div id="player-overlay" class="p-3" style="--game-bottom: {gameBottom}px;">
         <AvatarSigil player={$player} />
     </div>
 
     <!-- Map Overlay -->
-    <div id="map-overlay" class="p-3" style="--game-bottom: {gameBottom};">
+    <button
+        id="map-overlay"
+        class="p-3"
+        style="--game-top: {gameTop}px; --map-size: {MAP_SIZE}px;"
+        on:click={toggleMapSize}
+    >
         <Map></Map>
-    </div>
+    </button>
 
     <!-- Autocomplete Game Commands -->
     <div class="relative">
@@ -222,5 +263,8 @@
         position: absolute;
         top: var(--game-top); /* computed on mount */
         right: 0;
+        cursor: pointer;
+        width: var(--map-size);
+        height: var(--map-size);
     }
 </style>
