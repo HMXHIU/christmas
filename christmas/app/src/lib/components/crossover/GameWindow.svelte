@@ -24,7 +24,7 @@
     import ChatWindow from "./ChatWindow.svelte";
     import Game from "./Game";
     import Look from "./Look.svelte";
-    import Map from "./Map.svelte";
+    import Map from "./Map/Map.svelte";
     import Tool from "./Tool.svelte";
 
     export let onGameCommand: (command: GameCommand) => Promise<void>;
@@ -220,7 +220,7 @@
     }
     #map-overlay {
         position: absolute;
-        bottom: var(--game-bottom); /* computed on mount */
+        top: var(--game-top); /* computed on mount */
         right: 0;
     }
 </style>

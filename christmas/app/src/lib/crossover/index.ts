@@ -180,7 +180,7 @@ function handleUpdateEntities(
             for (const p of players) {
                 // Update self (player)
                 if (p.player === self?.player) {
-                    handleUpdatePlayer(self, p);
+                    handleUpdatePlayer(self, p); // TODO: Side effects here is hard to understand
                     player.set(p);
                 } else {
                     pr[p.player] = p;
@@ -569,7 +569,7 @@ async function login(
     }
 
     // Update `$player`
-    player.set(response.player);
+    player.set(response.player); // TODO: Side effects here is hard to understand
 
     return response;
 }
@@ -582,7 +582,7 @@ async function logout(
     }).crossover.auth.logout.query();
 
     // Update `$player`
-    player.set(null);
+    player.set(null); // TODO: Side effects here is hard to understand
 
     return response;
 }

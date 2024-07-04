@@ -13,15 +13,17 @@ import mod289 from "./lygia/math/mod289.glsl?raw";
 import permute from "./lygia/math/permute.glsl?raw";
 import remap from "./lygia/math/remap.glsl?raw";
 import taylorInvSqrt from "./lygia/math/taylorInvSqrt.glsl?raw";
+import mapFrag from "./map.frag?raw";
+import mapVertex from "./map.vert?raw";
 
 export {
-    MAX_SHADER_GEOMETRIES,
     createShader,
     createTexturedQuadGeometry,
     destroyShaderGeometry,
     destroyShaders,
-    loadShaderGeometry,
     loadedShaderGeometries,
+    loadShaderGeometry,
+    MAX_SHADER_GEOMETRIES,
     shaders,
     updateShaderUniforms,
     type ShaderGeometry,
@@ -69,6 +71,10 @@ const shaders: Record<string, { vertex: string; fragment: string }> = {
     world: {
         vertex: entityVertex,
         fragment: entityFrag,
+    },
+    map: {
+        vertex: mapVertex,
+        fragment: mapFrag,
     },
 };
 

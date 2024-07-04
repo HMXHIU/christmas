@@ -10,11 +10,11 @@ import { PNG, type PNGWithMetadata } from "pngjs";
 import { type AssetMetadata, type Tile } from "./types";
 import { worldSeed, type WorldSeed } from "./world";
 export {
-    INTENSITY_TO_HEIGHT,
     biomeAtGeohash,
     biomes,
     biomesNearbyGeohash,
     elevationAtGeohash,
+    INTENSITY_TO_HEIGHT,
     tileAtGeohash,
     topologyAtGeohash,
     topologyTile,
@@ -226,6 +226,8 @@ function topologyTile(geohash: string): {
     cols: number;
     row: number;
     col: number;
+    tlCol: number;
+    tlRow: number;
 } {
     // The topology is stored as 2 precision tiles (4 rows, 8 cols)
     const tile = geohash.slice(0, 2);
@@ -260,6 +262,8 @@ function topologyTile(geohash: string): {
         cols,
         col: col - tlCol,
         row: row - tlRow,
+        tlCol,
+        tlRow,
     };
 }
 
@@ -333,12 +337,23 @@ async function topologyAtGeohash(
     },
 ): Promise<{
     intensity: number;
-    width: number;
+    width: number; // of the image
     height: number;
-    x: number;
+    x: number; // pixel coordinate in the image
     y: number;
+    png: PNGWithMetadata;
+    url: string;
+    tile: {
+        origin: {
+            // world coordinate of the top left corner of the tile
+            col: number;
+            row: number;
+        };
+        rows: number;
+        cols: number;
+    };
 }> {
-    const { rows, cols, url, row, col } = topologyTile(geohash);
+    const { rows, cols, url, row, col, tlCol, tlRow } = topologyTile(geohash);
     const png = await topologyBuffer(url, {
         responseCache: options?.responseCache,
         bufferCache: options?.bufferCache,
@@ -421,6 +436,16 @@ async function topologyAtGeohash(
         x,
         y,
         intensity,
+        png,
+        url,
+        tile: {
+            origin: {
+                col: tlCol,
+                row: tlRow,
+            },
+            rows,
+            cols,
+        },
     };
 }
 

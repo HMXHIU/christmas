@@ -11,21 +11,10 @@
     } from "$lib/crossover";
     import { getPlayerAbilities } from "$lib/crossover/world/abilities";
     import { actions } from "$lib/crossover/world/actions";
-    import {
-        EquipmentSlots,
-        type EquipmentSlot,
-    } from "$lib/crossover/world/compendium";
     import type { Player } from "$lib/server/crossover/redis/entities";
     import { substituteVariables } from "$lib/utils";
     import { onDestroy, onMount } from "svelte";
-    import {
-        itemRecord,
-        player,
-        playerAbilities,
-        playerEquippedItems,
-        playerInventoryItems,
-        userMetadata,
-    } from "../../../store";
+    import { player, playerAbilities, userMetadata } from "../../../store";
     import type {
         ActionEvent,
         FeedEvent,
@@ -117,25 +106,9 @@
     }
 
     onMount(() => {
-        // Update player inventory and equipped items on itemRecord change
-        const unsubscribeItemRecord = itemRecord.subscribe((ir) => {
-            const playerItems = Object.values(ir).filter((item) => {
-                return item.loc.length === 1 && item.loc[0] === $player?.player;
-            });
-            playerInventoryItems.set(
-                playerItems.filter((item) => {
-                    return item.locT === "inv";
-                }),
-            );
-            playerEquippedItems.set(
-                playerItems.filter((item) => {
-                    return EquipmentSlots.includes(item.locT as EquipmentSlot);
-                }),
-            );
-        });
-        return () => {
-            unsubscribeItemRecord();
-        };
+        if ($player) {
+            onLogin($player);
+        }
     });
 
     onDestroy(() => {

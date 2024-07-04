@@ -10,7 +10,12 @@
     import { type Ability } from "$lib/crossover/world/abilities";
     import { actions, type Action } from "$lib/crossover/world/actions";
     import { bestiary } from "$lib/crossover/world/bestiary";
-    import { compendium, type Utility } from "$lib/crossover/world/compendium";
+    import {
+        EquipmentSlots,
+        compendium,
+        type EquipmentSlot,
+        type Utility,
+    } from "$lib/crossover/world/compendium";
     import { MS_PER_TICK } from "$lib/crossover/world/settings";
     import type { Direction } from "$lib/crossover/world/types";
     import { worldSeed } from "$lib/crossover/world/world";
@@ -47,17 +52,19 @@
         itemRecord,
         monsterRecord,
         player,
+        playerEquippedItems,
+        playerInventoryItems,
         playerRecord,
         target,
         worldRecord,
     } from "../../../../store";
-    import { animateAbility } from "./animations";
     import {
         MAX_SHADER_GEOMETRIES,
         destroyShaders,
         loadShaderGeometry,
         updateShaderUniforms,
-    } from "./shaders";
+    } from "../shaders";
+    import { animateAbility } from "./animations";
     import { clearHighlights, drawTargetUI, highlightEntity } from "./ui";
     import {
         CANVAS_HEIGHT,
@@ -1106,6 +1113,24 @@
             }),
             itemRecord.subscribe((ir) => {
                 updateEntities(ir, playerPosition, "item");
+                // Player inventory and equipped items
+                const playerItems = Object.values(ir).filter((item) => {
+                    return (
+                        item.loc.length === 1 && item.loc[0] === $player?.player
+                    );
+                });
+                playerInventoryItems.set(
+                    playerItems.filter((item) => {
+                        return item.locT === "inv";
+                    }),
+                );
+                playerEquippedItems.set(
+                    playerItems.filter((item) => {
+                        return EquipmentSlots.includes(
+                            item.locT as EquipmentSlot,
+                        );
+                    }),
+                );
             }),
             worldRecord.subscribe((wr) => {
                 updateWorlds(wr, playerPosition);
@@ -1137,9 +1162,10 @@
     onDestroy(() => {
         if (app && worldStage) {
             app.stage.removeAllListeners();
-            app = null; // set this so ticker stops before removing other things
+            isInitialized = false; // set this so ticker stops before removing other things
             destroyShaders();
             clearInstancedShaderMeshes(worldStage);
+            app = null;
         }
     });
 </script>

@@ -49,7 +49,7 @@ import {
     loadShaderGeometry,
     loadedShaderGeometries,
     type ShaderGeometry,
-} from "./shaders";
+} from "../shaders";
 
 export {
     CANVAS_HEIGHT,

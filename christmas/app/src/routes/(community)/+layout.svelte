@@ -15,7 +15,6 @@
             $userDeviceClient?.location?.country?.code &&
             $userDeviceClient?.location?.geohash
         ) {
-            console.log("Fetching market coupons");
             await fetchMarketCoupons({
                 region: $userDeviceClient?.location?.country?.code,
                 geohash: $userDeviceClient?.location?.geohash,
