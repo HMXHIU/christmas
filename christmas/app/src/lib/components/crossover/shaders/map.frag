@@ -2,6 +2,24 @@ precision mediump float;
 
 in vec2 vUV;
 uniform sampler2D uTexture;
+uniform float uTextureHeight;
+uniform float uTextureWidth;
+
+vec4 sampleTextureBilinear(sampler2D tex, vec2 uv) {
+    vec2 uTextureSize = vec2(uTextureWidth, uTextureHeight);
+    vec2 texelSize = 1.0 / uTextureSize;
+    vec2 f = fract(uv * uTextureSize);
+    vec2 centeredUV = uv - f * texelSize;
+
+    vec4 tl = texture2D(tex, centeredUV);
+    vec4 tr = texture2D(tex, centeredUV + vec2(texelSize.x, 0.0));
+    vec4 bl = texture2D(tex, centeredUV + vec2(0.0, texelSize.y));
+    vec4 br = texture2D(tex, centeredUV + vec2(texelSize.x, texelSize.y));
+
+    vec4 tMix = mix(tl, tr, f.x);
+    vec4 bMix = mix(bl, br, f.x);
+    return mix(tMix, bMix, f.y);
+}
 
 vec3 getTerrainColor(float height) {
     // Define color stops for different terrain types
@@ -26,7 +44,8 @@ vec3 getTerrainColor(float height) {
 
 void main() {
 
-    vec4 color = texture2D(uTexture, vUV);
+    // vec4 color = texture2D(uTexture, vUV);
+    vec4 color = sampleTextureBilinear(uTexture, vUV);
 
     float height = color.r; // Assuming the height is stored in the red channel
     vec3 terrainColor = getTerrainColor(height);

@@ -16,38 +16,41 @@
 
     let containerElement: HTMLDivElement;
     let app: Application | null = null;
-    let geohash: string | null = null;
     let mapMeshes: Record<string, MapMesh> = {};
     let clientHeight: number;
     let clientWidth: number;
+    let playerPosition: {
+        col: number;
+        row: number;
+        geohash: string;
+        mapId: string;
+    } | null = null;
 
     $: resize(clientHeight, clientWidth);
 
     function resize(height: number, width: number) {
-        if (app == null || geohash == null) {
+        if (app == null || playerPosition == null) {
+            return;
+        }
+        app.renderer.resize(width, height);
+        updateCamera();
+    }
+
+    function updateCamera() {
+        if (
+            app === null ||
+            playerPosition === null ||
+            mapMeshes[playerPosition.mapId] == null
+        ) {
             return;
         }
 
-        console.log("resize", width, height);
-        app.renderer.resize(width, height);
-        updateCamera(geohash);
-    }
-    function updateCamera(geohash: string) {
-        if (app === null) {
-            return;
-        }
         // Center map on player location (in pixel coordinates)
-        const mapId = geohash.slice(0, 2);
-        if (mapMeshes[mapId] == null) {
-            return;
-        }
-        const { texelX, texelY } = mapMeshes[mapId];
-        const [col, row] = geohashToColRow(geohash);
+        const { texelX, texelY } = mapMeshes[playerPosition.mapId];
         app.stage.pivot.set(
-            col * texelX - clientWidth / 2,
-            row * texelY - clientHeight / 2,
+            playerPosition.col * texelX - clientWidth / 2,
+            playerPosition.row * texelY - clientHeight / 2,
         );
-        console.log(col * texelX, row * texelY);
     }
 
     async function init() {
@@ -111,17 +114,23 @@
             }
 
             // Check if player location has changed
-            if (geohash === p.loc[0]) {
+            if (playerPosition?.geohash === p.loc[0]) {
                 return;
             }
 
-            geohash = p.loc[0];
+            const [col, row] = geohashToColRow(p.loc[0]);
+            playerPosition = {
+                col,
+                row,
+                geohash: p.loc[0],
+                mapId: p.loc[0].slice(0, 2),
+            };
 
             // Update map mesh
-            await updateMapMesh(geohash);
+            await updateMapMesh(playerPosition.geohash);
 
             // Center map on player location (in pixel coordinates)
-            updateCamera(geohash);
+            updateCamera();
         });
 
         return () => {
@@ -148,7 +157,7 @@
     ></div>
     <!-- TODO: Add copy button to copy geohash -->
     <p class="pt-2 text-muted-foreground text-xs text-center">
-        {geohash ?? ""}
+        {playerPosition?.geohash ?? ""}
     </p>
 </div>
 

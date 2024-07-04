@@ -50,7 +50,7 @@
 
         if (isMapExpanded) {
             gsap.to(mapElement, {
-                duration: 1.0,
+                duration: 0.5,
                 width: MAP_SIZE,
                 height: MAP_SIZE,
                 right: 0,
@@ -59,7 +59,7 @@
             });
         } else {
             gsap.to(mapElement, {
-                duration: 1.0,
+                duration: 0.5,
                 width: mapSizeExpanded,
                 height: mapSizeExpanded,
                 right: Math.round((innerWidth - mapSizeExpanded) / 2),
