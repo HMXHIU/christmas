@@ -13,8 +13,8 @@ import mod289 from "./lygia/math/mod289.glsl?raw";
 import permute from "./lygia/math/permute.glsl?raw";
 import remap from "./lygia/math/remap.glsl?raw";
 import taylorInvSqrt from "./lygia/math/taylorInvSqrt.glsl?raw";
-import mapFrag from "./map.frag?raw";
 import mapVertex from "./map.vert?raw";
+import mapFrag from "./map2.frag?raw";
 
 export {
     createShader,
@@ -112,6 +112,7 @@ function loadShaderGeometry(
         zScale?: number;
         zOffset?: number;
         cellHeight?: number;
+        textures?: Record<string, Texture>;
     } = {},
 ): ShaderGeometry {
     const instanceCount = options.instanceCount ?? 1;
@@ -147,6 +148,7 @@ function loadShaderGeometry(
                 anchor: options.anchor,
                 zScale: options.zScale,
                 zOffset: options.zOffset,
+                textures: options.textures,
             }),
             geometry,
         };
@@ -164,6 +166,7 @@ function createShader(
         anchor?: { x: number; y: number };
         zScale?: number;
         zOffset?: number;
+        textures?: Record<string, Texture>;
     },
 ): Shader {
     const height = instanceOptions?.height ?? texture.frame.height;
@@ -173,41 +176,51 @@ function createShader(
     const zScale = instanceOptions?.zScale ?? 0;
     const zOffset = instanceOptions?.zOffset ?? 0;
 
-    return Shader.from({
-        gl: shaders[s],
-        resources: {
-            uTexture: texture.source,
-            uniforms: {
-                uTime: {
-                    value: 0,
-                    type: "f32",
-                },
-                uTextureHeight: {
-                    value: height,
-                    type: "f32",
-                },
-                uTextureWidth: {
-                    value: width,
-                    type: "f32",
-                },
-                uAnchorX: {
-                    value: anchor.x * width,
-                    type: "f32",
-                },
-                uAnchorY: {
-                    value: anchor.y * height,
-                    type: "f32",
-                },
-                uZScale: {
-                    value: zScale,
-                    type: "f32",
-                },
-                uZOffset: {
-                    value: zOffset,
-                    type: "f32",
-                },
+    const resources: any = {
+        uTexture: texture.source,
+        uniforms: {
+            uTime: {
+                value: 0,
+                type: "f32",
+            },
+            uTextureHeight: {
+                value: height,
+                type: "f32",
+            },
+            uTextureWidth: {
+                value: width,
+                type: "f32",
+            },
+            uAnchorX: {
+                value: anchor.x * width,
+                type: "f32",
+            },
+            uAnchorY: {
+                value: anchor.y * height,
+                type: "f32",
+            },
+            uZScale: {
+                value: zScale,
+                type: "f32",
+            },
+            uZOffset: {
+                value: zOffset,
+                type: "f32",
             },
         },
+    };
+
+    if (instanceOptions?.textures) {
+        for (const [name, texture] of Object.entries(
+            instanceOptions.textures,
+        )) {
+            resources[name] = texture.source;
+        }
+    }
+
+    return Shader.from({
+        gl: shaders[s],
+        resources,
     });
 }
 

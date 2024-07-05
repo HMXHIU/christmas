@@ -2,6 +2,7 @@ precision mediump float;
 
 in vec2 vUV;
 uniform sampler2D uTexture;
+uniform sampler2D uParchmentTexture;
 uniform float uTextureHeight;
 uniform float uTextureWidth;
 
@@ -21,25 +22,11 @@ vec4 sampleTextureBilinear(sampler2D tex, vec2 uv) {
     return mix(tMix, bMix, f.y);
 }
 
-vec3 calculateNormal(vec2 uv) {
-    vec2 uTextureSize = vec2(uTextureWidth, uTextureHeight);
-    vec2 texelSize = 1.0 / uTextureSize;
-    
-    float left = sampleTextureBilinear(uTexture, uv - vec2(texelSize.x, 0.0)).r;
-    float right = sampleTextureBilinear(uTexture, uv + vec2(texelSize.x, 0.0)).r;
-    float top = sampleTextureBilinear(uTexture, uv - vec2(0.0, texelSize.y)).r;
-    float bottom = sampleTextureBilinear(uTexture, uv + vec2(0.0, texelSize.y)).r;
-    
-    float heightScale = 70.0; // Increase this value to exaggerate height differences
-    vec3 normal = normalize(vec3((left - right) * heightScale, 2.0, (bottom - top) * heightScale));
-    return normal;
-}
-
 vec3 getTerrainColor(float height) {
     // Define color stops for different terrain types
     vec3 deepWater = vec3(0.4392, 0.5765, 0.5529);
     vec3 shallowWater = vec3(0.5098, 0.6471, 0.6235);
-    vec3 lowLand = vec3(0.7059, 0.7529, 0.7059);  // New category for very low-lying land
+    vec3 lowLand = vec3(0.7059, 0.7529, 0.7059);
     vec3 sand = vec3(0.8314, 0.7882, 0.7059);
     vec3 grass = vec3(0.8314, 0.7216, 0.6392);
     vec3 forest = vec3(0.8314, 0.8118, 0.8000);
@@ -56,25 +43,57 @@ vec3 getTerrainColor(float height) {
     return mix(rock, snow, (height - 0.6) / 0.4);
 }
 
+float getHeight(vec2 uv) {
+    return sampleTextureBilinear(uTexture, uv).r;
+}
+
+float detectLandBoundaries(vec2 uv) {
+   
+    // Check neighboring pixels for outline
+    float outlineStrength = 1.0; // Adjust this for thicker/thinner outline
+    vec2 texelSize = vec2(1.0 / uTextureWidth, 1.0 / uTextureHeight);
+
+    if (getHeight(uv) < 0.001) {
+        return 0.0;
+    }
+
+    // Detect edge pixels
+    float e = 0.0;
+    for (float x = -1.0; x <= 1.0; x += 1.0) {
+        for (float y = -1.0; y <= 1.0; y += 1.0) {
+            if (x == 0.0 && y == 0.0) continue; // Skip center pixel
+            vec2 suv = uv + vec2(x, y) * texelSize * outlineStrength;
+            if (getHeight(suv) < 0.001) {
+                e = 1.0;
+                break;
+            }
+        }
+        if (e > 0.0) break;
+    }
+    
+    return e;
+}
+
 void main() {
 
-    // vec4 color = texture2D(uTexture, vUV);
-    vec4 color = sampleTextureBilinear(uTexture, vUV);
+    float height = getHeight(vUV);
+    float boundary = detectLandBoundaries(vUV);
 
-    // Get the height & color value from the texture
-    float height = color.r;
+    // Get base terrain color
     vec3 terrainColor = getTerrainColor(height);
 
-    // Calculate diffuse lighting
-    vec3 uLightDir = vec3(1.0, 1.0, -1.0);
-    vec3 normal = calculateNormal(vUV);
-    vec3 lightDir = normalize(uLightDir);
-    float diffuse = max(dot(normal, lightDir), 0.0);
+    // Get parchment color (Adjust the UV scale to match your parchment texture)
+    vec3 parchmentColor = texture2D(uParchmentTexture, vUV * 1.0).rgb;
     
-    // Add ambient light to avoid completely dark areas
-    float ambient = 0.1;
-    float lightIntensity = ambient + diffuse * 0.9;
-    // float lightIntensity = 0.7 + 0.3 * height;
+    // Combine everything
+    vec3 combined = mix(
+        mix(terrainColor, parchmentColor, 0.6),
+        vec3(0.4, 0.4, 0.4),
+        boundary * 0.5
+    );
 
-    gl_FragColor = vec4(terrainColor * lightIntensity, 1.0);
+    // Simple shading
+    float shading = 0.8 + 0.2 * height;
+
+    gl_FragColor = vec4(combined * shading,  1.0);
 }

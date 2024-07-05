@@ -84,11 +84,13 @@
 
         // Load shader and geometry (TODO: possible to create texture from cached png?)
         const texture = await Assets.load(url);
+        const parchmentTexture = await Assets.load("/textures/parchment.png");
         const { shader, geometry } = loadShaderGeometry(
             "map",
             texture,
             width,
             height,
+            { textures: { uParchmentTexture: parchmentTexture } },
         );
 
         // Draw the mesh in its location in the world (in pixel coordinates)

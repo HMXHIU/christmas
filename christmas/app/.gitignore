@@ -12,4 +12,5 @@ vite.config.ts.timestamp-*
 /static/demo/*
 /static/sprites/*
 /static/worlds/*
+/static/textures/*
 /static/topology_2p/*
