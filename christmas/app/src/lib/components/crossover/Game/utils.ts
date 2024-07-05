@@ -111,9 +111,13 @@ interface Position {
 interface ShaderTexture {
     texture: Texture;
     positions: Float32Array;
+    uvsX?: Float32Array;
+    uvsY?: Float32Array;
+    sizes?: Float32Array;
+    anchors?: Float32Array;
     width: number;
     height: number;
-    length: number;
+    instances: number;
 }
 
 interface EntityMesh {
@@ -523,7 +527,7 @@ async function _calculateBiomeForRowCol(
         throw new Error(`Missing asset for ${biome}`);
     }
 
-    // Load texture
+    // Load texture (probability of variant is defined in the asset metadata)
     const texture = await loadAssetTexture(asset, {
         seed: (row << 8) + col, // bit shift by 8 else gridRow + gridCol is the same at diagonals
     });
@@ -633,7 +637,7 @@ async function _calculateBiomeDecorationsForRowCol({
                     ), // x, y, h
                     height: texture.height,
                     width: texture.width,
-                    length: 0,
+                    instances: 0,
                 };
             }
 
@@ -643,27 +647,26 @@ async function _calculateBiomeDecorationsForRowCol({
             const y = spacedOffsets[i].y + isoY + jitter;
 
             // Add to decoration positions
-            texturePositions[texture.uid].positions![
-                texturePositions[texture.uid].length
-            ] = x;
-            texturePositions[texture.uid].positions![
-                texturePositions[texture.uid].length + 1
-            ] = y;
-            texturePositions[texture.uid].positions![
-                texturePositions[texture.uid].length + 2
-            ] = elevation;
-            texturePositions[texture.uid].length += 3;
+            const ref = texturePositions[texture.uid];
+            const st = ref.instances * 3;
+            ref.positions![st] = x;
+            ref.positions![st + 1] = y;
+            ref.positions![st + 2] = elevation;
+            ref.instances += 1;
         }
     }
     return texturePositions;
 }
 
-function sortFlatArrayByY(array: Float32Array, length: number): Float32Array {
+function sortInstancePositions(
+    array: Float32Array,
+    instances: number,
+): [Float32Array, number[]] {
     // Create an array of objects
-    const points: { x: number; y: number; h: number }[] = [];
-
-    for (let i = 0; i < length; i += 3) {
-        points.push({ x: array[i], y: array[i + 1], h: array[i + 2] });
+    const points: { x: number; y: number; h: number; i: number }[] = [];
+    for (let i = 0; i < instances; i += 1) {
+        const st = i * 3;
+        points.push({ x: array[st], y: array[st + 1], h: array[st + 2], i });
     }
 
     // Sort the array of objects by y value
@@ -671,12 +674,13 @@ function sortFlatArrayByY(array: Float32Array, length: number): Float32Array {
 
     // Flatten the sorted array of objects back into the original format
     for (let i = 0; i < points.length; i++) {
-        array[i * 3] = points[i].x;
-        array[i * 3 + 1] = points[i].y;
-        array[i * 3 + 2] = points[i].h;
+        const st = i * 3;
+        array[st] = points[i].x;
+        array[st + 1] = points[i].y;
+        array[st + 2] = points[i].h;
     }
 
-    return array;
+    return [array, points.map(({ i }) => i)];
 }
 
 async function drawShaderTextures({
@@ -694,7 +698,17 @@ async function drawShaderTextures({
 }) {
     for (const [
         textureUid,
-        { texture, positions, width, height, length },
+        {
+            texture,
+            positions,
+            width,
+            height,
+            instances,
+            uvsX,
+            uvsY,
+            sizes,
+            anchors,
+        },
     ] of Object.entries(shaderTextures)) {
         const { shader, geometry, instancePositions } = loadShaderGeometry(
             shaderName,
@@ -708,17 +722,72 @@ async function drawShaderTextures({
         );
 
         // Set geometry instance count
-        geometry.instanceCount = length / 3; // x, y, elevation
+        geometry.instanceCount = instances;
 
         // Update instance positions buffer
         if (instancePositions && positions != null) {
             // Sort the positions by y in place
-            sortFlatArrayByY(positions, length);
-
+            const [_, sortedIndices] = sortInstancePositions(
+                positions,
+                instances,
+            );
             instancePositions.data.set(positions);
             instancePositions.update();
+
+            // Update instance uvs
+            const instanceXUVs = geometry.getBuffer("aInstanceXUV");
+            const instanceYUVs = geometry.getBuffer("aInstanceYUV");
+            if (
+                instanceXUVs != null &&
+                instanceYUVs !== null &&
+                uvsX != null &&
+                uvsY != null
+            ) {
+                // Sort using sortedIndices
+                for (let i = 0; i < sortedIndices.length; i++) {
+                    const s = i * 4;
+                    const t = sortedIndices[i] * 4;
+                    instanceXUVs.data[s] = uvsX[t];
+                    instanceXUVs.data[s + 1] = uvsX[t + 1];
+                    instanceXUVs.data[s + 2] = uvsX[t + 2];
+                    instanceXUVs.data[s + 3] = uvsX[t + 3];
+                    instanceYUVs.data[s] = uvsY[t];
+                    instanceYUVs.data[s + 1] = uvsY[t + 1];
+                    instanceYUVs.data[s + 2] = uvsY[t + 2];
+                    instanceYUVs.data[s + 3] = uvsY[t + 3];
+                }
+                instanceXUVs.update();
+                instanceYUVs.update();
+            }
+
+            // Update instance sizes
+            const instanceSizes = geometry.getBuffer("aInstanceSize");
+            if (instanceSizes != null && sizes != null) {
+                for (let i = 0; i < sortedIndices.length; i++) {
+                    const s = i * 2;
+                    const t = sortedIndices[i] * 2;
+                    instanceSizes.data[s] = sizes[t];
+                    instanceSizes.data[s + 1] = sizes[t + 1];
+                }
+                // instanceSizes.data.set(sizes);
+                instanceSizes.update();
+            }
+
+            // Update instance anchors
+            const instanceAnchors = geometry.getBuffer("aInstanceAnchor");
+            if (instanceAnchors != null && anchors != null) {
+                for (let i = 0; i < sortedIndices.length; i++) {
+                    const s = i * 2;
+                    const t = sortedIndices[i] * 2;
+                    instanceAnchors.data[s] = anchors[t];
+                    instanceAnchors.data[s + 1] = anchors[t + 1];
+                }
+                // instanceAnchors.data.set(anchors);
+                instanceAnchors.update();
+            }
         }
 
+        // Create mesh
         const meshUid = `${shaderName}-${textureUid}`;
         if (instancedShaderMeshes[meshUid] == null) {
             const mesh = new Mesh<Geometry, Shader>({ geometry, shader });

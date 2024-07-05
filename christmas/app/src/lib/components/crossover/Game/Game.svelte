@@ -397,33 +397,61 @@
                     height,
                 } = await calculateBiomeForRowCol(playerPosition, row, col);
 
-                if (biomeTexturePositions[texture.uid] == null) {
-                    biomeTexturePositions[texture.uid] = {
+                // Use the entire sprite sheet as the texture
+                const textureUid = texture.source.label;
+                const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
+
+                if (biomeTexturePositions[textureUid] == null) {
+                    biomeTexturePositions[textureUid] = {
                         texture,
                         positions: new Float32Array(
                             MAX_SHADER_GEOMETRIES * 3,
                         ).fill(-1), // x, y, h
-                        width,
+                        uvsX: new Float32Array(MAX_SHADER_GEOMETRIES * 4), // x0, x1, x2, x3
+                        uvsY: new Float32Array(MAX_SHADER_GEOMETRIES * 4), // y0, y1, y2, y3
+                        sizes: new Float32Array(MAX_SHADER_GEOMETRIES * 2), // w, h
+                        anchors: new Float32Array(MAX_SHADER_GEOMETRIES * 2), // x, y
+                        width, // PROBLEM: this is not common to all the instances in teh sheet
                         height,
-                        length: 0,
+                        instances: 0,
                     };
                 } else {
-                    biomeTexturePositions[texture.uid].positions![
-                        biomeTexturePositions[texture.uid].length
-                    ] = isoX;
-                    biomeTexturePositions[texture.uid].positions![
-                        biomeTexturePositions[texture.uid].length + 1
-                    ] = isoY;
-                    biomeTexturePositions[texture.uid].positions![
-                        biomeTexturePositions[texture.uid].length + 2
-                    ] = elevation;
-                    biomeTexturePositions[texture.uid].length += 3;
+                    const ref = biomeTexturePositions[textureUid];
+
+                    // Set instance positions
+                    const stp = ref.instances * 3;
+                    ref.positions![stp] = isoX;
+                    ref.positions![stp + 1] = isoY;
+                    ref.positions![stp + 2] = elevation;
+
+                    // Set instance uvs
+                    const stuv = ref.instances * 4;
+                    ref.uvsX![stuv] = x0;
+                    ref.uvsX![stuv + 1] = x1;
+                    ref.uvsX![stuv + 2] = x2;
+                    ref.uvsX![stuv + 3] = x3;
+                    ref.uvsY![stuv] = y0;
+                    ref.uvsY![stuv + 1] = y1;
+                    ref.uvsY![stuv + 2] = y2;
+                    ref.uvsY![stuv + 3] = y3;
+
+                    // Set instance sizes
+                    const sts = ref.instances * 2;
+                    ref.sizes![sts] = width;
+                    ref.sizes![sts + 1] = height;
+
+                    // Set instance anchors
+                    ref.anchors![sts] = texture.defaultAnchor?.x || 0.5;
+                    ref.anchors![sts + 1] = texture.defaultAnchor?.y || 0.5;
+
+                    // Increment instances
+                    ref.instances += 1;
                 }
 
                 // Fill biomeDecorationsTexturePositions
                 for (const [
                     textureUid,
-                    { positions, texture, height, width, length },
+                    { positions, texture, height, width, instances },
                 ] of Object.entries(
                     await calculateBiomeDecorationsForRowCol({
                         geohash,
@@ -444,17 +472,17 @@
                             ).fill(-1), // x, y, h
                             width,
                             height,
-                            length: 0,
+                            instances: 0,
                         };
                     } else {
-                        biomeDecorationsTexturePositions[
-                            textureUid
-                        ].positions!.set(
-                            positions!.subarray(0, length),
-                            biomeDecorationsTexturePositions[textureUid].length,
+                        const ref =
+                            biomeDecorationsTexturePositions[textureUid];
+
+                        ref.positions!.set(
+                            positions!.subarray(0, instances * 3),
+                            ref.instances * 3, // offset
                         );
-                        biomeDecorationsTexturePositions[textureUid].length +=
-                            length;
+                        ref.instances += instances;
                     }
                 }
             }

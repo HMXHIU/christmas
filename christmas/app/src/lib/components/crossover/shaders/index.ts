@@ -293,6 +293,8 @@ function createInstancedTexturedQuadGeometry(
     geometry: Geometry;
     instancePositions: Buffer;
     instanceHighlights: Buffer;
+    instanceXUVs: Buffer;
+    instanceYUVs: Buffer;
 } {
     const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
 
@@ -307,6 +309,25 @@ function createInstancedTexturedQuadGeometry(
 
     const instanceHighlights = new Buffer({
         data: new Float32Array(instanceCount).fill(0),
+        usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
+    });
+
+    const instanceSizes = new Buffer({
+        data: new Float32Array(instanceCount * 2), // w, h
+        usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
+    });
+
+    const instanceAnchors = new Buffer({
+        data: new Float32Array(instanceCount * 2), // x, y
+        usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
+    });
+
+    const instanceXUVs = new Buffer({
+        data: new Float32Array(instanceCount * 4), // x0, x1, x2, x3
+        usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
+    });
+    const instanceYUVs = new Buffer({
+        data: new Float32Array(instanceCount * 4), // y0, y1, y2, y3
         usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
     });
 
@@ -341,11 +362,30 @@ function createInstancedTexturedQuadGeometry(
                     buffer: instanceHighlights,
                     instance: true,
                 },
+                aInstanceVertIndex: [0, 1, 2, 3],
+                aInstanceSize: {
+                    buffer: instanceSizes,
+                    instance: true,
+                },
+                aInstanceAnchor: {
+                    buffer: instanceAnchors,
+                    instance: true,
+                },
+                aInstanceXUV: {
+                    buffer: instanceXUVs,
+                    instance: true,
+                },
+                aInstanceYUV: {
+                    buffer: instanceYUVs,
+                    instance: true,
+                },
             },
             indexBuffer: [0, 1, 2, 2, 3, 0], // quad
             instanceCount,
         }),
         instancePositions,
         instanceHighlights,
+        instanceXUVs,
+        instanceYUVs,
     };
 }
