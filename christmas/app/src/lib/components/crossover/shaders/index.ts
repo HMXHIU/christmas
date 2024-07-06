@@ -1,4 +1,13 @@
-import { Buffer, BufferUsage, Geometry, Shader, Texture } from "pixi.js";
+import {
+    Buffer,
+    BufferUsage,
+    Container,
+    Geometry,
+    Mesh,
+    Shader,
+    Texture,
+} from "pixi.js";
+import { destroyContainer, Z_SCALE } from "../Game/utils";
 import biomeFrag from "./biome.frag?raw";
 import biomeVertex from "./biome.vert?raw";
 import entityFrag from "./entity.frag?raw";
@@ -17,16 +26,20 @@ import mapVertex from "./map.vert?raw";
 import mapFrag from "./map2.frag?raw";
 
 export {
+    clearInstancedShaderMeshes,
     createShader,
     createTexturedQuadGeometry,
     destroyShaderGeometry,
     destroyShaders,
+    drawShaderTextures,
+    highlightShaderInstances,
     loadedShaderGeometries,
     loadShaderGeometry,
     MAX_SHADER_GEOMETRIES,
     shaders,
     updateShaderUniforms,
     type ShaderGeometry,
+    type ShaderTexture,
 };
 
 const MAX_SHADER_GEOMETRIES = 2000;
@@ -40,6 +53,20 @@ interface ShaderGeometry {
     instancePositions: Buffer;
     instanceHighlights: Buffer;
 }
+
+interface ShaderTexture {
+    texture: Texture;
+    positions: Float32Array;
+    uvsX?: Float32Array;
+    uvsY?: Float32Array;
+    sizes?: Float32Array;
+    anchors?: Float32Array;
+    width: number;
+    height: number;
+    instances: number;
+}
+
+let instancedShaderMeshes: Record<string, Mesh<Geometry, Shader>> = {};
 
 const loadedShaderGeometries: Record<string, ShaderGeometry> = {};
 
@@ -388,4 +415,174 @@ function createInstancedTexturedQuadGeometry(
         instanceXUVs,
         instanceYUVs,
     };
+}
+
+function sortInstancePositions(
+    array: Float32Array,
+    instances: number,
+): [Float32Array, number[]] {
+    // Create an array of objects
+    const points: { x: number; y: number; h: number; i: number }[] = [];
+    for (let i = 0; i < instances; i += 1) {
+        const st = i * 3;
+        points.push({ x: array[st], y: array[st + 1], h: array[st + 2], i });
+    }
+
+    // Sort the array of objects by y value
+    points.sort((a, b) => a.y - b.y);
+
+    // Flatten the sorted array of objects back into the original format
+    for (let i = 0; i < points.length; i++) {
+        const st = i * 3;
+        array[st] = points[i].x;
+        array[st + 1] = points[i].y;
+        array[st + 2] = points[i].h;
+    }
+
+    return [array, points.map(({ i }) => i)];
+}
+
+async function drawShaderTextures({
+    shaderName,
+    shaderTextures,
+    renderOrder,
+    numGeometries,
+    stage,
+}: {
+    shaderName: string;
+    shaderTextures: Record<string, ShaderTexture>;
+    renderOrder: number;
+    numGeometries: number;
+    stage: Container;
+}) {
+    for (const [
+        textureUid,
+        {
+            texture,
+            positions,
+            width,
+            height,
+            instances,
+            uvsX,
+            uvsY,
+            sizes,
+            anchors,
+        },
+    ] of Object.entries(shaderTextures)) {
+        const { shader, geometry, instancePositions } = loadShaderGeometry(
+            shaderName,
+            texture,
+            width,
+            height,
+            {
+                instanceCount: numGeometries,
+                zScale: Z_SCALE,
+            },
+        );
+
+        // Set geometry instance count
+        geometry.instanceCount = instances;
+
+        // Update instance positions buffer
+        if (instancePositions && positions != null) {
+            // Sort the positions by y in place
+            const [_, sortedIndices] = sortInstancePositions(
+                positions,
+                instances,
+            );
+            instancePositions.data.set(positions);
+            instancePositions.update();
+
+            // Update instance uvs
+            const instanceXUVs = geometry.getBuffer("aInstanceXUV");
+            const instanceYUVs = geometry.getBuffer("aInstanceYUV");
+            if (
+                instanceXUVs != null &&
+                instanceYUVs !== null &&
+                uvsX != null &&
+                uvsY != null
+            ) {
+                // Sort using sortedIndices
+                for (let i = 0; i < sortedIndices.length; i++) {
+                    const s = i * 4;
+                    const t = sortedIndices[i] * 4;
+                    instanceXUVs.data[s] = uvsX[t];
+                    instanceXUVs.data[s + 1] = uvsX[t + 1];
+                    instanceXUVs.data[s + 2] = uvsX[t + 2];
+                    instanceXUVs.data[s + 3] = uvsX[t + 3];
+                    instanceYUVs.data[s] = uvsY[t];
+                    instanceYUVs.data[s + 1] = uvsY[t + 1];
+                    instanceYUVs.data[s + 2] = uvsY[t + 2];
+                    instanceYUVs.data[s + 3] = uvsY[t + 3];
+                }
+                instanceXUVs.update();
+                instanceYUVs.update();
+            }
+
+            // Update instance sizes
+            const instanceSizes = geometry.getBuffer("aInstanceSize");
+            if (instanceSizes != null && sizes != null) {
+                for (let i = 0; i < sortedIndices.length; i++) {
+                    const s = i * 2;
+                    const t = sortedIndices[i] * 2;
+                    instanceSizes.data[s] = sizes[t];
+                    instanceSizes.data[s + 1] = sizes[t + 1];
+                }
+                // instanceSizes.data.set(sizes);
+                instanceSizes.update();
+            }
+
+            // Update instance anchors
+            const instanceAnchors = geometry.getBuffer("aInstanceAnchor");
+            if (instanceAnchors != null && anchors != null) {
+                for (let i = 0; i < sortedIndices.length; i++) {
+                    const s = i * 2;
+                    const t = sortedIndices[i] * 2;
+                    instanceAnchors.data[s] = anchors[t];
+                    instanceAnchors.data[s + 1] = anchors[t + 1];
+                }
+                // instanceAnchors.data.set(anchors);
+                instanceAnchors.update();
+            }
+        }
+
+        // Create mesh
+        const meshUid = `${shaderName}-${textureUid}`;
+        if (instancedShaderMeshes[meshUid] == null) {
+            const mesh = new Mesh<Geometry, Shader>({ geometry, shader });
+            mesh.zIndex = renderOrder;
+            instancedShaderMeshes[meshUid] = mesh;
+            stage.addChild(mesh);
+        }
+    }
+}
+
+function highlightShaderInstances(
+    shader: string,
+    highlightPositions: Record<string, number>, // {'x,y': highlight}
+) {
+    for (const {
+        shaderName,
+        instanceHighlights,
+        instancePositions,
+    } of Object.values(loadedShaderGeometries)) {
+        if (shader === shaderName) {
+            // Iterate `instancePositions` and compare with `highlightPositions`
+            for (let i = 0; i < instanceHighlights.data.length; i += 1) {
+                const p = i * 3;
+                const x = instancePositions.data[p];
+                const y = instancePositions.data[p + 1];
+                instanceHighlights.data[i] =
+                    highlightPositions[`${x},${y}`] ?? 0;
+            }
+            instanceHighlights.update();
+        }
+    }
+}
+
+function clearInstancedShaderMeshes(stage: Container) {
+    for (const mesh of Object.values(instancedShaderMeshes)) {
+        destroyContainer(mesh);
+    }
+    instancedShaderMeshes = {};
 }

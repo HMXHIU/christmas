@@ -1,5 +1,6 @@
 <script lang="ts">
     import { crossoverCmdMove } from "$lib/crossover";
+    import { getGameActionId, type GameCommand } from "$lib/crossover/ir";
     import {
         autoCorrectGeohashPrecision,
         cartToIso,
@@ -19,8 +20,6 @@
     import { MS_PER_TICK } from "$lib/crossover/world/settings";
     import type { Direction } from "$lib/crossover/world/types";
     import { worldSeed } from "$lib/crossover/world/world";
-
-    import { getGameActionId, type GameCommand } from "$lib/crossover/ir";
     import type {
         EntityType,
         Item,
@@ -60,11 +59,19 @@
     } from "../../../../store";
     import {
         MAX_SHADER_GEOMETRIES,
+        clearInstancedShaderMeshes,
         destroyShaders,
+        drawShaderTextures,
+        highlightShaderInstances,
         loadShaderGeometry,
         updateShaderUniforms,
+        type ShaderTexture,
     } from "../shaders";
     import { animateAbility } from "./animations";
+    import {
+        calculateBiomeDecorationsForRowCol,
+        calculateBiomeForRowCol,
+    } from "./biomes";
     import { clearHighlights, drawTargetUI, highlightEntity } from "./ui";
     import {
         CANVAS_HEIGHT,
@@ -80,18 +87,13 @@
         WORLD_WIDTH,
         Z_OFF,
         Z_SCALE,
-        calculateBiomeDecorationsForRowCol,
-        calculateBiomeForRowCol,
         calculatePosition,
         calculateRowColFromIso,
-        clearInstancedShaderMeshes,
         destroyEntityMesh,
-        drawShaderTextures,
         getDirectionsToPosition,
         getImageForTile,
         getPathHighlights,
         getTilesetForTile,
-        highlightShaderInstances,
         initAssetManager,
         isCellInView,
         loadAssetTexture,
@@ -100,7 +102,6 @@
         updateEntityMeshRenderOrder,
         type EntityMesh,
         type Position,
-        type ShaderTexture,
     } from "./utils";
 
     export let previewCommand: GameCommand | null = null;

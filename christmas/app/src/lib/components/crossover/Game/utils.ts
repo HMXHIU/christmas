@@ -1,5 +1,4 @@
 import { PUBLIC_TILED_MINIO_BUCKET } from "$env/static/public";
-import { LRUMemoryCache, memoize } from "$lib/caches";
 import {
     topologyBufferCache,
     topologyResponseCache,
@@ -9,25 +8,16 @@ import {
     aStarPathfinding,
     autoCorrectGeohashPrecision,
     cartToIso,
-    generateEvenlySpacedPoints,
     getEntityId,
     isoToCart,
     seededRandom,
-    stringToRandomNumber,
 } from "$lib/crossover/utils";
 import type { Ability } from "$lib/crossover/world/abilities";
 import type { Action } from "$lib/crossover/world/actions";
-import {
-    biomeAtGeohash,
-    biomes,
-    elevationAtGeohash,
-} from "$lib/crossover/world/biomes";
+import { elevationAtGeohash } from "$lib/crossover/world/biomes";
 import { compendium } from "$lib/crossover/world/compendium";
 import type { AssetMetadata, Direction } from "$lib/crossover/world/types";
-import {
-    geohashToGridCell,
-    gridCellToGeohash,
-} from "$lib/crossover/world/utils";
+import { geohashToGridCell } from "$lib/crossover/world/utils";
 import { worldSeed } from "$lib/crossover/world/world";
 import type {
     Item,
@@ -44,58 +34,47 @@ import {
     type Shader,
     type Texture,
 } from "pixi.js";
-import {
-    MAX_SHADER_GEOMETRIES,
-    loadShaderGeometry,
-    loadedShaderGeometries,
-    type ShaderGeometry,
-} from "../shaders";
+import { type ShaderGeometry } from "../shaders";
 
 export {
+    calculatePosition,
+    calculateRowColFromIso,
     CANVAS_HEIGHT,
     CANVAS_WIDTH,
     CELL_HEIGHT,
     CELL_WIDTH,
-    ELEVATION_TO_CELL_HEIGHT,
-    GRID_MID_COL,
-    GRID_MID_ROW,
-    HALF_ISO_CELL_HEIGHT,
-    HALF_ISO_CELL_WIDTH,
-    ISO_CELL_HEIGHT,
-    ISO_CELL_WIDTH,
-    RENDER_ORDER,
-    WORLD_HEIGHT,
-    WORLD_WIDTH,
-    Z_LAYER,
-    Z_OFF,
-    Z_SCALE,
-    calculateBiomeDecorationsForRowCol,
-    calculateBiomeForRowCol,
-    calculatePosition,
-    calculateRowColFromIso,
-    clearInstancedShaderMeshes,
     debugColliders,
     decodeTiledSource,
+    destroyContainer,
     destroyEntityMesh,
-    drawShaderTextures,
+    ELEVATION_TO_CELL_HEIGHT,
     getAngle,
     getDirectionsToPosition,
     getImageForTile,
     getPathHighlights,
     getTilesetForTile,
-    highlightShaderInstances,
+    GRID_MID_COL,
+    GRID_MID_ROW,
+    HALF_ISO_CELL_HEIGHT,
+    HALF_ISO_CELL_WIDTH,
     initAssetManager,
-    instancedShaderMeshes,
     isCellInView,
+    ISO_CELL_HEIGHT,
+    ISO_CELL_WIDTH,
     loadAssetTexture,
     positionsInRange,
+    RENDER_ORDER,
     scaleToFitAndMaintainAspectRatio,
     swapEntityVariant,
     swapMeshTexture,
     updateEntityMeshRenderOrder,
+    WORLD_HEIGHT,
+    WORLD_WIDTH,
+    Z_LAYER,
+    Z_OFF,
+    Z_SCALE,
     type EntityMesh,
     type Position,
-    type ShaderTexture,
 };
 
 interface Position {
@@ -106,18 +85,6 @@ interface Position {
     geohash: string;
     precision: number;
     elevation: number;
-}
-
-interface ShaderTexture {
-    texture: Texture;
-    positions: Float32Array;
-    uvsX?: Float32Array;
-    uvsY?: Float32Array;
-    sizes?: Float32Array;
-    anchors?: Float32Array;
-    width: number;
-    height: number;
-    instances: number;
 }
 
 interface EntityMesh {
@@ -132,12 +99,6 @@ interface EntityMesh {
         variant?: string;
     };
 }
-
-let instancedShaderMeshes: Record<string, Mesh<Geometry, Shader>> = {};
-
-// Caches
-const biomeCache = new LRUMemoryCache({ max: 1000 });
-const biomeDecorationsCache = new LRUMemoryCache({ max: 1000 });
 
 // Note: this are cartesian coordinates (CELL_HEIGHT = CELL_WIDTH;)
 const CELL_WIDTH = 64; // 64, 96, 128
@@ -391,29 +352,6 @@ async function getImageForTile(
     throw new Error(`Missing image for tileId ${tileId}`);
 }
 
-function highlightShaderInstances(
-    shader: string,
-    highlightPositions: Record<string, number>, // {'x,y': highlight}
-) {
-    for (const {
-        shaderName,
-        instanceHighlights,
-        instancePositions,
-    } of Object.values(loadedShaderGeometries)) {
-        if (shader === shaderName) {
-            // Iterate `instancePositions` and compare with `highlightPositions`
-            for (let i = 0; i < instanceHighlights.data.length; i += 1) {
-                const p = i * 3;
-                const x = instancePositions.data[p];
-                const y = instancePositions.data[p + 1];
-                instanceHighlights.data[i] =
-                    highlightPositions[`${x},${y}`] ?? 0;
-            }
-            instanceHighlights.update();
-        }
-    }
-}
-
 function updateEntityMeshRenderOrder(entityMesh: EntityMesh) {
     if (entityMesh.entity == null) {
         return;
@@ -482,326 +420,10 @@ async function initAssetManager() {
     ]);
 }
 
-const calculateBiomeForRowCol = memoize(
-    _calculateBiomeForRowCol,
-    biomeCache,
-    (playerPosition, row, col) => `${row}-${col}`,
-);
-async function _calculateBiomeForRowCol(
-    playerPosition: Position,
-    row: number,
-    col: number,
-): Promise<{
-    texture: Texture;
-    isoX: number;
-    isoY: number;
-    elevation: number;
-    biome: string;
-    geohash: string;
-    strength: number;
-    width: number;
-    height: number;
-}> {
-    const geohash = gridCellToGeohash({
-        precision: playerPosition.precision,
-        row,
-        col,
-    });
-
-    // Get biome properties and asset
-    const [biome, strength] = await biomeAtGeohash(geohash, {
-        topologyResponseCache,
-        topologyResultCache,
-        topologyBufferCache,
-    });
-    const elevation =
-        ELEVATION_TO_CELL_HEIGHT *
-        (await elevationAtGeohash(geohash, {
-            responseCache: topologyResponseCache,
-            resultsCache: topologyResultCache,
-            bufferCache: topologyBufferCache,
-        }));
-
-    const asset = biomes[biome].asset;
-    if (!asset) {
-        throw new Error(`Missing asset for ${biome}`);
-    }
-
-    // Load texture (probability of variant is defined in the asset metadata)
-    const texture = await loadAssetTexture(asset, {
-        seed: (row << 8) + col, // bit shift by 8 else gridRow + gridCol is the same at diagonals
-    });
-    if (!texture) {
-        throw new Error(`Missing texture for ${biome}`);
-    }
-
-    // Scale the width and height of the texture to the cell while maintaining aspect ratio
-    const width = CELL_WIDTH;
-    const height = (texture.height * width) / texture.width;
-
-    // Convert cartesian to isometric position
-    // Note: snap to grid for biomes, so that we can do O(1) lookups for highlights
-    const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT, {
-        x: HALF_ISO_CELL_WIDTH,
-        y: HALF_ISO_CELL_HEIGHT,
-    });
-
-    return {
-        geohash,
-        biome,
-        strength,
-        texture,
-        isoX,
-        isoY,
-        elevation,
-        width,
-        height,
-    };
-}
-
-const calculateBiomeDecorationsForRowCol = memoize(
-    _calculateBiomeDecorationsForRowCol,
-    biomeDecorationsCache,
-    ({ row, col }) => `${row}-${col}`,
-);
-async function _calculateBiomeDecorationsForRowCol({
-    geohash,
-    biome,
-    strength,
-    row,
-    col,
-    isoX,
-    isoY,
-    elevation,
-}: {
-    geohash: string;
-    biome: string;
-    strength: number;
-    row: number;
-    col: number;
-    isoX: number;
-    isoY: number;
-    elevation: number;
-}): Promise<Record<string, ShaderTexture>> {
-    const texturePositions: Record<string, ShaderTexture> = {};
-
-    // TODO: Skip decorations in world
-
-    // Get biome decorations
-    const decorations = biomes[biome].decorations;
-    if (!decorations) {
-        return texturePositions;
-    }
-    const geohashSeed = stringToRandomNumber(geohash);
-
-    for (const [
-        name,
-        { asset, probability, minInstances, maxInstances, radius },
-    ] of Object.entries(decorations)) {
-        // Determine if this geohash should have decorations
-        const dice = seededRandom(geohashSeed);
-        if (dice > probability) {
-            continue;
-        }
-
-        // Number of instances depends on the strength of the tile
-        let numInstances = Math.ceil(
-            minInstances + strength * (maxInstances - minInstances),
-        );
-
-        // Get evenly spaced offsets
-        const spacedOffsets = generateEvenlySpacedPoints(
-            numInstances,
-            CELL_WIDTH * radius,
-        );
-
-        for (let i = 0; i < numInstances; i++) {
-            const instanceSeed = seededRandom((row << 8) + col + i);
-            const instanceRv = seededRandom(instanceSeed);
-
-            // Load texture
-            const texture = await loadAssetTexture(asset, {
-                seed: instanceSeed,
-            });
-            if (!texture) {
-                console.error(`Missing texture for ${name}`);
-                continue;
-            }
-
-            // Initialize decorations
-            if (texturePositions[texture.uid] == null) {
-                texturePositions[texture.uid] = {
-                    texture,
-                    positions: new Float32Array(MAX_SHADER_GEOMETRIES * 3).fill(
-                        -1,
-                    ), // x, y, h
-                    height: texture.height,
-                    width: texture.width,
-                    instances: 0,
-                };
-            }
-
-            // Evenly space out decorations and add jitter
-            const jitter = ((instanceRv - 0.5) * CELL_WIDTH) / 2;
-            const x = spacedOffsets[i].x + isoX + jitter;
-            const y = spacedOffsets[i].y + isoY + jitter;
-
-            // Add to decoration positions
-            const ref = texturePositions[texture.uid];
-            const st = ref.instances * 3;
-            ref.positions![st] = x;
-            ref.positions![st + 1] = y;
-            ref.positions![st + 2] = elevation;
-            ref.instances += 1;
-        }
-    }
-    return texturePositions;
-}
-
-function sortInstancePositions(
-    array: Float32Array,
-    instances: number,
-): [Float32Array, number[]] {
-    // Create an array of objects
-    const points: { x: number; y: number; h: number; i: number }[] = [];
-    for (let i = 0; i < instances; i += 1) {
-        const st = i * 3;
-        points.push({ x: array[st], y: array[st + 1], h: array[st + 2], i });
-    }
-
-    // Sort the array of objects by y value
-    points.sort((a, b) => a.y - b.y);
-
-    // Flatten the sorted array of objects back into the original format
-    for (let i = 0; i < points.length; i++) {
-        const st = i * 3;
-        array[st] = points[i].x;
-        array[st + 1] = points[i].y;
-        array[st + 2] = points[i].h;
-    }
-
-    return [array, points.map(({ i }) => i)];
-}
-
-async function drawShaderTextures({
-    shaderName,
-    shaderTextures,
-    renderOrder,
-    numGeometries,
-    stage,
-}: {
-    shaderName: string;
-    shaderTextures: Record<string, ShaderTexture>;
-    renderOrder: number;
-    numGeometries: number;
-    stage: Container;
-}) {
-    for (const [
-        textureUid,
-        {
-            texture,
-            positions,
-            width,
-            height,
-            instances,
-            uvsX,
-            uvsY,
-            sizes,
-            anchors,
-        },
-    ] of Object.entries(shaderTextures)) {
-        const { shader, geometry, instancePositions } = loadShaderGeometry(
-            shaderName,
-            texture,
-            width,
-            height,
-            {
-                instanceCount: numGeometries,
-                zScale: Z_SCALE,
-            },
-        );
-
-        // Set geometry instance count
-        geometry.instanceCount = instances;
-
-        // Update instance positions buffer
-        if (instancePositions && positions != null) {
-            // Sort the positions by y in place
-            const [_, sortedIndices] = sortInstancePositions(
-                positions,
-                instances,
-            );
-            instancePositions.data.set(positions);
-            instancePositions.update();
-
-            // Update instance uvs
-            const instanceXUVs = geometry.getBuffer("aInstanceXUV");
-            const instanceYUVs = geometry.getBuffer("aInstanceYUV");
-            if (
-                instanceXUVs != null &&
-                instanceYUVs !== null &&
-                uvsX != null &&
-                uvsY != null
-            ) {
-                // Sort using sortedIndices
-                for (let i = 0; i < sortedIndices.length; i++) {
-                    const s = i * 4;
-                    const t = sortedIndices[i] * 4;
-                    instanceXUVs.data[s] = uvsX[t];
-                    instanceXUVs.data[s + 1] = uvsX[t + 1];
-                    instanceXUVs.data[s + 2] = uvsX[t + 2];
-                    instanceXUVs.data[s + 3] = uvsX[t + 3];
-                    instanceYUVs.data[s] = uvsY[t];
-                    instanceYUVs.data[s + 1] = uvsY[t + 1];
-                    instanceYUVs.data[s + 2] = uvsY[t + 2];
-                    instanceYUVs.data[s + 3] = uvsY[t + 3];
-                }
-                instanceXUVs.update();
-                instanceYUVs.update();
-            }
-
-            // Update instance sizes
-            const instanceSizes = geometry.getBuffer("aInstanceSize");
-            if (instanceSizes != null && sizes != null) {
-                for (let i = 0; i < sortedIndices.length; i++) {
-                    const s = i * 2;
-                    const t = sortedIndices[i] * 2;
-                    instanceSizes.data[s] = sizes[t];
-                    instanceSizes.data[s + 1] = sizes[t + 1];
-                }
-                // instanceSizes.data.set(sizes);
-                instanceSizes.update();
-            }
-
-            // Update instance anchors
-            const instanceAnchors = geometry.getBuffer("aInstanceAnchor");
-            if (instanceAnchors != null && anchors != null) {
-                for (let i = 0; i < sortedIndices.length; i++) {
-                    const s = i * 2;
-                    const t = sortedIndices[i] * 2;
-                    instanceAnchors.data[s] = anchors[t];
-                    instanceAnchors.data[s + 1] = anchors[t + 1];
-                }
-                // instanceAnchors.data.set(anchors);
-                instanceAnchors.update();
-            }
-        }
-
-        // Create mesh
-        const meshUid = `${shaderName}-${textureUid}`;
-        if (instancedShaderMeshes[meshUid] == null) {
-            const mesh = new Mesh<Geometry, Shader>({ geometry, shader });
-            mesh.zIndex = renderOrder;
-            instancedShaderMeshes[meshUid] = mesh;
-            stage.addChild(mesh);
-        }
-    }
-}
-
-function destroy(thing: Sprite | Mesh<Geometry, Shader> | Container) {
+function destroyContainer(thing: Sprite | Mesh<Geometry, Shader> | Container) {
     // Destroy children
     for (const child of thing.children) {
-        destroy(child);
+        destroyContainer(child);
     }
 
     // Destroy self
@@ -816,18 +438,11 @@ function destroy(thing: Sprite | Mesh<Geometry, Shader> | Container) {
 
 function destroyEntityMesh(entityMesh: EntityMesh, stage: Container) {
     // Destroy hitbox and children
-    destroy(entityMesh.hitbox);
+    destroyContainer(entityMesh.hitbox);
 
     // TODO: causes mesh has no shader program
     // Destroy shader geometry
     // destroyShaderGeometry(entityMesh.shaderGeometry.shaderUid);
-}
-
-function clearInstancedShaderMeshes(stage: Container) {
-    for (const mesh of Object.values(instancedShaderMeshes)) {
-        destroy(mesh);
-    }
-    instancedShaderMeshes = {};
 }
 
 function positionsInRange(
