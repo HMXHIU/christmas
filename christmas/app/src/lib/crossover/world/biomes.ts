@@ -57,16 +57,15 @@ let biomes: Record<string, Biome> = {
                 radius: 1,
                 asset: {
                     path: "biomes/grass",
-                    // Note: Hard to get teh render order correct with multiple variants
                     variants: {
                         default: "0053",
-                        // alt1: "0052",
-                        // alt2: "0054",
+                        alt1: "0052",
+                        alt2: "0054",
                     },
                     prob: {
-                        default: 1,
-                        // alt1: 0.33,
-                        // alt2: 0.33,
+                        default: 0.33,
+                        alt1: 0.33,
+                        alt2: 0.33,
                     },
                     width: 0.5,
                     height: 0.5,
@@ -182,16 +181,15 @@ let biomes: Record<string, Biome> = {
                 radius: 1,
                 asset: {
                     path: "biomes/grass",
-                    // Hard to get the render order correct with multiple variants
                     variants: {
                         default: "0053",
-                        // alt1: "0052",
-                        // alt2: "0054",
+                        alt1: "0052",
+                        alt2: "0054",
                     },
                     prob: {
-                        default: 1,
-                        // alt1: 0.33,
-                        // alt2: 0.33,
+                        default: 0.33,
+                        alt1: 0.33,
+                        alt2: 0.33,
                     },
                     width: 0.5,
                     height: 0.5,

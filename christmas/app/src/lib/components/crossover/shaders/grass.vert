@@ -1,26 +1,20 @@
 precision mediump float;
 
-attribute vec2 aPosition;
 attribute vec3 aInstancePosition;
-attribute vec2 aUV;
-attribute float aInstanceHighlight;
-attribute float aZAlongY;
+attribute float aInstanceVertIndex;
+attribute vec4 aInstanceXUV;
+attribute vec4 aInstanceYUV;
+attribute vec2 aInstanceSize;
+attribute vec2 aInstanceAnchor;
 
 varying vec2 vPosition;
 varying vec2 vUV;
-varying float vZAlongY;
-varying vec3 vInstancePosition;
-varying float vInstanceHighlight;
+varying vec2 vInstanceSize;
 
 uniform mat3 uProjectionMatrix;
 uniform mat3 uWorldTransformMatrix;
 uniform mat3 uTransformMatrix;
-
-uniform float uTextureHeight;
-uniform float uTextureWidth;
 uniform float uTime;
-uniform float uAnchorX;
-uniform float uAnchorY;
 uniform float uZScale;
 uniform float uZOffset;
 
@@ -32,18 +26,28 @@ mat2 rotationMatrix(float angle) {
 }
 
 void main() {
-    vUV = aUV;
-    vPosition = aPosition;
-    vInstancePosition = aInstancePosition;
-    vInstanceHighlight = aInstanceHighlight;
-    vZAlongY = aZAlongY;
 
-    mat3 mvp = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix;
+    int vertIdx = int(aInstanceVertIndex);
+    if (vertIdx == 0) {
+        vUV = vec2(aInstanceXUV.x, aInstanceYUV.x);
+        vPosition = vec2(0, 0);
+    } else if (vertIdx == 1) {
+        vUV = vec2(aInstanceXUV.y, aInstanceYUV.y);
+        vPosition = vec2(aInstanceSize.x, 0);
+    } else if (vertIdx == 2) {
+        vUV = vec2(aInstanceXUV.z, aInstanceYUV.z);
+        vPosition = aInstanceSize;
+    } else {
+        vUV = vec2(aInstanceXUV.w, aInstanceYUV.w);
+        vPosition = vec2(0, aInstanceSize.y);
+    }
+    vInstanceSize = aInstanceSize;
 
     // Calculate clip space coordinates
+    mat3 mvp = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix;
     vec3 clip = mvp * vec3(
-        aInstancePosition.x + aPosition.x - uAnchorX,
-        aInstancePosition.y - aInstancePosition.z + aPosition.y - uAnchorY,
+        aInstancePosition.x + vPosition.x - (aInstanceAnchor.x * aInstanceSize.x),
+        aInstancePosition.y - aInstancePosition.z + vPosition.y - (aInstanceAnchor.y * aInstanceSize.y),
         1.0
     );
 
@@ -55,7 +59,7 @@ void main() {
     float noiseSample = snoise(vec2(st * 2. + uTime)) * windSpeed;
 
     // Calculate the height factor (1.0 at the base, 0.0 at the top)
-    float percentHeight = (uTextureHeight - aPosition.y) / uTextureHeight;
+    float percentHeight = (vInstanceSize.y - vPosition.y) / vInstanceSize.y;
 
     // Compute the rotation angle based on noise and height factor
     float angle = noiseSample * percentHeight;

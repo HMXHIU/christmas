@@ -58,27 +58,19 @@
         worldRecord,
     } from "../../../../store";
     import {
-        MAX_SHADER_GEOMETRIES,
         clearInstancedShaderMeshes,
         destroyShaders,
-        drawShaderTextures,
         highlightShaderInstances,
         loadShaderGeometry,
         updateShaderUniforms,
-        type ShaderTexture,
     } from "../shaders";
     import { animateAbility } from "./animations";
-    import {
-        calculateBiomeDecorationsForRowCol,
-        calculateBiomeForRowCol,
-    } from "./biomes";
+    import { drawBiomeShaders } from "./biomes";
     import { clearHighlights, drawTargetUI, highlightEntity } from "./ui";
     import {
         CANVAS_HEIGHT,
         CANVAS_WIDTH,
         CELL_WIDTH,
-        GRID_MID_COL,
-        GRID_MID_ROW,
         HALF_ISO_CELL_HEIGHT,
         HALF_ISO_CELL_WIDTH,
         ISO_CELL_HEIGHT,
@@ -113,9 +105,6 @@
     let app: Application | null = null;
     let worldStage: Container | null = null;
 
-    let biomeTexturePositions: Record<string, ShaderTexture> = {};
-    let biomeDecorationsTexturePositions: Record<string, ShaderTexture> = {};
-
     let entityMeshes: Record<string, EntityMesh> = {};
     let worldMeshes: Record<string, EntityMesh> = {};
 
@@ -125,8 +114,7 @@
     let isMouseDown: boolean = false;
     let path: Direction[] | null = null;
 
-    $: updatePlayer(playerPosition);
-    $: updateBiomes(playerPosition);
+    $: handlePlayerPosition(playerPosition);
     $: resize(clientHeight, clientWidth);
     $: handlePreviewCommand(previewCommand);
 
@@ -360,152 +348,6 @@
         }
     }
 
-    async function updateBiomes(playerPosition: Position | null) {
-        if (
-            !isInitialized ||
-            playerPosition == null ||
-            $player == null ||
-            worldStage == null
-        ) {
-            return;
-        }
-
-        // Clear shader textures
-        biomeTexturePositions = {};
-        biomeDecorationsTexturePositions = {};
-
-        // Create biome shader instances
-        for (
-            let row = playerPosition.row - GRID_MID_ROW;
-            row < playerPosition.row + GRID_MID_ROW;
-            row++
-        ) {
-            for (
-                let col = playerPosition.col - GRID_MID_COL;
-                col < playerPosition.col + GRID_MID_COL;
-                col++
-            ) {
-                // Fill biomeTexturePositions
-                const {
-                    isoX,
-                    isoY,
-                    texture,
-                    elevation,
-                    biome,
-                    geohash,
-                    strength,
-                    width,
-                    height,
-                } = await calculateBiomeForRowCol(playerPosition, row, col);
-
-                // Use the entire sprite sheet as the texture
-                const textureUid = texture.source.label;
-                const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
-
-                if (biomeTexturePositions[textureUid] == null) {
-                    biomeTexturePositions[textureUid] = {
-                        texture,
-                        positions: new Float32Array(
-                            MAX_SHADER_GEOMETRIES * 3,
-                        ).fill(-1), // x, y, h
-                        uvsX: new Float32Array(MAX_SHADER_GEOMETRIES * 4), // x0, x1, x2, x3
-                        uvsY: new Float32Array(MAX_SHADER_GEOMETRIES * 4), // y0, y1, y2, y3
-                        sizes: new Float32Array(MAX_SHADER_GEOMETRIES * 2), // w, h
-                        anchors: new Float32Array(MAX_SHADER_GEOMETRIES * 2), // x, y
-                        width, // PROBLEM: this is not common to all the instances in teh sheet
-                        height,
-                        instances: 0,
-                    };
-                } else {
-                    const ref = biomeTexturePositions[textureUid];
-
-                    // Set instance positions
-                    const stp = ref.instances * 3;
-                    ref.positions![stp] = isoX;
-                    ref.positions![stp + 1] = isoY;
-                    ref.positions![stp + 2] = elevation;
-
-                    // Set instance uvs
-                    const stuv = ref.instances * 4;
-                    ref.uvsX![stuv] = x0;
-                    ref.uvsX![stuv + 1] = x1;
-                    ref.uvsX![stuv + 2] = x2;
-                    ref.uvsX![stuv + 3] = x3;
-                    ref.uvsY![stuv] = y0;
-                    ref.uvsY![stuv + 1] = y1;
-                    ref.uvsY![stuv + 2] = y2;
-                    ref.uvsY![stuv + 3] = y3;
-
-                    // Set instance sizes
-                    const sts = ref.instances * 2;
-                    ref.sizes![sts] = width;
-                    ref.sizes![sts + 1] = height;
-
-                    // Set instance anchors
-                    ref.anchors![sts] = texture.defaultAnchor?.x || 0.5;
-                    ref.anchors![sts + 1] = texture.defaultAnchor?.y || 0.5;
-
-                    // Increment instances
-                    ref.instances += 1;
-                }
-
-                // Fill biomeDecorationsTexturePositions
-                for (const [
-                    textureUid,
-                    { positions, texture, height, width, instances },
-                ] of Object.entries(
-                    await calculateBiomeDecorationsForRowCol({
-                        geohash,
-                        biome,
-                        strength,
-                        row,
-                        col,
-                        isoX,
-                        isoY,
-                        elevation,
-                    }),
-                )) {
-                    if (biomeDecorationsTexturePositions[textureUid] == null) {
-                        biomeDecorationsTexturePositions[textureUid] = {
-                            texture,
-                            positions: new Float32Array(
-                                MAX_SHADER_GEOMETRIES * 3,
-                            ).fill(-1), // x, y, h
-                            width,
-                            height,
-                            instances: 0,
-                        };
-                    } else {
-                        const ref =
-                            biomeDecorationsTexturePositions[textureUid];
-
-                        ref.positions!.set(
-                            positions!.subarray(0, instances * 3),
-                            ref.instances * 3, // offset
-                        );
-                        ref.instances += instances;
-                    }
-                }
-            }
-        }
-
-        // Draw shaders
-        drawShaderTextures({
-            shaderName: "biome",
-            shaderTextures: biomeTexturePositions,
-            renderOrder: RENDER_ORDER.biome * playerPosition.isoY,
-            numGeometries: MAX_SHADER_GEOMETRIES,
-            stage: worldStage,
-        });
-        drawShaderTextures({
-            shaderName: "grass",
-            shaderTextures: biomeDecorationsTexturePositions,
-            renderOrder: RENDER_ORDER.grass * playerPosition.isoY,
-            numGeometries: MAX_SHADER_GEOMETRIES,
-            stage: worldStage,
-        });
-    }
-
     async function loadWorld({
         world,
         position,
@@ -625,12 +467,15 @@
                     mesh.x = x;
                     mesh.y = y - position.elevation;
                     mesh.zIndex = RENDER_ORDER[z] || RENDER_ORDER.world;
-                    shaderGeometry.instancePositions.data.set([
+
+                    const instancePositions =
+                        shaderGeometry.geometry.getBuffer("aInstancePosition");
+                    instancePositions.data.set([
                         x,
                         y + imageheight, // this is only used to calculate z
                         position.elevation, // this is not used to calculate z
                     ]);
-                    shaderGeometry.instancePositions.update();
+                    instancePositions.update();
 
                     // Add to worldMeshes
                     const worldMesh = {
@@ -652,7 +497,7 @@
         }
     }
 
-    async function updatePlayer(playerPosition: Position | null) {
+    async function handlePlayerPosition(playerPosition: Position | null) {
         if (
             !isInitialized ||
             playerPosition == null ||
@@ -661,6 +506,9 @@
         ) {
             return;
         }
+
+        // Update biomes
+        drawBiomeShaders(playerPosition, worldStage);
 
         // Cull entity meshes outside view
         for (const [id, entityMesh] of Object.entries(entityMeshes)) {
@@ -686,12 +534,17 @@
         const playerMesh = entityMeshes[$player.player];
         if (playerMesh != null && playerMesh.mesh != null) {
             // Update
-            playerMesh.shaderGeometry.instancePositions.data.set([
+
+            const instancePositions =
+                playerMesh.shaderGeometry.geometry.getBuffer(
+                    "aInstancePosition",
+                );
+            instancePositions.data.set([
                 playerPosition.isoX,
                 playerPosition.isoY,
                 playerPosition.elevation,
             ]);
-            playerMesh.shaderGeometry.instancePositions.update();
+            instancePositions.update();
             playerMesh.position = playerPosition;
 
             // Tween position
@@ -780,12 +633,12 @@
             }
 
             // Update
-            entityMesh.shaderGeometry.instancePositions.data.set([
-                isoX,
-                isoY,
-                elevation,
-            ]);
-            entityMesh.shaderGeometry.instancePositions.update();
+            const instancePositions =
+                entityMesh.shaderGeometry.geometry.getBuffer(
+                    "aInstancePosition",
+                );
+            instancePositions.data.set([isoX, isoY, elevation]);
+            instancePositions.update();
             entityMesh.position = position;
 
             // Tween position
@@ -906,12 +759,13 @@
             };
 
             // Set initial position (entities only use instancePositions for calculuation z)
-            entityMesh.shaderGeometry.instancePositions.data.set([
-                isoX,
-                isoY,
-                elevation,
-            ]);
-            entityMesh.shaderGeometry.instancePositions.update();
+
+            const instancePositions =
+                entityMesh.shaderGeometry.geometry.getBuffer(
+                    "aInstancePosition",
+                );
+            instancePositions.data.set([isoX, isoY, elevation]);
+            instancePositions.update();
 
             // Set mesh properties
             if (variant != null) {
@@ -1117,8 +971,7 @@
 
         // Initial update
         if (playerPosition && $player) {
-            await updatePlayer(playerPosition);
-            await updateBiomes(playerPosition);
+            await handlePlayerPosition(playerPosition);
             await updateEntities($monsterRecord, playerPosition, "monster");
             await updateEntities($playerRecord, playerPosition, "player");
             await updateEntities($itemRecord, playerPosition, "item");

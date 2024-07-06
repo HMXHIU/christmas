@@ -1,10 +1,7 @@
 precision mediump float;
 
-attribute vec2 aPosition;
 attribute vec3 aInstancePosition;
 attribute float aInstanceHighlight;
-attribute vec2 aUV;
-attribute float aZAlongY;
 attribute float aInstanceVertIndex;
 attribute vec4 aInstanceXUV;
 attribute vec4 aInstanceYUV;
@@ -13,17 +10,12 @@ attribute vec2 aInstanceAnchor;
 
 varying vec2 vPosition;
 varying vec2 vUV;
-varying float vZAlongY;
 varying vec3 vInstancePosition;
 varying float vInstanceHighlight;
 
 uniform mat3 uProjectionMatrix;
 uniform mat3 uWorldTransformMatrix;
 uniform mat3 uTransformMatrix;
-uniform float uAnchorX;
-uniform float uAnchorY;
-uniform float uTextureHeight;
-uniform float uTextureWidth;
 uniform float uZScale;
 uniform float uZOffset;
 
@@ -42,8 +34,6 @@ void main() {
         vUV = vec2(aInstanceXUV.w, aInstanceYUV.w);
         vPosition = vec2(0, aInstanceSize.y);
     }
-
-    vZAlongY = aZAlongY;
     vInstancePosition = aInstancePosition;
     vInstanceHighlight = aInstanceHighlight;
 
