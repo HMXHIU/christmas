@@ -2,8 +2,6 @@
     import { crossoverCmdMove } from "$lib/crossover";
     import { getGameActionId, type GameCommand } from "$lib/crossover/ir";
     import {
-        autoCorrectGeohashPrecision,
-        cartToIso,
         getEntityId,
         getPositionsForPath,
         snapToGrid,
@@ -25,7 +23,6 @@
         Item,
         Monster,
         Player,
-        World,
     } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
     import { gsap } from "gsap";
@@ -74,7 +71,6 @@
         HALF_ISO_CELL_HEIGHT,
         HALF_ISO_CELL_WIDTH,
         ISO_CELL_HEIGHT,
-        RENDER_ORDER,
         WORLD_HEIGHT,
         WORLD_WIDTH,
         Z_OFF,
@@ -83,9 +79,7 @@
         calculateRowColFromIso,
         destroyEntityMesh,
         getDirectionsToPosition,
-        getImageForTile,
         getPathHighlights,
-        getTilesetForTile,
         initAssetManager,
         isCellInView,
         loadAssetTexture,
@@ -95,6 +89,7 @@
         type EntityMesh,
         type Position,
     } from "./utils";
+    import { drawWorlds } from "./world";
 
     export let previewCommand: GameCommand | null = null;
 
@@ -311,189 +306,6 @@
         ) {
             const utilityRecord = compendium[prop]?.utilities[utility];
             console.log(source, `performing ${utility} on`, target);
-        }
-    }
-
-    async function updateWorlds(
-        worldRecord: Record<string, Record<string, World>>,
-        playerPosition: Position | null,
-    ) {
-        if (!isInitialized || playerPosition == null) {
-            return;
-        }
-
-        // Get all worlds in town
-        const town = playerPosition.geohash.slice(
-            0,
-            worldSeed.spatial.town.precision,
-        );
-        const worlds = worldRecord[town];
-        if (!worlds) {
-            return;
-        }
-
-        // TODO: this is pretty inefficient we we need to keep loading everytime player moves
-
-        // Load worlds
-        for (const w of Object.values(worlds)) {
-            const origin = autoCorrectGeohashPrecision(
-                w.loc[0],
-                worldSeed.spatial.unit.precision,
-            );
-            await loadWorld({
-                world: w,
-                position: await calculatePosition(origin),
-                town,
-            });
-        }
-    }
-
-    async function loadWorld({
-        world,
-        position,
-        town,
-    }: {
-        world: World;
-        town: string;
-        position: Position;
-    }) {
-        if (!isInitialized || worldStage == null) {
-            return;
-        }
-
-        // await debugColliders(worldStage, $worldRecord);
-
-        const tilemap = await Assets.load(world.url);
-        const { layers, tilesets, tileheight, tilewidth } = tilemap;
-        const [tileOffsetX, tileOffsetY] = cartToIso(
-            tilewidth / 2,
-            tilewidth / 2,
-        );
-
-        for (const layer of layers) {
-            const {
-                data, // 1D array of tile indices
-                properties,
-                offsetx, // in pixels
-                offsety,
-                width, // in tiles (1 tile might be multiple cells)
-                height,
-                x,
-                y,
-            } = layer;
-            const props: { name: string; value: any; type: string }[] =
-                properties ?? [];
-
-            // Get properties
-            const { z, collider, interior } = props.reduce(
-                (acc: Record<string, any>, { name, value, type }) => {
-                    acc[name] = value;
-                    return acc;
-                },
-                {},
-            );
-
-            const sortedTilesets = tilesets
-                .sort((a: any, b: any) => a.firstgid - b.firstgid)
-                .reverse();
-
-            // Create tile sprites
-            for (let i = 0; i < height; i++) {
-                for (let j = 0; j < width; j++) {
-                    const tileId = data[i * width + j];
-                    if (tileId === 0) {
-                        continue;
-                    }
-                    const id = `${town}-${world.world}-${tileId}-${i}-${j}`;
-
-                    // Skip if already created
-                    if (id in worldMeshes) {
-                        continue;
-                    }
-
-                    // Get tileset for tileId
-                    const { tileset, firstgid } = await getTilesetForTile(
-                        tileId,
-                        sortedTilesets,
-                    );
-
-                    // Get image for tileId
-                    const { texture, imageheight, imagewidth } =
-                        await getImageForTile(tileset.tiles, tileId - firstgid);
-
-                    const [isoX, isoY] = cartToIso(
-                        j * tilewidth,
-                        i * tilewidth, // use tilewidth for cartesian
-                    );
-
-                    const shaderGeometry = loadShaderGeometry(
-                        "world",
-                        texture,
-                        imagewidth,
-                        imageheight,
-                        {
-                            // Note: anchor is not used in entity meshes shader
-                            uid: id,
-                            zScale: Z_SCALE,
-                            zOffset: Z_OFF[z] ?? Z_OFF.floor,
-                            cellHeight: tileheight / ISO_CELL_HEIGHT,
-                        },
-                    );
-
-                    const mesh = new Mesh<Geometry, Shader>({
-                        geometry: shaderGeometry.geometry,
-                        shader: shaderGeometry.shader,
-                    });
-
-                    // Center of the bottom tile (imageheight a multiple of tileheight)
-                    const anchor = {
-                        x: 0.5,
-                        y: 1 - tileheight / imageheight / 2,
-                    };
-
-                    // Set initial position
-                    const x =
-                        isoX +
-                        (offsetx ?? 0) +
-                        position.isoX +
-                        tileOffsetX -
-                        anchor.x * imagewidth;
-                    const y =
-                        isoY +
-                        (offsety ?? 0) +
-                        position.isoY +
-                        tileOffsetY -
-                        anchor.y * imageheight;
-                    mesh.x = x;
-                    mesh.y = y - position.elevation;
-                    mesh.zIndex = RENDER_ORDER[z] || RENDER_ORDER.world;
-
-                    const instancePositions =
-                        shaderGeometry.geometry.getBuffer("aInstancePosition");
-                    instancePositions.data.set([
-                        x,
-                        y + imageheight, // this is only used to calculate z
-                        position.elevation, // this is not used to calculate z
-                    ]);
-                    instancePositions.update();
-
-                    // Add to worldMeshes
-                    const worldMesh = {
-                        id,
-                        mesh,
-                        shaderGeometry,
-                        hitbox: new Container(), // Not used for world meshes
-                        position: position, // Not used for world meshes
-                    };
-
-                    worldMeshes[id] = worldMesh;
-
-                    // Add to worldStage
-                    if (!worldStage.children.includes(mesh)) {
-                        worldStage.addChild(mesh);
-                    }
-                }
-            }
         }
     }
 
@@ -975,7 +787,7 @@
             await updateEntities($monsterRecord, playerPosition, "monster");
             await updateEntities($playerRecord, playerPosition, "player");
             await updateEntities($itemRecord, playerPosition, "item");
-            await updateWorlds($worldRecord, playerPosition);
+            await drawWorlds($worldRecord, playerPosition, worldStage);
             updateCamera($player, false);
         }
     }
@@ -986,6 +798,7 @@
         worldStage.sortableChildren = true;
         init();
 
+        // Store subscriptions
         const subscriptions = [
             monsterRecord.subscribe((mr) => {
                 updateEntities(mr, playerPosition, "monster");
@@ -1015,7 +828,10 @@
                 );
             }),
             worldRecord.subscribe((wr) => {
-                updateWorlds(wr, playerPosition);
+                if (playerPosition == null || worldStage == null) {
+                    return;
+                }
+                drawWorlds(wr, playerPosition, worldStage);
             }),
             player.subscribe((p) => {
                 updatePlayerPosition(p);

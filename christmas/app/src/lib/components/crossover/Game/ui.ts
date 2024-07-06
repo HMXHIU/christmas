@@ -64,28 +64,26 @@ function clearAllHighlights(
 }
 
 function clearHighlights(entityMesh: EntityMesh, highlight?: number) {
+    const instanceHighlights =
+        entityMesh.shaderGeometry.geometry.getBuffer("aInstanceHighlight");
+
     if (highlight == null) {
-        entityMesh.shaderGeometry.instanceHighlights.data.fill(0);
-        entityMesh.shaderGeometry.instanceHighlights.update();
+        instanceHighlights.data.fill(0);
+        instanceHighlights.update();
     } else {
         // Clear specific highlight
-        for (
-            var i = 0;
-            i < entityMesh.shaderGeometry.instanceHighlights.data.length;
-            i++
-        ) {
-            if (
-                entityMesh.shaderGeometry.instanceHighlights.data[i] ===
-                highlight
-            ) {
-                entityMesh.shaderGeometry.instanceHighlights.data[i] = 0;
+        for (var i = 0; i < instanceHighlights.data.length; i++) {
+            if (instanceHighlights.data[i] === highlight) {
+                instanceHighlights.data[i] = 0;
             }
         }
-        entityMesh.shaderGeometry.instanceHighlights.update();
+        instanceHighlights.update();
     }
 }
 
 function highlightEntity(entityMesh: EntityMesh, highlight: number = 1) {
-    entityMesh.shaderGeometry.instanceHighlights.data.fill(highlight);
-    entityMesh.shaderGeometry.instanceHighlights.update();
+    const instanceHighlights =
+        entityMesh.shaderGeometry.geometry.getBuffer("aInstanceHighlight");
+    instanceHighlights.data.fill(highlight);
+    instanceHighlights.update();
 }

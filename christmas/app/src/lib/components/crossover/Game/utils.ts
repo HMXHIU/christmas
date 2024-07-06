@@ -6,7 +6,6 @@ import {
 } from "$lib/crossover/caches";
 import {
     aStarPathfinding,
-    autoCorrectGeohashPrecision,
     cartToIso,
     getEntityId,
     isoToCart,
@@ -18,12 +17,10 @@ import { elevationAtGeohash } from "$lib/crossover/world/biomes";
 import { compendium } from "$lib/crossover/world/compendium";
 import type { AssetMetadata, Direction } from "$lib/crossover/world/types";
 import { geohashToGridCell } from "$lib/crossover/world/utils";
-import { worldSeed } from "$lib/crossover/world/world";
 import type {
     Item,
     Monster,
     Player,
-    World,
 } from "$lib/server/crossover/redis/entities";
 import {
     Assets,
@@ -43,7 +40,6 @@ export {
     CANVAS_WIDTH,
     CELL_HEIGHT,
     CELL_WIDTH,
-    debugColliders,
     decodeTiledSource,
     destroyContainer,
     destroyEntityMesh,
@@ -364,46 +360,6 @@ function updateEntityMeshRenderOrder(entityMesh: EntityMesh) {
     }
     entityMesh.mesh.zIndex = zIndex;
     entityMesh.hitbox.zIndex = zIndex;
-}
-
-async function debugColliders(
-    stage: Container,
-    worldRecord: Record<string, Record<string, World>>,
-) {
-    const colliderTexture = (await Assets.loadBundle("actions"))["actions"]
-        .textures["hiking"];
-
-    // Draw world colliders
-    for (const worlds of Object.values(worldRecord)) {
-        for (const w of Object.values(worlds)) {
-            const origin = autoCorrectGeohashPrecision(
-                (w as World).loc[0],
-                worldSeed.spatial.unit.precision,
-            );
-            const position = await calculatePosition(origin);
-
-            for (const cld of w.cld) {
-                const { row, col } = geohashToGridCell(cld);
-
-                // Create sprite
-                const sprite = new Sprite(colliderTexture);
-                sprite.width = CELL_WIDTH;
-                sprite.height =
-                    (colliderTexture.height * sprite.width) /
-                    colliderTexture.width;
-                sprite.anchor.set(0.5, 1);
-
-                // Convert cartesian to isometric position
-                const [isoX, isoY] = cartToIso(
-                    col * CELL_WIDTH,
-                    row * CELL_HEIGHT,
-                );
-                sprite.x = isoX;
-                sprite.y = isoY - position.elevation;
-                stage.addChild(sprite);
-            }
-        }
-    }
 }
 
 async function initAssetManager() {
