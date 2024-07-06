@@ -8,7 +8,6 @@
     } from "$lib/crossover/utils";
     import { type Ability } from "$lib/crossover/world/abilities";
     import { actions, type Action } from "$lib/crossover/world/actions";
-    import { bestiary } from "$lib/crossover/world/bestiary";
     import {
         EquipmentSlots,
         compendium,
@@ -17,13 +16,7 @@
     } from "$lib/crossover/world/compendium";
     import { MS_PER_TICK } from "$lib/crossover/world/settings";
     import type { Direction } from "$lib/crossover/world/types";
-    import { worldSeed } from "$lib/crossover/world/world";
-    import type {
-        EntityType,
-        Item,
-        Monster,
-        Player,
-    } from "$lib/server/crossover/redis/entities";
+    import type { Player } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
     import { gsap } from "gsap";
     import PixiPlugin from "gsap/PixiPlugin";
@@ -32,12 +25,6 @@
         Assets,
         Container,
         FederatedMouseEvent,
-        Geometry,
-        Graphics,
-        Mesh,
-        Rectangle,
-        Shader,
-        Sprite,
         Texture,
         Ticker,
         WebGLRenderer,
@@ -58,38 +45,35 @@
         clearInstancedShaderMeshes,
         destroyShaders,
         highlightShaderInstances,
-        loadShaderGeometry,
         updateShaderUniforms,
     } from "../shaders";
     import { animateAbility } from "./animations";
     import { drawBiomeShaders } from "./biomes";
-    import { clearHighlights, drawTargetUI, highlightEntity } from "./ui";
+    import {
+        cullEntityMeshes,
+        entityMeshes,
+        updateEntities,
+        upsertEntityMesh,
+    } from "./entities";
+    import { drawTargetUI } from "./ui";
     import {
         CANVAS_HEIGHT,
         CANVAS_WIDTH,
         CELL_WIDTH,
         HALF_ISO_CELL_HEIGHT,
         HALF_ISO_CELL_WIDTH,
-        ISO_CELL_HEIGHT,
         WORLD_HEIGHT,
         WORLD_WIDTH,
-        Z_OFF,
-        Z_SCALE,
         calculatePosition,
         calculateRowColFromIso,
-        destroyEntityMesh,
         getDirectionsToPosition,
         getPathHighlights,
         initAssetManager,
-        isCellInView,
-        loadAssetTexture,
         positionsInRange,
-        swapEntityVariant,
         updateEntityMeshRenderOrder,
-        type EntityMesh,
         type Position,
     } from "./utils";
-    import { drawWorlds } from "./world";
+    import { cullWorlds, drawWorlds } from "./world";
 
     export let previewCommand: GameCommand | null = null;
 
@@ -99,10 +83,6 @@
     let clientHeight: number;
     let app: Application | null = null;
     let worldStage: Container | null = null;
-
-    let entityMeshes: Record<string, EntityMesh> = {};
-    let worldMeshes: Record<string, EntityMesh> = {};
-
     let playerPosition: Position | null = null;
     let lastCursorX: number = 0;
     let lastCursorY: number = 0;
@@ -323,24 +303,10 @@
         drawBiomeShaders(playerPosition, worldStage);
 
         // Cull entity meshes outside view
-        for (const [id, entityMesh] of Object.entries(entityMeshes)) {
-            if (!isCellInView(entityMesh.position, playerPosition)) {
-                destroyEntityMesh(entityMesh, worldStage);
-                delete entityMeshes[id];
-            }
-        }
+        cullEntityMeshes(playerPosition, worldStage);
 
         // Cull world meshes outside town
-        const town = playerPosition.geohash.slice(
-            0,
-            worldSeed.spatial.town.precision,
-        );
-        for (const [id, entityMesh] of Object.entries(worldMeshes)) {
-            if (!id.startsWith(town)) {
-                destroyEntityMesh(entityMesh, worldStage);
-                delete worldMeshes[id];
-            }
-        }
+        cullWorlds(playerPosition, worldStage);
 
         // Player
         const playerMesh = entityMeshes[$player.player];
@@ -372,266 +338,6 @@
 
         // Move camera to player
         updateCamera($player);
-    }
-
-    async function updateEntities(
-        er: Record<string, Monster | Player | Item>,
-        playerPosition: Position | null,
-        entityType: EntityType,
-    ) {
-        if (
-            !isInitialized ||
-            playerPosition == null ||
-            worldStage == null ||
-            $player == null
-        ) {
-            return;
-        }
-
-        // Upsert entities (only locT = geohash)
-        let upserted = new Set<string>();
-        for (const entity of Object.values(er)) {
-            if (entity.locT === "geohash") {
-                await upsertEntityMesh(entity);
-                upserted.add(getEntityId(entity)[0]);
-            }
-        }
-
-        // Destroy entities not in record
-        for (const [id, entityMesh] of Object.entries(entityMeshes)) {
-            if (
-                entityMesh.entity == null ||
-                id === $player.player ||
-                upserted.has(id) ||
-                getEntityId(entityMesh.entity)[1] !== entityType
-            ) {
-                continue;
-            }
-            destroyEntityMesh(entityMesh, worldStage);
-            delete entityMeshes[id];
-        }
-    }
-
-    async function upsertEntityMesh(entity: Player | Item | Monster) {
-        if (worldStage == null || playerPosition == null || $player == null) {
-            return;
-        }
-
-        if (entity.locT !== "geohash") {
-            return;
-        }
-
-        const [entityId, entityType] = getEntityId(entity);
-
-        // Get position
-        const position = await calculatePosition(entity.loc[0]);
-        const { row, col, isoX, isoY, elevation } = position;
-
-        // Ignore entities outside player's view
-        if (!isCellInView({ row, col }, playerPosition)) {
-            return;
-        }
-
-        // Update
-        let entityMesh = entityMeshes[entityId];
-        if (entityMesh != null) {
-            if (entityType === "player") {
-            } else if (entityType === "monster") {
-            } else if (entityType === "item") {
-                const item = entity as Item;
-                const prop = compendium[item.prop];
-                const variant = prop.states[item.state].variant;
-                await swapEntityVariant(entityMesh, variant);
-            }
-
-            // Update
-            const instancePositions =
-                entityMesh.shaderGeometry.geometry.getBuffer(
-                    "aInstancePosition",
-                );
-            instancePositions.data.set([isoX, isoY, elevation]);
-            instancePositions.update();
-            entityMesh.position = position;
-
-            // Tween position
-            gsap.to(entityMesh.hitbox, {
-                x: isoX,
-                y: isoY - elevation,
-                duration: (actions.move.ticks * MS_PER_TICK) / 1000,
-            });
-
-            // Set render order
-            updateEntityMeshRenderOrder(entityMesh);
-
-            // Add to worldStage (might have been culled)
-            if (!worldStage.children.includes(entityMesh.hitbox)) {
-                worldStage.addChild(entityMesh.hitbox);
-            }
-        }
-        // Create
-        else {
-            let texture: Texture | null = null;
-            let width: number = 0;
-            let anchor: { x: number; y: number } = { x: 0.5, y: 0.5 };
-            let variant: string | null = null;
-
-            // Get texture, variant, width, anchor
-            if (entityType === "player") {
-                texture = await Assets.load((entity as Player).avatar);
-                width = CELL_WIDTH;
-                anchor = { x: 0.5, y: 1 };
-            } else if (entityType === "monster") {
-                const monster = entity as Monster;
-                const asset = bestiary[monster.beast]?.asset;
-                texture = await loadAssetTexture(asset);
-                width = asset.width * CELL_WIDTH; // asset.width is the multiplier
-                anchor = { x: 0.5, y: 1 };
-            } else if (entityType === "item") {
-                const item = entity as Item;
-                const prop = compendium[item.prop];
-                const asset = prop?.asset;
-                variant = prop.states[item.state].variant;
-                width = asset.width * CELL_WIDTH; // asset.width is the multiplier
-                texture = await loadAssetTexture(asset, { variant });
-            }
-            if (!texture) {
-                console.log(`Missing texture for ${entity.name}`);
-                return;
-            }
-
-            // Create entity mesh
-            const height = (texture.height * width) / texture.width; // Scale height while maintaining aspect ratio
-            const shaderGeometry = loadShaderGeometry(
-                "entity",
-                texture,
-                width,
-                height,
-                {
-                    uid: entityId,
-                    anchor,
-                    zScale: Z_SCALE,
-                    zOffset: Z_OFF.entity,
-                },
-            );
-
-            const mesh = new Mesh<Geometry, Shader>({
-                geometry: shaderGeometry.geometry,
-                shader: shaderGeometry.shader,
-            });
-
-            // Create a hitbox for cursor events (can't use the mesh directly because the position is set in shaders)
-            const hitbox = new Container({
-                width: width,
-                height: height,
-                x: isoX,
-                y: isoY - elevation,
-                pivot: {
-                    x: anchor.x * width,
-                    y: anchor.y * height,
-                },
-                eventMode: "static",
-                hitArea: new Rectangle(0, 0, width, height),
-                onmouseover: () => {
-                    const entityMesh = entityMeshes[entityId];
-                    if (
-                        ($target == null ||
-                            // Highlight if entity is not target (already highlighted)
-                            getEntityId($target)[0] != entityId) &&
-                        entityMesh != null
-                    ) {
-                        highlightEntity(entityMesh, 1);
-                    }
-                },
-                onmouseleave: () => {
-                    // Clear highlight if entity is not target
-                    const entityMesh = entityMeshes[entityId];
-                    if (
-                        ($target == null ||
-                            getEntityId($target)[0] != entityId) &&
-                        entityMesh != null
-                    ) {
-                        clearHighlights(entityMesh);
-                    }
-                },
-                onclick: () => {
-                    // Set target
-                    target.set(entity);
-                },
-            });
-            hitbox.addChild(mesh);
-
-            // Create entity mesh
-            entityMesh = {
-                id: entityId,
-                mesh,
-                shaderGeometry,
-                hitbox,
-                entity,
-                position,
-            };
-
-            // Set initial position (entities only use instancePositions for calculuation z)
-
-            const instancePositions =
-                entityMesh.shaderGeometry.geometry.getBuffer(
-                    "aInstancePosition",
-                );
-            instancePositions.data.set([isoX, isoY, elevation]);
-            instancePositions.update();
-
-            // Set mesh properties
-            if (variant != null) {
-                entityMesh.properties = { variant };
-            }
-
-            // Create action icon (sprite)
-            if (entityType === "player" || entityType === "monster") {
-                // Default move icon (to get dimensions)
-                const [bundleName, alias] = actions.move.icon.path
-                    .split("/")
-                    .slice(-2);
-                const bundle = await Assets.loadBundle(bundleName);
-                const texture: Texture =
-                    bundle[alias].textures[actions.move.icon.icon];
-
-                const icon = new Sprite({
-                    texture: Texture.EMPTY,
-                    visible: false,
-                    height: texture.height,
-                    width: texture.width,
-                    anchor: { x: 0.5, y: 0.5 },
-                    position: {
-                        x: hitbox.width / 2,
-                        y: -0.5 * ISO_CELL_HEIGHT,
-                    },
-                });
-
-                // Create a circular mask
-                const mask = new Graphics();
-                mask.circle(0, 0, Math.max(icon.width, icon.height) / 2);
-                mask.fill({ color: 0xffffff });
-                mask.position = { x: icon.width / 2, y: icon.height / 2 };
-                mask.pivot = { x: icon.width / 2, y: icon.height / 2 };
-
-                // Apply mask
-                icon.mask = mask;
-                icon.addChild(mask);
-
-                // Set icon position to bottom of hitbox
-                entityMesh.actionIcon = icon;
-                hitbox.addChild(icon);
-            }
-
-            entityMeshes[entityId] = entityMesh;
-
-            // Set render order
-            updateEntityMeshRenderOrder(entityMesh);
-
-            // Add to worldStage (might have been culled)
-            if (!worldStage.children.includes(entityMesh.hitbox)) {
-                worldStage.addChild(entityMesh.hitbox);
-            }
-        }
     }
 
     function onMouseMove(x: number, y: number) {
@@ -765,8 +471,8 @@
         };
 
         // Create player mesh
-        if ($player) {
-            await upsertEntityMesh($player);
+        if ($player != null && playerPosition !== null) {
+            await upsertEntityMesh($player, playerPosition, worldStage);
         }
 
         // Add ticker
@@ -784,9 +490,24 @@
         // Initial update
         if (playerPosition && $player) {
             await handlePlayerPosition(playerPosition);
-            await updateEntities($monsterRecord, playerPosition, "monster");
-            await updateEntities($playerRecord, playerPosition, "player");
-            await updateEntities($itemRecord, playerPosition, "item");
+            await updateEntities(
+                $monsterRecord,
+                playerPosition,
+                "monster",
+                worldStage,
+            );
+            await updateEntities(
+                $playerRecord,
+                playerPosition,
+                "player",
+                worldStage,
+            );
+            await updateEntities(
+                $itemRecord,
+                playerPosition,
+                "item",
+                worldStage,
+            );
             await drawWorlds($worldRecord, playerPosition, worldStage);
             updateCamera($player, false);
         }
@@ -801,13 +522,23 @@
         // Store subscriptions
         const subscriptions = [
             monsterRecord.subscribe((mr) => {
-                updateEntities(mr, playerPosition, "monster");
+                if (playerPosition == null || worldStage == null) {
+                    return;
+                }
+                updateEntities(mr, playerPosition, "monster", worldStage);
             }),
             playerRecord.subscribe((pr) => {
-                updateEntities(pr, playerPosition, "player");
+                if (playerPosition == null || worldStage == null) {
+                    return;
+                }
+                updateEntities(pr, playerPosition, "player", worldStage);
             }),
             itemRecord.subscribe((ir) => {
-                updateEntities(ir, playerPosition, "item");
+                if (playerPosition == null || worldStage == null) {
+                    return;
+                }
+                updateEntities(ir, playerPosition, "item", worldStage);
+
                 // Player inventory and equipped items
                 const playerItems = Object.values(ir).filter((item) => {
                     return (

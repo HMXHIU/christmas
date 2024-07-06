@@ -8,6 +8,7 @@ import {
     calculatePosition,
     CELL_HEIGHT,
     CELL_WIDTH,
+    destroyEntityMesh,
     getImageForTile,
     getTilesetForTile,
     ISO_CELL_HEIGHT,
@@ -18,7 +19,7 @@ import {
     type Position,
 } from "./utils";
 
-export { debugColliders, drawWorlds, loadWorld };
+export { cullWorlds, debugColliders, drawWorlds, loadWorld, worldMeshes };
 
 let worldMeshes: Record<string, EntityMesh> = {};
 
@@ -236,6 +237,20 @@ async function debugColliders(
                 sprite.y = isoY - position.elevation;
                 stage.addChild(sprite);
             }
+        }
+    }
+}
+
+function cullWorlds(playerPosition: Position, stage: Container) {
+    // Cull world meshes outside town
+    const town = playerPosition.geohash.slice(
+        0,
+        worldSeed.spatial.town.precision,
+    );
+    for (const [id, entityMesh] of Object.entries(worldMeshes)) {
+        if (!id.startsWith(town)) {
+            destroyEntityMesh(entityMesh, stage);
+            delete worldMeshes[id];
         }
     }
 }
