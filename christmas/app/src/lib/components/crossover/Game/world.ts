@@ -4,11 +4,11 @@ import { worldSeed } from "$lib/crossover/world/world";
 import type { World } from "$lib/server/crossover/redis/entities";
 import { Assets, Container, Geometry, Mesh, Shader, Sprite } from "pixi.js";
 import { loadShaderGeometry } from "../shaders";
+import { destroyEntityMesh } from "./entities";
 import {
     calculatePosition,
     CELL_HEIGHT,
     CELL_WIDTH,
-    destroyEntityMesh,
     getImageForTile,
     getTilesetForTile,
     ISO_CELL_HEIGHT,

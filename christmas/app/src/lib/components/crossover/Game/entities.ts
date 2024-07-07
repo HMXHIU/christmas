@@ -27,7 +27,7 @@ import { clearHighlights, highlightEntity } from "./ui";
 import {
     calculatePosition,
     CELL_WIDTH,
-    destroyEntityMesh,
+    destroyContainer,
     isCellInView,
     ISO_CELL_HEIGHT,
     loadAssetTexture,
@@ -39,7 +39,13 @@ import {
     type Position,
 } from "./utils";
 
-export { cullEntityMeshes, entityMeshes, updateEntities, upsertEntityMesh };
+export {
+    cullEntityMeshes,
+    destroyEntityMesh,
+    entityMeshes,
+    updateEntities,
+    upsertEntityMesh,
+};
 
 let entityMeshes: Record<string, EntityMesh> = {};
 
@@ -301,4 +307,13 @@ function cullEntityMeshes(playerPosition: Position, stage: Container) {
             delete entityMeshes[id];
         }
     }
+}
+
+function destroyEntityMesh(entityMesh: EntityMesh, stage: Container) {
+    // Destroy hitbox and children
+    destroyContainer(entityMesh.hitbox);
+
+    // TODO: causes mesh has no shader program
+    // Destroy shader geometry
+    // destroyShaderGeometry(entityMesh.shaderGeometry.shaderUid);
 }

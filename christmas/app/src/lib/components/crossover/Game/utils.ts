@@ -42,7 +42,6 @@ export {
     CELL_WIDTH,
     decodeTiledSource,
     destroyContainer,
-    destroyEntityMesh,
     ELEVATION_TO_CELL_HEIGHT,
     getAngle,
     getDirectionsToPosition,
@@ -390,15 +389,6 @@ function destroyContainer(thing: Sprite | Mesh<Geometry, Shader> | Container) {
         thing.parent.removeChild(thing);
     }
     thing.destroy();
-}
-
-function destroyEntityMesh(entityMesh: EntityMesh, stage: Container) {
-    // Destroy hitbox and children
-    destroyContainer(entityMesh.hitbox);
-
-    // TODO: causes mesh has no shader program
-    // Destroy shader geometry
-    // destroyShaderGeometry(entityMesh.shaderGeometry.shaderUid);
 }
 
 function positionsInRange(
