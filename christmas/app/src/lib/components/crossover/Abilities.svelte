@@ -32,6 +32,8 @@
         selectedAbility = abilities[ability];
         isDialogOpen = true;
     }
+
+    // TODO: Need to add TICKS && procedures to abilities
 </script>
 
 <div class={cn("w-full", $$restProps.class)}>
@@ -43,6 +45,19 @@
                     {#each $playerAbilities as ability (ability.ability)}
                         <Button
                             variant="link"
+                            class="h-6
+                            {ability?.type === 'healing'
+                                ? 'text-green-400'
+                                : ''}
+                            {ability?.type === 'offensive'
+                                ? 'text-red-400'
+                                : ''}
+                            {ability?.type === 'defensive'
+                                ? 'text-blue-400'
+                                : ''}
+                            {ability?.type === 'neutral'
+                                ? 'text-gray-400'
+                                : ''}"
                             on:click={() => openDialog(ability.ability)}
                             >{ability.ability}</Button
                         >
@@ -67,16 +82,16 @@
                     <Badge
                         class="
                         {selectedAbility?.type === 'healing'
-                            ? 'bg-green-300'
+                            ? 'bg-green-400'
                             : ''}
                         {selectedAbility?.type === 'offensive'
-                            ? 'bg-red-300'
+                            ? 'bg-red-400'
                             : ''}
                         {selectedAbility?.type === 'defensive'
-                            ? 'bg-blue-300'
+                            ? 'bg-blue-400'
                             : ''}
                         {selectedAbility?.type === 'neutral'
-                            ? 'bg-gray-300'
+                            ? 'bg-gray-400'
                             : ''}"
                     >
                         {#if selectedAbility?.type === "healing"}
@@ -94,24 +109,38 @@
                         <Target class="h-4"></Target>
                         {selectedAbility?.range}
                     </Badge>
-                    <Badge>
-                        <Grid2X2 class="h-4"></Grid2X2>
-                        {selectedAbility?.aoe}
-                    </Badge>
+                    {#if selectedAbility?.aoe && selectedAbility?.aoe > 0}
+                        <Badge>
+                            <Grid2X2 class="h-4"></Grid2X2>
+                            {selectedAbility?.aoe}
+                        </Badge>
+                    {/if}
                 </div>
+                <!-- Costs -->
                 <div class="flex flex-row gap-2">
-                    <Badge><Zap class="h-4"></Zap>{selectedAbility?.ap}</Badge>
-                    <Badge class="bg-yellow-400"
-                        ><Dumbbell class="h-4"
-                        ></Dumbbell>{selectedAbility?.st}</Badge
-                    >
-                    <Badge class="bg-red-400"
-                        ><Heart class="h-4"></Heart>{selectedAbility?.hp}</Badge
-                    >
-                    <Badge class="bg-blue-400"
-                        ><Sparkles class="h-4"
-                        ></Sparkles>{selectedAbility?.mp}</Badge
-                    >
+                    {#if selectedAbility?.ap && selectedAbility?.ap > 0}
+                        <Badge
+                            ><Zap class="h-4"></Zap>{selectedAbility?.ap}</Badge
+                        >
+                    {/if}
+                    {#if selectedAbility?.st && selectedAbility?.st > 0}
+                        <Badge class="bg-yellow-400"
+                            ><Dumbbell class="h-4"
+                            ></Dumbbell>{selectedAbility?.st}</Badge
+                        >
+                    {/if}
+                    {#if selectedAbility?.hp && selectedAbility?.hp > 0}
+                        <Badge class="bg-red-400"
+                            ><Heart class="h-4"
+                            ></Heart>{selectedAbility?.hp}</Badge
+                        >
+                    {/if}
+                    {#if selectedAbility?.mp && selectedAbility?.mp > 0}
+                        <Badge class="bg-blue-400"
+                            ><Sparkles class="h-4"
+                            ></Sparkles>{selectedAbility?.mp}</Badge
+                        >
+                    {/if}
                 </div>
             </div>
         </Dialog.Content>
