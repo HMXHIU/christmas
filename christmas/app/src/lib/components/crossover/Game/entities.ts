@@ -9,6 +9,7 @@ import type {
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
+import gsap from "gsap";
 import {
     Assets,
     Container,

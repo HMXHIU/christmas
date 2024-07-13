@@ -2,15 +2,24 @@
 
 I am creating a character sprite animation framework for a 2d isometric game in PIXI.js v8. The framework uses bones instead of a sprite sheet.
 
-These are following bones:
+These are following bones and the textures:
 
-- Head, Torso (Parent Bone), Left Arm, Right Arm, Left Leg, Right Leg
+- frontLowerArmBone, front_lower_arm.png
+- frontUpperArmBone, front_upper_arm.png
+- torsoBone (Parent), torso.png
+- headBone, head.png
+- backLowerArmBone, back_lower_arm.png
+- backUpperArmBone, back_upper_arm.png
+- frontLowerLegBone, front_lower_leg.png
+- frontUpperLegBone, front_upper_leg.png
+- backLowerLegBone, back_lower_leg.png
+- backUpperLegBone,back_upper_leg.png
 
 Each bone will be attached a texture. There should be an avatar metadata file in json that defines the bones and the textures that are attached to each bone. The point of attachment of each texture to the bone is the texture's anchor point (in pixijs). As the bones are scaled in length, it should also scale the texture attached to it. The length and width of the bone should be defined in the metadata file (defaults to sane sizes).
 
 The avatar should not use PIXI.js Sprites, but rather `Mesh<Geometry, Shader>`, this is because I have a custom shader which specifies the z coordinate, as depth testing is enabled for webgl. The geometry is a quad and the textures have alpha enabled. The shader will be provided to you.
 
-Because this is an isometric game, there are 2 directional views of the avatar, northeast and southwest. The other views, southeast and northwest, can be mirrored from these two views. Each texture would have 2 views, northeast and southwest, the framework should mirror the textures for southeast and northwest views.
+There is only 2 views for the character, southwest and southeast. The textures provided is for the southwest view. The southeast view can be mirrored from the southwest view. The framework should mirror the textures to create the southeast view.
 
 The bones will be animated using a tweening library (GASP). The bones will be animated in a way for such animations:
 
@@ -20,18 +29,16 @@ There should be an animation metadata file in json that defines the animations a
 
 This is a summary of of the bones and textures required:
 
-- headBone, headTextureNE, headTextureSW
-- torsoBone, torsoTextureNE, torsoTextureSW
-- leftUpperArmBone, leftUpperArmTextureNE, leftUpperArmTextureSW
-- rightUpperArmBone, rightUpperArmTextureNE, rightUpperArmTextureSW
-- leftLowerArmBone, leftLowerArmTextureNE, leftLowerArmTextureSW
-- rightLowerArmBone, rightLowerArmTextureNE, rightLowerArmTextureSW
-- leftLowerLegBone, leftLowerLegTextureNE, leftLowerLegTextureSW
-- rightLowerLegBone rightLowerLegTextureNE, rightLowerLegTextureSW
-- leftUpperLegBone, leftUpperLegTextureNE, leftUpperLegTextureSW
-- rightUpperLegBone rightUpperLegTextureNE, rightUpperLegTextureSW
-- leftFootBone, leftFootTextureNE, leftFootTextureSW
-- rightFootBone, rightFootTextureNE, rightFootTextureSW
+- frontLowerArmBone, front_lower_arm.png
+- frontUpperArmBone, front_upper_arm.png
+- torsoBone, torso.png
+- headBone, head.png
+- backLowerArmBone, back_lower_arm.png
+- backUpperArmBone, back_upper_arm.png
+- frontLowerLegBone, front_lower_leg.png
+- frontUpperLegBone, front_upper_leg.png
+- backLowerLegBone, back_lower_leg.png
+- backUpperLegBone,back_upper_leg.png
 
 Each bone should have a position relative to the parent bone. The parent bone is the torso bone. The anchor points of each texture is the base of each bone.
 
@@ -45,6 +52,7 @@ In addition to creating the framework, I would like an editor tool that allows m
 - Preview the bone animations from the animation metadata file
 - View/Load the textures attached to each bone
 - Scale the bones
+- Attach the bone to the texture via the ui
 - Play/Pause the animations
 - Select the animation to preview
 

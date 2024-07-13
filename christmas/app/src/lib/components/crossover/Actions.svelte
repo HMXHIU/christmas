@@ -29,12 +29,12 @@
         <Card.Content class="space-y-2">
             <div class="space-y-1">
                 <Label for="current">Actions</Label>
-                <div class="text-xs">
+                <div class="grid grid-cols-3 text-xs">
                     {#if playerActions.length > 0}
                         {#each playerActions as action (action.action)}
                             <Button
                                 variant="link"
-                                class="h-6"
+                                class="h-6 text-gray-400"
                                 on:click={() => openDialog(action.action)}
                                 >{action.action}</Button
                             >

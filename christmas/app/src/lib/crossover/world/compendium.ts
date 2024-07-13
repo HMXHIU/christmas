@@ -7,9 +7,10 @@ import { worldSeed } from "./world";
 const { cloneDeep } = lodash;
 
 export {
-    EquipmentSlots,
     compendium,
+    EquipmentSlots,
     itemAttibutes,
+    itemName,
     type EquipmentSlot,
     type ItemVariables,
     type Prop,
@@ -114,7 +115,7 @@ let compendium: Record<string, Prop> = {
         states: {
             default: {
                 destructible: true,
-                description: "A simple wooden club ${etching}.", // ${} for string substitution
+                description: "A simple wooden club. ${etching}", // ${} for string substitution
                 variant: "default",
             },
         },
@@ -138,7 +139,7 @@ let compendium: Record<string, Prop> = {
             etching: {
                 variable: "etching",
                 type: "string",
-                value: "Nothing etched on the club",
+                value: "There is nothing etched on the club.",
             },
         },
     },
@@ -377,7 +378,35 @@ function itemAttibutes(item: Item): PropAttributes {
     // Replace variables in description
     state.description = substituteVariables(
         state.description,
-        item.vars,
+        itemVariables(item),
     ) as string;
     return state;
+}
+
+/**
+ * Helper to get the name of an item.
+ * @param item - The item to get the name for.
+ * @returns The name of the item.
+ */
+function itemName(item: Item): string {
+    return item?.name || compendium[item.prop]?.defaultName;
+}
+
+/**
+ * Helper to get the variables of an item.
+ * @param item - The item to get the variables for.
+ * @returns The variables of the item.
+ */
+function itemVariables(item: Item): ItemVariables {
+    const vars: ItemVariables = {};
+    for (const { variable, value } of Object.values(
+        compendium[item.prop].variables,
+    )) {
+        if (item.vars[variable] == null) {
+            vars[variable] = value;
+        } else {
+            vars[variable] = item.vars[variable];
+        }
+    }
+    return vars;
 }
