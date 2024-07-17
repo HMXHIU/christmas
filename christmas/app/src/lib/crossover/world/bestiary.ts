@@ -1,15 +1,33 @@
+import { PUBLIC_HOST } from "$env/static/public";
 import { seededRandom, stringToRandomNumber } from "../utils";
 import { abilities, type AbilityType } from "./abilities";
 import type { AssetMetadata } from "./types";
 import { worldSeed, type WorldSeed } from "./world";
 
 export {
+    avatarMorphologies,
     bestiary,
-    monsterLUReward,
     monsterLimitAtGeohash,
+    monsterLUReward,
     monsterStats,
     type Alignment,
+    type AvatarMorphology,
     type Beast,
+};
+
+type AvatarMorphology = "humanoid" | "canine";
+const avatarMorphologies: Record<
+    AvatarMorphology,
+    { avatar: string; animation: string }
+> = {
+    humanoid: {
+        avatar: `${PUBLIC_HOST}/avatar/humanoid.json`,
+        animation: `${PUBLIC_HOST}/avatar/humanoid_animation.json`,
+    },
+    canine: {
+        avatar: `${PUBLIC_HOST}/avatar/canine.json`,
+        animation: `${PUBLIC_HOST}/avatar/canine.json`,
+    },
 };
 
 /**

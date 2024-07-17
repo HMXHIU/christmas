@@ -20,6 +20,10 @@ uniform float uZScale;
 uniform float uZOffset;
 
 void main() {
+
+    vInstancePosition = aInstancePosition;
+    vInstanceHighlight = aInstanceHighlight;
+
     int vertIdx = int(aInstanceVertIndex);
     if (vertIdx == 0) {
         vUV = vec2(aInstanceXUV.x, aInstanceYUV.x);
@@ -34,8 +38,6 @@ void main() {
         vUV = vec2(aInstanceXUV.w, aInstanceYUV.w);
         vPosition = vec2(0, aInstanceSize.y);
     }
-    vInstancePosition = aInstancePosition;
-    vInstanceHighlight = aInstanceHighlight;
 
     mat3 mvp = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix;
     vec3 clip = mvp * vec3(

@@ -6,10 +6,12 @@ attribute vec4 aInstanceXUV;
 attribute vec4 aInstanceYUV;
 attribute vec2 aInstanceSize;
 attribute vec2 aInstanceAnchor;
+attribute float aInstanceHighlight;
 
 varying vec2 vPosition;
 varying vec2 vUV;
 varying vec2 vInstanceSize;
+varying float vInstanceHighlight;
 
 uniform mat3 uProjectionMatrix;
 uniform mat3 uWorldTransformMatrix;
@@ -27,6 +29,9 @@ mat2 rotationMatrix(float angle) {
 
 void main() {
 
+    vInstanceHighlight = aInstanceHighlight;
+    vInstanceSize = aInstanceSize;
+
     int vertIdx = int(aInstanceVertIndex);
     if (vertIdx == 0) {
         vUV = vec2(aInstanceXUV.x, aInstanceYUV.x);
@@ -41,7 +46,6 @@ void main() {
         vUV = vec2(aInstanceXUV.w, aInstanceYUV.w);
         vPosition = vec2(0, aInstanceSize.y);
     }
-    vInstanceSize = aInstanceSize;
 
     // Calculate clip space coordinates
     mat3 mvp = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix;

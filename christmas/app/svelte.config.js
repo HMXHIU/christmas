@@ -1,5 +1,6 @@
 import adapter from "@sveltejs/adapter-auto";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
+import path from "path";
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -14,6 +15,12 @@ const config = {
         adapter: adapter(),
         env: {
             dir: "../",
+        },
+        alias: {
+            $avatar: path.resolve(
+                "..",
+                "character-animation-editor/src/lib/avatar",
+            ),
         },
         csrf: false, // TODO: set only for development
     },

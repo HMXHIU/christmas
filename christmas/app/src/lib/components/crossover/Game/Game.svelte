@@ -593,7 +593,7 @@
             app.stage.removeAllListeners();
             isInitialized = false; // set this so ticker stops before removing other things
             destroyShaders();
-            clearInstancedShaderMeshes(worldStage);
+            clearInstancedShaderMeshes();
             app = null;
         }
     });

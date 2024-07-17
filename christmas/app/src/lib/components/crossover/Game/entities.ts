@@ -1,6 +1,7 @@
+import { Avatar } from "$avatar/Avatar";
 import { getEntityId } from "$lib/crossover/utils";
 import { actions } from "$lib/crossover/world/actions";
-import { bestiary } from "$lib/crossover/world/bestiary";
+import { avatarMorphologies, bestiary } from "$lib/crossover/world/bestiary";
 import { compendium } from "$lib/crossover/world/compendium";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import type {
@@ -31,7 +32,9 @@ import {
     destroyContainer,
     isCellInView,
     ISO_CELL_HEIGHT,
+    ISO_CELL_WIDTH,
     loadAssetTexture,
+    scaleToFitAndMaintainAspectRatio,
     swapEntityVariant,
     updateEntityMeshRenderOrder,
     Z_OFF,
@@ -49,6 +52,7 @@ export {
 };
 
 let entityMeshes: Record<string, EntityMesh> = {};
+let entityAvatars: Record<string, Avatar> = {};
 
 async function updateEntities(
     er: Record<string, Monster | Player | Item>,
@@ -106,6 +110,67 @@ function onClickEntity(entity: Player | Item | Monster) {
     target.set(entity);
 }
 
+async function upsertEntityAvatar(
+    entity: Player | Monster,
+    playerPosition: Position,
+    stage: Container,
+) {
+    if (entity.locT !== "geohash") {
+        return;
+    }
+
+    const [entityId, entityType] = getEntityId(entity);
+
+    // Get position
+    const position = await calculatePosition(entity.loc[0]);
+    const { row, col, isoX, isoY, elevation } = position;
+
+    // Ignore entities outside player's view
+    if (!isCellInView({ row, col }, playerPosition)) {
+        return;
+    }
+
+    let avatar = entityAvatars[entityId];
+
+    // Create
+    if (avatar == null) {
+        const morphology = "humanoid";
+        const morphologySource = avatarMorphologies[morphology];
+        avatar = new Avatar();
+        await avatar.loadFromMetadata(
+            await Assets.load(morphologySource.avatar),
+        );
+        avatar.animationManager.load(
+            await Assets.load(morphologySource.animation),
+        );
+        entityAvatars[entityId] = avatar;
+
+        // Set size
+        const [width, height] = scaleToFitAndMaintainAspectRatio(
+            avatar.width,
+            avatar.height,
+            ISO_CELL_WIDTH * 4,
+            ISO_CELL_HEIGHT * 8,
+        );
+        avatar.width = width;
+        avatar.height = height;
+
+        await avatar.pose(avatar.animationManager.getPose("default"));
+    }
+
+    // Add to stage (might have been culled)
+    if (!stage.children.includes(avatar)) {
+        stage.addChild(avatar);
+    }
+
+    // Tween position
+    gsap.to(avatar, {
+        x: isoX,
+        y: isoY - elevation,
+        duration: (actions.move.ticks * MS_PER_TICK) / 1000,
+    });
+}
+
 async function upsertEntityMesh(
     entity: Player | Item | Monster,
     playerPosition: Position,
@@ -125,6 +190,12 @@ async function upsertEntityMesh(
     if (!isCellInView({ row, col }, playerPosition)) {
         return;
     }
+
+    // // FOR TESTING
+    // if (entityType === "player") {
+    //     await upsertEntityAvatar(entity as Player, playerPosition, stage);
+    //     return;
+    // }
 
     // Update
     let entityMesh = entityMeshes[entityId];

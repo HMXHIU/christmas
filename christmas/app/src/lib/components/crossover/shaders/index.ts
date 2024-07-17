@@ -8,22 +8,22 @@ import {
     Texture,
 } from "pixi.js";
 import { destroyContainer, Z_SCALE } from "../Game/utils";
-import biomeFrag from "./biome.frag?raw";
-import biomeVertex from "./biome.vert?raw";
-import entityFrag from "./entity.frag?raw";
-import entityVertex from "./entity.vert?raw";
-import grassFrag from "./grass.frag?raw";
-import grassVertex from "./grass.vert?raw";
-import iconFrag from "./icon.frag?raw";
-import iconVertex from "./icon.vert?raw";
+import biomeFrag from "./instanced/biome.frag?raw";
+import biomeVertex from "./instanced/biome.vert?raw";
+import grassFrag from "./instanced/grass.frag?raw";
+import grassVertex from "./instanced/grass.vert?raw";
 import snoise from "./lygia/generative/snoise.glsl?raw";
 import grad4 from "./lygia/math/grad4.glsl?raw";
 import mod289 from "./lygia/math/mod289.glsl?raw";
 import permute from "./lygia/math/permute.glsl?raw";
 import remap from "./lygia/math/remap.glsl?raw";
 import taylorInvSqrt from "./lygia/math/taylorInvSqrt.glsl?raw";
-import mapVertex from "./map.vert?raw";
-import mapFrag from "./map2.frag?raw";
+import entityFrag from "./singular/entity.frag?raw";
+import entityVertex from "./singular/entity.vert?raw";
+import iconFrag from "./singular/icon.frag?raw";
+import iconVertex from "./singular/icon.vert?raw";
+import mapFrag from "./singular/map.frag?raw";
+import mapVertex from "./singular/map.vert?raw";
 
 export {
     clearInstancedShaderMeshes,
@@ -532,7 +532,7 @@ function highlightShaderInstances(
     }
 }
 
-function clearInstancedShaderMeshes(stage: Container) {
+function clearInstancedShaderMeshes() {
     for (const mesh of Object.values(instancedShaderMeshes)) {
         destroyContainer(mesh);
     }
