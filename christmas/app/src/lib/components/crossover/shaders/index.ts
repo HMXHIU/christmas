@@ -7,7 +7,6 @@ import {
     Shader,
     Texture,
 } from "pixi.js";
-import { destroyContainer, Z_SCALE } from "../Game/utils";
 import biomeFrag from "./instanced/biome.frag?raw";
 import biomeVertex from "./instanced/biome.vert?raw";
 import grassFrag from "./instanced/grass.frag?raw";
@@ -104,18 +103,6 @@ const shaders: Record<string, { vertex: string; fragment: string }> = {
 
 function destroyShaderGeometry(shaderUid: string) {
     if (loadedShaderGeometries[shaderUid] != null) {
-        for (const bufferName of [
-            "aInstancePosition",
-            "aInstanceHighlight",
-            "aInstanceSize",
-            "aInstanceAnchor",
-            "aInstanceXUV",
-            "aInstanceYUV",
-        ]) {
-            loadedShaderGeometries[shaderUid].geometry
-                .getBuffer(bufferName)
-                ?.destroy();
-        }
         loadedShaderGeometries[shaderUid].geometry.destroy();
         loadedShaderGeometries[shaderUid].shader.destroy();
         delete loadedShaderGeometries[shaderUid];
@@ -142,7 +129,6 @@ function loadShaderGeometry(
     options: {
         instanceCount?: number;
         uid?: string;
-        anchor?: { x: number; y: number };
         zScale?: number;
         zOffset?: number;
         cellHeight?: number;
@@ -171,7 +157,6 @@ function loadShaderGeometry(
             shader: createShader(shaderName, texture, {
                 height,
                 width,
-                anchor: options.anchor,
                 zScale: options.zScale,
                 zOffset: options.zOffset,
                 textures: options.textures,
@@ -189,7 +174,6 @@ function createShader(
     instanceOptions?: {
         height?: number;
         width?: number;
-        anchor?: { x: number; y: number };
         zScale?: number;
         zOffset?: number;
         textures?: Record<string, Texture>;
@@ -197,8 +181,6 @@ function createShader(
 ): Shader {
     const height = instanceOptions?.height ?? texture.frame.height;
     const width = instanceOptions?.width ?? texture.frame.width;
-    const anchor = instanceOptions?.anchor ??
-        texture.defaultAnchor ?? { x: 0.5, y: 0.5 };
     const zScale = instanceOptions?.zScale ?? 0;
     const zOffset = instanceOptions?.zOffset ?? 0;
 
@@ -215,14 +197,6 @@ function createShader(
             },
             uTextureWidth: {
                 value: width,
-                type: "f32",
-            },
-            uAnchorX: {
-                value: anchor.x * width,
-                type: "f32",
-            },
-            uAnchorY: {
-                value: anchor.y * height,
                 type: "f32",
             },
             uZScale: {
@@ -398,12 +372,14 @@ async function drawShaderTextures({
     renderOrder,
     numGeometries,
     stage,
+    zScale,
 }: {
     shaderName: string;
     shaderTextures: Record<string, ShaderTexture>;
     renderOrder: number;
     numGeometries: number;
     stage: Container;
+    zScale: number;
 }) {
     for (const [
         textureUid,
@@ -426,7 +402,7 @@ async function drawShaderTextures({
             height,
             {
                 instanceCount: numGeometries,
-                zScale: Z_SCALE,
+                zScale,
             },
         );
 
@@ -493,7 +469,6 @@ async function drawShaderTextures({
                     instanceAnchors.data[s] = anchors[t];
                     instanceAnchors.data[s + 1] = anchors[t + 1];
                 }
-                // instanceAnchors.data.set(anchors);
                 instanceAnchors.update();
             }
         }
@@ -534,7 +509,24 @@ function highlightShaderInstances(
 
 function clearInstancedShaderMeshes() {
     for (const mesh of Object.values(instancedShaderMeshes)) {
-        destroyContainer(mesh);
+        destroyMesh(mesh);
     }
     instancedShaderMeshes = {};
+}
+
+function destroyMesh(thing: Mesh<Geometry, Shader> | Container) {
+    // Destroy children
+    for (const child of thing.children) {
+        destroyMesh(child);
+    }
+
+    // Remove from parent
+    if (thing.parent) {
+        thing.parent.removeChild(thing);
+    }
+
+    // Destroy self
+    thing.eventMode = "none";
+    thing.removeAllListeners();
+    thing.destroy();
 }

@@ -249,7 +249,7 @@ function cullWorlds(playerPosition: Position, stage: Container) {
     );
     for (const [id, entityMesh] of Object.entries(worldMeshes)) {
         if (!id.startsWith(town)) {
-            destroyEntityMesh(entityMesh, stage);
+            destroyEntityMesh(entityMesh);
             delete worldMeshes[id];
         }
     }

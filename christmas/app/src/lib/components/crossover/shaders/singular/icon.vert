@@ -15,8 +15,6 @@ varying vec3 vInstancePosition;
 uniform mat3 uProjectionMatrix;
 uniform mat3 uWorldTransformMatrix;
 uniform mat3 uTransformMatrix;
-uniform float uAnchorX;
-uniform float uAnchorY;
 uniform float uTextureHeight;
 uniform float uZScale;
 uniform float uZOffset;

@@ -1,4 +1,5 @@
+import type { Avatar } from "../../../app/src/lib/components/crossover/avatar/Avatar";
+
 import { writable } from "svelte/store";
-import type { Avatar } from "./avatar/Avatar";
 
 export const avatar = writable<Avatar | null>(null);

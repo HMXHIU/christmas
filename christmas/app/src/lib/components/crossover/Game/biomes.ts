@@ -32,6 +32,7 @@ import {
     HALF_ISO_CELL_WIDTH,
     loadAssetTexture,
     RENDER_ORDER,
+    Z_SCALE,
     type Position,
 } from "./utils";
 
@@ -384,6 +385,7 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
         renderOrder: RENDER_ORDER.biome * playerPosition.isoY,
         numGeometries: MAX_SHADER_GEOMETRIES,
         stage,
+        zScale: Z_SCALE,
     });
     drawShaderTextures({
         shaderName: "grass",
@@ -391,5 +393,6 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
         renderOrder: RENDER_ORDER.grass * playerPosition.isoY,
         numGeometries: MAX_SHADER_GEOMETRIES,
         stage,
+        zScale: Z_SCALE,
     });
 }

@@ -385,13 +385,14 @@ function destroyContainer(thing: Sprite | Mesh<Geometry, Shader> | Container) {
         destroyContainer(child);
     }
 
-    // Destroy self
-    thing.destroy();
-    thing.removeAllListeners();
-    thing.eventMode = "none";
+    // Remove from parent
     if (thing.parent) {
         thing.parent.removeChild(thing);
     }
+
+    // Destroy self
+    thing.eventMode = "none";
+    thing.removeAllListeners();
     thing.destroy();
 }
 

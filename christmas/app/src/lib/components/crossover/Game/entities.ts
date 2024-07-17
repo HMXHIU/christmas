@@ -1,4 +1,3 @@
-import { Avatar } from "$avatar/Avatar";
 import { getEntityId } from "$lib/crossover/utils";
 import { actions } from "$lib/crossover/world/actions";
 import { avatarMorphologies, bestiary } from "$lib/crossover/world/bestiary";
@@ -24,6 +23,7 @@ import {
 } from "pixi.js";
 import { get } from "svelte/store";
 import { player, target } from "../../../../store";
+import { Avatar } from "../avatar/Avatar";
 import { loadShaderGeometry } from "../shaders";
 import { clearHighlights, highlightEntity } from "./ui";
 import {
@@ -34,6 +34,7 @@ import {
     ISO_CELL_HEIGHT,
     ISO_CELL_WIDTH,
     loadAssetTexture,
+    RENDER_ORDER,
     scaleToFitAndMaintainAspectRatio,
     swapEntityVariant,
     updateEntityMeshRenderOrder,
@@ -45,6 +46,7 @@ import {
 
 export {
     cullEntityMeshes,
+    destroyAllEntityMeshes,
     destroyEntityMesh,
     entityMeshes,
     updateEntities,
@@ -81,7 +83,7 @@ async function updateEntities(
         ) {
             continue;
         }
-        destroyEntityMesh(entityMesh, stage);
+        destroyEntityMesh(entityMesh);
         delete entityMeshes[id];
     }
 }
@@ -136,7 +138,16 @@ async function upsertEntityAvatar(
     if (avatar == null) {
         const morphology = "humanoid";
         const morphologySource = avatarMorphologies[morphology];
-        avatar = new Avatar();
+        avatar = new Avatar({
+            zOffset: Z_OFF.entity,
+            zScale: Z_SCALE,
+
+            // {
+            //     uid: entityId,
+            //     zScale: Z_SCALE,
+            //     zOffset: Z_OFF.entity,
+            // }
+        });
         await avatar.loadFromMetadata(
             await Assets.load(morphologySource.avatar),
         );
@@ -154,6 +165,7 @@ async function upsertEntityAvatar(
         );
         avatar.width = width;
         avatar.height = height;
+        avatar.pivot = { x: width / 2, y: height };
 
         await avatar.pose(avatar.animationManager.getPose("default"));
     }
@@ -162,6 +174,17 @@ async function upsertEntityAvatar(
     if (!stage.children.includes(avatar)) {
         stage.addChild(avatar);
     }
+
+    const zIndex = RENDER_ORDER[entityType] * isoY;
+
+    for (const bone of Object.values(avatar.bones)) {
+        bone.zIndex = zIndex;
+        if (bone.mesh) {
+            bone.mesh.zIndex = zIndex;
+        }
+    }
+    avatar.zIndex = zIndex;
+    avatar.setInstancePosition(isoX, isoY, elevation);
 
     // Tween position
     gsap.to(avatar, {
@@ -191,11 +214,11 @@ async function upsertEntityMesh(
         return;
     }
 
-    // // FOR TESTING
-    // if (entityType === "player") {
-    //     await upsertEntityAvatar(entity as Player, playerPosition, stage);
-    //     return;
-    // }
+    // FOR TESTING
+    if (entityType === "player") {
+        await upsertEntityAvatar(entity as Player, playerPosition, stage);
+        return;
+    }
 
     // Update
     let entityMesh = entityMeshes[entityId];
@@ -271,7 +294,6 @@ async function upsertEntityMesh(
             height,
             {
                 uid: entityId,
-                anchor,
                 zScale: Z_SCALE,
                 zOffset: Z_OFF.entity,
             },
@@ -375,17 +397,21 @@ function cullEntityMeshes(playerPosition: Position, stage: Container) {
     // Cull entity meshes outside view
     for (const [id, entityMesh] of Object.entries(entityMeshes)) {
         if (!isCellInView(entityMesh.position, playerPosition)) {
-            destroyEntityMesh(entityMesh, stage);
+            destroyEntityMesh(entityMesh);
             delete entityMeshes[id];
         }
     }
 }
 
-function destroyEntityMesh(entityMesh: EntityMesh, stage: Container) {
+function destroyEntityMesh(entityMesh: EntityMesh) {
     // Destroy hitbox and children
     destroyContainer(entityMesh.hitbox);
 
-    // TODO: causes mesh has no shader program
-    // Destroy shader geometry
-    // destroyShaderGeometry(entityMesh.shaderGeometry.shaderUid);
+    // TODO: destroy shader geometry?
+}
+
+function destroyAllEntityMeshes() {
+    for (const entityMesh of Object.values(entityMeshes)) {
+        destroyEntityMesh(entityMesh);
+    }
 }
