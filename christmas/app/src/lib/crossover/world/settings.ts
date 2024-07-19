@@ -1,12 +1,12 @@
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 import type { Tile } from "./types";
 export {
+    abyssTile,
     MS_PER_TICK,
     SERVER_LATENCY,
     TICKS_PER_TURN,
     TILE_HEIGHT,
     TILE_WIDTH,
-    abyssTile,
 };
 
 const abyssTile: Tile = {

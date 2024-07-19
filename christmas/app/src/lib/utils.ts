@@ -13,6 +13,7 @@ import { z } from "zod";
 import type { TransactionResult } from "./anchorClient/types";
 
 export {
+    AsyncLock,
     calculateDistance,
     cleanString,
     confirmTransaction,
@@ -342,4 +343,37 @@ function generateRandomSeed(): number {
     // Generate a random integer within the range
     const randomSeed = Math.floor(Math.random() * maxSeed);
     return randomSeed;
+}
+class AsyncLock {
+    private locked: boolean = false;
+    private waitingQueue: (() => void)[] = [];
+
+    async acquire(): Promise<void> {
+        if (!this.locked) {
+            this.locked = true;
+            return;
+        }
+
+        return new Promise<void>((resolve) => {
+            this.waitingQueue.push(resolve);
+        });
+    }
+
+    release(): void {
+        if (this.waitingQueue.length > 0) {
+            const nextResolve = this.waitingQueue.shift();
+            nextResolve?.();
+        } else {
+            this.locked = false;
+        }
+    }
+
+    async withLock<T>(fn: () => Promise<T>): Promise<T> {
+        await this.acquire();
+        try {
+            return await fn();
+        } finally {
+            this.release();
+        }
+    }
 }
