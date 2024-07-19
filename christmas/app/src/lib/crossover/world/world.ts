@@ -53,7 +53,7 @@ const worldSeed: WorldSeed = {
             e: { bio: 0.5, hostile: 0.2, water: 0.1 },
             s: { bio: 0.5, hostile: 0.2, water: 0.1 },
             t: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            w: { bio: 0.5, hostile: 0.2, water: 0.1 },
+            w: { bio: 0.5, hostile: 0.2, water: 0.0 }, // no water for testing
             x: { bio: 0.5, hostile: 0.2, water: 0.1 },
             "2": { bio: 0.5, hostile: 0.2, water: 0.1 },
             "3": { bio: 0.5, hostile: 0.2, water: 0.1 },

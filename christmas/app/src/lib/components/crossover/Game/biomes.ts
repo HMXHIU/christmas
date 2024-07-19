@@ -263,12 +263,12 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
                     texture,
                     positions: new Float32Array(MAX_SHADER_GEOMETRIES * 3).fill(
                         -1,
-                    ), // x, y, h
+                    ), // x, y, elevation
                     uvsX: new Float32Array(MAX_SHADER_GEOMETRIES * 4), // x0, x1, x2, x3
                     uvsY: new Float32Array(MAX_SHADER_GEOMETRIES * 4), // y0, y1, y2, y3
                     sizes: new Float32Array(MAX_SHADER_GEOMETRIES * 2), // w, h
                     anchors: new Float32Array(MAX_SHADER_GEOMETRIES * 2), // x, y
-                    width, // PROBLEM: this is not common to all the instances in teh sheet
+                    width,
                     height,
                     instances: 0,
                 };
@@ -333,7 +333,7 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
                         texture,
                         positions: new Float32Array(
                             MAX_SHADER_GEOMETRIES * 3,
-                        ).fill(-1), // x, y, h
+                        ).fill(-1), // x, y, elevation
                         uvsX: new Float32Array(MAX_SHADER_GEOMETRIES * 4), // x0, x1, x2, x3
                         uvsY: new Float32Array(MAX_SHADER_GEOMETRIES * 4), // y0, y1, y2, y3
                         sizes: new Float32Array(MAX_SHADER_GEOMETRIES * 2), // w, h
@@ -379,7 +379,7 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
     }
 
     // Draw shaders
-    drawShaderTextures({
+    await drawShaderTextures({
         shaderName: "biome",
         shaderTextures: biomeTexturePositions,
         renderOrder: RENDER_ORDER.biome * playerPosition.isoY,
@@ -387,7 +387,7 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
         stage,
         zScale: Z_SCALE,
     });
-    drawShaderTextures({
+    await drawShaderTextures({
         shaderName: "grass",
         shaderTextures: biomeDecorationsTexturePositions,
         renderOrder: RENDER_ORDER.grass * playerPosition.isoY,

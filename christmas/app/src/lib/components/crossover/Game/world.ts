@@ -3,7 +3,7 @@ import { geohashToGridCell } from "$lib/crossover/world/utils";
 import { worldSeed } from "$lib/crossover/world/world";
 import type { World } from "$lib/server/crossover/redis/entities";
 import { Assets, Container, Sprite } from "pixi.js";
-import { IsoMesh } from "../shaders";
+import { IsoMesh } from "../shaders/IsoMesh";
 import {
     calculatePosition,
     CELL_HEIGHT,

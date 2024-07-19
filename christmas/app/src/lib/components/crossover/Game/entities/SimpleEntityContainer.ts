@@ -1,4 +1,5 @@
 import { getEntityId } from "$lib/crossover/utils";
+import { actions, type Actions } from "$lib/crossover/world/actions";
 import type { AssetMetadata } from "$lib/crossover/world/types";
 import type {
     EntityType,
@@ -8,7 +9,7 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import { gsap } from "gsap";
 import { Container, type DestroyOptions } from "pixi.js";
-import { IsoMesh } from "../../shaders";
+import { IsoMesh } from "../../shaders/IsoMesh";
 import {
     CELL_WIDTH,
     loadAssetTexture,
@@ -80,7 +81,6 @@ class SimpleEntityContainer extends Container {
                 return;
             }
 
-            console.log(asset.path, asset.height);
             this.mesh = new IsoMesh({
                 shaderName: "entity",
                 texture,
@@ -107,6 +107,13 @@ class SimpleEntityContainer extends Container {
             const anchor = texture.defaultAnchor ??
                 options?.anchor ?? { x: 0.5, y: 0.5 };
             this.pivot.set(anchor.x * width, anchor.y * height);
+        }
+    }
+
+    triggerAnimation(action: string) {
+        // Animation action bubble
+        if (this.actionBubble != null && action in actions) {
+            this.actionBubble.setAction(action as Actions);
         }
     }
 

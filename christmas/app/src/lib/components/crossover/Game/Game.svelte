@@ -19,7 +19,6 @@
     import type { Player } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
     import { gsap } from "gsap";
-    import PixiPlugin from "gsap/PixiPlugin";
     import {
         Application,
         Container,
@@ -45,6 +44,7 @@
         highlightShaderInstances,
         updateShaderUniforms,
     } from "../shaders";
+    import { animateAbility } from "./animations";
     import { drawBiomeShaders } from "./biomes";
     import {
         cullEntityContainers,
@@ -67,9 +67,13 @@
         getPathHighlights,
         initAssetManager,
         positionsInRange,
+        registerGSAP,
         type Position,
     } from "./utils";
     import { cullWorlds, drawWorlds } from "./world";
+
+    // Register GSAP & PixiPlugin
+    registerGSAP();
 
     export let previewCommand: GameCommand | null = null;
 
@@ -84,6 +88,7 @@
     let lastCursorY: number = 0;
     let isMouseDown: boolean = false;
     let path: Direction[] | null = null;
+    let cameraTween: gsap.core.Tween | null = null;
 
     $: handlePlayerPosition(playerPosition);
     $: resize(clientHeight, clientWidth);
@@ -189,7 +194,7 @@
                 playerPosition.elevation -
                 clientHeight / 2;
             if (tween) {
-                const t = gsap.to(worldStage.pivot, {
+                cameraTween = gsap.to(worldStage.pivot, {
                     x: offsetX,
                     y: offsetY,
                     duration: 1,
@@ -224,14 +229,14 @@
 
         // Render action/ability/utility
         if (action != null && sourceEntity != null) {
-            await sourceEntity.actionBubble.setAction(action);
+            await sourceEntity.triggerAnimation(action);
             console.log(source, `performing ${action} on`, target);
         } else if (ability != null) {
-            // await animateAbility(worldStage, {
-            //     source: sourceEntity,
-            //     target: targetEntity ?? undefined,
-            //     ability,
-            // });
+            await animateAbility(worldStage, {
+                source: sourceEntity,
+                target: targetEntity ?? undefined,
+                ability,
+            });
             console.log(source, `performing ${ability} on`, target);
         } else if (
             utility != null &&
@@ -254,7 +259,7 @@
         }
 
         // Update biomes
-        drawBiomeShaders(playerPosition, worldStage);
+        await drawBiomeShaders(playerPosition, worldStage);
 
         // Cull entity meshes outside view
         cullEntityContainers(playerPosition, worldStage);
@@ -346,9 +351,6 @@
             preference: "webgl",
         });
         await initAssetManager();
-
-        // GSAP
-        gsap.registerPlugin(PixiPlugin);
 
         // Set up depth test
         const gl = (app.renderer as WebGLRenderer).gl;
@@ -515,6 +517,20 @@
             }),
         ];
 
+        // Force trigger subscriptions on HMR reload
+        if ($player) {
+            player.set($player);
+        }
+        if ($monsterRecord) {
+            monsterRecord.set($monsterRecord);
+        }
+        if ($playerRecord) {
+            playerRecord.set($playerRecord);
+        }
+        if ($itemRecord) {
+            itemRecord.set($itemRecord);
+        }
+
         return () => {
             for (const s of subscriptions) {
                 s();
@@ -527,6 +543,17 @@
             app.stage.removeAllListeners();
             isInitialized = false; // set this so ticker stops before removing other things
 
+            // Stop tweens
+            if (cameraTween) {
+                cameraTween.kill();
+            }
+
+            // Destroy all children
+            for (const child of worldStage.children) {
+                child.destroy();
+            }
+
+            // Destroy shaders
             clearInstancedShaderMeshes();
             destroyShaders();
 

@@ -26,14 +26,13 @@ class ActionBubble extends Sprite {
             anchor: { x: 0.5, y: 0.5 },
         });
 
-        // Create a bubble mask
         const mask = new Graphics();
         mask.circle(0, 0, Math.max(width, height) / 2);
         mask.fill({ color: 0xffffff });
         mask.position = { x: width / 2, y: height / 2 };
         mask.pivot = { x: width / 2, y: height / 2 };
 
-        // Apply mask
+        // Apply mask (parent needs to add mask to stage)
         this.mask = mask;
         this.addChild(mask);
     }

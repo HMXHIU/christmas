@@ -1,7 +1,7 @@
 // src/lib/Bone.ts
 import { cloneDeep } from "lodash";
 import { Assets, Container } from "pixi.js";
-import { IsoMesh } from "../shaders";
+import { IsoMesh } from "../shaders/IsoMesh";
 import type { BoneMetadata, BoneTextureTransform } from "./types";
 
 export class Bone extends Container {

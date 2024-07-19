@@ -67,6 +67,7 @@ async function updateEntities(
             continue;
         }
         ec.destroy();
+        console.log("destroyed not in record", id);
         delete entityContainers[id];
     }
 }
@@ -229,7 +230,7 @@ async function upsertEntityContainer(
 
     // Get position
     const position = await calculatePosition(entity.loc[0]);
-    const { row, col, isoX, isoY, elevation } = position;
+    const { row, col } = position;
 
     // Ignore entities outside player's view
     if (!isCellInView({ row, col }, playerPosition)) {
@@ -252,6 +253,7 @@ function cullEntityContainers(playerPosition: Position, stage: Container) {
             !isCellInView(ec.isoPosition, playerPosition)
         ) {
             ec.destroy();
+            console.log("destroyed outside view", id);
             delete entityContainers[id];
         }
     }

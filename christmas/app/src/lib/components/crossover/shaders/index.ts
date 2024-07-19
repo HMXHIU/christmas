@@ -32,7 +32,6 @@ export {
     destroyShaders,
     drawShaderTextures,
     highlightShaderInstances,
-    IsoMesh,
     loadedShaderGeometries,
     loadShaderGeometry,
     MAX_SHADER_GEOMETRIES,
@@ -104,8 +103,7 @@ const shaders: Record<string, { vertex: string; fragment: string }> = {
 
 function destroyShaderGeometry(shaderUid: string) {
     if (loadedShaderGeometries[shaderUid] != null) {
-        loadedShaderGeometries[shaderUid].geometry.destroy();
-        loadedShaderGeometries[shaderUid].shader.destroy();
+        // Remove the references let the garbage collector handle the rest
         delete loadedShaderGeometries[shaderUid];
     }
 }
@@ -114,6 +112,13 @@ function destroyShaders() {
     for (const shaderUid of Object.keys(loadedShaderGeometries)) {
         destroyShaderGeometry(shaderUid);
     }
+}
+
+function clearInstancedShaderMeshes() {
+    for (const mesh of Object.values(instancedShaderMeshes)) {
+        mesh.destroy();
+    }
+    instancedShaderMeshes = {};
 }
 
 function updateShaderUniforms({ deltaTime }: { deltaTime: number }) {
@@ -409,7 +414,6 @@ async function drawShaderTextures({
 
         // Set geometry instance count
         geometry.instanceCount = instances;
-
         const instancePositions = geometry.getBuffer("aInstancePosition");
 
         // Update instance positions buffer
@@ -505,90 +509,5 @@ function highlightShaderInstances(
             }
             instanceHighlights.update();
         }
-    }
-}
-
-function clearInstancedShaderMeshes() {
-    for (const mesh of Object.values(instancedShaderMeshes)) {
-        destroyMesh(mesh);
-    }
-    instancedShaderMeshes = {};
-}
-
-function destroyMesh(thing: Mesh<Geometry, Shader> | Container) {
-    // Destroy children
-    for (const child of thing.children) {
-        destroyMesh(child);
-    }
-
-    // Remove from parent
-    if (thing.parent) {
-        thing.parent.removeChild(thing);
-    }
-
-    // Destroy self
-    thing.eventMode = "none";
-    thing.removeAllListeners();
-    thing.destroy();
-}
-
-class IsoMesh extends Mesh<Geometry, Shader> {
-    public zOffset: number = 0;
-    public zScale: number = 0;
-    public renderLayer: number = 0;
-    public cellHeight: number = 1;
-
-    constructor({
-        shaderName,
-        texture,
-        zOffset,
-        zScale,
-        renderLayer,
-        cellHeight,
-    }: {
-        shaderName: string;
-        texture: Texture;
-        zOffset?: number;
-        zScale?: number;
-        renderLayer?: number;
-        cellHeight?: number;
-    }) {
-        const { shader, geometry } = loadShaderGeometry(
-            shaderName,
-            texture,
-            texture.width,
-            texture.height,
-            {
-                zOffset: zOffset || 0,
-                zScale: zScale || 0,
-                cellHeight: cellHeight || 1,
-            },
-        );
-
-        super({
-            shader,
-            geometry,
-            texture,
-        });
-
-        this.zOffset = zOffset ?? 0;
-        this.zScale = zScale ?? 0;
-        this.renderLayer = renderLayer ?? 0;
-        this.cellHeight = cellHeight ?? 1;
-    }
-
-    updateDepth(
-        isoX: number,
-        isoY: number,
-        elevation: number,
-        z?: number,
-    ): void {
-        // This updates the depth of the instance in the shader
-        const ip = this.geometry.getBuffer("aInstancePosition");
-        ip.data.set([isoX, isoY, elevation]);
-        ip.update();
-
-        // Update zIndex
-        this.zIndex = this.renderLayer * isoY + (z ?? 0);
     }
 }

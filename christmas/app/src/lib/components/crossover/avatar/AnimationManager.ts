@@ -1,6 +1,5 @@
 // src/lib/AnimationManager.ts
 import { gsap } from "gsap";
-import { PixiPlugin } from "gsap/PixiPlugin";
 import { cloneDeep } from "lodash";
 import type { Bone } from "./Bone";
 import type {
@@ -13,75 +12,6 @@ import type {
 
 const TWO_PI = Math.PI * 2;
 const THREE_PI = Math.PI * 3;
-
-// Register GSAP PixiPlugin
-gsap.registerPlugin(PixiPlugin);
-
-export function timeIndex(time: number | string) {
-    return Number(parseFloat(String(time)).toFixed(1));
-}
-
-function normalizeAngle(angle: number): number {
-    // -π to π
-    return ((angle + THREE_PI) % TWO_PI) - Math.PI;
-}
-
-function normalizeAngle2Pi(angle: number): number {
-    return ((angle % TWO_PI) + TWO_PI) % TWO_PI;
-}
-
-function shortestAngleRotation(fromAngle: number, toAngle: number): number {
-    // Ensure angles are in the range [0, 2π)
-    fromAngle = normalizeAngle2Pi(fromAngle);
-    toAngle = normalizeAngle2Pi(toAngle);
-
-    // Calculate the difference
-    let diff = toAngle - fromAngle;
-
-    // Normalize the difference to be in the range [-π, π)
-    return normalizeAngle(diff);
-}
-
-function lerp(a: number, b: number, t: number): number {
-    return a + (b - a) * t;
-}
-
-function lerpAngle(a: number, b: number, t: number): number {
-    const diff = normalizeAngle(b - a);
-    return a + diff * t;
-}
-
-function interpolateBoneProperties(
-    bone: Bone,
-    start: {
-        position?: { x: number; y: number };
-        rotation?: number;
-        scale?: { x: number; y: number };
-    },
-    end: {
-        position?: { x: number; y: number };
-        rotation?: number;
-        scale?: { x: number; y: number };
-    },
-    factor: number,
-) {
-    // Interpolate position
-    if (start.position && end.position) {
-        bone.position.x = lerp(start.position.x, end.position.x, factor);
-        bone.position.y = lerp(start.position.y, end.position.y, factor);
-    }
-
-    // Interpolate rotation
-    if (start.rotation !== undefined && end.rotation !== undefined) {
-        bone.rotation = lerpAngle(start.rotation, end.rotation, factor);
-    }
-
-    // Interpolate scale
-    if (start.scale && end.scale) {
-        bone.scale.x = lerp(start.scale.x, end.scale.x, factor);
-        bone.scale.y = lerp(start.scale.y, end.scale.y, factor);
-    }
-}
 
 export class AnimationManager {
     public animations: Record<string, Animation> = {};
@@ -194,6 +124,66 @@ export class AnimationManager {
         }
     }
 
+    private createBoneAnimation(
+        timeline: gsap.core.Timeline,
+        bone: Bone,
+        keyframes: KeyFrame[],
+        duration: number,
+        pose: string,
+    ): void {
+        if (keyframes.length === 0) return;
+
+        const createTweenVars = (kf: KeyFrame): gsap.TweenVars => ({
+            ...(kf.rotation != null && { rotation: kf.rotation }),
+            ...(kf.scale != null && {
+                pixi: { scaleX: kf.scale.x, scaleY: kf.scale.y },
+            }),
+            ...(kf.position != null && { x: kf.position.x, y: kf.position.y }),
+        });
+
+        const timelineTos = keyframes.map((kf, i) => {
+            return {
+                tweenVars: createTweenVars(kf),
+                bone,
+                time: i > 0 ? keyframes[i - 1].time : 0, // start at previous keyframe, this is the target
+                duration: i > 0 ? kf.time - keyframes[i - 1].time : kf.time, // duration is the difference between the target and previous keyframe
+            };
+        });
+
+        // Final keyframe at duration should end at original pose
+        const poseBone = this.getPoseBone(bone.name, pose);
+        if (poseBone != null) {
+            timelineTos.push({
+                tweenVars: {
+                    rotation: poseBone.rotation,
+                    pixi: {
+                        scaleX: poseBone.scale.x,
+                        scaleY: poseBone.scale.y,
+                    },
+                    x: poseBone.position.x,
+                    y: poseBone.position.y,
+                },
+                bone,
+                time: keyframes[keyframes.length - 1].time,
+                duration: duration - keyframes[keyframes.length - 1].time,
+            });
+        }
+
+        let prevRotation: number | null = poseBone?.rotation ?? null;
+        timelineTos.forEach(({ tweenVars, time, duration }) => {
+            // Fix rotations (shortest rotation to prevRotation allowing to go past the -pi/pi boundary)
+            if (tweenVars.rotation !== undefined && prevRotation !== null) {
+                const diff = shortestAngleRotation(
+                    prevRotation,
+                    tweenVars.rotation as number,
+                );
+                tweenVars.rotation = prevRotation + diff;
+            }
+            prevRotation = (tweenVars.rotation as number) ?? prevRotation;
+            timeline.to(bone, { duration, ...tweenVars, ease: "none" }, time);
+        });
+    }
+
     playAnimation(
         animationName: string,
         bones: Record<string, Bone>,
@@ -239,62 +229,6 @@ export class AnimationManager {
         timeline.play();
     }
 
-    private createBoneAnimation(
-        timeline: gsap.core.Timeline,
-        bone: Bone,
-        keyframes: KeyFrame[],
-        duration: number,
-        pose: string,
-    ): void {
-        if (keyframes.length === 0) return;
-
-        const createTweenVars = (kf: KeyFrame): gsap.TweenVars => ({
-            ...(kf.rotation != null && { rotation: kf.rotation }),
-            ...(kf.scale != null && { scaleX: kf.scale.x, scaleY: kf.scale.y }),
-            ...(kf.position != null && { x: kf.position.x, y: kf.position.y }),
-        });
-
-        const timelineTos = keyframes.map((kf, i) => {
-            return {
-                tweenVars: createTweenVars(kf),
-                bone,
-                time: i > 0 ? keyframes[i - 1].time : 0, // start at previous keyframe, this is the target
-                duration: i > 0 ? kf.time - keyframes[i - 1].time : kf.time, // duration is the difference between the target and previous keyframe
-            };
-        });
-
-        // Final keyframe at duration should end at original pose
-        const poseBone = this.getPoseBone(bone.name, pose);
-        if (poseBone != null) {
-            timelineTos.push({
-                tweenVars: {
-                    rotation: poseBone.rotation,
-                    scaleX: poseBone.scale.x,
-                    scaleY: poseBone.scale.y,
-                    x: poseBone.position.x,
-                    y: poseBone.position.y,
-                },
-                bone,
-                time: keyframes[keyframes.length - 1].time,
-                duration: duration - keyframes[keyframes.length - 1].time,
-            });
-        }
-
-        let prevRotation: number | null = poseBone?.rotation ?? null;
-        timelineTos.forEach(({ tweenVars, time, duration }) => {
-            // Fix rotations (shortest rotation to prevRotation allowing to go past the -pi/pi boundary)
-            if (tweenVars.rotation !== undefined && prevRotation !== null) {
-                const diff = shortestAngleRotation(
-                    prevRotation,
-                    tweenVars.rotation as number,
-                );
-                tweenVars.rotation = prevRotation + diff;
-            }
-            prevRotation = (tweenVars.rotation as number) ?? prevRotation;
-            timeline.to(bone, { duration, ...tweenVars, ease: "none" }, time);
-        });
-    }
-
     stopAnimation(): void {
         if (this.currentAnimation) {
             this.currentAnimation.kill();
@@ -308,5 +242,71 @@ export class AnimationManager {
 
     getAnimation(name: string): Animation | undefined {
         return this.animations[name];
+    }
+}
+
+export function timeIndex(time: number | string) {
+    return Number(parseFloat(String(time)).toFixed(1));
+}
+
+function normalizeAngle(angle: number): number {
+    // -π to π
+    return ((angle + THREE_PI) % TWO_PI) - Math.PI;
+}
+
+function normalizeAngle2Pi(angle: number): number {
+    return ((angle % TWO_PI) + TWO_PI) % TWO_PI;
+}
+
+function shortestAngleRotation(fromAngle: number, toAngle: number): number {
+    // Ensure angles are in the range [0, 2π)
+    fromAngle = normalizeAngle2Pi(fromAngle);
+    toAngle = normalizeAngle2Pi(toAngle);
+
+    // Calculate the difference
+    let diff = toAngle - fromAngle;
+
+    // Normalize the difference to be in the range [-π, π)
+    return normalizeAngle(diff);
+}
+
+function lerp(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
+}
+
+function lerpAngle(a: number, b: number, t: number): number {
+    const diff = normalizeAngle(b - a);
+    return a + diff * t;
+}
+
+function interpolateBoneProperties(
+    bone: Bone,
+    start: {
+        position?: { x: number; y: number };
+        rotation?: number;
+        scale?: { x: number; y: number };
+    },
+    end: {
+        position?: { x: number; y: number };
+        rotation?: number;
+        scale?: { x: number; y: number };
+    },
+    factor: number,
+) {
+    // Interpolate position
+    if (start.position && end.position) {
+        bone.position.x = lerp(start.position.x, end.position.x, factor);
+        bone.position.y = lerp(start.position.y, end.position.y, factor);
+    }
+
+    // Interpolate rotation
+    if (start.rotation !== undefined && end.rotation !== undefined) {
+        bone.rotation = lerpAngle(start.rotation, end.rotation, factor);
+    }
+
+    // Interpolate scale
+    if (start.scale && end.scale) {
+        bone.scale.x = lerp(start.scale.x, end.scale.x, factor);
+        bone.scale.y = lerp(start.scale.y, end.scale.y, factor);
     }
 }

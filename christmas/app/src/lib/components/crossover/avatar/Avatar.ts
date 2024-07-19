@@ -1,6 +1,6 @@
 // src/lib/Avatar.ts
 import { cloneDeep } from "lodash";
-import { Assets, Container } from "pixi.js";
+import { Assets, Container, type DestroyOptions } from "pixi.js";
 import { AnimationManager } from "./AnimationManager";
 import { Bone } from "./Bone";
 import type { AvatarMetadata, BoneMetadata, Pose } from "./types";
@@ -192,5 +192,10 @@ export class Avatar extends Container {
         for (const bone of this.getAllBones()) {
             bone.updateDepth(isoX, isoY, elevation, z);
         }
+    }
+
+    destroy(options?: DestroyOptions): void {
+        this.animationManager.stopAnimation();
+        super.destroy(options);
     }
 }

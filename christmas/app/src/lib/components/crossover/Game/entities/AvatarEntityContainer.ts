@@ -1,4 +1,5 @@
 import { getEntityId } from "$lib/crossover/utils";
+import { actions, type Actions } from "$lib/crossover/world/actions";
 import type {
     EntityType,
     Item,
@@ -12,6 +13,10 @@ import { type Position } from "../utils";
 import { ActionBubble } from "./ActionBubble";
 
 export { AvatarEntityContainer };
+
+const animationTranslate: Record<string, string> = {
+    move: "walk",
+};
 
 class AvatarEntityContainer extends Avatar {
     public entityId: string;
@@ -52,6 +57,19 @@ class AvatarEntityContainer extends Avatar {
         // Create action bubble
         this.actionBubble = new ActionBubble();
         this.addChild(this.actionBubble);
+    }
+
+    triggerAnimation(action: string) {
+        // Animation action bubble
+        if (this.actionBubble != null && action in actions) {
+            this.actionBubble.setAction(action as Actions);
+        }
+
+        // Animate avatar
+        const animation = animationTranslate[action] || action;
+        if (animation in this.animationManager.animations) {
+            this.playAnimation(animation);
+        }
     }
 
     updateIsoPosition(isoPosition: Position, duration?: number) {

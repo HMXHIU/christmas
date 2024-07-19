@@ -15,6 +15,9 @@ import type { Action } from "$lib/crossover/world/actions";
 import { elevationAtGeohash } from "$lib/crossover/world/biomes";
 import type { AssetMetadata, Direction } from "$lib/crossover/world/types";
 import { geohashToGridCell } from "$lib/crossover/world/utils";
+import { gsap } from "gsap";
+import { PixiPlugin } from "gsap/PixiPlugin";
+import * as PIXI from "pixi.js";
 import {
     Assets,
     Container,
@@ -50,6 +53,7 @@ export {
     ISO_CELL_WIDTH,
     loadAssetTexture,
     positionsInRange,
+    registerGSAP,
     RENDER_ORDER,
     scaleToFitAndMaintainAspectRatio,
     swapMeshTexture,
@@ -310,6 +314,14 @@ async function initAssetManager() {
         "actions",
         "sound-effects",
     ]);
+}
+
+function registerGSAP() {
+    // Register GSAP PixiPlugin
+    gsap.registerPlugin(PixiPlugin);
+
+    // Configure PixiPlugin for Pixi.js v8
+    PixiPlugin.registerPIXI(PIXI);
 }
 
 function destroyContainer(thing: Sprite | Mesh<Geometry, Shader> | Container) {
