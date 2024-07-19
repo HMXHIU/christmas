@@ -4,11 +4,11 @@ import { PixiPlugin } from "gsap/PixiPlugin";
 import { cloneDeep } from "lodash";
 import type { Bone } from "./Bone";
 import type {
-  Animation,
-  AnimationMetadata,
-  IKChainData,
-  KeyFrame,
-  Pose,
+    Animation,
+    AnimationMetadata,
+    IKChainData,
+    KeyFrame,
+    Pose,
 } from "./types";
 
 const TWO_PI = Math.PI * 2;
@@ -18,290 +18,295 @@ const THREE_PI = Math.PI * 3;
 gsap.registerPlugin(PixiPlugin);
 
 export function timeIndex(time: number | string) {
-  return Number(parseFloat(String(time)).toFixed(1));
+    return Number(parseFloat(String(time)).toFixed(1));
 }
 
 function normalizeAngle(angle: number): number {
-  // -π to π
-  return ((angle + THREE_PI) % TWO_PI) - Math.PI;
+    // -π to π
+    return ((angle + THREE_PI) % TWO_PI) - Math.PI;
 }
 
 function normalizeAngle2Pi(angle: number): number {
-  return ((angle % TWO_PI) + TWO_PI) % TWO_PI;
+    return ((angle % TWO_PI) + TWO_PI) % TWO_PI;
 }
 
 function shortestAngleRotation(fromAngle: number, toAngle: number): number {
-  // Ensure angles are in the range [0, 2π)
-  fromAngle = normalizeAngle2Pi(fromAngle);
-  toAngle = normalizeAngle2Pi(toAngle);
+    // Ensure angles are in the range [0, 2π)
+    fromAngle = normalizeAngle2Pi(fromAngle);
+    toAngle = normalizeAngle2Pi(toAngle);
 
-  // Calculate the difference
-  let diff = toAngle - fromAngle;
+    // Calculate the difference
+    let diff = toAngle - fromAngle;
 
-  // Normalize the difference to be in the range [-π, π)
-  return normalizeAngle(diff);
+    // Normalize the difference to be in the range [-π, π)
+    return normalizeAngle(diff);
 }
 
 function lerp(a: number, b: number, t: number): number {
-  return a + (b - a) * t;
+    return a + (b - a) * t;
 }
 
 function lerpAngle(a: number, b: number, t: number): number {
-  const diff = normalizeAngle(b - a);
-  return a + diff * t;
+    const diff = normalizeAngle(b - a);
+    return a + diff * t;
 }
 
 function interpolateBoneProperties(
-  bone: Bone,
-  start: {
-    position?: { x: number; y: number };
-    rotation?: number;
-    scale?: { x: number; y: number };
-  },
-  end: {
-    position?: { x: number; y: number };
-    rotation?: number;
-    scale?: { x: number; y: number };
-  },
-  factor: number
+    bone: Bone,
+    start: {
+        position?: { x: number; y: number };
+        rotation?: number;
+        scale?: { x: number; y: number };
+    },
+    end: {
+        position?: { x: number; y: number };
+        rotation?: number;
+        scale?: { x: number; y: number };
+    },
+    factor: number,
 ) {
-  // Interpolate position
-  if (start.position && end.position) {
-    bone.position.x = lerp(start.position.x, end.position.x, factor);
-    bone.position.y = lerp(start.position.y, end.position.y, factor);
-  }
+    // Interpolate position
+    if (start.position && end.position) {
+        bone.position.x = lerp(start.position.x, end.position.x, factor);
+        bone.position.y = lerp(start.position.y, end.position.y, factor);
+    }
 
-  // Interpolate rotation
-  if (start.rotation !== undefined && end.rotation !== undefined) {
-    bone.rotation = lerpAngle(start.rotation, end.rotation, factor);
-  }
+    // Interpolate rotation
+    if (start.rotation !== undefined && end.rotation !== undefined) {
+        bone.rotation = lerpAngle(start.rotation, end.rotation, factor);
+    }
 
-  // Interpolate scale
-  if (start.scale && end.scale) {
-    bone.scale.x = lerp(start.scale.x, end.scale.x, factor);
-    bone.scale.y = lerp(start.scale.y, end.scale.y, factor);
-  }
+    // Interpolate scale
+    if (start.scale && end.scale) {
+        bone.scale.x = lerp(start.scale.x, end.scale.x, factor);
+        bone.scale.y = lerp(start.scale.y, end.scale.y, factor);
+    }
 }
 
 export class AnimationManager {
-  public animations: Record<string, Animation> = {};
-  public poses: Record<string, Pose> = {};
-  public currentAnimation: gsap.core.Timeline | null = null;
-  public ikChains: Record<string, IKChainData> = {};
+    public animations: Record<string, Animation> = {};
+    public poses: Record<string, Pose> = {};
+    public currentAnimation: gsap.core.Timeline | null = null;
+    public ikChains: Record<string, IKChainData> = {};
 
-  load(metadata: AnimationMetadata): void {
-    this.animations = cloneDeep(metadata.animations);
-    this.poses = cloneDeep(metadata.poses);
-    this.ikChains = cloneDeep(metadata.ik.chains);
-  }
+    load(metadata: AnimationMetadata): void {
+        this.animations = cloneDeep(metadata.animations);
+        this.poses = cloneDeep(metadata.poses);
+        this.ikChains = cloneDeep(metadata.ik.chains);
+    }
 
-  deserialize(): AnimationMetadata {
-    return {
-      ik: { chains: this.ikChains },
-      poses: this.poses,
-      animations: this.animations,
-    };
-  }
+    deserialize(): AnimationMetadata {
+        return {
+            ik: { chains: this.ikChains },
+            poses: this.poses,
+            animations: this.animations,
+        };
+    }
 
-  getPose(pose: string) {
-    return this.poses[pose];
-  }
+    getPose(pose: string) {
+        return this.poses[pose];
+    }
 
-  getPoseBone(bone: string, pose: string) {
-    return this.getPose(pose).find((poseBone) => poseBone.bone === bone);
-  }
+    getPoseBone(bone: string, pose: string) {
+        return this.getPose(pose).find((poseBone) => poseBone.bone === bone);
+    }
 
-  async pose(pose: Pose, bones: Record<string, Bone>) {
-    // Set bone transforms using the selected pose
-    for (const [
-      index,
-      { bone: boneName, texture, position, rotation },
-    ] of pose.entries()) {
-      const bone = bones[boneName];
-      if (bone) {
-        await bone.setTexture(texture);
-        bone.position.set(position.x, position.y);
-        bone.rotation = rotation;
-        bone.zIndex = index;
-        if (bone.mesh) {
-          bone.mesh.zIndex = index;
+    async pose(pose: Pose, bones: Record<string, Bone>) {
+        // Set bone transforms using the selected pose
+        for (const [
+            index,
+            { bone: boneName, texture, position, rotation },
+        ] of pose.entries()) {
+            const bone = bones[boneName];
+            if (bone) {
+                await bone.setTexture(texture);
+                bone.position.set(position.x, position.y);
+                bone.rotation = rotation;
+                bone.boneRenderLayer = index;
+                bone.zIndex = index;
+                if (bone.mesh) {
+                    bone.mesh.zIndex = index;
+                }
+            }
         }
-      }
     }
-  }
 
-  async poseAtTime(
-    pose: Pose,
-    animation: Animation,
-    time: number,
-    bones: Record<string, Bone>
-  ) {
-    // First, apply the initial pose
-    await this.pose(pose, bones);
+    async poseAtTime(
+        pose: Pose,
+        animation: Animation,
+        time: number,
+        bones: Record<string, Bone>,
+    ) {
+        // First, apply the initial pose
+        await this.pose(pose, bones);
 
-    // Iterate through each bone animation
-    for (const boneAnim of animation.bones) {
-      const bone = bones[boneAnim.boneName];
-      if (!bone) continue;
+        // Iterate through each bone animation
+        for (const boneAnim of animation.bones) {
+            const bone = bones[boneAnim.boneName];
+            if (!bone) continue;
 
-      // Find the initial pose for this bone
-      const initialPoseBone = pose.find((p) => p.bone === boneAnim.boneName);
-      if (!initialPoseBone) continue;
+            // Find the initial pose for this bone
+            const initialPoseBone = pose.find(
+                (p) => p.bone === boneAnim.boneName,
+            );
+            if (!initialPoseBone) continue;
 
-      // Handle case with no keyframes
-      if (boneAnim.keyframes.length === 0) {
-        continue; // Keep initial pose
-      }
+            // Handle case with no keyframes
+            if (boneAnim.keyframes.length === 0) {
+                continue; // Keep initial pose
+            }
 
-      // Find the keyframes surrounding the current time
-      let poseKf: KeyFrame = {
-        time: 0,
-        rotation: initialPoseBone.rotation,
-        scale: initialPoseBone.scale,
-        position: initialPoseBone.position,
-      };
-      let prevKeyframe = poseKf;
-      let nextKeyframe = boneAnim.keyframes[0];
-      for (let i = 0; i < boneAnim.keyframes.length; i++) {
-        if (boneAnim.keyframes[i].time <= time) {
-          prevKeyframe = boneAnim.keyframes[i];
-          nextKeyframe = boneAnim.keyframes[i + 1] || boneAnim.keyframes[i];
-        } else {
-          break;
+            // Find the keyframes surrounding the current time
+            let poseKf: KeyFrame = {
+                time: 0,
+                rotation: initialPoseBone.rotation,
+                scale: initialPoseBone.scale,
+                position: initialPoseBone.position,
+            };
+            let prevKeyframe = poseKf;
+            let nextKeyframe = boneAnim.keyframes[0];
+            for (let i = 0; i < boneAnim.keyframes.length; i++) {
+                if (boneAnim.keyframes[i].time <= time) {
+                    prevKeyframe = boneAnim.keyframes[i];
+                    nextKeyframe =
+                        boneAnim.keyframes[i + 1] || boneAnim.keyframes[i];
+                } else {
+                    break;
+                }
+            }
+
+            // Calculate interpolation factor
+            let factor;
+            if (prevKeyframe === nextKeyframe) {
+                // We're at or past the last keyframe
+                factor = 1;
+            } else if (prevKeyframe === poseKf) {
+                // We're before the first keyframe
+                factor = time / nextKeyframe.time;
+            } else {
+                factor =
+                    (time - prevKeyframe.time) /
+                    (nextKeyframe.time - prevKeyframe.time);
+            }
+
+            // Interpolate bone properties
+            interpolateBoneProperties(bone, prevKeyframe, nextKeyframe, factor);
         }
-      }
-
-      // Calculate interpolation factor
-      let factor;
-      if (prevKeyframe === nextKeyframe) {
-        // We're at or past the last keyframe
-        factor = 1;
-      } else if (prevKeyframe === poseKf) {
-        // We're before the first keyframe
-        factor = time / nextKeyframe.time;
-      } else {
-        factor =
-          (time - prevKeyframe.time) / (nextKeyframe.time - prevKeyframe.time);
-      }
-
-      // Interpolate bone properties
-      interpolateBoneProperties(bone, prevKeyframe, nextKeyframe, factor);
     }
-  }
 
-  playAnimation(
-    animationName: string,
-    bones: Record<string, Bone>,
-    loop: boolean = false,
-    onComplete?: () => void
-  ): void {
-    const animation = this.animations[animationName];
+    playAnimation(
+        animationName: string,
+        bones: Record<string, Bone>,
+        loop: boolean = false,
+        onComplete?: () => void,
+    ): void {
+        const animation = this.animations[animationName];
 
-    if (!animation) {
-      console.error(`Animation "${animationName}" not found`);
-      return;
-    }
-    this.stopAnimation();
-
-    // Create a timeline for the animation
-    const timeline = gsap.timeline({
-      repeat: loop ? -1 : 0, // -1 means infinite loop
-      onComplete: () => {
-        if (!loop) {
-          this.currentAnimation = null;
-          onComplete?.();
+        if (!animation) {
+            console.error(`Animation "${animationName}" not found`);
+            return;
         }
-      },
-    });
+        this.stopAnimation();
 
-    // Create tweens for each bone
-    for (const boneAnim of animation.bones) {
-      const bone = bones[boneAnim.boneName];
-      if (!bone) {
-        console.warn(`Bone "${boneAnim.boneName}" not found in avatar`);
-        continue;
-      }
-      this.createBoneAnimation(
-        timeline,
-        bone,
-        boneAnim.keyframes,
-        animation.duration,
-        animation.pose
-      );
+        // Create a timeline for the animation
+        const timeline = gsap.timeline({
+            repeat: loop ? -1 : 0, // -1 means infinite loop
+            onComplete: () => {
+                if (!loop) {
+                    this.currentAnimation = null;
+                    onComplete?.();
+                }
+            },
+        });
+
+        // Create tweens for each bone
+        for (const boneAnim of animation.bones) {
+            const bone = bones[boneAnim.boneName];
+            if (!bone) {
+                console.warn(`Bone "${boneAnim.boneName}" not found in avatar`);
+                continue;
+            }
+            this.createBoneAnimation(
+                timeline,
+                bone,
+                boneAnim.keyframes,
+                animation.duration,
+                animation.pose,
+            );
+        }
+
+        this.currentAnimation = timeline;
+        timeline.play();
     }
 
-    this.currentAnimation = timeline;
-    timeline.play();
-  }
+    private createBoneAnimation(
+        timeline: gsap.core.Timeline,
+        bone: Bone,
+        keyframes: KeyFrame[],
+        duration: number,
+        pose: string,
+    ): void {
+        if (keyframes.length === 0) return;
 
-  private createBoneAnimation(
-    timeline: gsap.core.Timeline,
-    bone: Bone,
-    keyframes: KeyFrame[],
-    duration: number,
-    pose: string
-  ): void {
-    if (keyframes.length === 0) return;
+        const createTweenVars = (kf: KeyFrame): gsap.TweenVars => ({
+            ...(kf.rotation != null && { rotation: kf.rotation }),
+            ...(kf.scale != null && { scaleX: kf.scale.x, scaleY: kf.scale.y }),
+            ...(kf.position != null && { x: kf.position.x, y: kf.position.y }),
+        });
 
-    const createTweenVars = (kf: KeyFrame): gsap.TweenVars => ({
-      ...(kf.rotation != null && { rotation: kf.rotation }),
-      ...(kf.scale != null && { scaleX: kf.scale.x, scaleY: kf.scale.y }),
-      ...(kf.position != null && { x: kf.position.x, y: kf.position.y }),
-    });
+        const timelineTos = keyframes.map((kf, i) => {
+            return {
+                tweenVars: createTweenVars(kf),
+                bone,
+                time: i > 0 ? keyframes[i - 1].time : 0, // start at previous keyframe, this is the target
+                duration: i > 0 ? kf.time - keyframes[i - 1].time : kf.time, // duration is the difference between the target and previous keyframe
+            };
+        });
 
-    const timelineTos = keyframes.map((kf, i) => {
-      return {
-        tweenVars: createTweenVars(kf),
-        bone,
-        time: i > 0 ? keyframes[i - 1].time : 0, // start at previous keyframe, this is the target
-        duration: i > 0 ? kf.time - keyframes[i - 1].time : kf.time, // duration is the difference between the target and previous keyframe
-      };
-    });
+        // Final keyframe at duration should end at original pose
+        const poseBone = this.getPoseBone(bone.name, pose);
+        if (poseBone != null) {
+            timelineTos.push({
+                tweenVars: {
+                    rotation: poseBone.rotation,
+                    scaleX: poseBone.scale.x,
+                    scaleY: poseBone.scale.y,
+                    x: poseBone.position.x,
+                    y: poseBone.position.y,
+                },
+                bone,
+                time: keyframes[keyframes.length - 1].time,
+                duration: duration - keyframes[keyframes.length - 1].time,
+            });
+        }
 
-    // Final keyframe at duration should end at original pose
-    const poseBone = this.getPoseBone(bone.name, pose);
-    if (poseBone != null) {
-      timelineTos.push({
-        tweenVars: {
-          rotation: poseBone.rotation,
-          scaleX: poseBone.scale.x,
-          scaleY: poseBone.scale.y,
-          x: poseBone.position.x,
-          y: poseBone.position.y,
-        },
-        bone,
-        time: keyframes[keyframes.length - 1].time,
-        duration: duration - keyframes[keyframes.length - 1].time,
-      });
+        let prevRotation: number | null = poseBone?.rotation ?? null;
+        timelineTos.forEach(({ tweenVars, time, duration }) => {
+            // Fix rotations (shortest rotation to prevRotation allowing to go past the -pi/pi boundary)
+            if (tweenVars.rotation !== undefined && prevRotation !== null) {
+                const diff = shortestAngleRotation(
+                    prevRotation,
+                    tweenVars.rotation as number,
+                );
+                tweenVars.rotation = prevRotation + diff;
+            }
+            prevRotation = (tweenVars.rotation as number) ?? prevRotation;
+            timeline.to(bone, { duration, ...tweenVars, ease: "none" }, time);
+        });
     }
 
-    let prevRotation: number | null = poseBone?.rotation ?? null;
-    timelineTos.forEach(({ tweenVars, time, duration }) => {
-      // Fix rotations (shortest rotation to prevRotation allowing to go past the -pi/pi boundary)
-      if (tweenVars.rotation !== undefined && prevRotation !== null) {
-        const diff = shortestAngleRotation(
-          prevRotation,
-          tweenVars.rotation as number
-        );
-        tweenVars.rotation = prevRotation + diff;
-      }
-      prevRotation = (tweenVars.rotation as number) ?? prevRotation;
-      timeline.to(bone, { duration, ...tweenVars, ease: "none" }, time);
-    });
-  }
-
-  stopAnimation(): void {
-    if (this.currentAnimation) {
-      this.currentAnimation.kill();
-      this.currentAnimation = null;
+    stopAnimation(): void {
+        if (this.currentAnimation) {
+            this.currentAnimation.kill();
+            this.currentAnimation = null;
+        }
     }
-  }
 
-  getAnimationNames(): string[] {
-    return Object.keys(this.animations);
-  }
+    getAnimationNames(): string[] {
+        return Object.keys(this.animations);
+    }
 
-  getAnimation(name: string): Animation | undefined {
-    return this.animations[name];
-  }
+    getAnimation(name: string): Animation | undefined {
+        return this.animations[name];
+    }
 }

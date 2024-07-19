@@ -5,33 +5,31 @@ import type {
     Player,
 } from "$lib/server/crossover/redis/entities";
 import { Container } from "pixi.js";
-import type { EntityMesh } from "./utils";
+import { entityContainers } from "./entities";
 
-export { clearAllHighlights, clearHighlights, drawTargetUI, highlightEntity };
+export { clearAllHighlights, drawTargetUI };
 
 function drawTargetUI({
     target,
-    entityMeshes,
     highlight,
 }: {
     source: Player | Monster | Item;
     target: Player | Monster | Item | null;
-    entityMeshes: Record<string, EntityMesh>;
     stage: Container;
     highlight: number;
 }) {
     if (target == null) {
-        clearAllHighlights(entityMeshes, highlight);
+        clearAllHighlights(highlight);
         return;
     }
 
     // Highlight target entity and unhighlight others
     const [targetId] = getEntityId(target);
-    for (const [entityId, entityMesh] of Object.entries(entityMeshes)) {
+    for (const [entityId, ec] of Object.entries(entityContainers)) {
         if (targetId === entityId) {
-            highlightEntity(entityMesh, highlight);
+            ec.highlight(highlight);
         } else {
-            clearHighlights(entityMesh, highlight);
+            ec.clearHighlight(highlight);
         }
     }
 
@@ -54,36 +52,8 @@ function drawTargetUI({
     // stage.addChild(targettingLine);
 }
 
-function clearAllHighlights(
-    entityMeshes: Record<string, EntityMesh>,
-    highlight?: number,
-) {
-    for (const entityMesh of Object.values(entityMeshes)) {
-        clearHighlights(entityMesh, highlight);
+function clearAllHighlights(highlight?: number) {
+    for (const ec of Object.values(entityContainers)) {
+        ec.clearHighlight(highlight);
     }
-}
-
-function clearHighlights(entityMesh: EntityMesh, highlight?: number) {
-    const instanceHighlights =
-        entityMesh.shaderGeometry.geometry.getBuffer("aInstanceHighlight");
-
-    if (highlight == null) {
-        instanceHighlights.data.fill(0);
-        instanceHighlights.update();
-    } else {
-        // Clear specific highlight
-        for (var i = 0; i < instanceHighlights.data.length; i++) {
-            if (instanceHighlights.data[i] === highlight) {
-                instanceHighlights.data[i] = 0;
-            }
-        }
-        instanceHighlights.update();
-    }
-}
-
-function highlightEntity(entityMesh: EntityMesh, highlight: number = 1) {
-    const instanceHighlights =
-        entityMesh.shaderGeometry.geometry.getBuffer("aInstanceHighlight");
-    instanceHighlights.data.fill(highlight);
-    instanceHighlights.update();
 }

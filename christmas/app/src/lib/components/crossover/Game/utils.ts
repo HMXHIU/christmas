@@ -7,21 +7,14 @@ import {
 import {
     aStarPathfinding,
     cartToIso,
-    getEntityId,
     isoToCart,
     seededRandom,
 } from "$lib/crossover/utils";
 import type { Ability } from "$lib/crossover/world/abilities";
 import type { Action } from "$lib/crossover/world/actions";
 import { elevationAtGeohash } from "$lib/crossover/world/biomes";
-import { compendium } from "$lib/crossover/world/compendium";
 import type { AssetMetadata, Direction } from "$lib/crossover/world/types";
 import { geohashToGridCell } from "$lib/crossover/world/utils";
-import type {
-    Item,
-    Monster,
-    Player,
-} from "$lib/server/crossover/redis/entities";
 import {
     Assets,
     Container,
@@ -31,7 +24,6 @@ import {
     type Shader,
     type Texture,
 } from "pixi.js";
-import { type ShaderGeometry } from "../shaders";
 
 export {
     calculatePosition,
@@ -60,15 +52,12 @@ export {
     positionsInRange,
     RENDER_ORDER,
     scaleToFitAndMaintainAspectRatio,
-    swapEntityVariant,
     swapMeshTexture,
-    updateEntityMeshRenderOrder,
     WORLD_HEIGHT,
     WORLD_WIDTH,
     Z_LAYER,
     Z_OFF,
     Z_SCALE,
-    type EntityMesh,
     type Position,
 };
 
@@ -80,19 +69,6 @@ interface Position {
     geohash: string;
     precision: number;
     elevation: number;
-}
-
-interface EntityMesh {
-    id: string;
-    hitbox: Container; // meshes are added to the hitbox so they can be moved together
-    mesh: Mesh<Geometry, Shader>;
-    actionIcon?: Sprite; // added to the hitbox so it can be moved together
-    shaderGeometry: ShaderGeometry; // mesh shader and geometry
-    position: Position;
-    entity?: Player | Monster | Item;
-    properties?: {
-        variant?: string;
-    };
 }
 
 // Note: this are cartesian coordinates (CELL_HEIGHT = CELL_WIDTH;)
@@ -244,35 +220,6 @@ function swapMeshTexture(mesh: Mesh<Geometry, Shader>, texture: Texture) {
     uvBuffer.update();
 }
 
-async function swapEntityVariant(entityMesh: EntityMesh, variant: string) {
-    if (entityMesh.entity == null) {
-        return;
-    }
-
-    let texture: Texture | null = null;
-
-    if (entityMesh.properties!.variant !== variant) {
-        if ((entityMesh.entity as Item).prop) {
-            const item = entityMesh.entity as Item;
-            const prop = compendium[item.prop];
-            const variant = prop.states[item.state].variant;
-            texture = await loadAssetTexture(prop.asset, {
-                variant,
-            });
-        }
-    }
-
-    if (!texture) {
-        console.error(
-            `Missing texture for ${entityMesh.entity.name}:${variant}`,
-        );
-        return;
-    }
-
-    entityMesh.properties!.variant = variant;
-    swapMeshTexture(entityMesh.mesh, texture);
-}
-
 async function loadAssetTexture(
     asset: AssetMetadata,
     { variant, seed }: { variant?: string; seed?: number } = {},
@@ -349,20 +296,6 @@ async function getImageForTile(
         }
     }
     throw new Error(`Missing image for tileId ${tileId}`);
-}
-
-function updateEntityMeshRenderOrder(entityMesh: EntityMesh) {
-    if (entityMesh.entity == null) {
-        return;
-    }
-    const [_, entityType] = getEntityId(entityMesh.entity);
-    const zIndex = RENDER_ORDER[entityType] * entityMesh.position.isoY; // TODO: this does not work during tweening
-    if (entityMesh.actionIcon != null) {
-        entityMesh.actionIcon.zIndex =
-            RENDER_ORDER.icon * entityMesh.position.isoY;
-    }
-    entityMesh.mesh.zIndex = zIndex;
-    entityMesh.hitbox.zIndex = zIndex;
 }
 
 async function initAssetManager() {

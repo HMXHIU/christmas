@@ -22,10 +22,8 @@
     import PixiPlugin from "gsap/PixiPlugin";
     import {
         Application,
-        Assets,
         Container,
         FederatedMouseEvent,
-        Texture,
         Ticker,
         WebGLRenderer,
     } from "pixi.js";
@@ -47,13 +45,12 @@
         highlightShaderInstances,
         updateShaderUniforms,
     } from "../shaders";
-    import { animateAbility } from "./animations";
     import { drawBiomeShaders } from "./biomes";
     import {
-        cullEntityMeshes,
-        entityMeshes,
+        cullEntityContainers,
+        entityContainers,
         updateEntities,
-        upsertEntityMesh,
+        upsertEntityContainer,
     } from "./entities";
     import { drawTargetUI } from "./ui";
     import {
@@ -70,7 +67,6 @@
         getPathHighlights,
         initAssetManager,
         positionsInRange,
-        updateEntityMeshRenderOrder,
         type Position,
     } from "./utils";
     import { cullWorlds, drawWorlds } from "./world";
@@ -115,7 +111,6 @@
         // Highlight target (prevent commandTarget from overriding target)
         drawTargetUI({
             target: $target,
-            entityMeshes,
             highlight: 2,
             stage: worldStage,
             source: $player,
@@ -124,28 +119,27 @@
         if (commandTarget != null) {
             const [commandTargetId, commandTargetType] =
                 getEntityId(commandTarget);
-            const commandTargetEntityMesh = entityMeshes[commandTargetId];
+            const targetEC = entityContainers[commandTargetId];
 
-            if (commandTargetEntityMesh == null) {
+            if (targetEC == null) {
                 return;
             }
 
             // Highlight command target
             drawTargetUI({
                 target: commandTarget,
-                entityMeshes,
                 highlight: 3,
                 stage: worldStage,
                 source: $player,
             });
 
-            if (gaType === "ability") {
+            if (gaType === "ability" && targetEC.isoPosition != null) {
                 const ability = ga as Ability;
 
                 // Get movement required to get in range
                 const path = getDirectionsToPosition(
                     playerPosition,
-                    entityMeshes[commandTargetId].position,
+                    targetEC.isoPosition,
                     ability.range,
                 );
                 const pathPositions = getPositionsForPath(playerPosition, path);
@@ -225,59 +219,19 @@
         const { source, target, action, ability, utility, prop } = event;
 
         // Get source entity
-        const sourceEntity = entityMeshes[source];
-        const targetEntity = target ? entityMeshes[target] : null;
+        const sourceEntity = entityContainers[source];
+        const targetEntity = target ? entityContainers[target] : null;
 
         // Render action/ability/utility
         if (action != null && sourceEntity != null) {
-            const { ticks, icon } = actions[action];
-
-            // Show action icon for duration
-            const [bundleName, alias] = icon.path.split("/").slice(-2);
-            const bundle = await Assets.loadBundle(bundleName);
-            const texture: Texture = bundle[alias].textures[icon.icon];
-            const actionIcon = sourceEntity.actionIcon;
-            if (actionIcon != null) {
-                actionIcon.texture = texture;
-                actionIcon.visible = true;
-                actionIcon.alpha = 1;
-                actionIcon.width = texture.width;
-                actionIcon.height = texture.height;
-                actionIcon.scale.x = HALF_ISO_CELL_WIDTH / actionIcon.width;
-                actionIcon.scale.y = HALF_ISO_CELL_WIDTH / actionIcon.height;
-
-                const duration = Math.max((ticks * MS_PER_TICK) / 1000, 1) * 2;
-
-                // Tween alpha
-                gsap.to(actionIcon, {
-                    duration,
-                    alpha: 0,
-                    ease: "power2.in",
-                    overwrite: true,
-                    onComplete: () => {
-                        if (actionIcon != null) {
-                            actionIcon.visible = false;
-                        }
-                    },
-                });
-
-                // Tween scale
-                gsap.to(actionIcon.scale, {
-                    duration,
-                    x: actionIcon.scale.x * 1.2,
-                    y: actionIcon.scale.y * 1.2,
-                    overwrite: true,
-                    ease: "power2.out",
-                });
-            }
+            await sourceEntity.actionBubble.setAction(action);
             console.log(source, `performing ${action} on`, target);
         } else if (ability != null) {
-            await animateAbility(worldStage, {
-                source: sourceEntity,
-                target: targetEntity ?? undefined,
-                ability,
-            });
-
+            // await animateAbility(worldStage, {
+            //     source: sourceEntity,
+            //     target: targetEntity ?? undefined,
+            //     ability,
+            // });
             console.log(source, `performing ${ability} on`, target);
         } else if (
             utility != null &&
@@ -303,37 +257,18 @@
         drawBiomeShaders(playerPosition, worldStage);
 
         // Cull entity meshes outside view
-        cullEntityMeshes(playerPosition, worldStage);
+        cullEntityContainers(playerPosition, worldStage);
 
         // Cull world meshes outside town
-        cullWorlds(playerPosition, worldStage);
+        cullWorlds(playerPosition);
 
-        // Player
-        const playerMesh = entityMeshes[$player.player];
-        if (playerMesh != null && playerMesh.mesh != null) {
-            // Update
-
-            const instancePositions =
-                playerMesh.shaderGeometry.geometry.getBuffer(
-                    "aInstancePosition",
-                );
-            instancePositions.data.set([
-                playerPosition.isoX,
-                playerPosition.isoY,
-                playerPosition.elevation,
-            ]);
-            instancePositions.update();
-            playerMesh.position = playerPosition;
-
-            // Tween position
-            gsap.to(playerMesh.hitbox, {
-                x: playerPosition.isoX,
-                y: playerPosition.isoY - playerPosition.elevation,
-                duration: (actions.move.ticks * MS_PER_TICK) / 1000,
-            });
-
-            // Set render order
-            updateEntityMeshRenderOrder(playerMesh);
+        // Move player avatar to new position
+        const playerAvatar = entityContainers[$player.player];
+        if (playerAvatar != null) {
+            playerAvatar.updateIsoPosition(
+                playerPosition,
+                (actions.move.ticks * MS_PER_TICK) / 1000,
+            );
         }
 
         // Move camera to player
@@ -472,7 +407,7 @@
 
         // Create player mesh
         if ($player != null && playerPosition !== null) {
-            await upsertEntityMesh($player, playerPosition, worldStage);
+            await upsertEntityContainer($player, playerPosition, worldStage);
         }
 
         // Add ticker
@@ -573,7 +508,6 @@
                 }
                 drawTargetUI({
                     target: t,
-                    entityMeshes,
                     highlight: 2,
                     source: $player,
                     stage: worldStage!,

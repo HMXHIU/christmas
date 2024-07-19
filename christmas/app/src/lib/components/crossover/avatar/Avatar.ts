@@ -10,15 +10,22 @@ export class Avatar extends Container {
     public rootBone: Bone | null = null;
     public animationManager: AnimationManager;
     public metadata: AvatarMetadata | null = null;
+
     public zOffset: number = 0;
     public zScale: number = 0;
+    public renderLayer: number = 0;
 
-    constructor(options?: { zOffset?: number; zScale?: number }) {
+    constructor(options?: {
+        zOffset?: number;
+        zScale?: number;
+        renderLayer?: number;
+    }) {
         super();
         this.animationManager = new AnimationManager();
         this.sortableChildren = true;
         this.zOffset = options?.zOffset || 0;
         this.zScale = options?.zScale || 0;
+        this.renderLayer = options?.renderLayer || 0;
     }
 
     async preloadTextures(): Promise<void> {
@@ -33,9 +40,11 @@ export class Avatar extends Container {
         this.metadata = cloneDeep(metadata);
 
         // Clear existing bones
+        for (const bone of Object.values(this.bones)) {
+            this.removeChild(bone);
+        }
         this.bones = {};
         this.rootBone = null;
-        this.removeChildren();
 
         // Preload all textures
         await this.preloadTextures();
@@ -52,6 +61,7 @@ export class Avatar extends Container {
                 zOffset: this.zOffset,
                 zScale: this.zScale,
             });
+            bone.eventMode = "none"; // Prevents inheritance of parent eventMode
             this.bones[boneName] = bone;
 
             // Auto-rig the texture (use the first texture as default)
@@ -169,15 +179,18 @@ export class Avatar extends Container {
         };
     }
 
-    setInstancePosition(isoX: number, isoY: number, elevation: number): void {
-        // The position is used internally to calculate the z coordinate
+    updateDepth(
+        isoX: number,
+        isoY: number,
+        elevation: number,
+        z?: number,
+    ): void {
+        // Update zIndex
+        this.zIndex = this.renderLayer * isoY + (z ?? 0);
+
+        // Update bone depth
         for (const bone of this.getAllBones()) {
-            if (bone.mesh == null) {
-                continue;
-            }
-            const ip = bone.mesh.geometry.getBuffer("aInstancePosition");
-            ip.data.set([isoX, isoY, elevation]);
-            ip.update();
+            bone.updateDepth(isoX, isoY, elevation, z);
         }
     }
 }

@@ -2,9 +2,8 @@ import { autoCorrectGeohashPrecision, cartToIso } from "$lib/crossover/utils";
 import { geohashToGridCell } from "$lib/crossover/world/utils";
 import { worldSeed } from "$lib/crossover/world/world";
 import type { World } from "$lib/server/crossover/redis/entities";
-import { Assets, Container, Geometry, Mesh, Shader, Sprite } from "pixi.js";
-import { loadShaderGeometry } from "../shaders";
-import { destroyEntityMesh } from "./entities";
+import { Assets, Container, Sprite } from "pixi.js";
+import { IsoMesh } from "../shaders";
 import {
     calculatePosition,
     CELL_HEIGHT,
@@ -15,13 +14,12 @@ import {
     RENDER_ORDER,
     Z_OFF,
     Z_SCALE,
-    type EntityMesh,
     type Position,
 } from "./utils";
 
 export { cullWorlds, debugColliders, drawWorlds, loadWorld, worldMeshes };
 
-let worldMeshes: Record<string, EntityMesh> = {};
+let worldMeshes: Record<string, IsoMesh> = {};
 
 async function drawWorlds(
     worldRecord: Record<string, Record<string, World>>,
@@ -130,24 +128,15 @@ async function loadWorld({
                     i * tilewidth, // use tilewidth for cartesian
                 );
 
-                const shaderGeometry = loadShaderGeometry(
-                    "world",
+                const mesh = new IsoMesh({
+                    shaderName: "world",
                     texture,
-                    imagewidth,
-                    imageheight,
-                    {
-                        // Note: anchor is not used in entity meshes shader
-                        uid: id,
-                        zScale: Z_SCALE,
-                        zOffset: Z_OFF[z] ?? Z_OFF.floor,
-                        cellHeight: tileheight / ISO_CELL_HEIGHT,
-                    },
-                );
-
-                const mesh = new Mesh<Geometry, Shader>({
-                    geometry: shaderGeometry.geometry,
-                    shader: shaderGeometry.shader,
+                    zOffset: Z_OFF[z] ?? Z_OFF.floor,
+                    zScale: Z_SCALE,
+                    renderLayer: RENDER_ORDER[z] || RENDER_ORDER.world,
+                    cellHeight: tileheight / ISO_CELL_HEIGHT,
                 });
+                worldMeshes[id] = mesh;
 
                 // Center of the bottom tile (imageheight a multiple of tileheight)
                 const anchor = {
@@ -170,27 +159,9 @@ async function loadWorld({
                     anchor.y * imageheight;
                 mesh.x = x;
                 mesh.y = y - position.elevation;
-                mesh.zIndex = RENDER_ORDER[z] || RENDER_ORDER.world;
 
-                const instancePositions =
-                    shaderGeometry.geometry.getBuffer("aInstancePosition");
-                instancePositions.data.set([
-                    x,
-                    y + imageheight, // this is only used to calculate z
-                    position.elevation, // this is not used to calculate z
-                ]);
-                instancePositions.update();
-
-                // Add to worldMeshes
-                const worldMesh = {
-                    id,
-                    mesh,
-                    shaderGeometry,
-                    hitbox: new Container(), // Not used for world meshes
-                    position: position, // Not used for world meshes
-                };
-
-                worldMeshes[id] = worldMesh;
+                // Update depth
+                mesh.updateDepth(x, y + imageheight, position.elevation);
 
                 // Add to stage
                 if (!stage.children.includes(mesh)) {
@@ -241,15 +212,15 @@ async function debugColliders(
     }
 }
 
-function cullWorlds(playerPosition: Position, stage: Container) {
+function cullWorlds(playerPosition: Position) {
     // Cull world meshes outside town
     const town = playerPosition.geohash.slice(
         0,
         worldSeed.spatial.town.precision,
     );
-    for (const [id, entityMesh] of Object.entries(worldMeshes)) {
+    for (const [id, mesh] of Object.entries(worldMeshes)) {
         if (!id.startsWith(town)) {
-            destroyEntityMesh(entityMesh);
+            mesh.destroy();
             delete worldMeshes[id];
         }
     }

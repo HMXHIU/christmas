@@ -8,7 +8,8 @@ import { sleep } from "$lib/utils";
 import { Sound } from "@pixi/sound";
 import { gsap } from "gsap";
 import { Assets, Container, MeshRope, Point, type PointData } from "pixi.js";
-import { RENDER_ORDER, getAngle, type EntityMesh } from "./utils";
+import type { EntityContainer } from "./entities";
+import { RENDER_ORDER, getAngle } from "./utils";
 
 export { animateAbility, animateSlash };
 
@@ -21,8 +22,8 @@ async function animateAbility(
         target,
         ability,
     }: {
-        source: EntityMesh;
-        target?: EntityMesh;
+        source: EntityContainer;
+        target?: EntityContainer;
         ability: Abilities;
     },
 ) {
@@ -47,22 +48,29 @@ async function addVisualEffects(
         source,
         target,
         procedure,
-    }: { source: EntityMesh; target?: EntityMesh; procedure: Procedure },
+    }: {
+        source: EntityContainer;
+        target?: EntityContainer;
+        procedure: Procedure;
+    },
 ) {
     const [ptype, effect] = procedure;
     const { ticks, damage, buffs, debuffs } = effect;
-    if (ptype === "action") {
+    if (ptype === "action" && source.isoPosition != null) {
         // Animate offensive damage abilities
         if (damage != null && target != null) {
             const { damageType, amount } = damage;
-            if (damageType === "slashing") {
+            if (damageType === "slashing" && target.isoPosition != null) {
                 tl.add(
                     await animateSlash(stage, tl, {
-                        startX: source.position.isoX,
+                        startX: source.isoPosition.isoX,
                         startY:
-                            source.position.isoY - source.position.elevation,
-                        endX: target.position.isoX,
-                        endY: target.position.isoY - target.position.elevation,
+                            source.isoPosition.isoY -
+                            source.isoPosition.elevation,
+                        endX: target.isoPosition.isoX,
+                        endY:
+                            target.isoPosition.isoY -
+                            target.isoPosition.elevation,
                     }),
                 );
             }

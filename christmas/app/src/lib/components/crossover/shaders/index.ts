@@ -32,6 +32,7 @@ export {
     destroyShaders,
     drawShaderTextures,
     highlightShaderInstances,
+    IsoMesh,
     loadedShaderGeometries,
     loadShaderGeometry,
     MAX_SHADER_GEOMETRIES,
@@ -230,6 +231,7 @@ function createTexturedQuadGeometry(
     height: number,
     cellHeight?: number,
 ): Geometry {
+    cellHeight = cellHeight ?? 1;
     const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
     const instancePositions = new Buffer({
         data: new Float32Array(3).fill(-1), // x, y, h
@@ -239,9 +241,8 @@ function createTexturedQuadGeometry(
         data: new Float32Array(1).fill(0),
         usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
     });
-    const zAlongY = cellHeight
-        ? [1, 1, 1, 1, 1, 1, 1, 1]
-        : [0, 0, 0, 0, 0, 0, 0, 0];
+    const zAlongY =
+        cellHeight > 1 ? [1, 1, 1, 1, 1, 1, 1, 1] : [0, 0, 0, 0, 0, 0, 0, 0];
 
     return new Geometry({
         attributes: {
@@ -529,4 +530,65 @@ function destroyMesh(thing: Mesh<Geometry, Shader> | Container) {
     thing.eventMode = "none";
     thing.removeAllListeners();
     thing.destroy();
+}
+
+class IsoMesh extends Mesh<Geometry, Shader> {
+    public zOffset: number = 0;
+    public zScale: number = 0;
+    public renderLayer: number = 0;
+    public cellHeight: number = 1;
+
+    constructor({
+        shaderName,
+        texture,
+        zOffset,
+        zScale,
+        renderLayer,
+        cellHeight,
+    }: {
+        shaderName: string;
+        texture: Texture;
+        zOffset?: number;
+        zScale?: number;
+        renderLayer?: number;
+        cellHeight?: number;
+    }) {
+        const { shader, geometry } = loadShaderGeometry(
+            shaderName,
+            texture,
+            texture.width,
+            texture.height,
+            {
+                zOffset: zOffset || 0,
+                zScale: zScale || 0,
+                cellHeight: cellHeight || 1,
+            },
+        );
+
+        super({
+            shader,
+            geometry,
+            texture,
+        });
+
+        this.zOffset = zOffset ?? 0;
+        this.zScale = zScale ?? 0;
+        this.renderLayer = renderLayer ?? 0;
+        this.cellHeight = cellHeight ?? 1;
+    }
+
+    updateDepth(
+        isoX: number,
+        isoY: number,
+        elevation: number,
+        z?: number,
+    ): void {
+        // This updates the depth of the instance in the shader
+        const ip = this.geometry.getBuffer("aInstancePosition");
+        ip.data.set([isoX, isoY, elevation]);
+        ip.update();
+
+        // Update zIndex
+        this.zIndex = this.renderLayer * isoY + (z ?? 0);
+    }
 }
