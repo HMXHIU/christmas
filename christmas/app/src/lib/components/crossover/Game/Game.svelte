@@ -7,17 +7,17 @@
         snapToGrid,
     } from "$lib/crossover/utils";
     import { type Ability } from "$lib/crossover/world/abilities";
-    import { actions, type Action } from "$lib/crossover/world/actions";
+    import { type Action } from "$lib/crossover/world/actions";
     import {
         EquipmentSlots,
         compendium,
         type EquipmentSlot,
         type Utility,
     } from "$lib/crossover/world/compendium";
-    import { MS_PER_TICK } from "$lib/crossover/world/settings";
     import type { Direction } from "$lib/crossover/world/types";
     import type { Player } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
+    import { AsyncLock } from "$lib/utils";
     import { gsap } from "gsap";
     import {
         Application,
@@ -176,12 +176,12 @@
         }
     }
 
-    function updatePlayerPosition(player: Player | null) {
+    async function updatePlayerPosition(player: Player | null) {
         if (player == null) {
             return;
         }
-        calculatePosition(player.loc[0]).then((p) => {
-            playerPosition = p;
+        calculatePosition(player.loc[0]).then((pos) => {
+            playerPosition = pos;
         });
     }
 
@@ -230,54 +230,47 @@
         // Render action/ability/utility
         if (action != null && sourceEntity != null) {
             await sourceEntity.triggerAnimation(action);
-            console.log(source, `performing ${action} on`, target);
         } else if (ability != null) {
             await animateAbility(worldStage, {
                 source: sourceEntity,
                 target: targetEntity ?? undefined,
                 ability,
             });
-            console.log(source, `performing ${ability} on`, target);
         } else if (
             utility != null &&
             prop != null &&
             compendium[prop]?.utilities[utility] != null
         ) {
             const utilityRecord = compendium[prop]?.utilities[utility];
-            console.log(source, `performing ${utility} on`, target);
         }
     }
 
+    const playerPositionUpdateLock = new AsyncLock();
     async function handlePlayerPosition(playerPosition: Position | null) {
-        if (
-            !isInitialized ||
-            playerPosition == null ||
-            worldStage == null ||
-            $player == null
-        ) {
-            return;
-        }
+        playerPositionUpdateLock.withLock(async () => {
+            if (
+                !isInitialized ||
+                playerPosition == null ||
+                worldStage == null ||
+                $player == null
+            ) {
+                return;
+            }
+            // Update biomes
+            await drawBiomeShaders(playerPosition, worldStage);
 
-        // Update biomes
-        await drawBiomeShaders(playerPosition, worldStage);
+            // Cull entity meshes outside view
+            cullEntityContainers(playerPosition);
 
-        // Cull entity meshes outside view
-        cullEntityContainers(playerPosition, worldStage);
+            // Cull world meshes outside town
+            cullWorlds(playerPosition);
 
-        // Cull world meshes outside town
-        cullWorlds(playerPosition);
+            // Update/Create player entity container
+            await upsertEntityContainer($player, playerPosition, worldStage);
 
-        // Move player avatar to new position
-        const playerAvatar = entityContainers[$player.player];
-        if (playerAvatar != null) {
-            playerAvatar.updateIsoPosition(
-                playerPosition,
-                (actions.move.ticks * MS_PER_TICK) / 1000,
-            );
-        }
-
-        // Move camera to player
-        updateCamera($player);
+            // Move camera to player
+            updateCamera($player);
+        });
     }
 
     function onMouseMove(x: number, y: number) {
@@ -341,9 +334,15 @@
      */
 
     async function init() {
-        if (isInitialized || app == null || worldStage == null) {
+        if (isInitialized) {
+            console.warn("Game already initialized");
             return;
         }
+
+        app = new Application();
+        worldStage = new Container();
+        worldStage.sortableChildren = true;
+
         await app.init({
             width: CANVAS_WIDTH,
             height: CANVAS_HEIGHT,
@@ -407,11 +406,6 @@
             }
         };
 
-        // Create player mesh
-        if ($player != null && playerPosition !== null) {
-            await upsertEntityContainer($player, playerPosition, worldStage);
-        }
-
         // Add ticker
         app.ticker.add(ticker);
 
@@ -424,7 +418,7 @@
         // Resize the canvas
         resize(clientHeight, clientWidth);
 
-        // Initial update
+        // Initial HMR update (stores are already initialized)
         if (playerPosition && $player) {
             await handlePlayerPosition(playerPosition);
             await updateEntities(
@@ -451,9 +445,7 @@
     }
 
     onMount(() => {
-        app = new Application();
-        worldStage = new Container();
-        worldStage.sortableChildren = true;
+        // Initialize game
         init();
 
         // Store subscriptions
@@ -462,18 +454,15 @@
                 if (playerPosition == null || worldStage == null) {
                     return;
                 }
-                console.log("monsterRecord");
                 updateEntities(mr, playerPosition, "monster", worldStage);
             }),
             playerRecord.subscribe((pr) => {
                 if (playerPosition == null || worldStage == null) {
                     return;
                 }
-                console.log("playerRecord");
                 updateEntities(pr, playerPosition, "player", worldStage);
             }),
             itemRecord.subscribe((ir) => {
-                console.log("itemRecord");
                 if (playerPosition == null || worldStage == null) {
                     return;
                 }
@@ -505,7 +494,6 @@
                 drawWorlds(wr, playerPosition, worldStage);
             }),
             player.subscribe((p) => {
-                console.log("player");
                 updatePlayerPosition(p);
             }),
             target.subscribe((t) => {
@@ -520,20 +508,6 @@
                 });
             }),
         ];
-
-        // Force trigger subscriptions on HMR reload
-        if ($player) {
-            player.set($player);
-        }
-        if ($monsterRecord) {
-            monsterRecord.set($monsterRecord);
-        }
-        if ($playerRecord) {
-            playerRecord.set($playerRecord);
-        }
-        if ($itemRecord) {
-            itemRecord.set($itemRecord);
-        }
 
         return () => {
             for (const s of subscriptions) {
@@ -566,11 +540,9 @@
     });
 </script>
 
-{#if playerPosition}
-    <div
-        class={cn("w-full h-full p-0 m-0", $$restProps.class)}
-        bind:this={container}
-        bind:clientHeight
-        bind:clientWidth
-    ></div>
-{/if}
+<div
+    class={cn("w-full h-full p-0 m-0", $$restProps.class)}
+    bind:this={container}
+    bind:clientHeight
+    bind:clientWidth
+></div>

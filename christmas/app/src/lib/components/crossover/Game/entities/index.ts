@@ -41,7 +41,7 @@ let entityContainers: Record<string, EntityContainer> = {};
 
 async function updateEntities(
     er: Record<string, Monster | Player | Item>,
-    playerPosition: Position,
+    playerPosition: Position, // ignores outside player's view
     entityType: EntityType,
     stage: Container,
 ) {
@@ -259,15 +259,15 @@ async function upsertEntityContainer(
     }
 }
 
-function cullEntityContainers(playerPosition: Position, stage: Container) {
+function cullEntityContainers(playerPosition?: Position) {
     // Cull entity containers outside view
     for (const [id, ec] of Object.entries(entityContainers)) {
         if (
             ec.isoPosition != null &&
+            playerPosition != null &&
             !isCellInView(ec.isoPosition, playerPosition)
         ) {
             ec.destroy();
-            console.log("destroyed outside view", id);
             delete entityContainers[id];
         }
     }
