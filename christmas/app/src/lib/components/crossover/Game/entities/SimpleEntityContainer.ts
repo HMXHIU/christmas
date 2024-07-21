@@ -93,7 +93,7 @@ class SimpleEntityContainer extends Container {
             this.addChild(this.mesh);
 
             // Set size
-            const [width, height] = scaleToFitAndMaintainAspectRatio(
+            const { width, height } = scaleToFitAndMaintainAspectRatio(
                 texture.width,
                 texture.height,
                 asset.width * CELL_WIDTH,

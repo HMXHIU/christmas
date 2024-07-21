@@ -369,7 +369,7 @@ function scaleToFitAndMaintainAspectRatio(
     h: number,
     targetWidth: number,
     targetHeight: number,
-): [number, number] {
+): { width: number; height: number; scale: number } {
     const aspectRatio = w / h;
     const targetAspectRatio = targetWidth / targetHeight;
 
@@ -395,7 +395,11 @@ function scaleToFitAndMaintainAspectRatio(
         newWidth = newHeight * aspectRatio;
     }
 
-    return [newWidth, newHeight];
+    const scaleX = newWidth / w;
+    const scaleY = newHeight / h;
+    const scale = Math.min(scaleX, scaleY);
+
+    return { width: newWidth, height: newHeight, scale };
 }
 
 function getPathHighlights(

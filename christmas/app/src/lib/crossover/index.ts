@@ -171,27 +171,36 @@ function handleUpdateEntities(
     const self = get(player);
     op ??= "upsert";
 
-    // Update playerRecord
-    if (players != null) {
-        playerRecord.update((pr) => {
-            if (op === "replace") {
-                pr = {};
+    // Update player
+    if (players != null && players.length > 0) {
+        for (const p of players) {
+            if (p.player === self?.player) {
+                // TODO: Side effects here is hard to understand
+                handleUpdatePlayer(self, p);
+                player.set(p);
+                break;
             }
-            for (const p of players) {
-                // Update self (player)
-                if (p.player === self?.player) {
-                    handleUpdatePlayer(self, p); // TODO: Side effects here is hard to understand
-                    player.set(p);
-                } else {
+        }
+    }
+
+    // Update playerRecord
+    if (players != null && players.length > 0) {
+        const otherPlayers = players.filter((p) => p.player !== self?.player);
+        if (otherPlayers.length > 0) {
+            playerRecord.update((pr) => {
+                if (op === "replace") {
+                    pr = {};
+                }
+                for (const p of otherPlayers) {
                     pr[p.player] = p;
                 }
-            }
-            return pr;
-        });
+                return pr;
+            });
+        }
     }
 
     // Update itemRecord
-    if (items != null) {
+    if (items != null && items.length > 0) {
         itemRecord.update((ir) => {
             if (op === "replace") {
                 ir = {};
@@ -204,7 +213,7 @@ function handleUpdateEntities(
     }
 
     // Update monsterRecord
-    if (monsters != null) {
+    if (monsters != null && monsters.length > 0) {
         monsterRecord.update((mr) => {
             if (op === "replace") {
                 mr = {};

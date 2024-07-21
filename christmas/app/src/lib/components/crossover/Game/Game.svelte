@@ -462,15 +462,18 @@
                 if (playerPosition == null || worldStage == null) {
                     return;
                 }
+                console.log("monsterRecord");
                 updateEntities(mr, playerPosition, "monster", worldStage);
             }),
             playerRecord.subscribe((pr) => {
                 if (playerPosition == null || worldStage == null) {
                     return;
                 }
+                console.log("playerRecord");
                 updateEntities(pr, playerPosition, "player", worldStage);
             }),
             itemRecord.subscribe((ir) => {
+                console.log("itemRecord");
                 if (playerPosition == null || worldStage == null) {
                     return;
                 }
@@ -502,6 +505,7 @@
                 drawWorlds(wr, playerPosition, worldStage);
             }),
             player.subscribe((p) => {
+                console.log("player");
                 updatePlayerPosition(p);
             }),
             target.subscribe((t) => {

@@ -67,7 +67,6 @@ async function updateEntities(
             continue;
         }
         ec.destroy();
-        console.log("destroyed not in record", id);
         delete entityContainers[id];
     }
 }
@@ -123,32 +122,45 @@ async function upsertAvatarContainer(
         entityContainers[entityId] = avatarContainer;
 
         // Set size
-        const [width, height] = scaleToFitAndMaintainAspectRatio(
+        const { width, height, scale } = scaleToFitAndMaintainAspectRatio(
             avatarContainer.width,
             avatarContainer.height,
-            ISO_CELL_WIDTH * 4,
-            ISO_CELL_HEIGHT * 8,
+            ISO_CELL_WIDTH * 1, // max width is 1 cell
+            ISO_CELL_HEIGHT * 3, // max height is 3 cells
         );
-        avatarContainer.width = width;
-        avatarContainer.height = height;
-        avatarContainer.pivot = { x: width / 2, y: height };
+        avatarContainer.pivot = {
+            x: avatarContainer.width / 2,
+            y: avatarContainer.height,
+        };
+        avatarContainer.scale.x = scale;
+        avatarContainer.scale.y = scale;
 
         // Set initial pose
         await avatarContainer.pose(
             avatarContainer.animationManager.getPose("default"),
         );
-    }
 
-    // Add to stage (might have been culled)
-    if (!stage.children.includes(avatarContainer)) {
-        stage.addChild(avatarContainer);
-    }
+        // Add to stage (might have been culled)
+        if (!stage.children.includes(avatarContainer)) {
+            stage.addChild(avatarContainer);
+        }
 
-    // Move avatar
-    avatarContainer.updateIsoPosition(
-        position,
-        (actions.move.ticks * MS_PER_TICK) / 1000,
-    );
+        // Set initial position
+        avatarContainer.updateIsoPosition(position);
+    }
+    // Update
+    else {
+        // Add to stage (might have been culled)
+        if (!stage.children.includes(avatarContainer)) {
+            stage.addChild(avatarContainer);
+        }
+
+        // Move avatar
+        avatarContainer.updateIsoPosition(
+            position,
+            (actions.move.ticks * MS_PER_TICK) / 1000,
+        );
+    }
 }
 
 async function upsertSimpleContainer(
@@ -170,12 +182,14 @@ async function upsertSimpleContainer(
         });
         entityContainers[entityId] = ec;
 
-        // Load asset
+        // Load monster asset
         if (entityType === "monster") {
             const monster = entity as Monster;
             const asset = bestiary[monster.beast].asset;
             await ec.loadAsset(asset, { anchor: { x: 0.5, y: 1 } });
-        } else if (entityType === "item") {
+        }
+        // Load item asset
+        else if (entityType === "item") {
             const item = entity as Item;
             const prop = compendium[item.prop];
             const asset = prop.asset;
