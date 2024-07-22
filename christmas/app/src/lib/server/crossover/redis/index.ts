@@ -135,8 +135,8 @@ async function getNearbyEntities(
     items: Item[];
 }> {
     // Get nearby geohashes
-    const parentGeohash = geohash.slice(0, -1);
-    const nearbyGeohashes = geohashesNearby(parentGeohash);
+    const p6 = geohash.slice(0, -2);
+    const nearbyGeohashes = geohashesNearby(p6);
 
     // Get players
     const players = (await playersInGeohashQuerySet(nearbyGeohashes).return.all(

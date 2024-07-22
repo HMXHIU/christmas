@@ -506,11 +506,11 @@ const crossoverRouter = {
                 return;
             }
             player = entity as PlayerEntity;
-            const parentGeohash = player.loc[0].slice(0, -1);
+            const p6 = player.loc[0].slice(0, -2);
 
             // Get logged in players in geohash
             const players = await playersInGeohashQuerySet(
-                geohashesNearby(parentGeohash),
+                geohashesNearby(p6),
             ).return.allIds({ pageSize: LOOK_PAGE_SIZE }); // limit players using page size
 
             // Send message to all players in the geohash (non blocking)

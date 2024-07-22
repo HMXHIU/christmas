@@ -13,7 +13,6 @@ import { geohashToGridCell } from "./world/utils";
 import { worldSeed } from "./world/world";
 
 export {
-    REGEX_STRIP_ENTITY_TYPE,
     aStarPathfinding,
     autoCorrectGeohashPrecision,
     borderingGeohashes,
@@ -27,15 +26,16 @@ export {
     filterSortEntitiesInRange,
     gameActionId,
     generateEvenlySpacedPoints,
+    geohashesNearby,
     geohashNeighbour,
     geohashToColRow,
-    geohashesNearby,
     getEntityId,
     getGeohashesForPath,
     getPlotsAtGeohash,
     getPositionsForPath,
     inRange,
     isoToCart,
+    REGEX_STRIP_ENTITY_TYPE,
     seededRandom,
     snapToGrid,
     stringToRandomNumber,
@@ -309,11 +309,17 @@ async function borderingGeohashes(geohashes: string[]): Promise<string[]> {
  * If precision is even, the geohash grid is 4x8, 8 neighbours will give 12x24 grid, add 3 more neighbours to the north and south
  *
  * @param geohash - The geohash for which to retrieve the surrounding geohashes.
+ * @param square - Optional parameter to specify if the grid should be square (default is false).
  * @returns An array of geohashes including the original geohash and its surrounding geohashes.
  */
-function geohashesNearby(geohash: string): string[] {
+function geohashesNearby(geohash: string, square: boolean = false): string[] {
     const evenPrecision = geohash.length % 2;
     const [n, ne, e, se, s, sw, w, nw] = ngeohash.neighbors(geohash);
+
+    if (!square) {
+        return [geohash, n, ne, e, se, s, sw, w, nw];
+    }
+
     const additionalNeghbours = evenPrecision
         ? [
               ngeohash.neighbor(n, [1, 0]),
