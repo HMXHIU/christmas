@@ -41,7 +41,7 @@ let entityContainers: Record<string, EntityContainer> = {};
 
 async function updateEntities(
     er: Record<string, Monster | Player | Item>,
-    playerPosition: Position, // ignores outside player's view
+    playerPosition: Position, // used for optimizing entity updates outside player's view
     entityType: EntityType,
     stage: Container,
 ) {
@@ -99,6 +99,7 @@ async function upsertAvatarContainer(
     entity: Player | Monster | Item,
     position: Position,
     stage: Container,
+    tween: boolean = true,
 ) {
     const [entityId, entityType] = getEntityId(entity);
     let avatarContainer = entityContainers[entityId];
@@ -158,7 +159,7 @@ async function upsertAvatarContainer(
         // Move avatar
         avatarContainer.updateIsoPosition(
             position,
-            (actions.move.ticks * MS_PER_TICK) / 1000,
+            tween ? (actions.move.ticks * MS_PER_TICK) / 1000 : undefined,
         );
     }
 }
@@ -167,6 +168,7 @@ async function upsertSimpleContainer(
     entity: Monster | Item,
     position: Position,
     stage: Container,
+    tween: boolean = true,
 ) {
     const [entityId, entityType] = getEntityId(entity);
     let ec = entityContainers[entityId];
@@ -221,7 +223,7 @@ async function upsertSimpleContainer(
         // Tween position
         ec.updateIsoPosition(
             position,
-            (actions.move.ticks * MS_PER_TICK) / 1000,
+            tween ? (actions.move.ticks * MS_PER_TICK) / 1000 : undefined,
         );
     }
 
@@ -247,15 +249,18 @@ async function upsertEntityContainer(
     const { row, col } = position;
 
     // Ignore entities outside player's view
-    if (!isCellInView({ row, col }, playerPosition)) {
-        return;
-    }
+    const tween = isCellInView({ row, col }, playerPosition);
 
     // Upsert
     if (entityType === "player") {
-        await upsertAvatarContainer(entity as Player, position, stage);
+        await upsertAvatarContainer(entity as Player, position, stage, tween);
     } else {
-        await upsertSimpleContainer(entity as Monster | Item, position, stage);
+        await upsertSimpleContainer(
+            entity as Monster | Item,
+            position,
+            stage,
+            tween,
+        );
     }
 }
 

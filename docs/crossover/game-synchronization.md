@@ -38,13 +38,13 @@ There should be an GET request endpoint for the player to request equipment data
 
 - [ ] Only send the minimum amount of data for rendering to the client (see above)
 - [x] Do not cull entity data from the client unless it is very far away
-- [ ] As the player moves new data that he does not have should be streamed to him
-- [ ] Stream entity data from a larger area. To make things simpler just get the 9 neighbours of 6 precision geohash (see `geohashesNearby`)
+- [x] As the player moves new data that he does not have should be streamed to him
+- [x] Stream entity data from a larger area. To make things simpler just get the 9 neighbours of 6 precision geohash (see `geohashesNearby`)
 - [x] When rendering, only render entities that are within the view of the player (separate from the amount of data that the player receives) - use pixijs cullable=true
 - [x] Make 6 precision the smallest unit of enitity data that is streamed to the player or that can be requested
-- [ ] Entity events only need to be broadcasted to players within 6p
+- [ ] Entity update events only need to be broadcasted to players within 6p
 - [ ] When receiving events from entities, client should upsert the entity record data, but should not render the entities (eg. position of containers).
-- [ ] Client only needs to update the positions of containers if it is within view (much less than 6p)
+- [x] Client only needs to tween the positions of containers if it is within view, else just set it directly (much less than 6p)
 
 # Problem: Too much movement data
 
