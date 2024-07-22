@@ -1,4 +1,4 @@
-import { getEntityId } from "$lib/crossover/utils";
+import { geohashesNearby, getEntityId } from "$lib/crossover/utils";
 import { actions } from "$lib/crossover/world/actions";
 import { avatarMorphologies, bestiary } from "$lib/crossover/world/bestiary";
 import { compendium } from "$lib/crossover/world/compendium";
@@ -259,16 +259,27 @@ async function upsertEntityContainer(
     }
 }
 
+/**
+ * Only manually cull (destroy) entities if they are very far away
+ *
+ * @param playerPosition - The player's position, if undefined, cull all entities
+ */
 function cullEntityContainers(playerPosition?: Position) {
-    // Cull entity containers outside view
-    for (const [id, ec] of Object.entries(entityContainers)) {
-        if (
-            ec.isoPosition != null &&
-            playerPosition != null &&
-            !isCellInView(ec.isoPosition, playerPosition)
-        ) {
+    if (playerPosition == null) {
+        for (const [id, ec] of Object.entries(entityContainers)) {
             ec.destroy();
             delete entityContainers[id];
+        }
+    } else {
+        const p5s = geohashesNearby(playerPosition.geohash.slice(0, -2));
+        console.log("checking culling", p5s);
+        for (const [id, ec] of Object.entries(entityContainers)) {
+            const geohash = ec.isoPosition?.geohash;
+            if (geohash != null && !p5s.some((gh) => geohash.startsWith(gh))) {
+                console.log("culling", id);
+                ec.destroy();
+                delete entityContainers[id];
+            }
         }
     }
 }
