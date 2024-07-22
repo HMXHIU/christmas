@@ -40,7 +40,7 @@ There should be an GET request endpoint for the player to request equipment data
 - [x] Do not cull entity data from the client unless it is very far away
 - [ ] As the player moves new data that he does not have should be streamed to him
 - [ ] Stream entity data from a larger area. To make things simpler just get the 9 neighbours of 6 precision geohash (see `geohashesNearby`)
-- [ ] When rendering, only render entities that are within the view of the player (separate from the amount of data that the player receives)
+- [x] When rendering, only render entities that are within the view of the player (separate from the amount of data that the player receives) - use pixijs cullable=true
 - [x] Make 6 precision the smallest unit of enitity data that is streamed to the player or that can be requested
 - [ ] When receiving events from entities, client should check if the entity is within view before processing the event (because it is receiving entity events from a larger area)
 

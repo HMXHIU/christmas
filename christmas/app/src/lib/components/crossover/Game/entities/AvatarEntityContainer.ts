@@ -57,6 +57,8 @@ class AvatarEntityContainer extends Avatar {
         // Create action bubble
         this.actionBubble = new ActionBubble();
         this.addChild(this.actionBubble);
+
+        this.cullable = true;
     }
 
     triggerAnimation(action: string) {

@@ -64,6 +64,8 @@ class SimpleEntityContainer extends Container {
         // Create action bubble
         this.actionBubble = new ActionBubble();
         this.addChild(this.actionBubble);
+
+        this.cullable = true;
     }
 
     async loadAsset(

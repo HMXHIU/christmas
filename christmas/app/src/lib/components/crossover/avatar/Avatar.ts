@@ -26,6 +26,7 @@ export class Avatar extends Container {
         this.zOffset = options?.zOffset || 0;
         this.zScale = options?.zScale || 0;
         this.renderLayer = options?.renderLayer || 0;
+        this.cullable = true;
     }
 
     async preloadTextures(): Promise<void> {

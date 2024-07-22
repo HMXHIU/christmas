@@ -272,11 +272,9 @@ function cullEntityContainers(playerPosition?: Position) {
         }
     } else {
         const p5s = geohashesNearby(playerPosition.geohash.slice(0, -2));
-        console.log("checking culling", p5s);
         for (const [id, ec] of Object.entries(entityContainers)) {
             const geohash = ec.isoPosition?.geohash;
             if (geohash != null && !p5s.some((gh) => geohash.startsWith(gh))) {
-                console.log("culling", id);
                 ec.destroy();
                 delete entityContainers[id];
             }

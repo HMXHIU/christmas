@@ -46,6 +46,7 @@ class IsoMesh extends Mesh<Geometry, Shader> {
         this.zScale = zScale ?? 0;
         this.renderLayer = renderLayer ?? 0;
         this.cellHeight = cellHeight ?? 1;
+        this.cullable = true;
     }
 
     updateDepth(
