@@ -43,7 +43,7 @@ There should be an GET request endpoint for the player to request equipment data
 - [x] When rendering, only render entities that are within the view of the player (separate from the amount of data that the player receives) - use pixijs cullable=true
 - [x] Make 6 precision the smallest unit of enitity data that is streamed to the player or that can be requested
 - [ ] Entity update events only need to be broadcasted to players within 6p
-- [ ] When receiving events from entities, client should upsert the entity record data, but should not render the entities (eg. position of containers).
+- [x] When receiving events from entities, client should upsert the entity record data even if they are not in view.
 - [x] Client only needs to tween the positions of containers if it is within view, else just set it directly (much less than 6p)
 
 # Problem: Too much movement data
@@ -52,15 +52,15 @@ There should be an GET request endpoint for the player to request equipment data
 
 When sending movement data:
 
-- The entity should perform the a\* pathfinding to the end position
-- The entity should send the full path to the server
-- The server should determine the movement AP cost and reject if the player does not have enough AP
-- The server should check for any collisions and reject if the path is blocked
+- [x] The entity should perform the a\* pathfinding to the end position
+- [x] The entity should send the full path to the server
+- [ ] The server should determine the movement AP cost and reject if the player does not have enough AP
+- [ ] The server should check for any collisions and reject if the path is blocked
 
 When receiving movement data:
 
-- The client should tween the entity to the end position following the path
-- The client should add additional time to the tween if the entity is moving diagonally
+- [x] The client should tween the entity to the end position following the path
+- [x] The client should add additional time to the tween if the entity is moving diagonally
 
 ```js
 // send
@@ -80,8 +80,8 @@ When receiving movement data:
 
 #### Deconflicting location of the entity
 
-- Add `pth`, `pthdur`, `pthclk` to the entity in redis.
-- The backend can immediately set the `geohash` to the destination
-- The client receives the `geohash` of the entity
-- The client receives the `pth`, `pthdur`, `pthclk` of the entity if `pthclk` + `pthdur` > `current_time`
-- Both client and server can determine the location of the entity based on the `pth`, `pthdur`, `pthclk`
+- [x] Add `pth`, `pthdur`, `pthclk` to the entity in redis.
+- [ ] The backend can immediately set the `geohash` to the destination
+- [ ] The client receives the `geohash` of the entity
+- [ ] The client receives the `pth`, `pthdur`, `pthclk` of the entity if `pthclk` + `pthdur` > `current_time`
+- [ ] Both client and server can determine the location of the entity based on the `pth`, `pthdur`, `pthclk`

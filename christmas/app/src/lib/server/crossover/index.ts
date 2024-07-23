@@ -1,6 +1,7 @@
 import {
     autoCorrectGeohashPrecision,
     calculateLocation,
+    calculatePathDuration,
     childrenGeohashes,
     entityDimensions,
     entityInRange,
@@ -27,6 +28,7 @@ import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import type { Direction, WorldAssetMetadata } from "$lib/crossover/world/types";
 import { sanctuariesByRegion, worldSeed } from "$lib/crossover/world/world";
 import { sleep } from "$lib/utils";
+import lodash from "lodash";
 import { z } from "zod";
 import {
     fetchEntity,
@@ -62,9 +64,9 @@ import {
     setPlayerState,
 } from "./utils";
 
+const { cloneDeep } = lodash;
+
 export {
-    LOOK_PAGE_SIZE,
-    PlayerStateSchema,
     checkAndSetBusy,
     configureItem,
     connectedUsers,
@@ -72,11 +74,13 @@ export {
     getPlayerState,
     getUserMetadata,
     loadPlayerEntity,
+    LOOK_PAGE_SIZE,
     movePlayer,
     performAbility,
     performEffectOnEntity,
     performInventory,
     performLook,
+    PlayerStateSchema,
     recoverAp,
     setPlayerState,
     spawnItem,
@@ -155,6 +159,10 @@ async function loadPlayerEntity(
         buf: [],
         lum: 0,
         umb: 0,
+        pthclk: 0,
+        pthdur: 0,
+        pth: [],
+        pthst: "",
     };
     let player: PlayerEntity = {
         ...defaultState,
@@ -233,6 +241,10 @@ async function spawnMonster({
         buclk: 0,
         buf: [],
         dbuf: [],
+        pthclk: 0,
+        pthdur: 0,
+        pth: [],
+        pthst: "",
     };
     return (await monsterRepository.save(monsterId, monster)) as MonsterEntity;
 }
@@ -934,11 +946,13 @@ async function checkAndSetBusy({
     action,
     ability,
     publishEvent,
+    duration,
 }: {
     entity: PlayerEntity | MonsterEntity;
     action?: Actions;
     ability?: string;
     publishEvent?: boolean;
+    duration?: number;
 }): Promise<{ busy: Boolean; entity: PlayerEntity | MonsterEntity }> {
     // Check if entity is busy
     const [isBusy, now] = entityIsBusy(entity);
@@ -953,8 +967,15 @@ async function checkAndSetBusy({
         return { busy: true, entity };
     }
 
-    // Action
-    if (action != null && actions[action].ticks > 0) {
+    // Duration provided
+    if (duration != null) {
+        entity.buclk = now + duration;
+        return {
+            busy: false,
+            entity: (await saveEntity(entity)) as PlayerEntity,
+        };
+        // Action
+    } else if (action != null && actions[action].ticks > 0) {
         const ms = actions[action].ticks * MS_PER_TICK;
         entity.buclk = now + ms;
         return {
@@ -1055,67 +1076,120 @@ async function consumeResources(
 }
 
 async function movePlayer(player: PlayerEntity, path: Direction[]) {
+    // Get path duration
+    const duration = calculatePathDuration(path);
+
     // Check if player is busy
     const { busy, entity } = await checkAndSetBusy({
         entity: player,
         action: actions.move.action,
         publishEvent: true,
+        duration, // use the duration of the full path
     });
     if (busy) {
         return;
     }
 
+    // Check if the full path is traversable
+    let loc = cloneDeep(player.loc);
     for (const direction of path) {
-        // Check if direction is traversable
         const [isTraversable, location] = await isDirectionTraversable(
-            player,
+            loc,
             direction,
         );
         if (!isTraversable) {
             publishFeedEvent(player.player, {
                 type: "error",
-                message: `Cannot move ${direction}`,
+                message: `Path is not traversable`,
             });
-            break;
-        }
-
-        // Publish action
-        publishActionEvent(player.player, {
-            action: actions.move.action,
-            source: player.player,
-        });
-
-        // Sleep for the duration of the effect
-        await sleep(actions.move.ticks * MS_PER_TICK);
-
-        // Update player location
-        player = entity as PlayerEntity;
-        player.loc = location;
-        player = (await saveEntity(player)) as PlayerEntity;
-
-        // Check if player moves to a different plot
-        const plotDidChange =
-            player.loc[0].slice(0, -1) !== location[0].slice(0, -1);
-
-        // Return nearby entities if plot changed
-        if (plotDidChange) {
-            const { monsters, players, items } = await getNearbyEntities(
-                player.loc[0],
-                LOOK_PAGE_SIZE,
-            );
-            publishAffectedEntitiesToPlayers(
-                [player, ...monsters, ...players, ...items],
-                { publishTo: player.player },
-            );
-        }
-
-        // Just update player (TODO: update players in vincinity)
-        else {
-            publishAffectedEntitiesToPlayers([player], {
-                publishTo: player.player,
-            });
+            return;
+        } else {
+            loc = location;
         }
     }
+
+    // Check if player moves to a new p6
+    const p6Changed = player.loc[0].slice(0, -2) !== loc[0].slice(0, -2);
+
+    // Update player location and path
+    player = entity as PlayerEntity;
+    player.pth = path;
+    player.pthst = player.loc[0]; // origin is always the first loc
+    player.pthdur = duration;
+    player.pthclk = Date.now();
+    player.loc = loc; // update loc immediately to final location (client and server to use `pthclk` to determine exact location)
+    player = (await saveEntity(player)) as PlayerEntity;
+
+    // Return nearby entities if plot changed
+    if (p6Changed) {
+        const { monsters, players, items } = await getNearbyEntities(
+            player.loc[0],
+            LOOK_PAGE_SIZE,
+        );
+        publishAffectedEntitiesToPlayers(
+            [player, ...monsters, ...players, ...items],
+            { publishTo: player.player },
+        );
+    } else {
+        // Just update player's location
+        publishAffectedEntitiesToPlayers([player], {
+            publishTo: player.player,
+        });
+    }
+
+    // TODO: update players in vincinity
+
+    // for (const direction of path) {
+    //     // Check if direction is traversable
+    //     const [isTraversable, location] = await isDirectionTraversable(
+    //         player.loc,
+    //         direction,
+    //     );
+    //     if (!isTraversable) {
+    //         publishFeedEvent(player.player, {
+    //             type: "error",
+    //             message: `Cannot move ${direction}`,
+    //         });
+    //         break;
+    //     }
+
+    //     // Publish action
+    //     publishActionEvent(player.player, {
+    //         action: actions.move.action,
+    //         source: player.player,
+    //     });
+
+    //     // Sleep for the duration of the effect
+    //     await sleep(actions.move.ticks * MS_PER_TICK);
+
+    //     // Update player location
+    //     player = entity as PlayerEntity;
+    //     player.loc = location;
+    //     player = (await saveEntity(player)) as PlayerEntity;
+
+    //     // Check if player moves to a different plot
+    //     const plotDidChange =
+    //         player.loc[0].slice(0, -1) !== location[0].slice(0, -1);
+
+    //     // Return nearby entities if plot changed
+    //     if (plotDidChange) {
+    //         const { monsters, players, items } = await getNearbyEntities(
+    //             player.loc[0],
+    //             LOOK_PAGE_SIZE,
+    //         );
+    //         publishAffectedEntitiesToPlayers(
+    //             [player, ...monsters, ...players, ...items],
+    //             { publishTo: player.player },
+    //         );
+    //     }
+
+    //     // Just update player (TODO: update players in vincinity)
+    //     else {
+    //         publishAffectedEntitiesToPlayers([player], {
+    //             publishTo: player.player,
+    //         });
+    //     }
+    // }
 }
 
 async function performLook(

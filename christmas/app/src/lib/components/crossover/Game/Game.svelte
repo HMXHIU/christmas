@@ -59,12 +59,10 @@
         CELL_WIDTH,
         HALF_ISO_CELL_HEIGHT,
         HALF_ISO_CELL_WIDTH,
-        WORLD_HEIGHT,
-        WORLD_WIDTH,
-        calculatePosition,
         calculateRowColFromIso,
         getDirectionsToPosition,
         getPathHighlights,
+        getPlayerPosition,
         initAssetManager,
         positionsInRange,
         registerGSAP,
@@ -83,21 +81,20 @@
     let clientHeight: number;
     let app: Application | null = null;
     let worldStage: Container | null = null;
-    let playerPosition: Position | null = null;
     let lastCursorX: number = 0;
     let lastCursorY: number = 0;
     let isMouseDown: boolean = false;
     let path: Direction[] | null = null;
     let cameraTween: gsap.core.Tween | null = null;
+    let playerIsoX: number = 0;
+    let playerIsoY: number = 0;
 
-    $: handlePlayerPosition(playerPosition);
     $: resize(clientHeight, clientWidth);
     $: handlePreviewCommand(previewCommand);
 
     async function handlePreviewCommand(command: GameCommand | null) {
         if (
             !isInitialized ||
-            playerPosition == null ||
             worldStage == null ||
             app == null ||
             $player == null
@@ -138,7 +135,10 @@
                 source: $player,
             });
 
-            if (gaType === "ability" && targetEC.isoPosition != null) {
+            const playerPosition = getPlayerPosition();
+            if (playerPosition == null) {
+                return;
+            } else if (gaType === "ability" && targetEC.isoPosition != null) {
                 const ability = ga as Ability;
 
                 // Get movement required to get in range
@@ -176,41 +176,13 @@
         }
     }
 
-    async function updatePlayerPosition(player: Player | null) {
-        if (player == null) {
-            return;
-        }
-        calculatePosition(player.loc[0]).then((pos) => {
-            playerPosition = pos;
-        });
-    }
-
-    function updateCamera(player: Player, tween = true) {
-        if (playerPosition != null && worldStage != null) {
-            const offsetX =
-                playerPosition.isoX + CELL_WIDTH / 2 - clientWidth / 2;
-            const offsetY =
-                playerPosition.isoY -
-                playerPosition.elevation -
-                clientHeight / 2;
-            if (tween) {
-                cameraTween = gsap.to(worldStage.pivot, {
-                    x: offsetX,
-                    y: offsetY,
-                    duration: 1,
-                    ease: "power2.out",
-                    overwrite: true, // overwrite previous tweens
-                });
-            } else {
-                worldStage.pivot = { x: offsetX, y: offsetY };
-            }
-        }
-    }
-
     function resize(clientHeight: number, clientWidth: number) {
         if (app && isInitialized && clientHeight && clientWidth && $player) {
             app.renderer.resize(clientWidth, clientHeight);
-            updateCamera($player);
+            const position = getPlayerPosition();
+            if (position != null) {
+                handleTrackPlayer({ position, duration: 1 });
+            }
         }
     }
 
@@ -245,40 +217,11 @@
         }
     }
 
-    const playerPositionUpdateLock = new AsyncLock();
-    async function handlePlayerPosition(playerPosition: Position | null) {
-        playerPositionUpdateLock.withLock(async () => {
-            if (
-                !isInitialized ||
-                playerPosition == null ||
-                worldStage == null ||
-                $player == null
-            ) {
-                return;
-            }
-            // Update biomes
-            await drawBiomeShaders(playerPosition, worldStage);
-
-            // Cull entity meshes outside view
-            cullEntityContainers(playerPosition);
-
-            // Cull world meshes outside town
-            cullWorlds(playerPosition);
-
-            // Update/Create player entity container
-            await upsertEntityContainer($player, playerPosition, worldStage);
-
-            // Move camera to player
-            updateCamera($player);
-        });
-    }
-
     function onMouseMove(x: number, y: number) {
+        const playerPosition = getPlayerPosition();
         if (playerPosition == null) {
             return;
-        }
-
-        if (isMouseDown) {
+        } else if (isMouseDown) {
             // Calculate path (astar)
             const [rowEnd, colEnd] = calculateRowColFromIso(x, y);
             path = getDirectionsToPosition(playerPosition, {
@@ -294,6 +237,7 @@
     }
 
     async function onMouseUp(x: number, y: number) {
+        const playerPosition = getPlayerPosition();
         if (playerPosition == null) {
             return;
         }
@@ -307,9 +251,6 @@
     }
 
     function onMouseDown(x: number, y: number) {
-        if (playerPosition == null || worldStage == null) {
-            return;
-        }
         // Clear path
         path = null;
     }
@@ -329,6 +270,72 @@
         updateShaderUniforms({ deltaTime: seconds });
     }
 
+    async function handlePlayerPositionUpdate(position: Position) {
+        if (worldStage == null) {
+            return;
+        }
+
+        // Update biomes
+        await drawBiomeShaders(position, worldStage);
+
+        // Cull entity meshes outside view
+        cullEntityContainers(position);
+
+        // Cull world meshes outside town
+        cullWorlds(position);
+    }
+
+    async function handleTrackPlayer({
+        position,
+        duration,
+    }: {
+        position: Position;
+        duration?: number;
+    }) {
+        if (worldStage == null) {
+            return;
+        }
+        const cameraX = position.isoX + CELL_WIDTH / 2 - clientWidth / 2;
+        const cameraY = position.isoY - position.elevation - clientHeight / 2;
+        if (duration != null) {
+            cameraTween = gsap.to(worldStage.pivot, {
+                x: cameraX,
+                y: cameraY,
+                duration: duration * 3,
+                ease: "power2.inout",
+                overwrite: true, // overwrite previous tweens
+            });
+        } else {
+            worldStage.pivot = { x: cameraX, y: cameraY };
+        }
+    }
+
+    const playerPositionUpdateLock = new AsyncLock();
+    async function updatePlayer(player: Player | null) {
+        playerPositionUpdateLock.withLock(async () => {
+            if (!isInitialized || worldStage == null || player == null) {
+                return;
+            }
+
+            // Upsert player container
+            const [created, ec] = await upsertEntityContainer(
+                player,
+                worldStage,
+            );
+
+            // Listen on position update
+            if (created) {
+                ec.on("positionUpdate", handlePlayerPositionUpdate);
+                ec.on("trackEntity", handleTrackPlayer);
+                // First position update is not handled
+                if (ec.isoPosition != null) {
+                    await handlePlayerPositionUpdate(ec.isoPosition);
+                    await handleTrackPlayer({ position: ec.isoPosition });
+                }
+            }
+        });
+    }
+
     /*
      * Initialization
      */
@@ -342,6 +349,7 @@
         app = new Application();
         worldStage = new Container();
         worldStage.sortableChildren = true;
+        app.stage.addChild(worldStage);
 
         await app.init({
             width: CANVAS_WIDTH,
@@ -360,48 +368,57 @@
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        // Add world container
-        worldStage.width = WORLD_WIDTH;
-        worldStage.height = WORLD_HEIGHT;
-        app.stage.addChild(worldStage);
-
         // Setup app events
         app.stage.eventMode = "static"; // enable interactivity
         app.stage.hitArea = app.screen; // ensure whole canvas area is interactive
 
-        function getMousePosition(e: FederatedMouseEvent) {
+        function getMousePosition(
+            e: FederatedMouseEvent,
+        ): [number, number] | null {
+            const playerPosition = getPlayerPosition();
+            if (playerPosition == null) {
+                return null;
+            }
             return snapToGrid(
                 e.global.x + worldStage!.pivot.x,
-                e.global.y + worldStage!.pivot.y + playerPosition!.elevation, // select on the same plane as player
+                e.global.y + worldStage!.pivot.y + playerPosition.elevation, // select on the same plane as player
                 HALF_ISO_CELL_WIDTH,
                 HALF_ISO_CELL_HEIGHT,
             );
         }
         app.stage.onmouseup = (e) => {
+            const playerPosition = getPlayerPosition();
             if (playerPosition != null && e.global != null) {
-                const [snapX, snapY] = getMousePosition(e);
-                onMouseUp(snapX, snapY);
-                lastCursorX = snapX;
-                lastCursorY = snapY;
-                isMouseDown = false;
+                const snapXY = getMousePosition(e);
+                if (snapXY != null) {
+                    onMouseUp(...snapXY);
+                    lastCursorX = snapXY[0];
+                    lastCursorY = snapXY[1];
+                    isMouseDown = false;
+                }
             }
         };
         app.stage.onmousedown = (e) => {
-            if (playerPosition != null && e.global != null) {
-                const [snapX, snapY] = getMousePosition(e);
-                onMouseDown(snapX, snapY);
-                lastCursorX = snapX;
-                lastCursorY = snapY;
-                isMouseDown = true;
+            if (e.global != null) {
+                const snapXY = getMousePosition(e);
+                if (snapXY != null) {
+                    onMouseDown(...snapXY);
+                    lastCursorX = snapXY[0];
+                    lastCursorY = snapXY[1];
+                    isMouseDown = true;
+                }
             }
         };
         app.stage.onmousemove = (e) => {
-            if (playerPosition != null && e.global != null) {
-                const [snapX, snapY] = getMousePosition(e);
-                if (lastCursorX !== snapX || lastCursorY !== snapY) {
-                    onMouseMove(snapX, snapY);
-                    lastCursorX = snapX;
-                    lastCursorY = snapY;
+            if (e.global != null) {
+                const snapXY = getMousePosition(e);
+                if (
+                    snapXY != null &&
+                    (lastCursorX !== snapXY[0] || lastCursorY !== snapXY[1])
+                ) {
+                    onMouseMove(...snapXY);
+                    lastCursorX = snapXY[0];
+                    lastCursorY = snapXY[1];
                 }
             }
         };
@@ -419,28 +436,21 @@
         resize(clientHeight, clientWidth);
 
         // Initial HMR update (stores are already initialized)
-        if (playerPosition && $player) {
-            await handlePlayerPosition(playerPosition);
-            await updateEntities(
-                $monsterRecord,
-                playerPosition,
-                "monster",
-                worldStage,
-            );
-            await updateEntities(
-                $playerRecord,
-                playerPosition,
-                "player",
-                worldStage,
-            );
-            await updateEntities(
-                $itemRecord,
-                playerPosition,
-                "item",
-                worldStage,
-            );
-            await drawWorlds($worldRecord, playerPosition, worldStage);
-            updateCamera($player, false);
+        if ($player) {
+            await updatePlayer($player);
+            await updateEntities($monsterRecord, "monster", worldStage);
+            await updateEntities($playerRecord, "player", worldStage);
+            await updateEntities($itemRecord, "item", worldStage);
+            await drawWorlds($worldRecord, worldStage);
+
+            const position = await getPlayerPosition();
+            if (position != null) {
+                // ec.on("positionUpdate", handlePlayerPositionUpdate);
+                // ec.on("trackEntity", handleTrackPlayer);
+
+                await handlePlayerPositionUpdate(position);
+                await handleTrackPlayer({ position });
+            }
         }
     }
 
@@ -451,22 +461,22 @@
         // Store subscriptions
         const subscriptions = [
             monsterRecord.subscribe((mr) => {
-                if (playerPosition == null || worldStage == null) {
+                if (worldStage == null) {
                     return;
                 }
-                updateEntities(mr, playerPosition, "monster", worldStage);
+                updateEntities(mr, "monster", worldStage);
             }),
             playerRecord.subscribe((pr) => {
-                if (playerPosition == null || worldStage == null) {
+                if (worldStage == null) {
                     return;
                 }
-                updateEntities(pr, playerPosition, "player", worldStage);
+                updateEntities(pr, "player", worldStage);
             }),
             itemRecord.subscribe((ir) => {
-                if (playerPosition == null || worldStage == null) {
+                if (worldStage == null) {
                     return;
                 }
-                updateEntities(ir, playerPosition, "item", worldStage);
+                updateEntities(ir, "item", worldStage);
 
                 // Player inventory and equipped items
                 const playerItems = Object.values(ir).filter((item) => {
@@ -488,13 +498,12 @@
                 );
             }),
             worldRecord.subscribe((wr) => {
-                if (playerPosition == null || worldStage == null) {
-                    return;
+                if (worldStage != null) {
+                    drawWorlds(wr, worldStage);
                 }
-                drawWorlds(wr, playerPosition, worldStage);
             }),
             player.subscribe((p) => {
-                updatePlayerPosition(p);
+                updatePlayer(p);
             }),
             target.subscribe((t) => {
                 if ($player == null || worldStage == null) {
@@ -510,15 +519,14 @@
         ];
 
         return () => {
-            for (const s of subscriptions) {
-                s();
+            for (const unsubscribe of subscriptions) {
+                unsubscribe();
             }
         };
     });
 
     onDestroy(() => {
         if (app && worldStage) {
-            app.stage.removeAllListeners();
             isInitialized = false; // set this so ticker stops before removing other things
 
             // Stop tweens
@@ -535,7 +543,8 @@
             clearInstancedShaderMeshes();
             destroyShaders();
 
-            app = null;
+            // Destroy all ecs
+            cullEntityContainers();
         }
     });
 </script>

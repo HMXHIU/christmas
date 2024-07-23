@@ -7,8 +7,10 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import ngeohash from "ngeohash";
 import type { GameAction } from "./ir";
+import { actions } from "./world/actions";
 import { bestiary } from "./world/bestiary";
 import { compendium } from "./world/compendium";
+import { MS_PER_TICK } from "./world/settings";
 import { geohashToGridCell } from "./world/utils";
 import { worldSeed } from "./world/world";
 
@@ -17,8 +19,10 @@ export {
     autoCorrectGeohashPrecision,
     borderingGeohashes,
     calculateLocation,
+    calculatePathDuration,
     cartToIso,
     childrenGeohashes,
+    directionDuration,
     directionVectors,
     entityDimensions,
     entityInRange,
@@ -792,4 +796,20 @@ function filterSortEntitiesInRange(
             return a.distance - b.distance; // ascending order
         })
         .map(({ entity }) => entity);
+}
+
+function directionDuration(d: Direction): number {
+    if (d === "n" || d === "s" || d === "e" || d === "w") {
+        return actions.move.ticks * MS_PER_TICK;
+    } else {
+        return actions.move.ticks * MS_PER_TICK * 1.414;
+    }
+}
+
+function calculatePathDuration(path: Direction[]): number {
+    let dur = 0;
+    for (const d of path) {
+        dur += directionDuration(d);
+    }
+    return Math.round(dur);
 }

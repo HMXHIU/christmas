@@ -7,6 +7,7 @@ import type {
     EntityType,
     Item,
     Monster,
+    PathParams,
     Player,
 } from "$lib/server/crossover/redis/entities";
 import { Assets, Container } from "pixi.js";
@@ -41,7 +42,6 @@ let entityContainers: Record<string, EntityContainer> = {};
 
 async function updateEntities(
     er: Record<string, Monster | Player | Item>,
-    playerPosition: Position, // used for optimizing entity updates outside player's view
     entityType: EntityType,
     stage: Container,
 ) {
@@ -49,12 +49,12 @@ async function updateEntities(
     let upserted = new Set<string>();
     for (const entity of Object.values(er)) {
         if (entity.locT === "geohash") {
-            await upsertEntityContainer(entity, playerPosition, stage);
+            await upsertEntityContainer(entity, stage);
             upserted.add(getEntityId(entity)[0]);
         }
     }
 
-    // Destroy entities not in record
+    // Destroy entities not in record (exclude player)
     const self = get(player);
     for (const [id, ec] of Object.entries(entityContainers)) {
         if (
@@ -100,9 +100,9 @@ async function upsertAvatarContainer(
     position: Position,
     stage: Container,
     tween: boolean = true,
-) {
+): Promise<[boolean, AvatarEntityContainer]> {
     const [entityId, entityType] = getEntityId(entity);
-    let avatarContainer = entityContainers[entityId];
+    let avatarContainer = entityContainers[entityId] as AvatarEntityContainer;
 
     // Create
     if (avatarContainer == null) {
@@ -148,6 +148,8 @@ async function upsertAvatarContainer(
 
         // Set initial position
         avatarContainer.updateIsoPosition(position);
+
+        return [true, avatarContainer];
     }
     // Update
     else {
@@ -157,10 +159,16 @@ async function upsertAvatarContainer(
         }
 
         // Move avatar
-        avatarContainer.updateIsoPosition(
-            position,
-            tween ? (actions.move.ticks * MS_PER_TICK) / 1000 : undefined,
-        );
+        if (entityType == "player" || entityType == "monster") {
+            await avatarContainer.followPath(entity as PathParams);
+        } else {
+            avatarContainer.updateIsoPosition(
+                position,
+                tween ? (actions.move.ticks * MS_PER_TICK) / 1000 : undefined,
+            );
+        }
+
+        return [false, avatarContainer];
     }
 }
 
@@ -169,9 +177,9 @@ async function upsertSimpleContainer(
     position: Position,
     stage: Container,
     tween: boolean = true,
-) {
+): Promise<[boolean, SimpleEntityContainer]> {
     const [entityId, entityType] = getEntityId(entity);
-    let ec = entityContainers[entityId];
+    let ec = entityContainers[entityId] as SimpleEntityContainer;
 
     // Create
     if (ec == null) {
@@ -209,6 +217,12 @@ async function upsertSimpleContainer(
         ec.onmouseover = () => onMouseOverEntity(ec.entityId);
         ec.onmouseleave = () => onMouseLeaveEntity(ec.entityId);
         ec.onclick = () => onClickEntity(ec.entity);
+
+        // Add to stage (might have been culled)
+        if (!stage.children.includes(ec)) {
+            stage.addChild(ec);
+        }
+        return [true, ec];
     }
     // Update
     else {
@@ -225,21 +239,21 @@ async function upsertSimpleContainer(
             position,
             tween ? (actions.move.ticks * MS_PER_TICK) / 1000 : undefined,
         );
-    }
 
-    // Add to stage (might have been culled)
-    if (!stage.children.includes(ec)) {
-        stage.addChild(ec);
+        // Add to stage (might have been culled)
+        if (!stage.children.includes(ec)) {
+            stage.addChild(ec);
+        }
+        return [false, ec];
     }
 }
 
 async function upsertEntityContainer(
     entity: Player | Item | Monster,
-    playerPosition: Position,
     stage: Container,
-) {
+): Promise<[boolean, SimpleEntityContainer | AvatarEntityContainer]> {
     if (entity.locT !== "geohash") {
-        return;
+        throw new Error("entity location is not a geohash");
     }
 
     const [entityId, entityType] = getEntityId(entity);
@@ -248,14 +262,31 @@ async function upsertEntityContainer(
     const position = await calculatePosition(entity.loc[0]);
     const { row, col } = position;
 
-    // Ignore entities outside player's view
-    const tween = isCellInView({ row, col }, playerPosition);
+    // Get player position & determine if tween is required if entity is in player's view
+    const playerId = get(player)?.player;
+    let tween = false;
+    if (
+        playerId != null &&
+        entityContainers[playerId] != null &&
+        entityContainers[playerId].isoPosition != null
+    ) {
+        // Ignore entities outside player's view
+        tween = isCellInView(
+            { row, col },
+            entityContainers[playerId].isoPosition,
+        );
+    }
 
-    // Upsert
+    // Upsert containers
     if (entityType === "player") {
-        await upsertAvatarContainer(entity as Player, position, stage, tween);
+        return await upsertAvatarContainer(
+            entity as Player,
+            position,
+            stage,
+            tween,
+        );
     } else {
-        await upsertSimpleContainer(
+        return await upsertSimpleContainer(
             entity as Monster | Item,
             position,
             stage,

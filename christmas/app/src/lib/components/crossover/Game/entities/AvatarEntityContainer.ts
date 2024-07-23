@@ -1,15 +1,24 @@
-import { getEntityId } from "$lib/crossover/utils";
+import {
+    directionDuration,
+    getEntityId,
+    getPositionsForPath,
+} from "$lib/crossover/utils";
 import { actions, type Actions } from "$lib/crossover/world/actions";
+import {
+    geohashToGridCell,
+    gridCellToGeohash,
+} from "$lib/crossover/world/utils";
 import type {
     EntityType,
     Item,
     Monster,
+    PathParams,
     Player,
 } from "$lib/server/crossover/redis/entities";
 import { gsap } from "gsap";
-import { type DestroyOptions } from "pixi.js";
+import type { DestroyOptions } from "pixi.js";
 import { Avatar } from "../../avatar/Avatar";
-import { type Position } from "../utils";
+import { calculatePosition, type Position } from "../utils";
 import { ActionBubble } from "./ActionBubble";
 
 export { AvatarEntityContainer };
@@ -29,7 +38,7 @@ class AvatarEntityContainer extends Avatar {
 
     public isoPosition: Position | null = null;
 
-    public tween: gsap.core.Tween | null = null;
+    public tween: gsap.core.Tween | gsap.core.Timeline | null = null;
     public actionBubble: ActionBubble;
 
     constructor({
@@ -61,6 +70,14 @@ class AvatarEntityContainer extends Avatar {
         this.cullable = true;
     }
 
+    private emitPositionUpdate() {
+        this.emit("positionUpdate", this.isoPosition);
+    }
+
+    private emitTrackEntity(position: Position, duration?: number) {
+        this.emit("trackEntity", { position, duration });
+    }
+
     triggerAnimation(action: string) {
         // Animation action bubble
         if (this.actionBubble != null && action in actions) {
@@ -74,8 +91,66 @@ class AvatarEntityContainer extends Avatar {
         }
     }
 
+    async followPath(pathParams: PathParams) {
+        const { pthst, pthdur, pthclk, pth } = pathParams;
+        const now = Date.now();
+
+        if (pthclk + pthdur > now) {
+            const pathPositions = getPositionsForPath(
+                // includes start
+                geohashToGridCell(pthst),
+                pth,
+            );
+
+            // Create a timeline for smooth path following
+            if (this.tween != null) {
+                this.tween.kill();
+            }
+            this.tween = gsap.timeline({
+                onStart: () => {
+                    this.triggerAnimation("move");
+                },
+            });
+
+            // Animate through each position in the path
+            let finalPosition: Position | undefined;
+            for (const [index, { row, col }] of pathPositions.entries()) {
+                const geohash = gridCellToGeohash({
+                    row,
+                    col,
+                    precision: pthst.length,
+                });
+                const isoPosition = await calculatePosition(geohash);
+
+                // Add tween to the timeline
+                this.tween.to(this, {
+                    x: isoPosition.isoX,
+                    y: isoPosition.isoY - isoPosition.elevation,
+                    duration: directionDuration(pth[index]) / 1000,
+                    ease: "linear",
+                    onComplete: () => {
+                        this.isoPosition = isoPosition;
+                        this.updateDepth(
+                            isoPosition.isoX,
+                            isoPosition.isoY,
+                            isoPosition.elevation,
+                        );
+                        this.emitPositionUpdate();
+                    },
+                });
+                finalPosition = isoPosition;
+            }
+
+            // Play the timeline
+            this.tween = this.tween.play();
+            if (finalPosition != null) {
+                this.emitTrackEntity(finalPosition, pthdur / 1000);
+            }
+        }
+    }
+
     updateIsoPosition(isoPosition: Position, duration?: number) {
-        // Skip is position is the same
+        // Skip if position is the same
         if (
             this.isoPosition != null &&
             this.isoPosition.isoX === isoPosition.isoX &&
@@ -85,24 +160,42 @@ class AvatarEntityContainer extends Avatar {
             return;
         }
 
-        this.isoPosition = isoPosition;
-        this.updateDepth(
-            isoPosition.isoX,
-            isoPosition.isoY,
-            isoPosition.elevation,
-        );
+        // Tween position to isoPosition
         if (duration != null) {
+            if (this.tween != null) {
+                this.tween.kill();
+            }
             this.tween = gsap.to(this, {
                 x: isoPosition.isoX,
                 y: isoPosition.isoY - isoPosition.elevation,
                 duration,
                 overwrite: true, // overwrite previous tweens
+                onComplete: () => {
+                    this.isoPosition = isoPosition;
+                    this.updateDepth(
+                        isoPosition.isoX,
+                        isoPosition.isoY,
+                        isoPosition.elevation,
+                    );
+                    this.emitPositionUpdate();
+                },
             });
-        } else {
+            this.emitTrackEntity(isoPosition, duration);
+        }
+        // Set position immediately
+        else {
+            this.isoPosition = isoPosition;
             this.position.set(
                 isoPosition.isoX,
                 isoPosition.isoY - isoPosition.elevation,
             );
+            this.updateDepth(
+                isoPosition.isoX,
+                isoPosition.isoY,
+                isoPosition.elevation,
+            );
+            this.emitPositionUpdate();
+            this.emitTrackEntity(isoPosition);
         }
     }
 

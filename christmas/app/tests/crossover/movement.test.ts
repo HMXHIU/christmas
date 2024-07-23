@@ -8,9 +8,14 @@ import {
 import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
 import { compendium } from "$lib/crossover/world/compendium";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
-import { spawnItem } from "$lib/server/crossover";
+import type { Direction } from "$lib/crossover/world/types";
+import { movePlayer, spawnItem } from "$lib/server/crossover";
 import { fetchEntity, initializeClients } from "$lib/server/crossover/redis";
-import type { ItemEntity, Player } from "$lib/server/crossover/redis/entities";
+import type {
+    ItemEntity,
+    Player,
+    PlayerEntity,
+} from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import { cloneDeep } from "lodash";
 import { expect, test } from "vitest";
@@ -154,7 +159,7 @@ test("Test Movement", async () => {
         waitForEventData(playerOneStream, "feed"),
     ).resolves.toMatchObject({
         type: "error",
-        message: "Cannot move s",
+        message: "Path is not traversable",
     });
     await sleep(MS_PER_TICK * 2);
 
@@ -174,7 +179,7 @@ test("Test Movement", async () => {
         waitForEventData(playerOneStream, "feed"),
     ).resolves.toMatchObject({
         type: "error",
-        message: "Cannot move s",
+        message: "Path is not traversable",
     });
     await sleep(MS_PER_TICK * 2);
 
@@ -193,6 +198,49 @@ test("Test Movement", async () => {
         waitForEventData(playerOneStream, "feed"),
     ).resolves.toMatchObject({
         type: "error",
-        message: "Cannot move w",
+        message: "Path is not traversable",
     });
+});
+
+test("Test `movePlayer`", async () => {
+    await initializeClients(); // create redis repositories
+
+    // Player one
+    const playerOneName = "Gandalf";
+    let playerOneGeohash = generateRandomGeohash(8, "h9");
+    let [playerOneWallet, playerOneCookies, playerOne] =
+        await createRandomPlayer({
+            region: String.fromCharCode(...getRandomRegion()),
+            geohash: playerOneGeohash,
+            name: playerOneName,
+        });
+
+    // Create streams
+    const [playerOneStream, playerOneCloseStream] = await stream({
+        Cookie: playerOneCookies,
+    });
+    await expect(
+        waitForEventData(playerOneStream, "feed"),
+    ).resolves.toMatchObject({
+        type: "system",
+        message: "started",
+    });
+
+    const path: Direction[] = ["s", "s", "s", "s"];
+    const finalGeohash = geohashNeighbour(playerOneGeohash, "s", 4);
+
+    await movePlayer(playerOne as PlayerEntity, path);
+    playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
+
+    // Check pthst
+    expect(playerOne.pthst).toBe(playerOneGeohash);
+
+    // Check pth
+    expect(playerOne.pth).toMatchObject(["s", "s", "s", "s"]);
+
+    // Check pthdur, pthclk
+    expect(playerOne.pthclk + playerOne.pthdur).toBeGreaterThan(Date.now());
+
+    // Check final destination
+    expect(playerOne.loc[0]).toBe(finalGeohash);
 });

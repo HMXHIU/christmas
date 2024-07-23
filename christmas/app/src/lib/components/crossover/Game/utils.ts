@@ -27,6 +27,9 @@ import {
     type Shader,
     type Texture,
 } from "pixi.js";
+import { get } from "svelte/store";
+import { player } from "../../../../store";
+import { entityContainers } from "./entities";
 
 export {
     calculatePosition,
@@ -42,6 +45,7 @@ export {
     getDirectionsToPosition,
     getImageForTile,
     getPathHighlights,
+    getPlayerPosition,
     getTilesetForTile,
     GRID_MID_COL,
     GRID_MID_ROW,
@@ -417,4 +421,9 @@ function getPathHighlights(
     );
 
     return highlights;
+}
+
+function getPlayerPosition(): Position | null {
+    const p = get(player);
+    return p?.player ? entityContainers[p.player]?.isoPosition : null;
 }

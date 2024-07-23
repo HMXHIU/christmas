@@ -1,4 +1,4 @@
-import type { LocationType } from "$lib/crossover/world/types";
+import type { Direction, LocationType } from "$lib/crossover/world/types";
 import { Schema, type Entity } from "redis-om";
 
 export {
@@ -13,6 +13,7 @@ export {
     type ItemEntity,
     type Monster,
     type MonsterEntity,
+    type PathParams,
     type Player,
     type PlayerEntity,
     type World,
@@ -34,6 +35,17 @@ interface EntityState {
     buclk: number; // busy clock (time the entity is busy till)
     dbuf: string[];
     buf: string[];
+    pthclk: number; // time the pth movement was started
+    pthdur: number; // time duration for the pth movement to be completed
+    pthst: string; // starting geohash of the path
+    pth: Direction[]; // list of directions (nswe) of the path
+}
+
+interface PathParams {
+    pthclk: number; // time the pth movement was started
+    pthdur: number; // time duration for the pth movement to be completed
+    pthst: string; // starting geohash of the path
+    pth: Direction[]; // list of directions (nswe) of the path
 }
 
 /*
@@ -61,6 +73,10 @@ const PlayerEntitySchema = new Schema("Player", {
     buclk: { type: "number" }, //  busy clock (time the entity is busy till)
     dbuf: { type: "string[]" },
     buf: { type: "string[]" },
+    pthclk: { type: "number" }, // time the pth movement was started
+    pthdur: { type: "number" }, // time duration for the pth movement to be completed
+    pthst: { type: "string" }, // starting geohash of the path
+    pth: { type: "string[]" }, // list of directions (nswe) of the path
 });
 
 interface Player extends EntityState {
@@ -98,6 +114,10 @@ const MonsterEntitySchema = new Schema("Monster", {
     buclk: { type: "number" }, //  busy clock (time the entity is busy till)
     dbuf: { type: "string[]" },
     buf: { type: "string[]" },
+    pthclk: { type: "number" }, // time the pth movement was started
+    pthdur: { type: "number" }, // time duration for the pth movement to be completed
+    pthst: { type: "string" }, // starting geohash of the path
+    pth: { type: "string[]" }, // list of directions (nswe) of the path
 });
 
 interface Monster extends EntityState {

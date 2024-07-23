@@ -3,7 +3,7 @@
     import { topologyAtGeohash } from "$lib/crossover/world/biomes";
     import { cn } from "$lib/shadcn";
     import { Application, Assets, Geometry, Mesh, Shader } from "pixi.js";
-    import { onDestroy, onMount } from "svelte";
+    import { onMount } from "svelte";
     import { player } from "../../../../store";
     import { initAssetManager } from "../Game/utils";
     import { loadShaderGeometry } from "../shaders";
@@ -53,16 +53,6 @@
         );
     }
 
-    async function init() {
-        app = new Application();
-        await initAssetManager();
-        await app.init({
-            antialias: false,
-            preference: "webgl",
-        });
-        containerElement.appendChild(app.canvas);
-    }
-
     async function updateMapMesh(geohash: string) {
         if (app === null) {
             return;
@@ -106,6 +96,16 @@
         app.stage.addChild(mesh);
     }
 
+    async function init() {
+        app = new Application();
+        await initAssetManager();
+        await app.init({
+            antialias: false,
+            preference: "webgl",
+        });
+        containerElement.appendChild(app.canvas);
+    }
+
     onMount(() => {
         // Initialize
         init();
@@ -138,13 +138,6 @@
         return () => {
             unsubscribePlayer();
         };
-    });
-
-    onDestroy(() => {
-        if (app !== null) {
-            app.stage.removeAllListeners();
-            app = null;
-        }
     });
 </script>
 

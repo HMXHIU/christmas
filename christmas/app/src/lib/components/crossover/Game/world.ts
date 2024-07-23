@@ -9,6 +9,7 @@ import {
     CELL_HEIGHT,
     CELL_WIDTH,
     getImageForTile,
+    getPlayerPosition,
     getTilesetForTile,
     ISO_CELL_HEIGHT,
     RENDER_ORDER,
@@ -23,9 +24,13 @@ let worldMeshes: Record<string, IsoMesh> = {};
 
 async function drawWorlds(
     worldRecord: Record<string, Record<string, World>>,
-    playerPosition: Position,
     stage: Container,
 ) {
+    const playerPosition = getPlayerPosition();
+    if (playerPosition == null) {
+        return;
+    }
+
     // Get all worlds in town
     const town = playerPosition.geohash.slice(
         0,

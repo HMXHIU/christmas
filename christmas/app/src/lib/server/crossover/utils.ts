@@ -153,24 +153,24 @@ async function isLocationTraversable(location: string[]): Promise<boolean> {
 }
 
 async function isDirectionTraversable(
-    entity: PlayerEntity | MonsterEntity,
+    loc: string[], // entity might be more than 1 cell in size
     direction: Direction,
 ): Promise<[boolean, string[]]> {
     let location: string[] = [];
 
     // Check all cells are able to move (location might include more than 1 cell for large entities)
-    for (const geohash of entity.loc) {
+    for (const geohash of loc) {
         const nextGeohash = geohashNeighbour(geohash, direction);
 
         // Within own location is always traversable
-        if (entity.loc.includes(nextGeohash)) {
+        if (loc.includes(nextGeohash)) {
             location.push(nextGeohash);
             continue;
         }
 
         // Check if geohash is traversable
         if (!(await isGeohashTraversable(nextGeohash))) {
-            return [false, entity.loc]; // early return if not traversable
+            return [false, loc]; // early return if not traversable
         } else {
             location.push(nextGeohash);
         }
