@@ -131,6 +131,14 @@ export class Avatar extends Container {
         };
 
         rigBones(rootBoneName);
+
+        // Set the pivot at the rootBone (usually the pivotBone)
+        if (this.rootBone != null) {
+            this.pivot.x = this.rootBone.x;
+            this.pivot.y = this.rootBone.y;
+        }
+        console.log(this.rootBone);
+        console.log(this.pivot.x, this.pivot.y);
     }
 
     getBone(name: string): Bone | undefined {

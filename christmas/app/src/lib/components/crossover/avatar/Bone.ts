@@ -9,7 +9,7 @@ export class Bone extends Container {
     public mesh: IsoMesh | null = null;
     public boneMetadata: BoneMetadata;
     public textures: Record<string, string>;
-    public textureKey: string;
+    public textureKey: string | null = null;
 
     public zOffset: number = 0;
     public zScale: number = 0;
@@ -28,8 +28,8 @@ export class Bone extends Container {
     }: {
         name: string;
         boneMetadata: BoneMetadata;
-        textureKey: string;
         textures: Record<string, string>;
+        textureKey?: string;
         zOffset?: number;
         zScale?: number;
         renderLayer?: number;
@@ -38,7 +38,7 @@ export class Bone extends Container {
         super();
         this.name = name;
         this.boneMetadata = cloneDeep(boneMetadata);
-        this.textureKey = textureKey;
+        this.textureKey = textureKey || null;
         this.textures = textures;
 
         this.zOffset = zOffset || 0;
@@ -47,15 +47,13 @@ export class Bone extends Container {
         this.boneRenderLayer = boneRenderLayer ?? 0;
 
         // Get texture
-        this.setTexture(textureKey);
-    }
-
-    getBoneTextureTransform(): BoneTextureTransform {
-        return this.boneMetadata.textures[this.textureKey];
+        if (textureKey != null) {
+            this.setTexture(textureKey);
+        }
     }
 
     setTextureTransform(transform: BoneTextureTransform): void {
-        if (this.mesh == null) {
+        if (this.mesh == null || this.textureKey == null) {
             return;
         }
 

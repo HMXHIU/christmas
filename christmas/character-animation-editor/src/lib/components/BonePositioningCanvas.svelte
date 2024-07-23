@@ -65,6 +65,11 @@
 
         const selectedTexture = selectedBone.textureKey;
 
+        // pivotBone has no texture
+        if (selectedTexture == null) {
+            return;
+        }
+
         // Load and display texture (sprite)
         const textureUrl = textures[selectedTexture];
         const texture = (await Assets.load(textureUrl)) as Texture;

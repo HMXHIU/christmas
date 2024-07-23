@@ -127,10 +127,6 @@ async function upsertAvatarContainer(
             ISO_CELL_WIDTH * 1, // max width is 1 cell
             ISO_CELL_HEIGHT * 3, // max height is 3 cells
         );
-        ec.pivot = {
-            x: ec.width / 2,
-            y: ec.height,
-        };
         ec.scale.x = scale;
         ec.scale.y = scale;
 
