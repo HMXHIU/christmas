@@ -116,6 +116,7 @@ async function upsertAvatarContainer(
         });
         await avatarContainer.loadFromMetadata(
             await Assets.load(morphology.avatar),
+            entityId,
         );
         avatarContainer.animationManager.load(
             await Assets.load(morphology.animation),

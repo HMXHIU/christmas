@@ -25,6 +25,7 @@ export class Bone extends Container {
         zScale,
         renderLayer,
         boneRenderLayer,
+        uid,
     }: {
         name: string;
         boneMetadata: BoneMetadata;
@@ -72,7 +73,7 @@ export class Bone extends Container {
         this.boneMetadata.textures[this.textureKey] = transform;
     }
 
-    async setTexture(textureKey: string) {
+    async setTexture(textureKey: string, uid?: string) {
         // Create mesh if it doesn't exist
         if (!this.mesh) {
             const texture = await Assets.load(this.textures[textureKey]);
@@ -82,6 +83,7 @@ export class Bone extends Container {
                 zOffset: this.zOffset,
                 zScale: this.zScale,
                 renderLayer: this.renderLayer,
+                uid,
             });
             this.addChild(this.mesh);
         }

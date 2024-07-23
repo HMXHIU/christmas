@@ -90,6 +90,7 @@ class SimpleEntityContainer extends Container {
                 zScale: this.zScale,
                 renderLayer: this.renderLayer,
                 cellHeight: asset.height,
+                uid: this.entityId,
             });
             this.mesh.eventMode = "none"; // Prevents inheritance of parent eventMode
             this.addChild(this.mesh);
@@ -147,27 +148,31 @@ class SimpleEntityContainer extends Container {
             return;
         }
 
-        this.isoPosition = isoPosition;
-        this.updateDepth(
-            isoPosition.isoX,
-            isoPosition.isoY,
-            isoPosition.elevation,
-        );
         if (duration != null) {
             this.tween = gsap.to(this, {
                 x: isoPosition.isoX,
                 y: isoPosition.isoY - isoPosition.elevation,
                 duration,
                 overwrite: true, // overwrite previous tweens
+                onComplete: () => {
+                    this.isoPosition = isoPosition;
+                    this.updateDepth(
+                        isoPosition.isoX,
+                        isoPosition.isoY,
+                        isoPosition.elevation,
+                    );
+                },
             });
+        } else {
+            this.isoPosition = isoPosition;
             this.position.set(
                 isoPosition.isoX,
                 isoPosition.isoY - isoPosition.elevation,
             );
-        } else {
-            this.position.set(
+            this.updateDepth(
                 isoPosition.isoX,
-                isoPosition.isoY - isoPosition.elevation,
+                isoPosition.isoY,
+                isoPosition.elevation,
             );
         }
     }

@@ -37,7 +37,10 @@ export class Avatar extends Container {
         await Promise.all(texturePromises);
     }
 
-    async loadFromMetadata(metadata: AvatarMetadata): Promise<void> {
+    async loadFromMetadata(
+        metadata: AvatarMetadata,
+        uid?: string,
+    ): Promise<void> {
         this.metadata = cloneDeep(metadata);
 
         // Clear existing bones
@@ -68,7 +71,10 @@ export class Avatar extends Container {
             // Auto-rig the texture (use the first texture as default)
             const boneTextureTransform = boneMetadata.textures[textureKey];
             if (textureKey && boneTextureTransform) {
-                await bone.setTexture(textureKey);
+                await bone.setTexture(
+                    textureKey,
+                    uid != null ? `${uid}_${boneName}` : undefined,
+                );
             }
         }
 

@@ -156,6 +156,7 @@ function loadShaderGeometry(
                       options.cellHeight,
                   );
 
+        // TODO: shader does not need to be recreated if its the same dont use shaderUid
         loadedShaderGeometries[shaderUid] = {
             shaderUid,
             shaderName,

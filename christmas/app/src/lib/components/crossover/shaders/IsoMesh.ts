@@ -16,6 +16,7 @@ class IsoMesh extends Mesh<Geometry, Shader> {
         zScale,
         renderLayer,
         cellHeight,
+        uid,
     }: {
         shaderName: string;
         texture: Texture;
@@ -23,6 +24,7 @@ class IsoMesh extends Mesh<Geometry, Shader> {
         zScale?: number;
         renderLayer?: number;
         cellHeight?: number;
+        uid?: string;
     }) {
         const { shader, geometry } = loadShaderGeometry(
             shaderName,
@@ -33,6 +35,7 @@ class IsoMesh extends Mesh<Geometry, Shader> {
                 zOffset: zOffset || 0,
                 zScale: zScale || 0,
                 cellHeight: cellHeight || 1,
+                uid,
             },
         );
 
