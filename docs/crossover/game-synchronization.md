@@ -81,7 +81,7 @@ When receiving movement data:
 #### Deconflicting location of the entity
 
 - [x] Add `pth`, `pthdur`, `pthclk` to the entity in redis.
-- [ ] The backend can immediately set the `geohash` to the destination
-- [ ] The client receives the `geohash` of the entity
-- [ ] The client receives the `pth`, `pthdur`, `pthclk` of the entity if `pthclk` + `pthdur` > `current_time`
+- [x] The backend can immediately set the `geohash` to the destination
+- [x] The client receives the `geohash` of the entity
+- [x] The client receives the `pth`, `pthdur`, `pthclk` of the entity if `pthclk` + `pthdur` > `current_time`
 - [ ] Both client and server can determine the location of the entity based on the `pth`, `pthdur`, `pthclk`

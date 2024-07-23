@@ -25,7 +25,6 @@ export class Bone extends Container {
         zScale,
         renderLayer,
         boneRenderLayer,
-        uid,
     }: {
         name: string;
         boneMetadata: BoneMetadata;

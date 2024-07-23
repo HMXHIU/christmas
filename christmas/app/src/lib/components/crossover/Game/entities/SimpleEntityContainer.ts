@@ -1,72 +1,19 @@
-import { getEntityId } from "$lib/crossover/utils";
-import { actions, type Actions } from "$lib/crossover/world/actions";
 import type { AssetMetadata } from "$lib/crossover/world/types";
-import type {
-    EntityType,
-    Item,
-    Monster,
-    Player,
-} from "$lib/server/crossover/redis/entities";
-import { gsap } from "gsap";
-import { Container, type DestroyOptions } from "pixi.js";
 import { IsoMesh } from "../../shaders/IsoMesh";
 import {
     CELL_WIDTH,
     loadAssetTexture,
     scaleToFitAndMaintainAspectRatio,
     swapMeshTexture,
-    type Position,
 } from "../utils";
-import { ActionBubble } from "./ActionBubble";
+import { EntityContainer } from "./EntityContainer";
 
 export { SimpleEntityContainer };
 
-class SimpleEntityContainer extends Container {
-    public entityId: string;
-    public entityType: EntityType;
-    public entity: Player | Monster | Item;
+class SimpleEntityContainer extends EntityContainer {
     public mesh: IsoMesh | null = null;
-
-    public zOffset: number = 0;
-    public zScale: number = 0;
-    public renderLayer: number = 0;
-
-    public isoPosition: Position | null = null;
-
     public asset: AssetMetadata | null = null;
     public variant: string | null = null;
-
-    public tween: gsap.core.Tween | null = null;
-    public actionBubble: ActionBubble;
-
-    constructor({
-        entity,
-        zOffset,
-        zScale,
-        renderLayer,
-    }: {
-        entity: Player | Monster | Item;
-        zOffset?: number;
-        zScale?: number;
-        renderLayer?: number;
-    }) {
-        super();
-
-        // Set properties
-        const [entityId, entityType] = getEntityId(entity);
-        this.entityId = entityId;
-        this.entityType = entityType;
-        this.entity = entity;
-        this.zOffset = zOffset || 0;
-        this.zScale = zScale || 0;
-        this.renderLayer = renderLayer || 0;
-
-        // Create action bubble
-        this.actionBubble = new ActionBubble();
-        this.addChild(this.actionBubble);
-
-        this.cullable = true;
-    }
 
     async loadAsset(
         asset: AssetMetadata,
@@ -113,13 +60,6 @@ class SimpleEntityContainer extends Container {
         }
     }
 
-    triggerAnimation(action: string) {
-        // Animation action bubble
-        if (this.actionBubble != null && action in actions) {
-            this.actionBubble.setAction(action as Actions);
-        }
-    }
-
     async swapVariant(variant: string) {
         if (this.mesh == null || this.asset == null) {
             return;
@@ -137,54 +77,13 @@ class SimpleEntityContainer extends Container {
         swapMeshTexture(this.mesh, texture);
     }
 
-    updateIsoPosition(isoPosition: Position, duration?: number) {
-        // Skip is position is the same
-        if (
-            this.isoPosition != null &&
-            this.isoPosition.isoX === isoPosition.isoX &&
-            this.isoPosition.isoY === isoPosition.isoY &&
-            this.isoPosition.elevation === isoPosition.elevation
-        ) {
-            return;
-        }
-
-        if (duration != null) {
-            this.tween = gsap.to(this, {
-                x: isoPosition.isoX,
-                y: isoPosition.isoY - isoPosition.elevation,
-                duration,
-                overwrite: true, // overwrite previous tweens
-                onComplete: () => {
-                    this.isoPosition = isoPosition;
-                    this.updateDepth(
-                        isoPosition.isoX,
-                        isoPosition.isoY,
-                        isoPosition.elevation,
-                    );
-                },
-            });
-        } else {
-            this.isoPosition = isoPosition;
-            this.position.set(
-                isoPosition.isoX,
-                isoPosition.isoY - isoPosition.elevation,
-            );
-            this.updateDepth(
-                isoPosition.isoX,
-                isoPosition.isoY,
-                isoPosition.elevation,
-            );
-        }
-    }
-
     updateDepth(
         isoX: number,
         isoY: number,
         elevation: number,
         z?: number,
     ): void {
-        // Update zIndex
-        this.zIndex = this.renderLayer * isoY + (z ?? 0);
+        super.updateDepth(isoX, isoY, elevation, z);
 
         // Update mesh depth
         if (this.mesh) {
@@ -193,11 +92,7 @@ class SimpleEntityContainer extends Container {
     }
 
     highlight(highlight: number) {
-        if (
-            this.mesh == null ||
-            this.mesh.geometry.attributes == null ||
-            this.mesh.geometry.attributes["aInstanceHighlight"] == null
-        ) {
+        if (this.mesh?.geometry.attributes?.aInstanceHighlight == null) {
             return;
         }
         const ih = this.mesh.geometry.getBuffer("aInstanceHighlight");
@@ -206,11 +101,7 @@ class SimpleEntityContainer extends Container {
     }
 
     clearHighlight(highlight?: number) {
-        if (
-            this.mesh == null ||
-            this.mesh.geometry.attributes == null ||
-            this.mesh.geometry.attributes["aInstanceHighlight"] == null
-        ) {
+        if (this.mesh?.geometry.attributes?.aInstanceHighlight == null) {
             return;
         }
         const ih = this.mesh.geometry.getBuffer("aInstanceHighlight");
@@ -228,12 +119,5 @@ class SimpleEntityContainer extends Container {
             }
             ih.update();
         }
-    }
-
-    destroy(options?: DestroyOptions): void {
-        if (this.tween != null) {
-            this.tween.kill();
-        }
-        super.destroy(options);
     }
 }

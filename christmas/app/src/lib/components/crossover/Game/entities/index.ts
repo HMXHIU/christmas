@@ -97,87 +97,56 @@ function onClickEntity(entity: Player | Item | Monster) {
 
 async function upsertAvatarContainer(
     entity: Player | Monster | Item,
-    position: Position,
-    stage: Container,
-    tween: boolean = true,
 ): Promise<[boolean, AvatarEntityContainer]> {
     const [entityId, entityType] = getEntityId(entity);
-    let avatarContainer = entityContainers[entityId] as AvatarEntityContainer;
+    let ec = entityContainers[entityId] as AvatarEntityContainer;
 
     // Create
-    if (avatarContainer == null) {
+    if (ec == null) {
         const morphology = avatarMorphologies["humanoid"]; // TODO: get from bestiary
 
-        avatarContainer = new AvatarEntityContainer({
+        ec = new AvatarEntityContainer({
             entity,
             zOffset: Z_OFF.entity,
             zScale: Z_SCALE,
             renderLayer: RENDER_ORDER[entityType],
         });
-        await avatarContainer.loadFromMetadata(
+        await ec.avatar.loadFromMetadata(
             await Assets.load(morphology.avatar),
             entityId,
         );
-        avatarContainer.animationManager.load(
+        ec.avatar.animationManager.load(
             await Assets.load(morphology.animation),
         );
-        entityContainers[entityId] = avatarContainer;
+        entityContainers[entityId] = ec;
 
         // Set size
         const { width, height, scale } = scaleToFitAndMaintainAspectRatio(
-            avatarContainer.width,
-            avatarContainer.height,
+            ec.width,
+            ec.height,
             ISO_CELL_WIDTH * 1, // max width is 1 cell
             ISO_CELL_HEIGHT * 3, // max height is 3 cells
         );
-        avatarContainer.pivot = {
-            x: avatarContainer.width / 2,
-            y: avatarContainer.height,
+        ec.pivot = {
+            x: ec.width / 2,
+            y: ec.height,
         };
-        avatarContainer.scale.x = scale;
-        avatarContainer.scale.y = scale;
+        ec.scale.x = scale;
+        ec.scale.y = scale;
 
         // Set initial pose
-        await avatarContainer.pose(
-            avatarContainer.animationManager.getPose("default"),
-        );
+        await ec.avatar.pose(ec.avatar.animationManager.getPose("default"));
 
-        // Add to stage (might have been culled)
-        if (!stage.children.includes(avatarContainer)) {
-            stage.addChild(avatarContainer);
-        }
-
-        // Set initial position
-        avatarContainer.updateIsoPosition(position);
-
-        return [true, avatarContainer];
+        return [true, ec];
     }
     // Update
     else {
-        // Add to stage (might have been culled)
-        if (!stage.children.includes(avatarContainer)) {
-            stage.addChild(avatarContainer);
-        }
-
-        // Move avatar
-        if (entityType == "player" || entityType == "monster") {
-            await avatarContainer.followPath(entity as PathParams);
-        } else {
-            avatarContainer.updateIsoPosition(
-                position,
-                tween ? (actions.move.ticks * MS_PER_TICK) / 1000 : undefined,
-            );
-        }
-
-        return [false, avatarContainer];
+        return [false, ec];
     }
 }
 
 async function upsertSimpleContainer(
     entity: Monster | Item,
-    position: Position,
-    stage: Container,
-    tween: boolean = true,
 ): Promise<[boolean, SimpleEntityContainer]> {
     const [entityId, entityType] = getEntityId(entity);
     let ec = entityContainers[entityId] as SimpleEntityContainer;
@@ -208,9 +177,6 @@ async function upsertSimpleContainer(
             await ec.loadAsset(asset, { variant });
         }
 
-        // Set initial position
-        ec.updateIsoPosition(position);
-
         // Set event listeners
         ec.eventMode = "static";
         ec.interactiveChildren = false; // Prevents mouse events from bubbling to children
@@ -219,10 +185,6 @@ async function upsertSimpleContainer(
         ec.onmouseleave = () => onMouseLeaveEntity(ec.entityId);
         ec.onclick = () => onClickEntity(ec.entity);
 
-        // Add to stage (might have been culled)
-        if (!stage.children.includes(ec)) {
-            stage.addChild(ec);
-        }
         return [true, ec];
     }
     // Update
@@ -233,17 +195,6 @@ async function upsertSimpleContainer(
             const prop = compendium[item.prop];
             const variant = prop.states[item.state].variant;
             ec.swapVariant(variant);
-        }
-
-        // Tween position
-        ec.updateIsoPosition(
-            position,
-            tween ? (actions.move.ticks * MS_PER_TICK) / 1000 : undefined,
-        );
-
-        // Add to stage (might have been culled)
-        if (!stage.children.includes(ec)) {
-            stage.addChild(ec);
         }
         return [false, ec];
     }
@@ -278,22 +229,40 @@ async function upsertEntityContainer(
         );
     }
 
-    // Upsert containers
-    if (entityType === "player") {
-        return await upsertAvatarContainer(
-            entity as Player,
-            position,
-            stage,
-            tween,
-        );
-    } else {
-        return await upsertSimpleContainer(
-            entity as Monster | Item,
-            position,
-            stage,
-            tween,
-        );
+    // Create/Update container
+    const [created, ec] =
+        entityType === "player"
+            ? await upsertAvatarContainer(entity as Player)
+            : await upsertSimpleContainer(entity as Monster | Item);
+
+    // Add to stage (might have been culled)
+    if (!stage.children.includes(ec)) {
+        stage.addChild(ec);
     }
+
+    // Set initial position
+    if (created) {
+        ec.updateIsoPosition(position);
+    }
+    // Update position
+    else {
+        if (entityType == "player" || entityType == "monster") {
+            const { pthclk, pthdur } = entity as PathParams;
+            // Entity is moving
+            if (pthclk + pthdur > Date.now()) {
+                await ec.followPath(entity as PathParams);
+            } else {
+                ec.updateIsoPosition(position);
+            }
+        } else {
+            ec.updateIsoPosition(
+                position,
+                tween ? (actions.move.ticks * MS_PER_TICK) / 1000 : undefined,
+            );
+        }
+    }
+
+    return [created, ec];
 }
 
 /**
