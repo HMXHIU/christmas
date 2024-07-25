@@ -46,7 +46,7 @@ class SimpleEntityContainer extends EntityContainer {
             const { width, height } = scaleToFitAndMaintainAspectRatio(
                 texture.width,
                 texture.height,
-                asset.width * CELL_WIDTH,
+                (asset.width || 1) * CELL_WIDTH,
                 texture.height,
             );
             // Note: Containers themselves don't have intrinsic dimensions - their size is determined by their content and their scale.

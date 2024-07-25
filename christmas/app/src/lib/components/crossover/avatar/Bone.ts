@@ -1,6 +1,7 @@
 // src/lib/Bone.ts
 import { cloneDeep } from "lodash";
-import { Assets, Container } from "pixi.js";
+import { Assets, Container, Texture } from "pixi.js";
+import { swapMeshTexture } from "../Game/utils";
 import { IsoMesh } from "../shaders/IsoMesh";
 import type { BoneMetadata, BoneTextureTransform } from "./types";
 
@@ -36,11 +37,11 @@ export class Bone extends Container {
         boneRenderLayer?: number;
     }) {
         super();
+
+        // Note: don't set textureKey here, only in setTexture
         this.name = name;
         this.boneMetadata = cloneDeep(boneMetadata);
-        this.textureKey = textureKey || null;
         this.textures = textures;
-
         this.zOffset = zOffset || 0;
         this.zScale = zScale || 0;
         this.renderLayer = renderLayer ?? 0;
@@ -50,6 +51,12 @@ export class Bone extends Container {
         if (textureKey != null) {
             this.setTexture(textureKey);
         }
+    }
+
+    getTextureTransform(): BoneTextureTransform | null {
+        return this.textureKey
+            ? this.boneMetadata.textures[this.textureKey]
+            : null;
     }
 
     setTextureTransform(transform: BoneTextureTransform): void {
@@ -70,34 +77,59 @@ export class Bone extends Container {
         this.boneMetadata.textures[this.textureKey] = transform;
     }
 
-    async setTexture(textureKey: string, uid?: string) {
+    async addTexture(textureKey: string, path: string): Promise<Texture> {
+        // Use current transform as the new texture transform
+        const transform = this.getTextureTransform();
+        if (transform == null) {
+            throw new Error(`Texture transform not found for ${textureKey}`);
+        }
+        // Save to textures and metadata
+        this.textures[textureKey] = path;
+        this.boneMetadata.textures[textureKey] = transform;
+
+        return await Assets.load(this.textures[textureKey]);
+    }
+
+    async setTexture(
+        textureKey: string,
+        options?: {
+            uid?: string;
+            path?: string;
+        },
+    ) {
+        // Skip if already loaded
+        if (this.textureKey === textureKey) {
+            return;
+        }
+
+        // Add new textureKey to textures and metadata if necessary
+        if (options?.path != null) {
+            await this.addTexture(textureKey, options.path);
+        }
+        const texture = await Assets.load(this.textures[textureKey]);
+
         // Create mesh if it doesn't exist
         if (!this.mesh) {
-            const texture = await Assets.load(this.textures[textureKey]);
             this.mesh = new IsoMesh({
                 shaderName: "entity",
                 texture,
                 zOffset: this.zOffset,
                 zScale: this.zScale,
                 renderLayer: this.renderLayer,
-                uid,
+                uid: options?.uid,
             });
             this.addChild(this.mesh);
         }
 
-        // Set texture transform
+        // Swap texture of existing mesh if needed
+        if (this.textureKey !== textureKey) {
+            swapMeshTexture(this.mesh, texture);
+        }
+
         this.setTextureTransform(this.boneMetadata.textures[textureKey]);
 
-        // Update texture key
+        // Update texture key (Do this last)
         this.textureKey = textureKey;
-    }
-
-    clearTexture(): void {
-        if (this.mesh) {
-            this.removeChild(this.mesh);
-            this.mesh.destroy();
-            this.mesh = null;
-        }
     }
 
     updateDepth(

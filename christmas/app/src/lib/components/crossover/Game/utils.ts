@@ -252,10 +252,15 @@ async function loadAssetTexture(
         }
     }
     variant ??= "default";
+
+    // Asset is a url to a texture
+    if (asset.path.startsWith("http")) {
+        return await Assets.load(asset.path);
+    }
+
+    // Asset uses a pixijs bundle (spritesheet or image)
     const [bundleName, alias] = asset.path.split("/").slice(-2);
     const bundle = await Assets.loadBundle(bundleName);
-
-    // Bundle might be a sprite sheet or image
     const frame =
         bundle[alias]?.textures?.[asset.variants?.[variant] || "default"] ||
         bundle[alias];

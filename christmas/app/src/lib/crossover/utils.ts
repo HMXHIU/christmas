@@ -415,20 +415,33 @@ function childrenGeohashes(geohash: string): string[] {
  * @throws {Error} If the entity is invalid.
  */
 function entityDimensions(entity: Player | Monster | Item) {
+    // Player
     if ((entity as Player).player) {
         return {
             width: 1,
             height: 1,
             precision: worldSeed.spatial.unit.precision,
         };
-    } else if ((entity as Item).item) {
+    }
+    // Item
+    else if ((entity as Item).item) {
         const { width, height, precision } =
             compendium[(entity as Item).prop].asset;
-        return { width, height, precision };
-    } else if ((entity as Monster).monster) {
+        return {
+            width: width ?? 1,
+            height: height ?? 1,
+            precision: precision ?? worldSeed.spatial.unit.precision,
+        };
+    }
+    // Monster
+    else if ((entity as Monster).monster) {
         const { width, height, precision } =
             bestiary[(entity as Monster).beast].asset;
-        return { width, height, precision };
+        return {
+            width: width ?? 1,
+            height: height ?? 1,
+            precision: precision ?? worldSeed.spatial.unit.precision,
+        };
     }
 
     throw new Error("Invalid entity");

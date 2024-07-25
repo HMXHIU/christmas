@@ -51,6 +51,7 @@
         entityContainers,
         updateEntities,
         upsertEntityContainer,
+        type AvatarEntityContainer,
     } from "./entities";
     import { drawTargetUI } from "./ui";
     import {
@@ -86,8 +87,6 @@
     let isMouseDown: boolean = false;
     let path: Direction[] | null = null;
     let cameraTween: gsap.core.Tween | null = null;
-    let playerIsoX: number = 0;
-    let playerIsoY: number = 0;
 
     $: resize(clientHeight, clientWidth);
     $: handlePreviewCommand(previewCommand);
@@ -311,8 +310,10 @@
     }
 
     const playerPositionUpdateLock = new AsyncLock();
-    async function updatePlayer(player: Player | null) {
-        playerPositionUpdateLock.withLock(async () => {
+    async function updatePlayer(
+        player: Player | null,
+    ): Promise<AvatarEntityContainer> {
+        const ec = await playerPositionUpdateLock.withLock(async () => {
             if (!isInitialized || worldStage == null || player == null) {
                 return;
             }
@@ -333,7 +334,10 @@
                     await handleTrackPlayer({ position: ec.isoPosition });
                 }
             }
+
+            return ec;
         });
+        return ec as AvatarEntityContainer;
     }
 
     /*
@@ -437,7 +441,7 @@
 
         // Initial HMR update (stores are already initialized)
         if ($player) {
-            await updatePlayer($player);
+            const ec = (await updatePlayer($player)) as AvatarEntityContainer;
             await updateEntities($monsterRecord, "monster", worldStage);
             await updateEntities($playerRecord, "player", worldStage);
             await updateEntities($itemRecord, "item", worldStage);
@@ -445,11 +449,11 @@
 
             const position = await getPlayerPosition();
             if (position != null) {
-                // ec.on("positionUpdate", handlePlayerPositionUpdate);
-                // ec.on("trackEntity", handleTrackPlayer);
-
                 await handlePlayerPositionUpdate(position);
                 await handleTrackPlayer({ position });
+
+                // Load inventory
+                await ec.loadInventory($playerEquippedItems);
             }
         }
     }
@@ -504,6 +508,14 @@
             }),
             player.subscribe((p) => {
                 updatePlayer(p);
+            }),
+            playerEquippedItems.subscribe(async (items) => {
+                if ($player && $player.player in entityContainers) {
+                    const ec = entityContainers[
+                        $player.player
+                    ] as AvatarEntityContainer;
+                    await ec.loadInventory(items);
+                }
             }),
             target.subscribe((t) => {
                 if ($player == null || worldStage == null) {

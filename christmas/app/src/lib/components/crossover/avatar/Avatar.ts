@@ -71,10 +71,9 @@ export class Avatar extends Container {
             // Auto-rig the texture (use the first texture as default)
             const boneTextureTransform = boneMetadata.textures[textureKey];
             if (textureKey && boneTextureTransform) {
-                await bone.setTexture(
-                    textureKey,
-                    uid != null ? `${uid}_${boneName}` : undefined,
-                );
+                await bone.setTexture(textureKey, {
+                    uid: uid != null ? `${uid}_${boneName}` : undefined,
+                });
             }
         }
 
@@ -137,8 +136,6 @@ export class Avatar extends Container {
             this.pivot.x = this.rootBone.x;
             this.pivot.y = this.rootBone.y;
         }
-        console.log(this.rootBone);
-        console.log(this.pivot.x, this.pivot.y);
     }
 
     getBone(name: string): Bone | undefined {
@@ -147,14 +144,6 @@ export class Avatar extends Container {
 
     getAllBones(): Bone[] {
         return Object.values(this.bones);
-    }
-
-    clearBoneTexture(boneName: string): void {
-        const bone = this.bones[boneName];
-        if (bone && bone.mesh) {
-            this.removeChild(bone.mesh);
-            bone.clearTexture();
-        }
     }
 
     async pose(pose: Pose) {

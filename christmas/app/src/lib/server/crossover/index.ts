@@ -211,7 +211,10 @@ async function spawnMonster({
     const monsterId = `monster_${beast}${count}`; // must start with monster
 
     // Calculate location
-    const { width, height, precision } = bestiary[beast].asset;
+    const asset = bestiary[beast].asset;
+    const width = asset.width ?? 1;
+    const height = asset.height ?? 1;
+    const precision = asset.precision ?? worldSeed.spatial.unit.precision;
 
     // Auto correct geohash precision
     if (geohash.length !== precision) {
@@ -421,7 +424,11 @@ async function spawnItem({
     // Get prop
     const { defaultName, defaultState, durability, charges, collider } =
         compendium[prop];
-    const { width, height, precision } = compendium[prop].asset;
+
+    const asset = compendium[prop].asset;
+    const width = asset.width ?? 1;
+    const height = asset.height ?? 1;
+    const precision = asset.precision ?? worldSeed.spatial.unit.precision;
 
     // Auto correct geohash precision
     if (geohash.length !== precision) {
@@ -896,7 +903,7 @@ async function performEffectOnEntity({
 
             // Patch location (if the location dimensions have changed beyond the asset's dimensions)
             if (state === "loc") {
-                const { width, height, precision } = entityDimensions(entity);
+                const { width, height } = entityDimensions(entity);
                 if (entity[state].length !== width * height) {
                     entity[state] = calculateLocation(
                         entity[state][0],

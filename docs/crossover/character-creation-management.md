@@ -29,13 +29,13 @@ Character creation involves:
 # Equipment & Avatar
 
 - [ ] Individual equipment should be generated at approximately 96x96 or lesser resolution
-- [ ] Armour equipment slots (chest, legs, gloves, boots, helmet) - affects the look of the avatar
+- [x] Armour equipment slots (chest, legs, gloves, boots, helmet) - affects the look of the avatar
 - [ ] Armour should support layers (i.e. equipment should be drawn over default skin texture, legs and boots may have textures for lower legs, in this case, legs should draw first, then boots) - this means `Bones` should support multiple `IsoMeshes`
 - [ ] Do not support drawing helmets (no texture) for now as it is hard to draw over the face with the hair
 - [ ] Weapon equipment slots (right hand, left hand) - affects the look of the avatar
 - [ ] Shields are always displayed on the front hand, weapons can be on both, but defaults to front hand if only single.
-- [ ] Equipment such as armour and weapons are considered `items` with `props` in the `compendium`
-- [ ] Avatar morphology JSON contains default textures (bare skin only) when no equipment is equipped
+- [x] Equipment such as armour and weapons are considered `items` with `props` in the `compendium`
+- [x] Avatar morphology JSON contains default textures (bare skin only) when no equipment is equipped
 - [ ] Armour equipment such as armour, boots and gloves have multiple textures with fixed names (eg. back_lower_arm.png, front_lower_arm.png, ...). When equipped, call `Bone.setTexture` to replace the default texture for the bone
   ```json
   "textures": {

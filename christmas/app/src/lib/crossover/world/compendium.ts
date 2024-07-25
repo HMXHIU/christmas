@@ -1,14 +1,20 @@
-import type { EntityType, Item } from "$lib/server/crossover/redis/entities";
+import type {
+    EntityType,
+    Item,
+    Monster,
+    Player,
+} from "$lib/server/crossover/redis/entities";
 import { substituteVariables } from "$lib/utils";
 import lodash from "lodash";
+import { getEntityId } from "../utils";
 import { abilities } from "./abilities";
 import { type AssetMetadata } from "./types";
-import { worldSeed } from "./world";
 const { cloneDeep } = lodash;
 
 export {
     compendium,
     EquipmentSlots,
+    isItemEquipped,
     itemAttibutes,
     itemName,
     type EquipmentSlot,
@@ -53,9 +59,9 @@ interface Prop {
     states: Record<string, PropAttributes>; // map item.state to prop attributes
     utilities: Record<string, Utility>;
     variables: PropVariables; // configurable variables to alter prop behavior & descriptions
-    equipmentSlot?: EquipmentSlot[];
     weight: number; // -1 means it cannot be taken
     collider: boolean; // cannot have more than 1 collidable item in the same location, cannot walk through collidable items
+    equipmentSlot?: EquipmentSlot[];
 }
 
 interface PropAttributes {
@@ -94,6 +100,35 @@ type ItemVariables = Record<string, string | number | boolean>;
  * `compendium` is a collection of `Prop` templates used  to create `item` instances.
  */
 let compendium: Record<string, Prop> = {
+    /**
+     * Equipment - armour
+     */
+    steelplate: {
+        prop: "steelplate",
+        defaultName: "Steel plate armor",
+        asset: {
+            path: "http://localhost:5173/avatar/images/female_steel_plate/torso.png",
+        },
+        durability: 100,
+        charges: 0,
+        weight: 20,
+        collider: false,
+        equipmentSlot: ["ch"],
+        defaultState: "default",
+        states: {
+            default: {
+                destructible: true,
+                description: "A simple steel plate of armor.",
+                variant: "default",
+            },
+        },
+        utilities: {},
+        variables: {},
+    },
+
+    /**
+     * Equipment - weapons
+     */
     woodenclub: {
         prop: "woodenclub",
         defaultName: "Wooden Club",
@@ -102,9 +137,6 @@ let compendium: Record<string, Prop> = {
             variants: {
                 default: "wooden-club",
             },
-            width: 1,
-            height: 1,
-            precision: worldSeed.spatial.unit.precision,
         },
         durability: 100,
         charges: 0,
@@ -143,6 +175,9 @@ let compendium: Record<string, Prop> = {
             },
         },
     },
+    /**
+     * Consumables
+     */
     potionofhealth: {
         prop: "potionofhealth",
         defaultName: "Potion of Health",
@@ -152,9 +187,6 @@ let compendium: Record<string, Prop> = {
             variants: {
                 default: "red-potion",
             },
-            width: 1,
-            height: 1,
-            precision: worldSeed.spatial.unit.precision,
         },
         durability: 100,
         charges: 5,
@@ -186,6 +218,9 @@ let compendium: Record<string, Prop> = {
         },
         variables: {},
     },
+    /**
+     * Architecture
+     */
     woodendoor: {
         prop: "woodendoor",
         defaultName: "Wooden Door",
@@ -195,9 +230,6 @@ let compendium: Record<string, Prop> = {
                 default: "wood-door-2", // open
                 closed: "wood-door-1",
             },
-            width: 1,
-            height: 1,
-            precision: worldSeed.spatial.unit.precision,
         },
         defaultState: "closed",
         durability: 100,
@@ -261,7 +293,6 @@ let compendium: Record<string, Prop> = {
             },
             width: 2,
             height: 2,
-            precision: worldSeed.spatial.unit.precision,
         },
         defaultState: "default",
         durability: 100,
@@ -294,7 +325,6 @@ let compendium: Record<string, Prop> = {
             },
             width: 2,
             height: 2,
-            precision: worldSeed.spatial.unit.precision,
         },
         defaultState: "default",
         durability: 100,
@@ -321,7 +351,6 @@ let compendium: Record<string, Prop> = {
             },
             width: 2,
             height: 2,
-            precision: worldSeed.spatial.unit.precision,
         },
         durability: 100,
         charges: 100,
@@ -409,4 +438,11 @@ function itemVariables(item: Item): ItemVariables {
         }
     }
     return vars;
+}
+
+function isItemEquipped(item: Item, entity: Player | Monster | Item): boolean {
+    return (
+        EquipmentSlots.includes(item.locT as EquipmentSlot) &&
+        item.loc[0] === getEntityId(entity)[0]
+    );
 }

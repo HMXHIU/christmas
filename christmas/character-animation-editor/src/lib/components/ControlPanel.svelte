@@ -113,12 +113,6 @@
         a.click();
         URL.revokeObjectURL(url);
     }
-
-    function setPose() {
-        if (!$avatar || !selectedPose) {
-            return;
-        }
-    }
 </script>
 
 <div class="w-fulll h-full bg-gray-100 p-4 overflow-y-auto">
@@ -219,17 +213,6 @@
             class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
         >
             Rig Bone Textures
-        </button>
-    </div>
-
-    <!-- Set Pose -->
-    <div class="mb-4 flex flex-row space-x-2">
-        <button
-            class="bg-cyan-500 text-white py-2 px-4 rounded hover:bg-purple-600 w-full"
-            on:click={setPose}
-            disabled={!$avatar}
-        >
-            Set Pose
         </button>
     </div>
 

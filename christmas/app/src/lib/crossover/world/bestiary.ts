@@ -64,9 +64,6 @@ const bestiary: Record<string, Beast> = {
             // variants: {
             //     default: "stand/0",
             // },
-            width: 1,
-            height: 1,
-            precision: worldSeed.spatial.unit.precision,
         },
     },
     giantSpider: {
@@ -98,9 +95,6 @@ const bestiary: Record<string, Beast> = {
             variants: {
                 default: "stand/0",
             },
-            width: 1,
-            height: 1,
-            precision: worldSeed.spatial.unit.precision,
         },
     },
     dragon: {
