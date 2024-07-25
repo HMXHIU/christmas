@@ -63,18 +63,12 @@ When receiving movement data:
 - [x] The client should add additional time to the tween if the entity is moving diagonally
 
 ```js
-// send
+// send & receive
 {
     pthclk: 973614596,
     pthdur: 1000,
-    pth:['geohash1', 'geohash2', 'geohash3', 'geohash4'],
-}
-
-// receive
-{
-    pthclk: 973614596,
-    pthdur: 1000,
-    pth:['geohash1', 'geohash2', 'geohash3', 'geohash4'],
+    pthst: "geeohash",
+    pth:['nw', 'ne', 'e', 's'],
 }
 ```
 

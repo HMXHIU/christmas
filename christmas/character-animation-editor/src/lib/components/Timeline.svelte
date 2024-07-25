@@ -36,6 +36,12 @@
 
     function addKeyframe() {
         if (!animation || !$avatar || !pose) return;
+
+        if (currentTime === 0) {
+            console.error("cannot add key frame at 0, use pose");
+            return;
+        }
+
         console.log("Adding Keyframe at", currentTime);
 
         let hasChanges = false;
@@ -49,7 +55,7 @@
             // Find the initial pose for this bone
             const initialBonePose = pose.find((bp) => bp.bone === boneName);
             if (!initialBonePose) {
-                console.error(`Initial pose not found for bone: ${boneName}`);
+                console.warn(`Initial pose not found for bone: ${boneName}`);
                 continue;
             }
 

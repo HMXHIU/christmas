@@ -83,7 +83,7 @@
         if (!isInitialized || !app || !avatar || !boneContainer) return;
         avatar.position.set(
             Math.round(app.screen.width / 2),
-            Math.round(app.screen.height / 2),
+            Math.round(app.screen.height * 0.8),
         );
         boneContainer.position = avatar.position;
     }
@@ -217,6 +217,9 @@
 
                 // Update bone graphics
                 updateAllBoneGraphics();
+
+                // Update all pose bones if tIdx == 0
+                updateAllPoseBones();
             };
 
             const onDragEnd = () => {
@@ -433,6 +436,8 @@
 
     function updatePoseBone(boneName: string, bone: Bone) {
         const tIdx = timeIndex(currentTime);
+
+        // Only update PoseBone if tIdx = 0
         if (!selectedPose || tIdx !== 0 || !selectedPose) return;
         const poseBone = selectedPose.find(
             (poseBone) => poseBone.bone === boneName,
@@ -460,6 +465,13 @@
         if (!$avatar) return;
         $avatar.getAllBones().forEach((bone) => {
             updateBoneGraphic(bone.name, bone);
+        });
+    }
+
+    function updateAllPoseBones() {
+        if (!$avatar) return;
+        $avatar.getAllBones().forEach((bone) => {
+            updatePoseBone(bone.name, bone);
         });
     }
 

@@ -53,6 +53,30 @@ Character creation involves:
   ```
 - [ ] Add bones for right hand, left hand weapon (without texture, similar to pivotBone). Call `Bone.setTexture` in rh and lh bones when weapons are equipped
 
+# Equipment props
+
+- [ ] Equipment item props can be either from the compendium (standard) or from NFTs
+- [ ] If from NFT the prop should be the public address of the NFT
+- [ ] The NFT data should be loaded into Redis with the corresponding API to access them
+- [ ] Add additional fields for stats etc ...
+
+```ts
+interface Prop {
+  prop: string;
+  defaultName: string;
+  defaultState: string;
+  asset: AssetMetadata;
+  durability: number;
+  charges: number;
+  states: Record<string, PropAttributes>; // map item.state to prop attributes
+  utilities: Record<string, Utility>;
+  variables: PropVariables; // configurable variables to alter prop behavior & descriptions
+  equipmentSlot?: EquipmentSlot[];
+  weight: number; // -1 means it cannot be taken
+  collider: boolean; // cannot have more than 1 collidable item in the same location, cannot walk through collidable items
+}
+```
+
 ## Character Creation Happy Path
 
 1. User has not created a character yet, redirected to character creation page
