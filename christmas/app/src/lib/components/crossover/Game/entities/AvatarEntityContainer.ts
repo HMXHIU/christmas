@@ -1,8 +1,8 @@
 import {
     compendium,
     isItemEquipped,
-    itemAttibutes,
     tints,
+    type EquipmentAsset,
 } from "$lib/crossover/world/compendium";
 import type { Item } from "$lib/server/crossover/redis/entities";
 import { Avatar } from "../../avatar/Avatar";
@@ -41,20 +41,22 @@ class AvatarEntityContainer extends EntityContainer {
         }
     }
 
-    async setEquipmentTexture(
-        path: string,
+    async setEquipmentAsset(
+        equipmentAsset: EquipmentAsset,
         boneName: string,
-        tint?: Float32Array,
     ): Promise<string | null> {
         if (boneName != null) {
             const bone = this.avatar.getBone(boneName);
             if (bone != null) {
-                // Set overlay texture
+                const { tint, asset } = equipmentAsset;
                 const textureKey = equippedTextureKey(boneName);
-                await bone.setOverlayTexture(textureKey, {
-                    path,
-                });
-                // Tint texture
+                // Set overlay texture
+                if (asset?.path != null) {
+                    await bone.setOverlayTexture(textureKey, {
+                        path: asset.path,
+                    });
+                }
+                // Tint texture (some assets only consist of tint)
                 if (tint != null) {
                     bone.tintTexture(tint);
                 }
@@ -77,18 +79,14 @@ class AvatarEntityContainer extends EntityContainer {
             if (isItemEquipped(item, this.entity)) {
                 const prop = compendium[item.prop];
 
-                // Get item tint
-                const { tint } = itemAttibutes(item);
-
                 // Get all bone assets from equipmentAssets
                 if (prop.equipmentAssets != null) {
-                    for (const [boneName, asset] of Object.entries(
+                    for (const [boneName, equipmentAsset] of Object.entries(
                         prop.equipmentAssets,
                     )) {
-                        const textureKey = await this.setEquipmentTexture(
-                            asset.path,
+                        const textureKey = await this.setEquipmentAsset(
+                            equipmentAsset,
                             boneName,
-                            tint,
                         );
                         equipped.add(textureKey);
                     }

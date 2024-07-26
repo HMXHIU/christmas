@@ -18,6 +18,7 @@ export {
     itemAttibutes,
     itemName,
     tints,
+    type EquipmentAsset,
     type EquipmentSlot,
     type ItemVariables,
     type Prop,
@@ -49,7 +50,7 @@ const EquipmentSlots: EquipmentSlot[] = [
 
 const tints = {
     none: new Float32Array([0, 0, 0, 0]),
-    black: new Float32Array([0.1, 0.1, 0.1, 0.9]),
+    black: new Float32Array([0.1, 0.1, 0.1, 0.85]),
 };
 
 /**
@@ -68,14 +69,18 @@ interface Prop {
     weight: number; // -1 means it cannot be taken
     collider: boolean; // cannot have more than 1 collidable item in the same location, cannot walk through collidable items
     equipmentSlot?: EquipmentSlot[];
-    equipmentAssets?: Record<string, AssetMetadata>; // maps bone to asset metadata
+    equipmentAssets?: Record<string, EquipmentAsset>; // maps bone to EquipmentAsset
+}
+
+interface EquipmentAsset {
+    asset?: AssetMetadata;
+    tint?: Float32Array; // tints the texture (eg. under armour)
 }
 
 interface PropAttributes {
     description: string;
     destructible: boolean;
     variant: string;
-    tint?: Float32Array; // tints the texture (eg. under armour)
 }
 
 interface Utility {
@@ -119,7 +124,10 @@ let compendium: Record<string, Prop> = {
         },
         equipmentAssets: {
             torsoBone: {
-                path: "http://localhost:5173/avatar/images/female_steel_plate/torso.png",
+                asset: {
+                    path: "http://localhost:5173/avatar/images/female_steel_plate/torso.png",
+                },
+                tint: tints.black,
             },
         },
         durability: 100,
@@ -130,10 +138,9 @@ let compendium: Record<string, Prop> = {
         defaultState: "default",
         states: {
             default: {
+                variant: "default",
                 destructible: true,
                 description: "A simple steel plate of armor.",
-                variant: "default",
-                tint: tints.black,
             },
         },
         utilities: {},
@@ -147,10 +154,22 @@ let compendium: Record<string, Prop> = {
         },
         equipmentAssets: {
             frontUpperLegBone: {
-                path: "http://localhost:5173/avatar/images/female_steel_plate/front_upper_leg.png",
+                asset: {
+                    path: "http://localhost:5173/avatar/images/female_steel_plate/front_upper_leg.png",
+                },
+                tint: tints.black,
             },
             backUpperLegBone: {
-                path: "http://localhost:5173/avatar/images/female_steel_plate/back_upper_leg.png",
+                asset: {
+                    path: "http://localhost:5173/avatar/images/female_steel_plate/back_upper_leg.png",
+                },
+                tint: tints.black,
+            },
+            frontLowerLegBone: {
+                tint: tints.black,
+            },
+            backLowerLegBone: {
+                tint: tints.black,
             },
         },
         durability: 100,
@@ -164,7 +183,6 @@ let compendium: Record<string, Prop> = {
                 destructible: true,
                 description: "A simple steel armor worn on the legs",
                 variant: "default",
-                tint: tints.black,
             },
         },
         utilities: {},
