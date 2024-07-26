@@ -180,6 +180,14 @@ export class Bone extends Container {
         this.textureKey = textureKey;
     }
 
+    tintTexture(tint: Float32Array) {
+        // Skip if no mesh or shader
+        if (this.mesh == null || this.mesh.shader == null) {
+            return;
+        }
+        this.mesh.shader.resources.uniforms.uniforms.uTint = tint;
+    }
+
     updateDepth(
         isoX: number,
         isoY: number,

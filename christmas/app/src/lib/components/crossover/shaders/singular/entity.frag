@@ -10,10 +10,16 @@ uniform float uTextureWidth;
 
 uniform sampler2D uOverlayTexture;
 uniform float uOverlayTextureEnabled;
+uniform vec4 uTint;
 
 void main() {
 
     vec4 color = texture2D(uTexture, vUV);
+
+    // Tint the base texture (amount depends on uTint.a)
+    if(uTint.a > 0.0) {
+        color.rgb = mix(color.rgb, uTint.rgb, uTint.a);
+    }
 
     // Overlay Texture
     if (uOverlayTextureEnabled > 0.0) {

@@ -198,6 +198,10 @@ function createShader(
                 value: 0,
                 type: "f32",
             },
+            uTint: {
+                value: new Float32Array([0, 0, 0, 0]),
+                type: "vec4<f32>",
+            },
             uTextureHeight: {
                 value: height,
                 type: "f32",

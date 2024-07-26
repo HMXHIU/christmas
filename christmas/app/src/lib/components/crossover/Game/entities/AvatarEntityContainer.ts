@@ -1,4 +1,9 @@
-import { compendium, isItemEquipped } from "$lib/crossover/world/compendium";
+import {
+    compendium,
+    isItemEquipped,
+    itemAttibutes,
+    tints,
+} from "$lib/crossover/world/compendium";
 import type { Item } from "$lib/server/crossover/redis/entities";
 import { Avatar } from "../../avatar/Avatar";
 import { EntityContainer } from "./EntityContainer";
@@ -39,29 +44,42 @@ class AvatarEntityContainer extends EntityContainer {
     async setEquipmentTexture(
         path: string,
         boneName: string,
+        tint?: Float32Array,
     ): Promise<string | null> {
         if (boneName != null) {
             const bone = this.avatar.getBone(boneName);
             if (bone != null) {
+                // Set overlay texture
                 const textureKey = equippedTextureKey(boneName);
                 await bone.setOverlayTexture(textureKey, {
                     path,
                 });
+                // Tint texture
+                if (tint != null) {
+                    bone.tintTexture(tint);
+                }
                 return textureKey;
             }
         }
         return null;
     }
 
+    /**
+     * TODO: load from NFT + compendium
+     *
+     * @param items - Player equipped items
+     */
     async loadInventory(items: Item[]) {
         const equipped = new Set();
-
-        // TODO: load from NFT + compendium
 
         // Load equipped item textures
         for (const item of items) {
             if (isItemEquipped(item, this.entity)) {
                 const prop = compendium[item.prop];
+
+                // Get item tint
+                const { tint } = itemAttibutes(item);
+
                 // Get all bone assets from equipmentAssets
                 if (prop.equipmentAssets != null) {
                     for (const [boneName, asset] of Object.entries(
@@ -70,6 +88,7 @@ class AvatarEntityContainer extends EntityContainer {
                         const textureKey = await this.setEquipmentTexture(
                             asset.path,
                             boneName,
+                            tint,
                         );
                         equipped.add(textureKey);
                     }
@@ -80,7 +99,10 @@ class AvatarEntityContainer extends EntityContainer {
         // Use default texture for un-equipped items (needed when user unequips an item)
         for (const bone of this.avatar.getAllBones()) {
             if (!equipped.has(equippedTextureKey(bone.name))) {
+                // Clear overlay texture
                 bone.clearOverlayTexture();
+                // Reset tint
+                bone.tintTexture(tints.none);
             }
         }
 

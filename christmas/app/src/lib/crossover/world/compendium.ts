@@ -17,6 +17,7 @@ export {
     isItemEquipped,
     itemAttibutes,
     itemName,
+    tints,
     type EquipmentSlot,
     type ItemVariables,
     type Prop,
@@ -46,6 +47,11 @@ const EquipmentSlots: EquipmentSlot[] = [
     "r2",
 ];
 
+const tints = {
+    none: new Float32Array([0, 0, 0, 0]),
+    black: new Float32Array([0.1, 0.1, 0.1, 0.9]),
+};
+
 /**
  * `Prop` is a template used to create an `item` instance
  */
@@ -69,6 +75,7 @@ interface PropAttributes {
     description: string;
     destructible: boolean;
     variant: string;
+    tint?: Float32Array; // tints the texture (eg. under armour)
 }
 
 interface Utility {
@@ -126,6 +133,7 @@ let compendium: Record<string, Prop> = {
                 destructible: true,
                 description: "A simple steel plate of armor.",
                 variant: "default",
+                tint: tints.black,
             },
         },
         utilities: {},
@@ -156,6 +164,7 @@ let compendium: Record<string, Prop> = {
                 destructible: true,
                 description: "A simple steel armor worn on the legs",
                 variant: "default",
+                tint: tints.black,
             },
         },
         utilities: {},
