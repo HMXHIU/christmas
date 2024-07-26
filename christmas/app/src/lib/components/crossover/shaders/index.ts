@@ -138,7 +138,7 @@ function loadShaderGeometry(
         zScale?: number;
         zOffset?: number;
         cellHeight?: number;
-        textures?: Record<string, Texture>;
+        textures?: Record<string, { texture: Texture; enabled: number }>; // set any other textures here
     } = {},
 ): ShaderGeometry {
     const instanceCount = options.instanceCount ?? 1;
@@ -178,21 +178,21 @@ function loadShaderGeometry(
 function createShader(
     s: string,
     texture: Texture,
-    instanceOptions?: {
+    options?: {
         height?: number;
         width?: number;
         zScale?: number;
         zOffset?: number;
-        textures?: Record<string, Texture>;
+        textures?: Record<string, { texture: Texture; enabled: number }>; // set any other textures here
     },
 ): Shader {
-    const height = instanceOptions?.height ?? texture.frame.height;
-    const width = instanceOptions?.width ?? texture.frame.width;
-    const zScale = instanceOptions?.zScale ?? 0;
-    const zOffset = instanceOptions?.zOffset ?? 0;
-
+    const height = options?.height ?? texture.frame.height;
+    const width = options?.width ?? texture.frame.width;
+    const zScale = options?.zScale ?? 0;
+    const zOffset = options?.zOffset ?? 0;
     const resources: any = {
         uTexture: texture.source,
+        uOverlayTexture: Texture.WHITE.source,
         uniforms: {
             uTime: {
                 value: 0,
@@ -214,14 +214,22 @@ function createShader(
                 value: zOffset,
                 type: "f32",
             },
+            uOverlayTextureEnabled: {
+                value: 0,
+                type: "f32",
+            },
         },
     };
 
-    if (instanceOptions?.textures) {
-        for (const [name, texture] of Object.entries(
-            instanceOptions.textures,
+    if (options?.textures != null) {
+        for (const [name, { texture, enabled }] of Object.entries(
+            options.textures,
         )) {
-            resources[name] = texture.source;
+            resources[name] = texture.source; // Add texture source
+            resources.uniforms[`${name}Enabled`] = {
+                value: enabled,
+                type: "f32",
+            }; // Add texture flag
         }
     }
 

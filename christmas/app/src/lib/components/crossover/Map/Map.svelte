@@ -80,7 +80,14 @@
             texture,
             width,
             height,
-            { textures: { uParchmentTexture: parchmentTexture } },
+            {
+                textures: {
+                    uParchmentTexture: {
+                        texture: parchmentTexture,
+                        enabled: 1,
+                    },
+                },
+            },
         );
 
         // Draw the mesh in its location in the world (in pixel coordinates)

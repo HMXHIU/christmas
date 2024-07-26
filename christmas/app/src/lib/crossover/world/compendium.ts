@@ -131,6 +131,36 @@ let compendium: Record<string, Prop> = {
         utilities: {},
         variables: {},
     },
+    steelleg: {
+        prop: "steelleg",
+        defaultName: "Steel leg armor",
+        asset: {
+            path: "http://localhost:5173/avatar/images/female_steel_plate/front_upper_leg.png",
+        },
+        equipmentAssets: {
+            frontUpperLegBone: {
+                path: "http://localhost:5173/avatar/images/female_steel_plate/front_upper_leg.png",
+            },
+            backUpperLegBone: {
+                path: "http://localhost:5173/avatar/images/female_steel_plate/back_upper_leg.png",
+            },
+        },
+        durability: 100,
+        charges: 0,
+        weight: 20,
+        collider: false,
+        equipmentSlot: ["lg"],
+        defaultState: "default",
+        states: {
+            default: {
+                destructible: true,
+                description: "A simple steel armor worn on the legs",
+                variant: "default",
+            },
+        },
+        utilities: {},
+        variables: {},
+    },
     /**
      * Equipment - weapons
      */

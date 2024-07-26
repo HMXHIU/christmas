@@ -8,9 +8,21 @@ uniform sampler2D uTexture;
 uniform float uTextureHeight;
 uniform float uTextureWidth;
 
+uniform sampler2D uOverlayTexture;
+uniform float uOverlayTextureEnabled;
+
 void main() {
 
     vec4 color = texture2D(uTexture, vUV);
+
+    // Overlay Texture
+    if (uOverlayTextureEnabled > 0.0) {
+        vec4 overlayColor = texture2D(uOverlayTexture, vUV);
+        // Alpha compositing
+        vec3 blendedColor = mix(color.rgb, overlayColor.rgb, overlayColor.a);
+        float blendedAlpha = color.a + (1.0 - color.a) * overlayColor.a;
+        color = vec4(blendedColor.rgb, blendedAlpha);
+    }
     
     // Note: entities can't have alpha = 0, else it is hard to get the rendering order correct with grass
     if (color.a < 0.1) {

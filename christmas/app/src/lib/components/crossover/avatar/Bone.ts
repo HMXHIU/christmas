@@ -11,6 +11,7 @@ export class Bone extends Container {
     public boneMetadata: BoneMetadata;
     public textures: Record<string, string>;
     public textureKey: string | null = null;
+    public overlayTextureKey: string | null = null;
 
     public zOffset: number = 0;
     public zScale: number = 0;
@@ -78,6 +79,11 @@ export class Bone extends Container {
     }
 
     async addTexture(textureKey: string, path: string): Promise<Texture> {
+        // Skip if already added
+        if (this.textures[textureKey] != null) {
+            return await Assets.load(this.textures[textureKey]);
+        }
+
         // Use current transform as the new texture transform
         const transform = this.getTextureTransform();
         if (transform == null) {
@@ -88,6 +94,45 @@ export class Bone extends Container {
         this.boneMetadata.textures[textureKey] = transform;
 
         return await Assets.load(this.textures[textureKey]);
+    }
+
+    async setOverlayTexture(
+        textureKey: string,
+        options?: {
+            path?: string;
+        },
+    ): Promise<void> {
+        // Skip if no mesh or shader
+        if (this.mesh == null || this.mesh.shader == null) {
+            return;
+        }
+        // Skip if already loaded
+        if (
+            this.overlayTextureKey === textureKey &&
+            this.mesh.shader.resources.uniforms.uOverlayTextureEnabled > 0
+        ) {
+            return;
+        }
+
+        // Add new textureKey to textures and metadata if necessary
+        if (options?.path != null) {
+            await this.addTexture(textureKey, options.path);
+        }
+        const texture = await Assets.load(this.textures[textureKey]);
+
+        // Set and enable overlay texture
+        this.mesh.shader.resources.uOverlayTexture = texture.source;
+        this.mesh.shader.resources.uniforms.uniforms.uOverlayTextureEnabled = 1;
+
+        // Update texture key (Do this last)
+        this.overlayTextureKey = textureKey;
+    }
+
+    async clearOverlayTexture() {
+        if (this.mesh == null || this.mesh.shader == null) {
+            return;
+        }
+        this.mesh.shader.resources.uniforms.uniforms.uOverlayTextureEnabled = 0;
     }
 
     async setTexture(
@@ -117,6 +162,9 @@ export class Bone extends Container {
                 zScale: this.zScale,
                 renderLayer: this.renderLayer,
                 uid: options?.uid,
+                textures: {
+                    uOverlayTexture: { texture, enabled: 0 },
+                },
             });
             this.addChild(this.mesh);
         }

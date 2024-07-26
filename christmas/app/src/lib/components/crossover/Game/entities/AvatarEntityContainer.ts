@@ -44,8 +44,7 @@ class AvatarEntityContainer extends EntityContainer {
             const bone = this.avatar.getBone(boneName);
             if (bone != null) {
                 const textureKey = equippedTextureKey(boneName);
-                await bone.setTexture(textureKey, {
-                    uid: this.entityId,
+                await bone.setOverlayTexture(textureKey, {
                     path,
                 });
                 return textureKey;
@@ -81,12 +80,7 @@ class AvatarEntityContainer extends EntityContainer {
         // Use default texture for un-equipped items (needed when user unequips an item)
         for (const bone of this.avatar.getAllBones()) {
             if (!equipped.has(equippedTextureKey(bone.name))) {
-                const defaultTextureKey = Object.keys(
-                    bone.boneMetadata.textures,
-                )[0];
-                if (defaultTextureKey != null) {
-                    await bone.setTexture(defaultTextureKey);
-                }
+                bone.clearOverlayTexture();
             }
         }
 
