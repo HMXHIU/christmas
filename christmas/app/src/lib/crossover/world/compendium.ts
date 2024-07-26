@@ -26,24 +26,34 @@ export {
 };
 
 type EquipmentSlot =
-    | "rh" // right hand
-    | "lh" // left hand
-    | "ft" // feet
-    | "hd" // head
-    | "nk" // neck
+    // armor
     | "ch" // chest
     | "lg" // legs
+    | "ft" // feet
+    | "sh" // shoulders
+    | "gl" // gloves
+    // weapons
+    | "rh" // right hand
+    | "lh" // left hand
+    // non visible
+    | "hd" // head
+    | "nk" // neck
     | "r1" // ring 1
     | "r2"; // ring 2
 
 const EquipmentSlots: EquipmentSlot[] = [
-    "rh",
-    "lh",
-    "ft",
-    "hd",
-    "nk",
+    // armor
     "ch",
     "lg",
+    "ft",
+    "sh",
+    "gl",
+    // weapons
+    "rh",
+    "lh",
+    // non visible
+    "hd",
+    "nk",
     "r1",
     "r2",
 ];
@@ -182,6 +192,118 @@ let compendium: Record<string, Prop> = {
             default: {
                 destructible: true,
                 description: "A simple steel armor worn on the legs",
+                variant: "default",
+            },
+        },
+        utilities: {},
+        variables: {},
+    },
+    steelboots: {
+        prop: "steelboot",
+        defaultName: "Steel boots",
+        asset: {
+            path: "http://localhost:5173/avatar/images/female_steel_plate/front_lower_leg.png",
+        },
+        equipmentAssets: {
+            frontLowerLegBone: {
+                asset: {
+                    path: "http://localhost:5173/avatar/images/female_steel_plate/front_lower_leg.png",
+                },
+            },
+            backLowerLegBone: {
+                asset: {
+                    path: "http://localhost:5173/avatar/images/female_steel_plate/back_lower_leg.png",
+                },
+            },
+        },
+        durability: 100,
+        charges: 0,
+        weight: 20,
+        collider: false,
+        equipmentSlot: ["ft"],
+        defaultState: "default",
+        states: {
+            default: {
+                destructible: true,
+                description: "A simple set of steel boots",
+                variant: "default",
+            },
+        },
+        utilities: {},
+        variables: {},
+    },
+    steelpauldron: {
+        prop: "steelpauldron",
+        defaultName: "Steel Pauldrons",
+        asset: {
+            path: "http://localhost:5173/avatar/images/female_steel_plate/front_upper_arm.png",
+        },
+        equipmentAssets: {
+            frontLowerArmBone: {
+                tint: tints.black,
+            },
+            backLowerArmBone: {
+                tint: tints.black,
+            },
+            frontUpperArmBone: {
+                asset: {
+                    path: "http://localhost:5173/avatar/images/female_steel_plate/front_upper_arm.png",
+                },
+                tint: tints.black,
+            },
+            backUpperArmBone: {
+                asset: {
+                    path: "http://localhost:5173/avatar/images/female_steel_plate/back_upper_arm.png",
+                },
+                tint: tints.black,
+            },
+        },
+        durability: 100,
+        charges: 0,
+        weight: 20,
+        collider: false,
+        equipmentSlot: ["sh"],
+        defaultState: "default",
+        states: {
+            default: {
+                destructible: true,
+                description: "A simple set of steel pauldrons",
+                variant: "default",
+            },
+        },
+        utilities: {},
+        variables: {},
+    },
+    steelgauntlet: {
+        prop: "steelgauntlet",
+        defaultName: "Steel Gauntlets",
+        asset: {
+            path: "http://localhost:5173/avatar/images/female_steel_plate/front_lower_arm.png",
+        },
+        equipmentAssets: {
+            frontLowerArmBone: {
+                asset: {
+                    path: "http://localhost:5173/avatar/images/female_steel_plate/front_lower_arm.png",
+                },
+                tint: tints.black,
+            },
+            backLowerArmBone: {
+                asset: {
+                    path: "http://localhost:5173/avatar/images/female_steel_plate/back_lower_arm.png",
+                },
+                tint: tints.black,
+            },
+        },
+        durability: 100,
+        charges: 0,
+        weight: 20,
+        collider: false,
+        equipmentSlot: ["gl"],
+        defaultState: "default",
+        states: {
+            default: {
+                destructible: true,
+                description: "A simple set of steel gauntlets",
                 variant: "default",
             },
         },

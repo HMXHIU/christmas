@@ -129,7 +129,19 @@ const SpawnWorldSchema = z.object({
 // Schemas - player
 const EquipItemSchema = z.object({
     item: z.string(),
-    slot: z.enum(["rh", "lh", "ft", "hd", "nk", "ch", "lg", "r1", "r2"]),
+    slot: z.enum([
+        "rh",
+        "lh",
+        "ft",
+        "hd",
+        "nk",
+        "ch",
+        "lg",
+        "r1",
+        "r2",
+        "sh",
+        "gl",
+    ]), // TODO: dont hardcode this?
 });
 
 const UserMetadataSchema = z.object({
