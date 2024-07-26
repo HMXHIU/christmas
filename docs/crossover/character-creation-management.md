@@ -36,7 +36,7 @@ Character creation involves:
 - [ ] Shields are always displayed on the front hand, weapons can be on both, but defaults to front hand if only single.
 - [x] Equipment such as armour and weapons are considered `items` with `props` in the `compendium`
 - [x] Avatar morphology JSON contains default textures (bare skin only) when no equipment is equipped
-- [ ] Armour equipment such as armour, boots and gloves have multiple textures with fixed names (eg. back_lower_arm.png, front_lower_arm.png, ...). When equipped, call `Bone.setTexture` to replace the default texture for the bone
+- [x] Armour equipment such as armour, boots and gloves have multiple textures with fixed names (eg. back_lower_arm.png, front_lower_arm.png, ...). When equipped, call `Bone.setTexture` to replace the default texture for the bone
   ```json
   "textures": {
     "torso": "http://localhost:5173/avatar/images/female_default/torso.png",

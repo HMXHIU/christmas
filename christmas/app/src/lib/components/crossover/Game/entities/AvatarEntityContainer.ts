@@ -1,8 +1,4 @@
-import {
-    compendium,
-    isItemEquipped,
-    type EquipmentSlot,
-} from "$lib/crossover/world/compendium";
+import { compendium, isItemEquipped } from "$lib/crossover/world/compendium";
 import type { Item } from "$lib/server/crossover/redis/entities";
 import { Avatar } from "../../avatar/Avatar";
 import { EntityContainer } from "./EntityContainer";
@@ -13,17 +9,9 @@ const actionToAnimation: Record<string, string> = {
     move: "walk",
 };
 
-const equipmentSlotToBone: Record<EquipmentSlot, string | null> = {
-    ch: "torsoBone",
-    rh: null,
-    lh: null,
-    ft: null,
-    hd: "headBone",
-    nk: null,
-    lg: null,
-    r1: null,
-    r2: null,
-};
+function equippedTextureKey(boneName: string): string {
+    return `eq_${boneName}`;
+}
 
 class AvatarEntityContainer extends EntityContainer {
     public avatar: Avatar;
@@ -50,17 +38,17 @@ class AvatarEntityContainer extends EntityContainer {
 
     async setEquipmentTexture(
         path: string,
-        slot: EquipmentSlot,
+        boneName: string,
     ): Promise<string | null> {
-        const boneName = equipmentSlotToBone[slot];
         if (boneName != null) {
             const bone = this.avatar.getBone(boneName);
             if (bone != null) {
-                await bone.setTexture(slot, {
+                const textureKey = equippedTextureKey(boneName);
+                await bone.setTexture(textureKey, {
                     uid: this.entityId,
                     path,
                 });
-                return boneName;
+                return textureKey;
             }
         }
         return null;
@@ -69,21 +57,30 @@ class AvatarEntityContainer extends EntityContainer {
     async loadInventory(items: Item[]) {
         const equipped = new Set();
 
+        // TODO: load from NFT + compendium
+
         // Load equipped item textures
         for (const item of items) {
             if (isItemEquipped(item, this.entity)) {
-                const prop = compendium[item.prop]; // TODO: load from NFT
-                const boneName = await this.setEquipmentTexture(
-                    prop.asset.path,
-                    item.locT as EquipmentSlot,
-                );
-                equipped.add(boneName);
+                const prop = compendium[item.prop];
+                // Get all bone assets from equipmentAssets
+                if (prop.equipmentAssets != null) {
+                    for (const [boneName, asset] of Object.entries(
+                        prop.equipmentAssets,
+                    )) {
+                        const textureKey = await this.setEquipmentTexture(
+                            asset.path,
+                            boneName,
+                        );
+                        equipped.add(textureKey);
+                    }
+                }
             }
         }
 
         // Use default texture for un-equipped items (needed when user unequips an item)
         for (const bone of this.avatar.getAllBones()) {
-            if (!equipped.has(bone.name)) {
+            if (!equipped.has(equippedTextureKey(bone.name))) {
                 const defaultTextureKey = Object.keys(
                     bone.boneMetadata.textures,
                 )[0];

@@ -62,6 +62,7 @@ interface Prop {
     weight: number; // -1 means it cannot be taken
     collider: boolean; // cannot have more than 1 collidable item in the same location, cannot walk through collidable items
     equipmentSlot?: EquipmentSlot[];
+    equipmentAssets?: Record<string, AssetMetadata>; // maps bone to asset metadata
 }
 
 interface PropAttributes {
@@ -109,6 +110,11 @@ let compendium: Record<string, Prop> = {
         asset: {
             path: "http://localhost:5173/avatar/images/female_steel_plate/torso.png",
         },
+        equipmentAssets: {
+            torsoBone: {
+                path: "http://localhost:5173/avatar/images/female_steel_plate/torso.png",
+            },
+        },
         durability: 100,
         charges: 0,
         weight: 20,
@@ -125,7 +131,6 @@ let compendium: Record<string, Prop> = {
         utilities: {},
         variables: {},
     },
-
     /**
      * Equipment - weapons
      */
