@@ -396,11 +396,16 @@ async function performAction(
     }
     // equip
     else if (action.action === "equip" && variables != null) {
-        const slot = variables.queryIrrelevant as EquipmentSlot;
-        if (EquipmentSlots.includes(slot)) {
+        // Get equipment slot from query else from prop
+        const item = target as Item;
+        const slotFromQuery = variables.queryIrrelevant as EquipmentSlot;
+        const slot = EquipmentSlots.includes(slotFromQuery)
+            ? slotFromQuery
+            : compendium[item.prop].equipmentSlot?.[0];
+        if (slot) {
             return await crossoverCmdEquip(
                 {
-                    item: getEntityId(target as Item)[0],
+                    item: getEntityId(item)[0],
                     slot,
                 },
                 headers,
