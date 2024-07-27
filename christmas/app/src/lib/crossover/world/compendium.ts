@@ -78,7 +78,7 @@ interface Prop {
     variables: PropVariables; // configurable variables to alter prop behavior & descriptions
     weight: number; // -1 means it cannot be taken
     collider: boolean; // cannot have more than 1 collidable item in the same location, cannot walk through collidable items
-    equipmentSlot?: EquipmentSlot[];
+    equipmentSlot?: EquipmentSlot[]; // can be used to tell if item is an equipment
     equipmentAssets?: Record<string, EquipmentAsset>; // maps bone to EquipmentAsset
 }
 
