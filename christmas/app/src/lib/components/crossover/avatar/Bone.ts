@@ -135,6 +135,14 @@ export class Bone extends Container {
         this.mesh.shader.resources.uniforms.uniforms.uOverlayTextureEnabled = 0;
     }
 
+    async setDefaultTexture() {
+        // Set to default texture
+        const tkey = Object.keys(this.boneMetadata.textures)[0];
+        if (tkey != null) {
+            await this.setTexture(tkey);
+        }
+    }
+
     async setTexture(
         textureKey: string,
         options?: {

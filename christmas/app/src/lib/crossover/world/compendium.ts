@@ -85,6 +85,7 @@ interface Prop {
 interface EquipmentAsset {
     asset?: AssetMetadata;
     tint?: Float32Array; // tints the texture (eg. under armour)
+    replace?: boolean; // replace the texture (defaults to overlay)
 }
 
 interface PropAttributes {
@@ -198,7 +199,7 @@ let compendium: Record<string, Prop> = {
         utilities: {},
         variables: {},
     },
-    steelboots: {
+    steelboot: {
         prop: "steelboot",
         defaultName: "Steel boots",
         asset: {
@@ -209,11 +210,15 @@ let compendium: Record<string, Prop> = {
                 asset: {
                     path: "http://localhost:5173/avatar/images/female_steel_plate/front_lower_leg.png",
                 },
+                replace: true,
+                tint: tints.none, // replace and remove tints added from other armor
             },
             backLowerLegBone: {
                 asset: {
                     path: "http://localhost:5173/avatar/images/female_steel_plate/back_lower_leg.png",
                 },
+                replace: true,
+                tint: tints.none,
             },
         },
         durability: 100,

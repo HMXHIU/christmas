@@ -2,10 +2,11 @@ import {
     compendium,
     isItemEquipped,
     tints,
-    type EquipmentAsset,
 } from "$lib/crossover/world/compendium";
+import type { AssetMetadata } from "$lib/crossover/world/types";
 import type { Item } from "$lib/server/crossover/redis/entities";
 import { Avatar } from "../../avatar/Avatar";
+import type { Bone } from "../../avatar/Bone";
 import { EntityContainer } from "./EntityContainer";
 
 export { AvatarEntityContainer };
@@ -41,29 +42,22 @@ class AvatarEntityContainer extends EntityContainer {
         }
     }
 
-    async setEquipmentAsset(
-        equipmentAsset: EquipmentAsset,
-        boneName: string,
+    async setBoneEquipmentTexture(
+        bone: Bone,
+        asset: AssetMetadata,
+        replace: boolean = false,
     ): Promise<string | null> {
-        if (boneName != null) {
-            const bone = this.avatar.getBone(boneName);
-            if (bone != null) {
-                const { tint, asset } = equipmentAsset;
-                const textureKey = equippedTextureKey(boneName);
-                // Set overlay texture
-                if (asset?.path != null) {
-                    await bone.setOverlayTexture(textureKey, {
-                        path: asset.path,
-                    });
-                }
-                // Tint texture (some assets only consist of tint)
-                if (tint != null) {
-                    bone.tintTexture(tint);
-                }
-                return textureKey;
-            }
+        const textureKey = equippedTextureKey(bone.name);
+        if (replace) {
+            await bone.setTexture(textureKey, {
+                path: asset.path,
+            });
+        } else {
+            await bone.setOverlayTexture(textureKey, {
+                path: asset.path,
+            });
         }
-        return null;
+        return textureKey;
     }
 
     /**
@@ -72,34 +66,53 @@ class AvatarEntityContainer extends EntityContainer {
      * @param items - Player equipped items
      */
     async loadInventory(items: Item[]) {
-        const equipped = new Set();
+        const equippedTextureKeys = new Set();
+        const equippedTints = new Set();
 
         // Load equipped item textures
         for (const item of items) {
             if (isItemEquipped(item, this.entity)) {
                 const prop = compendium[item.prop];
-
                 // Get all bone assets from equipmentAssets
                 if (prop.equipmentAssets != null) {
-                    for (const [boneName, equipmentAsset] of Object.entries(
-                        prop.equipmentAssets,
-                    )) {
-                        const textureKey = await this.setEquipmentAsset(
-                            equipmentAsset,
-                            boneName,
-                        );
-                        equipped.add(textureKey);
+                    for (const [
+                        boneName,
+                        { asset, tint, replace },
+                    ] of Object.entries(prop.equipmentAssets)) {
+                        const bone = this.avatar.getBone(boneName);
+                        if (bone == null) continue;
+
+                        if (asset != null) {
+                            equippedTextureKeys.add(
+                                await this.setBoneEquipmentTexture(
+                                    bone,
+                                    asset,
+                                    replace,
+                                ),
+                            );
+                        }
+
+                        if (tint != null) {
+                            bone.tintTexture(tint);
+                            equippedTints.add(boneName);
+                        }
                     }
                 }
             }
         }
 
-        // Use default texture for un-equipped items (needed when user unequips an item)
         for (const bone of this.avatar.getAllBones()) {
-            if (!equipped.has(equippedTextureKey(bone.name))) {
+            // Remove textures (use default)
+            if (!equippedTextureKeys.has(equippedTextureKey(bone.name))) {
                 // Clear overlay texture
-                bone.clearOverlayTexture();
-                // Reset tint
+                await bone.clearOverlayTexture();
+
+                // Set to default texture
+                await bone.setDefaultTexture();
+            }
+
+            // Remove tints
+            if (!equippedTints.has(bone.name)) {
                 bone.tintTexture(tints.none);
             }
         }
