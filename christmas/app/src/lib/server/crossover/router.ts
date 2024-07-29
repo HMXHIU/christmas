@@ -1,14 +1,10 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
-import { entityInRange, geohashesNearby } from "$lib/crossover/utils";
-import { actions } from "$lib/crossover/world/actions";
-import { compendium } from "$lib/crossover/world/compendium";
-import { PlayerMetadataSchema, playerStats } from "$lib/crossover/world/player";
+import { PlayerMetadataSchema } from "$lib/crossover/world/player";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/world";
 import {
     fetchEntity,
     initializeClients,
-    itemRepository,
     playerRepository,
     saveEntity,
     worldsInGeohashQuerySet,
@@ -17,22 +13,7 @@ import { PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
 import { performance } from "perf_hooks";
 import { z } from "zod";
-import {
-    LOOK_PAGE_SIZE,
-    checkAndSetBusy,
-    configureItem,
-    getPlayerState,
-    getUserMetadata,
-    loadPlayerEntity,
-    movePlayer,
-    performAbility,
-    performInventory,
-    performLook,
-    spawnItem,
-    spawnMonster,
-    spawnWorld,
-    useItem,
-} from ".";
+import { getPlayerState, getUserMetadata, loadPlayerEntity } from ".";
 import {
     FEE_PAYER_PUBKEY,
     createSerializedTransaction,
@@ -41,12 +22,28 @@ import {
 } from "..";
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, internalServiceProcedure, t } from "../trpc";
-import { performMonsterActions, spawnMonsters } from "./dungeonMaster";
+import { performAbility } from "./abilities";
 import {
-    inventoryQuerySet,
-    loggedInPlayersQuerySet,
-    playersInGeohashQuerySet,
-} from "./redis";
+    configureItem,
+    createItem,
+    dropItem,
+    equipItem,
+    movePlayer,
+    performInventory,
+    performLook,
+    rest,
+    say,
+    takeItem,
+    unequipItem,
+    useItem,
+} from "./actions";
+import {
+    performMonsterActions,
+    spawnMonster,
+    spawnMonsters,
+    spawnWorld,
+} from "./dungeonMaster";
+import { loggedInPlayersQuerySet } from "./redis";
 import type {
     ItemEntity,
     MonsterEntity,
@@ -55,11 +52,7 @@ import type {
     World,
     WorldEntity,
 } from "./redis/entities";
-import {
-    publishAffectedEntitiesToPlayers,
-    publishFeedEvent,
-    savePlayerState,
-} from "./utils";
+import { entityIsBusy, publishFeedEvent, savePlayerState } from "./utils";
 
 export { SaySchema, UserMetadataSchema, crossoverRouter };
 
@@ -148,6 +141,49 @@ const UserMetadataSchema = z.object({
     publicKey: z.string(),
     crossover: PlayerMetadataSchema.optional(),
 });
+
+const playerAuthProcedure = authProcedure.use(async ({ ctx, next }) => {
+    const player = (await tryFetchEntity(ctx.user.publicKey)) as PlayerEntity;
+
+    if (!player) {
+        throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Player not found",
+        });
+    }
+    return next({
+        ctx: {
+            ...ctx,
+            player,
+        },
+    });
+});
+
+const playerAuthBusyProcedure = playerAuthProcedure.use(
+    async ({ ctx, next }) => {
+        const [isBusy, now] = entityIsBusy(ctx.player);
+
+        if (isBusy) {
+            publishFeedEvent(ctx.player.player, {
+                type: "error",
+                message: "You are busy at the moment.",
+            });
+
+            // Throw a TRPCError to abort the procedure
+            throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "Player is busy",
+            });
+        }
+
+        return next({
+            ctx: {
+                ...ctx,
+                now,
+            },
+        });
+    },
+);
 
 // Router
 const crossoverRouter = {
@@ -255,90 +291,18 @@ const crossoverRouter = {
             return await getUserMetadata(ctx.user.publicKey);
         }),
         // player.inventory
-        inventory: authProcedure.query(async ({ ctx }) => {
-            // Get player
-            const player = (await tryFetchEntity(
-                ctx.user.publicKey,
-            )) as PlayerEntity;
-
-            performInventory(player);
+        inventory: playerAuthProcedure.query(async ({ ctx }) => {
+            performInventory(ctx.player);
         }),
         // player.equip
-        equip: authProcedure
+        equip: playerAuthBusyProcedure
             .input(EquipItemSchema)
             .query(async ({ ctx, input }) => {
                 const { item, slot } = input;
-
-                // Get player
-                let player = (await tryFetchEntity(
-                    ctx.user.publicKey,
-                )) as PlayerEntity;
-
-                // Check if player is busy
-                const { busy, entity } = await checkAndSetBusy({
-                    entity: player,
-                    action: actions.equip.action,
-                    publishEvent: true,
-                });
-                if (busy) {
-                    return;
-                }
-                player = entity as PlayerEntity;
-
-                let itemToEquip = (await tryFetchEntity(item)) as ItemEntity;
-
-                // Check if item is in player inventory (can be inventory or equipment slot)
-                if (itemToEquip.loc[0] !== player.player) {
-                    publishFeedEvent(player.player, {
-                        type: "error",
-                        message: `${item} is not in inventory`,
-                    });
-                    return;
-                }
-
-                // Check equipment slot
-                const slots = compendium[itemToEquip.prop].equipmentSlot;
-                if (!slots) {
-                    publishFeedEvent(player.player, {
-                        type: "error",
-                        message: `${item} is not equippable`,
-                    });
-                    return;
-                }
-                if (!slots.includes(slot)) {
-                    publishFeedEvent(player.player, {
-                        type: "error",
-                        message: `${item} cannot be equipped in ${slot}`,
-                    });
-                    return;
-                }
-
-                // Unequip existing item in slot
-                const exitingItemsInSlot = (await inventoryQuerySet(
-                    player.player,
-                )
-                    .and("locT")
-                    .equal(slot)
-                    .return.all()) as ItemEntity[];
-                for (const itemEntity of exitingItemsInSlot) {
-                    itemEntity.loc = [player.player];
-                    itemEntity.locT = "inv";
-                    await itemRepository.save(itemEntity.item, itemEntity);
-                }
-
-                // Equip item in slot
-                itemToEquip.loc = [player.player];
-                itemToEquip.locT = slot;
-                itemToEquip = (await itemRepository.save(
-                    itemToEquip.item,
-                    itemToEquip,
-                )) as ItemEntity;
-
-                // Perform inventory
-                performInventory(player);
+                equipItem(ctx.player, item, slot, ctx.now);
             }),
         // player.unequip
-        unequip: authProcedure
+        unequip: playerAuthBusyProcedure
             .input(
                 z.object({
                     item: z.string(),
@@ -346,49 +310,13 @@ const crossoverRouter = {
             )
             .query(async ({ ctx, input }) => {
                 const { item } = input;
-                let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
-
-                // Get player
-                let player = (await tryFetchEntity(
-                    ctx.user.publicKey,
-                )) as PlayerEntity;
-
-                // Check if player is busy
-                const { busy, entity } = await checkAndSetBusy({
-                    entity: player,
-                    action: actions.unequip.action,
-                    publishEvent: true,
-                });
-                if (busy) {
-                    return;
-                }
-                player = entity as PlayerEntity;
-
-                // Check item is on player
-                if (itemEntity.loc[0] !== player.player) {
-                    publishFeedEvent(player.player, {
-                        type: "error",
-                        message: `${item} is not equipped`,
-                    });
-                    return;
-                }
-
-                // Unequip item
-                itemEntity.loc = [player.player];
-                itemEntity.locT = "inv";
-                itemEntity = (await itemRepository.save(
-                    itemEntity.item,
-                    itemEntity,
-                )) as ItemEntity;
-
-                // Perform inventory
-                performInventory(player);
+                unequipItem(ctx.player, item, ctx.now);
             }),
     }),
     // Commands
     cmd: t.router({
         // cmd.take
-        take: authProcedure
+        take: playerAuthBusyProcedure
             .input(
                 z.object({
                     item: z.string(),
@@ -396,66 +324,10 @@ const crossoverRouter = {
             )
             .query(async ({ ctx, input }) => {
                 const { item } = input;
-
-                // Get player
-                let player = (await tryFetchEntity(
-                    ctx.user.publicKey,
-                )) as PlayerEntity;
-
-                // Check if player is busy
-                const { busy, entity } = await checkAndSetBusy({
-                    entity: player,
-                    action: actions.take.action,
-                    publishEvent: true,
-                });
-                if (busy) {
-                    return;
-                }
-                player = entity as PlayerEntity;
-
-                // Get item
-                let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
-
-                // Check item owner is player or public
-                if (itemEntity.own !== player.player && itemEntity.own) {
-                    publishFeedEvent(player.player, {
-                        type: "error",
-                        message: `${item} is owned by someone else`,
-                    });
-                    return;
-                }
-
-                // Check if in range
-                if (!entityInRange(player, itemEntity, actions.take.range)[0]) {
-                    publishFeedEvent(player.player, {
-                        type: "error",
-                        message: `${item} is not in range`,
-                    });
-                    return;
-                }
-
-                // Check if item is takeable
-                if (compendium[itemEntity.prop].weight < 0) {
-                    publishFeedEvent(player.player, {
-                        type: "error",
-                        message: `${item} cannot be taken`,
-                    });
-                    return;
-                }
-
-                // Take item
-                itemEntity.loc = [player.player];
-                itemEntity.locT = "inv";
-                itemEntity = (await itemRepository.save(
-                    itemEntity.item,
-                    itemEntity,
-                )) as ItemEntity;
-
-                // Perform look
-                performLook(player, { inventory: true });
+                takeItem(ctx.player, item, ctx.now);
             }),
         // cmd.drop
-        drop: authProcedure
+        drop: playerAuthBusyProcedure
             .input(
                 z.object({
                     item: z.string(),
@@ -463,267 +335,67 @@ const crossoverRouter = {
             )
             .query(async ({ ctx, input }) => {
                 const { item } = input;
-
-                // Get player
-                let player = (await tryFetchEntity(
-                    ctx.user.publicKey,
-                )) as PlayerEntity;
-
-                // Check if player is busy
-                const { busy, entity } = await checkAndSetBusy({
-                    entity: player,
-                    action: actions.drop.action,
-                    publishEvent: true,
-                });
-                if (busy) {
-                    return;
-                }
-                player = entity as PlayerEntity;
-
-                // Check item is in player inventory
-                let itemEntity = (await tryFetchEntity(item)) as ItemEntity;
-                if (itemEntity.loc[0] !== player.player) {
-                    publishFeedEvent(player.player, {
-                        type: "error",
-                        message: `${item} is not in inventory`,
-                    });
-                    return;
-                }
-
-                // Drop item
-                itemEntity.loc = player.loc;
-                itemEntity.locT = "geohash";
-                itemEntity = (await itemRepository.save(
-                    itemEntity.item,
-                    itemEntity,
-                )) as ItemEntity;
-
-                // Perform look
-                performLook(player, { inventory: true });
+                dropItem(ctx.player, item, ctx.now);
             }),
         // cmd.say
-        say: authProcedure.input(SaySchema).query(async ({ ctx, input }) => {
-            // Get player
-            let player = (await tryFetchEntity(
-                ctx.user.publicKey,
-            )) as PlayerEntity;
-
-            // Check if player is busy
-            const { busy, entity } = await checkAndSetBusy({
-                entity: player,
-                action: actions.say.action,
-                publishEvent: true,
-            });
-            if (busy) {
-                return;
-            }
-            player = entity as PlayerEntity;
-
-            // Get logged in players in geohash
-            const players = await playersInGeohashQuerySet(
-                geohashesNearby(player.loc[0].slice(0, -1), true), // use p7 square for `say` radius
-            ).return.allIds({ pageSize: LOOK_PAGE_SIZE }); // limit players using page size
-
-            // Send message to all players in the geohash (non blocking)
-            for (const publicKey of players) {
-                publishFeedEvent(publicKey, {
-                    type: "message",
-                    message: "${origin} says ${message}",
-                    variables: {
-                        cmd: "say",
-                        origin: ctx.user.publicKey,
-                        message: input.message,
-                    },
-                });
-            }
-        }),
+        say: playerAuthBusyProcedure
+            .input(SaySchema)
+            .query(async ({ ctx, input }) => {
+                say(ctx.player, input.message, ctx.now);
+            }),
         // cmd.look
-        look: authProcedure.input(LookSchema).query(async ({ ctx, input }) => {
-            // Get player
-            let player = (await tryFetchEntity(
-                ctx.user.publicKey,
-            )) as PlayerEntity;
-
-            // Perform look
-            performLook(player, { inventory: true });
-        }),
+        look: playerAuthProcedure
+            .input(LookSchema)
+            .query(async ({ ctx, input }) => {
+                performLook(ctx.player, { inventory: true });
+            }),
         // cmd.move
-        move: authProcedure.input(PathSchema).query(async ({ ctx, input }) => {
-            const { path } = input;
-
-            // Get player
-            let player = (await tryFetchEntity(
-                ctx.user.publicKey,
-            )) as PlayerEntity;
-
-            movePlayer(player, path);
-        }),
+        move: playerAuthProcedure
+            .input(PathSchema)
+            .query(async ({ ctx, input }) => {
+                const { path } = input;
+                movePlayer(ctx.player, path);
+            }),
         // cmd.performAbility
-        performAbility: authProcedure
+        performAbility: playerAuthProcedure
             .input(PerformAbilitySchema)
             .query(async ({ ctx, input }) => {
                 const { ability, target } = input;
-
-                // Perform ability (non blocking)
                 performAbility({
-                    self: (await tryFetchEntity(
-                        ctx.user.publicKey,
-                    )) as PlayerEntity,
-                    target: await tryFetchEntity(target),
+                    self: ctx.player,
+                    target,
                     ability,
                 });
             }),
         // cmd.useItem
-        useItem: authProcedure
+        useItem: playerAuthProcedure
             .input(UseItemSchema)
             .query(async ({ ctx, input }) => {
                 const { item, utility, target } = input;
-
-                // Get player
-                const player = (await tryFetchEntity(
-                    ctx.user.publicKey,
-                )) as PlayerEntity;
-
-                // Get item
-                const itemEntity = (await tryFetchEntity(item)) as ItemEntity;
-
-                // Use Item (non blocking)
                 useItem({
-                    self: player,
-                    item: itemEntity,
-                    target: target ? await tryFetchEntity(target) : undefined, // get target if provided
+                    self: ctx.player,
+                    item,
+                    target,
                     utility,
                 });
             }),
         // cmd.createItem
-        createItem: authProcedure
+        createItem: playerAuthBusyProcedure
             .input(CreateItemSchema)
             .query(async ({ ctx, input }) => {
                 const { geohash, prop, variables } = input;
-
-                // Get player
-                let player = (await tryFetchEntity(
-                    ctx.user.publicKey,
-                )) as PlayerEntity;
-
-                // Check if player is busy
-                const { busy, entity } = await checkAndSetBusy({
-                    entity: player,
-                    action: actions.create.action,
-                    publishEvent: true,
-                });
-                if (busy) {
-                    return;
-                }
-
-                player = entity as PlayerEntity;
-
-                try {
-                    // Create item
-                    await spawnItem({
-                        geohash,
-                        prop,
-                        variables,
-                        owner: player.player, // owner is player
-                        configOwner: player.player,
-                    });
-
-                    // Perform look
-                    performLook(player, { inventory: true });
-                } catch (error: any) {
-                    publishFeedEvent(player.player, {
-                        type: "error",
-                        message: error.message,
-                    });
-                    return;
-                }
+                createItem(ctx.player, geohash, prop, variables, ctx.now);
             }),
         // cmd.configureItem
-        configureItem: authProcedure
+        configureItem: playerAuthBusyProcedure
             .input(ConfigureItemSchema)
             .query(async ({ ctx, input }) => {
                 const { item, variables } = input;
-
-                // Get player
-                let player = (await tryFetchEntity(
-                    ctx.user.publicKey,
-                )) as PlayerEntity;
-
-                // Check if player is busy
-                const { busy, entity } = await checkAndSetBusy({
-                    entity: player,
-                    action: actions.configure.action,
-                    publishEvent: true,
-                });
-                if (busy) {
-                    return;
-                }
-
-                player = entity as PlayerEntity;
-                const itemEntity = (await tryFetchEntity(item)) as ItemEntity;
-
-                // Check in range
-                if (
-                    !entityInRange(
-                        player,
-                        itemEntity,
-                        actions.configure.range,
-                    )[0]
-                ) {
-                    publishFeedEvent(player.player, {
-                        type: "error",
-                        message: `${item} is not in range`,
-                    });
-                    return;
-                }
-
-                // Get & configure item
-                const result = await configureItem({
-                    self: player,
-                    item: itemEntity,
-                    variables,
-                });
-                if (result.status === "success") {
-                    // Perform look
-                    performLook(player, { inventory: true });
-                } else {
-                    publishFeedEvent(player.player, {
-                        type: "error",
-                        message: result.message,
-                    });
-                    return;
-                }
+                configureItem(ctx.player, item, variables, ctx.now);
             }),
         // cmd.rest
-        rest: authProcedure.query(async ({ ctx }) => {
-            // Get player
-            let player = (await tryFetchEntity(
-                ctx.user.publicKey,
-            )) as PlayerEntity;
-
-            // Check if player is busy
-            const { busy, entity } = await checkAndSetBusy({
-                entity: player,
-                action: actions.rest.action,
-                publishEvent: true,
-            });
-            if (busy) {
-                return;
-            }
-            player = entity as PlayerEntity;
-
-            // Rest player
-            player.hp = playerStats({ level: player.lvl }).hp;
-            player.mp = playerStats({ level: player.lvl }).mp;
-            player.st = playerStats({ level: player.lvl }).st;
-
-            // Save player
-            await playerRepository.save(player.player, player);
-
-            // Publish update event
-            publishAffectedEntitiesToPlayers([player], {
-                publishTo: player.player,
-            });
+        rest: playerAuthBusyProcedure.query(async ({ ctx }) => {
+            rest(ctx.player, ctx.now);
         }),
     }),
     // Authentication

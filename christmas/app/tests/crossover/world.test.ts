@@ -9,7 +9,7 @@ import {
 import {
     biomeAtGeohash,
     biomesNearbyGeohash,
-    heightAtGeohash,
+    elevationAtGeohash,
     topologyAtGeohash,
     topologyTile,
 } from "$lib/crossover/world/biomes";
@@ -20,7 +20,7 @@ import {
     gridCellToGeohash,
 } from "$lib/crossover/world/utils";
 import type { WorldSeed } from "$lib/crossover/world/world";
-import { spawnWorld } from "$lib/server/crossover";
+import { spawnWorld } from "$lib/server/crossover/dungeonMaster";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { createRandomPlayer, generateRandomGeohash } from "./utils";
@@ -527,23 +527,23 @@ test("Test World", async () => {
     ).resolves.toMatchObject(everest);
 
     // Test heightAtGeohash with LRUCache
-    var everestHeight = await heightAtGeohash("tvpjj3cd");
+    var everestHeight = await elevationAtGeohash("tvpjj3cd");
     expect(everestHeight).toBe(6352);
     await expect(
-        heightAtGeohash("tvpjj3cd", {
+        elevationAtGeohash("tvpjj3cd", {
             resultsCache,
             responseCache,
             bufferCache,
         }),
     ).resolves.toBe(everestHeight);
     await expect(
-        heightAtGeohash("tvpjj3cd", {
+        elevationAtGeohash("tvpjj3cd", {
             resultsCache,
             responseCache,
             bufferCache,
         }),
     ).resolves.toBe(
-        await heightAtGeohash("tvpjj3cd", {
+        await elevationAtGeohash("tvpjj3cd", {
             resultsCache,
             responseCache,
             bufferCache,

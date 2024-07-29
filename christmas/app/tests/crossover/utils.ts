@@ -20,7 +20,10 @@ import {
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { sanctuariesByRegion } from "$lib/crossover/world/world";
 import { hashObject } from "$lib/server";
-import { performAbility, performEffectOnEntity } from "$lib/server/crossover";
+import {
+    performAbility,
+    performEffectOnEntity,
+} from "$lib/server/crossover/abilities";
 import type {
     Item,
     ItemEntity,
@@ -277,7 +280,7 @@ export async function testMonsterPerformAbilityOnPlayer({
     // Perform ability on player
     await performAbility({
         self: monster,
-        target: player, // this will change player in place
+        target: player.player, // this will change player in place
         ability,
     });
 

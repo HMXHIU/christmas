@@ -9,7 +9,8 @@ import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
 import { compendium } from "$lib/crossover/world/compendium";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import type { Direction } from "$lib/crossover/world/types";
-import { movePlayer, spawnItem } from "$lib/server/crossover";
+import { movePlayer } from "$lib/server/crossover/actions";
+import { spawnItem } from "$lib/server/crossover/dungeonMaster";
 import { fetchEntity, initializeClients } from "$lib/server/crossover/redis";
 import type {
     ItemEntity,

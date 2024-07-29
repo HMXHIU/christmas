@@ -11,7 +11,7 @@ import {
 } from "$lib/crossover/world/abilities";
 import { actions } from "$lib/crossover/world/actions";
 import { compendium, type Utility } from "$lib/crossover/world/compendium";
-import { spawnItem, spawnMonster } from "$lib/server/crossover";
+import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import type { Item, ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";

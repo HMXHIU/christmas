@@ -15,11 +15,11 @@ import { compendium, itemAttibutes } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/world";
-import { configureItem, spawnItem } from "$lib/server/crossover";
+import { configureItem } from "$lib/server/crossover/actions";
+import { spawnItem } from "$lib/server/crossover/dungeonMaster";
 import { fetchEntity, initializeClients } from "$lib/server/crossover/redis";
 import type {
     Item,
-    ItemEntity,
     Player,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
@@ -369,20 +369,12 @@ test("Test Player", async () => {
     })) as Item;
 
     // Configure portals (dm)
-    await configureItem({
-        self: playerOne as PlayerEntity,
-        item: portalOne as ItemEntity,
-        variables: {
-            target: portalTwo.item,
-        },
+    await configureItem(playerOne as PlayerEntity, portalOne.item, {
+        target: portalTwo.item,
     });
     await sleep(MS_PER_TICK * 2);
-    await configureItem({
-        self: playerOne as PlayerEntity,
-        item: portalTwo as ItemEntity,
-        variables: {
-            target: portalOne.item,
-        },
+    await configureItem(playerOne as PlayerEntity, portalTwo.item, {
+        target: portalOne.item,
     });
     await sleep(MS_PER_TICK * 2);
 

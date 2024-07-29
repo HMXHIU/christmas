@@ -9,7 +9,7 @@ import {
 } from "$lib/crossover";
 import { compendium } from "$lib/crossover/world/compendium";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
-import { spawnItem } from "$lib/server/crossover";
+import { spawnItem } from "$lib/server/crossover/dungeonMaster";
 import { fetchEntity, initializeClients } from "$lib/server/crossover/redis";
 import type {
     ItemEntity,

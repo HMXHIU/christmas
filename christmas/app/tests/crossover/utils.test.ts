@@ -4,7 +4,7 @@ import {
     filterSortEntitiesInRange,
     geohashNeighbour,
 } from "$lib/crossover/utils";
-import { spawnMonster } from "$lib/server/crossover";
+import { spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { expect, test } from "vitest";
 import { generateRandomGeohash } from "./utils";

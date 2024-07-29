@@ -2,35 +2,101 @@
 
 ---
 
-When moving or looking (non targetted), the player receives the full entity data from redis. Instead it should only receive the require information to draw the entity on screen. Only provide more information when a player looks at a certain entity
+When moving or looking (non targetted), the player receives the full entity data from redis. Instead it should only receive the required information to draw the entity on screen. Only provide more information when a player looks at a certain entity
 
-```js
+```json
+// Full information currenly received
+[
+  {
+    "player": "DNURK18ss8xRihpEvjeL3vVaz9R6H29tU6KR5bCEWgFL",
+    "name": "Sauron",
+    "avatar": "http://localhost:5173/api/storage/avatar/public/DNURK18ss8xRihpEvjeL3vVaz9R6H29tU6KR5bCEWgFL-1d844ecc77a1e57344618fd0b2ed7a71d1fe15b489cf9e686b64b74b89e6b2f1-921150484.png",
+    "lgn": true,
+    "rgn": "SHN",
+    "loc": ["h9h5hzcw"],
+    "locT": "geohash",
+    "lvl": 1,
+    "hp": 10,
+    "mp": 10,
+    "st": 10,
+    "ap": 4,
+    "apclk": 0,
+    "buclk": 0,
+    "dbuf": [],
+    "buf": [],
+    "lum": 0,
+    "umb": 0
+  },
+  {
+    "item": "item_steelpauldron1691",
+    "name": "Steel Pauldrons",
+    "prop": "steelpauldron",
+    "loc": ["9WQYjAQUcwFwE6oBuTdjKzT9VSHzN5yZVK8RcReJ5A4v"],
+    "locT": "sh",
+    "own": "9WQYjAQUcwFwE6oBuTdjKzT9VSHzN5yZVK8RcReJ5A4v",
+    "cfg": "9WQYjAQUcwFwE6oBuTdjKzT9VSHzN5yZVK8RcReJ5A4v",
+    "cld": false,
+    "dur": 100,
+    "chg": 0,
+    "state": "default",
+    "vars": {},
+    "dbuf": [],
+    "buf": []
+  },
+  {
+    "monster": "monster_goblin10606",
+    "name": "goblin",
+    "beast": "goblin",
+    "loc": ["h9h5hzf4"],
+    "locT": "geohash",
+    "lvl": 1,
+    "hp": 19,
+    "mp": 20,
+    "st": 20,
+    "ap": 11,
+    "apclk": 1719407598459,
+    "buclk": 0,
+    "buf": [],
+    "dbuf": []
+  }
+]
+```
+
+```json
 {
-    name: "ben",
-    loc: [],
-    locT: "geohash",
+  // Common
+  "name": "ben",
 
-    // Player
-    player: "7umC2fKc8zH7s7M4aBDcWCthAJVsq6nyFKr6T7AaQdLZ",
+  // Location
+  "loc": [],
+  "locT": "geohash",
 
-    // Item
-    item: "item_woodenclub969",
-    prop: "woodendoor",
-    state: "open",
+  // Path (only if entity is moving)
+  "pthst": "geohash",
+  "pth": ["nw", "ne", "s"],
+  "pthdur": 1,
 
-    // Monster
-    monster: "monster_goblin10609",
-    beast: "goblin",
+  // Player
+  "player": "7umC2fKc8zH7s7M4aBDcWCthAJVsq6nyFKr6T7AaQdLZ",
+
+  // Item
+  "item": "item_woodenclub969",
+  "prop": "woodendoor",
+  "state": "open",
+
+  // Monster
+  "monster": "monster_goblin10609",
+  "beast": "goblin"
 }
 ```
 
 #### Drawing monsters and items
 
-All the information required can be found in the compendium or bestiary on the client.
+- [ ] All the information required can be found in the compendium or bestiary on the client.
 
 #### Drawing players
 
-There should be an GET request endpoint for the player to request equipment data (items:locT = EquipmentSlot). This data can be cached in the client, or the client can draw a generic entity until the equipment data is received.
+- [ ] There should be an GET request endpoint for the player to request equipment data (items:locT = EquipmentSlot). This data can be cached in the client, or the client can draw a generic entity until the equipment data is received.
 
 # Problem: When the entities are out of view, they are culled, but when the player moves back, they are not recreated
 

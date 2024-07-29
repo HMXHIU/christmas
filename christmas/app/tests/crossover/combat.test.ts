@@ -5,7 +5,7 @@ import { compendium } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { sanctuariesByRegion } from "$lib/crossover/world/world";
-import { spawnItem, spawnMonster } from "$lib/server/crossover";
+import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import {
     fetchEntity,
     initializeClients,

@@ -7,7 +7,7 @@ import {
 import { abilities, type Ability } from "$lib/crossover/world/abilities";
 import type { Utility } from "$lib/crossover/world/compendium";
 import { compendium } from "$lib/crossover/world/compendium";
-import { spawnItem, spawnMonster } from "$lib/server/crossover";
+import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import type {
     Item,

@@ -11,7 +11,7 @@ import { trpc } from "$lib/trpcClient";
 import { retry, signAndSendTransaction, sleep } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";
 import type { HTTPHeaders } from "@trpc/client";
-import { get } from "svelte/store";
+import { get, type Writable } from "svelte/store";
 import type {
     FeedEvent,
     StreamEvent,
@@ -149,11 +149,126 @@ async function updateWorlds(geohash: string) {
     });
 }
 
-async function handleUpdatePlayer(before: Player, after: Player) {
-    // Location changed
+// function handleUpdateEntities(
+//     {
+//         players,
+//         items,
+//         monsters,
+//     }: {
+//         players?: Player[];
+//         items?: Item[];
+//         monsters?: Monster[];
+//     },
+//     op?: "upsert" | "replace",
+// ) {
+//     const self = get(player);
+//     op ??= "upsert";
+
+//     // Update player
+//     if (players != null && players.length > 0) {
+//         for (const p of players) {
+//             if (p.player === self?.player) {
+//                 // TODO: Side effects here is hard to understand
+//                 handleUpdatePlayer(self, p);
+//                 player.set(p);
+//                 break;
+//             }
+//         }
+//     }
+
+//     // Update playerRecord
+//     if (players != null && players.length > 0) {
+//         const otherPlayers = players.filter((p) => p.player !== self?.player);
+//         if (otherPlayers.length > 0) {
+//             playerRecord.update((pr) => {
+//                 if (op === "replace") {
+//                     pr = {};
+//                 }
+//                 for (const p of otherPlayers) {
+//                     pr[p.player] = p;
+//                 }
+//                 return pr;
+//             });
+//         }
+//     }
+
+//     // Update itemRecord
+//     if (items != null && items.length > 0) {
+//         itemRecord.update((ir) => {
+//             if (op === "replace") {
+//                 ir = {};
+//             }
+//             for (const i of items) {
+//                 ir[i.item] = i;
+//             }
+//             return ir;
+//         });
+//     }
+
+//     // Update monsterRecord
+//     if (monsters != null && monsters.length > 0) {
+//         monsterRecord.update((mr) => {
+//             if (op === "replace") {
+//                 mr = {};
+//             }
+//             for (const m of monsters) {
+//                 if (mr[m.monster]) {
+//                     displayEntityEffects(mr[m.monster], m);
+//                 }
+//                 mr[m.monster] = m;
+//             }
+//             return mr;
+//         });
+//     }
+// }
+
+async function handlePlayerChanged(before: Player, after: Player) {
+    // Update world on location changed
     if (before.loc[0] !== after.loc[0]) {
         await updateWorlds(after.loc[0]);
     }
+}
+
+async function updatePlayer(
+    p: Player,
+    op: "upsert" | "replace",
+    handleChanged?: (oldEntity: Player, newEntity: Player) => void,
+) {
+    const oldPlayer = get(player);
+    const newPlayer = op === "replace" ? p : { ...oldPlayer, ...p };
+    if (handleChanged && oldPlayer) {
+        handleChanged(oldPlayer, newPlayer);
+    }
+    player.set(newPlayer);
+}
+
+function updateRecord<T extends { [key: string]: any }>(
+    record: Writable<Record<string, T>>,
+    entities: T[],
+    idKey: keyof T & string,
+    op: "upsert" | "replace",
+    handleChanged?: (oldEntity: T, newEntity: T) => void,
+) {
+    record.update((r) => {
+        // Replace entire record
+        const newRecord = op === "replace" ? {} : r;
+
+        for (const entity of entities) {
+            const entityId = entity[idKey];
+            // Update entity
+            if (newRecord[entityId]) {
+                const updatedEnity = { ...newRecord[entityId], ...entity };
+                if (handleChanged) {
+                    handleChanged(newRecord[entityId], updatedEnity);
+                }
+            }
+            // Create entity
+            else {
+                newRecord[entityId] = entity;
+            }
+        }
+        return newRecord;
+    });
 }
 
 function handleUpdateEntities(
@@ -166,66 +281,38 @@ function handleUpdateEntities(
         items?: Item[];
         monsters?: Monster[];
     },
-    op?: "upsert" | "replace",
+    op: "upsert" | "replace" = "upsert",
 ) {
-    const self = get(player);
-    op ??= "upsert";
+    if (players?.length) {
+        const self = get(player);
 
-    // Update player
-    if (players != null && players.length > 0) {
-        for (const p of players) {
-            if (p.player === self?.player) {
-                // TODO: Side effects here is hard to understand
-                handleUpdatePlayer(self, p);
-                player.set(p);
-                break;
-            }
+        // Update player
+        const p = players.find((p) => p.player === self?.player);
+        if (p != null) {
+            updatePlayer(p, op, handlePlayerChanged);
         }
-    }
 
-    // Update playerRecord
-    if (players != null && players.length > 0) {
+        // Update playerRecord (excluding self)
         const otherPlayers = players.filter((p) => p.player !== self?.player);
-        if (otherPlayers.length > 0) {
-            playerRecord.update((pr) => {
-                if (op === "replace") {
-                    pr = {};
-                }
-                for (const p of otherPlayers) {
-                    pr[p.player] = p;
-                }
-                return pr;
-            });
+        if (otherPlayers.length) {
+            updateRecord<Player>(playerRecord, otherPlayers, "player", op);
         }
     }
 
     // Update itemRecord
-    if (items != null && items.length > 0) {
-        itemRecord.update((ir) => {
-            if (op === "replace") {
-                ir = {};
-            }
-            for (const i of items) {
-                ir[i.item] = i;
-            }
-            return ir;
-        });
+    if (items?.length) {
+        updateRecord<Item>(itemRecord, items, "item", op);
     }
 
     // Update monsterRecord
-    if (monsters != null && monsters.length > 0) {
-        monsterRecord.update((mr) => {
-            if (op === "replace") {
-                mr = {};
-            }
-            for (const m of monsters) {
-                if (mr[m.monster]) {
-                    displayEntityEffects(mr[m.monster], m);
-                }
-                mr[m.monster] = m;
-            }
-            return mr;
-        });
+    if (monsters?.length) {
+        updateRecord<Monster>(
+            monsterRecord,
+            monsters,
+            "monster",
+            op,
+            displayEntityEffects,
+        );
     }
 }
 

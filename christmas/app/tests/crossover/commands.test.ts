@@ -9,7 +9,7 @@ import { geohashNeighbour } from "$lib/crossover/utils";
 import { abilities } from "$lib/crossover/world/abilities";
 import { compendium } from "$lib/crossover/world/compendium";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
-import { spawnItem, spawnMonster } from "$lib/server/crossover";
+import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import type {
     Item,

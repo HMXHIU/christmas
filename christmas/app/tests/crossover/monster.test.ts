@@ -2,10 +2,11 @@ import { geohashNeighbour } from "$lib/crossover/utils";
 import { abilities } from "$lib/crossover/world/abilities";
 import { monsterLUReward, monsterStats } from "$lib/crossover/world/bestiary";
 import { compendium } from "$lib/crossover/world/compendium";
-import { spawnItem, spawnMonster } from "$lib/server/crossover";
 import {
     performMonsterActions,
     selectMonsterAbility,
+    spawnItem,
+    spawnMonster,
 } from "$lib/server/crossover/dungeonMaster";
 import {
     initializeClients,
