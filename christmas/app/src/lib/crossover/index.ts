@@ -239,6 +239,8 @@ async function updatePlayer(
     if (handleChanged && oldPlayer) {
         handleChanged(oldPlayer, newPlayer);
     }
+
+    console.log(JSON.stringify(p, null, 2));
     player.set(newPlayer);
 }
 

@@ -1,9 +1,10 @@
-import { crossoverCmdMove, stream } from "$lib/crossover";
+import { crossoverCmdMove } from "$lib/crossover";
 import {
     aStarPathfinding,
     geohashNeighbour,
     getGeohashesForPath,
     getPositionsForPath,
+    isEntityInMotion,
 } from "$lib/crossover/utils";
 import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
 import { compendium } from "$lib/crossover/world/compendium";
@@ -11,237 +12,245 @@ import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import type { Direction } from "$lib/crossover/world/types";
 import { movePlayer } from "$lib/server/crossover/actions";
 import { spawnItem } from "$lib/server/crossover/dungeonMaster";
-import { fetchEntity, initializeClients } from "$lib/server/crossover/redis";
+import {
+    fetchEntity,
+    initializeClients,
+    saveEntity,
+} from "$lib/server/crossover/redis";
 import type {
     ItemEntity,
-    Player,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
+import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { cloneDeep } from "lodash";
-import { expect, test } from "vitest";
-import { getRandomRegion } from "../utils";
+import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import {
-    createRandomPlayer,
+    createGandalfSarumanSauron,
     generateRandomGeohash,
     waitForEventData,
 } from "./utils";
 
-test("Test Pathfinding", async () => {
-    // Test `getGeohashesForPath`
-    expect(getGeohashesForPath("swbb81k4", ["e", "e"])).toMatchObject([
-        "swbb81k4",
-        "swbb81k6",
-        "swbb81kd",
-    ]);
+let region: string;
+let geohash: string;
+let playerOne: PlayerEntity;
+let playerTwo: PlayerEntity;
+let playerThree: PlayerEntity;
+let playerOneCookies: string;
+let playerTwoCookies: string;
+let playerThreeCookies: string;
+let playerOneStream: EventTarget;
+let playerTwoStream: EventTarget;
+let playerThreeStream: EventTarget;
+let playerOneWallet: NodeWallet;
+let playerTwoWallet: NodeWallet;
+let playerThreeWallet: NodeWallet;
 
-    // Test `getPositionsForPath`
-    var positions = getPositionsForPath({ row: 0, col: 0 }, ["e", "e"]);
-    expect(positions).toMatchObject([
-        { row: 0, col: 0 },
-        { row: 0, col: 1 },
-        { row: 0, col: 2 },
-    ]);
-
-    /*
-     * Test pathfinding without obstacles
-     */
-    var path = aStarPathfinding({
-        rowStart: 0,
-        colStart: 0,
-        rowEnd: 3,
-        colEnd: 3,
-        getTraversalCost: (row, col) => {
-            return 0;
-        },
-    });
-    expect(path).toMatchObject(["se", "se", "se"]);
-    var path = aStarPathfinding({
-        rowStart: 3,
-        colStart: 3,
-        rowEnd: 0,
-        colEnd: 0,
-        getTraversalCost: (row, col) => {
-            return 0;
-        },
-    });
-    expect(path).toMatchObject(["nw", "nw", "nw"]);
-    var path = aStarPathfinding({
-        rowStart: 3,
-        colStart: 3,
-        rowEnd: 3,
-        colEnd: 1,
-        getTraversalCost: (row, col) => {
-            return 0;
-        },
-    });
-    expect(path).toMatchObject(["w", "w"]);
-
-    /*
-     *Test with obstacles
-     */
-
-    /*
-     * s 0 0 0 0
-     * 0 0 0 0 0
-     * 0 1 1 1 0
-     * 0 0 0 0 0
-     * 0 0 0 0 e
-     */
-    var path = aStarPathfinding({
-        rowStart: 0,
-        colStart: 0,
-        rowEnd: 4,
-        colEnd: 4,
-        getTraversalCost: (row, col) => {
-            if (
-                (row == 2 && col == 1) ||
-                (row == 2 && col == 2) ||
-                (row == 2 && col == 3)
-            ) {
-                return 1;
-            }
-            return 0;
-        },
-    });
-    expect(path).toMatchObject(["se", "e", "e", "se", "s", "s"]);
-});
-
-test("Test Movement", async () => {
+beforeAll(async () => {
     await initializeClients(); // create redis repositories
 
-    // Player one
-    const playerOneName = "Gandalf";
-    let playerOneGeohash = generateRandomGeohash(8, "h9");
-    let [playerOneWallet, playerOneCookies, playerOne] =
-        await createRandomPlayer({
-            region: String.fromCharCode(...getRandomRegion()),
-            geohash: playerOneGeohash,
-            name: playerOneName,
-        });
-
-    // Create streams
-    const [playerOneStream, playerOneCloseStream] = await stream({
-        Cookie: playerOneCookies,
-    });
-    await expect(
-        waitForEventData(playerOneStream, "feed"),
-    ).resolves.toMatchObject({
-        type: "system",
-        message: "started",
-    });
-
-    /*
-     * Test obstructive item
-     */
-
-    // Spawn tavern below playerOne
-    const tavernGeohash = geohashNeighbour(playerOneGeohash, "s"); // below playerOne
-
-    let tavern = (await spawnItem({
-        geohash: tavernGeohash,
-        prop: compendium.tavern.prop,
-    })) as ItemEntity;
-
-    const tavernOrigin = geohashNeighbour(playerOneGeohash, "s");
-    expect(tavern).toMatchObject({
-        loc: [
-            tavernOrigin,
-            geohashNeighbour(tavernOrigin, "e"),
-            geohashNeighbour(tavernOrigin, "s"),
-            geohashNeighbour(tavernOrigin, "se"),
-        ],
-        locT: "geohash",
-    });
-
-    // PlayerOne tries to move south (obstructed by tavern)
-    await crossoverCmdMove({ path: ["s"] }, { Cookie: playerOneCookies });
-    await expect(
-        waitForEventData(playerOneStream, "feed"),
-    ).resolves.toMatchObject({
-        type: "error",
-        message: "Path is not traversable",
-    });
-    await sleep(MS_PER_TICK * 2);
-
-    // PlayerOne move each (unobstructed)
-    await crossoverCmdMove({ path: ["e"] }, { Cookie: playerOneCookies });
-    await sleep(MS_PER_TICK * 2);
-    playerOne = (await fetchEntity(playerOne.player)) as Player;
-    const biome = (
-        await biomeAtGeohash(geohashNeighbour(playerOneGeohash, "e"))
-    )[0];
-    expect(biomes[biome].traversableSpeed).toBeGreaterThan(0);
-    expect(playerOne.loc[0]).toBe(geohashNeighbour(playerOneGeohash, "e"));
-
-    // PlayerOne tries to move south (obstructed by tavern)
-    await crossoverCmdMove({ path: ["s"] }, { Cookie: playerOneCookies });
-    await expect(
-        waitForEventData(playerOneStream, "feed"),
-    ).resolves.toMatchObject({
-        type: "error",
-        message: "Path is not traversable",
-    });
-    await sleep(MS_PER_TICK * 2);
-
-    // PlayerOne move south east (unobstructed)
-    const playerOneBefore = cloneDeep(playerOne);
-    await crossoverCmdMove({ path: ["se"] }, { Cookie: playerOneCookies });
-    await sleep(MS_PER_TICK * 2);
-    playerOne = (await fetchEntity(playerOne.player)) as Player;
-    expect(playerOne.loc[0]).toBe(
-        geohashNeighbour(playerOneBefore.loc[0], "se"),
-    );
-
-    // PlayerOne move west (obstructed by tavern)
-    await crossoverCmdMove({ path: ["w"] }, { Cookie: playerOneCookies });
-    await expect(
-        waitForEventData(playerOneStream, "feed"),
-    ).resolves.toMatchObject({
-        type: "error",
-        message: "Path is not traversable",
-    });
+    ({
+        region,
+        geohash,
+        playerOne,
+        playerTwo,
+        playerThree,
+        playerOneCookies,
+        playerTwoCookies,
+        playerThreeCookies,
+        playerOneStream,
+        playerTwoStream,
+        playerThreeStream,
+        playerOneWallet,
+        playerTwoWallet,
+        playerThreeWallet,
+    } = await createGandalfSarumanSauron());
 });
 
-test("Test `movePlayer`", async () => {
-    await initializeClients(); // create redis repositories
+beforeEach(async () => {
+    geohash = generateRandomGeohash(8, "h9b");
 
-    // Player one
-    const playerOneName = "Gandalf";
-    let playerOneGeohash = generateRandomGeohash(8, "h9");
-    let [playerOneWallet, playerOneCookies, playerOne] =
-        await createRandomPlayer({
-            region: String.fromCharCode(...getRandomRegion()),
-            geohash: playerOneGeohash,
-            name: playerOneName,
+    // Reset playerOne location
+    playerOne.loc = [geohash];
+    playerOne = (await saveEntity(playerOne)) as PlayerEntity;
+});
+
+describe("Movement Tests", () => {
+    test("Test Pathfinding", async () => {
+        // Test `getGeohashesForPath`
+        expect(getGeohashesForPath("swbb81k4", ["e", "e"])).toMatchObject([
+            "swbb81k4",
+            "swbb81k6",
+            "swbb81kd",
+        ]);
+
+        // Test `getPositionsForPath`
+        var positions = getPositionsForPath({ row: 0, col: 0 }, ["e", "e"]);
+        expect(positions).toMatchObject([
+            { row: 0, col: 0 },
+            { row: 0, col: 1 },
+            { row: 0, col: 2 },
+        ]);
+
+        /*
+         * Test pathfinding without obstacles
+         */
+        var path = aStarPathfinding({
+            rowStart: 0,
+            colStart: 0,
+            rowEnd: 3,
+            colEnd: 3,
+            getTraversalCost: (row, col) => {
+                return 0;
+            },
+        });
+        expect(path).toMatchObject(["se", "se", "se"]);
+        var path = aStarPathfinding({
+            rowStart: 3,
+            colStart: 3,
+            rowEnd: 0,
+            colEnd: 0,
+            getTraversalCost: (row, col) => {
+                return 0;
+            },
+        });
+        expect(path).toMatchObject(["nw", "nw", "nw"]);
+        var path = aStarPathfinding({
+            rowStart: 3,
+            colStart: 3,
+            rowEnd: 3,
+            colEnd: 1,
+            getTraversalCost: (row, col) => {
+                return 0;
+            },
+        });
+        expect(path).toMatchObject(["w", "w"]);
+
+        /*
+         *Test with obstacles
+         */
+
+        /*
+         * s 0 0 0 0
+         * 0 0 0 0 0
+         * 0 1 1 1 0
+         * 0 0 0 0 0
+         * 0 0 0 0 e
+         */
+        var path = aStarPathfinding({
+            rowStart: 0,
+            colStart: 0,
+            rowEnd: 4,
+            colEnd: 4,
+            getTraversalCost: (row, col) => {
+                if (
+                    (row == 2 && col == 1) ||
+                    (row == 2 && col == 2) ||
+                    (row == 2 && col == 3)
+                ) {
+                    return 1;
+                }
+                return 0;
+            },
+        });
+        expect(path).toMatchObject(["se", "e", "e", "se", "s", "s"]);
+    });
+
+    test("Test Movement", async () => {
+        const playerOneGeohash = playerOne.loc[0];
+
+        // Spawn tavern below playerOne
+        const tavernGeohash = geohashNeighbour(playerOneGeohash, "s");
+        let tavern = (await spawnItem({
+            geohash: tavernGeohash,
+            prop: compendium.tavern.prop,
+        })) as ItemEntity;
+        const tavernOrigin = geohashNeighbour(playerOneGeohash, "s");
+        expect(tavern).toMatchObject({
+            loc: [
+                tavernOrigin,
+                geohashNeighbour(tavernOrigin, "e"),
+                geohashNeighbour(tavernOrigin, "s"),
+                geohashNeighbour(tavernOrigin, "se"),
+            ],
+            locT: "geohash",
         });
 
-    // Create streams
-    const [playerOneStream, playerOneCloseStream] = await stream({
-        Cookie: playerOneCookies,
+        // PlayerOne tries to move south (obstructed by tavern)
+        await expect(
+            crossoverCmdMove({ path: ["s"] }, { Cookie: playerOneCookies }),
+        ).rejects.toThrowError("Path is not traversable");
+        await expect(
+            waitForEventData(playerOneStream, "feed"),
+        ).resolves.toMatchObject({
+            type: "error",
+            message: "Path is not traversable",
+        });
+        await sleep(MS_PER_TICK * 2);
+
+        // PlayerOne move each (unobstructed)
+        await crossoverCmdMove({ path: ["e"] }, { Cookie: playerOneCookies });
+        await sleep(MS_PER_TICK * 2);
+        playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
+        const biome = (
+            await biomeAtGeohash(geohashNeighbour(playerOneGeohash, "e"))
+        )[0];
+        expect(biomes[biome].traversableSpeed).toBeGreaterThan(0);
+        expect(playerOne.loc[0]).toBe(geohashNeighbour(playerOneGeohash, "e"));
+
+        // PlayerOne tries to move south (obstructed by tavern)
+        await expect(
+            crossoverCmdMove({ path: ["s"] }, { Cookie: playerOneCookies }),
+        ).rejects.toThrowError("Path is not traversable");
+        await expect(
+            waitForEventData(playerOneStream, "feed"),
+        ).resolves.toMatchObject({
+            type: "error",
+            message: "Path is not traversable",
+        });
+        await sleep(MS_PER_TICK * 2);
+
+        // PlayerOne move south east (unobstructed)
+        const playerOneBefore = cloneDeep(playerOne);
+        await crossoverCmdMove({ path: ["se"] }, { Cookie: playerOneCookies });
+        await sleep(MS_PER_TICK * 2);
+        playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
+        expect(playerOne.loc[0]).toBe(
+            geohashNeighbour(playerOneBefore.loc[0], "se"),
+        );
+
+        // PlayerOne move west (obstructed by tavern)
+        await expect(
+            crossoverCmdMove({ path: ["w"] }, { Cookie: playerOneCookies }),
+        ).rejects.toThrowError("Path is not traversable");
+        await expect(
+            waitForEventData(playerOneStream, "feed"),
+        ).resolves.toMatchObject({
+            type: "error",
+            message: "Path is not traversable",
+        });
     });
-    await expect(
-        waitForEventData(playerOneStream, "feed"),
-    ).resolves.toMatchObject({
-        type: "system",
-        message: "started",
+
+    test("Test `movePlayer`", async () => {
+        const playerOneGeohash = playerOne.loc[0];
+        const path: Direction[] = ["s", "s", "s", "s"];
+        const finalGeohash = geohashNeighbour(playerOneGeohash, "s", 4);
+
+        playerOne = await movePlayer(playerOne as PlayerEntity, path);
+
+        // Check in motion
+        expect(isEntityInMotion(playerOne)).equal(true);
+
+        // Check pthst
+        expect(playerOne.pthst).toBe(playerOneGeohash);
+
+        // Check pth
+        expect(playerOne.pth).toMatchObject(["s", "s", "s", "s"]);
+
+        // Check pthdur, pthclk
+        expect(playerOne.pthclk + playerOne.pthdur).toBeGreaterThan(Date.now());
+
+        // Check final destination
+        expect(playerOne.loc[0]).toBe(finalGeohash);
     });
-
-    const path: Direction[] = ["s", "s", "s", "s"];
-    const finalGeohash = geohashNeighbour(playerOneGeohash, "s", 4);
-
-    await movePlayer(playerOne as PlayerEntity, path);
-    playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
-
-    // Check pthst
-    expect(playerOne.pthst).toBe(playerOneGeohash);
-
-    // Check pth
-    expect(playerOne.pth).toMatchObject(["s", "s", "s", "s"]);
-
-    // Check pthdur, pthclk
-    expect(playerOne.pthclk + playerOne.pthdur).toBeGreaterThan(Date.now());
-
-    // Check final destination
-    expect(playerOne.loc[0]).toBe(finalGeohash);
 });

@@ -299,14 +299,14 @@ const crossoverRouter = {
         }),
         // player.inventory
         inventory: playerAuthProcedure.query(async ({ ctx }) => {
-            performInventory(ctx.player);
+            await performInventory(ctx.player);
         }),
 
         // player.probeEquipment
         probeEquipment: playerAuthProcedure
             .input(TargetPlayerSchema)
             .query(async ({ ctx, input }) => {
-                probeEquipment(ctx.player, input.player);
+                await probeEquipment(ctx.player, input.player);
             }),
     }),
     // Commands
@@ -316,54 +316,54 @@ const crossoverRouter = {
             .input(TargetItemSchema)
             .query(async ({ ctx, input }) => {
                 const { item } = input;
-                takeItem(ctx.player, item, ctx.now);
+                await takeItem(ctx.player, item, ctx.now);
             }),
         // cmd.equip
         equip: playerAuthBusyProcedure
             .input(EquipItemSchema)
             .query(async ({ ctx, input }) => {
                 const { item, slot } = input;
-                equipItem(ctx.player, item, slot, ctx.now);
+                await equipItem(ctx.player, item, slot, ctx.now);
             }),
         // cmd.unequip
         unequip: playerAuthBusyProcedure
             .input(TargetItemSchema)
             .query(async ({ ctx, input }) => {
                 const { item } = input;
-                unequipItem(ctx.player, item, ctx.now);
+                await unequipItem(ctx.player, item, ctx.now);
             }),
         // cmd.drop
         drop: playerAuthBusyProcedure
             .input(TargetItemSchema)
             .query(async ({ ctx, input }) => {
                 const { item } = input;
-                dropItem(ctx.player, item, ctx.now);
+                await dropItem(ctx.player, item, ctx.now);
             }),
         // cmd.say
         say: playerAuthBusyProcedure
             .input(SaySchema)
             .query(async ({ ctx, input }) => {
-                say(ctx.player, input.message, ctx.now);
+                await say(ctx.player, input.message, ctx.now);
             }),
         // cmd.look
         look: playerAuthProcedure
             .input(LookSchema)
             .query(async ({ ctx, input }) => {
-                performLook(ctx.player, { inventory: true });
+                await performLook(ctx.player, { inventory: true });
             }),
         // cmd.move
-        move: playerAuthProcedure
+        move: playerAuthBusyProcedure
             .input(PathSchema)
             .query(async ({ ctx, input }) => {
                 const { path } = input;
-                movePlayer(ctx.player, path);
+                await movePlayer(ctx.player, path, ctx.now);
             }),
         // cmd.performAbility
         performAbility: playerAuthProcedure
             .input(PerformAbilitySchema)
             .query(async ({ ctx, input }) => {
                 const { ability, target } = input;
-                performAbility({
+                await performAbility({
                     self: ctx.player,
                     target,
                     ability,
@@ -374,7 +374,7 @@ const crossoverRouter = {
             .input(UseItemSchema)
             .query(async ({ ctx, input }) => {
                 const { item, utility, target } = input;
-                useItem({
+                await useItem({
                     self: ctx.player,
                     item,
                     target,
@@ -386,18 +386,18 @@ const crossoverRouter = {
             .input(CreateItemSchema)
             .query(async ({ ctx, input }) => {
                 const { geohash, prop, variables } = input;
-                createItem(ctx.player, geohash, prop, variables, ctx.now);
+                await createItem(ctx.player, geohash, prop, variables, ctx.now);
             }),
         // cmd.configureItem
         configureItem: playerAuthBusyProcedure
             .input(ConfigureItemSchema)
             .query(async ({ ctx, input }) => {
                 const { item, variables } = input;
-                configureItem(ctx.player, item, variables, ctx.now);
+                await configureItem(ctx.player, item, variables, ctx.now);
             }),
         // cmd.rest
         rest: playerAuthBusyProcedure.query(async ({ ctx }) => {
-            rest(ctx.player, ctx.now);
+            await rest(ctx.player, ctx.now);
         }),
     }),
     // Authentication

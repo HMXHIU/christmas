@@ -92,7 +92,7 @@ When moving or looking (non targetted), the player receives the full entity data
 
 #### Drawing monsters and items
 
-- [ ] All the information required can be found in the compendium or bestiary on the client.
+- [x] All the information required can be found in the compendium or bestiary on the client.
 
 #### Drawing players
 
@@ -102,7 +102,7 @@ When moving or looking (non targetted), the player receives the full entity data
 
 ---
 
-- [ ] Only send the minimum amount of data for rendering to the client (see above)
+- [c] Only send the minimum amount of data for rendering to the client (see above)
 - [x] Do not cull entity data from the client unless it is very far away
 - [x] As the player moves new data that he does not have should be streamed to him
 - [x] Stream entity data from a larger area. To make things simpler just get the 9 neighbours of 6 precision geohash (see `geohashesNearby`)
@@ -131,10 +131,10 @@ When receiving movement data:
 ```js
 // send & receive
 {
-    pthclk: 973614596,
-    pthdur: 1000,
-    pthst: "geeohash",
-    pth:['nw', 'ne', 'e', 's'],
+  pthclk: 973614596,
+  pthdur: 1000,
+  pthst: "geeohash",
+  pth:['nw', 'ne', 'e', 's']
 }
 ```
 

@@ -498,8 +498,8 @@ function getEntityId(entity: Player | Monster | Item): [string, EntityType] {
     }
 }
 
-function isEntityInMotion(entity: Player | Monster): boolean {
-    return entity.pthclk + entity.pthdur < Date.now();
+function isEntityInMotion(entity: Player | Monster, now?: number): boolean {
+    return entity.pthclk + entity.pthdur > (now ?? Date.now());
 }
 
 function minifiedEntity(
@@ -508,6 +508,7 @@ function minifiedEntity(
         location?: boolean;
         stats?: boolean; // hp, mp, st, etc ...
         timers?: boolean; // apclk, buclk
+        now?: number;
     },
 ): Player | Monster | Item {
     const [entityId, entityType] = getEntityId(entity);

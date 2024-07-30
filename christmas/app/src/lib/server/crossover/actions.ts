@@ -100,6 +100,7 @@ async function movePlayer(
     now?: number,
 ): Promise<PlayerEntity> {
     // Get path duration
+    now = now ?? Date.now();
     const duration = calculatePathDuration(path);
 
     // Check if player is busy
@@ -137,14 +138,14 @@ async function movePlayer(
     player.pth = path;
     player.pthst = player.loc[0]; // origin is always the first loc
     player.pthdur = duration;
-    player.pthclk = Date.now();
+    player.pthclk = now;
     player.loc = loc; // update loc immediately to final location (client and server to use `pthclk` to determine exact location)
     player = (await saveEntity(player)) as PlayerEntity;
 
     // Inform all players nearby of location change
     const nearbyPlayerIds = await getNearbyPlayerIds(player.loc[0]);
     publishAffectedEntitiesToPlayers(
-        [minifiedEntity(player, { location: true })],
+        [minifiedEntity(player, { location: true, now })],
         {
             publishTo: nearbyPlayerIds,
         },

@@ -55,6 +55,7 @@ const handleTRPC: Handle = createTRPCHandle({
     router,
     createContext,
     onError(opts) {
+        // Only display debug on console during development
         if (ENVIRONMENT === "development") {
             console.error("TRPC Error:", opts.error);
         }
