@@ -780,7 +780,7 @@ function crossoverCmdEquip(
     headers: HTTPHeaders = {},
 ) {
     const { item, slot } = input;
-    return trpc({ headers }).crossover.player.equip.query({ item, slot });
+    return trpc({ headers }).crossover.cmd.equip.query({ item, slot });
 }
 
 function crossoverCmdUnequip(
@@ -788,7 +788,7 @@ function crossoverCmdUnequip(
     headers: HTTPHeaders = {},
 ) {
     const { item } = input;
-    return trpc({ headers }).crossover.player.unequip.query({ item });
+    return trpc({ headers }).crossover.cmd.unequip.query({ item });
 }
 
 function crossoverCmdCreateItem(

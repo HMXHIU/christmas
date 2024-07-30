@@ -1,18 +1,29 @@
 import { INTERNAL_SERVICE_KEY } from "$env/static/private";
 import {
+    crossoverCmdConfigureItem,
+    crossoverCmdCreateItem,
+    crossoverCmdDrop,
+    crossoverCmdEquip,
     crossoverCmdPerformAbility,
+    crossoverCmdTake,
+    crossoverCmdUnequip,
     crossoverCmdUseItem,
     login as loginCrossover,
     signup,
+    stream,
 } from "$lib/crossover";
-import { entityInRange } from "$lib/crossover/utils";
+import { entityInRange, minifiedEntity } from "$lib/crossover/utils";
 import {
     abilities,
     hasResourcesForAbility,
     patchEffectWithVariables,
 } from "$lib/crossover/world/abilities";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
-import { compendium } from "$lib/crossover/world/compendium";
+import {
+    compendium,
+    type EquipmentSlot,
+    type ItemVariables,
+} from "$lib/crossover/world/compendium";
 import {
     archetypeTypes,
     type PlayerMetadata,
@@ -41,12 +52,14 @@ import { ObjectStorage } from "$lib/server/objectStorage";
 import { generateRandomSeed, sleep } from "$lib/utils";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { uniqBy } from "lodash";
+import { cloneDeep } from "lodash-es";
 import { expect } from "vitest";
 import type {
+    ActionEvent,
     StreamEvent,
     UpdateEntitiesEvent,
 } from "../../src/routes/api/crossover/stream/+server";
-import { createRandomUser } from "../utils";
+import { createRandomUser, getRandomRegion } from "../utils";
 
 export type PerformAbilityTestResults =
     | "outOfRange"
@@ -54,6 +67,7 @@ export type PerformAbilityTestResults =
     | "insufficientResources"
     | "targetPredicateNotMet"
     | "itemConditionsNotMet"
+    | "failure"
     | "success";
 
 /**
@@ -122,6 +136,89 @@ export async function createRandomPlayer({
     );
 
     return [wallet, cookies, player];
+}
+
+export async function createGandalfSarumanSauron() {
+    const region = String.fromCharCode(...getRandomRegion());
+    const geohash = generateRandomGeohash(8, "h9");
+    let playerOne: Player;
+    let playerTwo: Player;
+    let playerThree: Player;
+    let playerOneCookies: string;
+    let playerTwoCookies: string;
+    let playerThreeCookies: string;
+    let playerOneStream: EventTarget;
+    let playerTwoStream: EventTarget;
+    let playerThreeStream: EventTarget;
+    let playerOneWallet: NodeWallet;
+    let playerTwoWallet: NodeWallet;
+    let playerThreeWallet: NodeWallet;
+
+    // Create players
+    [playerOneWallet, playerOneCookies, playerOne] = await createRandomPlayer({
+        region,
+        geohash: geohash,
+        name: "Gandalf",
+    });
+    [playerTwoWallet, playerTwoCookies, playerTwo] = await createRandomPlayer({
+        region,
+        geohash: geohash,
+        name: "Saruman",
+    });
+    [playerThreeWallet, playerThreeCookies, playerThree] =
+        await createRandomPlayer({
+            region,
+            geohash: geohash,
+            name: "Sauron",
+        });
+
+    // Create stream
+    [playerOneStream] = await stream({
+        Cookie: playerOneCookies,
+    });
+    await expect(
+        waitForEventData(playerOneStream, "feed"),
+    ).resolves.toMatchObject({
+        type: "system",
+        message: "started",
+    });
+
+    [playerTwoStream] = await stream({
+        Cookie: playerTwoCookies,
+    });
+    await expect(
+        waitForEventData(playerTwoStream, "feed"),
+    ).resolves.toMatchObject({
+        type: "system",
+        message: "started",
+    });
+
+    [playerThreeStream] = await stream({
+        Cookie: playerThreeCookies,
+    });
+    await expect(
+        waitForEventData(playerThreeStream, "feed"),
+    ).resolves.toMatchObject({
+        type: "system",
+        message: "started",
+    });
+
+    return {
+        region,
+        geohash,
+        playerOne: playerOne as PlayerEntity,
+        playerTwo: playerTwo as PlayerEntity,
+        playerThree: playerThree as PlayerEntity,
+        playerOneCookies,
+        playerTwoCookies,
+        playerThreeCookies,
+        playerOneStream,
+        playerTwoStream,
+        playerThreeStream,
+        playerOneWallet,
+        playerTwoWallet,
+        playerThreeWallet,
+    };
 }
 
 /**
@@ -645,14 +742,51 @@ export async function testPlayerPerformAbilityOnPlayer({
         });
 
         return ["busy", { self, target, selfBefore, targetBefore }];
-    }
-    // Check procedure effects
-    else {
-        const entitiesEvents = (await collectEventDataForDuration(
-            selfStream,
-            "entities",
-        )) as UpdateEntitiesEvent[];
+    } else {
+        // Self events
+        let feedEvents: StreamEvent[] = [];
+        let entitiesEvents: UpdateEntitiesEvent[] = [];
+        let actionEvents: ActionEvent[] = [];
         let entitiesEventsCnt = 0;
+        collectEventDataForDuration(selfStream, "entities").then((events) => {
+            entitiesEvents = events as UpdateEntitiesEvent[];
+        });
+        collectEventDataForDuration(selfStream, "feed").then((events) => {
+            feedEvents = events;
+        });
+        collectEventDataForDuration(selfStream, "action").then((events) => {
+            actionEvents = events as ActionEvent[];
+        });
+
+        // Target events
+        let targetFeedEvents: StreamEvent[] = [];
+        let targetEntitiesEvents: UpdateEntitiesEvent[] = [];
+        let targetActionEvents: ActionEvent[] = [];
+        let targetEntitiesEventsCnt = 0;
+        collectEventDataForDuration(targetStream, "entities").then((events) => {
+            targetEntitiesEvents = events as UpdateEntitiesEvent[];
+        });
+        collectEventDataForDuration(targetStream, "feed").then((events) => {
+            targetFeedEvents = events;
+        });
+        collectEventDataForDuration(targetStream, "action").then((events) => {
+            targetActionEvents = events as ActionEvent[];
+        });
+        await sleep(500); // wait for events to be collected
+
+        // Check received action event
+        expect(actionEvents[0]).toMatchObject({
+            ability,
+            source: self.player,
+            target: target.player,
+            event: "action",
+        });
+        expect(targetActionEvents[0]).toMatchObject({
+            ability,
+            source: self.player,
+            target: target.player,
+            event: "action",
+        });
 
         // Check received 'entities' event consuming player resources
         expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
@@ -669,12 +803,12 @@ export async function testPlayerPerformAbilityOnPlayer({
         entitiesEventsCnt += 1;
 
         // Update self
-        for (const p of entitiesEvents[entitiesEventsCnt]?.players!) {
-            if (p.player === self.player) {
-                self = p;
-                break;
-            }
-        }
+        self = {
+            ...self,
+            ...(entitiesEvents[entitiesEventsCnt]?.players?.find(
+                (p) => p.player === self.player,
+            ) || {}),
+        };
 
         // Check received 'entities' event for procedures effecting target
         for (const [type, effect] of procedures) {
@@ -685,19 +819,30 @@ export async function testPlayerPerformAbilityOnPlayer({
                     target,
                 });
 
-                // Check if effect is applied to self
+                // Effect applied to self
                 if (effect.target === "self") {
                     console.log(`Checking effect applied to self`);
                     self = (await performEffectOnEntity({
                         entity: self,
                         effect: actualEffect,
                     })) as Player;
-                    expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
-                        players: uniqBy([self, target], "player"),
-                        monsters: [],
-                    });
+                    const ev = {
+                        players: uniqBy(
+                            [self, target].map((e) =>
+                                minifiedEntity(e, {
+                                    stats: true,
+                                    location: true,
+                                }),
+                            ),
+                            "player",
+                        ),
+                    };
+                    expect(entitiesEvents[entitiesEventsCnt]).toMatchObject(ev);
+                    expect(
+                        targetEntitiesEvents[targetEntitiesEventsCnt],
+                    ).toMatchObject(ev);
                 }
-                // Check if effect is applied to target
+                // Effect applied to target
                 else {
                     console.log(
                         `Checking effect applied to target ${target.name}`,
@@ -706,17 +851,21 @@ export async function testPlayerPerformAbilityOnPlayer({
                         entity: target,
                         effect: actualEffect,
                     })) as Player;
-                    expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
+                    const ev = {
                         players: [
                             { player: self.player },
                             { player: target.player },
                         ],
-                    });
+                    };
+                    expect(entitiesEvents[entitiesEventsCnt]).toMatchObject(ev);
+                    expect(
+                        targetEntitiesEvents[targetEntitiesEventsCnt],
+                    ).toMatchObject(ev);
                 }
                 entitiesEventsCnt += 1;
+                targetEntitiesEventsCnt += 1;
             }
         }
-
         return ["success", { self, target, selfBefore, targetBefore }];
     }
 }
@@ -1070,9 +1219,9 @@ export async function testPlayerUseItemOnPlayer({
         },
     ]
 > {
-    const targetBefore = { ...target };
-    const selfBefore = { ...self };
-    const itemBefore = { ...item };
+    const targetBefore = cloneDeep(target);
+    const selfBefore = cloneDeep(self);
+    const itemBefore = cloneDeep(item);
     const prop = compendium[item.prop];
     const propUtility = prop.utilities![utility];
     const propAbility = propUtility.ability;
@@ -1110,19 +1259,21 @@ export async function testPlayerUseItemOnPlayer({
     }
 
     // Check received item start state event
-    console.log("Checking event for item start state");
-    await expect(
-        waitForEventData(selfStream, "entities"),
-    ).resolves.toMatchObject({
-        players: [{ player: self.player }],
-        monsters: [],
-        items: [
-            {
-                item: item.item,
-                state: propUtility.state.start,
-            },
-        ],
-    });
+    if (item.state !== propUtility.state.start) {
+        console.log("Checking event for item start state");
+        await expect(
+            waitForEventData(selfStream, "entities"),
+        ).resolves.toMatchObject({
+            players: [{ player: self.player }],
+            monsters: [],
+            items: [
+                {
+                    item: item.item,
+                    state: propUtility.state.start,
+                },
+            ],
+        });
+    }
 
     // Get target if specified in item variables
     if (prop.variables.target) {
@@ -1339,8 +1490,8 @@ export async function testPlayerUseItem({
         },
     ]
 > {
-    const selfBefore = { ...self };
-    const itemBefore = { ...item };
+    const selfBefore = cloneDeep(self);
+    const itemBefore = cloneDeep(item);
     const prop = compendium[item.prop];
     const propUtility = prop.utilities![utility];
 
@@ -1370,24 +1521,69 @@ export async function testPlayerUseItem({
         return ["itemConditionsNotMet", { self, item, selfBefore, itemBefore }];
     }
 
-    const entitiesEvents = (await collectEventDataForDuration(
-        stream,
-        "entities",
-    )) as UpdateEntitiesEvent[];
+    let entitiesEvents: UpdateEntitiesEvent[] = [];
     let entitiesEventsCnt = 0;
+    collectEventDataForDuration(stream, "entities").then((events) => {
+        entitiesEvents = events as UpdateEntitiesEvent[];
+    });
+    await sleep(500); // wait for events to be collected
 
     // Check received item start state event
-    console.log("Checking event for item start state");
-    await expect(entitiesEvents[entitiesEventsCnt++]).toMatchObject({
-        players: [{ player: self.player }],
-        monsters: [],
-        items: [
-            {
-                item: item.item,
-                state: propUtility.state.start,
-            },
-        ],
-    });
+    if (item.state !== propUtility.state.start) {
+        console.log("Checking event for item start state");
+        await expect(entitiesEvents[entitiesEventsCnt++]).toMatchObject({
+            players: [{ player: self.player }],
+            monsters: [],
+            items: [
+                {
+                    item: item.item,
+                    state: propUtility.state.start,
+                },
+            ],
+        });
+    }
+
+    // Check ability event
+    const propAbility = propUtility.ability;
+
+    // Check perform ability
+    if (propAbility) {
+        let targetEntity;
+        let newSelf: PlayerEntity | MonsterEntity = self as PlayerEntity;
+
+        // Overwrite target if specified in item variables
+        if (prop.variables.target) {
+            targetEntity = (await itemVariableValue(
+                item as ItemEntity,
+                "target",
+            )) as PlayerEntity | MonsterEntity | ItemEntity;
+        }
+
+        // Overwrite self if specified in item variables (can only be `player` or `monster`)
+        if (prop.variables.self) {
+            newSelf = (await itemVariableValue(item as ItemEntity, "self")) as
+                | PlayerEntity
+                | MonsterEntity;
+        }
+
+        // Consume ability effects (hard to check and listen for events)
+        if (targetEntity && self.player === newSelf.player) {
+            for (const [type, effect] of abilities[propAbility].procedures) {
+                if (type === "action") {
+                    // Update self
+                    if (entitiesEvents[entitiesEventsCnt].players) {
+                        self = {
+                            ...self,
+                            ...(entitiesEvents[entitiesEventsCnt].players?.find(
+                                (p) => p.player === self.player,
+                            ) || {}),
+                        };
+                    }
+                    entitiesEventsCnt += 1;
+                }
+            }
+        }
+    }
 
     // Check received item end state event
     console.log("Checking event for item end state");
@@ -1403,12 +1599,311 @@ export async function testPlayerUseItem({
     });
 
     // Update item
-    for (const i of entitiesEvents[entitiesEventsCnt]?.items!) {
-        if (i.item === item.item) {
-            item = i as ItemEntity;
-            break;
-        }
-    }
+    item = {
+        ...item,
+        ...(entitiesEvents[entitiesEventsCnt]?.items?.find(
+            (i) => i.item === item.item,
+        ) || {}),
+    };
 
     return ["success", { self, selfBefore, item, itemBefore }];
+}
+
+export async function testPlayerCreateItem({
+    self,
+    geohash,
+    prop,
+    cookies,
+    stream,
+    variables,
+}: {
+    self: Player;
+    geohash: string;
+    prop: string;
+    variables?: ItemVariables;
+    cookies: string;
+    stream: EventTarget;
+}): Promise<
+    [
+        PerformAbilityTestResults,
+        {
+            self: Player;
+            item?: Item;
+            selfBefore: Player;
+        },
+    ]
+> {
+    const selfBefore = cloneDeep(self);
+
+    // Create item
+    await crossoverCmdCreateItem(
+        {
+            geohash,
+            prop: prop,
+            variables,
+        },
+        { Cookie: cookies },
+    );
+
+    const { items } = (await waitForEventData(
+        stream,
+        "entities",
+    )) as UpdateEntitiesEvent;
+
+    if (items == null || items.length !== 1) {
+        return ["failure", { self, selfBefore }];
+    }
+
+    expect(items[0]).toMatchObject({
+        name: compendium[prop].defaultName,
+        state: compendium[prop].defaultState,
+        loc: [geohash],
+        ...(variables && { vars: variables }),
+    });
+    return ["success", { self, item: items[0], selfBefore }];
+}
+
+export async function testPlayerTakeItem({
+    self,
+    item,
+    cookies,
+    stream,
+}: {
+    self: Player;
+    item: Item;
+    cookies: string;
+    stream: EventTarget;
+}): Promise<
+    [
+        PerformAbilityTestResults,
+        {
+            self: Player;
+            item?: Item;
+            itemBefore: Item;
+            selfBefore: Player;
+        },
+    ]
+> {
+    const selfBefore = cloneDeep(self);
+    const itemBefore = cloneDeep(item);
+
+    // Take item
+    await crossoverCmdTake({ item: item.item }, { Cookie: cookies });
+
+    const { items } = (await waitForEventData(
+        stream,
+        "entities",
+    )) as UpdateEntitiesEvent;
+
+    if (items == null || items.length !== 1) {
+        return ["failure", { self, selfBefore, itemBefore }];
+    }
+
+    item = items[0];
+    const prop = compendium[item.prop];
+
+    expect(item).toMatchObject({
+        name: prop.defaultName,
+        state: prop.defaultState,
+        locT: "inv",
+        loc: [self.player],
+    });
+    return ["success", { self, item, selfBefore, itemBefore }];
+}
+
+export async function testPlayerEquipItem({
+    self,
+    item,
+    slot,
+    cookies,
+    stream,
+}: {
+    self: Player;
+    item: Item;
+    slot: EquipmentSlot;
+    cookies: string;
+    stream: EventTarget;
+}): Promise<
+    [
+        PerformAbilityTestResults,
+        {
+            self: Player;
+            item?: Item;
+            itemBefore: Item;
+            selfBefore: Player;
+        },
+    ]
+> {
+    const selfBefore = cloneDeep(self);
+    const itemBefore = cloneDeep(item);
+
+    // Equip item
+    await crossoverCmdEquip({ item: item.item, slot }, { Cookie: cookies });
+
+    const { items } = (await waitForEventData(
+        stream,
+        "entities",
+    )) as UpdateEntitiesEvent;
+
+    item = items?.find((i) => item.item === i.item) as Item; // may also receive unequipped items in existing slot
+
+    if (item == null) {
+        return ["failure", { self, selfBefore, itemBefore }];
+    }
+
+    const prop = compendium[item.prop];
+    expect(item).toMatchObject({
+        name: prop.defaultName,
+        state: prop.defaultState,
+        locT: slot,
+        loc: [self.player],
+    });
+    return ["success", { self, item, selfBefore, itemBefore }];
+}
+
+export async function testPlayerUnequipItem({
+    self,
+    item,
+    cookies,
+    stream,
+}: {
+    self: Player;
+    item: Item;
+    cookies: string;
+    stream: EventTarget;
+}): Promise<
+    [
+        PerformAbilityTestResults,
+        {
+            self: Player;
+            item?: Item;
+            itemBefore: Item;
+            selfBefore: Player;
+        },
+    ]
+> {
+    const selfBefore = cloneDeep(self);
+    const itemBefore = cloneDeep(item);
+
+    // Equip item
+    await crossoverCmdUnequip({ item: item.item }, { Cookie: cookies });
+
+    const { items } = (await waitForEventData(
+        stream,
+        "entities",
+    )) as UpdateEntitiesEvent;
+
+    // May also receive unequipped items in existing slot
+    item = items?.find((i) => item.item === i.item) as Item;
+    if (item == null) {
+        return ["failure", { self, selfBefore, itemBefore }];
+    }
+
+    const prop = compendium[item.prop];
+    expect(item).toMatchObject({
+        name: prop.defaultName,
+        state: prop.defaultState,
+        locT: "inv",
+        loc: [self.player],
+    });
+    return ["success", { self, item, selfBefore, itemBefore }];
+}
+
+export async function testPlayerDropItem({
+    self,
+    item,
+    cookies,
+    stream,
+}: {
+    self: Player;
+    item: Item;
+    cookies: string;
+    stream: EventTarget;
+}): Promise<
+    [
+        PerformAbilityTestResults,
+        {
+            self: Player;
+            item?: Item;
+            itemBefore: Item;
+            selfBefore: Player;
+        },
+    ]
+> {
+    const selfBefore = cloneDeep(self);
+    const itemBefore = cloneDeep(item);
+
+    // Equip item
+    await crossoverCmdDrop({ item: item.item }, { Cookie: cookies });
+
+    const { items } = (await waitForEventData(
+        stream,
+        "entities",
+    )) as UpdateEntitiesEvent;
+
+    // May also receive unequipped items in existing slot
+    item = items?.find((i) => item.item === i.item) as Item;
+    if (item == null) {
+        return ["failure", { self, selfBefore, itemBefore }];
+    }
+
+    const prop = compendium[item.prop];
+    expect(item).toMatchObject({
+        name: prop.defaultName,
+        state: prop.defaultState,
+        locT: "geohash",
+        loc: self.loc,
+    });
+    return ["success", { self, item, selfBefore, itemBefore }];
+}
+
+export async function testPlayerConfigureItem({
+    self,
+    item,
+    cookies,
+    stream,
+    variables,
+}: {
+    self: Player;
+    item: Item;
+    variables: ItemVariables;
+    cookies: string;
+    stream: EventTarget;
+}): Promise<
+    [
+        PerformAbilityTestResults,
+        {
+            self: Player;
+            selfBefore: Player;
+            item: Item;
+            itemBefore: Item;
+        },
+    ]
+> {
+    const selfBefore = cloneDeep(self);
+    const itemBefore = cloneDeep(item);
+
+    // Configure item
+    await crossoverCmdConfigureItem(
+        {
+            item: item.item,
+            variables,
+        },
+        { Cookie: cookies },
+    );
+
+    const { items } = (await waitForEventData(
+        stream,
+        "entities",
+    )) as UpdateEntitiesEvent;
+
+    if (items == null || items.length !== 1) {
+        return ["failure", { self, selfBefore, item, itemBefore }];
+    }
+
+    expect(items[0]).toMatchObject({
+        vars: variables,
+    });
+
+    return ["success", { self, selfBefore, item: items[0], itemBefore }];
 }

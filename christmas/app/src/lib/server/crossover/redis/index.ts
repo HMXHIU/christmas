@@ -10,6 +10,7 @@ import { expandGeohashes, geohashesNearby } from "$lib/crossover/utils";
 import { worldSeed } from "$lib/crossover/world/world";
 import type { Search } from "redis-om";
 import { Repository } from "redis-om";
+import { LOOK_PAGE_SIZE } from "..";
 import {
     ItemEntitySchema,
     MonsterEntitySchema,
@@ -25,8 +26,10 @@ import {
 
 // Exports
 export {
+    equipmentQuerySet,
     fetchEntity,
     getNearbyEntities,
+    getNearbyPlayerIds,
     hasCollidersInGeohash,
     hasWorldCollider,
     initializeClients,
@@ -129,6 +132,11 @@ async function fetchEntity(
 async function getNearbyEntities(
     geohash: string,
     playersPageSize: number,
+    options: {
+        monsters: boolean;
+        items: boolean;
+        players: boolean;
+    } = { monsters: true, items: true, players: true },
 ): Promise<{
     players: Player[];
     monsters: Monster[];
@@ -138,28 +146,32 @@ async function getNearbyEntities(
     const p6 = geohash.slice(0, -2);
     const nearbyGeohashes = geohashesNearby(p6);
 
-    // Get players
-    const players = (await playersInGeohashQuerySet(nearbyGeohashes).return.all(
-        {
-            pageSize: playersPageSize,
-        },
-    )) as PlayerEntity[];
-
-    // Get monsters in surrounding (don't use page size for monsters)
-    const monsters = (await monstersInGeohashQuerySet(
-        nearbyGeohashes,
-    ).return.all()) as MonsterEntity[];
-
-    // Get items
-    const items = (await itemsInGeohashQuerySet(
-        nearbyGeohashes,
-    ).return.all()) as ItemEntity[];
-
     return {
-        players: players as Player[],
-        monsters: monsters as Monster[],
-        items: items as Item[],
+        players: options.players
+            ? ((await playersInGeohashQuerySet(nearbyGeohashes).return.all({
+                  pageSize: playersPageSize,
+              })) as PlayerEntity[])
+            : [],
+        monsters: options.monsters
+            ? ((await monstersInGeohashQuerySet(
+                  nearbyGeohashes, // no pageSize for monsters, retrive everything
+              ).return.all()) as MonsterEntity[])
+            : [],
+        items: options.items
+            ? ((await itemsInGeohashQuerySet(
+                  nearbyGeohashes, // no pageSize for monsters, retrive everything
+              ).return.all()) as ItemEntity[])
+            : [],
     };
+}
+
+async function getNearbyPlayerIds(geohash: string): Promise<string[]> {
+    const { players } = await getNearbyEntities(geohash, LOOK_PAGE_SIZE, {
+        players: true,
+        monsters: false,
+        items: false,
+    });
+    return players.map((p) => p.player);
 }
 
 async function saveEntity(
@@ -308,4 +320,20 @@ async function hasWorldCollider(geohash: string): Promise<boolean> {
  */
 function inventoryQuerySet(player: string): Search {
     return itemRepository.search().where("loc").contains(player);
+}
+
+/**
+ * Retrieves the equipped items for a specific player.
+ * @param player - The name of the player.
+ * @returns A Search object representing the query for player inventory items.
+ */
+function equipmentQuerySet(player: string): Search {
+    return itemRepository
+        .search()
+        .where("locT")
+        .not.equal("geohash")
+        .and("locT")
+        .not.equal("inv")
+        .where("loc")
+        .contains(player);
 }

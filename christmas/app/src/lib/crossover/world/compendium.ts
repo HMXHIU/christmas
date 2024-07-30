@@ -5,11 +5,10 @@ import type {
     Player,
 } from "$lib/server/crossover/redis/entities";
 import { substituteVariables } from "$lib/utils";
-import lodash from "lodash";
+import { cloneDeep } from "lodash-es";
 import { getEntityId } from "../utils";
 import { abilities } from "./abilities";
 import { type AssetMetadata } from "./types";
-const { cloneDeep } = lodash;
 
 export {
     compendium,

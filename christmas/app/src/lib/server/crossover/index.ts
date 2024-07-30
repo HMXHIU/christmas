@@ -134,7 +134,6 @@ async function loadPlayerEntity(
 
 /**
  * Handles the event when a player kills a monster.
- * Note: changes player, monster in place
  *
  * @param player - The player entity.
  * @param monster - The monster entity.
@@ -142,6 +141,7 @@ async function loadPlayerEntity(
 async function handlePlayerKillsMonster(
     player: PlayerEntity,
     monster: MonsterEntity,
+    playersNearby: string[],
 ) {
     // Note: changes player, monster in place
     // Give player rewards
@@ -153,41 +153,42 @@ async function handlePlayerKillsMonster(
     player.umb += umbra;
     // Save & publish player
     player = (await saveEntity(player)) as PlayerEntity;
-    publishAffectedEntitiesToPlayers([player]); // non blocking
+    publishAffectedEntitiesToPlayers([player]); // publish full entity to self
 }
 
 /**
  * Handles the scenario where a monster kills a player.
- * Note: changes player, monster in place
  *
  * @param monster - The monster entity.
  * @param player - The player entity.
- * @returns A Promise that resolves to an array containing the updated monster and player entities.
  */
 async function handleMonsterKillsPlayer(
     monster: MonsterEntity,
     player: PlayerEntity,
+    playersNearby: string[],
 ) {
-    // Set respawn location
-    const respawnGeohash = sanctuariesByRegion[player.rgn].geohash;
-
-    // TODO: Handle player death after a timer not here
-    // // Recover all stats
-    // const attributes = (await getUserMetadata(player.player))?.crossover
-    //     ?.attributes;
-
-    // Note: don't save here
     player = {
         ...player,
-        // ...playerStats({ level: player.lvl, attributes }),
-        loc: [respawnGeohash],
+        // Recover all stats
+        ...playerStats({
+            level: player.lvl,
+            attributes: (await getUserMetadata(player.player))?.crossover
+                ?.attributes,
+        }),
+        // Respawn at player's region
+        loc: [sanctuariesByRegion[player.rgn].geohash],
+        // Lose half exp
+        umb: Math.floor(player.lum / 2),
+        lum: Math.floor(player.umb / 2),
     };
 
     publishFeedEvent(player.player, {
         type: "message",
         message: "You died.",
-    }); // non blocking
-    publishAffectedEntitiesToPlayers([player]); // non blocking
+    });
+    // Save & publish player
+    player = (await saveEntity(player)) as PlayerEntity;
+    publishAffectedEntitiesToPlayers([player], { publishTo: playersNearby });
 }
 
 async function performActionConsequences({
@@ -195,11 +196,13 @@ async function performActionConsequences({
     targetBefore,
     selfAfter,
     targetAfter,
+    playersNearby,
 }: {
     selfBefore: PlayerEntity | MonsterEntity;
     targetBefore: PlayerEntity | MonsterEntity | ItemEntity;
     selfAfter: PlayerEntity | MonsterEntity;
     targetAfter: PlayerEntity | MonsterEntity | ItemEntity;
+    playersNearby: string[];
 }): Promise<{
     self: PlayerEntity | MonsterEntity;
     target: PlayerEntity | MonsterEntity | ItemEntity;
@@ -221,6 +224,7 @@ async function performActionConsequences({
                 await handlePlayerKillsMonster(
                     selfAfter as PlayerEntity,
                     targetAfter as MonsterEntity,
+                    playersNearby,
                 );
             }
         }
@@ -236,6 +240,7 @@ async function performActionConsequences({
                 await handleMonsterKillsPlayer(
                     selfAfter as MonsterEntity,
                     targetAfter as PlayerEntity,
+                    playersNearby,
                 );
             }
         }

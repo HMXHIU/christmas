@@ -5,10 +5,9 @@ import type {
     Player,
 } from "$lib/server/crossover/redis/entities";
 import { substituteVariables } from "$lib/utils";
-import lodash from "lodash";
+import { cloneDeep } from "lodash-es";
 import type { GameActionEntities, TokenPositions } from "../ir";
 import { TICKS_PER_TURN } from "./settings";
-const { cloneDeep } = lodash;
 
 export {
     abilities,

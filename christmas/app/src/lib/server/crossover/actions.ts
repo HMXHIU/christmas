@@ -2,6 +2,8 @@ import {
     calculatePathDuration,
     entityInRange,
     geohashesNearby,
+    getEntityId,
+    minifiedEntity,
 } from "$lib/crossover/utils";
 import { actions } from "$lib/crossover/world/actions";
 import {
@@ -10,13 +12,14 @@ import {
 } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
 import type { Direction } from "$lib/crossover/world/types";
-import lodash from "lodash";
+import { cloneDeep } from "lodash-es";
 import { setEntityBusy } from ".";
 import { performAbility } from "./abilities";
 import { spawnItem } from "./dungeonMaster";
 import {
     fetchEntity,
     getNearbyEntities,
+    getNearbyPlayerIds,
     inventoryQuerySet,
     itemRepository,
     playerRepository,
@@ -24,9 +27,9 @@ import {
     saveEntity,
 } from "./redis";
 import {
+    type GameEntity,
     type ItemEntity,
     type MonsterEntity,
-    type Player,
     type PlayerEntity,
 } from "./redis/entities";
 import {
@@ -41,8 +44,6 @@ import {
     publishFeedEvent,
     setPlayerState,
 } from "./utils";
-
-const { cloneDeep } = lodash;
 
 export {
     configureItem,
@@ -67,7 +68,7 @@ export {
 const LOOK_PAGE_SIZE = 20;
 
 async function say(player: PlayerEntity, message: string, now?: number) {
-    // Check if player is busy
+    // Set busy
     player = (await setEntityBusy({
         entity: player,
         action: actions.say.action,
@@ -97,7 +98,7 @@ async function movePlayer(
     player: PlayerEntity,
     path: Direction[],
     now?: number,
-) {
+): Promise<PlayerEntity> {
     // Get path duration
     const duration = calculatePathDuration(path);
 
@@ -117,11 +118,12 @@ async function movePlayer(
             direction,
         );
         if (!isTraversable) {
+            const error = `Path is not traversable`;
             publishFeedEvent(player.player, {
                 type: "error",
-                message: `Path is not traversable`,
+                message: error,
             });
-            return;
+            throw new Error(error);
         } else {
             loc = location;
         }
@@ -139,82 +141,40 @@ async function movePlayer(
     player.loc = loc; // update loc immediately to final location (client and server to use `pthclk` to determine exact location)
     player = (await saveEntity(player)) as PlayerEntity;
 
-    // Return nearby entities if plot changed
+    // Inform all players nearby of location change
+    const nearbyPlayerIds = await getNearbyPlayerIds(player.loc[0]);
+    publishAffectedEntitiesToPlayers(
+        [minifiedEntity(player, { location: true })],
+        {
+            publishTo: nearbyPlayerIds,
+        },
+    );
+
+    // Request nearby entities if p6Changed
     if (p6Changed) {
-        const { monsters, players, items } = await getNearbyEntities(
+        const { players, monsters, items } = await getNearbyEntities(
             player.loc[0],
             LOOK_PAGE_SIZE,
         );
         publishAffectedEntitiesToPlayers(
-            [player, ...monsters, ...players, ...items],
-            { publishTo: player.player },
+            [
+                ...monsters.map((e) => minifiedEntity(e, { location: true })),
+                ...players
+                    .filter((p) => p.player !== player.player)
+                    .map((e) => minifiedEntity(e, { location: true })), // exclude self (already received above)
+                ...items.map((e) => minifiedEntity(e, { location: true })),
+            ],
+            { publishTo: [player.player] },
         );
-    } else {
-        // Just update player's location
-        publishAffectedEntitiesToPlayers([player], {
-            publishTo: player.player,
-        });
     }
 
-    // TODO: update players in vincinity
-
-    // for (const direction of path) {
-    //     // Check if direction is traversable
-    //     const [isTraversable, location] = await isDirectionTraversable(
-    //         player.loc,
-    //         direction,
-    //     );
-    //     if (!isTraversable) {
-    //         publishFeedEvent(player.player, {
-    //             type: "error",
-    //             message: `Cannot move ${direction}`,
-    //         });
-    //         break;
-    //     }
-
-    //     // Publish action
-    //     publishActionEvent(player.player, {
-    //         action: actions.move.action,
-    //         source: player.player,
-    //     });
-
-    //     // Sleep for the duration of the effect
-    //     await sleep(actions.move.ticks * MS_PER_TICK);
-
-    //     // Update player location
-    //     player = entity as PlayerEntity;
-    //     player.loc = location;
-    //     player = (await saveEntity(player)) as PlayerEntity;
-
-    //     // Check if player moves to a different plot
-    //     const plotDidChange =
-    //         player.loc[0].slice(0, -1) !== location[0].slice(0, -1);
-
-    //     // Return nearby entities if plot changed
-    //     if (plotDidChange) {
-    //         const { monsters, players, items } = await getNearbyEntities(
-    //             player.loc[0],
-    //             LOOK_PAGE_SIZE,
-    //         );
-    //         publishAffectedEntitiesToPlayers(
-    //             [player, ...monsters, ...players, ...items],
-    //             { publishTo: player.player },
-    //         );
-    //     }
-
-    //     // Just update player (TODO: update players in vincinity)
-    //     else {
-    //         publishAffectedEntitiesToPlayers([player], {
-    //             publishTo: player.player,
-    //         });
-    //     }
-    // }
+    return player;
 }
 
 async function performLook(
     player: PlayerEntity,
     options?: { inventory?: boolean },
-) {
+): Promise<GameEntity[]> {
     const { monsters, players, items } = await getNearbyEntities(
         player.loc[0],
         LOOK_PAGE_SIZE,
@@ -226,10 +186,20 @@ async function performLook(
           ).return.all()) as ItemEntity[])
         : [];
 
-    publishAffectedEntitiesToPlayers(
-        [player, ...monsters, ...players, ...items, ...inventoryItems],
-        { publishTo: player.player, op: "replace" },
-    );
+    const entities = [
+        player,
+        ...monsters.map((e) => minifiedEntity(e, { location: true })),
+        ...players.map((e) => minifiedEntity(e, { location: true })),
+        ...items.map((e) => minifiedEntity(e, { location: true })),
+        ...inventoryItems,
+    ];
+
+    publishAffectedEntitiesToPlayers(entities, {
+        publishTo: [player.player],
+        op: "replace",
+    });
+
+    return entities;
 }
 
 async function performInventory(player: PlayerEntity) {
@@ -238,7 +208,7 @@ async function performInventory(player: PlayerEntity) {
     ).return.all()) as ItemEntity[];
 
     publishAffectedEntitiesToPlayers(inventoryItems, {
-        publishTo: player.player,
+        publishTo: [player.player],
     });
 }
 
@@ -259,11 +229,9 @@ async function useItem({
 }: {
     item: string;
     utility: string;
-    self: PlayerEntity | MonsterEntity; // sell can only be `player` or `monster`
+    self: PlayerEntity | MonsterEntity;
     target?: string; // target can be an `item`
 }) {
-    const selfBefore = { ...self }; // save self before substitution
-
     // Get item
     let itemEntity = (await fetchEntity(item)) as ItemEntity;
     if (itemEntity == null) {
@@ -277,17 +245,13 @@ async function useItem({
     }
 
     // Get target
-    let targetEntity: PlayerEntity | MonsterEntity | ItemEntity | undefined =
-        undefined;
-    if (target) {
-        const targetEntity = (await fetchEntity(target)) || undefined;
-        if (targetEntity == null) {
-            publishFeedEvent((self as PlayerEntity).player, {
-                type: "error",
-                message: `Target ${target} not found`,
-            });
-            return;
-        }
+    let targetEntity = target ? await fetchEntity(target) : undefined;
+    if (target && !targetEntity) {
+        publishFeedEvent((self as PlayerEntity).player, {
+            type: "error",
+            message: `Target ${target} not found`,
+        });
+        return;
     }
 
     // Check if can use item
@@ -301,45 +265,51 @@ async function useItem({
     }
 
     const prop = compendium[itemEntity.prop];
-    const propUtility = prop.utilities![utility];
+    const propUtility = prop.utilities[utility];
     const propAbility = propUtility.ability;
+    const nearbyPlayerIds = await getNearbyPlayerIds(self.loc[0]);
 
-    // Set item start state
-    itemEntity.state = propUtility.state.start;
-    itemEntity = (await itemRepository.save(
-        itemEntity.item,
-        itemEntity,
-    )) as ItemEntity;
+    if (itemEntity.state !== propUtility.state.start) {
+        // Set item start state
+        itemEntity.state = propUtility.state.start;
+        itemEntity = (await itemRepository.save(
+            itemEntity.item,
+            itemEntity,
+        )) as ItemEntity;
 
-    // Publish item state to player
-    // TODO: what about other people in the vincinity?
-    if (self.player != null) {
-        publishAffectedEntitiesToPlayers([self, itemEntity]); // non blocking
+        // Publish item state to nearby players
+        if (self.player != null) {
+            publishAffectedEntitiesToPlayers([minifiedEntity(itemEntity)], {
+                publishTo: nearbyPlayerIds,
+            });
+        }
     }
-
-    // Overwrite target if specified in item variables
-    if (prop.variables.target) {
-        targetEntity = (await itemVariableValue(itemEntity, "target")) as
-            | PlayerEntity
-            | MonsterEntity
-            | ItemEntity;
-    }
-
-    // Overwrite self if specified in item variables (can only be `player` or `monster`)
-    if (prop.variables.self) {
-        self = (await itemVariableValue(itemEntity, "self")) as
-            | PlayerEntity
-            | MonsterEntity;
-    }
-
     // Perform ability (ignore cost when using items)
-    if (propAbility && target) {
-        await performAbility({
-            self,
-            target,
-            ability: propAbility,
-            ignoreCost: true, // ignore cost when using items
-        });
+    if (propAbility) {
+        // Overwrite target if specified in item variables
+        if (prop.variables.target) {
+            targetEntity = (await itemVariableValue(itemEntity, "target")) as
+                | PlayerEntity
+                | MonsterEntity
+                | ItemEntity;
+            target = getEntityId(targetEntity)[0];
+        }
+
+        // Overwrite self if specified in item variables (can only be `player` or `monster`)
+        if (prop.variables.self) {
+            self = (await itemVariableValue(itemEntity, "self")) as
+                | PlayerEntity
+                | MonsterEntity;
+        }
+
+        if (target) {
+            await performAbility({
+                self,
+                target,
+                ability: propAbility,
+                ignoreCost: true, // ignore cost when using items
+            });
+        }
     }
 
     // Set item end state, consume charges and durability
@@ -351,13 +321,13 @@ async function useItem({
         itemEntity,
     )) as ItemEntity;
 
-    // Publish item state to user (use selfBefore as it might have changed after substitution)
-    // TODO: what about other people in the vincinity?
-    if (selfBefore.player != null) {
-        publishAffectedEntitiesToPlayers([itemEntity], {
-            publishTo: (selfBefore as Player).player,
-        }); // non blocking
-    }
+    // Publish item state to nearby players
+    publishAffectedEntitiesToPlayers(
+        [minifiedEntity(itemEntity, { stats: true, location: true })],
+        {
+            publishTo: nearbyPlayerIds,
+        },
+    );
 }
 
 async function equipItem(
@@ -365,7 +335,8 @@ async function equipItem(
     item: string,
     slot: EquipmentSlot,
     now?: number,
-) {
+): Promise<ItemEntity> {
+    // Set busy
     player = (await setEntityBusy({
         entity: player,
         action: actions.equip.action,
@@ -373,39 +344,25 @@ async function equipItem(
     })) as PlayerEntity;
 
     let itemToEquip = (await fetchEntity(item)) as ItemEntity;
+    const slots = compendium[itemToEquip.prop].equipmentSlot;
+    let error: string | null = null;
 
     if (itemToEquip == null) {
-        publishFeedEvent(player.player, {
-            type: "error",
-            message: `Item ${item} not found`,
-        });
-        return;
+        error = `Item ${item} not found`;
+    } else if (itemToEquip.loc[0] !== player.player) {
+        error = `${item} is not in inventory`;
+    } else if (slots == null) {
+        error = `${item} is not equippable`;
+    } else if (!slots.includes(slot)) {
+        error = `${item} cannot be equipped in ${slot}`;
     }
 
-    // Check if item is in player inventory (can be inventory or equipment slot)
-    if (itemToEquip.loc[0] !== player.player) {
+    if (error != null) {
         publishFeedEvent(player.player, {
             type: "error",
-            message: `${item} is not in inventory`,
+            message: error,
         });
-        return;
-    }
-
-    // Check equipment slot
-    const slots = compendium[itemToEquip.prop].equipmentSlot;
-    if (!slots) {
-        publishFeedEvent(player.player, {
-            type: "error",
-            message: `${item} is not equippable`,
-        });
-        return;
-    }
-    if (!slots.includes(slot)) {
-        publishFeedEvent(player.player, {
-            type: "error",
-            message: `${item} cannot be equipped in ${slot}`,
-        });
-        return;
+        throw new Error(error);
     }
 
     // Unequip existing item in slot
@@ -413,10 +370,10 @@ async function equipItem(
         .and("locT")
         .equal(slot)
         .return.all()) as ItemEntity[];
-    for (const itemEntity of exitingItemsInSlot) {
+    for (let itemEntity of exitingItemsInSlot) {
         itemEntity.loc = [player.player];
         itemEntity.locT = "inv";
-        await itemRepository.save(itemEntity.item, itemEntity);
+        (await itemRepository.save(itemEntity.item, itemEntity)) as ItemEntity;
     }
 
     // Equip item in slot
@@ -427,8 +384,18 @@ async function equipItem(
         itemToEquip,
     )) as ItemEntity;
 
-    // Perform inventory
-    performInventory(player);
+    // Inform all players nearby of equipment change
+    const nearbyPlayerIds = await getNearbyPlayerIds(player.loc[0]);
+    publishAffectedEntitiesToPlayers(
+        [itemToEquip, ...exitingItemsInSlot].map((e) =>
+            minifiedEntity(e, { location: true }),
+        ),
+        {
+            publishTo: nearbyPlayerIds,
+        },
+    );
+
+    return itemToEquip;
 }
 
 async function unequipItem(player: PlayerEntity, item: string, now?: number) {
@@ -442,6 +409,7 @@ async function unequipItem(player: PlayerEntity, item: string, now?: number) {
         return;
     }
 
+    // Set busy
     player = (await setEntityBusy({
         entity: player,
         action: actions.unequip.action,
@@ -465,12 +433,18 @@ async function unequipItem(player: PlayerEntity, item: string, now?: number) {
         itemEntity,
     )) as ItemEntity;
 
-    // Perform inventory
-    performInventory(player);
+    // Inform all players nearby of equipment change
+    const nearbyPlayerIds = await getNearbyPlayerIds(player.loc[0]);
+    publishAffectedEntitiesToPlayers(
+        [minifiedEntity(itemEntity, { location: true })],
+        {
+            publishTo: nearbyPlayerIds,
+        },
+    );
 }
 
 async function takeItem(player: PlayerEntity, item: string, now?: number) {
-    // Check if player is busy
+    // Set busy
     player = (await setEntityBusy({
         entity: player,
         action: actions.take.action,
@@ -522,12 +496,16 @@ async function takeItem(player: PlayerEntity, item: string, now?: number) {
         itemEntity,
     )) as ItemEntity;
 
-    // Perform look
-    performLook(player, { inventory: true });
+    // Inform all players nearby of item creation
+    const nearbyPlayerIds = await getNearbyPlayerIds(player.loc[0]);
+    publishAffectedEntitiesToPlayers(
+        [minifiedEntity(itemEntity, { location: true, stats: true })],
+        { publishTo: nearbyPlayerIds },
+    );
 }
 
 async function dropItem(player: PlayerEntity, item: string, now?: number) {
-    // Check if player is busy
+    // Set busy
     player = (await setEntityBusy({
         entity: player,
         action: actions.drop.action,
@@ -560,8 +538,12 @@ async function dropItem(player: PlayerEntity, item: string, now?: number) {
         itemEntity,
     )) as ItemEntity;
 
-    // Perform look
-    performLook(player, { inventory: true });
+    // Inform all players nearby of item creation
+    const nearbyPlayerIds = await getNearbyPlayerIds(player.loc[0]);
+    publishAffectedEntitiesToPlayers(
+        [minifiedEntity(itemEntity, { location: true, stats: true })],
+        { publishTo: nearbyPlayerIds },
+    );
 }
 
 async function createItem(
@@ -570,8 +552,8 @@ async function createItem(
     prop: string,
     variables?: Record<string, string | number | boolean>,
     now?: number,
-) {
-    // Check if player is busy
+): Promise<ItemEntity> {
+    // Set busy
     player = (await setEntityBusy({
         entity: player,
         action: actions.create.action,
@@ -580,7 +562,7 @@ async function createItem(
 
     try {
         // Create item
-        await spawnItem({
+        const item = await spawnItem({
             geohash,
             prop,
             variables,
@@ -588,14 +570,20 @@ async function createItem(
             configOwner: player.player,
         });
 
-        // Perform look
-        performLook(player, { inventory: true });
+        // Inform all players nearby of item creation
+        const nearbyPlayerIds = await getNearbyPlayerIds(player.loc[0]);
+        publishAffectedEntitiesToPlayers(
+            [minifiedEntity(item, { location: true, stats: true })],
+            { publishTo: nearbyPlayerIds },
+        );
+
+        return item;
     } catch (error: any) {
         publishFeedEvent(player.player, {
             type: "error",
             message: error.message,
         });
-        return;
+        throw new Error(error.message);
     }
 }
 
@@ -605,7 +593,7 @@ async function configureItem(
     variables: Record<string, string | number | boolean>,
     now?: number,
 ): Promise<ItemEntity> {
-    // Check if player is busy
+    // Set busy
     player = (await setEntityBusy({
         entity: player,
         action: actions.configure.action,
@@ -651,14 +639,16 @@ async function configureItem(
         itemEntity,
     )) as ItemEntity;
 
-    // Perform look
-    performLook(player, { inventory: true });
+    // Publish update event
+    publishAffectedEntitiesToPlayers([minifiedEntity(itemEntity)], {
+        publishTo: [player.player],
+    });
 
     return itemEntity;
 }
 
 async function rest(player: PlayerEntity, now?: number) {
-    // Check if player is busy
+    // Set busy
     player = (await setEntityBusy({
         entity: player,
         action: actions.rest.action,
@@ -678,6 +668,6 @@ async function rest(player: PlayerEntity, now?: number) {
 
     // Publish update event
     publishAffectedEntitiesToPlayers([player], {
-        publishTo: player.player,
+        publishTo: [player.player],
     });
 }

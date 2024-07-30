@@ -3,6 +3,7 @@ import {
     entityDimensions,
     entityInRange,
     getEntityId,
+    minifiedEntity,
 } from "$lib/crossover/utils";
 import {
     abilities,
@@ -13,13 +14,14 @@ import {
 } from "$lib/crossover/world/abilities";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { sleep } from "$lib/utils";
+import { cloneDeep } from "lodash-es";
 import {
     consumeResources,
     performActionConsequences,
     recoverAp,
     setEntityBusy,
 } from ".";
-import { fetchEntity, saveEntity } from "./redis";
+import { fetchEntity, getNearbyPlayerIds, saveEntity } from "./redis";
 import {
     type Item,
     type ItemEntity,
@@ -106,10 +108,7 @@ async function performAbility({
     }
 
     // Check if target is in range
-    if (
-        !entityInRange(self, targetEntity, range)[0] &&
-        selfEntityType === "player"
-    ) {
+    if (!entityInRange(self, targetEntity, range)[0] && self.player) {
         publishFeedEvent(selfEntityId, {
             type: "error",
             message: `Target is out of range`,
@@ -125,8 +124,8 @@ async function performAbility({
     });
 
     // Save old self and target
-    const selfBefore = { ...self };
-    const targetBefore = { ...targetEntity };
+    const selfBefore = cloneDeep(self);
+    const targetBefore = cloneDeep(targetEntity);
 
     // Expend ability costs (also caps stats to player level)
     if (!ignoreCost) {
@@ -135,18 +134,27 @@ async function performAbility({
     targetEntity = targetEntity.player === self.player ? self : targetEntity; // target might be self, in which case update it after save
 
     // Publish ability costs changes to player
-    if (selfEntityType === "player" && !ignoreCost) {
-        publishAffectedEntitiesToPlayers([self]); // non blocking
+    if (self.player && !ignoreCost) {
+        publishAffectedEntitiesToPlayers([
+            minifiedEntity(self, { stats: true, timers: true }),
+        ]);
     }
 
-    // Publish action event (TODO: what about other people in the vincinity?)
-    if (selfEntityType === "player") {
-        publishActionEvent(selfEntityId, {
-            ability: ability as Abilities,
-            source: selfEntityId,
-            target,
-        });
+    // Get all players nearby self & target
+    const playerIdsNearby = [];
+    playerIdsNearby.push(...(await getNearbyPlayerIds(self.loc[0])));
+    if (selfEntityId !== target) {
+        playerIdsNearby.push(
+            ...(await getNearbyPlayerIds(targetEntity.loc[0])),
+        );
     }
+
+    // Publish action event to all players nearby
+    publishActionEvent(playerIdsNearby, {
+        ability: ability as Abilities,
+        source: selfEntityId,
+        target,
+    });
 
     // Perform procedures
     for (const [type, effect] of procedures) {
@@ -179,10 +187,19 @@ async function performAbility({
                     | ItemEntity;
             }
 
-            // Publish effect & effected entities to relevant players (non blocking)
-            if (self.player || entity.player) {
-                publishAffectedEntitiesToPlayers([self, targetEntity]);
-            }
+            // Publish effect & effected entities to relevant players (include players nearby)
+            publishAffectedEntitiesToPlayers(
+                [self, targetEntity].map((e) =>
+                    minifiedEntity(e, {
+                        stats: true,
+                        timers: true,
+                        location: true,
+                    }),
+                ),
+                {
+                    publishTo: playerIdsNearby,
+                },
+            );
         }
         // Check
         else if (type === "check") {
@@ -191,12 +208,13 @@ async function performAbility({
     }
 
     // Perform action consequences
-    ({ self, target: targetEntity } = await performActionConsequences({
+    await performActionConsequences({
         selfBefore,
         selfAfter: self,
         targetBefore,
         targetAfter: targetEntity,
-    }));
+        playersNearby: playerIdsNearby,
+    });
 }
 
 async function performEffectOnEntity({

@@ -10,7 +10,7 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import type { RequestHandler } from "@sveltejs/kit";
 
-export type StreamEvent = FeedEvent | UpdateEntitiesEvent;
+export type StreamEvent = FeedEvent | UpdateEntitiesEvent | ActionEvent;
 
 export interface FeedEvent {
     event: "feed";

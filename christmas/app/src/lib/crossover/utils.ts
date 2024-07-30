@@ -5,6 +5,7 @@ import type {
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
+import { pick } from "lodash-es";
 import ngeohash from "ngeohash";
 import type { GameAction } from "./ir";
 import { actions } from "./world/actions";
@@ -38,7 +39,9 @@ export {
     getPlotsAtGeohash,
     getPositionsForPath,
     inRange,
+    isEntityInMotion,
     isoToCart,
+    minifiedEntity,
     REGEX_STRIP_ENTITY_TYPE,
     seededRandom,
     snapToGrid,
@@ -493,6 +496,64 @@ function getEntityId(entity: Player | Monster | Item): [string, EntityType] {
     } else {
         return [entity.item, "item"];
     }
+}
+
+function isEntityInMotion(entity: Player | Monster): boolean {
+    return entity.pthclk + entity.pthdur < Date.now();
+}
+
+function minifiedEntity(
+    entity: Player | Monster | Item,
+    options?: {
+        location?: boolean;
+        stats?: boolean; // hp, mp, st, etc ...
+        timers?: boolean; // apclk, buclk
+    },
+): Player | Monster | Item {
+    const [entityId, entityType] = getEntityId(entity);
+
+    // Default fields
+    let fields: string[] = ["name"];
+
+    // Player
+    if (entityType === "player") {
+        fields.push("player");
+    }
+    // Monster
+    else if (entityType === "monster") {
+        fields.push("monster", "beast");
+    }
+    // Item
+    else {
+        fields.push("item", "prop", "state", "vars");
+    }
+
+    // Location
+    if (options?.location) {
+        fields.push("loc", "locT");
+    }
+
+    if (entityType === "player" || entityType === "monster") {
+        // Path
+        if (options?.location && isEntityInMotion(entity as Monster | Player)) {
+            fields.push("pth", "pthst", "pthclk", "pthdur");
+        }
+        // Stats
+        if (options?.stats) {
+            fields.push("hp", "mp", "st", "ap");
+        }
+        // Timers
+        if (options?.timers) {
+            fields.push("apclk, buclk");
+        }
+    } else if (entityType === "item") {
+        // Stats
+        if (options?.stats) {
+            fields.push("chg", "dur");
+        }
+    }
+
+    return pick(entity, fields) as Player | Monster | Item;
 }
 
 /**

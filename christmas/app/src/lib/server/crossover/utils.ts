@@ -13,7 +13,7 @@ import {
 } from "$lib/server/crossover/caches";
 import { parseZodErrors } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
-import lodash from "lodash";
+import { uniqBy } from "lodash-es";
 import { z } from "zod";
 import { PlayerStateSchema, type PlayerState } from ".";
 import { serverAnchorClient } from "..";
@@ -61,8 +61,6 @@ export {
     setPlayerState,
 };
 
-const { uniqBy } = lodash;
-
 async function publishFeedEvent(
     player: string,
     event: Omit<FeedEvent, "event">,
@@ -72,16 +70,22 @@ async function publishFeedEvent(
 }
 
 async function publishActionEvent(
-    player: string,
+    players: string[],
     event: Omit<ActionEvent, "event">,
 ) {
     (event as ActionEvent).event = "action";
-    await redisClient.publish(player, JSON.stringify(event));
+    const message = JSON.stringify(event);
+    for (const p of players) {
+        await redisClient.publish(p, message);
+    }
 }
 
 async function publishAffectedEntitiesToPlayers(
     entities: (Player | Monster | Item)[],
-    options?: { publishTo?: string; op?: "replace" | "upsert" },
+    options?: {
+        publishTo?: string[];
+        op?: "replace" | "upsert";
+    },
 ) {
     const op = options?.op || "upsert";
 
@@ -107,7 +111,9 @@ async function publishAffectedEntitiesToPlayers(
     } as UpdateEntitiesEvent);
 
     if (options?.publishTo != null) {
-        await redisClient.publish(options?.publishTo, event);
+        for (const p of options.publishTo) {
+            await redisClient.publish(p, event);
+        }
     } else {
         // Publish effects to all players
         for (const p of effectedPlayers) {

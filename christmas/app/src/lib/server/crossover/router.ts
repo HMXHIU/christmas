@@ -43,6 +43,7 @@ import {
     spawnMonsters,
     spawnWorld,
 } from "./dungeonMaster";
+import { probeEquipment } from "./player";
 import { loggedInPlayersQuerySet } from "./redis";
 import type {
     ItemEntity,
@@ -85,6 +86,12 @@ const UseItemSchema = z.object({
     item: z.string(),
     utility: z.string(),
     target: z.string().optional(),
+});
+const TargetItemSchema = z.object({
+    item: z.string(),
+});
+const TargetPlayerSchema = z.object({
+    player: z.string(),
 });
 const ConfigureItemSchema = z.object({
     item: z.string(),
@@ -294,45 +301,40 @@ const crossoverRouter = {
         inventory: playerAuthProcedure.query(async ({ ctx }) => {
             performInventory(ctx.player);
         }),
-        // player.equip
-        equip: playerAuthBusyProcedure
-            .input(EquipItemSchema)
+
+        // player.probeEquipment
+        probeEquipment: playerAuthProcedure
+            .input(TargetPlayerSchema)
             .query(async ({ ctx, input }) => {
-                const { item, slot } = input;
-                equipItem(ctx.player, item, slot, ctx.now);
-            }),
-        // player.unequip
-        unequip: playerAuthBusyProcedure
-            .input(
-                z.object({
-                    item: z.string(),
-                }),
-            )
-            .query(async ({ ctx, input }) => {
-                const { item } = input;
-                unequipItem(ctx.player, item, ctx.now);
+                probeEquipment(ctx.player, input.player);
             }),
     }),
     // Commands
     cmd: t.router({
         // cmd.take
         take: playerAuthBusyProcedure
-            .input(
-                z.object({
-                    item: z.string(),
-                }),
-            )
+            .input(TargetItemSchema)
             .query(async ({ ctx, input }) => {
                 const { item } = input;
                 takeItem(ctx.player, item, ctx.now);
             }),
+        // cmd.equip
+        equip: playerAuthBusyProcedure
+            .input(EquipItemSchema)
+            .query(async ({ ctx, input }) => {
+                const { item, slot } = input;
+                equipItem(ctx.player, item, slot, ctx.now);
+            }),
+        // cmd.unequip
+        unequip: playerAuthBusyProcedure
+            .input(TargetItemSchema)
+            .query(async ({ ctx, input }) => {
+                const { item } = input;
+                unequipItem(ctx.player, item, ctx.now);
+            }),
         // cmd.drop
         drop: playerAuthBusyProcedure
-            .input(
-                z.object({
-                    item: z.string(),
-                }),
-            )
+            .input(TargetItemSchema)
             .query(async ({ ctx, input }) => {
                 const { item } = input;
                 dropItem(ctx.player, item, ctx.now);
