@@ -232,37 +232,34 @@ async function useItem({
     utility: string;
     self: PlayerEntity | MonsterEntity;
     target?: string; // target can be an `item`
-}) {
-    // Get item
+}): Promise<ItemEntity> {
+    let error: string | null = null;
+    let targetEntity = target ? await fetchEntity(target) : undefined;
     let itemEntity = (await fetchEntity(item)) as ItemEntity;
-    if (itemEntity == null) {
+    // Get target
+    if (target && !targetEntity) {
+        error = `Target ${target} not found`;
+    }
+    // Get item
+    else if (itemEntity == null) {
+        error = `Item ${item} not found`;
+    }
+    // Check if can use item
+    else {
+        const { canUse, message } = canUseItem(self, itemEntity, utility);
+        if (!canUse && self.player) {
+            error = message;
+        }
+    }
+
+    if (error) {
         if (self.player) {
             publishFeedEvent((self as PlayerEntity).player, {
                 type: "error",
-                message: `Item ${item} not found`,
+                message: error,
             });
         }
-        return;
-    }
-
-    // Get target
-    let targetEntity = target ? await fetchEntity(target) : undefined;
-    if (target && !targetEntity) {
-        publishFeedEvent((self as PlayerEntity).player, {
-            type: "error",
-            message: `Target ${target} not found`,
-        });
-        return;
-    }
-
-    // Check if can use item
-    const { canUse, message } = canUseItem(self, itemEntity, utility);
-    if (!canUse && self.player) {
-        publishFeedEvent((self as PlayerEntity).player, {
-            type: "error",
-            message,
-        });
-        return;
+        throw new Error(error);
     }
 
     const prop = compendium[itemEntity.prop];
@@ -329,6 +326,8 @@ async function useItem({
             publishTo: nearbyPlayerIds,
         },
     );
+
+    return itemEntity;
 }
 
 async function equipItem(
@@ -444,7 +443,11 @@ async function unequipItem(player: PlayerEntity, item: string, now?: number) {
     );
 }
 
-async function takeItem(player: PlayerEntity, item: string, now?: number) {
+async function takeItem(
+    player: PlayerEntity,
+    item: string,
+    now?: number,
+): Promise<ItemEntity> {
     // Set busy
     player = (await setEntityBusy({
         entity: player,
@@ -452,41 +455,32 @@ async function takeItem(player: PlayerEntity, item: string, now?: number) {
         now: now,
     })) as PlayerEntity;
 
+    let error: string | null = null;
+
     // Get item
     let itemEntity = (await fetchEntity(item)) as ItemEntity;
     if (itemEntity == null) {
-        publishFeedEvent(player.player, {
-            type: "error",
-            message: `Item ${item} not found`,
-        });
-        return;
+        error = `Item ${item} not found`;
     }
-
     // Check item owner is player or public
-    if (itemEntity.own !== player.player && itemEntity.own) {
-        publishFeedEvent(player.player, {
-            type: "error",
-            message: `${item} is owned by someone else`,
-        });
-        return;
+    else if (itemEntity.own !== player.player && itemEntity.own) {
+        error = `${item} is owned by someone else`;
     }
-
     // Check if in range
-    if (!entityInRange(player, itemEntity, actions.take.range)[0]) {
-        publishFeedEvent(player.player, {
-            type: "error",
-            message: `${item} is not in range`,
-        });
-        return;
+    else if (!entityInRange(player, itemEntity, actions.take.range)[0]) {
+        error = `${item} is not in range`;
+    }
+    // Check if item is takeable
+    else if (compendium[itemEntity.prop].weight < 0) {
+        error = `${item} cannot be taken`;
     }
 
-    // Check if item is takeable
-    if (compendium[itemEntity.prop].weight < 0) {
+    if (error) {
         publishFeedEvent(player.player, {
             type: "error",
-            message: `${item} cannot be taken`,
+            message: error,
         });
-        return;
+        throw new Error(error);
     }
 
     // Take item
@@ -503,6 +497,8 @@ async function takeItem(player: PlayerEntity, item: string, now?: number) {
         [minifiedEntity(itemEntity, { location: true, stats: true })],
         { publishTo: nearbyPlayerIds },
     );
+
+    return itemEntity;
 }
 
 async function dropItem(player: PlayerEntity, item: string, now?: number) {

@@ -12,4 +12,5 @@ test("Test Utils", async () => {
             value: "456",
         }),
     ).toBe("The 123 value is 456");
+    expect(substituteVariables("Hello, ${name}", {})).toBe("Hello, ${name}");
 });

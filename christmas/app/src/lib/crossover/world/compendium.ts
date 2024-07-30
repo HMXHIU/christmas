@@ -611,6 +611,7 @@ function itemName(item: Item): string {
 
 /**
  * Helper to get the variables of an item.
+ *
  * @param item - The item to get the variables for.
  * @returns The variables of the item.
  */
@@ -619,9 +620,12 @@ function itemVariables(item: Item): ItemVariables {
     for (const { variable, value } of Object.values(
         compendium[item.prop].variables,
     )) {
+        // If not exists, use the default from prop
         if (item.vars[variable] == null) {
             vars[variable] = value;
-        } else {
+        }
+        // Use var from item
+        else {
             vars[variable] = item.vars[variable];
         }
     }
