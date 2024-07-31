@@ -9,7 +9,7 @@
     import {
         crossoverAvailableAvatars,
         crossoverGenerateAvatar,
-    } from "$lib/crossover";
+    } from "$lib/crossover/client";
     import {
         PlayerMetadataSchema,
         ageTypes,

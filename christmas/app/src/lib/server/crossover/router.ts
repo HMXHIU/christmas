@@ -13,7 +13,7 @@ import { PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
 import { performance } from "perf_hooks";
 import { z } from "zod";
-import { getPlayerState, getUserMetadata, loadPlayerEntity } from ".";
+import { loadPlayerEntity } from ".";
 import {
     FEE_PAYER_PUBKEY,
     createSerializedTransaction,
@@ -53,7 +53,13 @@ import type {
     World,
     WorldEntity,
 } from "./redis/entities";
-import { entityIsBusy, publishFeedEvent, savePlayerState } from "./utils";
+import {
+    entityIsBusy,
+    getPlayerState,
+    getUserMetadata,
+    publishFeedEvent,
+    savePlayerState,
+} from "./utils";
 
 export { SaySchema, UserMetadataSchema, crossoverRouter };
 

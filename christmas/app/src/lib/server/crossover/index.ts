@@ -18,21 +18,17 @@ import {
     getUserMetadata,
     publishAffectedEntitiesToPlayers,
     publishFeedEvent,
-    setPlayerState,
 } from "./utils";
 
 export {
     connectedUsers,
     consumeResources,
-    getPlayerState,
-    getUserMetadata,
     loadPlayerEntity,
     LOOK_PAGE_SIZE,
     performActionConsequences,
     PlayerStateSchema,
     recoverAp,
     setEntityBusy,
-    setPlayerState,
     type ConnectedUser,
     type PlayerState,
 };

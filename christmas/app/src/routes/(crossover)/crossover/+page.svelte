@@ -1,20 +1,16 @@
 <script lang="ts">
-    import GameWindow from "$lib/components/crossover/GameWindow.svelte";
+    import GameWindow from "$lib/components/crossover/GameWindow";
     import Onboard from "$lib/components/crossover/Onboard.svelte";
-    import {
-        addMessageFeed,
-        crossoverPlayerMetadata,
-        executeGameCommand,
-        handleUpdateEntities,
-        stream,
-        updateWorlds,
-    } from "$lib/crossover";
-    import { getPlayerAbilities } from "$lib/crossover/world/abilities";
-    import { actions } from "$lib/crossover/world/actions";
+    import { stream } from "$lib/crossover/client";
     import type { Player } from "$lib/server/crossover/redis/entities";
-    import { substituteVariables } from "$lib/utils";
     import { onDestroy, onMount } from "svelte";
-    import { player, playerAbilities, userMetadata } from "../../../store";
+    import {
+        actionEvent,
+        entitiesEvent,
+        feedEvent,
+        loginEvent,
+        player,
+    } from "../../../store";
     import type {
         ActionEvent,
         FeedEvent,
@@ -23,65 +19,31 @@
 
     let eventStream: EventTarget | null = null;
     let closeStream: (() => void) | null = null;
-    let gameWindow: GameWindow;
+
+    function processEntitiesEvent(event: Event) {
+        entitiesEvent.set((event as MessageEvent).data as UpdateEntitiesEvent);
+    }
 
     function processFeedEvent(event: Event) {
-        const { data } = event as MessageEvent;
-        const { type, message, variables } = data as FeedEvent;
-
-        // Error events
-        if (type === "error") {
-            addMessageFeed({
-                message,
-                name: "Error",
-                messageFeedType: "error",
-            });
-        }
-
-        // System feed
-        else if (type === "system") {
-            addMessageFeed({
-                message,
-                name: "System",
-                messageFeedType: "system",
-            });
-        }
-
-        // Message feed
-        else if (type === "message") {
-            addMessageFeed({
-                message: variables
-                    ? (substituteVariables(message, variables) as string)
-                    : message,
-                name: "",
-                messageFeedType: "message",
-            });
-        }
+        feedEvent.set((event as MessageEvent).data as FeedEvent);
     }
 
-    function processActions(event: Event) {
-        const actionEvent = (event as MessageEvent).data as ActionEvent;
-        gameWindow.handleActionEvent(actionEvent);
-    }
-
-    function processUpdateEntities(event: Event) {
-        const { players, items, monsters, op } = (event as MessageEvent)
-            .data as UpdateEntitiesEvent;
-        handleUpdateEntities({ players, items, monsters }, op);
+    function processActionEvent(event: Event) {
+        actionEvent.set((event as MessageEvent).data as ActionEvent);
     }
 
     async function startStream() {
         [eventStream, closeStream] = await stream();
         eventStream.addEventListener("feed", processFeedEvent);
-        eventStream.addEventListener("entities", processUpdateEntities);
-        eventStream.addEventListener("action", processActions);
+        eventStream.addEventListener("entities", processEntitiesEvent);
+        eventStream.addEventListener("action", processActionEvent);
     }
 
     function stopStream() {
         if (eventStream != null) {
             eventStream.removeEventListener("feed", processFeedEvent);
-            eventStream.removeEventListener("entities", processUpdateEntities);
-            eventStream.addEventListener("action", processActions);
+            eventStream.removeEventListener("entities", processEntitiesEvent);
+            eventStream.addEventListener("action", processActionEvent);
         }
         if (closeStream != null) {
             closeStream();
@@ -89,23 +51,16 @@
     }
 
     async function onLogin(player: Player) {
-        // Fetch player metadata
-        userMetadata.set(await crossoverPlayerMetadata());
-
-        // Fetch player abilities
-        playerAbilities.set(getPlayerAbilities(player));
-
         // Start streaming on login
         stopStream();
         await startStream();
 
-        // Look at surroundings & update inventory
-        await updateWorlds(player.loc[0]);
-        await executeGameCommand([actions.look, { self: player }]);
-        await executeGameCommand([actions.inventory, { self: player }]);
+        // Trigger login event
+        loginEvent.set(player);
     }
 
     onMount(() => {
+        // HMR
         if ($player) {
             onLogin($player);
         }
@@ -121,9 +76,5 @@
         <Onboard {onLogin} />
     </div>
 {:else}
-    <GameWindow
-        class="pt-0"
-        onGameCommand={executeGameCommand}
-        bind:this={gameWindow}
-    />
+    <GameWindow class="pt-0" />
 {/if}

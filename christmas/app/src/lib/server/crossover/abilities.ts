@@ -31,23 +31,17 @@ import {
     type PlayerEntity,
 } from "./redis/entities";
 import {
-    getPlayerState,
-    getUserMetadata,
     publishActionEvent,
     publishAffectedEntitiesToPlayers,
     publishFeedEvent,
-    setPlayerState,
 } from "./utils";
 
 export {
     consumeResources,
-    getPlayerState,
-    getUserMetadata,
     performAbility,
     performEffectOnEntity,
     recoverAp,
     setEntityBusy,
-    setPlayerState,
 };
 
 async function performAbility({

@@ -2,7 +2,7 @@
     import { createUser } from "$lib/community";
     import Wallet from "$lib/components/common/Wallet.svelte";
     import { Button } from "$lib/components/ui/button";
-    import { login, signup } from "$lib/crossover";
+    import { login, signup } from "$lib/crossover/client";
     import type { PlayerMetadata } from "$lib/crossover/world/player";
     import { worldSeed } from "$lib/crossover/world/world";
     import type { Player } from "$lib/server/crossover/redis/entities";

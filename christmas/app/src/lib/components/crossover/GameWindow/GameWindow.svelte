@@ -7,10 +7,12 @@
     } from "$lib/crossover/ir";
     import { playerActions } from "$lib/crossover/world/actions";
     import { cn } from "$lib/shadcn";
+    import { substituteVariables } from "$lib/utils";
     import { gsap } from "gsap";
     import { onDestroy, onMount } from "svelte";
-    import type { ActionEvent } from "../../../routes/api/crossover/stream/+server";
+    import { addMessageFeed } from ".";
     import {
+        feedEvent,
         inGame,
         itemRecord,
         monsterRecord,
@@ -18,17 +20,15 @@
         playerAbilities,
         playerEquippedItems,
         playerRecord,
-    } from "../../../store";
-    import AutocompleteGC from "./AutocompleteGC.svelte";
-    import AvatarSigil from "./AvatarSigil.svelte";
-    import ChatInput from "./ChatInput.svelte";
-    import ChatWindow from "./ChatWindow.svelte";
-    import Game from "./Game";
-    import Look from "./Look.svelte";
-    import Map from "./Map/Map.svelte";
-    import Tool from "./Tool.svelte";
-
-    export let onGameCommand: (command: GameCommand) => Promise<void>;
+    } from "../../../../store";
+    import AutocompleteGC from "../AutocompleteGC.svelte";
+    import AvatarSigil from "../AvatarSigil.svelte";
+    import ChatInput from "../ChatInput.svelte";
+    import ChatWindow from "../ChatWindow.svelte";
+    import Game, { executeGameCommand } from "../Game";
+    import Look from "../Look.svelte";
+    import Map from "../Map/Map.svelte";
+    import Tool from "../Tool.svelte";
 
     const LARGE_SCREEN = 1000;
     const MEDIUM_SCREEN = 800;
@@ -41,7 +41,6 @@
     let mapSizeExpanded = 0;
     let commands: GameCommand[] = [];
     let command: GameCommand | null = null;
-    let gameRef: Game;
     let gameContainer: HTMLDivElement;
     let isMapExpanded = false;
 
@@ -71,17 +70,13 @@
         isMapExpanded = !isMapExpanded;
     }
 
-    export async function handleActionEvent(event: ActionEvent) {
-        gameRef.drawActionEvent(event);
-    }
-
     async function onEnterKeyPress(message: string) {
         // Clear game commands
         commands = [];
 
         // Submit game command on enter
         if (command) {
-            onGameCommand(command);
+            await onGameCommand(command);
         }
     }
 
@@ -103,6 +98,10 @@
         }
     }
 
+    async function onGameCommand(command: GameCommand) {
+        await executeGameCommand(command);
+    }
+
     onMount(() => {
         // Go into game mode
         inGame.set(true);
@@ -116,6 +115,51 @@
         mapSizeExpanded = Math.round(
             Math.min(window.innerWidth, window.innerHeight) * 0.9,
         );
+
+        // Store subscriptions
+        const subscriptions = [
+            feedEvent.subscribe(async (e) => {
+                if (!e) return;
+                const { type, message, variables } = e;
+                // Error events
+                if (type === "error") {
+                    addMessageFeed({
+                        message,
+                        name: "Error",
+                        messageFeedType: type,
+                    });
+                }
+
+                // System feed
+                else if (type === "system") {
+                    addMessageFeed({
+                        message,
+                        name: "System",
+                        messageFeedType: type,
+                    });
+                }
+
+                // Message feed
+                else if (type === "message") {
+                    addMessageFeed({
+                        message: variables
+                            ? (substituteVariables(
+                                  message,
+                                  variables,
+                              ) as string)
+                            : message,
+                        name: "",
+                        messageFeedType: type,
+                    });
+                }
+            }),
+        ];
+
+        return () => {
+            for (const unsubscribe of subscriptions) {
+                unsubscribe();
+            }
+        };
     });
 
     onDestroy(() => {
@@ -138,7 +182,7 @@
         class="shrink-0"
         bind:this={gameContainer}
     >
-        <Game bind:this={gameRef} previewCommand={command}></Game>
+        <Game previewCommand={command}></Game>
     </div>
 
     <!-- Environment Overlay -->

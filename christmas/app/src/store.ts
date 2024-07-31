@@ -1,5 +1,5 @@
 import type { Account, Coupon, Store } from "$lib/anchorClient/types";
-import type { MessageFeed } from "$lib/crossover";
+import type { MessageFeed } from "$lib/components/crossover/GameWindow";
 import type { Ability } from "$lib/crossover/world/abilities";
 import type {
     CouponMetadataSchema,
@@ -15,6 +15,11 @@ import type { UserMetadataSchema } from "$lib/server/crossover/router";
 import { UserDeviceClient } from "$lib/userDeviceClient";
 import { writable } from "svelte/store";
 import { z } from "zod";
+import type {
+    ActionEvent,
+    FeedEvent,
+    UpdateEntitiesEvent,
+} from "./routes/api/crossover/stream/+server";
 
 // Community
 export let token = writable<string | null>(null); // jwt access token (cookies fallback, null if logged out)
@@ -51,3 +56,8 @@ export let monsterRecord = writable<Record<string, Monster>>({});
 export let worldRecord = writable<Record<string, Record<string, World>>>({});
 export let messageFeed = writable<MessageFeed[]>([]);
 export let target = writable<Player | Monster | Item | null>(null);
+
+export let entitiesEvent = writable<UpdateEntitiesEvent>();
+export let actionEvent = writable<ActionEvent>();
+export let feedEvent = writable<FeedEvent>();
+export let loginEvent = writable<Player>();

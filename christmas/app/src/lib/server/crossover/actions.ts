@@ -35,14 +35,11 @@ import {
 import {
     canConfigureItem,
     canUseItem,
-    getPlayerState,
-    getUserMetadata,
     isDirectionTraversable,
     itemVariableValue,
     parseItemVariables,
     publishAffectedEntitiesToPlayers,
     publishFeedEvent,
-    setPlayerState,
 } from "./utils";
 
 export {
@@ -50,8 +47,6 @@ export {
     createItem,
     dropItem,
     equipItem,
-    getPlayerState,
-    getUserMetadata,
     LOOK_PAGE_SIZE,
     movePlayer,
     performInventory,
@@ -59,7 +54,6 @@ export {
     rest,
     say,
     setEntityBusy,
-    setPlayerState,
     takeItem,
     unequipItem,
     useItem,

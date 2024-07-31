@@ -1,9 +1,9 @@
 <script lang="ts">
-    import type { MessageFeed } from "$lib/crossover";
     import { cn } from "$lib/shadcn";
     import { getCurrentTimestamp } from "$lib/utils";
     import { onMount } from "svelte";
     import { messageFeed } from "../../../store";
+    import type { MessageFeed } from "./GameWindow";
 
     const ERROR_TIMESPAN = 5000;
 

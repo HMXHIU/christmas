@@ -7,7 +7,7 @@ import {
     type User,
 } from "../anchorClient/types";
 
-import { logout as logoutCrossoover } from "$lib/crossover";
+import { logout as logoutCrossoover } from "$lib/crossover/client";
 import type {
     CouponMetadataSchema,
     StoreMetadataSchema,

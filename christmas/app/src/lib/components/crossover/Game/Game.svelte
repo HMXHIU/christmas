@@ -1,13 +1,19 @@
 <script lang="ts">
-    import { crossoverCmdMove } from "$lib/crossover";
+    import {
+        crossoverCmdMove,
+        crossoverPlayerMetadata,
+    } from "$lib/crossover/client";
     import { getGameActionId, type GameCommand } from "$lib/crossover/ir";
     import {
         getEntityId,
         getPositionsForPath,
         snapToGrid,
     } from "$lib/crossover/utils";
-    import { type Ability } from "$lib/crossover/world/abilities";
-    import { type Action } from "$lib/crossover/world/actions";
+    import {
+        getPlayerAbilities,
+        type Ability,
+    } from "$lib/crossover/world/abilities";
+    import { actions, type Action } from "$lib/crossover/world/actions";
     import {
         EquipmentSlots,
         compendium,
@@ -27,15 +33,21 @@
         WebGLRenderer,
     } from "pixi.js";
     import { onDestroy, onMount } from "svelte";
+    import { executeGameCommand, handleUpdateEntities, updateWorlds } from ".";
     import type { ActionEvent } from "../../../../routes/api/crossover/stream/+server";
     import {
+        actionEvent,
+        entitiesEvent,
         itemRecord,
+        loginEvent,
         monsterRecord,
         player,
+        playerAbilities,
         playerEquippedItems,
         playerInventoryItems,
         playerRecord,
         target,
+        userMetadata,
         worldRecord,
     } from "../../../../store";
     import {
@@ -185,7 +197,7 @@
         }
     }
 
-    export async function drawActionEvent(event: ActionEvent) {
+    async function drawActionEvent(event: ActionEvent) {
         /**
          * TODO: Server should notify entity perform action on entity to all clients involved for rendering
          */
@@ -464,6 +476,29 @@
 
         // Store subscriptions
         const subscriptions = [
+            loginEvent.subscribe(async (p) => {
+                if (!p) return;
+
+                // Fetch player metadata
+                userMetadata.set(await crossoverPlayerMetadata());
+
+                // Fetch player abilities
+                playerAbilities.set(getPlayerAbilities(p));
+
+                // Look at surroundings & update inventory
+                await updateWorlds(p.loc[0]);
+                await executeGameCommand([actions.look, { self: p }]);
+                await executeGameCommand([actions.inventory, { self: p }]);
+            }),
+            actionEvent.subscribe(async (e) => {
+                if (!e) return;
+                await drawActionEvent(e);
+            }),
+            entitiesEvent.subscribe(async (e) => {
+                if (!e) return;
+                const { players, items, monsters, op } = e;
+                await handleUpdateEntities({ players, items, monsters }, op);
+            }),
             monsterRecord.subscribe((mr) => {
                 if (worldStage == null) {
                     return;
