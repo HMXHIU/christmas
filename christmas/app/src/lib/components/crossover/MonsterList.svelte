@@ -28,12 +28,12 @@
 </script>
 
 {#if $monsterRecord && Object.keys($monsterRecord).length > 0}
-    <div class="text-sm text-rose-400">
+    <p class="text-sm text-rose-400">
         {#each Object.entries(groupedMonsters) as [name, monsters] (name)}
             <p>
                 {getMonsterDescription(name, monsters.length)}
                 {getAdditionalInfo(monsters)}.
             </p>
         {/each}
-    </div>
+    </p>
 {/if}
