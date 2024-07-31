@@ -44,14 +44,15 @@ export let userMetadata = writable<z.infer<typeof UserMetadataSchema> | null>(
 // Crossver
 export let inGame = writable<boolean>(false);
 export let player = writable<Player | null>(null);
+
 export let playerAbilities = writable<Ability[]>([]);
 export let playerInventoryItems = writable<Item[]>([]);
 export let playerEquippedItems = writable<Item[]>([]);
 
-export let playerEquipmentRecord = writable<Record<string, Item[]>>({});
 export let playerRecord = writable<Record<string, Player>>({});
 export let itemRecord = writable<Record<string, Item>>({});
 export let monsterRecord = writable<Record<string, Monster>>({});
+export let equipmentRecord = writable<Record<string, Record<string, Item>>>({});
 
 export let worldRecord = writable<Record<string, Record<string, World>>>({});
 export let messageFeed = writable<MessageFeed[]>([]);

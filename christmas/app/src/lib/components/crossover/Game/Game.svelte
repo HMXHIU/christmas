@@ -14,16 +14,9 @@
         type Ability,
     } from "$lib/crossover/world/abilities";
     import { actions, type Action } from "$lib/crossover/world/actions";
-    import {
-        EquipmentSlots,
-        compendium,
-        type EquipmentSlot,
-        type Utility,
-    } from "$lib/crossover/world/compendium";
+    import { compendium, type Utility } from "$lib/crossover/world/compendium";
     import type { Direction } from "$lib/crossover/world/types";
-    import type { Player } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
-    import { AsyncLock } from "$lib/utils";
     import { gsap } from "gsap";
     import {
         Application,
@@ -33,7 +26,7 @@
         WebGLRenderer,
     } from "pixi.js";
     import { onDestroy, onMount } from "svelte";
-    import { executeGameCommand, handleUpdateEntities, updateWorlds } from ".";
+    import { executeGameCommand, updateEntities, updateWorlds } from ".";
     import type { ActionEvent } from "../../../../routes/api/crossover/stream/+server";
     import {
         actionEvent,
@@ -43,8 +36,6 @@
         monsterRecord,
         player,
         playerAbilities,
-        playerEquippedItems,
-        playerInventoryItems,
         playerRecord,
         target,
         userMetadata,
@@ -58,13 +49,7 @@
     } from "../shaders";
     import { animateAbility } from "./animations";
     import { drawBiomeShaders } from "./biomes";
-    import {
-        cullEntityContainers,
-        entityContainers,
-        updateEntities,
-        upsertEntityContainer,
-        type AvatarEntityContainer,
-    } from "./entities";
+    import { cullEntityContainers, entityContainers } from "./entities";
     import { drawTargetUI } from "./ui";
     import {
         CANVAS_HEIGHT,
@@ -257,7 +242,8 @@
 
         // Move command
         if (path != null && path.length > 0) {
-            await crossoverCmdMove({ path }); // TODO: should funnel everything through executeGameCommand
+            // TODO: should funnel everything through executeGameCommand
+            await crossoverCmdMove({ path });
         }
     }
 
@@ -281,7 +267,7 @@
         updateShaderUniforms({ deltaTime: seconds });
     }
 
-    async function handlePlayerPositionUpdate(position: Position) {
+    export async function handlePlayerPositionUpdate(position: Position) {
         if (worldStage == null) {
             return;
         }
@@ -296,7 +282,7 @@
         cullWorlds(position);
     }
 
-    async function handleTrackPlayer({
+    export async function handleTrackPlayer({
         position,
         duration,
     }: {
@@ -319,37 +305,6 @@
         } else {
             worldStage.pivot = { x: cameraX, y: cameraY };
         }
-    }
-
-    const playerPositionUpdateLock = new AsyncLock();
-    async function updatePlayer(
-        player: Player | null,
-    ): Promise<AvatarEntityContainer> {
-        const ec = await playerPositionUpdateLock.withLock(async () => {
-            if (!isInitialized || worldStage == null || player == null) {
-                return;
-            }
-
-            // Upsert player container
-            const [created, ec] = await upsertEntityContainer(
-                player,
-                worldStage,
-            );
-
-            // Listen on position update
-            if (created) {
-                ec.on("positionUpdate", handlePlayerPositionUpdate);
-                ec.on("trackEntity", handleTrackPlayer);
-                // First position update is not handled
-                if (ec.isoPosition != null) {
-                    await handlePlayerPositionUpdate(ec.isoPosition);
-                    await handleTrackPlayer({ position: ec.isoPosition });
-                }
-            }
-
-            return ec;
-        });
-        return ec as AvatarEntityContainer;
     }
 
     /*
@@ -453,20 +408,20 @@
 
         // Initial HMR update (stores are already initialized)
         if ($player) {
-            const ec = (await updatePlayer($player)) as AvatarEntityContainer;
-            await updateEntities($monsterRecord, "monster", worldStage);
-            await updateEntities($playerRecord, "player", worldStage);
-            await updateEntities($itemRecord, "item", worldStage);
+            updateEntities(
+                {
+                    players: Object.values($playerRecord),
+                    items: Object.values($itemRecord),
+                    monsters: Object.values($monsterRecord),
+                    op: "replace",
+                },
+                {
+                    stage: worldStage,
+                    handlePlayerPositionUpdate,
+                    handleTrackPlayer,
+                },
+            );
             await drawWorlds($worldRecord, worldStage);
-
-            const position = await getPlayerPosition();
-            if (position != null) {
-                await handlePlayerPositionUpdate(position);
-                await handleTrackPlayer({ position });
-
-                // Load inventory
-                await ec.loadInventory($playerEquippedItems);
-            }
         }
     }
 
@@ -478,13 +433,10 @@
         const subscriptions = [
             loginEvent.subscribe(async (p) => {
                 if (!p) return;
-
                 // Fetch player metadata
                 userMetadata.set(await crossoverPlayerMetadata());
-
                 // Fetch player abilities
                 playerAbilities.set(getPlayerAbilities(p));
-
                 // Look at surroundings & update inventory
                 await updateWorlds(p.loc[0]);
                 await executeGameCommand([actions.look, { self: p }]);
@@ -495,61 +447,16 @@
                 await drawActionEvent(e);
             }),
             entitiesEvent.subscribe(async (e) => {
-                if (!e) return;
-                const { players, items, monsters, op } = e;
-                await handleUpdateEntities({ players, items, monsters }, op);
-            }),
-            monsterRecord.subscribe((mr) => {
-                if (worldStage == null) {
-                    return;
-                }
-                updateEntities(mr, "monster", worldStage);
-            }),
-            playerRecord.subscribe((pr) => {
-                if (worldStage == null) {
-                    return;
-                }
-                updateEntities(pr, "player", worldStage);
-            }),
-            itemRecord.subscribe((ir) => {
-                if (worldStage == null) {
-                    return;
-                }
-                updateEntities(ir, "item", worldStage);
-
-                // Player inventory and equipped items
-                const playerItems = Object.values(ir).filter((item) => {
-                    return (
-                        item.loc.length === 1 && item.loc[0] === $player?.player
-                    );
+                if (!e || !worldStage) return;
+                await updateEntities(e, {
+                    stage: worldStage,
+                    handlePlayerPositionUpdate,
+                    handleTrackPlayer,
                 });
-                playerInventoryItems.set(
-                    playerItems.filter((item) => {
-                        return item.locT === "inv";
-                    }),
-                );
-                playerEquippedItems.set(
-                    playerItems.filter((item) => {
-                        return EquipmentSlots.includes(
-                            item.locT as EquipmentSlot,
-                        );
-                    }),
-                );
             }),
             worldRecord.subscribe((wr) => {
                 if (worldStage != null) {
                     drawWorlds(wr, worldStage);
-                }
-            }),
-            player.subscribe((p) => {
-                updatePlayer(p);
-            }),
-            playerEquippedItems.subscribe(async (items) => {
-                if ($player && $player.player in entityContainers) {
-                    const ec = entityContainers[
-                        $player.player
-                    ] as AvatarEntityContainer;
-                    await ec.loadInventory(items);
                 }
             }),
             target.subscribe((t) => {

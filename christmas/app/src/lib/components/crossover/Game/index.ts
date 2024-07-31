@@ -1,6 +1,9 @@
 import Root from "./Game.svelte";
 
-import { getDirectionsToPosition } from "$lib/components/crossover/Game/utils";
+import {
+    getDirectionsToPosition,
+    type Position,
+} from "$lib/components/crossover/Game/utils";
 import { addMessageFeed } from "$lib/components/crossover/GameWindow";
 import {
     crossoverCmdConfigureItem,
@@ -42,24 +45,48 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import type { HTTPHeaders } from "@trpc/client";
+import { groupBy } from "lodash-es";
+import type { Container } from "pixi.js";
 import { get, type Writable } from "svelte/store";
 import {
+    equipmentRecord,
     itemRecord,
     monsterRecord,
     player,
+    playerEquippedItems,
+    playerInventoryItems,
     playerRecord,
     worldRecord,
 } from "../../../../store";
+import { entityContainers, upsertEntityContainer } from "./entities";
+import { AvatarEntityContainer } from "./entities/AvatarEntityContainer";
 
-export { executeGameCommand, handleUpdateEntities, updateWorlds };
+export { executeGameCommand, updateEntities, updateWorlds, type GameLogic };
 
 export default Root;
 
+interface GameLogic {
+    stage: Container;
+    handlePlayerPositionUpdate: (position: Position) => Promise<void>;
+    handleTrackPlayer: (params: {
+        position: Position;
+        duration?: number;
+    }) => Promise<void>;
+}
+
+/**
+ * Call this to update wordRecord when player moves to a new town
+ *
+ * @param geohash - geohash of the player
+ * @returns
+ */
 async function updateWorlds(geohash: string) {
     const t = geohash.slice(0, worldSeed.spatial.town.precision);
+    // Already have world at town
     if (get(worldRecord)[t] != null) {
         return;
     }
+    // Get world at town
     const { town, worlds } = await crossoverWorldWorlds(geohash);
     worldRecord.update((wr) => {
         if (wr[town] == null) {
@@ -72,30 +99,20 @@ async function updateWorlds(geohash: string) {
     });
 }
 
-async function updatePlayer(
-    p: Player,
-    op: "upsert" | "replace",
-    handleChanged?: (oldEntity: Player, newEntity: Player) => void,
-) {
-    const oldPlayer = get(player);
-    const newPlayer = op === "replace" ? p : { ...oldPlayer, ...p };
-    if (handleChanged && oldPlayer) {
-        handleChanged(oldPlayer, newPlayer);
-    }
-    player.set(newPlayer);
-}
-
-async function handlePlayerChanged(before: Player, after: Player) {
-    // Update world on location changed
-    if (before.loc[0] !== after.loc[0]) {
-        await updateWorlds(after.loc[0]);
-    }
-}
-
+/**
+ * Use this to perform UI effects when an entity changes
+ *
+ * @param oldEntity - Old entity before change
+ * @param newEntity - New entity after change
+ */
 function displayEntityEffects<T extends Player | Monster | Item>(
-    oldEntity: T,
+    oldEntity: T | null,
     newEntity: T,
+    game: GameLogic,
 ) {
+    // If just created don't display effects
+    if (oldEntity == null) return;
+
     // Monster
     if ("monster" in oldEntity) {
         const deltaHp = oldEntity.hp - (newEntity as Monster).hp;
@@ -120,7 +137,163 @@ function displayEntityEffects<T extends Player | Monster | Item>(
     }
     // Item
     else if ("item" in oldEntity) {
-        console.log("ITEM CHANGTED", oldEntity, newEntity);
+    }
+}
+
+/**
+ * Upsert entity containers for entities with lotT=geohash
+ *
+ * @param oldEntity
+ * @param newEntity
+ * @param game
+ */
+async function updateEntityContainer<T extends Player | Monster | Item>(
+    oldEntity: T | null,
+    newEntity: T,
+    game: GameLogic,
+) {
+    if (newEntity.locT === "geohash") {
+        const [created, ec] = await upsertEntityContainer(
+            newEntity,
+            game.stage,
+        );
+
+        if (created) {
+            // Load initial inventory
+            if (ec instanceof AvatarEntityContainer) {
+                const entityEquipment = get(equipmentRecord)[ec.entityId];
+                if (entityEquipment) {
+                    ec.loadInventory(Object.values(entityEquipment));
+                }
+            }
+
+            // Attach game events to created player ec (self)
+            if (ec.entityId === get(player)?.player) {
+                ec.on("positionUpdate", game.handlePlayerPositionUpdate);
+                ec.on("trackEntity", game.handleTrackPlayer);
+                // Initial event
+                if (ec.isoPosition != null) {
+                    game.handlePlayerPositionUpdate(ec.isoPosition);
+                    game.handleTrackPlayer({ position: ec.isoPosition });
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Use this to update the player (self) and perform additional logic
+ *
+ * @param oldEntity - Old PlayerEntity before change
+ * @param newEntity - New PlayerEntity after change
+ */
+async function updatePlayer(
+    oldEntity: Player | null,
+    newEntity: Player,
+    game: GameLogic,
+) {
+    if (newEntity.player === get(player)?.player) {
+        // Set player (self)
+        player.set(newEntity);
+
+        // Update worlds if location changed
+        if (oldEntity == null || oldEntity.loc[0] !== newEntity.loc[0]) {
+            await updateWorlds(newEntity.loc[0]);
+        }
+    }
+}
+
+/**
+ * Use this to update the player (self) and perform additional logic
+ *
+ * @param oldItem - Old Entity before change
+ * @param newItem - New Entity after change
+ */
+async function updateEquipment(
+    oldItem: Item | null,
+    newItem: Item,
+    game: GameLogic,
+) {
+    if (newItem.locT !== "geohash") {
+        equipmentRecord.update((er) => {
+            const entityId = newItem.loc[0];
+            if (er[entityId]) {
+                er[entityId][newItem.item] = newItem;
+            } else {
+                er[entityId] = {
+                    [newItem.item]: newItem,
+                };
+            }
+            return er;
+        });
+    }
+}
+
+function loadInventory(record: Record<string, Item>) {
+    const playerId = get(player)?.player;
+    for (const [entityId, items] of Object.entries(
+        groupBy(
+            Object.values(record).filter((i) => i.locT !== "geohash"),
+            (i) => i.loc[0],
+        ),
+    )) {
+        const ec = entityContainers[entityId];
+        if (ec && ec instanceof AvatarEntityContainer) {
+            ec.loadInventory(items);
+        }
+
+        // Set player (self) equipment & inventory
+        if (playerId === entityId) {
+            playerEquippedItems.set(items.filter((i) => i.locT !== "inv"));
+            playerInventoryItems.set(items.filter((i) => i.locT === "inv"));
+        }
+    }
+}
+
+function updateEntities(
+    {
+        players,
+        items,
+        monsters,
+        op,
+    }: {
+        players?: Player[];
+        items?: Item[];
+        monsters?: Monster[];
+        op?: "upsert" | "replace";
+    },
+    game: GameLogic,
+) {
+    op = op ?? "upsert";
+
+    // Update itemRecord
+    if (items?.length) {
+        updateRecord<Item>(itemRecord, items, "item", op, game, {
+            handleChanged: [
+                updateEquipment,
+                updateEntityContainer,
+                displayEntityEffects,
+            ],
+            onComplete: loadInventory,
+        });
+    }
+
+    // Update monsterRecord
+    if (monsters?.length) {
+        updateRecord<Monster>(monsterRecord, monsters, "monster", op, game, {
+            handleChanged: [updateEntityContainer, displayEntityEffects],
+        });
+    }
+
+    // Update playerRecord
+    if (players?.length) {
+        updateRecord<Player>(playerRecord, players, "player", op, game, {
+            handleChanged: [
+                updatePlayer, // Update player (self)
+                updateEntityContainer,
+                displayEntityEffects,
+            ],
+        });
     }
 }
 
@@ -129,72 +302,45 @@ function updateRecord<T extends { [key: string]: any }>(
     entities: T[],
     idKey: keyof T & string,
     op: "upsert" | "replace",
-    handleChanged?: (oldEntity: T, newEntity: T) => void,
+    game: GameLogic,
+    callbacks?: {
+        handleChanged?: ((
+            oldEntity: T | null,
+            newEntity: T,
+            game: GameLogic,
+        ) => void)[];
+        onComplete?: (record: Record<string, T>) => void;
+    },
 ) {
     record.update((r) => {
         // Replace entire record
         const newRecord = op === "replace" ? {} : r;
-
         for (const entity of entities) {
             const entityId = entity[idKey];
             // Update entity
             if (newRecord[entityId]) {
                 const updatedEnity = { ...newRecord[entityId], ...entity };
-                if (handleChanged) {
-                    handleChanged(newRecord[entityId], updatedEnity);
+                if (callbacks?.handleChanged) {
+                    for (const f of callbacks?.handleChanged) {
+                        f(newRecord[entityId], updatedEnity, game);
+                    }
                 }
+                newRecord[entityId] = updatedEnity;
             }
             // Create entity
             else {
+                if (callbacks?.handleChanged) {
+                    for (const f of callbacks?.handleChanged) {
+                        f(null, entity, game);
+                    }
+                }
                 newRecord[entityId] = entity;
             }
         }
         return newRecord;
     });
-}
-
-function handleUpdateEntities(
-    {
-        players,
-        items,
-        monsters,
-    }: {
-        players?: Player[];
-        items?: Item[];
-        monsters?: Monster[];
-    },
-    op: "upsert" | "replace" = "upsert",
-) {
-    if (players?.length) {
-        const self = get(player);
-
-        // Update player
-        const p = players.find((p) => p.player === self?.player);
-        if (p != null) {
-            updatePlayer(p, op, handlePlayerChanged);
-        }
-
-        // Update playerRecord (excluding self)
-        const otherPlayers = players.filter((p) => p.player !== self?.player);
-        if (otherPlayers.length) {
-            updateRecord<Player>(playerRecord, otherPlayers, "player", op);
-        }
-    }
-
-    // Update itemRecord
-    if (items?.length) {
-        updateRecord<Item>(itemRecord, items, "item", op, displayEntityEffects);
-    }
-
-    // Update monsterRecord
-    if (monsters?.length) {
-        updateRecord<Monster>(
-            monsterRecord,
-            monsters,
-            "monster",
-            op,
-            displayEntityEffects,
-        );
+    if (callbacks?.onComplete) {
+        callbacks.onComplete(get(record));
     }
 }
 
