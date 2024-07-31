@@ -1,14 +1,39 @@
 <script lang="ts">
+    import { groupBy } from "lodash";
     import { monsterRecord } from "../../../store";
+
+    $: groupedMonsters = groupBy($monsterRecord, "name");
+
+    function getMonsterDescription(name: string, count: number): string {
+        if (count === 1) {
+            return `You see a ${name}`;
+        } else if (count === 2) {
+            return `You see a pair of ${name}s`;
+        } else if (count <= 5) {
+            return `You see a small group of ${name}s`;
+        } else if (count <= 10) {
+            return `You see a pack of ${name}s`;
+        } else {
+            return `You see a horde of ${name}s`;
+        }
+    }
+
+    function getAdditionalInfo(monsters: any[]): string {
+        const uniqueIds = new Set(monsters.map((m) => m.monster));
+        if (uniqueIds.size > 1) {
+            return ` (${uniqueIds.size})`;
+        }
+        return "";
+    }
 </script>
 
-{#if $monsterRecord}
-    {#if Object.keys($monsterRecord).length > 0}
-        <p class="text-sm text-primary-background">You see some creatures</p>
-    {/if}
-    <div class="text-sm text-muted-foreground flex flex-wrap gap-y-0 gap-x-2">
-        {#each Object.entries($monsterRecord) as [monsterId, monster] (monsterId)}
-            <span>{monster.name}</span>
+{#if $monsterRecord && Object.keys($monsterRecord).length > 0}
+    <div class="text-sm text-rose-400">
+        {#each Object.entries(groupedMonsters) as [name, monsters] (name)}
+            <p>
+                {getMonsterDescription(name, monsters.length)}
+                {getAdditionalInfo(monsters)}.
+            </p>
         {/each}
     </div>
 {/if}
