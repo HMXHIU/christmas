@@ -54,10 +54,10 @@
             {#if message.messageFeedType === "message"}
                 <div class="flex flex-row text-left">
                     <div class="flex flex-col w-16 shrink-0">
-                        <p class="italic text-sm">{message.name}</p>
                         <small class="opacity-50 text-xs"
                             >{getCurrentTimestamp(message.timestamp)}</small
                         >
+                        <p class="italic text-sm">{message.name}</p>
                     </div>
                     <!-- Normal Messages -->
                     <p class="text-sm font-extralight px-2 text-left">

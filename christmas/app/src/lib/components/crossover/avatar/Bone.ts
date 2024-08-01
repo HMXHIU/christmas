@@ -137,10 +137,14 @@ export class Bone extends Container {
 
     async setDefaultTexture() {
         // Set to default texture
-        const tkey = Object.keys(this.boneMetadata.textures)[0];
+        const tkey = this.getDefaultTextureKey();
         if (tkey != null) {
             await this.setTexture(tkey);
         }
+    }
+
+    getDefaultTextureKey() {
+        return Object.keys(this.boneMetadata.textures)[0];
     }
 
     async setTexture(

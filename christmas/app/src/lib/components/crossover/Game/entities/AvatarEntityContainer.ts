@@ -68,12 +68,13 @@ class AvatarEntityContainer extends EntityContainer {
     async loadInventory(items: Item[]) {
         const equippedTextureKeys = new Set();
         const equippedTints = new Set();
+        const bonesToTint: [Bone, Float32Array][] = [];
 
         // Load equipped item textures
         for (const item of items) {
             if (isItemEquipped(item, this.entity)) {
-                const prop = compendium[item.prop];
                 // Get all bone assets from equipmentAssets
+                const prop = compendium[item.prop];
                 if (prop.equipmentAssets != null) {
                     for (const [
                         boneName,
@@ -81,7 +82,7 @@ class AvatarEntityContainer extends EntityContainer {
                     ] of Object.entries(prop.equipmentAssets)) {
                         const bone = this.avatar.getBone(boneName);
                         if (bone == null) continue;
-
+                        // Set bone texture
                         if (asset != null) {
                             equippedTextureKeys.add(
                                 await this.setBoneEquipmentTexture(
@@ -91,10 +92,9 @@ class AvatarEntityContainer extends EntityContainer {
                                 ),
                             );
                         }
-
+                        // Add bonesToTint
                         if (tint != null) {
-                            bone.tintTexture(tint);
-                            equippedTints.add(boneName);
+                            bonesToTint.push([bone, tint]);
                         }
                     }
                 }
@@ -106,7 +106,6 @@ class AvatarEntityContainer extends EntityContainer {
             if (!equippedTextureKeys.has(equippedTextureKey(bone.name))) {
                 // Clear overlay texture
                 await bone.clearOverlayTexture();
-
                 // Set to default texture
                 await bone.setDefaultTexture();
             }
@@ -114,6 +113,17 @@ class AvatarEntityContainer extends EntityContainer {
             // Remove tints
             if (!equippedTints.has(bone.name)) {
                 bone.tintTexture(tints.none);
+            }
+        }
+
+        // Tint default textures (have to do after all textures have been set or replaced)
+        for (const [bone, tint] of bonesToTint) {
+            if (
+                // tint if bone texture is default (might be replaced)
+                bone.getDefaultTextureKey() === bone.textureKey
+            ) {
+                bone.tintTexture(tint);
+                equippedTints.add(bone.name);
             }
         }
 

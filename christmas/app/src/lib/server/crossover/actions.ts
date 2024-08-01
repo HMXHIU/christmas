@@ -78,10 +78,11 @@ async function say(player: PlayerEntity, message: string, now?: number) {
     for (const publicKey of players) {
         publishFeedEvent(publicKey, {
             type: "message",
-            message: "${origin} says ${message}",
+            message: "${name} says ${message}",
             variables: {
                 cmd: "say",
-                origin: player.player,
+                player: player.player,
+                name: player.name,
                 message: message,
             },
         });
