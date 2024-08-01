@@ -12,7 +12,11 @@ import type {
 } from "../../routes/api/crossover/stream/+server";
 import { player } from "../../store";
 import { type EquipmentSlot, type ItemVariables } from "./world/compendium";
-import type { PlayerMetadata } from "./world/player";
+import type {
+    PlayerAppearance,
+    PlayerDemographic,
+    PlayerMetadata,
+} from "./world/player";
 import { type Direction } from "./world/types";
 
 export {
@@ -341,30 +345,36 @@ function crossoverWorldWorlds(geohash: string, headers: HTTPHeaders = {}) {
  */
 
 async function crossoverAvailableAvatars(
-    playerMetadata: PlayerMetadata,
+    metadata: {
+        demographic: PlayerDemographic;
+        appearance: PlayerAppearance;
+    },
     headers: any = {},
 ): Promise<string[]> {
     const { avatars } = await (
         await fetch(`${PUBLIC_HOST}/api/crossover/avatar/avatars`, {
             method: "POST",
             headers,
-            body: JSON.stringify(playerMetadata),
+            body: JSON.stringify(metadata),
         })
     ).json();
     return avatars;
 }
 
 async function crossoverGenerateAvatar(
-    playerMetadata: PlayerMetadata,
+    metadata: {
+        demographic: PlayerDemographic;
+        appearance: PlayerAppearance;
+    },
     headers: any = {},
-): Promise<[string, string]> {
-    const { avatarImageUrl } = await (
-        await fetch(`${PUBLIC_HOST}/api/crossover/avatar/create`, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(playerMetadata),
-        })
-    ).json();
-
-    return [avatarImageUrl, avatarImageUrl];
+): Promise<string[]> {
+    const response = await fetch(`${PUBLIC_HOST}/api/crossover/avatar/create`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(metadata),
+    });
+    if (!response.ok) {
+        throw new Error("Generation service is down");
+    }
+    return await response.json();
 }

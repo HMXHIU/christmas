@@ -26,6 +26,11 @@ Character creation involves:
 - [ ] Portraits should be generated in 2 profiles (front and side)
 - [ ] Portrait should scaled down to 96x96 so that it is reasonable to be used in the Avatar as well as in character sheet
 
+# Portrait
+
+- [ ] Facial segmentation map can achieve different colors for skin color, hair color, eye color
+- [ ] Generate normal map
+
 # Equipment & Avatar
 
 - [ ] Individual equipment should be generated at approximately 96x96 or lesser resolution
@@ -90,7 +95,7 @@ interface Prop {
 5. The backend verifies that the `PlayerMetadata` matches the portrait selection
    - If it is verified, the backend updates the `PlayerMetadata` in MINIO with the portrait selection
 
-## Avatar Naming Convention
+## Portrait Naming Convention
 
 ```js
 const playerMetadata = await PlayerMetadataSchema.parse({

@@ -11,6 +11,8 @@
         crossoverGenerateAvatar,
     } from "$lib/crossover/client";
     import {
+        PlayerAppearanceSchema,
+        PlayerDemographicSchema,
         PlayerMetadataSchema,
         ageTypes,
         archetypeTypes,
@@ -25,6 +27,8 @@
         playerStats,
         raceTypes,
         skinTypes,
+        type PlayerAppearance,
+        type PlayerDemographic,
         type PlayerMetadata,
     } from "$lib/crossover/world/player";
     import { cn } from "$lib/shadcn";
@@ -39,6 +43,7 @@
     let name: string = "";
     let description: string = "";
     let avatar: string = "";
+
     let selectedHairType = hairTypes[0];
     let selectedHairColor = hairColors[0];
     let selectedEyeColor = eyeColors[0];
@@ -81,38 +86,18 @@
 
     let errors: Record<string, string> = {};
 
-    async function getAvailableAvatars() {
-        const playerMetadata = validatePlayerMetadata({
-            name: "name", // not needed for avatar generation
-            description: "description",
-            playerPublicKey: "playerPublicKey",
-            avatar: "https://example.com/avatar.png",
-        });
-
-        // Get available avatars
-        if (playerMetadata) {
-            availableAvatars =
-                (await crossoverAvailableAvatars(playerMetadata)) || [];
-        }
-    }
-
-    function validatePlayerMetadata(overwrite?: {
-        name?: string;
-        description?: string;
-        playerPublicKey?: string;
-        avatar?: string;
-    }): PlayerMetadata | null {
-        // Validate player metadata
+    function validatePlayerMetadata(): PlayerMetadata | null {
         try {
-            const playerMetadata = PlayerMetadataSchema.parse({
-                name: overwrite?.name ?? name,
-                description: overwrite?.description ?? description,
-                avatar: overwrite?.avatar ?? avatar,
-                player: overwrite?.playerPublicKey ?? playerPublicKey,
-                gender: selectedGenderType.value,
-                race: selectedRaceType.value,
-                archetype: selectedArchetypeType.value,
-                attributes: archetypes[selectedArchetypeType.value].attributes,
+            return PlayerMetadataSchema.parse({
+                player: playerPublicKey,
+                name,
+                description,
+                avatar,
+                demographic: {
+                    gender: selectedGenderType.value,
+                    race: selectedRaceType.value,
+                    archetype: selectedArchetypeType.value,
+                },
                 appearance: {
                     hair: {
                         type: selectedHairType.value,
@@ -129,7 +114,39 @@
                     age: selectedAgeType.value,
                 },
             });
-            return playerMetadata;
+        } catch (err) {
+            errors = parseZodErrors(err);
+            return null;
+        }
+    }
+
+    function validateAvatarMetadata(): {
+        demographic: PlayerDemographic;
+        appearance: PlayerAppearance;
+    } | null {
+        try {
+            return {
+                appearance: PlayerAppearanceSchema.parse({
+                    hair: {
+                        type: selectedHairType.value,
+                        color: selectedHairColor.value,
+                    },
+                    eye: {
+                        type: selectedEyeType.value,
+                        color: selectedEyeColor.value,
+                    },
+                    face: selectedFaceType.value,
+                    body: selectedBodyType.value,
+                    skin: selectedSkinType.value,
+                    personality: selectedPersonalityType.value,
+                    age: selectedAgeType.value,
+                }),
+                demographic: PlayerDemographicSchema.parse({
+                    gender: selectedGenderType.value,
+                    race: selectedRaceType.value,
+                    archetype: selectedArchetypeType.value,
+                }),
+            };
         } catch (err) {
             errors = parseZodErrors(err);
             return null;
@@ -137,15 +154,24 @@
     }
 
     async function onGenerateAvatar() {
-        const playerMetadata = await validatePlayerMetadata({
-            name: "name", // not needed for avatar generation
-            description: "description",
-            playerPublicKey: "playerPublicKey",
-            avatar: "https://example.com/avatar.png",
-        });
-        if (playerMetadata) {
-            availableAvatars = await crossoverGenerateAvatar(playerMetadata);
-            errors = {};
+        try {
+            const meta = await validateAvatarMetadata();
+            if (meta) {
+                availableAvatars = await crossoverGenerateAvatar(meta);
+
+                console.log(JSON.stringify(availableAvatars, null, 2));
+                errors = {};
+            }
+        } catch (err: any) {
+            errors.generate = err.message;
+            await getAvailableAvatars();
+        }
+    }
+
+    async function getAvailableAvatars() {
+        const meta = validateAvatarMetadata();
+        if (meta) {
+            availableAvatars = (await crossoverAvailableAvatars(meta)) || [];
         }
     }
 
@@ -553,9 +579,9 @@
     <!-- Avatar -->
     <Card.Root>
         <Card.Header>
-            <Card.Title>Select Your Avatar</Card.Title>
+            <Card.Title>Who are you?</Card.Title>
         </Card.Header>
-        <Card.Content>
+        <Card.Content class="py-0">
             {#if availableAvatars.length > 0}
                 <RadioGroup.Root
                     bind:value={avatar}
@@ -577,10 +603,19 @@
                 </RadioGroup.Root>
             {:else}
                 <p class="text-xs p-4">
-                    There are no available avatars, you may generate one.
+                    There are no available avatars, please generate one.
                 </p>
-                <Button on:click={onGenerateAvatar}>Generate</Button>
             {/if}
+            <div class="pt-4 pb-0">
+                <Button on:click={onGenerateAvatar}
+                    >Generate (Payment required)</Button
+                >
+                {#if errors.generate}
+                    <p class="text-xs text-destructive pt-2">
+                        {errors.generate}
+                    </p>
+                {/if}
+            </div>
         </Card.Content>
         <Card.Footer>
             {#if errors.avatar}

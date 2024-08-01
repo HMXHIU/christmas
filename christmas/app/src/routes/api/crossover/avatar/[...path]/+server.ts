@@ -1,5 +1,8 @@
 import { COMFYUI_REST_ENDPOINT } from "$env/static/private";
-import type { PlayerMetadata } from "$lib/crossover/world/player";
+import {
+    type PlayerAppearance,
+    type PlayerDemographic,
+} from "$lib/crossover/world/player";
 import { hashObject, requireLogin } from "$lib/server";
 import { ObjectStorage } from "$lib/server/objectStorage";
 import { generateRandomSeed, sleep } from "$lib/utils";
@@ -7,7 +10,7 @@ import type { RequestHandler } from "@sveltejs/kit";
 import workflow from "./crossover_comfyui_character_creator.json";
 
 /*
- *  See ComfyUI endpoitns here:
+ *  See ComfyUI endpoints here:
  *  https://github.com/comfyanonymous/ComfyUI/blob/master/server.py
  */
 
@@ -53,10 +56,12 @@ function createPrompt() {
 
 async function queuePrompt({
     attempts,
-    playerMetadata,
+    demographic,
+    appearance,
 }: {
     attempts?: number;
-    playerMetadata: PlayerMetadata;
+    demographic: PlayerDemographic;
+    appearance: PlayerAppearance;
 }) {
     attempts = attempts || 10;
 
@@ -85,15 +90,18 @@ async function queuePrompt({
     return result;
 }
 
-async function createAvatar(
-    playerMetadata: PlayerMetadata,
-): Promise<{ avatarImageUrl: string }> {
+async function createAvatar({
+    demographic,
+    appearance,
+}: {
+    demographic: PlayerDemographic;
+    appearance: PlayerAppearance;
+}): Promise<string[]> {
     // Generate random seed for kSampler
     const samplerSeed = generateRandomSeed();
 
     // Generate avatar hash
-    const { gender, race, archetype, appearance } = playerMetadata;
-    const avatarHash = hashObject({ gender, race, archetype, appearance });
+    const avatarHash = hashObject({ demographic, appearance });
 
     // Create filename for the avatar
     const avatarFilename = `${avatarHash}-${samplerSeed}.png`;
@@ -106,17 +114,21 @@ async function createAvatar(
             name: avatarFilename,
         })
     ) {
-        return {
-            avatarImageUrl: ObjectStorage.objectUrl({
+        return [
+            ObjectStorage.objectUrl({
                 owner: null,
                 bucket: "avatar",
                 name: avatarFilename,
             }),
-        };
+        ];
     }
 
     // Create and queue the prompt, get the output results
-    const outputs = await queuePrompt({ attempts: 10, playerMetadata });
+    const outputs = await queuePrompt({
+        attempts: 10,
+        demographic,
+        appearance,
+    });
 
     // Get the result of the output node
     const node_id = "97";
@@ -145,13 +157,18 @@ async function createAvatar(
         { "Content-Type": response.headers.get("content-type") || "image/png" },
     );
 
-    return { avatarImageUrl };
+    return [avatarImageUrl];
 }
 
-async function getAvatars(playerMetadata: PlayerMetadata): Promise<string[]> {
+async function getAvatars({
+    demographic,
+    appearance,
+}: {
+    demographic: PlayerDemographic;
+    appearance: PlayerAppearance;
+}): Promise<string[]> {
     // Generate avatar hash
-    const { gender, race, archetype, appearance } = playerMetadata;
-    const avatarHash = hashObject({ gender, race, archetype, appearance });
+    const avatarHash = hashObject({ demographic, appearance });
 
     // Find all avatar's with filename prefix containing the avatarHash
     const bucketItems = await ObjectStorage.listObjects({
@@ -161,18 +178,41 @@ async function getAvatars(playerMetadata: PlayerMetadata): Promise<string[]> {
         maxKeys: 3,
     });
 
-    return bucketItems.map((item) => {
-        return ObjectStorage.objectUrl({
-            owner: null,
-            bucket: "avatar",
-            name: item.name!.split("/").slice(-1)[0], // remove prefix (public, private)
+    // Available generated
+    if (bucketItems && bucketItems.length) {
+        return bucketItems.map((item) => {
+            return ObjectStorage.objectUrl({
+                owner: null,
+                bucket: "avatar",
+                name: item.name!.split("/").slice(-1)[0], // remove prefix (public, private)
+            });
         });
-    });
+    }
+    // Default avatars
+    else {
+        return defaultAvatars({ demographic, appearance });
+    }
+}
+
+function defaultAvatars({
+    demographic,
+    appearance,
+}: {
+    demographic: PlayerDemographic;
+    appearance: PlayerAppearance;
+}): string[] {
+    // Male
+    if (demographic.gender === "male") {
+        return ["/sprites/portraits/male_human.jpeg"];
+    }
+    // Female
+    else {
+        return ["/sprites/portraits/female_human.jpeg"];
+    }
 }
 
 export const GET: RequestHandler = async (event) => {
     const user = requireLogin(event);
-
     const { path } = event.params as { path: string };
     const [operation] = path.split("/");
 
@@ -201,15 +241,12 @@ export const POST: RequestHandler = async (event) => {
     if (operation === "create") {
         // TODO: set player avatar if he chose it, need to set limits, player cannot set the url from frontend to any image
         //       it must be the url generated & validated from the character creator
-
-        let playerMetadata = await event.request.json();
-        const avatarMetadata = await createAvatar(playerMetadata);
+        const avatarMetadata = await createAvatar(await event.request.json());
         return Response.json(avatarMetadata);
     }
     // Avatars
     else if (operation === "avatars") {
-        let playerMetadata = await event.request.json();
-        const avatars = await getAvatars(playerMetadata);
+        const avatars = await getAvatars(await event.request.json());
         return Response.json({ avatars });
     }
 
