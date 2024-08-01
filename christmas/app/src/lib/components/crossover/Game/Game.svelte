@@ -49,7 +49,11 @@
     } from "../shaders";
     import { animateAbility } from "./animations";
     import { drawBiomeShaders } from "./biomes";
-    import { cullEntityContainers, entityContainers } from "./entities";
+    import {
+        cullAllEntityContainers,
+        entityContainers,
+        garbageCollectEntityContainers,
+    } from "./entities";
     import { drawTargetUI } from "./ui";
     import {
         CANVAS_HEIGHT,
@@ -276,7 +280,7 @@
         await drawBiomeShaders(position, worldStage);
 
         // Cull entity meshes outside view
-        cullEntityContainers(position);
+        garbageCollectEntityContainers(position);
 
         // Cull world meshes outside town
         cullWorlds(position);
@@ -498,7 +502,7 @@
             destroyShaders();
 
             // Destroy all ecs
-            cullEntityContainers();
+            cullAllEntityContainers();
         }
     });
 </script>

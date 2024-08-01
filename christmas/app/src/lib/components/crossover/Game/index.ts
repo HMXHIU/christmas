@@ -58,7 +58,11 @@ import {
     playerRecord,
     worldRecord,
 } from "../../../../store";
-import { entityContainers, upsertEntityContainer } from "./entities";
+import {
+    cullEntityContainerById,
+    entityContainers,
+    upsertEntityContainer,
+} from "./entities";
 import { AvatarEntityContainer } from "./entities/AvatarEntityContainer";
 
 export { executeGameCommand, updateEntities, updateWorlds, type GameLogic };
@@ -178,6 +182,10 @@ async function updateEntityContainer<T extends Player | Monster | Item>(
                 }
             }
         }
+    }
+    // Cull ec if not in environment
+    else {
+        cullEntityContainerById(getEntityId(newEntity)[0]);
     }
 }
 

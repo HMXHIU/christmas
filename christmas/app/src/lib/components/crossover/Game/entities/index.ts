@@ -15,13 +15,7 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import { Assets, Container } from "pixi.js";
 import { get } from "svelte/store";
-import {
-    itemRecord,
-    monsterRecord,
-    player,
-    playerRecord,
-    target,
-} from "../../../../../store";
+import { player, target } from "../../../../../store";
 import {
     calculatePosition,
     isCellInView,
@@ -37,8 +31,10 @@ import { AvatarEntityContainer } from "./AvatarEntityContainer";
 import { SimpleEntityContainer } from "./SimpleEntityContainer";
 
 export {
-    cullEntityContainers,
+    cullAllEntityContainers,
+    cullEntityContainerById,
     entityContainers,
+    garbageCollectEntityContainers,
     upsertEntityContainer,
     type EntityContainer,
 };
@@ -52,7 +48,6 @@ async function upsertEntityContainer(
     stage: Container,
 ): Promise<[boolean, SimpleEntityContainer | AvatarEntityContainer]> {
     if (entity.locT !== "geohash") {
-        console.log(entity);
         throw new Error("entity location is not a geohash");
     }
 
@@ -227,40 +222,37 @@ async function upsertSimpleContainer(
 }
 
 /**
- * Only manually cull (destroy) entities if they are very far away
+ * Destroy unused ecs (very far away, not in environment)
  *
  * @param playerPosition - The player's position, if undefined, cull all entities
  */
-function cullEntityContainers(playerPosition?: Position) {
-    // Cull all ecs
-    if (playerPosition == null) {
-        for (const [id, ec] of Object.entries(entityContainers)) {
-            ec.destroy();
-            delete entityContainers[id];
-        }
-    }
-    // Cull ecs far away
-    else {
-        const p5s = geohashesNearby(playerPosition.geohash.slice(0, -2));
-        for (const [id, ec] of Object.entries(entityContainers)) {
-            const geohash = ec.isoPosition?.geohash;
-            if (geohash != null && !p5s.some((gh) => geohash.startsWith(gh))) {
-                ec.destroy();
-                delete entityContainers[id];
+function garbageCollectEntityContainers(playerPosition: Position) {
+    const p5s = geohashesNearby(playerPosition.geohash.slice(0, -2));
+    for (const [id, ec] of Object.entries(entityContainers)) {
+        const geohash = ec.isoPosition?.geohash;
+        if (geohash) {
+            // Very far away
+            if (!p5s.some((gh) => geohash.startsWith(gh))) {
+                cullEntityContainerById(id);
             }
         }
-    }
-    // Cull ecs not in record
-    for (const [id, ec] of Object.entries(entityContainers)) {
-        if (
-            !get(itemRecord)[id] &&
-            !get(monsterRecord)[id] &&
-            !get(playerRecord)[id] &&
-            get(player)?.player !== id
-        ) {
-            ec.destroy();
-            delete entityContainers[id];
+        // Not in environment
+        else {
+            cullEntityContainerById(id);
         }
+    }
+}
+
+function cullAllEntityContainers() {
+    for (const [id, ec] of Object.entries(entityContainers)) {
+        cullEntityContainerById(id);
+    }
+}
+
+function cullEntityContainerById(entityId: string) {
+    if (entityContainers[entityId]) {
+        entityContainers[entityId].destroy();
+        delete entityContainers[entityId];
     }
 }
 
