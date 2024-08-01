@@ -1,4 +1,4 @@
-import { stream } from "$lib/crossover";
+import { stream } from "$lib/crossover/client";
 import {
     abilities,
     patchEffectWithVariables,

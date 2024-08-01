@@ -1,4 +1,4 @@
-import { crossoverCmdPerformAbility, stream } from "$lib/crossover";
+import { crossoverCmdPerformAbility, stream } from "$lib/crossover/client";
 import { abilities } from "$lib/crossover/world/abilities";
 import { expect, test, vi } from "vitest";
 import { createRandomPlayer, waitForEventData } from "./utils";

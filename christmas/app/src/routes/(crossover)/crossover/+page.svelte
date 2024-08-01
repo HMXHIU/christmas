@@ -34,6 +34,11 @@
 
     async function startStream() {
         [eventStream, closeStream] = await stream();
+
+        eventStream.removeEventListener("feed", processFeedEvent);
+        eventStream.removeEventListener("entities", processEntitiesEvent);
+        eventStream.removeEventListener("action", processActionEvent);
+
         eventStream.addEventListener("feed", processFeedEvent);
         eventStream.addEventListener("entities", processEntitiesEvent);
         eventStream.addEventListener("action", processActionEvent);
@@ -43,7 +48,7 @@
         if (eventStream != null) {
             eventStream.removeEventListener("feed", processFeedEvent);
             eventStream.removeEventListener("entities", processEntitiesEvent);
-            eventStream.addEventListener("action", processActionEvent);
+            eventStream.removeEventListener("action", processActionEvent);
         }
         if (closeStream != null) {
             closeStream();

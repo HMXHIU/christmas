@@ -4,7 +4,7 @@ import {
     login as loginCrossover,
     logout as logoutCrossover,
     signup,
-} from "$lib/crossover";
+} from "$lib/crossover/client";
 import {
     archetypeTypes,
     type PlayerMetadata,

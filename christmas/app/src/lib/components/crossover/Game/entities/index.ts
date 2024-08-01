@@ -50,7 +50,6 @@ async function upsertEntityContainer(
     if (entity.locT !== "geohash") {
         throw new Error("entity location is not a geohash");
     }
-
     const [entityId, entityType] = getEntityId(entity);
 
     // Get position

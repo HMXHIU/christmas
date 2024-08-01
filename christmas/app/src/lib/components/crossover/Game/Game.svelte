@@ -1,27 +1,19 @@
 <script lang="ts">
-    import {
-        crossoverCmdMove,
-        crossoverPlayerMetadata,
-    } from "$lib/crossover/client";
+    import { crossoverPlayerMetadata } from "$lib/crossover/client";
     import { getGameActionId, type GameCommand } from "$lib/crossover/ir";
-    import {
-        getEntityId,
-        getPositionsForPath,
-        snapToGrid,
-    } from "$lib/crossover/utils";
+    import { getEntityId, getPositionsForPath } from "$lib/crossover/utils";
     import {
         getPlayerAbilities,
         type Ability,
     } from "$lib/crossover/world/abilities";
     import { actions, type Action } from "$lib/crossover/world/actions";
     import { compendium, type Utility } from "$lib/crossover/world/compendium";
-    import type { Direction } from "$lib/crossover/world/types";
     import { cn } from "$lib/shadcn";
     import { gsap } from "gsap";
     import {
         Application,
         Container,
-        FederatedMouseEvent,
+        FederatedPointerEvent,
         Ticker,
         WebGLRenderer,
     } from "pixi.js";
@@ -54,14 +46,12 @@
         entityContainers,
         garbageCollectEntityContainers,
     } from "./entities";
+    import { createHIDHandlers } from "./hid";
     import { drawTargetUI } from "./ui";
     import {
         CANVAS_HEIGHT,
         CANVAS_WIDTH,
         CELL_WIDTH,
-        HALF_ISO_CELL_HEIGHT,
-        HALF_ISO_CELL_WIDTH,
-        calculateRowColFromIso,
         getDirectionsToPosition,
         getPathHighlights,
         getPlayerPosition,
@@ -83,11 +73,11 @@
     let clientHeight: number;
     let app: Application | null = null;
     let worldStage: Container | null = null;
-    let lastCursorX: number = 0;
-    let lastCursorY: number = 0;
-    let isMouseDown: boolean = false;
-    let path: Direction[] | null = null;
     let cameraTween: gsap.core.Tween | null = null;
+
+    let mouseMove: (e: FederatedPointerEvent) => void;
+    let mouseDown: (e: FederatedPointerEvent) => void;
+    let mouseUp: (e: FederatedPointerEvent) => void;
 
     $: resize(clientHeight, clientWidth);
     $: handlePreviewCommand(previewCommand);
@@ -217,45 +207,6 @@
         }
     }
 
-    function onMouseMove(x: number, y: number) {
-        const playerPosition = getPlayerPosition();
-        if (playerPosition == null) {
-            return;
-        } else if (isMouseDown) {
-            // Calculate path (astar)
-            const [rowEnd, colEnd] = calculateRowColFromIso(x, y);
-            path = getDirectionsToPosition(playerPosition, {
-                row: rowEnd,
-                col: colEnd,
-            });
-            const pathPositions = getPositionsForPath(playerPosition, path);
-            highlightShaderInstances(
-                "biome",
-                getPathHighlights(pathPositions, 1),
-            );
-        }
-    }
-
-    async function onMouseUp(x: number, y: number) {
-        const playerPosition = getPlayerPosition();
-        if (playerPosition == null) {
-            return;
-        }
-        // Clear highlights
-        highlightShaderInstances("biome", {});
-
-        // Move command
-        if (path != null && path.length > 0) {
-            // TODO: should funnel everything through executeGameCommand
-            await crossoverCmdMove({ path });
-        }
-    }
-
-    function onMouseDown(x: number, y: number) {
-        // Clear path
-        path = null;
-    }
-
     function ticker(ticker: Ticker) {
         if (!isInitialized || app == null || worldStage == null) {
             return;
@@ -347,56 +298,14 @@
         app.stage.eventMode = "static"; // enable interactivity
         app.stage.hitArea = app.screen; // ensure whole canvas area is interactive
 
-        function getMousePosition(
-            e: FederatedMouseEvent,
-        ): [number, number] | null {
-            const playerPosition = getPlayerPosition();
-            if (playerPosition == null) {
-                return null;
-            }
-            return snapToGrid(
-                e.global.x + worldStage!.pivot.x,
-                e.global.y + worldStage!.pivot.y + playerPosition.elevation, // select on the same plane as player
-                HALF_ISO_CELL_WIDTH,
-                HALF_ISO_CELL_HEIGHT,
-            );
-        }
-        app.stage.onmouseup = (e) => {
-            const playerPosition = getPlayerPosition();
-            if (playerPosition != null && e.global != null) {
-                const snapXY = getMousePosition(e);
-                if (snapXY != null) {
-                    onMouseUp(...snapXY);
-                    lastCursorX = snapXY[0];
-                    lastCursorY = snapXY[1];
-                    isMouseDown = false;
-                }
-            }
-        };
-        app.stage.onmousedown = (e) => {
-            if (e.global != null) {
-                const snapXY = getMousePosition(e);
-                if (snapXY != null) {
-                    onMouseDown(...snapXY);
-                    lastCursorX = snapXY[0];
-                    lastCursorY = snapXY[1];
-                    isMouseDown = true;
-                }
-            }
-        };
-        app.stage.onmousemove = (e) => {
-            if (e.global != null) {
-                const snapXY = getMousePosition(e);
-                if (
-                    snapXY != null &&
-                    (lastCursorX !== snapXY[0] || lastCursorY !== snapXY[1])
-                ) {
-                    onMouseMove(...snapXY);
-                    lastCursorX = snapXY[0];
-                    lastCursorY = snapXY[1];
-                }
-            }
-        };
+        // Listen to HID events
+        app.stage.off("pointerup", mouseUp);
+        app.stage.off("pointerdown", mouseDown);
+        app.stage.off("pointermove", mouseMove);
+        ({ mouseMove, mouseUp, mouseDown } = createHIDHandlers(worldStage));
+        app.stage.on("pointerup", mouseUp);
+        app.stage.on("pointerdown", mouseDown);
+        app.stage.on("pointermove", mouseMove);
 
         // Add ticker
         app.ticker.add(ticker);
@@ -491,6 +400,11 @@
             if (cameraTween) {
                 cameraTween.kill();
             }
+
+            // Remove HID events
+            app.stage.off("pointerup", mouseUp);
+            app.stage.off("pointerdown", mouseDown);
+            app.stage.off("pointermove", mouseMove);
 
             // Destroy all children
             for (const child of worldStage.children) {

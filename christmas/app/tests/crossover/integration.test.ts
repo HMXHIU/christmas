@@ -3,7 +3,7 @@ import {
     crossoverCmdMove,
     crossoverCmdPerformAbility,
     crossoverCmdSay,
-} from "$lib/crossover";
+} from "$lib/crossover/client";
 import { minifiedEntity } from "$lib/crossover/utils";
 import { abilities } from "$lib/crossover/world/abilities";
 import { compendium, itemAttibutes } from "$lib/crossover/world/compendium";

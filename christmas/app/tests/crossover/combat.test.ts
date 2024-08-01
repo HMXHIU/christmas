@@ -1,4 +1,8 @@
-import { crossoverCmdEquip, crossoverCmdTake, stream } from "$lib/crossover";
+import {
+    crossoverCmdEquip,
+    crossoverCmdTake,
+    stream,
+} from "$lib/crossover/client";
 import { abilities } from "$lib/crossover/world/abilities";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
 import { compendium } from "$lib/crossover/world/compendium";

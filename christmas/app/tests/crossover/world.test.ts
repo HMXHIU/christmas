@@ -1,5 +1,5 @@
 import { LRUMemoryCache, MemoryCache } from "$lib/caches";
-import { crossoverWorldWorlds } from "$lib/crossover";
+import { crossoverWorldWorlds } from "$lib/crossover/client";
 import {
     childrenGeohashes,
     geohashNeighbour,

@@ -1,5 +1,5 @@
 import { createUser, fetchUser } from "$lib/community";
-import { crossoverPlayerMetadata } from "$lib/crossover";
+import { crossoverPlayerMetadata } from "$lib/crossover/client";
 import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
 import { stringToUint8Array } from "$lib/utils";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";

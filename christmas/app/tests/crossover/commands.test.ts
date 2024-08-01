@@ -3,7 +3,7 @@ import {
     crossoverCmdTake,
     executeGameCommand,
     stream,
-} from "$lib/crossover";
+} from "$lib/crossover/client";
 import { searchPossibleCommands, type GameCommand } from "$lib/crossover/ir";
 import { geohashNeighbour } from "$lib/crossover/utils";
 import { abilities } from "$lib/crossover/world/abilities";

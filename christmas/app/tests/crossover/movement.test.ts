@@ -1,4 +1,4 @@
-import { crossoverCmdMove } from "$lib/crossover";
+import { crossoverCmdMove } from "$lib/crossover/client";
 import {
     aStarPathfinding,
     geohashNeighbour,
@@ -26,7 +26,9 @@ import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { cloneDeep } from "lodash";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import {
+    collectEventDataForDuration,
     createGandalfSarumanSauron,
+    flushEventChannel,
     generateRandomGeohash,
     waitForEventData,
 } from "./utils";
@@ -236,6 +238,7 @@ describe("Movement Tests", () => {
         const path: Direction[] = ["s", "s", "s", "s"];
         const finalGeohash = geohashNeighbour(playerOneGeohash, "s", 4);
 
+        await flushEventChannel(playerOneStream, "entities");
         playerOne = await movePlayer(playerOne as PlayerEntity, path);
 
         // Check in motion
@@ -252,5 +255,26 @@ describe("Movement Tests", () => {
 
         // Check final destination
         expect(playerOne.loc[0]).toBe(finalGeohash);
+
+        // Check correct events
+        const entityEvents = await collectEventDataForDuration(
+            playerOneStream,
+            "entities",
+        );
+        expect(entityEvents.length).equal(1); // check no duplicates
+        expect(entityEvents[0]).toMatchObject({
+            event: "entities",
+            players: [
+                {
+                    name: playerOne.name,
+                    player: playerOne.player,
+                    loc: [finalGeohash],
+                    locT: "geohash",
+                    pth: ["s", "s", "s", "s"],
+                    pthst: playerOneGeohash,
+                },
+            ],
+            op: "upsert",
+        });
     });
 });

@@ -11,7 +11,7 @@ import {
     login as loginCrossover,
     signup,
     stream,
-} from "$lib/crossover";
+} from "$lib/crossover/client";
 import { entityInRange, minifiedEntity } from "$lib/crossover/utils";
 import {
     abilities,
