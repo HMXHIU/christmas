@@ -1,7 +1,7 @@
 // src/lib/Bone.ts
 import { cloneDeep } from "lodash";
 import { Assets, Container, Texture } from "pixi.js";
-import { swapMeshTexture } from "../Game/utils";
+import { swapMeshTexture } from "../shaders";
 import { IsoMesh } from "../shaders/IsoMesh";
 import type { BoneMetadata, BoneTextureTransform } from "./types";
 
@@ -168,7 +168,7 @@ export class Bone extends Container {
         // Create mesh if it doesn't exist
         if (!this.mesh) {
             this.mesh = new IsoMesh({
-                shaderName: "entity",
+                shaderName: "entity", // use `entity` shader
                 texture,
                 zOffset: this.zOffset,
                 zScale: this.zScale,

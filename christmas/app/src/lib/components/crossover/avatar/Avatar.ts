@@ -71,9 +71,9 @@ export class Avatar extends Container {
             // Auto-rig the texture (use the first texture as default)
             const boneTextureTransform = boneMetadata.textures[textureKey];
             if (textureKey && boneTextureTransform) {
-                await bone.setTexture(textureKey, {
-                    uid: uid != null ? `${uid}_${boneName}` : undefined,
-                });
+                const shaderUid =
+                    uid != null ? `${uid}_${boneName}` : undefined;
+                await bone.setTexture(textureKey, { uid: shaderUid });
             }
         }
 

@@ -45,13 +45,14 @@ export class AnimationManager {
         // Set bone transforms using the selected pose
         for (const [
             index,
-            { bone: boneName, texture, position, rotation },
+            { bone: boneName, texture, position, rotation, scale },
         ] of pose.entries()) {
             const bone = bones[boneName];
             if (bone) {
                 await bone.setTexture(texture);
                 bone.position.set(position.x, position.y);
                 bone.rotation = rotation;
+                bone.scale.set(scale.x, scale.y);
                 bone.boneRenderLayer = index;
                 bone.zIndex = index;
                 if (bone.mesh) {

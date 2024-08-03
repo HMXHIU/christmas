@@ -1,5 +1,5 @@
 import { Geometry, Mesh, Shader, Texture } from "pixi.js";
-import { loadShaderGeometry } from ".";
+import { loadShaderGeometry, type OptionalShaderTextures } from ".";
 
 export { IsoMesh };
 
@@ -26,7 +26,7 @@ class IsoMesh extends Mesh<Geometry, Shader> {
         renderLayer?: number;
         cellHeight?: number;
         uid?: string;
-        textures?: Record<string, { texture: Texture; enabled: number }>; // set any other textures here
+        textures?: OptionalShaderTextures; // set any other textures here
     }) {
         const { shader, geometry } = loadShaderGeometry(
             shaderName,

@@ -1,95 +1,95 @@
 // src/lib/types.ts
 
 export interface BoneTextureTransform {
-  anchor: {
-    x: number;
-    y: number;
-  };
-  rotation: number;
+    anchor: {
+        x: number;
+        y: number;
+    };
+    rotation: number;
 }
 
 export interface BoneTextures {
-  [key: string]: BoneTextureTransform;
+    [key: string]: BoneTextureTransform;
 }
 
 export interface BoneMetadata {
-  bone: string;
-  height: number;
-  width: number;
-  parent?: string;
-  textures: BoneTextures;
+    bone: string;
+    height: number;
+    width: number;
+    textures: BoneTextures;
+    parent?: string;
 }
 
 export interface AvatarMetadata {
-  bones: Record<string, BoneMetadata>;
-  textures: { [key: string]: string };
+    bones: Record<string, BoneMetadata>;
+    textures: { [key: string]: string };
 }
 
 export interface BonePose {
-  pose: string;
-  bone: string;
-  texture: string;
-  position: {
-    x: number;
-    y: number;
-  };
-  rotation: number;
-  scale: {
-    x: number;
-    y: number;
-  };
+    pose: string;
+    bone: string;
+    texture: string;
+    position: {
+        x: number;
+        y: number;
+    };
+    rotation: number;
+    scale: {
+        x: number;
+        y: number;
+    };
 }
 
 export interface BoneConstraints {
-  rotation: {
-    center: number;
-    range: number;
-  };
+    rotation: {
+        center: number;
+        range: number;
+    };
 }
 
 export type Pose = BonePose[];
 
 export interface KeyFrame {
-  time: number;
-  rotation?: number;
-  scale?: {
-    x: number;
-    y: number;
-  };
-  position?: {
-    x: number;
-    y: number;
-  };
+    time: number;
+    rotation?: number;
+    scale?: {
+        x: number;
+        y: number;
+    };
+    position?: {
+        x: number;
+        y: number;
+    };
 }
 
 export interface BoneAnimation {
-  boneName: string;
-  keyframes: KeyFrame[];
+    boneName: string;
+    keyframes: KeyFrame[];
 }
 
 export interface Animation {
-  animation: string;
-  duration: number;
-  bones: BoneAnimation[];
-  pose: string;
+    animation: string;
+    duration: number;
+    bones: BoneAnimation[];
+    pose: string;
 }
 
 export interface AnimationMetadata {
-  animations: Record<string, Animation>;
-  poses: Record<string, Pose>;
-  ik: {
-    chains: Record<string, IKChainData>;
-  };
+    animations: Record<string, Animation>;
+    poses: Record<string, Pose>;
+    ik: {
+        chains: Record<string, IKChainData>;
+    };
 }
 
 export interface IKEffector {
-  boneName: string;
-  offset: { x: number; y: number };
+    boneName: string;
+    offset: { x: number; y: number };
 }
 
 export interface IKChainData {
-  chain: string;
-  bones: string[];
-  effector: IKEffector;
-  constraints: Record<string, BoneConstraints>;
+    chain: string;
+    bones: string[];
+    effector: IKEffector;
+    constraints: Record<string, BoneConstraints>;
 }

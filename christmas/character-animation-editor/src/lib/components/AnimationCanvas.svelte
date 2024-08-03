@@ -21,7 +21,9 @@
         Pose,
     } from "../../../../app/src/lib/components/crossover/avatar/types";
     import { BoneGraphic } from "../BoneGraphic";
+    import { dot, normalize, rotatePoint } from "../mathUtils";
     import { avatar } from "../store";
+    // We'll create this file
 
     export let selectedAnimation: Animation | null = null;
     export let selectedPose: Pose | null = null;
@@ -41,6 +43,7 @@
     let rotatingBone: string | null = null;
     let scalingBone: string | null = null;
     let selectedBones: string[] = [];
+    let boneDirection = { x: 0, y: 0 };
 
     let startBonePosition = { x: 0, y: 0 };
     let startBoneRotation = 0;
@@ -314,9 +317,18 @@
             const parent = bone.parent as Container;
             startBoneScale = bone.scale.clone();
             startPosition = parent.toLocal(event.global).clone();
-            boneGraphics[boneName].startScale(event);
+
+            // Calculate the bone direction
+            const boneEnd = rotatePoint(
+                { x: bone.boneMetadata.height, y: 0 },
+                bone.rotation,
+            );
+            boneDirection = normalize(boneEnd);
+
             // Hide other bones
             hideAllBones();
+
+            boneGraphics[boneName].startScale(event);
         }
         app.stage.on("pointermove", onDragMove);
     }
@@ -392,8 +404,21 @@
                 const dx = localPosition.x - startPosition.x;
                 const dy = localPosition.y - startPosition.y;
 
-                // ONLY ALLOW SCALING ALONG BONE FOR NOW
-                bone.scale.x = startBoneScale.x + dx / bone.boneMetadata.height;
+                // Calculate scaling factors
+                const scaleX = dot({ x: dx, y: dy }, boneDirection);
+                const scaleY = dot(
+                    { x: dx, y: dy },
+                    {
+                        x: -boneDirection.y,
+                        y: boneDirection.x,
+                    },
+                );
+
+                // Apply scaling
+                bone.scale.x =
+                    startBoneScale.x + scaleX / bone.boneMetadata.height;
+                bone.scale.y =
+                    startBoneScale.y + scaleY / bone.boneMetadata.height;
 
                 // Update bone graphic
                 updateBoneGraphic(scalingBone, bone);

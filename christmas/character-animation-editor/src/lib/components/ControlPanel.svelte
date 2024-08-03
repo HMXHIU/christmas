@@ -1,14 +1,11 @@
 <!-- src/lib/components/ControlPanel.svelte -->
 <script lang="ts">
-    import { createEventDispatcher } from "svelte";
     import type {
         Animation,
         Pose,
     } from "../../../../app/src/lib/components/crossover/avatar/types";
     import { avatar } from "../store";
     import RiggingTool from "./RiggingTool.svelte";
-
-    const dispatch = createEventDispatcher();
 
     export let selectedAnimation: Animation | null = null;
     export let selectedPose: Pose | null = null;

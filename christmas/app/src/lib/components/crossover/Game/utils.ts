@@ -60,7 +60,6 @@ export {
     registerGSAP,
     RENDER_ORDER,
     scaleToFitAndMaintainAspectRatio,
-    swapMeshTexture,
     WORLD_HEIGHT,
     WORLD_WIDTH,
     Z_LAYER,
@@ -214,18 +213,6 @@ function getDirectionsToPosition(
             return 0; // TODO: add actual traversal cost
         },
     });
-}
-
-function swapMeshTexture(mesh: Mesh<Geometry, Shader>, texture: Texture) {
-    if (mesh.shader == null) {
-        console.error("Missing shader for mesh");
-        return;
-    }
-    mesh.shader.resources.uTexture = texture.source;
-    const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
-    const uvBuffer = mesh.geometry.getBuffer("aUV");
-    uvBuffer.data.set([x0, y0, x1, y1, x2, y2, x3, y3]);
-    uvBuffer.update();
 }
 
 async function loadAssetTexture(

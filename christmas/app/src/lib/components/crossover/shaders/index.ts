@@ -36,7 +36,10 @@ export {
     loadShaderGeometry,
     MAX_SHADER_GEOMETRIES,
     shaders,
+    swapMeshTexture,
     updateShaderUniforms,
+    type OptionalShaderTexture,
+    type OptionalShaderTextures,
     type ShaderGeometry,
     type ShaderTexture,
 };
@@ -62,6 +65,9 @@ interface ShaderTexture {
     height: number;
     instances: number;
 }
+
+type OptionalShaderTexture = { texture: Texture; enabled: number };
+type OptionalShaderTextures = Record<string, OptionalShaderTexture>;
 
 let instancedShaderMeshes: Record<string, Mesh<Geometry, Shader>> = {};
 let loadedShaderGeometries: Record<string, ShaderGeometry> = {};
@@ -127,6 +133,18 @@ function updateShaderUniforms({ deltaTime }: { deltaTime: number }) {
     }
 }
 
+function swapMeshTexture(mesh: Mesh<Geometry, Shader>, texture: Texture) {
+    if (mesh.shader == null) {
+        console.error("Missing shader for mesh");
+        return;
+    }
+    mesh.shader.resources.uTexture = texture.source;
+    const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
+    const uvBuffer = mesh.geometry.getBuffer("aUV");
+    uvBuffer.data.set([x0, y0, x1, y1, x2, y2, x3, y3]);
+    uvBuffer.update();
+}
+
 function loadShaderGeometry(
     shaderName: string,
     texture: Texture,
@@ -138,7 +156,7 @@ function loadShaderGeometry(
         zScale?: number;
         zOffset?: number;
         cellHeight?: number;
-        textures?: Record<string, { texture: Texture; enabled: number }>; // set any other textures here
+        textures?: OptionalShaderTextures; // set any other textures here
     } = {},
 ): ShaderGeometry {
     const instanceCount = options.instanceCount ?? 1;
@@ -183,7 +201,7 @@ function createShader(
         width?: number;
         zScale?: number;
         zOffset?: number;
-        textures?: Record<string, { texture: Texture; enabled: number }>; // set any other textures here
+        textures?: OptionalShaderTextures; // set any other textures here
     },
 ): Shader {
     const height = options?.height ?? texture.frame.height;

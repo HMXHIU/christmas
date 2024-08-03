@@ -1,10 +1,10 @@
 import type { AssetMetadata } from "$lib/crossover/world/types";
+import { swapMeshTexture } from "../../shaders";
 import { IsoMesh } from "../../shaders/IsoMesh";
 import {
     CELL_WIDTH,
     loadAssetTexture,
     scaleToFitAndMaintainAspectRatio,
-    swapMeshTexture,
 } from "../utils";
 import { EntityContainer } from "./EntityContainer";
 
