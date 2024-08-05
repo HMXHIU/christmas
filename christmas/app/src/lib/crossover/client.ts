@@ -350,7 +350,7 @@ async function crossoverAvailableAvatars(
         appearance: PlayerAppearance;
     },
     headers: any = {},
-): Promise<string[]> {
+): Promise<Record<string, string>> {
     const { avatars } = await (
         await fetch(`${PUBLIC_HOST}/api/crossover/avatar/avatars`, {
             method: "POST",
@@ -367,7 +367,7 @@ async function crossoverGenerateAvatar(
         appearance: PlayerAppearance;
     },
     headers: any = {},
-): Promise<string[]> {
+): Promise<Record<string, string>> {
     const response = await fetch(`${PUBLIC_HOST}/api/crossover/avatar/create`, {
         method: "POST",
         headers,

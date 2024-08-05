@@ -166,32 +166,34 @@ async function getAvatars({
 }: {
     demographic: PlayerDemographic;
     appearance: PlayerAppearance;
-}): Promise<string[]> {
-    // Generate avatar hash
-    const avatarHash = hashObject({ demographic, appearance });
+}): Promise<Record<string, string>> {
+    // // Generate avatar hash
+    // const avatarHash = hashObject({ demographic, appearance });
 
-    // Find all avatar's with filename prefix containing the avatarHash
-    const bucketItems = await ObjectStorage.listObjects({
-        owner: null,
-        bucket: "avatar",
-        prefix: avatarHash,
-        maxKeys: 3,
-    });
+    // // Find all avatar's with filename prefix containing the avatarHash
+    // const bucketItems = await ObjectStorage.listObjects({
+    //     owner: null,
+    //     bucket: "avatar",
+    //     prefix: avatarHash,
+    //     maxKeys: 3,
+    // });
 
-    // Available generated
-    if (bucketItems && bucketItems.length) {
-        return bucketItems.map((item) => {
-            return ObjectStorage.objectUrl({
-                owner: null,
-                bucket: "avatar",
-                name: item.name!.split("/").slice(-1)[0], // remove prefix (public, private)
-            });
-        });
-    }
-    // Default avatars
-    else {
-        return defaultAvatars({ demographic, appearance });
-    }
+    // // Available generated
+    // if (bucketItems && bucketItems.length) {
+    //     return bucketItems.map((item) => {
+    //         return ObjectStorage.objectUrl({
+    //             owner: null,
+    //             bucket: "avatar",
+    //             name: item.name!.split("/").slice(-1)[0], // remove prefix (public, private)
+    //         });
+    //     });
+    // }
+    // // Default avatars
+    // else {
+    //     return defaultAvatars({ demographic, appearance });
+    // }
+
+    return defaultAvatars({ demographic, appearance });
 }
 
 function defaultAvatars({
@@ -200,15 +202,64 @@ function defaultAvatars({
 }: {
     demographic: PlayerDemographic;
     appearance: PlayerAppearance;
-}): string[] {
+}): Record<string, string> {
+    let textures = {};
     // Male
     if (demographic.gender === "male") {
-        return ["/sprites/portraits/male_human.jpeg"];
+        textures = {
+            torso: "http://localhost:5173/avatar/images/female_default/torso.png",
+            front_upper_arm:
+                "http://localhost:5173/avatar/images/female_default/front_upper_arm.png",
+            front_lower_arm:
+                "http://localhost:5173/avatar/images/female_default/front_lower_arm.png",
+            back_upper_arm:
+                "http://localhost:5173/avatar/images/female_default/back_upper_arm.png",
+            back_lower_arm:
+                "http://localhost:5173/avatar/images/female_default/back_lower_arm.png",
+            front_upper_leg:
+                "http://localhost:5173/avatar/images/female_default/front_upper_leg.png",
+            front_lower_leg:
+                "http://localhost:5173/avatar/images/female_default/front_lower_leg.png",
+            back_upper_leg:
+                "http://localhost:5173/avatar/images/female_default/back_upper_leg.png",
+            back_lower_leg:
+                "http://localhost:5173/avatar/images/female_default/back_lower_leg.png",
+            head: "http://localhost:5173/avatar/images/head/face/female_default/face.png",
+            front_hair:
+                "http://localhost:5173/avatar/images/head/hair/female_long/front_hair.png",
+            back_hair:
+                "http://localhost:5173/avatar/images/head/hair/female_long/back_hair.png",
+        };
     }
     // Female
     else {
-        return ["/sprites/portraits/female_human.jpeg"];
+        textures = {
+            torso: "http://localhost:5173/avatar/images/female_default/torso.png",
+            front_upper_arm:
+                "http://localhost:5173/avatar/images/female_default/front_upper_arm.png",
+            front_lower_arm:
+                "http://localhost:5173/avatar/images/female_default/front_lower_arm.png",
+            back_upper_arm:
+                "http://localhost:5173/avatar/images/female_default/back_upper_arm.png",
+            back_lower_arm:
+                "http://localhost:5173/avatar/images/female_default/back_lower_arm.png",
+            front_upper_leg:
+                "http://localhost:5173/avatar/images/female_default/front_upper_leg.png",
+            front_lower_leg:
+                "http://localhost:5173/avatar/images/female_default/front_lower_leg.png",
+            back_upper_leg:
+                "http://localhost:5173/avatar/images/female_default/back_upper_leg.png",
+            back_lower_leg:
+                "http://localhost:5173/avatar/images/female_default/back_lower_leg.png",
+            head: "http://localhost:5173/avatar/images/head/face/female_default/face.png",
+            front_hair:
+                "http://localhost:5173/avatar/images/head/hair/female_long/front_hair.png",
+            back_hair:
+                "http://localhost:5173/avatar/images/head/hair/female_long/back_hair.png",
+        };
     }
+
+    return textures;
 }
 
 export const GET: RequestHandler = async (event) => {

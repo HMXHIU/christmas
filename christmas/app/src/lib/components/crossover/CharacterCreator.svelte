@@ -2,7 +2,6 @@
     import { Button } from "$lib/components/ui/button";
     import * as Card from "$lib/components/ui/card/index.js";
     import { Input } from "$lib/components/ui/input";
-    import { Label } from "$lib/components/ui/label";
     import * as RadioGroup from "$lib/components/ui/radio-group/index.js";
     import * as Select from "$lib/components/ui/select/index.js";
     import { Textarea } from "$lib/components/ui/textarea";
@@ -33,9 +32,12 @@
     } from "$lib/crossover/world/player";
     import { cn } from "$lib/shadcn";
     import { parseZodErrors } from "$lib/utils";
+    import { onMount } from "svelte";
     import { player } from "../../../store";
     import LabelField from "../common/LabelField.svelte";
     import SeparatorWithText from "../common/SeparatorWithText.svelte";
+    import { Label } from "../ui/label";
+    import AvatarViewer from "./AvatarViewer.svelte";
 
     export let playerPublicKey: string;
     export let onCreateCharacter: (playerMetadata: PlayerMetadata) => void;
@@ -63,7 +65,7 @@
         },
         {},
     );
-    let availableAvatars: string[] = [];
+    let avatarTextures: Record<string, string> = {}; // this is the avatar textures in `humanoid.json`
 
     $: attributes = archetypes[selectedArchetypeType.value].attributes;
     $: stats = playerStats({
@@ -153,13 +155,14 @@
         }
     }
 
+    /**
+     * TODO: For future allow payment to generate an avatar using uploaded user's face
+     */
     async function onGenerateAvatar() {
         try {
             const meta = await validateAvatarMetadata();
             if (meta) {
-                availableAvatars = await crossoverGenerateAvatar(meta);
-
-                console.log(JSON.stringify(availableAvatars, null, 2));
+                avatarTextures = await crossoverGenerateAvatar(meta);
                 errors = {};
             }
         } catch (err: any) {
@@ -171,7 +174,7 @@
     async function getAvailableAvatars() {
         const meta = validateAvatarMetadata();
         if (meta) {
-            availableAvatars = (await crossoverAvailableAvatars(meta)) || [];
+            avatarTextures = (await crossoverAvailableAvatars(meta)) || {};
         }
     }
 
@@ -182,9 +185,14 @@
             errors = {};
         }
     }
+
+    onMount(() => {
+        // Get default on load
+        getAvailableAvatars();
+    });
 </script>
 
-<div class={cn("flex flex-col w-full h-full gap-2", $$restProps)}>
+<div class={cn("flex flex-col w-full h-full gap-2 px-2", $$restProps)}>
     <!-- Character -->
     <Card.Root>
         <Card.Header>
@@ -582,40 +590,29 @@
             <Card.Title>Who are you?</Card.Title>
         </Card.Header>
         <Card.Content class="py-0">
-            {#if availableAvatars.length > 0}
+            {#if avatarTextures}
                 <RadioGroup.Root
                     bind:value={avatar}
                     class="grid grid-cols-3 gap-4"
                 >
-                    {#each availableAvatars as avatarImageUrl}
-                        <Label
-                            for={avatarImageUrl}
-                            class="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
-                        >
-                            <RadioGroup.Item
-                                value={avatarImageUrl}
-                                id={avatarImageUrl}
-                                class="sr-only"
-                            />
-                            <img src={avatarImageUrl} alt="avatar" />
-                        </Label>
-                    {/each}
+                    <Label
+                        for="avatar"
+                        class="flex flex-col items-center justify-between rounded-full overflow-hidden border-2 border-muted bg-popover p-0 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+                    >
+                        <RadioGroup.Item
+                            value="avatar"
+                            id="avatar"
+                            class="sr-only"
+                        />
+                        <AvatarViewer class="aspect-square" {avatarTextures}
+                        ></AvatarViewer>
+                    </Label>
                 </RadioGroup.Root>
             {:else}
                 <p class="text-xs p-4">
                     There are no available avatars, please generate one.
                 </p>
             {/if}
-            <div class="pt-4 pb-0">
-                <Button on:click={onGenerateAvatar}
-                    >Generate (Payment required)</Button
-                >
-                {#if errors.generate}
-                    <p class="text-xs text-destructive pt-2">
-                        {errors.generate}
-                    </p>
-                {/if}
-            </div>
         </Card.Content>
         <Card.Footer>
             {#if errors.avatar}
