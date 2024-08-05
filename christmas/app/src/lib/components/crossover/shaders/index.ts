@@ -133,12 +133,21 @@ function updateShaderUniforms({ deltaTime }: { deltaTime: number }) {
     }
 }
 
-function swapMeshTexture(mesh: Mesh<Geometry, Shader>, texture: Texture) {
+function swapMeshTexture(
+    mesh: Mesh<Geometry, Shader>,
+    texture: Texture,
+    overlay: boolean = false,
+) {
     if (mesh.shader == null) {
         console.error("Missing shader for mesh");
         return;
     }
-    mesh.shader.resources.uTexture = texture.source;
+    if (overlay) {
+        mesh.shader.resources.uOverlayTexture = texture.source;
+    } else {
+        mesh.shader.resources.uTexture = texture.source;
+    }
+
     const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
     const uvBuffer = mesh.geometry.getBuffer("aUV");
     uvBuffer.data.set([x0, y0, x1, y1, x2, y2, x3, y3]);

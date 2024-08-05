@@ -1,92 +1,96 @@
 {
-    "bundles": [
+  "bundles": [
+    {
+      "name": "player",
+      "assets": [
         {
-            "name": "player",
-            "assets": [
-                {
-                    "alias": "player",
-                    "src": "/sprites/knight/sprite.json"
-                }
-            ]
-        },
-        {
-            "name": "biomes",
-            "assets": [
-                {
-                    "alias": "terrain",
-                    "src": "/sprites/biome/terrain/sprite.json"
-                },
-                {
-                    "alias": "tree",
-                    "src": "/sprites/tree/sprite.json"
-                },
-                {
-                    "alias": "lightwater",
-                    "src": "/sprites/biome/sprite.json"
-                },
-                {
-                    "alias": "grass",
-                    "src": "/sprites/biome/grass/sprite.json"
-                }
-            ]
-        },
-        {
-            "name": "actions",
-            "assets":[
-                {
-                    "alias": "actions",
-                    "src": "/sprites/actions/sprite.json"
-                }
-            ]
-        },
-        {
-            "name": "pedestals",
-            "assets":[
-                {
-                    "alias": "pedestals",
-                    "src": "/sprites/pedestals/sprite.json"
-                }
-            ]
-        },
-        {
-            "name": "bestiary",
-            "assets": [
-                {
-                    "alias": "goblin",
-                    "src": "/sprites/portraits/goblin.jpeg"
-                }
-            ]
-        },
-        {
-            "name": "props",
-            "assets": [
-                {
-                    "alias": "gothic",
-                    "src": "/sprites/props/gothic/sprite.json"
-                }
-            ]
-        },
-        {
-            "name": "animation-effects",
-            "assets": [
-                {
-                    "alias": "trail",
-                    "src": "https://pixijs.com/assets/trail.png"
-                }
-            ]
-        },
-        {
-            "name": "sound-effects",
-            "assets": [
-                {
-                    "alias": "slashing",
-                    "src": "https://cdn.pixabay.com/audio/2024/01/11/audio_f5a8065509.mp3"
-                },
-                {
-                    "alias": "blood",
-                    "src": "https://cdn.pixabay.com/audio/2022/10/09/audio_11c9a721fe.mp3"
-                }
-            ]
+          "alias": "player",
+          "src": "/sprites/knight/sprite.json"
         }
-    ]
+      ]
+    },
+    {
+      "name": "biomes",
+      "assets": [
+        {
+          "alias": "terrain",
+          "src": "/sprites/biome/terrain/sprite.json"
+        },
+        {
+          "alias": "tree",
+          "src": "/sprites/tree/sprite.json"
+        },
+        {
+          "alias": "lightwater",
+          "src": "/sprites/biome/sprite.json"
+        },
+        {
+          "alias": "grass",
+          "src": "/sprites/biome/grass/sprite.json"
+        }
+      ]
+    },
+    {
+      "name": "actions",
+      "assets": [
+        {
+          "alias": "actions",
+          "src": "/sprites/actions/sprite.json"
+        },
+        {
+          "alias": "circle",
+          "src": "/sprites/actions/circle.png"
+        }
+      ]
+    },
+    {
+      "name": "pedestals",
+      "assets": [
+        {
+          "alias": "pedestals",
+          "src": "/sprites/pedestals/sprite.json"
+        }
+      ]
+    },
+    {
+      "name": "bestiary",
+      "assets": [
+        {
+          "alias": "goblin",
+          "src": "/sprites/portraits/goblin.jpeg"
+        }
+      ]
+    },
+    {
+      "name": "props",
+      "assets": [
+        {
+          "alias": "gothic",
+          "src": "/sprites/props/gothic/sprite.json"
+        }
+      ]
+    },
+    {
+      "name": "animation-effects",
+      "assets": [
+        {
+          "alias": "trail",
+          "src": "https://pixijs.com/assets/trail.png"
+        }
+      ]
+    },
+    {
+      "name": "sound-effects",
+      "assets": [
+        {
+          "alias": "slashing",
+          "src": "https://cdn.pixabay.com/audio/2024/01/11/audio_f5a8065509.mp3"
+        },
+        {
+          "alias": "blood",
+          "src": "https://cdn.pixabay.com/audio/2022/10/09/audio_11c9a721fe.mp3"
+        }
+      ]
+    }
+  ]
 }

@@ -130,6 +130,10 @@ const RENDER_ORDER: Record<string, number> = {
     biome: 0,
     floor: 0,
     wall: 0,
+
+    // Action bubble
+    icon: 0,
+
     // draw last because it has alpha
     item: 1,
     grass: 2,
@@ -137,7 +141,6 @@ const RENDER_ORDER: Record<string, number> = {
     monster: 1,
     world: 1,
     effects: 3,
-    icon: 3,
 };
 
 // In WebGL, the gl_Position.z value should be in the range [-1 (closer), 1]

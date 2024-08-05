@@ -73,6 +73,9 @@ export class EntityContainer extends Container {
     public triggerAnimation(action: string) {
         if (this.actionBubble != null && action in actions) {
             this.actionBubble.setAction(action as Actions);
+            if (this.isoPosition) {
+                this.actionBubble.updateDepth(this.isoPosition.isoY);
+            }
         }
     }
 
@@ -86,6 +89,12 @@ export class EntityContainer extends Container {
                 bounds.rectangle.height,
             )
             .stroke({ color: "0xff0000" });
+    }
+
+    public debugOrigin() {
+        this.addChild(
+            new Graphics().circle(0, 0, 5).fill({ color: "0xff0000" }),
+        );
     }
 
     async followPath(pathParams: PathParams) {
@@ -187,6 +196,7 @@ export class EntityContainer extends Container {
 
     public updateDepth(isoY: number): void {
         this.zIndex = this.renderLayer * isoY;
+        this.actionBubble.updateDepth(isoY);
     }
 
     public highlight(highlight: number) {}

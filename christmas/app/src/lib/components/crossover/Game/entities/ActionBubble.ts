@@ -1,41 +1,18 @@
 import { actions, type Actions } from "$lib/crossover/world/actions";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { gsap } from "gsap";
-import {
-    Assets,
-    Graphics,
-    Sprite,
-    Texture,
-    type DestroyOptions,
-} from "pixi.js";
-import { RENDER_ORDER } from "../utils";
+import { Assets, Container, Texture, type DestroyOptions } from "pixi.js";
+import { swapMeshTexture } from "../../shaders";
+import { IsoMesh } from "../../shaders/IsoMesh";
+import { RENDER_ORDER, Z_OFF, Z_SCALE } from "../utils";
 
 export { ActionBubble };
 
-class ActionBubble extends Sprite {
-    public alphaTween: gsap.core.Tween | null = null;
-    public scaleTween: gsap.core.Tween | null = null;
+const ROT_45 = Math.PI / 4;
 
-    constructor(width: number = 60, height: number = 60) {
-        super({
-            texture: Texture.EMPTY,
-            visible: false,
-            alpha: 0,
-            height,
-            width,
-            anchor: { x: 0.5, y: 0.5 },
-        });
-
-        const mask = new Graphics();
-        mask.circle(0, 0, Math.max(width, height) / 2);
-        mask.fill({ color: 0xffffff });
-        mask.position = { x: width / 2, y: height / 2 };
-        mask.pivot = { x: width / 2, y: height / 2 };
-
-        // Apply mask (parent needs to add mask to stage)
-        this.mask = mask;
-        this.addChild(mask);
-    }
+class ActionBubble extends Container {
+    public isoMesh: IsoMesh | null = null;
+    public tween: gsap.core.Tween | null = null;
 
     async setAction(action: Actions) {
         const { ticks, icon } = actions[action];
@@ -44,54 +21,69 @@ class ActionBubble extends Sprite {
         const [bundleName, alias] = icon.path.split("/").slice(-2);
         const bundle = await Assets.loadBundle(bundleName);
         const texture: Texture = bundle[alias].textures[icon.icon];
+        const anchor = texture.defaultAnchor || { x: 0.5, y: 0.5 };
 
-        // Set position above parent container
-        this.x = -this.parent.pivot.x + this.parent.width / 2 + this.width / 2;
-        this.y = -this.parent.pivot.y - this.height;
+        // Create isoMesh
+        if (!this.isoMesh) {
+            // Create the IsoMesh
+            this.isoMesh = new IsoMesh({
+                shaderName: "entity",
+                texture,
+                zOffset: Z_OFF.entity,
+                zScale: Z_SCALE,
+                renderLayer: RENDER_ORDER.icon,
+            });
+            this.isoMesh.visible = false;
+            this.addChild(this.isoMesh);
+
+            // Make isometric
+            this.pivot = {
+                x: anchor.x * texture.width,
+                y: anchor.y * texture.height,
+            };
+            this.rotation = ROT_45;
+        } else {
+            swapMeshTexture(this.isoMesh, texture);
+        }
 
         // Set texture & make visible
-        this.texture = texture;
-        this.visible = true;
-        this.alpha = 1;
-        this.scale.x = this.scale.y = 1;
+        this.isoMesh.visible = true;
+        this.scale.set(0);
 
-        // Tween alpha & scale
-        const duration = Math.max((ticks * MS_PER_TICK) / 1000, 1) * 2;
-        this.alphaTween = gsap.to(this, {
-            duration,
-            alpha: 0,
-            ease: "power2.in",
-            overwrite: true,
-            onComplete: () => {
-                if (this != null) {
-                    this.visible = false;
-                }
+        // Tween
+        const duration = Math.max((ticks * MS_PER_TICK) / 1000, 1);
+        this.tween = gsap.fromTo(
+            this,
+            { pixi: { scaleX: 0, scaleY: 0 } },
+            {
+                duration,
+                yoyo: true,
+                repeat: 1,
+                overwrite: true,
+                ease: "elastic.out",
+                pixi: {
+                    scaleX: 3,
+                    scaleY: 3,
+                },
+                onComplete: () => {
+                    if (this.isoMesh) {
+                        this.isoMesh.visible = false;
+                    }
+                },
             },
-        });
-        this.scaleTween = gsap.to(this.scale, {
-            duration,
-            x: this.scale.x * 1.7,
-            y: this.scale.y * 1.7,
-            overwrite: true,
-            ease: "power2.out",
-            onComplete: () => {
-                if (this != null) {
-                    this.scale.x = this.scale.y = 1;
-                }
-            },
-        });
+        );
     }
 
     updateDepth(isoY: number) {
         this.zIndex = RENDER_ORDER.icon * isoY;
+        if (this.isoMesh) {
+            this.isoMesh.updateDepth(isoY);
+        }
     }
 
     destroy(options?: DestroyOptions): void {
-        if (this.alphaTween != null) {
-            this.alphaTween.kill();
-        }
-        if (this.scaleTween != null) {
-            this.scaleTween.kill();
+        if (this.tween != null) {
+            this.tween.kill();
         }
         super.destroy(options);
     }
