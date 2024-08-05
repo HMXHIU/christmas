@@ -55,18 +55,13 @@ class IsoMesh extends Mesh<Geometry, Shader> {
         this.cullable = true;
     }
 
-    updateDepth(
-        isoX: number,
-        isoY: number,
-        elevation: number,
-        z?: number,
-    ): void {
-        // This updates the depth of the instance in the shader
-        const ip = this.geometry.getBuffer("aInstancePosition");
-        ip.data.set([isoX, isoY, elevation]);
-        ip.update();
-
+    updateDepth(isoY: number): void {
         // Update zIndex
-        this.zIndex = this.renderLayer * isoY + (z ?? 0);
+        this.zIndex = this.renderLayer * isoY;
+
+        // This updates the depth of the instance in the shader (only isoY is used)
+        const ip = this.geometry.getBuffer("aInstancePosition");
+        ip.data.set([0, isoY, 0]);
+        ip.update();
     }
 }

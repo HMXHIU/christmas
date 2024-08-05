@@ -102,11 +102,11 @@ const Z_LAYER = ISO_CELL_HEIGHT * 2;
 const Z_OFF: Record<string, number> = {
     // shader
     biome: 0 * Z_LAYER,
-    entity: 0 * Z_LAYER,
+    entity: 1 * Z_LAYER,
     // entities
-    item: 0 * Z_LAYER,
-    monster: 0 * Z_LAYER,
-    player: 0 * Z_LAYER,
+    item: 1 * Z_LAYER,
+    monster: 1 * Z_LAYER,
+    player: 1 * Z_LAYER,
     // layers
     ground: 0 * Z_LAYER,
     grass: 0 * Z_LAYER,
@@ -369,31 +369,21 @@ function scaleToFitAndMaintainAspectRatio(
     const aspectRatio = w / h;
     const targetAspectRatio = targetWidth / targetHeight;
 
-    let newWidth, newHeight;
+    let scale: number;
+    let newWidth: number;
+    let newHeight: number;
 
     if (aspectRatio > targetAspectRatio) {
         // Width is the limiting factor
-        newWidth = targetWidth;
-        newHeight = newWidth / aspectRatio;
+        scale = targetWidth / w;
     } else {
         // Height is the limiting factor
-        newHeight = targetHeight;
-        newWidth = newHeight * aspectRatio;
+        scale = targetHeight / h;
     }
 
-    // Ensure neither dimension exceeds its target
-    if (newWidth > targetWidth) {
-        newWidth = targetWidth;
-        newHeight = newWidth / aspectRatio;
-    }
-    if (newHeight > targetHeight) {
-        newHeight = targetHeight;
-        newWidth = newHeight * aspectRatio;
-    }
-
-    const scaleX = newWidth / w;
-    const scaleY = newHeight / h;
-    const scale = Math.min(scaleX, scaleY);
+    // Calculate new dimensions
+    newWidth = w * scale;
+    newHeight = h * scale;
 
     return { width: newWidth, height: newHeight, scale };
 }

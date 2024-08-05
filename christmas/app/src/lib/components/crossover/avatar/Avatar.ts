@@ -64,6 +64,7 @@ export class Avatar extends Container {
                 textureKey,
                 zOffset: this.zOffset,
                 zScale: this.zScale,
+                renderLayer: this.renderLayer,
             });
             bone.eventMode = "none"; // Prevents inheritance of parent eventMode
             this.bones[boneName] = bone;
@@ -183,18 +184,13 @@ export class Avatar extends Container {
         };
     }
 
-    updateDepth(
-        isoX: number,
-        isoY: number,
-        elevation: number,
-        z?: number,
-    ): void {
+    updateDepth(isoY: number): void {
         // Update zIndex
-        this.zIndex = this.renderLayer * isoY + (z ?? 0);
+        this.zIndex = this.renderLayer * isoY;
 
         // Update bone depth
         for (const bone of this.getAllBones()) {
-            bone.updateDepth(isoX, isoY, elevation, z);
+            bone.updateDepth(isoY);
         }
     }
 

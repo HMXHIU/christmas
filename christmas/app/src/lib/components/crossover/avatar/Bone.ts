@@ -47,6 +47,7 @@ export class Bone extends Container {
         this.zScale = zScale || 0;
         this.renderLayer = renderLayer ?? 0;
         this.boneRenderLayer = boneRenderLayer ?? 0;
+        this.sortableChildren = true;
 
         // Get texture
         if (textureKey != null) {
@@ -200,23 +201,13 @@ export class Bone extends Container {
         this.mesh.shader.resources.uniforms.uniforms.uTint = tint;
     }
 
-    updateDepth(
-        isoX: number,
-        isoY: number,
-        elevation: number,
-        z?: number,
-    ): void {
-        // Update zIndex
-        this.zIndex = this.renderLayer * isoY + this.boneRenderLayer + (z ?? 0);
+    updateDepth(isoY: number): void {
+        // Update zIndex (draw order for alpha blending - alpha should be last)
+        this.zIndex = this.renderLayer * isoY + this.boneRenderLayer;
 
         // Update mesh depth
         if (this.mesh) {
-            this.mesh.updateDepth(
-                isoX,
-                isoY,
-                elevation,
-                this.boneRenderLayer + (z ?? 0),
-            );
+            this.mesh.updateDepth(isoY + this.boneRenderLayer);
         }
     }
 }

@@ -17,7 +17,7 @@ import type {
     Player,
 } from "$lib/server/crossover/redis/entities";
 import { gsap } from "gsap";
-import { Container, type DestroyOptions } from "pixi.js";
+import { Container, Graphics, type DestroyOptions } from "pixi.js";
 import { calculatePosition, type Position } from "../utils";
 import { ActionBubble } from "./ActionBubble";
 
@@ -76,6 +76,18 @@ export class EntityContainer extends Container {
         }
     }
 
+    public debugBoundingBox(): Graphics {
+        const bounds = this.getBounds();
+        return new Graphics()
+            .rect(
+                bounds.rectangle.x,
+                bounds.rectangle.y,
+                bounds.rectangle.width,
+                bounds.rectangle.height,
+            )
+            .stroke({ color: "0xff0000" });
+    }
+
     async followPath(pathParams: PathParams) {
         const { pthst, pthdur, pthclk, pth } = pathParams;
         const now = Date.now();
@@ -116,11 +128,7 @@ export class EntityContainer extends Container {
                     ease: "linear",
                     onComplete: () => {
                         this.isoPosition = isoPosition;
-                        this.updateDepth(
-                            isoPosition.isoX,
-                            isoPosition.isoY,
-                            isoPosition.elevation,
-                        );
+                        this.updateDepth(isoPosition.isoY);
                         this.emitPositionUpdate();
                     },
                 });
@@ -158,11 +166,7 @@ export class EntityContainer extends Container {
                 overwrite: true,
                 onComplete: () => {
                     this.isoPosition = isoPosition;
-                    this.updateDepth(
-                        isoPosition.isoX,
-                        isoPosition.isoY,
-                        isoPosition.elevation,
-                    );
+                    this.updateDepth(isoPosition.isoY);
                     this.emitPositionUpdate();
                 },
             });
@@ -175,23 +179,14 @@ export class EntityContainer extends Container {
                 isoPosition.isoX,
                 isoPosition.isoY - isoPosition.elevation,
             );
-            this.updateDepth(
-                isoPosition.isoX,
-                isoPosition.isoY,
-                isoPosition.elevation,
-            );
+            this.updateDepth(isoPosition.isoY);
             this.emitPositionUpdate();
             this.emitTrackEntity(isoPosition);
         }
     }
 
-    public updateDepth(
-        isoX: number,
-        isoY: number,
-        elevation: number,
-        z?: number,
-    ): void {
-        this.zIndex = this.renderLayer * isoY + (z ?? 0);
+    public updateDepth(isoY: number): void {
+        this.zIndex = this.renderLayer * isoY;
     }
 
     public highlight(highlight: number) {}

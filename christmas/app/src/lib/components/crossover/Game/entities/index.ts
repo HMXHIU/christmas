@@ -86,6 +86,7 @@ async function upsertEntityContainer(
     if (created) {
         ec.updateIsoPosition(position);
     }
+
     // Update position
     else {
         if (entityType == "player" || entityType == "monster") {
@@ -131,18 +132,18 @@ async function upsertAvatarContainer(
         );
         entityContainers[entityId] = ec;
 
-        // Set size
+        // Set initial pose
+        await ec.avatar.pose(ec.avatar.animationManager.getPose("default"));
+
+        // Set size (must do after pose)
         const { width, height, scale } = scaleToFitAndMaintainAspectRatio(
             ec.width,
             ec.height,
-            ISO_CELL_WIDTH * 1, // max width is 1 cell
-            ISO_CELL_HEIGHT * 3, // max height is 3 cells
+            ISO_CELL_WIDTH * 1.25, // max width is 1 cell
+            ISO_CELL_HEIGHT * 3.5, // max height is 3 cells
         );
         ec.scale.x = scale;
         ec.scale.y = scale;
-
-        // Set initial pose
-        await ec.avatar.pose(ec.avatar.animationManager.getPose("default"));
 
         return [true, ec];
     }

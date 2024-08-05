@@ -129,25 +129,16 @@ class AvatarEntityContainer extends EntityContainer {
 
         // Update the depth for new meshes
         if (this.isoPosition != null) {
-            this.updateDepth(
-                this.isoPosition.isoX,
-                this.isoPosition.isoY,
-                this.isoPosition.elevation,
-            );
+            this.updateDepth(this.isoPosition.isoY);
         }
     }
 
-    updateDepth(
-        isoX: number,
-        isoY: number,
-        elevation: number,
-        z?: number,
-    ): void {
-        super.updateDepth(isoX, isoY, elevation, z);
+    updateDepth(isoY: number): void {
+        super.updateDepth(isoY);
 
         // Update mesh depth
         if (this.avatar) {
-            this.avatar.updateDepth(isoX, isoY, elevation, z ?? 0);
+            this.avatar.updateDepth(isoY);
         }
     }
 }

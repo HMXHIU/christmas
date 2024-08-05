@@ -166,7 +166,7 @@ async function loadWorld({
                 mesh.y = y - position.elevation;
 
                 // Update depth
-                mesh.updateDepth(x, y + imageheight, position.elevation);
+                mesh.updateDepth(y + imageheight);
 
                 // Add to stage
                 if (!stage.children.includes(mesh)) {

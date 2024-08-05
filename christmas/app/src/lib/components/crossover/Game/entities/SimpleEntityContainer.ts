@@ -77,17 +77,12 @@ class SimpleEntityContainer extends EntityContainer {
         swapMeshTexture(this.mesh, texture);
     }
 
-    updateDepth(
-        isoX: number,
-        isoY: number,
-        elevation: number,
-        z?: number,
-    ): void {
-        super.updateDepth(isoX, isoY, elevation, z);
+    updateDepth(isoY: number): void {
+        super.updateDepth(isoY);
 
         // Update mesh depth
         if (this.mesh) {
-            this.mesh.updateDepth(isoX, isoY, elevation, z ?? 0);
+            this.mesh.updateDepth(isoY);
         }
     }
 

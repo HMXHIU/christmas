@@ -42,6 +42,8 @@ export class AnimationManager {
     }
 
     async pose(pose: Pose, bones: Record<string, Bone>) {
+        const offset = Math.round(Object.keys(bones).length / 2);
+
         // Set bone transforms using the selected pose
         for (const [
             index,
@@ -53,11 +55,8 @@ export class AnimationManager {
                 bone.position.set(position.x, position.y);
                 bone.rotation = rotation;
                 bone.scale.set(scale.x, scale.y);
-                bone.boneRenderLayer = index;
-                bone.zIndex = index;
-                if (bone.mesh) {
-                    bone.mesh.zIndex = index;
-                }
+                // Note: `boneRenderLayer` is only known at pose time, but when creating bone
+                bone.boneRenderLayer = index - offset;
             }
         }
     }
