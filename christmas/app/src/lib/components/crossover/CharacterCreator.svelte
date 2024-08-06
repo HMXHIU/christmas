@@ -5,10 +5,8 @@
     import * as RadioGroup from "$lib/components/ui/radio-group/index.js";
     import * as Select from "$lib/components/ui/select/index.js";
     import { Textarea } from "$lib/components/ui/textarea";
-    import {
-        crossoverAvailableAvatars,
-        crossoverGenerateAvatar,
-    } from "$lib/crossover/client";
+    import { crossoverAvailableAvatars } from "$lib/crossover/client";
+    import { avatarMorphologies } from "$lib/crossover/world/bestiary";
     import {
         PlayerAppearanceSchema,
         PlayerDemographicSchema,
@@ -32,6 +30,7 @@
     } from "$lib/crossover/world/player";
     import { cn } from "$lib/shadcn";
     import { parseZodErrors } from "$lib/utils";
+    import { Assets } from "pixi.js";
     import { onMount } from "svelte";
     import { player } from "../../../store";
     import LabelField from "../common/LabelField.svelte";
@@ -41,6 +40,8 @@
 
     export let playerPublicKey: string;
     export let onCreateCharacter: (playerMetadata: PlayerMetadata) => void;
+
+    type AvatarTextures = Record<string, Record<string, string>>;
 
     let name: string = "";
     let description: string = "";
@@ -65,7 +66,8 @@
         },
         {},
     );
-    let avatarTextures: Record<string, string> = {}; // this is the avatar textures in `humanoid.json`
+    let avatarTextures: AvatarTextures = {}; // this is the avatar textures in `humanoid.json`
+    let errors: Record<string, string> = {};
 
     $: attributes = archetypes[selectedArchetypeType.value].attributes;
     $: stats = playerStats({
@@ -86,8 +88,6 @@
         selectedArchetypeType &&
         getAvailableAvatars();
 
-    let errors: Record<string, string> = {};
-
     function validatePlayerMetadata(): PlayerMetadata | null {
         try {
             return PlayerMetadataSchema.parse({
@@ -100,6 +100,7 @@
                     race: selectedRaceType.value,
                     archetype: selectedArchetypeType.value,
                 },
+                attributes,
                 appearance: {
                     hair: {
                         type: selectedHairType.value,
@@ -155,26 +156,22 @@
         }
     }
 
-    /**
-     * TODO: For future allow payment to generate an avatar using uploaded user's face
-     */
-    async function onGenerateAvatar() {
-        try {
-            const meta = await validateAvatarMetadata();
-            if (meta) {
-                avatarTextures = await crossoverGenerateAvatar(meta);
-                errors = {};
-            }
-        } catch (err: any) {
-            errors.generate = err.message;
-            await getAvailableAvatars();
-        }
-    }
-
     async function getAvailableAvatars() {
         const meta = validateAvatarMetadata();
         if (meta) {
-            avatarTextures = (await crossoverAvailableAvatars(meta)) || {};
+            const avatarTexturesUrls = await crossoverAvailableAvatars(meta);
+            const textures: AvatarTextures = {};
+            for (const url of avatarTexturesUrls) {
+                const response = await fetch(url);
+                textures[url] = {
+                    // default humanoid textures (TODO: gender specific)
+                    ...(await Assets.load(avatarMorphologies.humanoid.avatar))
+                        .textures,
+                    // override with selected textures
+                    ...(await response.json()),
+                };
+            }
+            avatarTextures = textures;
         }
     }
 
@@ -590,23 +587,27 @@
             <Card.Title>Who are you?</Card.Title>
         </Card.Header>
         <Card.Content class="py-0">
-            {#if avatarTextures}
+            {#if Object.keys(avatarTextures).length}
                 <RadioGroup.Root
-                    bind:value={avatar}
                     class="grid grid-cols-3 gap-4"
+                    bind:value={avatar}
                 >
-                    <Label
-                        for="avatar"
-                        class="flex flex-col items-center justify-between rounded-full overflow-hidden border-2 border-muted bg-popover p-0 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
-                    >
-                        <RadioGroup.Item
-                            value="avatar"
-                            id="avatar"
-                            class="sr-only"
-                        />
-                        <AvatarViewer class="aspect-square" {avatarTextures}
-                        ></AvatarViewer>
-                    </Label>
+                    {#each Object.entries(avatarTextures) as [url, textures]}
+                        <Label
+                            for={url}
+                            class="flex flex-col items-center justify-between rounded-full 
+                            overflow-hidden border-2 border-muted bg-popover p-0 hover:bg-accent 
+                            hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+                        >
+                            <RadioGroup.Item
+                                class="sr-only"
+                                value={url}
+                                id={url}
+                            />
+                            <AvatarViewer class="aspect-square" {textures}
+                            ></AvatarViewer>
+                        </Label>
+                    {/each}
                 </RadioGroup.Root>
             {:else}
                 <p class="text-xs p-4">
@@ -622,6 +623,6 @@
             {/if}
         </Card.Footer>
     </Card.Root>
-
+    <!-- Create Character -->
     <Button on:click={onCreate}>Create Character</Button>
 </div>

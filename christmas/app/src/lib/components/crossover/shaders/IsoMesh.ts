@@ -34,9 +34,9 @@ class IsoMesh extends Mesh<Geometry, Shader> {
             texture.width,
             texture.height,
             {
-                zOffset: zOffset || 0,
-                zScale: zScale || 0,
-                cellHeight: cellHeight || 1,
+                zOffset: zOffset ?? 0,
+                zScale: zScale ?? 0,
+                cellHeight: cellHeight ?? 1,
                 uid,
                 textures,
             },
@@ -53,6 +53,13 @@ class IsoMesh extends Mesh<Geometry, Shader> {
         this.renderLayer = renderLayer ?? 0;
         this.cellHeight = cellHeight ?? 1;
         this.cullable = true;
+
+        if (this.renderLayer < 1) {
+            console.warn("renderLayer should not be 0");
+        }
+        if (this.zScale >= 0) {
+            console.warn("zScale should be a negative fraction");
+        }
     }
 
     updateDepth(isoY: number): void {

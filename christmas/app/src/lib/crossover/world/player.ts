@@ -1,7 +1,5 @@
 import { z } from "zod";
 import type { Attributes } from "./abilities";
-import type { AssetMetadata } from "./types";
-import { worldSeed } from "./world";
 
 export {
     AGE_TYPES,
@@ -26,7 +24,6 @@ export {
     PERSONALITY_TYPES,
     personalityTypes,
     PlayerAppearanceSchema,
-    playerAsset,
     PlayerDemographicSchema,
     PlayerMetadataSchema,
     playerStats,
@@ -93,19 +90,6 @@ function playerStats({
         ap: Math.min(4 + Math.floor(level / 10), MAX_POSSIBLE_AP),
     };
 }
-
-const playerAsset: AssetMetadata = {
-    path: "player/player",
-    animations: {
-        stand: "stand",
-    },
-    variants: {
-        default: "stand/0",
-    },
-    width: 1,
-    height: 1,
-    precision: worldSeed.spatial.unit.precision,
-};
 
 const GENDER_TYPES = ["male", "female"] as const;
 

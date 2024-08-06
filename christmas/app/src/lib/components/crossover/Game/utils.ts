@@ -12,9 +12,11 @@ import {
 } from "$lib/crossover/utils";
 import type { Ability } from "$lib/crossover/world/abilities";
 import type { Action } from "$lib/crossover/world/actions";
+import { avatarMorphologies } from "$lib/crossover/world/bestiary";
 import { elevationAtGeohash } from "$lib/crossover/world/biomes";
 import type { AssetMetadata, Direction } from "$lib/crossover/world/types";
 import { geohashToGridCell } from "$lib/crossover/world/utils";
+import type { Player } from "$lib/server/crossover/redis/entities";
 import { gsap } from "gsap";
 import { PixiPlugin } from "gsap/PixiPlugin";
 import * as PIXI from "pixi.js";
@@ -29,6 +31,7 @@ import {
 } from "pixi.js";
 import { get } from "svelte/store";
 import { player } from "../../../../store";
+import type { AnimationMetadata, AvatarMetadata } from "../avatar/types";
 import { entityContainers } from "./entities";
 
 export {
@@ -42,6 +45,7 @@ export {
     destroyContainer,
     ELEVATION_TO_CELL_HEIGHT,
     getAngle,
+    getAvatarMetadata,
     getDirectionsToPosition,
     getImageForTile,
     getPathHighlights,
@@ -411,4 +415,32 @@ function getPathHighlights(
 function getPlayerPosition(): Position | null {
     const p = get(player);
     return p?.player ? entityContainers[p.player]?.isoPosition : null;
+}
+
+// TODO: support monster
+async function getAvatarMetadata(
+    entity: Player,
+): Promise<{ avatar: AvatarMetadata; animation: AnimationMetadata }> {
+    const avatar = await Assets.load(avatarMorphologies.humanoid.avatar);
+    const animation = await Assets.load(avatarMorphologies.humanoid.animation);
+    try {
+        const response = await fetch(entity.avatar);
+        return {
+            animation: await Assets.load(avatarMorphologies.humanoid.animation),
+            avatar: {
+                ...avatar,
+                textures: {
+                    ...avatar.textures,
+                    // override with avatar textures
+                    ...(await response.json()),
+                },
+            },
+        };
+    } catch (error) {
+        console.error(error);
+        return {
+            avatar,
+            animation,
+        };
+    }
 }

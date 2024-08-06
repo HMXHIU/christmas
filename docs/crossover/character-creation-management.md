@@ -6,10 +6,8 @@ Character creation involves:
 
 1. Select appearance parameters (hair, face, age ...)
 
-- [ ] Need to reduce the number parameters to five else there is too many to generate.
+- [x] Need to reduce the number parameters to five else there is too many to generate.
 - [ ] Generate 5*3*4*5*2 = 600 (gender(2), hair(5), race(4), age(3), face(5)) number of premade portraits
-- [ ] Write a script to autogenerate all of these combinations
-- [ ] Use a controlnet to draw the portrait with the armour, then remove the armour (this is so that the back of an long hair is not drawn)
 - [ ] Handle eye color seperately via tinting (could include anatomical segmentation map in the alpha channel in the normal map)
 - [ ] Store apperance parameters in `PlayerMetadata` in MINIO
 

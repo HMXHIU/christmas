@@ -43,8 +43,8 @@ export class Bone extends Container {
         this.name = name;
         this.boneMetadata = cloneDeep(boneMetadata);
         this.textures = textures;
-        this.zOffset = zOffset || 0;
-        this.zScale = zScale || 0;
+        this.zOffset = zOffset ?? 0;
+        this.zScale = zScale ?? 0;
         this.renderLayer = renderLayer ?? 0;
         this.boneRenderLayer = boneRenderLayer ?? 0;
         this.sortableChildren = true;

@@ -18,6 +18,7 @@ export class AnimationManager {
     public poses: Record<string, Pose> = {};
     public currentAnimation: gsap.core.Timeline | null = null;
     public ikChains: Record<string, IKChainData> = {};
+    public currentPose: Pose | null = null;
 
     load(metadata: AnimationMetadata): void {
         this.animations = cloneDeep(metadata.animations);
@@ -56,9 +57,10 @@ export class AnimationManager {
                 bone.rotation = rotation;
                 bone.scale.set(scale.x, scale.y);
                 // Note: `boneRenderLayer` is only known at pose time, but when creating bone
-                bone.boneRenderLayer = index - offset;
+                bone.boneRenderLayer = index;
             }
         }
+        this.currentPose = pose;
     }
 
     async poseAtTime(

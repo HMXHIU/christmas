@@ -4,7 +4,7 @@ import {
     isEntityInMotion,
 } from "$lib/crossover/utils";
 import { actions } from "$lib/crossover/world/actions";
-import { avatarMorphologies, bestiary } from "$lib/crossover/world/bestiary";
+import { bestiary } from "$lib/crossover/world/bestiary";
 import { compendium } from "$lib/crossover/world/compendium";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import type {
@@ -13,11 +13,12 @@ import type {
     PathParams,
     Player,
 } from "$lib/server/crossover/redis/entities";
-import { Assets, Container } from "pixi.js";
+import { Container } from "pixi.js";
 import { get } from "svelte/store";
 import { player, target } from "../../../../../store";
 import {
     calculatePosition,
+    getAvatarMetadata,
     isCellInView,
     ISO_CELL_HEIGHT,
     ISO_CELL_WIDTH,
@@ -111,14 +112,14 @@ async function upsertEntityContainer(
 }
 
 async function upsertAvatarContainer(
-    entity: Player | Monster | Item,
+    entity: Player,
 ): Promise<[boolean, AvatarEntityContainer]> {
     const [entityId, entityType] = getEntityId(entity);
     let ec = entityContainers[entityId] as AvatarEntityContainer;
 
     // Create
     if (ec == null) {
-        const morphology = avatarMorphologies["humanoid"]; // TODO: get from bestiary
+        const { avatar, animation } = await getAvatarMetadata(entity);
 
         ec = new AvatarEntityContainer({
             entity,
@@ -126,13 +127,8 @@ async function upsertAvatarContainer(
             zScale: Z_SCALE,
             renderLayer: RENDER_ORDER[entityType],
         });
-        await ec.avatar.loadFromMetadata(
-            await Assets.load(morphology.avatar),
-            entityId,
-        );
-        ec.avatar.animationManager.load(
-            await Assets.load(morphology.animation),
-        );
+        await ec.avatar.loadFromMetadata(avatar, entityId);
+        ec.avatar.animationManager.load(animation);
         entityContainers[entityId] = ec;
 
         // Set initial pose

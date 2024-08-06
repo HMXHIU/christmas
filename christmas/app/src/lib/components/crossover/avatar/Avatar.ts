@@ -20,12 +20,12 @@ export class Avatar extends Container {
         zScale?: number;
         renderLayer?: number;
     }) {
-        super();
+        super({});
         this.animationManager = new AnimationManager();
         this.sortableChildren = true;
-        this.zOffset = options?.zOffset || 0;
-        this.zScale = options?.zScale || 0;
-        this.renderLayer = options?.renderLayer || 0;
+        this.zOffset = options?.zOffset ?? 0;
+        this.zScale = options?.zScale ?? 0;
+        this.renderLayer = options?.renderLayer ?? 1; // Note: min renderLayer is 1
         this.cullable = true;
     }
 
@@ -189,7 +189,9 @@ export class Avatar extends Container {
         this.zIndex = this.renderLayer * isoY;
 
         // Update bone depth
-        for (const bone of this.getAllBones()) {
+        for (const bone of this.getAllBones().sort(
+            (a, b) => a.boneRenderLayer - b.boneRenderLayer,
+        )) {
             bone.updateDepth(isoY);
         }
     }

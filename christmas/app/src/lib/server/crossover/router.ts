@@ -307,8 +307,7 @@ const crossoverRouter = {
         inventory: playerAuthProcedure.query(async ({ ctx }) => {
             await performInventory(ctx.player);
         }),
-
-        // player.probeEquipment
+        // player.probeEquipment (TODO: not used, deprecate?)
         probeEquipment: playerAuthProcedure
             .input(TargetPlayerSchema)
             .query(async ({ ctx, input }) => {
@@ -437,24 +436,9 @@ const crossoverRouter = {
                 // Parse & validate player metadata
                 const playerMetadata = await PlayerMetadataSchema.parse(input);
 
-                // Check that avatar matches the player metadata
-                const { gender, race, archetype, appearance, avatar } =
-                    playerMetadata;
-                const avatarHash = hashObject({
-                    gender,
-                    race,
-                    archetype,
-                    appearance,
-                });
-                const avatarFileName = avatar.split("/").slice(-1)[0];
-                if (!avatarFileName.startsWith(avatarHash)) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
-                        message: `Invalid avatar`,
-                    });
-                }
-
                 // Check that avatar exists
+                const { demographic, appearance, avatar } = playerMetadata;
+                const avatarFileName = avatar.split("/").slice(-1)[0];
                 if (
                     !(await ObjectStorage.objectExists({
                         owner: null,
@@ -467,15 +451,6 @@ const crossoverRouter = {
                         message: `Avatar does not exist`,
                     });
                 }
-
-                // Reserve the avatar for the player
-                const reservedFileName = await ObjectStorage.renameObject({
-                    owner: null,
-                    bucket: "avatar",
-                    oldName: avatarFileName,
-                    newName: `${ctx.user.publicKey}-${avatarFileName}`,
-                });
-                playerMetadata.avatar = reservedFileName;
 
                 // Update user metadata with player metadata
                 userMetadata = await UserMetadataSchema.parse({
