@@ -1,15 +1,6 @@
 {
   "bundles": [
     {
-      "name": "player",
-      "assets": [
-        {
-          "alias": "player",
-          "src": "/sprites/knight/sprite.json"
-        }
-      ]
-    },
-    {
       "name": "biomes",
       "assets": [
         {

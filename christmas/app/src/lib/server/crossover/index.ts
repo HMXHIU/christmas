@@ -27,7 +27,6 @@ export {
     LOOK_PAGE_SIZE,
     performActionConsequences,
     PlayerStateSchema,
-    recoverAp,
     setEntityBusy,
     type ConnectedUser,
     type PlayerState,
@@ -293,29 +292,6 @@ async function setEntityBusy({
     return entity;
 }
 
-async function recoverAp(
-    entity: PlayerEntity | MonsterEntity,
-): Promise<PlayerEntity | MonsterEntity> {
-    const maxAp = entity.player
-        ? playerStats({ level: entity.lvl }).ap
-        : monsterStats({
-              level: entity.lvl,
-              beast: (entity as MonsterEntity).beast,
-          }).ap;
-
-    if (entity.ap < maxAp) {
-        const now = Date.now();
-        entity.ap = Math.min(
-            maxAp,
-            Math.floor(entity.ap + (now - entity.apclk) / MS_PER_TICK),
-        );
-        entity.apclk = now; // reset ap clock after recovery
-        return (await saveEntity(entity)) as PlayerEntity | MonsterEntity;
-    }
-
-    return entity;
-}
-
 async function consumeResources(
     entity: PlayerEntity | MonsterEntity,
     {
@@ -323,13 +299,17 @@ async function consumeResources(
         mp,
         st,
         hp,
+        now,
     }: {
         ap?: number;
         mp?: number;
         st?: number;
         hp?: number;
+        now?: number;
     },
 ): Promise<PlayerEntity | MonsterEntity> {
+    now = now ?? Date.now();
+
     // Get max stats (also fixes stats when it goes over max)
     const {
         ap: maxAp,
@@ -358,7 +338,7 @@ async function consumeResources(
 
     // Set AP clock (if consumed)
     if (ap != null && ap > 0) {
-        entity.apclk = Date.now();
+        entity.apclk = now;
     }
 
     return (await saveEntity(entity)) as PlayerEntity;

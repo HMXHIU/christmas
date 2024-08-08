@@ -13,14 +13,10 @@ import {
     type ProcedureEffect,
 } from "$lib/crossover/world/abilities";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { entityActualAp } from "$lib/crossover/world/utils";
 import { sleep } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
-import {
-    consumeResources,
-    performActionConsequences,
-    recoverAp,
-    setEntityBusy,
-} from ".";
+import { consumeResources, performActionConsequences, setEntityBusy } from ".";
 import { fetchEntity, getNearbyPlayerIds, saveEntity } from "./redis";
 import {
     type Item,
@@ -31,6 +27,7 @@ import {
     type PlayerEntity,
 } from "./redis/entities";
 import {
+    getUserMetadata,
     publishActionEvent,
     publishAffectedEntitiesToPlayers,
     publishFeedEvent,
@@ -40,7 +37,6 @@ export {
     consumeResources,
     performAbility,
     performEffectOnEntity,
-    recoverAp,
     setEntityBusy,
 };
 
@@ -73,8 +69,13 @@ async function performAbility({
 
     const { procedures, ap, mp, st, hp, range, predicate } = abilities[ability];
 
-    // Recover AP
-    self = await recoverAp(self);
+    // Recover AP (for player need to get attributes)
+    const attributes =
+        selfEntityType === "player"
+            ? (await getUserMetadata(selfEntityId))?.crossover?.attributes
+            : undefined;
+    self.ap = entityActualAp(self, { now, attributes });
+    self = (await saveEntity(self)) as PlayerEntity | MonsterEntity;
 
     // Check if self has enough resources to perform ability
     if (!ignoreCost) {
@@ -123,7 +124,7 @@ async function performAbility({
 
     // Expend ability costs (also caps stats to player level)
     if (!ignoreCost) {
-        self = await consumeResources(self, { ap, mp, st, hp });
+        self = await consumeResources(self, { ap, mp, st, hp, now });
     }
     targetEntity = targetEntity.player === self.player ? self : targetEntity; // target might be self, in which case update it after save
 

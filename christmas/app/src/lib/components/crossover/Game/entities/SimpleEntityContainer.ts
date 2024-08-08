@@ -1,4 +1,5 @@
 import type { AssetMetadata } from "$lib/crossover/world/types";
+import { Container, Sprite } from "pixi.js";
 import { swapMeshTexture } from "../../shaders";
 import { IsoMesh } from "../../shaders/IsoMesh";
 import {
@@ -22,6 +23,7 @@ class SimpleEntityContainer extends EntityContainer {
         if (this.mesh == null) {
             this.asset = asset;
             this.variant = options?.variant ?? null;
+
             const texture = await loadAssetTexture(asset, {
                 variant: options?.variant,
             });
@@ -58,6 +60,30 @@ class SimpleEntityContainer extends EntityContainer {
                 options?.anchor ?? { x: 0.5, y: 0.5 };
             this.pivot.set(anchor.x * width, anchor.y * height);
         }
+    }
+
+    asSpriteContainer(): Container | null {
+        if (this.mesh && this.mesh.texture) {
+            const c = new Container();
+            const s = new Sprite(this.mesh.texture);
+
+            c.rotation = this.rotation;
+            c.position.copyFrom(this.position);
+            c.scale.copyFrom(this.scale);
+            c.pivot.copyFrom(this.pivot);
+            c.zIndex = this.zIndex;
+
+            s.rotation = this.mesh.rotation;
+            s.position.copyFrom(this.mesh.position);
+            s.scale.copyFrom(this.mesh.scale);
+            s.pivot.copyFrom(this.mesh.pivot);
+            s.zIndex = this.mesh.zIndex;
+
+            c.addChild(s);
+            return c;
+        }
+
+        return null;
     }
 
     async swapVariant(variant: string) {

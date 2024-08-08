@@ -5,7 +5,6 @@
     import { Application, Assets, Geometry, Mesh, Shader } from "pixi.js";
     import { onMount } from "svelte";
     import { player } from "../../../../store";
-    import { initAssetManager } from "../Game/utils";
     import { loadShaderGeometry } from "../shaders";
 
     interface MapMesh {
@@ -105,7 +104,6 @@
 
     async function init() {
         app = new Application();
-        await initAssetManager();
         await app.init({
             antialias: false,
             preference: "webgl",

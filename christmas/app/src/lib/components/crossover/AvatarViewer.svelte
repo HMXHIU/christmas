@@ -1,11 +1,18 @@
 <script lang="ts">
-    import { avatarMorphologies } from "$lib/crossover/world/bestiary";
     import { cn } from "$lib/shadcn";
-    import { Application, Assets, Container, WebGLRenderer } from "pixi.js";
+    import { Application, Container, WebGLRenderer } from "pixi.js";
     import { onMount } from "svelte";
     import { Avatar } from "./avatar/Avatar";
+    import type { AnimationMetadata, AvatarMetadata } from "./avatar/types";
 
-    export let textures: Record<string, string>;
+    export let metadata: {
+        avatarMetadata: AvatarMetadata;
+        animationMetadata: AnimationMetadata;
+        pose?: string;
+    };
+
+    export let anchor: { x: number; y: number } = { x: 0, y: 0 };
+    export let scale: number = 1;
 
     let containerElement: HTMLDivElement;
     let app: Application | null = null;
@@ -16,7 +23,7 @@
     let isInitialized: boolean = false;
 
     $: resize(clientHeight, clientWidth);
-    $: updateAvatar(textures);
+    $: updateAvatar(metadata);
 
     function resize(height: number, width: number) {
         if (!app || !stage || !isInitialized) {
@@ -26,34 +33,36 @@
         stage.pivot = { x: -width / 2, y: -height / 2 };
     }
 
-    async function updateAvatar(textures: Record<string, string>) {
+    async function updateAvatar({
+        avatarMetadata,
+        animationMetadata,
+        pose,
+    }: {
+        avatarMetadata: AvatarMetadata;
+        animationMetadata: AnimationMetadata;
+        pose?: string;
+    }) {
         if (!app || !stage || !isInitialized) {
             return;
         }
-        const morphology = avatarMorphologies["humanoid"];
-
-        // Load humanoid avatar metadata and replace textures
-        const avatarMetadata = {
-            ...(await Assets.load(morphology.avatar)),
-            textures: textures,
-        };
 
         // Create avatar from metadata
         avatar = new Avatar({ renderLayer: 1, zScale: -0.00001 }); // just need to be a negative small number
         await avatar.loadFromMetadata(avatarMetadata);
 
         // Load humanoid animation and pose
-        avatar.animationManager.load(await Assets.load(morphology.animation));
-        await avatar.pose(avatar.animationManager.getPose("default"));
+        avatar.animationManager.load(animationMetadata);
+        await avatar.pose(avatar.animationManager.getPose(pose ?? "default"));
         avatar.updateDepth(1);
 
         stage.removeChildren();
         stage.addChild(avatar);
 
         // Focus on face
-        avatar.scale.set(1.8);
+        avatar.scale.set(scale);
         const bounds = avatar.getBounds();
-        avatar.y = bounds.height * 0.9;
+        avatar.y = bounds.height * anchor.y;
+        avatar.x = bounds.height * anchor.x;
 
         resize(clientHeight, clientWidth);
     }
@@ -82,8 +91,8 @@
         isInitialized = true;
 
         // HMR
-        if (textures) {
-            updateAvatar(textures);
+        if (metadata) {
+            updateAvatar(metadata);
             resize(containerElement.clientHeight, containerElement.clientWidth);
         }
     }

@@ -7,6 +7,7 @@ export {
     PlayerEntitySchema,
     WorldEntitySchema,
     type EntityState,
+    type EntityStats,
     type EntityType,
     type GameEntity,
     type Item,
@@ -22,6 +23,14 @@ export {
 
 type EntityType = "player" | "monster" | "item";
 type GameEntity = Monster | Player | Item;
+
+interface EntityStats {
+    hp: number;
+    mp: number;
+    st: number;
+    ap: number;
+    apclk?: number; // needed for calculating current ap
+}
 
 interface EntityState {
     loc: string[];

@@ -43,10 +43,10 @@ import type {
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
-import { sleep } from "$lib/utils";
+import { AsyncLock, sleep } from "$lib/utils";
 import type { HTTPHeaders } from "@trpc/client";
 import { groupBy } from "lodash-es";
-import type { Container } from "pixi.js";
+import { Container, type Application } from "pixi.js";
 import { get, type Writable } from "svelte/store";
 import {
     equipmentRecord,
@@ -56,12 +56,15 @@ import {
     playerEquippedItems,
     playerInventoryItems,
     playerRecord,
+    userMetadata,
     worldRecord,
 } from "../../../../store";
 import {
     cullEntityContainerById,
     entityContainers,
+    entitySigils,
     upsertEntityContainer,
+    upsertEntitySigil,
 } from "./entities";
 import { AvatarEntityContainer } from "./entities/AvatarEntityContainer";
 
@@ -70,6 +73,7 @@ export { executeGameCommand, updateEntities, updateWorlds, type GameLogic };
 export default Root;
 
 interface GameLogic {
+    app: Application;
     stage: Container;
     handlePlayerPositionUpdate: (position: Position) => Promise<void>;
     handleTrackPlayer: (params: {
@@ -151,42 +155,73 @@ function displayEntityEffects<T extends Player | Monster | Item>(
  * @param newEntity
  * @param game
  */
+const updateEntityContainerLock = new AsyncLock();
 async function updateEntityContainer<T extends Player | Monster | Item>(
     oldEntity: T | null,
     newEntity: T,
     game: GameLogic,
 ) {
-    if (newEntity.locT === "geohash") {
-        const [created, ec] = await upsertEntityContainer(
-            newEntity,
-            game.stage,
-        );
+    updateEntityContainerLock.withLock(async () => {
+        if (newEntity.locT === "geohash") {
+            const [created, ec] = await upsertEntityContainer(
+                newEntity,
+                game.stage,
+            );
 
-        if (created) {
-            // Load initial inventory
-            if (ec instanceof AvatarEntityContainer) {
-                const entityEquipment = get(equipmentRecord)[ec.entityId];
-                if (entityEquipment) {
-                    ec.loadInventory(Object.values(entityEquipment));
+            if (created) {
+                // Load initial inventory
+                if (ec instanceof AvatarEntityContainer) {
+                    const entityEquipment = get(equipmentRecord)[ec.entityId];
+                    if (entityEquipment) {
+                        ec.loadInventory(Object.values(entityEquipment));
+                    }
+                }
+
+                // Player (self)
+                if (ec.entityId === get(player)?.player) {
+                    const self = ec.entity as Player;
+                    const avatar = (ec as AvatarEntityContainer).avatar;
+
+                    // Attach game events
+                    ec.on("positionUpdate", game.handlePlayerPositionUpdate);
+                    ec.on("trackEntity", game.handleTrackPlayer);
+
+                    // Initial event
+                    if (ec.isoPosition != null) {
+                        game.handlePlayerPositionUpdate(ec.isoPosition);
+                        game.handleTrackPlayer({ position: ec.isoPosition });
+                    }
+
+                    // Create sigil (at bottom left)
+                    if (avatar) {
+                        const sigil = await upsertEntitySigil(
+                            ec,
+                            game.app.stage,
+                            get(userMetadata)?.crossover?.attributes,
+                        );
+                        const bounds = sigil.getBounds();
+                        const padding = 10;
+                        sigil.position.set(
+                            padding + bounds.width / 2,
+                            game.app.screen.height -
+                                padding -
+                                bounds.height / 2,
+                        );
+                    }
                 }
             }
 
-            // Attach game events to created player ec (self)
-            if (ec.entityId === get(player)?.player) {
-                ec.on("positionUpdate", game.handlePlayerPositionUpdate);
-                ec.on("trackEntity", game.handleTrackPlayer);
-                // Initial event
-                if (ec.isoPosition != null) {
-                    game.handlePlayerPositionUpdate(ec.isoPosition);
-                    game.handleTrackPlayer({ position: ec.isoPosition });
-                }
+            // Update sigils (only upsert if already created as we dont want sigils for every entity)
+            if (entitySigils[ec.entityId]) {
+                entitySigils[ec.entityId].updateStats(
+                    newEntity as Player | Monster,
+                );
             }
+        } else {
+            // Cull ec if not in environment
+            cullEntityContainerById(getEntityId(newEntity)[0]);
         }
-    }
-    // Cull ec if not in environment
-    else {
-        cullEntityContainerById(getEntityId(newEntity)[0]);
-    }
+    });
 }
 
 /**

@@ -6,7 +6,6 @@
     import * as Select from "$lib/components/ui/select/index.js";
     import { Textarea } from "$lib/components/ui/textarea";
     import { crossoverAvailableAvatars } from "$lib/crossover/client";
-    import { avatarMorphologies } from "$lib/crossover/world/bestiary";
     import {
         PlayerAppearanceSchema,
         PlayerDemographicSchema,
@@ -30,18 +29,25 @@
     } from "$lib/crossover/world/player";
     import { cn } from "$lib/shadcn";
     import { parseZodErrors } from "$lib/utils";
-    import { Assets } from "pixi.js";
     import { onMount } from "svelte";
     import { player } from "../../../store";
     import LabelField from "../common/LabelField.svelte";
     import SeparatorWithText from "../common/SeparatorWithText.svelte";
     import { Label } from "../ui/label";
     import AvatarViewer from "./AvatarViewer.svelte";
+    import { getAvatarMetadata } from "./Game/utils";
+    import type { AnimationMetadata, AvatarMetadata } from "./avatar/types";
 
     export let playerPublicKey: string;
     export let onCreateCharacter: (playerMetadata: PlayerMetadata) => void;
 
-    type AvatarTextures = Record<string, Record<string, string>>;
+    type AvatarSelection = Record<
+        string,
+        {
+            avatar: AvatarMetadata;
+            animation: AnimationMetadata;
+        }
+    >;
 
     let name: string = "";
     let description: string = "";
@@ -66,7 +72,7 @@
         },
         {},
     );
-    let avatarTextures: AvatarTextures = {}; // this is the avatar textures in `humanoid.json`
+    let avatarSelection: AvatarSelection = {};
     let errors: Record<string, string> = {};
 
     $: attributes = archetypes[selectedArchetypeType.value].attributes;
@@ -159,19 +165,11 @@
     async function getAvailableAvatars() {
         const meta = validateAvatarMetadata();
         if (meta) {
-            const avatarTexturesUrls = await crossoverAvailableAvatars(meta);
-            const textures: AvatarTextures = {};
-            for (const url of avatarTexturesUrls) {
-                const response = await fetch(url);
-                textures[url] = {
-                    // default humanoid textures (TODO: gender specific)
-                    ...(await Assets.load(avatarMorphologies.humanoid.avatar))
-                        .textures,
-                    // override with selected textures
-                    ...(await response.json()),
-                };
+            const m: AvatarSelection = {};
+            for (const url of await crossoverAvailableAvatars(meta)) {
+                m[url] = await getAvatarMetadata(url);
             }
-            avatarTextures = textures;
+            avatarSelection = m;
         }
     }
 
@@ -587,15 +585,15 @@
             <Card.Title>Who are you?</Card.Title>
         </Card.Header>
         <Card.Content class="py-0">
-            {#if Object.keys(avatarTextures).length}
+            {#if Object.keys(avatarSelection).length}
                 <RadioGroup.Root
                     class="grid grid-cols-3 gap-4"
                     bind:value={avatar}
                 >
-                    {#each Object.entries(avatarTextures) as [url, textures]}
+                    {#each Object.entries(avatarSelection) as [url, metadata]}
                         <Label
                             for={url}
-                            class="flex flex-col items-center justify-between rounded-full 
+                            class="w-48 h-48 flex flex-col items-center justify-between rounded-full 
                             overflow-hidden border-2 border-muted bg-popover p-0 hover:bg-accent 
                             hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
                         >
@@ -604,7 +602,12 @@
                                 value={url}
                                 id={url}
                             />
-                            <AvatarViewer class="aspect-square" {textures}
+                            <AvatarViewer
+                                class="aspect-square"
+                                metadata={{
+                                    animationMetadata: metadata.animation,
+                                    avatarMetadata: metadata.avatar,
+                                }}
                             ></AvatarViewer>
                         </Label>
                     {/each}

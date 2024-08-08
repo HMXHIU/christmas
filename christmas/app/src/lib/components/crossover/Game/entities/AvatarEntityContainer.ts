@@ -5,6 +5,7 @@ import {
 } from "$lib/crossover/world/compendium";
 import type { AssetMetadata } from "$lib/crossover/world/types";
 import type { Item } from "$lib/server/crossover/redis/entities";
+import type { Container } from "pixi.js";
 import { Avatar } from "../../avatar/Avatar";
 import type { Bone } from "../../avatar/Bone";
 import { EntityContainer } from "./EntityContainer";
@@ -131,6 +132,10 @@ class AvatarEntityContainer extends EntityContainer {
         if (this.isoPosition != null) {
             this.updateDepth(this.isoPosition.isoY);
         }
+    }
+
+    asSpriteContainer(): Container | null {
+        return this.avatar.asSpriteContainer();
     }
 
     updateDepth(isoY: number): void {

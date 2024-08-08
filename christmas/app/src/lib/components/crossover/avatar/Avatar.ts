@@ -1,6 +1,6 @@
 // src/lib/Avatar.ts
 import { cloneDeep } from "lodash";
-import { Assets, Container, type DestroyOptions } from "pixi.js";
+import { Assets, Container, Sprite, type DestroyOptions } from "pixi.js";
 import { AnimationManager } from "./AnimationManager";
 import { Bone } from "./Bone";
 import type { AvatarMetadata, BoneMetadata, Pose } from "./types";
@@ -35,6 +35,37 @@ export class Avatar extends Container {
             (url) => Assets.load(url),
         );
         await Promise.all(texturePromises);
+    }
+
+    asSpriteContainer(): Container | null {
+        if (this.rootBone) {
+            function makeSprite(root: Bone) {
+                const boneTransform = root.getTextureTransform();
+                const container = new Container();
+                container.rotation = root.rotation;
+                container.position.copyFrom(root.position);
+                container.scale.copyFrom(root.scale);
+                container.pivot.copyFrom(root.pivot);
+                container.zIndex = root.zIndex;
+                if (root.mesh && boneTransform) {
+                    const sprite = new Sprite(root.mesh.texture);
+                    container.addChild(sprite);
+                    sprite.rotation = root.mesh.rotation;
+                    sprite.scale.copyFrom(root.mesh.scale);
+                    sprite.position.copyFrom(root.mesh.position);
+                    sprite.pivot.copyFrom(root.mesh.pivot);
+                    sprite.zIndex = root.mesh.zIndex;
+                }
+                for (const bone of root.children) {
+                    if (bone instanceof Bone) {
+                        container.addChild(makeSprite(bone));
+                    }
+                }
+                return container;
+            }
+            return makeSprite(this.rootBone);
+        }
+        return null;
     }
 
     async loadFromMetadata(

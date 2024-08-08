@@ -1,7 +1,23 @@
+import type {
+    EntityStats,
+    Monster,
+    Player,
+} from "$lib/server/crossover/redis/entities";
 import ngeohash from "ngeohash";
+import type { Attributes } from "./abilities";
+import { monsterStats } from "./bestiary";
+import { playerStats } from "./player";
+import { MS_PER_TICK } from "./settings";
 import type { GridCell } from "./types";
 
-export { geohashToGridCell, gridCellToGeohash, gridSizeAtPrecision };
+export {
+    entityActualAp,
+    entityStats,
+    geohashToGridCell,
+    gridCellToGeohash,
+    gridSizeAtPrecision,
+    recoverAp,
+};
 
 const gridSizeAtPrecision: Record<number, { rows: number; cols: number }> = {
     1: { rows: 4, cols: 8 },
@@ -65,4 +81,34 @@ function gridCellToGeohash({
     );
     const lon = ((col + 0.5) / gridSizeAtPrecision[precision].cols) * 360 - 180;
     return ngeohash.encode(lat, lon, precision);
+}
+
+function recoverAp(
+    ap: number,
+    maxAp: number,
+    apclk: number,
+    now: number,
+): number {
+    return Math.min(maxAp, Math.floor(ap + (now - apclk) / MS_PER_TICK));
+}
+
+function entityActualAp(
+    entity: Player | Monster,
+    opts?: { attributes?: Attributes; now?: number; maxAp?: number },
+): number {
+    const now = opts?.now ?? Date.now();
+    const maxAp = opts?.maxAp ?? entityStats(entity, opts?.attributes).ap;
+    return recoverAp(entity.ap, maxAp, entity.apclk, now);
+}
+
+function entityStats(
+    entity: Player | Monster,
+    attributes?: Attributes,
+): EntityStats {
+    return (entity as Player).player
+        ? playerStats({ level: entity.lvl, attributes: attributes })
+        : monsterStats({
+              level: entity.lvl,
+              beast: (entity as Monster).beast,
+          });
 }

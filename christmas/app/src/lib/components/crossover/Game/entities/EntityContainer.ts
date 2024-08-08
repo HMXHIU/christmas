@@ -52,9 +52,9 @@ export class EntityContainer extends Container {
         this.entityId = entityId;
         this.entityType = entityType;
         this.entity = entity;
-        this.zOffset = zOffset || 0;
-        this.zScale = zScale || 0;
-        this.renderLayer = renderLayer || 0;
+        this.zOffset = zOffset ?? 0;
+        this.zScale = zScale ?? 0;
+        this.renderLayer = renderLayer ?? 1;
 
         this.actionBubble = new ActionBubble();
         this.addChild(this.actionBubble);
@@ -204,6 +204,10 @@ export class EntityContainer extends Container {
     public clearHighlight(highlight?: number) {}
 
     public swapVariant(variant: string) {}
+
+    public asSpriteContainer(): Container | null {
+        return null;
+    }
 
     public destroy(options?: DestroyOptions): void {
         if (this.tween != null) {

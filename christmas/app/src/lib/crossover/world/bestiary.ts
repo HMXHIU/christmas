@@ -1,4 +1,5 @@
 import { PUBLIC_HOST } from "$env/static/public";
+import type { EntityStats } from "$lib/server/crossover/redis/entities";
 import { seededRandom, stringToRandomNumber } from "../utils";
 import { abilities, type AbilityType } from "./abilities";
 import type { AssetMetadata } from "./types";
@@ -157,12 +158,13 @@ interface Beast {
     asset: AssetMetadata;
 }
 
-function monsterStats({ level, beast }: { level: number; beast: string }): {
-    hp: number;
-    mp: number;
-    st: number;
-    ap: number;
-} {
+function monsterStats({
+    level,
+    beast,
+}: {
+    level: number;
+    beast: string;
+}): EntityStats {
     const beastTemplate = bestiary[beast];
     const multiplier = 1 + Math.log(level) + level; // make monsters stronger than players
     return {

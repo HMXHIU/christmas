@@ -22,10 +22,10 @@
         playerRecord,
     } from "../../../../store";
     import AutocompleteGC from "../AutocompleteGC.svelte";
-    import AvatarSigil from "../AvatarSigil.svelte";
     import ChatInput from "../ChatInput.svelte";
     import ChatWindow from "../ChatWindow.svelte";
     import Game, { executeGameCommand } from "../Game";
+    import { initAssetManager } from "../Game/utils";
     import Look from "../Look.svelte";
     import Map from "../Map/Map.svelte";
     import Tool from "../Tool.svelte";
@@ -105,6 +105,8 @@
     onMount(() => {
         // Go into game mode
         inGame.set(true);
+
+        initAssetManager();
 
         // Compute game container top/bottom
         const rect = gameContainer.getBoundingClientRect();
@@ -202,11 +204,6 @@
     >
         <!-- Chat Window -->
         <ChatWindow></ChatWindow>
-    </div>
-
-    <!-- Player Sigil Overlay -->
-    <div id="player-overlay" class="p-3" style="--game-bottom: {gameBottom}px;">
-        <AvatarSigil player={$player} />
     </div>
 
     <!-- Map Overlay -->

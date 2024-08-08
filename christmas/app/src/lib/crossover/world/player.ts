@@ -1,3 +1,4 @@
+import type { EntityStats } from "$lib/server/crossover/redis/entities";
 import { z } from "zod";
 import type { Attributes } from "./abilities";
 
@@ -45,12 +46,7 @@ function playerStats({
 }: {
     level: number;
     attributes?: Attributes;
-}): {
-    hp: number;
-    mp: number;
-    st: number;
-    ap: number;
-} {
+}): EntityStats {
     attributes = attributes ?? {
         dex: 10,
         str: 10,

@@ -3,9 +3,11 @@ import {
     getEntityId,
     isEntityInMotion,
 } from "$lib/crossover/utils";
+import type { Attributes } from "$lib/crossover/world/abilities";
 import { actions } from "$lib/crossover/world/actions";
-import { bestiary } from "$lib/crossover/world/bestiary";
+import { bestiary, monsterStats } from "$lib/crossover/world/bestiary";
 import { compendium } from "$lib/crossover/world/compendium";
+import { playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import type {
     Item,
@@ -13,6 +15,7 @@ import type {
     PathParams,
     Player,
 } from "$lib/server/crossover/redis/entities";
+import { AsyncLock } from "$lib/utils";
 import { Container } from "pixi.js";
 import { get } from "svelte/store";
 import { player, target } from "../../../../../store";
@@ -29,86 +32,129 @@ import {
     type Position,
 } from "../utils";
 import { AvatarEntityContainer } from "./AvatarEntityContainer";
+import { EntitySigil } from "./EntitySigil";
 import { SimpleEntityContainer } from "./SimpleEntityContainer";
 
 export {
     cullAllEntityContainers,
     cullEntityContainerById,
     entityContainers,
+    entitySigils,
     garbageCollectEntityContainers,
     upsertEntityContainer,
+    upsertEntitySigil,
     type EntityContainer,
 };
 
 type EntityContainer = SimpleEntityContainer | AvatarEntityContainer;
 
 let entityContainers: Record<string, EntityContainer> = {};
+let entitySigils: Record<string, EntitySigil> = {};
 
+async function upsertEntitySigil(
+    ec: EntityContainer,
+    stage: Container,
+    attributes?: Attributes,
+): Promise<EntitySigil> {
+    const entity = ec.entity as Monster | Player;
+
+    // Check if already exists
+    if (entitySigils[ec.entityId]) {
+        entitySigils[ec.entityId].updateStats(entity);
+        return entitySigils[ec.entityId];
+    }
+
+    // Create
+    let maxStats =
+        ec.entityType === "player"
+            ? playerStats({
+                  level: entity.lvl,
+                  attributes: attributes,
+              })
+            : monsterStats({
+                  level: entity.lvl,
+                  beast: (entity as Monster).beast,
+              });
+
+    const sigil = new EntitySigil(ec, maxStats, entity, {
+        anchor: { x: 0, y: -0.825 },
+        radius: 48,
+    });
+    entitySigils[ec.entityId] = sigil;
+    stage.addChild(sigil);
+    return entitySigils[ec.entityId];
+}
+
+const upsertEntityContainerLock = new AsyncLock();
 async function upsertEntityContainer(
     entity: Player | Item | Monster,
     stage: Container,
 ): Promise<[boolean, SimpleEntityContainer | AvatarEntityContainer]> {
-    if (entity.locT !== "geohash") {
-        throw new Error("entity location is not a geohash");
-    }
-    const [entityId, entityType] = getEntityId(entity);
+    return upsertEntityContainerLock.withLock(async () => {
+        if (entity.locT !== "geohash") {
+            throw new Error("entity location is not a geohash");
+        }
+        const [entityId, entityType] = getEntityId(entity);
 
-    // Get position
-    const position = await calculatePosition(entity.loc[0]);
-    const { row, col } = position;
+        // Get position
+        const position = await calculatePosition(entity.loc[0]);
+        const { row, col } = position;
 
-    // Get player position & determine if tween is required if entity is in player's view
-    const playerId = get(player)?.player;
-    let tween = false;
-    if (
-        playerId != null &&
-        entityContainers[playerId] != null &&
-        entityContainers[playerId].isoPosition != null
-    ) {
-        // Ignore entities outside player's view
-        tween = isCellInView(
-            { row, col },
-            entityContainers[playerId].isoPosition,
-        );
-    }
-
-    // Create/Update container
-    const [created, ec] =
-        entityType === "player"
-            ? await upsertAvatarContainer(entity as Player)
-            : await upsertSimpleContainer(entity as Monster | Item);
-
-    // Add to stage (might have been culled)
-    if (!stage.children.includes(ec)) {
-        stage.addChild(ec);
-    }
-
-    // Set initial position
-    if (created) {
-        ec.updateIsoPosition(position);
-
-        stage.addChild(ec.debugBoundingBox());
-        ec.debugOrigin();
-    }
-
-    // Update position
-    else {
-        if (entityType == "player" || entityType == "monster") {
-            // Entity is moving
-            if (isEntityInMotion(entity as Player | Monster)) {
-                await ec.followPath(entity as PathParams);
-            } else {
-                ec.updateIsoPosition(position);
-            }
-        } else {
-            ec.updateIsoPosition(
-                position,
-                tween ? (actions.move.ticks * MS_PER_TICK) / 1000 : undefined,
+        // Get player position & determine if tween is required if entity is in player's view
+        const playerId = get(player)?.player;
+        let tween = false;
+        if (
+            playerId != null &&
+            entityContainers[playerId] != null &&
+            entityContainers[playerId].isoPosition != null
+        ) {
+            // Ignore entities outside player's view
+            tween = isCellInView(
+                { row, col },
+                entityContainers[playerId].isoPosition,
             );
         }
-    }
 
-    return [created, ec];
+        // Create/Update container
+        const [created, ec] =
+            entityType === "player"
+                ? await upsertAvatarContainer(entity as Player)
+                : await upsertSimpleContainer(entity as Monster | Item);
+
+        // Add to stage (might have been culled)
+        if (!stage.children.includes(ec)) {
+            stage.addChild(ec);
+        }
+
+        // Set initial position
+        if (created) {
+            ec.updateIsoPosition(position);
+
+            stage.addChild(ec.debugBoundingBox());
+            ec.debugOrigin();
+        }
+
+        // Update position
+        else {
+            if (entityType == "player" || entityType == "monster") {
+                // Entity is moving
+                if (isEntityInMotion(entity as Player | Monster)) {
+                    await ec.followPath(entity as PathParams);
+                } else {
+                    ec.updateIsoPosition(position);
+                }
+            } else {
+                ec.updateIsoPosition(
+                    position,
+                    tween
+                        ? (actions.move.ticks * MS_PER_TICK) / 1000
+                        : undefined,
+                );
+            }
+        }
+
+        return [created, ec];
+    });
 }
 
 async function upsertAvatarContainer(
@@ -119,8 +165,11 @@ async function upsertAvatarContainer(
 
     // Create
     if (ec == null) {
-        const { avatar, animation } = await getAvatarMetadata(entity);
+        if (!entity.avatar) {
+            throw new Error(`${entity.player} is missing avatar url`);
+        }
 
+        const { avatar, animation } = await getAvatarMetadata(entity.avatar);
         ec = new AvatarEntityContainer({
             entity,
             zOffset: Z_OFF.entity,

@@ -545,7 +545,7 @@ function minifiedEntity(
         }
         // Timers
         if (options?.timers) {
-            fields.push("apclk, buclk");
+            fields.push("apclk", "buclk"); // need to include ap
         }
     } else if (entityType === "item") {
         // Stats
@@ -553,7 +553,6 @@ function minifiedEntity(
             fields.push("chg", "dur");
         }
     }
-
     return pick(entity, fields) as Player | Monster | Item;
 }
 

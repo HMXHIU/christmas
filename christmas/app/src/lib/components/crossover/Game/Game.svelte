@@ -55,7 +55,6 @@
         getDirectionsToPosition,
         getPathHighlights,
         getPlayerPosition,
-        initAssetManager,
         positionsInRange,
         registerGSAP,
         type Position,
@@ -280,10 +279,9 @@
         await app.init({
             width: CANVAS_WIDTH,
             height: CANVAS_HEIGHT,
-            antialias: false,
+            antialias: true,
             preference: "webgl",
         });
-        await initAssetManager();
 
         // Set up depth test
         const gl = (app.renderer as WebGLRenderer).gl;
@@ -329,6 +327,7 @@
                     op: "replace",
                 },
                 {
+                    app,
                     stage: worldStage,
                     handlePlayerPositionUpdate,
                     handleTrackPlayer,
@@ -360,8 +359,9 @@
                 await drawActionEvent(e);
             }),
             entitiesEvent.subscribe(async (e) => {
-                if (!e || !worldStage) return;
+                if (!e || !worldStage || !app) return;
                 await updateEntities(e, {
+                    app: app,
                     stage: worldStage,
                     handlePlayerPositionUpdate,
                     handleTrackPlayer,

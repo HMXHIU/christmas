@@ -194,7 +194,7 @@ async function isDirectionTraversable(
 }
 
 /**
- * Retrieves the user metadata for a given public key.
+ * Retrieves the user metadata for a given public key (this should be cached).
  *
  * @param publicKey The public key of the user.
  * @returns A promise that resolves to the user metadata or null if not found.

@@ -222,12 +222,15 @@ async function useItem({
     utility,
     self,
     target,
+    now,
 }: {
     item: string;
     utility: string;
     self: PlayerEntity | MonsterEntity;
     target?: string; // target can be an `item`
+    now?: number;
 }): Promise<ItemEntity> {
+    now = now ?? Date.now();
     let error: string | null = null;
     let targetEntity = target ? await fetchEntity(target) : undefined;
     let itemEntity = (await fetchEntity(item)) as ItemEntity;
@@ -301,6 +304,7 @@ async function useItem({
                 target,
                 ability: propAbility,
                 ignoreCost: true, // ignore cost when using items
+                now,
             });
         }
     }

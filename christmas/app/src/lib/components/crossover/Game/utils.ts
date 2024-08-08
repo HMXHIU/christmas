@@ -16,7 +16,6 @@ import { avatarMorphologies } from "$lib/crossover/world/bestiary";
 import { elevationAtGeohash } from "$lib/crossover/world/biomes";
 import type { AssetMetadata, Direction } from "$lib/crossover/world/types";
 import { geohashToGridCell } from "$lib/crossover/world/utils";
-import type { Player } from "$lib/server/crossover/redis/entities";
 import { gsap } from "gsap";
 import { PixiPlugin } from "gsap/PixiPlugin";
 import * as PIXI from "pixi.js";
@@ -255,6 +254,7 @@ async function loadAssetTexture(
     // Asset uses a pixijs bundle (spritesheet or image)
     const [bundleName, alias] = asset.path.split("/").slice(-2);
     const bundle = await Assets.loadBundle(bundleName);
+
     const frame =
         bundle[alias]?.textures?.[asset.variants?.[variant] || "default"] ||
         bundle[alias];
@@ -419,14 +419,23 @@ function getPlayerPosition(): Position | null {
 
 // TODO: support monster
 async function getAvatarMetadata(
-    entity: Player,
+    url: string,
 ): Promise<{ avatar: AvatarMetadata; animation: AnimationMetadata }> {
-    const avatar = await Assets.load(avatarMorphologies.humanoid.avatar);
-    const animation = await Assets.load(avatarMorphologies.humanoid.animation);
+    // this casues issues with asset bundle not initialized
+    // const avatar = await Assets.load(avatarMorphologies.humanoid.avatar);
+    // const animation = await Assets.load(avatarMorphologies.humanoid.animation);
+
+    const avatar = await (
+        await fetch(avatarMorphologies.humanoid.avatar)
+    ).json();
+    const animation = await (
+        await fetch(avatarMorphologies.humanoid.animation)
+    ).json();
+
     try {
-        const response = await fetch(entity.avatar);
+        const response = await fetch(url);
         return {
-            animation: await Assets.load(avatarMorphologies.humanoid.animation),
+            animation,
             avatar: {
                 ...avatar,
                 textures: {
@@ -437,7 +446,7 @@ async function getAvatarMetadata(
             },
         };
     } catch (error) {
-        console.error(error);
+        console.error(`Failed to get avatar metadata for ${url}`);
         return {
             avatar,
             animation,

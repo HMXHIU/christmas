@@ -351,7 +351,7 @@ const crossoverRouter = {
                 await say(ctx.player, input.message, ctx.now);
             }),
         // cmd.look
-        look: playerAuthProcedure
+        look: playerAuthBusyProcedure
             .input(LookSchema)
             .query(async ({ ctx, input }) => {
                 await performLook(ctx.player, { inventory: true });
@@ -364,7 +364,7 @@ const crossoverRouter = {
                 await movePlayer(ctx.player, path, ctx.now);
             }),
         // cmd.performAbility
-        performAbility: playerAuthProcedure
+        performAbility: playerAuthBusyProcedure
             .input(PerformAbilitySchema)
             .query(async ({ ctx, input }) => {
                 const { ability, target } = input;
@@ -372,10 +372,11 @@ const crossoverRouter = {
                     self: ctx.player,
                     target,
                     ability,
+                    now: ctx.now,
                 });
             }),
         // cmd.useItem
-        useItem: playerAuthProcedure
+        useItem: playerAuthBusyProcedure
             .input(UseItemSchema)
             .query(async ({ ctx, input }) => {
                 const { item, utility, target } = input;
@@ -384,6 +385,7 @@ const crossoverRouter = {
                     item,
                     target,
                     utility,
+                    now: ctx.now,
                 });
             }),
         // cmd.createItem

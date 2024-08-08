@@ -201,13 +201,22 @@ export class Bone extends Container {
         this.mesh.shader.resources.uniforms.uniforms.uTint = tint;
     }
 
-    updateDepth(isoY: number): void {
+    updateDepth(isoY: number, recursive?: boolean): void {
         // Update zIndex (draw order for alpha blending - alpha should be last)
         this.zIndex = this.renderLayer * isoY + this.boneRenderLayer;
 
         // Update mesh depth
         if (this.mesh) {
             this.mesh.updateDepth(isoY + this.boneRenderLayer);
+        }
+
+        // Update all childbones
+        if (recursive) {
+            for (const child of this.children) {
+                if (child instanceof Bone) {
+                    child.updateDepth(isoY, recursive);
+                }
+            }
         }
     }
 }
