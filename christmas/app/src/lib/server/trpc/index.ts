@@ -1,4 +1,7 @@
-import { INTERNAL_SERVICE_KEY } from "$env/static/private";
+import {
+    DUNGEON_MASTER_TOKEN,
+    INTERNAL_SERVICE_KEY,
+} from "$env/static/private";
 import { TRPCError, initTRPC } from "@trpc/server";
 import type { Context } from "./context";
 
@@ -22,6 +25,16 @@ export const internalServiceProcedure = t.procedure.use(
     async function isInternalService(opts) {
         const { ctx } = opts;
         if (ctx.locals.authToken !== INTERNAL_SERVICE_KEY) {
+            throw new TRPCError({ code: "UNAUTHORIZED" });
+        }
+        return opts.next();
+    },
+);
+
+export const dmServiceProcedure = t.procedure.use(
+    async function isInternalService(opts) {
+        const { ctx } = opts;
+        if (ctx.locals.authToken !== DUNGEON_MASTER_TOKEN) {
             throw new TRPCError({ code: "UNAUTHORIZED" });
         }
         return opts.next();

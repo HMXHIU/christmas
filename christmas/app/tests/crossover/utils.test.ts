@@ -3,7 +3,9 @@ import {
     expandGeohashes,
     filterSortEntitiesInRange,
     geohashNeighbour,
+    geohashToColRow,
 } from "$lib/crossover/utils";
+import { geohashToGridCell } from "$lib/crossover/world/utils";
 import { spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { expect, test } from "vitest";
@@ -11,6 +13,20 @@ import { generateRandomGeohash } from "./utils";
 
 test("Test Utils", async () => {
     await initializeClients(); // create redis repositories
+
+    /**
+     * geohashToColRow/geohashToGridCell
+     */
+
+    let [col, row] = geohashToColRow("w2bmekem");
+    let { row: row2, col: col2 } = geohashToGridCell("w2bmekem");
+    expect(row).equal(row2);
+    expect(col).equal(col2);
+
+    [col, row] = geohashToColRow("c5853");
+    let { row: row3, col: col3 } = geohashToGridCell("c5853");
+    expect(row).equal(row3);
+    expect(col).equal(col3);
 
     /**
      * Test `calculateLocation`

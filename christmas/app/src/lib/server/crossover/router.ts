@@ -21,13 +21,19 @@ import {
     serverAnchorClient,
 } from "..";
 import { ObjectStorage } from "../objectStorage";
-import { authProcedure, internalServiceProcedure, t } from "../trpc";
+import {
+    authProcedure,
+    dmServiceProcedure,
+    internalServiceProcedure,
+    t,
+} from "../trpc";
 import { performAbility } from "./abilities";
 import {
     configureItem,
     createItem,
     dropItem,
     equipItem,
+    moveEntity,
     movePlayer,
     performInventory,
     performLook,
@@ -84,9 +90,15 @@ const PathSchema = z.object({
         z.enum(["n", "s", "e", "w", "ne", "nw", "se", "sw", "u", "d"]),
     ),
 });
+const EntityPathSchema = PathSchema.extend({
+    entity: z.string(),
+});
 const PerformAbilitySchema = z.object({
     ability: z.string(),
     target: z.string(),
+});
+const EntityPerformAbilitySchema = PerformAbilitySchema.extend({
+    entity: z.string(),
 });
 const UseItemSchema = z.object({
     item: z.string(),
@@ -200,6 +212,30 @@ const playerAuthBusyProcedure = playerAuthProcedure.use(
 
 // Router
 const crossoverRouter = {
+    //  Dungeon master (requires dm token)
+    dm: t.router({
+        moveMonster: dmServiceProcedure
+            .input(EntityPathSchema)
+            .mutation(async ({ ctx, input }) => {
+                const { path, entity } = input;
+                await moveEntity(
+                    (await fetchEntity(entity)) as PlayerEntity | MonsterEntity,
+                    path,
+                );
+            }),
+        performMonsterAbility: dmServiceProcedure
+            .input(EntityPerformAbilitySchema)
+            .mutation(async ({ ctx, input }) => {
+                const { ability, target, entity } = input;
+                await performAbility({
+                    self: (await fetchEntity(entity)) as
+                        | PlayerEntity
+                        | MonsterEntity,
+                    target,
+                    ability,
+                });
+            }),
+    }),
     // World
     world: t.router({
         respawnMonsters: internalServiceProcedure.mutation(async () => {

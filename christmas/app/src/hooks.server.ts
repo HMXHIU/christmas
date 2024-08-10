@@ -1,4 +1,5 @@
 import {
+    DUNGEON_MASTER_TOKEN,
     ENVIRONMENT,
     INTERNAL_SERVICE_KEY,
     JWT_SECRET_KEY,
@@ -26,7 +27,10 @@ const handleBase: Handle = async ({ event, resolve }) => {
     }
 
     // Internal Service
-    if (authToken === INTERNAL_SERVICE_KEY) {
+    if (
+        authToken === INTERNAL_SERVICE_KEY ||
+        authToken === DUNGEON_MASTER_TOKEN
+    ) {
         locals.authToken = authToken;
         return await resolve(event);
     }

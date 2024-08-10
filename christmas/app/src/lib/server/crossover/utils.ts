@@ -194,7 +194,9 @@ async function isDirectionTraversable(
 }
 
 /**
- * Retrieves the user metadata for a given public key (this should be cached).
+ * Retrieves the user metadata for a given public key
+ *
+ * TODO: this should be cached as it calls the blockchain
  *
  * @param publicKey The public key of the user.
  * @returns A promise that resolves to the user metadata or null if not found.

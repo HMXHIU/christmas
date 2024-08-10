@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "dungeon-master"
+version = "0.1.0"
+description = ""
+authors = ["benjaminhon <benjaminhon86@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+redis = {extras = ["hiredis"], version = "^5.0.8"}
+jupyterlab = "^4.2.4"
+python-dotenv = "^1.0.1"
+python-geohash = "^0.8.5"
+pillow = "^10.4.0"
+numpy = "^2.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

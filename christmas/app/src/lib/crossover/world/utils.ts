@@ -40,6 +40,8 @@ const gridSizeAtPrecision: Record<number, { rows: number; cols: number }> = {
 /**
  * Gets the grid cell coordinates for a given geohash.
  *
+ * TODO: This is repeated for geohashToColRow?
+ *
  * @param geohash - The geohash string.
  * @returns An object with the precision, row and column for the geohash in the grid.
  */
