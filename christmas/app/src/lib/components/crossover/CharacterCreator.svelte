@@ -11,7 +11,7 @@
         PlayerDemographicSchema,
         PlayerMetadataSchema,
         ageTypes,
-        archetypeTypes,
+        archetypes,
         bodyTypes,
         eyeColors,
         eyeTypes,
@@ -64,18 +64,15 @@
     let selectedPersonalityType = personalityTypes[0];
     let selectedRaceType = raceTypes[0];
     let selectedGenderType = genderTypes[0];
-    let selectedArchetypeType = archetypeTypes[0];
-    let archetypes = archetypeTypes.reduce(
-        (acc: Record<string, typeof cur>, cur) => {
-            acc[cur.value] = cur;
-            return acc;
-        },
-        {},
-    );
+    let selectedArchetype = {
+        label: archetypes["fighter"].label,
+        value: archetypes["fighter"].archetype,
+    };
+
     let avatarSelection: AvatarSelection = {};
     let errors: Record<string, string> = {};
 
-    $: attributes = archetypes[selectedArchetypeType.value].attributes;
+    $: attributes = archetypes[selectedArchetype.value].attributes;
     $: stats = playerStats({
         level: 1,
         attributes: attributes,
@@ -91,7 +88,7 @@
         selectedPersonalityType &&
         selectedRaceType &&
         selectedGenderType &&
-        selectedArchetypeType &&
+        selectedArchetype &&
         getAvailableAvatars();
 
     function validatePlayerMetadata(): PlayerMetadata | null {
@@ -104,7 +101,7 @@
                 demographic: {
                     gender: selectedGenderType.value,
                     race: selectedRaceType.value,
-                    archetype: selectedArchetypeType.value,
+                    archetype: selectedArchetype.value,
                 },
                 attributes,
                 appearance: {
@@ -153,7 +150,7 @@
                 demographic: PlayerDemographicSchema.parse({
                     gender: selectedGenderType.value,
                     race: selectedRaceType.value,
-                    archetype: selectedArchetypeType.value,
+                    archetype: selectedArchetype.value,
                 }),
             };
         } catch (err) {
@@ -262,17 +259,17 @@
                 </LabelField>
                 <!-- Archetype -->
                 <LabelField label="Archetype" class="text-left">
-                    <Select.Root bind:selected={selectedArchetypeType}>
+                    <Select.Root bind:selected={selectedArchetype}>
                         <Select.Trigger>
                             <Select.Value placeholder="" />
                         </Select.Trigger>
                         <Select.Content>
                             <Select.Group>
-                                {#each archetypeTypes as archetypeType}
+                                {#each Object.values(archetypes) as archetype}
                                     <Select.Item
-                                        value={archetypeType.value}
-                                        label={archetypeType.label}
-                                        >{archetypeType.label}</Select.Item
+                                        value={archetype.archetype}
+                                        label={archetype.label}
+                                        >{archetype.label}</Select.Item
                                     >
                                 {/each}
                             </Select.Group>
@@ -331,12 +328,8 @@
                             {attributes.int}
                         </p>
                         <p class="text-xs">
-                            <span class="font-bold">Wisdom:</span>
-                            {attributes.wis}
-                        </p>
-                        <p class="text-xs">
-                            <span class="font-bold">Charisma:</span>
-                            {attributes.cha}
+                            <span class="font-bold">Faith:</span>
+                            {attributes.fth}
                         </p>
                     </div>
                 </div>

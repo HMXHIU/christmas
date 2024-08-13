@@ -2,7 +2,7 @@ import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
 import { abilities } from "$lib/crossover/world/abilities";
 import { actions, type Actions } from "$lib/crossover/world/actions";
 import { monsterLUReward, monsterStats } from "$lib/crossover/world/bestiary";
-import { playerStats } from "$lib/crossover/world/player";
+import { playerAttributes, playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { sanctuariesByRegion, worldSeed } from "$lib/crossover/world/world";
 import { z } from "zod";
@@ -79,7 +79,7 @@ async function loadPlayerEntity(
     if (userMetadata.crossover == null) {
         throw new Error(`Player ${publicKey} missing crossover metadata`);
     }
-    const { avatar, name } = userMetadata.crossover;
+    const { avatar, name, demographic } = userMetadata.crossover;
 
     // Merge default, player state, player entity
     let playerEntity = (await fetchEntity(publicKey)) || {};
@@ -100,6 +100,9 @@ async function loadPlayerEntity(
         buf: [],
         lum: 0,
         umb: 0,
+        arch: demographic.archetype,
+        gen: demographic.gender,
+        race: demographic.race,
         pthclk: 0,
         pthdur: 0,
         pth: [],
@@ -167,8 +170,7 @@ async function handleMonsterKillsPlayer(
         // Recover all stats
         ...playerStats({
             level: player.lvl,
-            attributes: (await getUserMetadata(player.player))?.crossover
-                ?.attributes,
+            attributes: playerAttributes(player),
         }),
         // Respawn at player's region
         loc: [sanctuariesByRegion[player.rgn].geohash],

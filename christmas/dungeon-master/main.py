@@ -96,6 +96,13 @@ async def spawn_monsters(
 async def update_entities_record_loop(context: Context, interval: int):
     while True:
         now = time()
+
+        # clear context
+        context.players_by_id.clear()
+        context.monsters_by_id.clear()
+        context.monsters_near_players.clear()
+        context.dirty_entities = set()
+
         for player in context.game.logged_in_players():
             if player["locT"] != "geohash":
                 continue

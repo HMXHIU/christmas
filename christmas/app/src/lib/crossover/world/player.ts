@@ -1,4 +1,4 @@
-import type { EntityStats } from "$lib/server/crossover/redis/entities";
+import type { EntityStats, Player } from "$lib/server/crossover/redis/entities";
 import { z } from "zod";
 import type { Attributes } from "./abilities";
 
@@ -6,7 +6,7 @@ export {
     AGE_TYPES,
     ageTypes,
     ARCHETYPE_TYPES,
-    archetypeTypes,
+    archetypes,
     BODY_TYPES,
     bodyTypes,
     EYE_COLORS,
@@ -25,6 +25,7 @@ export {
     PERSONALITY_TYPES,
     personalityTypes,
     PlayerAppearanceSchema,
+    playerAttributes,
     PlayerDemographicSchema,
     PlayerMetadataSchema,
     playerStats,
@@ -32,6 +33,7 @@ export {
     raceTypes,
     SKIN_TYPES,
     skinTypes,
+    type Archetype,
     type PlayerAppearance,
     type PlayerAttributes,
     type PlayerDemographic,
@@ -39,6 +41,10 @@ export {
 };
 
 const MAX_POSSIBLE_AP = 8;
+
+function playerAttributes(player: Player): Attributes {
+    return archetypes[player.arch].attributes;
+}
 
 function playerStats({
     level,
@@ -52,27 +58,23 @@ function playerStats({
         str: 10,
         int: 10,
         con: 10,
-        wis: 10,
-        cha: 10,
+        fth: 10,
     };
 
     // Base attributes
-    const { dex, str, int, con, wis, cha } = attributes;
+    const { dex, str, int, con, fth } = attributes;
 
     const conModifier = Math.floor((con - 10) / 2);
     const dexModifier = Math.floor((dex - 10) / 2);
     const intModifier = Math.floor((int - 10) / 2);
-    const wisModifier = Math.floor((wis - 10) / 2);
-    const chaModifier = Math.floor((cha - 10) / 2);
+    const fthModifier = Math.floor((fth - 10) / 2);
     const strModifier = Math.floor((str - 10) / 2);
 
     // Calculate HP based on CON and level
     const hp = level * (10 + conModifier);
 
     // Calculate MP based on the maximum of INT, WIS, and CHA, and level
-    const mp =
-        level *
-        (10 + Math.floor(Math.max(intModifier, wisModifier, chaModifier)));
+    const mp = level * (10 + Math.floor(Math.max(intModifier, fthModifier)));
 
     // Calculate ST based on a mix of STR, DEX, and CON
     const st =
@@ -110,165 +112,105 @@ const ARCHETYPE_TYPES = [
     "ranger",
     "paladin",
     "bard",
-    "druid",
-    "sorcerer",
-    "monk",
-    "barbarian",
 ] as const;
 
-const archetypeTypes = [
-    {
-        value: "fighter",
+interface Archetype {
+    archetype: string;
+    label: string;
+    description: string;
+    attributes: Attributes;
+}
+
+const archetypes: Record<string, Archetype> = {
+    fighter: {
+        archetype: "fighter",
         label: "Fighter",
         description:
             "Skilled combatant with versatile abilities, excels with a variety of weapons and tactics.",
         attributes: {
             dex: 12,
-            str: 14,
+            str: 16,
+            con: 12,
             int: 10,
-            con: 14,
-            wis: 10,
-            cha: 10,
+            fth: 10,
         },
     },
-    {
-        value: "mage",
-        label: "Mage",
-        description: "Harnesses arcane magic to cast powerful spells.",
-        attributes: {
-            dex: 10,
-            str: 8,
-            int: 16,
-            con: 10,
-            wis: 12,
-            cha: 12,
-        },
-    },
-    {
-        value: "rogue",
+    rogue: {
+        archetype: "rogue",
         label: "Rogue",
         description:
             "Stealthy and agile, excels in deception and precision attacks.",
         attributes: {
             dex: 16,
-            str: 10,
-            int: 12,
+            str: 12,
             con: 10,
-            wis: 10,
-            cha: 10,
+            int: 12,
+            fth: 10,
         },
     },
-    {
-        value: "cleric",
-        label: "Cleric",
-        description: "Channels divine magic to heal allies and smite enemies.",
-        attributes: {
-            dex: 8,
-            str: 10,
-            int: 10,
-            con: 12,
-            wis: 16,
-            cha: 12,
-        },
-    },
-    {
-        value: "ranger",
+    ranger: {
+        archetype: "ranger",
         label: "Ranger",
         description: "Skilled tracker and marksman, attuned to nature.",
         attributes: {
             dex: 14,
-            str: 12,
-            int: 10,
+            str: 14,
             con: 12,
-            wis: 14,
-            cha: 10,
+            int: 10,
+            fth: 10,
         },
     },
-    {
-        value: "paladin",
+    mage: {
+        archetype: "mage",
+        label: "Mage",
+        description: "Harnesses arcane magic to cast powerful spells.",
+        attributes: {
+            dex: 12,
+            str: 10,
+            con: 12,
+            int: 16,
+            fth: 10,
+        },
+    },
+    cleric: {
+        archetype: "cleric",
+        label: "Cleric",
+        description: "Channels divine magic to heal allies and smite enemies.",
+        attributes: {
+            dex: 12,
+            str: 10,
+            con: 12,
+            int: 10,
+            fth: 16,
+        },
+    },
+    paladin: {
+        archetype: "paladin",
         label: "Paladin",
         description:
             "Holy knight, defender of justice, wields divine powers in battle.",
         attributes: {
             dex: 10,
             str: 14,
-            int: 8,
             con: 12,
-            wis: 10,
-            cha: 14,
+            int: 10,
+            fth: 14,
         },
     },
-    {
-        value: "bard",
+    bard: {
+        archetype: "bard",
         label: "Bard",
         description:
             "Charismatic performer, inspires allies and casts spells through music and storytelling.",
         attributes: {
-            dex: 10,
-            str: 8,
-            int: 12,
-            con: 10,
-            wis: 10,
-            cha: 18,
-        },
-    },
-    {
-        value: "druid",
-        label: "Druid",
-        description:
-            "Shape-shifting nature caster, connected to the primal forces of the wilderness.",
-        attributes: {
-            dex: 10,
-            str: 8,
-            int: 10,
-            con: 12,
-            wis: 16,
-            cha: 12,
-        },
-    },
-    {
-        value: "sorcerer",
-        label: "Sorcerer",
-        description:
-            "Innate spellcaster, born with magical abilities, commands raw arcane power.",
-        attributes: {
-            dex: 10,
-            str: 8,
-            int: 16,
-            con: 12,
-            wis: 10,
-            cha: 12,
-        },
-    },
-    {
-        value: "monk",
-        label: "Monk",
-        description:
-            "Disciplined martial artist, masters unarmed combat and mystical techniques.",
-        attributes: {
-            dex: 16,
+            dex: 14,
             str: 12,
-            int: 10,
-            con: 14,
-            wis: 14,
-            cha: 8,
+            con: 10,
+            int: 12,
+            fth: 12,
         },
     },
-    {
-        value: "barbarian",
-        label: "Barbarian",
-        description:
-            "Fierce warrior from untamed lands, channels primal rage in battle.",
-        attributes: {
-            dex: 10,
-            str: 16,
-            int: 8,
-            con: 16,
-            wis: 10,
-            cha: 8,
-        },
-    },
-];
+};
 
 const RACE_TYPES = ["human", "elf", "dwarf", "orc", "halfling"] as const;
 
@@ -1109,8 +1051,7 @@ const PlayerAttributesSchema = z.object({
     dex: z.number(),
     con: z.number(),
     int: z.number(),
-    wis: z.number(),
-    cha: z.number(),
+    fth: z.number(),
 });
 
 const PlayerMetadataSchema = z.object({

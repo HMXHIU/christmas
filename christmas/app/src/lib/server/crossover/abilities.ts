@@ -12,6 +12,7 @@ import {
     type Abilities,
     type ProcedureEffect,
 } from "$lib/crossover/world/abilities";
+import { playerAttributes } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { entityActualAp } from "$lib/crossover/world/utils";
 import { sleep } from "$lib/utils";
@@ -27,7 +28,6 @@ import {
     type PlayerEntity,
 } from "./redis/entities";
 import {
-    getUserMetadata,
     publishActionEvent,
     publishAffectedEntitiesToPlayers,
     publishFeedEvent,
@@ -72,7 +72,7 @@ async function performAbility({
     // Recover AP (for player need to get attributes)
     const attributes =
         selfEntityType === "player"
-            ? (await getUserMetadata(selfEntityId))?.crossover?.attributes
+            ? playerAttributes(self as Player)
             : undefined;
     self.ap = entityActualAp(self, { now, attributes });
     self = (await saveEntity(self)) as PlayerEntity | MonsterEntity;

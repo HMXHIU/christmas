@@ -34,7 +34,6 @@ import {
     dropItem,
     equipItem,
     moveEntity,
-    movePlayer,
     performInventory,
     performLook,
     rest,
@@ -394,7 +393,7 @@ const crossoverRouter = {
             .input(PathSchema)
             .query(async ({ ctx, input }) => {
                 const { path } = input;
-                await movePlayer(ctx.player, path, ctx.now);
+                await moveEntity(ctx.player, path, ctx.now);
             }),
         // cmd.performAbility
         performAbility: playerAuthBusyProcedure

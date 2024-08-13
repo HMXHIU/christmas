@@ -35,6 +35,7 @@ import {
     type EquipmentSlot,
     type Utility,
 } from "$lib/crossover/world/compendium";
+import { playerAttributes } from "$lib/crossover/world/player";
 import { MS_PER_TICK, SERVER_LATENCY } from "$lib/crossover/world/settings";
 import { Directions, type Direction } from "$lib/crossover/world/types";
 import { worldSeed } from "$lib/crossover/world/world";
@@ -56,7 +57,6 @@ import {
     playerEquippedItems,
     playerInventoryItems,
     playerRecord,
-    userMetadata,
     worldRecord,
 } from "../../../../store";
 import {
@@ -197,7 +197,7 @@ async function updateEntityContainer<T extends Player | Monster | Item>(
                         const sigil = await upsertEntitySigil(
                             ec,
                             game.app.stage,
-                            get(userMetadata)?.crossover?.attributes,
+                            playerAttributes(self),
                         );
                         const bounds = sigil.getBounds();
                         const padding = 10;

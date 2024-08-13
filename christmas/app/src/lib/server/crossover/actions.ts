@@ -49,7 +49,6 @@ export {
     equipItem,
     LOOK_PAGE_SIZE,
     moveEntity,
-    movePlayer,
     performInventory,
     performLook,
     rest,
@@ -94,13 +93,13 @@ async function moveEntity(
     entity: PlayerEntity | MonsterEntity,
     path: Direction[],
     now?: number,
-): Promise<PlayerEntity> {
+): Promise<PlayerEntity | MonsterEntity> {
     // Get path duration
     now = now ?? Date.now();
     const duration = calculatePathDuration(path);
     const [entityId, entityType] = getEntityId(entity);
 
-    // Check if player is busy
+    // Check if entity is busy
     entity = await setEntityBusy({
         entity: entity,
         action: actions.move.action,
@@ -129,7 +128,7 @@ async function moveEntity(
         }
     }
 
-    // Check if player moves to a new p6
+    // Check if entity moves to a new p6
     const p6Changed = entity.loc[0].slice(0, -2) !== loc[0].slice(0, -2);
 
     // Update location and path
@@ -138,12 +137,12 @@ async function moveEntity(
     entity.pthdur = duration;
     entity.pthclk = now;
     entity.loc = loc; // update loc immediately to final location (client and server to use `pthclk` to determine exact location)
-    entity = (await saveEntity(entity)) as PlayerEntity;
+    entity = (await saveEntity(entity)) as PlayerEntity | MonsterEntity;
 
     // Inform all players nearby of location change
     const nearbyPlayerIds = await getNearbyPlayerIds(entity.loc[0]);
     publishAffectedEntitiesToPlayers(
-        [minifiedEntity(entity, { location: true, now })],
+        [minifiedEntity(entity, { location: true, demographics: true, now })],
         {
             publishTo: nearbyPlayerIds,
         },
@@ -160,7 +159,12 @@ async function moveEntity(
                 ...monsters.map((e) => minifiedEntity(e, { location: true })),
                 ...players
                     .filter((p) => p.player !== entityId)
-                    .map((e) => minifiedEntity(e, { location: true })), // exclude self (already received above)
+                    .map((e) =>
+                        minifiedEntity(e, {
+                            location: true,
+                            demographics: true,
+                        }),
+                    ), // exclude self (already received above)
                 ...items.map((e) => minifiedEntity(e, { location: true })),
             ],
             { publishTo: [entityId] },
@@ -168,84 +172,6 @@ async function moveEntity(
     }
 
     return entity;
-}
-
-async function movePlayer(
-    player: PlayerEntity,
-    path: Direction[],
-    now?: number,
-): Promise<PlayerEntity> {
-    // Get path duration
-    now = now ?? Date.now();
-    const duration = calculatePathDuration(path);
-
-    // Check if player is busy
-    const entity = await setEntityBusy({
-        entity: player,
-        action: actions.move.action,
-        duration, // use the duration of the full path
-        now,
-    });
-
-    // Check if the full path is traversable
-    let loc = cloneDeep(player.loc);
-    for (const direction of path) {
-        const [isTraversable, location] = await isDirectionTraversable(
-            loc,
-            direction,
-        );
-        if (!isTraversable) {
-            const error = `Path is not traversable`;
-            publishFeedEvent(player.player, {
-                type: "error",
-                message: error,
-            });
-            throw new Error(error);
-        } else {
-            loc = location;
-        }
-    }
-
-    // Check if player moves to a new p6
-    const p6Changed = player.loc[0].slice(0, -2) !== loc[0].slice(0, -2);
-
-    // Update player location and path
-    player = entity as PlayerEntity;
-    player.pth = path;
-    player.pthst = player.loc[0]; // origin is always the first loc
-    player.pthdur = duration;
-    player.pthclk = now;
-    player.loc = loc; // update loc immediately to final location (client and server to use `pthclk` to determine exact location)
-    player = (await saveEntity(player)) as PlayerEntity;
-
-    // Inform all players nearby of location change
-    const nearbyPlayerIds = await getNearbyPlayerIds(player.loc[0]);
-    publishAffectedEntitiesToPlayers(
-        [minifiedEntity(player, { location: true, now })],
-        {
-            publishTo: nearbyPlayerIds,
-        },
-    );
-
-    // Request nearby entities if p6Changed
-    if (p6Changed) {
-        const { players, monsters, items } = await getNearbyEntities(
-            player.loc[0],
-            LOOK_PAGE_SIZE,
-        );
-        publishAffectedEntitiesToPlayers(
-            [
-                ...monsters.map((e) => minifiedEntity(e, { location: true })),
-                ...players
-                    .filter((p) => p.player !== player.player)
-                    .map((e) => minifiedEntity(e, { location: true })), // exclude self (already received above)
-                ...items.map((e) => minifiedEntity(e, { location: true })),
-            ],
-            { publishTo: [player.player] },
-        );
-    }
-
-    return player;
 }
 
 async function performLook(
@@ -266,7 +192,9 @@ async function performLook(
     const entities = [
         player,
         ...monsters.map((e) => minifiedEntity(e, { location: true })),
-        ...players.map((e) => minifiedEntity(e, { location: true })),
+        ...players.map((e) =>
+            minifiedEntity(e, { location: true, demographics: true }),
+        ),
         ...items.map((e) => minifiedEntity(e, { location: true })),
         ...inventoryItems,
     ];

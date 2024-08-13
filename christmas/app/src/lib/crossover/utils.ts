@@ -507,33 +507,40 @@ function minifiedEntity(
     options?: {
         location?: boolean;
         stats?: boolean; // hp, mp, st, etc ...
+        demographics?: boolean; // archetype, gender, race
         timers?: boolean; // apclk, buclk
         now?: number;
     },
 ): Player | Monster | Item {
     const [entityId, entityType] = getEntityId(entity);
 
-    // Default fields
+    // Common
     let fields: string[] = ["name"];
 
-    // Player
+    // Player specific
     if (entityType === "player") {
         fields.push("player");
+
+        // Demographics
+        if (options?.demographics) {
+            fields.push("gen", "arch", "race");
+        }
     }
-    // Monster
+    // Monster specific
     else if (entityType === "monster") {
         fields.push("monster", "beast");
     }
-    // Item
+    // Item specific
     else {
         fields.push("item", "prop", "state", "vars");
+
+        // Stats
+        if (options?.stats) {
+            fields.push("chg", "dur");
+        }
     }
 
-    // Location
-    if (options?.location) {
-        fields.push("loc", "locT");
-    }
-
+    // Monster & Player specific
     if (entityType === "player" || entityType === "monster") {
         // Path
         if (options?.location && isEntityInMotion(entity as Monster | Player)) {
@@ -547,12 +554,13 @@ function minifiedEntity(
         if (options?.timers) {
             fields.push("apclk", "buclk"); // need to include ap
         }
-    } else if (entityType === "item") {
-        // Stats
-        if (options?.stats) {
-            fields.push("chg", "dur");
-        }
     }
+
+    // Location
+    if (options?.location) {
+        fields.push("loc", "locT");
+    }
+
     return pick(entity, fields) as Player | Monster | Item;
 }
 

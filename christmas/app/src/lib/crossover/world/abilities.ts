@@ -56,13 +56,13 @@ type Debuff =
 type Buff = "haste" | "regeneration" | "shield" | "invisibility" | "berserk";
 
 interface Attributes {
-    dex: number;
-    str: number;
-    int: number;
-    con: number;
-    wis: number;
-    cha: number;
+    dex: number; // stamina
+    str: number; // stamina
+    con: number; // health, phy resistance
+    int: number; // mana
+    fth: number; // mana, spell resistance
 }
+
 type Abilities =
     | "bandage"
     | "disintegrate"

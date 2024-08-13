@@ -70,6 +70,9 @@ const PlayerEntitySchema = new Schema("Player", {
     lgn: { type: "boolean" }, // logged in
     lum: { type: "number" }, // lumina
     umb: { type: "number" }, // umbra
+    arch: { type: "string" }, // archetype
+    gen: { type: "string" }, // gender
+    race: { type: "string" }, // race
     // EntityState
     loc: { type: "string[]" },
     locT: { type: "string" },
@@ -96,6 +99,9 @@ interface Player extends EntityState {
     lgn: boolean;
     lum: number;
     umb: number;
+    arch: string;
+    gen: string;
+    race: string;
 }
 
 type PlayerEntity = Player & Entity;
