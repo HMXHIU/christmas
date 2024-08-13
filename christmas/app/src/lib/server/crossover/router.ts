@@ -169,7 +169,6 @@ const UserMetadataSchema = z.object({
 
 const playerAuthProcedure = authProcedure.use(async ({ ctx, next }) => {
     const player = (await tryFetchEntity(ctx.user.publicKey)) as PlayerEntity;
-
     if (!player) {
         throw new TRPCError({
             code: "NOT_FOUND",
@@ -187,7 +186,6 @@ const playerAuthProcedure = authProcedure.use(async ({ ctx, next }) => {
 const playerAuthBusyProcedure = playerAuthProcedure.use(
     async ({ ctx, next }) => {
         const [isBusy, now] = entityIsBusy(ctx.player);
-
         if (isBusy) {
             publishFeedEvent(ctx.player.player, {
                 type: "error",
@@ -200,7 +198,6 @@ const playerAuthBusyProcedure = playerAuthProcedure.use(
                 message: "Player is busy",
             });
         }
-
         return next({
             ctx: {
                 ...ctx,

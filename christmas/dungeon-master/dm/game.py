@@ -1,5 +1,6 @@
 from redis.commands.search.query import Query
 import json
+from requests import request
 from typing import Generator
 from .utils import geohashes_nearby
 from .queries import (
@@ -8,11 +9,12 @@ from .queries import (
     items_in_geohash_query,
     monsters_in_geohash_query,
 )
-from .types import Player, Entity, Monster
+from .types import Player, Entity, Monster, List
 from .world.abilities import abilities, Ability
-from .utils import entity_in_range, geohash_to_grid_cell
-from .pathfinding import a_star_pathfinding
-from requests import request
+from .utils import entity_in_range, geohash_to_grid_cell, geohash_to_col_row
+from .pathfinding import a_star_pathfinding, Direction
+from .world.biomes import traversable_cost
+from .api import APIClient
 
 
 class Game:
@@ -24,8 +26,7 @@ class Game:
         self.monster_index = redis_client.ft("Monster:index")
         self.item_index = redis_client.ft("Item:index")
         self.world_index = redis_client.ft("World:index")
-        self.dm_token = dm_token
-        self.api_host = api_host
+        self.api_client = APIClient(api_host, dm_token)
 
     def logged_in_players(self, offset=0) -> Generator[Player, None, None]:
         # This is a generator
@@ -77,14 +78,6 @@ class Game:
 
         raise Exception("Query either players, monsters or items")
 
-    def get_nearby_player_ids(self, geohash):
-        players = self.get_nearby_entities(
-            geohash,
-            self.page_size,
-            {"players": True, "monsters": False, "items": False},
-        )["players"]
-        return [player.player for player in players]
-
     def has_colliders_in_geohash(self, geohash):
         item_colliders = self.item_index.search(
             Query(f"@locT:{{geohash}} @loc:{{{geohash}*}} @cld:{{true}}")
@@ -92,47 +85,42 @@ class Game:
         world_colliders = self.world_index.search(Query(f"@cld:{{{geohash}*}}")).total
         return (item_colliders + world_colliders) > 0
 
-    def perform_monster_ability(self, monster: Monster, player: Player, ability: str):
-
-        ability: Ability = abilities[ability]
+    def perform_monster_ability(
+        self, monster: Monster, player: Player, ability_str: str
+    ):
+        ability: Ability = abilities[ability_str]
 
         # check in range
         in_range, distance = entity_in_range(monster, player, ability["range"])
 
         if in_range:
-            # call API to perform ability
-            pass
+            self.api_client.monster_ability(
+                monster=monster["monster"], target=player["player"], ability=ability_str
+            )
 
-        pass
-
-    def perform_monster_move(self, monster: Monster, **kwargs):
-
-        geohash = kwargs["geohash"] if "geohash" in kwargs else None
-        directions = kwargs["directions"] if "directions" in kwargs else None
+    def perform_monster_move(
+        self,
+        monster: Monster,
+        geohash: str | None = None,
+        directions: List[Direction] | None = None,
+    ):
+        geohash = geohash or None
+        directions = directions or None
 
         if geohash != None:
-            monster_geohash = monster["loc"][0]
-            monster_cell = geohash_to_grid_cell(monster_geohash)
-            dest_cell = geohash_to_grid_cell(geohash)
-
+            m_col, m_row = geohash_to_col_row(monster["loc"][0])
+            d_col, d_row = geohash_to_col_row(geohash)
             directions = a_star_pathfinding(
-                monster_cell["row"],
-                monster_cell["col"],
-                dest_cell["row"],
-                dest_cell["col"],
-                lambda r, c: 0,  # TODO: need to check for colliders
+                m_row,
+                m_col,
+                d_row,
+                d_col,
+                traversable_cost,
             )
         elif directions == None:
             raise Exception("Provide either geohash or directions")
 
-        request(
-            "POST",
-            f"{self.api_host}/trpc/crossover.dm.moveMonster",
-            headers={
-                "Authorization": f"Bearer {self.dm_token}",
-            },
-            json={"path": directions, "entity": monster["monster"]},
-        )
+        self.api_client.monster_move(monster=monster["monster"], directions=directions)
 
 
 def index_query_generator(index, query, page_size, offset=0):

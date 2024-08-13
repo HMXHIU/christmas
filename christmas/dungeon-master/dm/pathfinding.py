@@ -1,4 +1,4 @@
-from typing import List, Tuple, Callable, Optional, Set, Dict
+from typing import List, Tuple, Callable, Optional, Set, Dict, Literal
 from dataclasses import dataclass
 
 
@@ -12,7 +12,18 @@ class Node:
     parent: Optional["Node"] = None
 
 
-Direction = str
+Direction = Literal[
+    "n",
+    "s",
+    "e",
+    "w",
+    "ne",
+    "nw",
+    "se",
+    "sw",
+    "u",
+    "d",
+]
 DirectionVector = Tuple[int, int]
 
 direction_vectors: Dict[Direction, DirectionVector] = {

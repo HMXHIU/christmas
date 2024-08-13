@@ -1,5 +1,5 @@
 from typing import Dict, List, Literal, TypedDict
-from abilities import abilities
+from .abilities import abilities
 
 
 AbilityType = Literal["offensive", "healing", "defensive", "neutral"]

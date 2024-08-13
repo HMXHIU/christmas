@@ -69,18 +69,16 @@ def entity_in_range(
         else:
             return False, 0
 
-    source_cell = geohash_to_grid_cell(source["loc"][0]).values()
-    target_cell = geohash_to_grid_cell(target["loc"][0]).values()
+    [source_col, source_row] = geohash_to_col_row(source["loc"][0])
+    [target_col, target_row] = geohash_to_col_row(target["loc"][0])
 
     return in_range(
-        {
-            "r1": source_cell["row"],
-            "c1": source_cell["col"],
-            "r2": target_cell["row"],
-            "c2": target_cell["col"],
-            "range": range,
-            "diagonal": diagonal,
-        }
+        source_row,
+        source_col,
+        target_row,
+        target_col,
+        range,
+        diagonal,
     )
 
 
