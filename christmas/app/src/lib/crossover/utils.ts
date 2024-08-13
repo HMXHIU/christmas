@@ -640,7 +640,7 @@ interface Node {
  * @param colStart - The starting column index.
  * @param colEnd - The ending column index.
  * @param getTraversalCost - A function that returns the traversal cost for a given cell (0 is walkable, 1 is not).
- * @param range - Max range to terminate early
+ * @param range - Stop if within range (eg. ability range)
  * @returns An array of directions representing the optimal path (eg. [n, s, e, w]).
  */
 function aStarPathfinding({
@@ -650,16 +650,17 @@ function aStarPathfinding({
     colEnd,
     getTraversalCost,
     range,
+    maxIterations,
 }: {
     rowStart: number;
     rowEnd: number;
     colStart: number;
     colEnd: number;
     getTraversalCost: (row: number, col: number) => number; // 0 is walkable, 1 is not
+    maxIterations?: number;
     range?: number;
 }): Direction[] {
-    // Need to have a max range else it will go on infinitely
-    range = range ?? 100;
+    maxIterations = maxIterations ?? 1000;
 
     const heuristic = (
         row: number,
@@ -730,7 +731,10 @@ function aStarPathfinding({
         return heuristic(row, col, rowEnd, colEnd) <= range;
     };
 
-    while (openList.length > 0) {
+    let iterations = 0;
+    while (openList.length > 0 && iterations < maxIterations) {
+        iterations++;
+
         openList.sort((a, b) => a.f - b.f); // Sort by f value
         const currentNode = openList.shift()!;
         const currentKey = `${currentNode.row},${currentNode.col}`;

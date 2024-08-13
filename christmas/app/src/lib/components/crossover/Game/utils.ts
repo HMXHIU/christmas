@@ -207,7 +207,7 @@ function calculateRowColFromIso(isoX: number, isoY: number): [number, number] {
 function getDirectionsToPosition(
     source: { row: number; col: number },
     target: { row: number; col: number },
-    range: number = 50, // in row col coordinates
+    range?: number,
 ): Direction[] {
     return aStarPathfinding({
         colStart: source.col,

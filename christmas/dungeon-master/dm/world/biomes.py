@@ -145,7 +145,7 @@ def biome_at_geohash(geohash: str, seed: WorldSeed | None = None) -> Tuple[str, 
 
     # Leave h9* for ice for testing (fully traversable)
     if geohash.startswith("h9"):
-        return biomes.ice.biome, 1
+        return biomes["ice"]["biome"], 1
 
     # Get topology
     height = topology_at_geohash(geohash)

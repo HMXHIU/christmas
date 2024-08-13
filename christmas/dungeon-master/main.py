@@ -1,10 +1,12 @@
 from redis import Redis
 from dotenv import load_dotenv, find_dotenv
 import os
-from time import sleep, time
+from dataclasses import dataclass
+from time import time
 import logging
-import sched
-from typing import Dict, List
+import asyncio
+from asyncio import Queue
+from typing import Dict, List, Any, Set
 from dm.game import Game
 from dm.types import Monster, Player
 from dm.world.bestiary import bestiary
@@ -14,7 +16,6 @@ from dm.utils import entity_in_range
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("main")
-scheduler = sched.scheduler(time, sleep)
 
 load_dotenv(find_dotenv())
 REDIS_HOST = os.getenv("REDIS_HOST")
@@ -25,69 +26,64 @@ API_HOST = os.getenv("API_HOST")
 DUNGEON_MASTER_TOKEN = os.getenv("DUNGEON_MASTER_TOKEN")
 
 
-# Connect to redis
-redis_client = Redis(
-    host=REDIS_HOST,
-    port=REDIS_PORT,
-    username=REDIS_USERNAME,
-    password=REDIS_PASSWORD,
-    db=0,
-    protocol=3,
-    decode_responses=True,
-)
-
-# Create game client
-game = Game(redis_client, 200, dm_token=DUNGEON_MASTER_TOKEN, api_host=API_HOST)
-
-# Entity records
-monsters_by_id: Dict[str, Monster] = {}
-players_by_id: Dict[str, Player] = {}
-monsters_near_players: Dict[str, List[str]] = {}
+@dataclass
+class Context:
+    game: Game
+    jobs: Queue[Any]
+    monsters_by_id: Dict[str, Monster]
+    players_by_id: Dict[str, Player]
+    monsters_near_players: Dict[str, List[str]]
+    dirty_entities: Set[str]
 
 
-def process_entities(
-    monsters_by_id: Dict[str, Monster],
-    players_by_id: Dict[str, Player],
-    monsters_near_players: Dict[str, List[str]],
-):
+async def process_entities(context: Context):
     """
     Reformat or bin entities as neccessary or use monsters_near_players
     - Use monsters_by_id, players_by_id to get the actual entity data
     """
     processed = 0
     monsters_processed = set()
-    for p, mx in monsters_near_players.items():
+    for p, mx in context.monsters_near_players.items():
         processed += 1
+
+        # Refetch player if dirty
+        if p in context.dirty_entities:
+            context.players_by_id[p] = context.game.fetch_entity(p)
+            context.dirty_entities.remove(p)
+
         for m in mx:
 
-            # monster already processed
+            # Monster already processed
             if m in monsters_processed:
                 continue
             monsters_processed.add(m)
 
+            # Refetch monster if dirty
+            if m in context.dirty_entities:
+                context.monsters_by_id[m] = context.game.fetch_entity(m)
+                context.dirty_entities.remove(m)
+
             # Choose monster ability
-            monster = monsters_by_id[m]
+            monster = context.monsters_by_id[m]
             beast = bestiary[monster["beast"]]
             ability_str = beast["abilities"]["offensive"][0]
             ability = abilities[ability_str]
 
             # Check player in range of ability
-            player = players_by_id[p]
-
-            if entity_in_range(monster, player, ability["range"]):
-                # use ability
-                game.perform_monster_ability(
-                    monster=monster, player=player, ability_str=ability_str
-                )
+            player = context.players_by_id[p]
+            in_range, distance = entity_in_range(monster, player, ability["range"])
+            if in_range:
+                # Perform ability
+                await context.jobs.put(["perform_monster_ability", m, p, ability_str])
             else:
-                # move in range
-                game.perform_monster_move(monster=monster, geohash=player["loc"][0])
+                # Move in range
+                await context.jobs.put(["perform_monster_move", m, player["loc"][0]])
 
-        if processed % 20 == 0:
-            logging.info(f"{processed} players processed")
+        if processed % 50 == 0:
+            logging.info(f"{processed}/{len(context.players_by_id)} players processed")
 
 
-def spawn_monsters(
+async def spawn_monsters(
     monsters_by_id: Dict[str, Monster], players_by_id: Dict[str, Player]
 ):
     """
@@ -97,86 +93,152 @@ def spawn_monsters(
     pass
 
 
-def update_entities_record_loop(interval: int):
-    now = time()
-    for player in game.logged_in_players():
-        if player["locT"] != "geohash":
-            continue
-        player_geohash = player["loc"][0]
-        players_by_id[player["player"]] = player  # update players
-        monsters_near_players[player["player"]] = []
-        # TODO: this can be more efficient by first getting all unique player's geohash
-        for monster in game.get_nearby_entities(player_geohash, monsters=True):
-            monsters_by_id[monster["monster"]] = monster  # update monsters
-            monsters_near_players[player["player"]].append(monster["monster"])
-    took = time() - now
-    logger.info(f"Update entities took {took:.1f} seconds")
+async def update_entities_record_loop(context: Context, interval: int):
+    while True:
+        now = time()
+        for player in context.game.logged_in_players():
+            if player["locT"] != "geohash":
+                continue
+            player_geohash = player["loc"][0]
+            context.players_by_id[player["player"]] = player
+            context.monsters_near_players[player["player"]] = []
+            for monster in context.game.get_nearby_entities(
+                player_geohash, monsters=True
+            ):
+                context.monsters_by_id[monster["monster"]] = monster
+                context.monsters_near_players[player["player"]].append(
+                    monster["monster"]
+                )
+        took = time() - now
+        logger.info(f"Update entities took {took:.1f} seconds")
 
-    # schedule next call
-    scheduler.enter(interval, 1, update_entities_record_loop, (interval,))
+        remaining = interval - took
+        if remaining > 0:
+            await asyncio.sleep(remaining)
 
 
-def spawn_monsters_loop(
-    interval: int, monsters_by_id: Dict[str, Monster], players_by_id: Dict[str, Player]
-):
-    now = time()
-    spawn_monsters(monsters_by_id=monsters_by_id, players_by_id=players_by_id)
-    took = time() - now
-    logger.info(f"Spawn monsters took {took:.1f} seconds")
+async def spawn_monsters_loop(context: Context, interval: int):
+    while True:
+        now = time()
+        await spawn_monsters(
+            monsters_by_id=context.monsters_by_id,
+            players_by_id=context.players_by_id,
+        )
+        took = time() - now
+        logger.info(f"Spawn monsters took {took:.1f} seconds")
 
-    # schedule next call
-    scheduler.enter(
-        interval,
-        1,
-        spawn_monsters_loop,
-        (
-            interval,
-            monsters_by_id,
-            players_by_id,
-        ),
+        remaining = interval - took
+        if remaining > 0:
+            await asyncio.sleep(remaining)
+
+
+async def process_entities_loop(context: Context, interval: int):
+    while True:
+        now = time()
+        await process_entities(context)
+        took = time() - now
+        logger.info(
+            f"Processed {len(context.players_by_id)} players {len(context.monsters_by_id)} monsters in {took:.1f} seconds"
+        )
+        remaining = interval - took
+        if remaining > 0:
+            await asyncio.sleep(remaining)
+
+
+async def process_jobs_loop(context: Context):
+    while True:
+        job = await context.jobs.get()
+        if job:
+            job_type, *args = job
+            if job_type == "perform_monster_ability":
+                monster_id, player_id, ability_str = args
+
+                # FOR TESTING
+                if (
+                    player_id != "9WQYjAQUcwFwE6oBuTdjKzT9VSHzN5yZVK8RcReJ5A4v"
+                    or monster_id != "monster_goblin10620"
+                ):
+                    continue
+
+                if (
+                    monster_id in context.monsters_by_id
+                    and player_id in context.players_by_id
+                ):
+                    print(job)
+                    await context.game.perform_monster_ability(
+                        monster=context.monsters_by_id[monster_id],
+                        player=context.players_by_id[player_id],
+                        ability_str=ability_str,
+                    )
+                    context.dirty_entities.add(monster_id)  # set dirty
+                    context.dirty_entities.add(player_id)  # set dirty
+
+            elif job_type == "perform_monster_move":
+                monster_id, target_geohash = args
+
+                # FOR TESTING
+                if monster_id != "monster_goblin10620":
+                    continue
+
+                if monster_id in context.monsters_by_id:
+                    print(job)
+                    await context.game.perform_monster_move(
+                        monster=context.monsters_by_id[monster_id],
+                        geohash=target_geohash,
+                    )
+                    context.dirty_entities.add(monster_id)  # set dirty
+            # Mark job as done
+            context.jobs.task_done()
+
+
+async def main():
+
+    # Connect to redis
+    redis_client = Redis(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        username=REDIS_USERNAME,
+        password=REDIS_PASSWORD,
+        db=0,
+        protocol=3,
+        decode_responses=True,
     )
 
+    # Create game client
+    game = Game(redis_client, 200, dm_token=DUNGEON_MASTER_TOKEN, api_host=API_HOST)
 
-def process_entities_loop(
-    interval: int,
-    monsters_by_id: Dict[str, Monster],
-    players_by_id: Dict[str, Player],
-    monsters_near_players: Dict[str, List[str]],
-):
-    now = time()
-    process_entities(
+    # Entity records
+    monsters_by_id: Dict[str, Monster] = {}
+    players_by_id: Dict[str, Player] = {}
+    monsters_near_players: Dict[str, List[str]] = {}
+    dirty_entities = set()
+
+    # Job queue
+    jobs: Queue[Any] = Queue()
+
+    context = Context(
+        game=game,
+        jobs=jobs,
         monsters_by_id=monsters_by_id,
         players_by_id=players_by_id,
         monsters_near_players=monsters_near_players,
-    )
-    took = time() - now
-    logger.info(
-        f"Processed {len(players_by_id)} players {len(monsters_by_id)} monsters in {took:.1f} seconds"
+        dirty_entities=dirty_entities,
     )
 
-    # schedule next call
-    scheduler.enter(
-        interval,
-        1,
-        process_entities_loop,
-        (
-            interval,
-            monsters_by_id,
-            players_by_id,
-            monsters_near_players,
-        ),
+    # Create tasks for each loop
+    update_task = asyncio.create_task(
+        update_entities_record_loop(
+            context,
+            interval=10,
+        )
     )
+    spawn_task = asyncio.create_task(spawn_monsters_loop(context, interval=30))
+    process_task = asyncio.create_task(process_entities_loop(context, interval=3))
+    job_task = asyncio.create_task(process_jobs_loop(context))
+
+    # Run tasks
+    await asyncio.gather(update_task, spawn_task, process_task, job_task)
 
 
 if __name__ == "__main__":
-    update_entities_record_loop(interval=10)
-    spawn_monsters_loop(
-        interval=30, monsters_by_id=monsters_by_id, players_by_id=players_by_id
-    )
-    process_entities_loop(
-        interval=3,
-        monsters_by_id=monsters_by_id,
-        players_by_id=players_by_id,
-        monsters_near_players=monsters_near_players,
-    )
-    scheduler.run()
+    asyncio.run(main())

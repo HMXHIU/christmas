@@ -49,7 +49,8 @@ def a_star_pathfinding(
     row_end: int,
     col_end: int,
     get_traversal_cost: Callable[[int, int], int],
-    range: Optional[int] = 50,
+    range: Optional[int] = None,
+    max_iterations: Optional[int] = 500,
 ) -> List[Direction]:
     """
     Performs A* pathfinding algorithm to find the optimal path between two points on a map.
@@ -59,7 +60,7 @@ def a_star_pathfinding(
     :param col_start: The starting column index.
     :param col_end: The ending column index.
     :param get_traversal_cost: A function that returns the traversal cost for a given cell (0 is walkable, 1 is not).
-    :param range: Optional range parameter.
+    :param range: Stop if within range (eg. ability range)
     :return: An array of directions representing the optimal path (eg. ['n', 's', 'e', 'w']).
     """
 
@@ -113,7 +114,9 @@ def a_star_pathfinding(
     def is_within_range(row: int, col: int, range: int) -> bool:
         return heuristic(row, col, row_end, col_end) <= range
 
-    while open_list:
+    iterations = 0
+    while open_list and iterations < max_iterations:
+        iterations += 1
         open_list.sort(key=lambda x: x.f)
         current_node = open_list.pop(0)
         current_key = f"{current_node.row},{current_node.col}"

@@ -1,5 +1,6 @@
 from redis.commands.search.query import Query
 import json
+import asyncio
 from requests import request
 from typing import Generator
 from .utils import geohashes_nearby
@@ -34,7 +35,7 @@ class Game:
             self.player_index, logged_in_players_query(), self.page_size, offset
         )
 
-    def fetch_entity(self, entity_id) -> Entity:
+    def fetch_entity(self, entity_id: str) -> Entity:
         if entity_id.startswith("monster"):
             return self.redis_client.json().get(f"Monster:{entity_id}")
         elif entity_id.startswith("item"):
@@ -42,7 +43,9 @@ class Game:
         else:
             return self.redis_client.json().get(f"Player:{entity_id}")
 
-    def get_nearby_entities(self, geohash, **kwargs) -> Generator[Entity, None, None]:
+    def get_nearby_entities(
+        self, geohash: str, **kwargs
+    ) -> Generator[Entity, None, None]:
         # This is a generator
         monsters = kwargs["monsters"] if "monsters" in kwargs else False
         players = kwargs["players"] if "players" in kwargs else False
@@ -85,7 +88,7 @@ class Game:
         world_colliders = self.world_index.search(Query(f"@cld:{{{geohash}*}}")).total
         return (item_colliders + world_colliders) > 0
 
-    def perform_monster_ability(
+    async def perform_monster_ability(
         self, monster: Monster, player: Player, ability_str: str
     ):
         ability: Ability = abilities[ability_str]
@@ -94,11 +97,11 @@ class Game:
         in_range, distance = entity_in_range(monster, player, ability["range"])
 
         if in_range:
-            self.api_client.monster_ability(
+            await self.api_client.monster_ability(
                 monster=monster["monster"], target=player["player"], ability=ability_str
             )
 
-    def perform_monster_move(
+    async def perform_monster_move(
         self,
         monster: Monster,
         geohash: str | None = None,
@@ -120,7 +123,9 @@ class Game:
         elif directions == None:
             raise Exception("Provide either geohash or directions")
 
-        self.api_client.monster_move(monster=monster["monster"], directions=directions)
+        await self.api_client.monster_move(
+            monster=monster["monster"], directions=directions
+        )
 
 
 def index_query_generator(index, query, page_size, offset=0):
