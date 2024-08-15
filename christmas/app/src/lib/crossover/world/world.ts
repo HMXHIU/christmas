@@ -11,6 +11,7 @@ export {
     traversableCellsInWorld,
     traversableSpeedInWorld,
     type Sanctuary,
+    type Tileset,
     type WorldSeed,
 };
 
@@ -62,6 +63,35 @@ interface WorldSeed {
             };
         };
     };
+}
+
+interface Tileset {
+    columns: number;
+    grid: {
+        height: number;
+        orientation: string;
+        width: number;
+    };
+    margin: number;
+    name: string;
+    objectalignment: string;
+    spacing: number;
+    tilecount: number;
+    tiledversion: string;
+    tileheight: number;
+    tileoffset?: {
+        x: number;
+        y: number;
+    };
+    tiles: Array<{
+        id: number;
+        image: string;
+        imageheight: number;
+        imagewidth: number;
+    }>;
+    tilewidth: number;
+    type: string;
+    version: string;
 }
 
 const sanctuariesByRegion = sanctuaries.reduce(

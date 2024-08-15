@@ -21,6 +21,7 @@ import { elevationAtGeohash } from "$lib/crossover/world/biomes";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import type { AssetMetadata, Direction } from "$lib/crossover/world/types";
 import { isGeohashTraversable } from "$lib/crossover/world/utils";
+import type { Tileset } from "$lib/crossover/world/world";
 import type { World } from "$lib/server/crossover/redis/entities";
 import { gsap } from "gsap";
 import { PixiPlugin } from "gsap/PixiPlugin";
@@ -290,7 +291,7 @@ function decodeTiledSource(path: string): string {
 async function getTilesetForTile(
     tileId: number,
     sortedTilesets: { firstgid: number; source: string }[],
-): Promise<{ firstgid: number; tileset: any }> {
+): Promise<{ firstgid: number; tileset: Tileset }> {
     for (const ts of sortedTilesets) {
         if (tileId >= ts.firstgid) {
             return {
@@ -482,10 +483,13 @@ async function hasColliders(geohash: string): Promise<boolean> {
 }
 
 async function getWorldForGeohash(geohash: string): Promise<World | undefined> {
-    for (const worlds of Object.values(get(worldRecord))) {
+    for (const [town, worlds] of Object.entries(get(worldRecord))) {
+        if (!geohash.startsWith(town)) continue;
         for (const world of Object.values(worlds)) {
-            if (geohash.startsWith(world.loc[0])) {
-                return world;
+            for (const loc of world.loc) {
+                if (geohash.startsWith(loc)) {
+                    return world;
+                }
             }
         }
     }

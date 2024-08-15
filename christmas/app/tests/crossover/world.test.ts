@@ -1,4 +1,5 @@
 import { LRUMemoryCache, MemoryCache } from "$lib/caches";
+import { isGeohashTraversableClient } from "$lib/components/crossover/Game/utils";
 import { crossoverWorldWorlds } from "$lib/crossover/client";
 import {
     childrenGeohashes,
@@ -34,6 +35,7 @@ import { isGeohashTraversableServer } from "$lib/server/crossover/utils";
 import { BUCKETS, ObjectStorage } from "$lib/server/objectStorage";
 import { omit } from "lodash-es";
 import { beforeAll, describe, expect, test } from "vitest";
+import { itemRecord, worldRecord } from "../../src/store";
 import { createGandalfSarumanSauron, generateRandomGeohash } from "./utils";
 
 const worldSeed: WorldSeed = {
@@ -212,6 +214,11 @@ beforeAll(async () => {
         },
     })) as ItemEntity;
 
+    // Set itemRecord
+    itemRecord.set({
+        [woodenDoor.item]: woodenDoor,
+    });
+
     // Store the test world asset in storage and get the url
     assetUrl = await ObjectStorage.putJSONObject({
         owner: null,
@@ -227,6 +234,13 @@ beforeAll(async () => {
         geohash: worldGeohash,
         tileHeight: asset.tileheight,
         tileWidth: asset.tilewidth,
+    });
+
+    // Set worldRecord
+    worldRecord.set({
+        w2: {
+            [world.world]: world,
+        },
     });
 });
 
@@ -332,14 +346,23 @@ describe("World Tests", () => {
         await expect(
             isGeohashTraversableServer(woodenDoorGeohash),
         ).resolves.toBe(false);
+        await expect(
+            isGeohashTraversableClient(woodenDoorGeohash),
+        ).resolves.toBe(false);
 
         // Ocean not traversable
         await expect(isGeohashTraversableServer("2b67676h")).resolves.toBe(
             false,
         );
+        await expect(isGeohashTraversableClient("2b67676h")).resolves.toBe(
+            false,
+        );
 
         // World collider not traversable
         await expect(isGeohashTraversableServer("w21z8uck")).resolves.toBe(
+            false,
+        );
+        await expect(isGeohashTraversableClient("w21z8uck")).resolves.toBe(
             false,
         );
     });

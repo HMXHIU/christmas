@@ -3,10 +3,10 @@ import { LRUCache } from "lru-cache";
 export {
     BrowserCache,
     CacheInterface,
-    LRUMemoryCache,
     LocalStorageCache,
-    MemoryCache,
+    LRUMemoryCache,
     memoize,
+    MemoryCache,
 };
 
 function memoize<T, A extends any[]>(
@@ -92,24 +92,28 @@ class LocalStorageCache extends CacheInterface {
     }
 }
 
-class BrowserCache {
+class BrowserCache extends CacheInterface {
     name: string;
 
     constructor(name: string) {
+        super();
         this.name = name;
     }
 
     async get(key: string): Promise<Response | null> {
+        if (!self) return null; // not in browser environment
         const cache = await self.caches.open(this.name);
         return (await cache.match(key)) || null;
     }
 
     async set(key: string, value: Response) {
+        if (!self) return; // not in browser environment
         const cache = await self.caches.open(this.name);
         await cache.put(key, value);
     }
 
     async delete(key: string) {
+        if (!self) return; // not in browser environment
         const cache = await self.caches.open(this.name);
         await cache.delete(key);
     }

@@ -26,6 +26,7 @@ export {
     getErrorMessage,
     imageDataUrlToFile,
     imageUrlToDataURL,
+    isBrowser,
     parseZodErrors,
     retry,
     signAndSendTransaction,
@@ -381,4 +382,8 @@ class AsyncLock {
 
 function divmod(n: number, d: number): [number, number] {
     return [Math.floor(n / d), n % d];
+}
+
+function isBrowser(): boolean {
+    return typeof window !== "undefined";
 }

@@ -60,7 +60,10 @@ async function loadWorld({
 
     const tilemap = await Assets.load(world.url);
     const { layers, tilesets, tileheight, tilewidth } = tilemap;
-    const [tileOffsetX, tileOffsetY] = cartToIso(tilewidth / 2, tilewidth / 2);
+    const [tileMapOffsetX, tileMapOffsetY] = cartToIso(
+        tilewidth / 2,
+        tilewidth / 2,
+    );
 
     for (const layer of layers) {
         const {
@@ -77,7 +80,7 @@ async function loadWorld({
             properties ?? [];
 
         // Get properties
-        const { z, collider, interior } = props.reduce(
+        const { z, traversableSpeed } = props.reduce(
             (acc: Record<string, any>, { name, value, type }) => {
                 acc[name] = value;
                 return acc;
@@ -109,6 +112,9 @@ async function loadWorld({
                     sortedTilesets,
                 );
 
+                const tileSetOffsetX = tileset.tileoffset?.x ?? 0;
+                const tileSetOffsetY = tileset.tileoffset?.y ?? 0;
+
                 // Get image for tileId
                 const { texture, imageheight, imagewidth } =
                     await getImageForTile(tileset.tiles, tileId - firstgid);
@@ -129,28 +135,35 @@ async function loadWorld({
                 worldMeshes[id] = mesh;
 
                 // Center of the bottom tile (imageheight a multiple of tileheight)
+                // const anchor = {
+                //     x: 0.5,
+                //     y: 1 - tileheight / imageheight / 2,
+                // };
+
                 const anchor = {
-                    x: 0.5,
-                    y: 1 - tileheight / imageheight / 2,
+                    x: 0,
+                    y: 0,
                 };
 
                 // Set initial position
                 const x =
-                    isoX +
-                    (offsetx ?? 0) +
-                    position.isoX +
-                    tileOffsetX -
+                    isoX + // layer position
+                    (offsetx ?? 0) + // layer offset
+                    position.isoX + // world  position
+                    tileMapOffsetX + // tilemap offset (when dimensions != grid dimensions)
+                    tileSetOffsetX - // tileset offset
                     anchor.x * imagewidth;
                 const y =
                     isoY +
                     (offsety ?? 0) +
                     position.isoY +
-                    tileOffsetY -
+                    tileMapOffsetY +
+                    tileSetOffsetY -
                     anchor.y * imageheight;
                 mesh.x = x;
                 mesh.y = y - position.elevation;
 
-                // Update depth
+                // Update depth (set as bottom of the image)
                 mesh.updateDepth(y + imageheight);
 
                 // Add to stage
