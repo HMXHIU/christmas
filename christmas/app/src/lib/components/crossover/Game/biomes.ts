@@ -3,10 +3,11 @@ import {
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
-} from "$lib/crossover/caches";
+} from "$lib/components/crossover/Game/caches";
 import {
     cartToIso,
     generateEvenlySpacedPoints,
+    gridCellToGeohash,
     seededRandom,
     stringToRandomNumber,
 } from "$lib/crossover/utils";
@@ -15,7 +16,6 @@ import {
     biomes,
     elevationAtGeohash,
 } from "$lib/crossover/world/biomes";
-import { gridCellToGeohash } from "$lib/crossover/world/utils";
 import { AsyncLock } from "$lib/utils";
 import type { Container, Texture } from "pixi.js";
 import {

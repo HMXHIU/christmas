@@ -7,7 +7,7 @@ import { filterSortEntitiesInRange, gameActionId, getEntityId } from "./utils";
 import { resolveAbilityEntities, type Ability } from "./world/abilities";
 import { resolveActionEntities, type Action } from "./world/actions";
 import type { Utility } from "./world/compendium";
-import { compendium } from "./world/compendium";
+import { compendium } from "./world/settings/compendium";
 
 export {
     COMMAND_SEARCH_RANGE,

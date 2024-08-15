@@ -3,7 +3,7 @@
     import Wallet from "$lib/components/common/Wallet.svelte";
     import { login, signup } from "$lib/crossover/client";
     import type { PlayerMetadata } from "$lib/crossover/world/player";
-    import { worldSeed } from "$lib/crossover/world/world";
+    import { worldSeed } from "$lib/crossover/world/settings/world";
     import type { Player } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
     import { onMount } from "svelte";

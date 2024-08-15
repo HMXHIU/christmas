@@ -14,27 +14,24 @@ import {
 } from "$lib/crossover/client";
 import { entityInRange, minifiedEntity } from "$lib/crossover/utils";
 import {
-    abilities,
     hasResourcesForAbility,
     patchEffectWithVariables,
 } from "$lib/crossover/world/abilities";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
 import {
-    compendium,
     type EquipmentSlot,
     type ItemVariables,
 } from "$lib/crossover/world/compendium";
-import {
-    archetypeTypes,
-    type PlayerMetadata,
-} from "$lib/crossover/world/player";
+import { archetypes, type PlayerMetadata } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { abilities } from "$lib/crossover/world/settings/abilities";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import { sanctuariesByRegion } from "$lib/crossover/world/world";
-import { hashObject } from "$lib/server";
 import {
     performAbility,
     performEffectOnEntity,
 } from "$lib/server/crossover/abilities";
+import { generateAvatarHash } from "$lib/server/crossover/player";
 import type {
     Item,
     ItemEntity,
@@ -93,10 +90,12 @@ export async function createRandomPlayer({
         name,
         description: "",
         avatar: "",
-        gender: "male",
-        race: "human",
-        archetype: "fighter",
-        attributes: archetypeTypes[0].attributes,
+        attributes: archetypes.fighter.attributes,
+        demographic: {
+            gender: "male",
+            race: "human",
+            archetype: "fighter",
+        },
         appearance: {
             hair: {
                 type: "afro",
@@ -113,12 +112,13 @@ export async function createRandomPlayer({
             age: "adult",
         },
     };
-    const avatarHash = hashObject({
-        gender: playerMetadata.gender,
-        race: playerMetadata.race,
-        archetype: playerMetadata.archetype,
+
+    const avatarHash = generateAvatarHash({
+        demographic: playerMetadata.demographic,
         appearance: playerMetadata.appearance,
+        textures: {},
     });
+
     const avatarFilename = `${avatarHash}-${generateRandomSeed()}.png`;
     playerMetadata.avatar = `https://example.com/avatar/${avatarFilename}`;
 

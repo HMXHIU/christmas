@@ -1,15 +1,11 @@
 import { autoCorrectGeohashPrecision, cartToIso } from "$lib/crossover/utils";
-import { geohashToGridCell } from "$lib/crossover/world/utils";
-import { worldSeed } from "$lib/crossover/world/world";
+import { worldSeed } from "$lib/crossover/world/settings/world";
 import type { World } from "$lib/server/crossover/redis/entities";
-import { Assets, Container, Sprite } from "pixi.js";
+import { Assets, Container } from "pixi.js";
 import { IsoMesh } from "../shaders/IsoMesh";
 import {
     calculatePosition,
-    CELL_HEIGHT,
-    CELL_WIDTH,
     getImageForTile,
-    getPlayerPosition,
     getTilesetForTile,
     ISO_CELL_HEIGHT,
     RENDER_ORDER,
@@ -26,37 +22,21 @@ async function drawWorlds(
     worldRecord: Record<string, Record<string, World>>,
     stage: Container,
 ) {
-    const playerPosition = getPlayerPosition();
-    if (playerPosition == null) {
-        return;
-    }
-
-    // Get all worlds in town
-    const town = playerPosition.geohash.slice(
-        0,
-        worldSeed.spatial.town.precision,
-    );
-    const worldsInTown = worldRecord[town];
-
-    // Town has no worlds
-    if (!worldsInTown) {
-        return;
-    }
-
-    // TODO: this is pretty inefficient we we need to keep loading everytime player moves
-
     // Load worlds
-    for (const w of Object.values(worldsInTown)) {
-        const origin = autoCorrectGeohashPrecision(
-            w.loc[0],
-            worldSeed.spatial.unit.precision,
-        );
-        await loadWorld({
-            world: w,
-            position: await calculatePosition(origin),
-            town,
-            stage,
-        });
+    for (const [town, worlds] of Object.entries(worldRecord)) {
+        for (const [worldId, world] of Object.entries(worlds)) {
+            // Origin is at top left
+            const origin = autoCorrectGeohashPrecision(
+                world.loc[0],
+                worldSeed.spatial.unit.precision,
+            );
+            await loadWorld({
+                world: world,
+                position: await calculatePosition(origin),
+                town,
+                stage,
+            });
+        }
     }
 }
 
@@ -71,6 +51,11 @@ async function loadWorld({
     position: Position;
     stage: Container;
 }) {
+    // Skip if alerady loaded
+    if (worldMeshes[world.world]) {
+        return;
+    }
+
     // await debugColliders(worldStage, $worldRecord);
 
     const tilemap = await Assets.load(world.url);
@@ -193,26 +178,27 @@ async function debugColliders(
             );
             const position = await calculatePosition(origin);
 
-            for (const cld of w.cld) {
-                const { row, col } = geohashToGridCell(cld);
+            // TODO: draw colliders using layer props
+            // for (const cld of w.cld) {
+            //     const { row, col } = geohashToGridCell(cld);
 
-                // Create sprite
-                const sprite = new Sprite(colliderTexture);
-                sprite.width = CELL_WIDTH;
-                sprite.height =
-                    (colliderTexture.height * sprite.width) /
-                    colliderTexture.width;
-                sprite.anchor.set(0.5, 1);
+            //     // Create sprite
+            //     const sprite = new Sprite(colliderTexture);
+            //     sprite.width = CELL_WIDTH;
+            //     sprite.height =
+            //         (colliderTexture.height * sprite.width) /
+            //         colliderTexture.width;
+            //     sprite.anchor.set(0.5, 1);
 
-                // Convert cartesian to isometric position
-                const [isoX, isoY] = cartToIso(
-                    col * CELL_WIDTH,
-                    row * CELL_HEIGHT,
-                );
-                sprite.x = isoX;
-                sprite.y = isoY - position.elevation;
-                stage.addChild(sprite);
-            }
+            //     // Convert cartesian to isometric position
+            //     const [isoX, isoY] = cartToIso(
+            //         col * CELL_WIDTH,
+            //         row * CELL_HEIGHT,
+            //     );
+            //     sprite.x = isoX;
+            //     sprite.y = isoY - position.elevation;
+            //     stage.addChild(sprite);
+            // }
         }
     }
 }

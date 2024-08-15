@@ -1,7 +1,7 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
 import { PlayerMetadataSchema } from "$lib/crossover/world/player";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
-import { worldSeed } from "$lib/crossover/world/world";
+import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     fetchEntity,
     initializeClients,
@@ -42,12 +42,7 @@ import {
     unequipItem,
     useItem,
 } from "./actions";
-import {
-    performMonsterActions,
-    spawnMonster,
-    spawnMonsters,
-    spawnWorld,
-} from "./dungeonMaster";
+import { spawnMonster, spawnMonsters, spawnWorld } from "./dungeonMaster";
 import { probeEquipment } from "./player";
 import { loggedInPlayersQuerySet } from "./redis";
 import type {
@@ -234,6 +229,7 @@ const crossoverRouter = {
     }),
     // World
     world: t.router({
+        // TODO: Move to dm
         respawnMonsters: internalServiceProcedure.mutation(async () => {
             const start = performance.now();
             // Get all logged in players
@@ -245,15 +241,7 @@ const crossoverRouter = {
             const end = performance.now();
             return { status: "success", time: end - start };
         }),
-        animateMonsters: internalServiceProcedure.mutation(async () => {
-            const start = performance.now();
-            // Get all logged in players
-            const players =
-                (await loggedInPlayersQuerySet().return.all()) as PlayerEntity[];
-            await performMonsterActions(players);
-            const end = performance.now();
-            return { status: "success", time: end - start };
-        }),
+        // TODO: Move to dm
         spawnMonster: internalServiceProcedure
             .input(SpawnMonsterSchema)
             .mutation(async ({ input }) => {

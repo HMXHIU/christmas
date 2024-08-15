@@ -270,8 +270,8 @@ def topology_at_geohash(geohash: str) -> float:
     width = metadata["width"]
     height = metadata["height"]
 
-    x_raw = (width - 1) * (col / cols)  # x, y is 0 indexed
-    y_raw = (height - 1) * (row / rows)
+    x_raw = (width - 1) * (col / (cols - 1))  # x, y is 0 indexed
+    y_raw = (height - 1) * (row / (rows - 1))
     x = math.floor(x_raw)  # must use floor not round!!!
     y = math.floor(y_raw)
     x_pixel = x_raw - math.floor(x_raw)

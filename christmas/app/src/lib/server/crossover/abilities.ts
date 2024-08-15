@@ -6,7 +6,6 @@ import {
     minifiedEntity,
 } from "$lib/crossover/utils";
 import {
-    abilities,
     hasResourcesForAbility,
     patchEffectWithVariables,
     type Abilities,
@@ -14,6 +13,7 @@ import {
 } from "$lib/crossover/world/abilities";
 import { playerAttributes } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { abilities } from "$lib/crossover/world/settings/abilities";
 import { entityActualAp } from "$lib/crossover/world/utils";
 import { sleep } from "$lib/utils";
 import { cloneDeep } from "lodash-es";

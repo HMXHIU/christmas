@@ -5,10 +5,11 @@ import {
 } from "$lib/crossover/utils";
 import type { Attributes } from "$lib/crossover/world/abilities";
 import { actions } from "$lib/crossover/world/actions";
-import { bestiary, monsterStats } from "$lib/crossover/world/bestiary";
-import { compendium } from "$lib/crossover/world/compendium";
+import { monsterStats } from "$lib/crossover/world/bestiary";
 import { playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { bestiary } from "$lib/crossover/world/settings/bestiary";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import type {
     Item,
     Monster,

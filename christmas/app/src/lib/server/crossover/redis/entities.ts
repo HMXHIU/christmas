@@ -197,19 +197,15 @@ type ItemEntity = Item & Entity;
 const WorldEntitySchema = new Schema("World", {
     world: { type: "string" },
     url: { type: "string" },
+    locT: { type: "string" },
     loc: { type: "string[]" }, // geohashes of plots (whole grids less than unit precision)
-    h: { type: "number" }, // height
-    w: { type: "number" }, // width
-    cld: { type: "string[]" }, // colliders
 });
 
 interface World {
     world: string;
     url: string;
-    h: number;
-    w: number;
     loc: string[];
-    cld: string[];
+    locT: LocationType;
 }
 
 type WorldEntity = World & Entity;

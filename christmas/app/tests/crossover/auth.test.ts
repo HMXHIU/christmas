@@ -5,12 +5,9 @@ import {
     logout as logoutCrossover,
     signup,
 } from "$lib/crossover/client";
-import {
-    archetypeTypes,
-    type PlayerMetadata,
-} from "$lib/crossover/world/player";
-import { worldSeed } from "$lib/crossover/world/world";
-import { hashObject } from "$lib/server";
+import { archetypes, type PlayerMetadata } from "$lib/crossover/world/player";
+import { worldSeed } from "$lib/crossover/world/settings/world";
+import { generateAvatarHash } from "$lib/server/crossover/player";
 import { ObjectStorage } from "$lib/server/objectStorage";
 import { generateRandomSeed } from "$lib/utils";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
@@ -30,10 +27,12 @@ test("Test Auth", async () => {
         name,
         description: "A powerful wizard",
         avatar: "",
-        gender: "male",
-        race: "human",
-        archetype: "fighter",
-        attributes: archetypeTypes[0].attributes,
+        demographic: {
+            gender: "male",
+            race: "human",
+            archetype: "fighter",
+        },
+        attributes: archetypes[0].attributes,
         appearance: {
             hair: {
                 type: "afro",
@@ -50,12 +49,13 @@ test("Test Auth", async () => {
             age: "adult",
         },
     };
-    const avatarHash = hashObject({
-        gender: playerMetadata.gender,
-        race: playerMetadata.race,
-        archetype: playerMetadata.archetype,
+
+    const avatarHash = generateAvatarHash({
+        demographic: playerMetadata.demographic,
         appearance: playerMetadata.appearance,
+        textures: {},
     });
+
     const avatarFilename = `${avatarHash}-${generateRandomSeed()}.png`;
     playerMetadata.avatar = `https://example.com/avatar/${avatarFilename}`;
     await ObjectStorage.putObject({

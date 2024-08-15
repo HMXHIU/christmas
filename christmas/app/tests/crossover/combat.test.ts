@@ -3,11 +3,11 @@ import {
     crossoverCmdTake,
     stream,
 } from "$lib/crossover/client";
-import { abilities } from "$lib/crossover/world/abilities";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
-import { compendium } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { abilities } from "$lib/crossover/world/settings/abilities";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import { sanctuariesByRegion } from "$lib/crossover/world/world";
 import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import {

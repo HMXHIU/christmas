@@ -7,8 +7,8 @@ import {
     crossoverPlayerInventory,
     stream,
 } from "$lib/crossover/client";
-import { compendium } from "$lib/crossover/world/compendium";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItem } from "$lib/server/crossover/dungeonMaster";
 import { fetchEntity, initializeClients } from "$lib/server/crossover/redis";
 import type {

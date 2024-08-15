@@ -1,14 +1,14 @@
+import { executeGameCommand } from "$lib/components/crossover/Game";
 import {
     crossoverCmdEquip,
     crossoverCmdTake,
-    executeGameCommand,
     stream,
 } from "$lib/crossover/client";
 import { searchPossibleCommands, type GameCommand } from "$lib/crossover/ir";
 import { geohashNeighbour } from "$lib/crossover/utils";
-import { abilities } from "$lib/crossover/world/abilities";
-import { compendium } from "$lib/crossover/world/compendium";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { abilities } from "$lib/crossover/world/settings/abilities";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import type {

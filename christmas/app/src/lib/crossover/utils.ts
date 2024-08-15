@@ -1,19 +1,19 @@
-import { type Direction } from "$lib/crossover/world/types";
+import { type Direction, type GridCell } from "$lib/crossover/world/types";
 import type {
     EntityType,
     Item,
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
+import { divmod } from "$lib/utils";
 import { pick } from "lodash-es";
 import ngeohash from "ngeohash";
 import type { GameAction } from "./ir";
 import { actions } from "./world/actions";
-import { bestiary } from "./world/bestiary";
-import { compendium } from "./world/compendium";
 import { MS_PER_TICK } from "./world/settings";
-import { geohashToGridCell } from "./world/utils";
-import { worldSeed } from "./world/world";
+import { bestiary } from "./world/settings/bestiary";
+import { compendium } from "./world/settings/compendium";
+import { worldSeed } from "./world/settings/world";
 
 export {
     aStarPathfinding,
@@ -34,10 +34,13 @@ export {
     geohashesNearby,
     geohashNeighbour,
     geohashToColRow,
+    geohashToGridCell,
     getEntityId,
     getGeohashesForPath,
     getPlotsAtGeohash,
     getPositionsForPath,
+    gridCellToGeohash,
+    gridSizeAtPrecision,
     inRange,
     isEntityInMotion,
     isoToCart,
@@ -48,7 +51,34 @@ export {
     stringToRandomNumber,
 };
 
+interface Node {
+    row: number;
+    col: number;
+    g: number;
+    h: number;
+    f: number;
+    parent: Node | null;
+}
+
 const REGEX_STRIP_ENTITY_TYPE = /^(monster_|item_)/;
+
+const gridSizeAtPrecision: Record<number, { rows: number; cols: number }> = {
+    1: { rows: 4, cols: 8 },
+    2: { rows: 4 * 8, cols: 8 * 4 },
+    3: { rows: 4 * 8 * 4, cols: 8 * 4 * 8 },
+    4: { rows: 4 * 8 * 4 * 8, cols: 8 * 4 * 8 * 4 },
+    5: { rows: 4 * 8 * 4 * 8 * 4, cols: 8 * 4 * 8 * 4 * 8 },
+    6: { rows: 4 * 8 * 4 * 8 * 4 * 8, cols: 8 * 4 * 8 * 4 * 8 * 4 },
+    7: { rows: 4 * 8 * 4 * 8 * 4 * 8 * 4, cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 },
+    8: {
+        rows: 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8,
+        cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4,
+    },
+    9: {
+        rows: 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4,
+        cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8,
+    },
+};
 
 const evenColRow: Record<string, [number, number]> = {
     b: [0, 0],
@@ -119,6 +149,14 @@ const oddColRow: Record<string, [number, number]> = {
     "8": [2, 7],
     b: [3, 7],
 };
+
+const invertedEvenColRow: Record<string, string> = Object.fromEntries(
+    Object.entries(evenColRow).map(([char, [x, y]]) => [`${x},${y}`, char]),
+);
+
+const invertedOddColRow: Record<string, string> = Object.fromEntries(
+    Object.entries(oddColRow).map(([char, [x, y]]) => [`${x},${y}`, char]),
+);
 
 /**
  * Converts a string (seed) to a random number.
@@ -271,7 +309,7 @@ function geohashNeighbour(
 }
 
 /**
- * Expands an array of geohashes to include parent geoahses up to a certain precision.
+ * Expands an array of geohashes to include parent geohashes up to a certain precision.
  *
  * @param geohashes - The array of geohashes to expand.
  * @param precision - The precision to expand the geohashes to.
@@ -631,13 +669,68 @@ function geohashToColRow(geohash: string): [number, number] {
     }
 }
 
-interface Node {
-    row: number;
+/**
+ * Gets the grid cell coordinates for a given geohash.
+ *
+ * @param geohash - The geohash string.
+ * @returns An object with the precision, row and column for the geohash in the grid.
+ */
+function geohashToGridCell(geohash: string): GridCell {
+    const precision = geohash.length;
+    const [col, row] = geohashToColRow(geohash);
+    return { precision, row, col, geohash };
+}
+
+/**
+ * Converts a grid cell to a geohash string.
+ *
+ * @param precision - The precision level of the geohash.
+ * @param row - The row index of the grid cell.
+ * @param col - The column index of the grid cell.
+ * @returns The geohash string representing the grid cell.
+ */
+function gridCellToGeohash({
+    col,
+    row,
+    precision,
+}: {
     col: number;
-    g: number;
-    h: number;
-    f: number;
-    parent: Node | null;
+    row: number;
+    precision: number;
+}): string {
+    const geohashStr: string[] = [];
+    for (let i = precision - 1; i >= 0; i--) {
+        let char: string;
+        if (i % 2 === 0) {
+            // Even precision levels use evenColRow
+            const [subCol, remainderCol] = divmod(col, 8);
+            const [subRow, remainderRow] = divmod(row, 4);
+            char = invertedEvenColRow[`${remainderCol},${remainderRow}`];
+            if (char === undefined) {
+                throw new Error(
+                    `Invalid coordinate for even level: ${remainderCol},${remainderRow}`,
+                );
+            }
+            col = subCol;
+            row = subRow;
+        } else {
+            // Odd precision levels use oddColRow
+            const [subCol, remainderCol] = divmod(col, 4);
+            const [subRow, remainderRow] = divmod(row, 8);
+            char = invertedOddColRow[`${remainderCol},${remainderRow}`];
+            if (char === undefined) {
+                throw new Error(
+                    `Invalid coordinate for odd level: ${remainderCol},${remainderRow}`,
+                );
+            }
+            col = subCol;
+            row = subRow;
+        }
+
+        geohashStr.push(char);
+    }
+
+    return geohashStr.reverse().join("");
 }
 
 /**

@@ -1,7 +1,7 @@
 import { searchPossibleCommands } from "$lib/crossover/ir";
-import { abilities } from "$lib/crossover/world/abilities";
 import { actions } from "$lib/crossover/world/actions";
-import { compendium } from "$lib/crossover/world/compendium";
+import { abilities } from "$lib/crossover/world/settings/abilities";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients, saveEntity } from "$lib/server/crossover/redis";
 import type {

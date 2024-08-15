@@ -1,5 +1,5 @@
 import { minifiedEntity } from "$lib/crossover/utils";
-import { compendium } from "$lib/crossover/world/compendium";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import { createItem, equipItem, takeItem } from "$lib/server/crossover/actions";
 import { probeEquipment } from "$lib/server/crossover/player";
 import { initializeClients } from "$lib/server/crossover/redis";

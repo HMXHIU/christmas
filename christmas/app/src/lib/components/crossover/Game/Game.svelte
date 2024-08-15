@@ -7,7 +7,8 @@
         type Ability,
     } from "$lib/crossover/world/abilities";
     import { actions, type Action } from "$lib/crossover/world/actions";
-    import { compendium, type Utility } from "$lib/crossover/world/compendium";
+    import { type Utility } from "$lib/crossover/world/compendium";
+    import { compendium } from "$lib/crossover/world/settings/compendium";
     import { cn } from "$lib/shadcn";
     import { gsap } from "gsap";
     import {

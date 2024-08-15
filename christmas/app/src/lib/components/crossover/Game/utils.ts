@@ -3,10 +3,13 @@ import {
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
-} from "$lib/crossover/caches";
+    worldAssetMetadataCache,
+    worldTraversableCellsCache,
+} from "$lib/components/crossover/Game/caches";
 import {
     aStarPathfinding,
     cartToIso,
+    geohashToGridCell,
     isoToCart,
     seededRandom,
 } from "$lib/crossover/utils";
@@ -15,7 +18,8 @@ import type { Action } from "$lib/crossover/world/actions";
 import { avatarMorphologies } from "$lib/crossover/world/bestiary";
 import { elevationAtGeohash } from "$lib/crossover/world/biomes";
 import type { AssetMetadata, Direction } from "$lib/crossover/world/types";
-import { geohashToGridCell } from "$lib/crossover/world/utils";
+import { isGeohashTraversable } from "$lib/crossover/world/utils";
+import type { World } from "$lib/server/crossover/redis/entities";
 import { gsap } from "gsap";
 import { PixiPlugin } from "gsap/PixiPlugin";
 import * as PIXI from "pixi.js";
@@ -29,7 +33,7 @@ import {
     type Texture,
 } from "pixi.js";
 import { get } from "svelte/store";
-import { player } from "../../../../store";
+import { itemRecord, player, worldRecord } from "../../../../store";
 import type { AnimationMetadata, AvatarMetadata } from "../avatar/types";
 import { entityContainers } from "./entities";
 
@@ -56,6 +60,7 @@ export {
     HALF_ISO_CELL_WIDTH,
     initAssetManager,
     isCellInView,
+    isGeohashTraversableClient,
     ISO_CELL_HEIGHT,
     ISO_CELL_WIDTH,
     loadAssetTexture,
@@ -452,4 +457,34 @@ async function getAvatarMetadata(
             animation,
         };
     }
+}
+
+async function hasColliders(geohash: string): Promise<boolean> {
+    for (const item of Object.values(get(itemRecord))) {
+        if (item.locT === "geohash" && item.loc.includes(geohash)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+async function getWorldForGeohash(geohash: string): Promise<World | undefined> {
+    for (const worlds of Object.values(get(worldRecord))) {
+        for (const world of Object.values(worlds)) {
+            if (geohash.startsWith(world.loc[0])) {
+                return world;
+            }
+        }
+    }
+    return undefined;
+}
+
+async function isGeohashTraversableClient(geohash: string): Promise<boolean> {
+    return isGeohashTraversable(geohash, hasColliders, getWorldForGeohash, {
+        topologyResponseCache,
+        topologyResultCache,
+        topologyBufferCache,
+        worldAssetMetadataCache,
+        worldTraversableCellsCache,
+    });
 }

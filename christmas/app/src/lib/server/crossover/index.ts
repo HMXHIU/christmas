@@ -1,10 +1,11 @@
 import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
-import { abilities } from "$lib/crossover/world/abilities";
 import { actions, type Actions } from "$lib/crossover/world/actions";
 import { monsterLUReward, monsterStats } from "$lib/crossover/world/bestiary";
 import { playerAttributes, playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
-import { sanctuariesByRegion, worldSeed } from "$lib/crossover/world/world";
+import { abilities } from "$lib/crossover/world/settings/abilities";
+import { worldSeed } from "$lib/crossover/world/settings/world";
+import { sanctuariesByRegion } from "$lib/crossover/world/world";
 import { z } from "zod";
 import { fetchEntity, saveEntity } from "./redis";
 import {

@@ -3,7 +3,7 @@
         topologyBufferCache,
         topologyResponseCache,
         topologyResultCache,
-    } from "$lib/crossover/caches";
+    } from "$lib/components/crossover/Game/caches";
     import { biomeAtGeohash, tileAtGeohash } from "$lib/crossover/world/biomes";
     import type { Tile } from "$lib/crossover/world/types";
     import { onMount } from "svelte";

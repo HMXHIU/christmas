@@ -5,11 +5,12 @@ import {
     crossoverCmdSay,
 } from "$lib/crossover/client";
 import { minifiedEntity } from "$lib/crossover/utils";
-import { abilities } from "$lib/crossover/world/abilities";
-import { compendium, itemAttibutes } from "$lib/crossover/world/compendium";
+import { itemAttibutes } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
-import { worldSeed } from "$lib/crossover/world/world";
+import { abilities } from "$lib/crossover/world/settings/abilities";
+import { compendium } from "$lib/crossover/world/settings/compendium";
+import { worldSeed } from "$lib/crossover/world/settings/world";
 import { configureItem } from "$lib/server/crossover/actions";
 import { spawnItem } from "$lib/server/crossover/dungeonMaster";
 import {

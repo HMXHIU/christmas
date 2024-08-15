@@ -7,10 +7,10 @@ import {
     isEntityInMotion,
 } from "$lib/crossover/utils";
 import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
-import { compendium } from "$lib/crossover/world/compendium";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { Direction } from "$lib/crossover/world/types";
-import { movePlayer } from "$lib/server/crossover/actions";
+import { moveEntity } from "$lib/server/crossover/actions";
 import { spawnItem } from "$lib/server/crossover/dungeonMaster";
 import {
     fetchEntity,
@@ -233,13 +233,16 @@ describe("Movement Tests", () => {
         });
     });
 
-    test("Test `movePlayer`", async () => {
+    test("Test `moveEntity`", async () => {
         const playerOneGeohash = playerOne.loc[0];
         const path: Direction[] = ["s", "s", "s", "s"];
         const finalGeohash = geohashNeighbour(playerOneGeohash, "s", 4);
 
         await flushEventChannel(playerOneStream, "entities");
-        playerOne = await movePlayer(playerOne as PlayerEntity, path);
+        playerOne = (await moveEntity(
+            playerOne as PlayerEntity,
+            path,
+        )) as PlayerEntity;
 
         // Check in motion
         expect(isEntityInMotion(playerOne)).equal(true);

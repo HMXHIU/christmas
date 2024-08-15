@@ -6,11 +6,9 @@ import {
     minifiedEntity,
 } from "$lib/crossover/utils";
 import { actions } from "$lib/crossover/world/actions";
-import {
-    compendium,
-    type EquipmentSlot,
-} from "$lib/crossover/world/compendium";
+import { type EquipmentSlot } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { Direction } from "$lib/crossover/world/types";
 import { cloneDeep } from "lodash-es";
 import { setEntityBusy } from ".";

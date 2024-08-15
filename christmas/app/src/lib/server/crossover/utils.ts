@@ -1,15 +1,17 @@
 import { geohashNeighbour } from "$lib/crossover/utils";
-import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
 import {
-    compendium,
     type EquipmentSlot,
     type ItemVariables,
 } from "$lib/crossover/world/compendium";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { Direction } from "$lib/crossover/world/types";
+import { isGeohashTraversable } from "$lib/crossover/world/utils";
 import {
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
+    worldAssetMetadataCache,
+    worldTraversableCellsCache,
 } from "$lib/server/crossover/caches";
 import { parseZodErrors } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
@@ -25,11 +27,11 @@ import type {
 import { ObjectStorage } from "../objectStorage";
 import {
     hasCollidersInGeohash,
-    isGeohashInWorld,
     itemRepository,
     monsterRepository,
     playerRepository,
     redisClient,
+    worldsContainingGeohashQuerySet,
 } from "./redis";
 import type {
     Item,
@@ -38,6 +40,7 @@ import type {
     MonsterEntity,
     Player,
     PlayerEntity,
+    WorldEntity,
 } from "./redis/entities";
 import type { UserMetadataSchema } from "./router";
 
@@ -50,7 +53,7 @@ export {
     hasItemConfigOwnerPermissions,
     hasItemOwnerPermissions,
     isDirectionTraversable,
-    isGeohashTraversable,
+    isGeohashTraversableServer,
     isLocationTraversable,
     itemVariableValue,
     parseItemVariables,
@@ -139,28 +142,32 @@ function entityIsBusy(entity: Player | Monster): [boolean, number] {
     return [false, now];
 }
 
-async function isGeohashTraversable(geohash: string): Promise<boolean> {
-    const inWorld = await isGeohashInWorld(geohash);
-    const [biome, strength] = await biomeAtGeohash(geohash, {
-        topologyResultCache,
-        topologyBufferCache,
-        topologyResponseCache,
-    });
+async function getWorldAtGeohash(
+    geohash: string,
+): Promise<WorldEntity | undefined> {
+    return (await worldsContainingGeohashQuerySet([geohash]).first()) as
+        | WorldEntity
+        | undefined;
+}
 
-    // Check if biome is traversable (ignore if user is in a world)
-    if (!inWorld && biomes[biome].traversableSpeed <= 0) {
-        return false;
-    }
-    // Get colliders in geohash
-    if (await hasCollidersInGeohash(geohash)) {
-        return false;
-    }
-    return true;
+async function isGeohashTraversableServer(geohash: string): Promise<boolean> {
+    return await isGeohashTraversable(
+        geohash,
+        hasCollidersInGeohash,
+        getWorldAtGeohash,
+        {
+            topologyResultCache,
+            topologyBufferCache,
+            topologyResponseCache,
+            worldTraversableCellsCache,
+            worldAssetMetadataCache,
+        },
+    );
 }
 
 async function isLocationTraversable(location: string[]): Promise<boolean> {
     for (const geohash of location) {
-        if (!(await isGeohashTraversable(geohash))) {
+        if (!(await isGeohashTraversableServer(geohash))) {
             return false;
         }
     }
@@ -184,7 +191,7 @@ async function isDirectionTraversable(
         }
 
         // Check if geohash is traversable
-        if (!(await isGeohashTraversable(nextGeohash))) {
+        if (!(await isGeohashTraversableServer(nextGeohash))) {
             return [false, loc]; // early return if not traversable
         } else {
             location.push(nextGeohash);

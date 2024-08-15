@@ -7,19 +7,12 @@ import {
     getPlotsAtGeohash,
 } from "$lib/crossover/utils";
 import {
-    abilities,
-    hasResourcesForAbility,
-} from "$lib/crossover/world/abilities";
-import {
-    bestiary,
     monsterLimitAtGeohash,
     monsterStats,
-    type Beast,
 } from "$lib/crossover/world/bestiary";
-import { compendium } from "$lib/crossover/world/compendium";
-import type { WorldAssetMetadata } from "$lib/crossover/world/types";
-import { worldSeed } from "$lib/crossover/world/world";
-import { performAbility } from "./abilities";
+import { bestiary } from "$lib/crossover/world/settings/bestiary";
+import { compendium } from "$lib/crossover/world/settings/compendium";
+import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     itemRepository,
     monsterRepository,
@@ -34,129 +27,7 @@ import type {
 } from "./redis/entities";
 import { isLocationTraversable, parseItemVariables } from "./utils";
 
-export {
-    dungeonMaster,
-    performMonsterActions,
-    selectMonsterAbility,
-    spawnItem,
-    spawnMonster,
-    spawnMonsters,
-    spawnWorld,
-};
-
-const dungeonMaster = `dungeonMaster_benjamin`; // used as owner for items, etc owned by the game
-
-/**
- * Selects the best ability for a monster to use against a player.
- * @param monster - The monster entity.
- * @param player - The player entity.
- * @returns The selected ability as a string, or null if no ability is selected.
- */
-function selectMonsterAbility(
-    monster: MonsterEntity,
-    player: PlayerEntity, // TODO: add more intelligence based on player stats
-): string | null {
-    const beast: Beast = bestiary[monster.beast];
-
-    // TODO: cache this using lru-cache
-    const { hp: maxHp } = monsterStats({
-        level: monster.lvl,
-        beast: monster.beast,
-    });
-
-    const { offensive, defensive, neutral, healing } = beast.abilities;
-
-    // Use the highest ap healing ability if monster's hp is less than half
-    if (healing.length > 0 && monster.hp < maxHp / 2) {
-        const healingAbilities = healing
-            .sort((a, b) => {
-                return abilities[b].ap - abilities[a].ap;
-            })
-            .filter((ability) => {
-                return hasResourcesForAbility(monster, ability).hasResources;
-            });
-        if (healingAbilities.length > 0) {
-            return healingAbilities[0];
-        }
-    }
-
-    // Use the highest ap offensive ability
-    if (offensive.length > 0) {
-        const offensiveAbilities = offensive
-            .sort((a, b) => {
-                return abilities[b].ap - abilities[a].ap;
-            })
-            .filter((ability) => {
-                return hasResourcesForAbility(monster, ability).hasResources;
-            });
-        if (offensiveAbilities.length > 0) {
-            return offensiveAbilities[0];
-        }
-    }
-
-    // Use the highest ap defensive ability
-    if (defensive.length > 0) {
-        const defensiveAbilities = defensive
-            .sort((a, b) => {
-                return abilities[b].ap - abilities[a].ap;
-            })
-            .filter((ability) => {
-                return hasResourcesForAbility(monster, ability).hasResources;
-            });
-        if (defensiveAbilities.length > 0) {
-            return defensiveAbilities[0];
-        }
-    }
-
-    // Use the highest ap neutral ability
-    if (neutral.length > 0) {
-        const neutralAbilities = neutral
-            .sort((a, b) => {
-                return abilities[b].ap - abilities[a].ap;
-            })
-            .filter((ability) => {
-                return hasResourcesForAbility(monster, ability).hasResources;
-            });
-        if (neutralAbilities.length > 0) {
-            return neutralAbilities[0];
-        }
-    }
-
-    // Do nothing
-    return null;
-}
-
-/**
- * Performs monster actions on players.
- *
- * @param players - An array of PlayerEntity objects representing the players.
- * @param monsters - An optional array of MonsterEntity objects representing the monsters. If not provided, monsters will be fetched based on the player's geohash.
- */
-async function performMonsterActions(
-    players: PlayerEntity[],
-    monsters?: MonsterEntity[],
-) {
-    for (const player of players) {
-        // Get monsters in player's geohash
-        const monstersNearPlayer =
-            monsters ||
-            ((await monstersInGeohashQuerySet([
-                player.loc[0],
-            ]).return.all()) as MonsterEntity[]);
-
-        // Perform monster actions
-        for (const monster of monstersNearPlayer) {
-            const ability = selectMonsterAbility(monster, player);
-            if (ability != null) {
-                await performAbility({
-                    self: monster,
-                    target: player.player,
-                    ability,
-                });
-            }
-        }
-    }
-}
+export { spawnItem, spawnMonster, spawnMonsters, spawnWorld };
 
 /**
  * Spawns monsters in the game world based on the given players' locations.
@@ -291,7 +162,6 @@ async function spawnMonster({
  *
  * @param geohash - The geohash of the world asset.
  * @param assetUrl - The URL of the asset (required to be rendered).
- * @param asset - The world asset object.
  * @param tileHeight - The height of a tile in game (asset tileheight might be different).
  * @param tileWidth - The width of a tile in game (asset tilewidth might be different).
  * @returns A promise that resolves to a WorldEntity.
@@ -299,21 +169,14 @@ async function spawnMonster({
 async function spawnWorld({
     geohash,
     assetUrl,
-    asset,
     tileHeight,
     tileWidth,
 }: {
     geohash: string;
-    assetUrl?: string;
-    asset?: WorldAssetMetadata;
+    assetUrl: string;
     tileHeight: number;
     tileWidth: number;
 }): Promise<WorldEntity> {
-    // Check asset or assetUrl
-    if (!asset && !assetUrl) {
-        throw new Error("asset or assetUrl must be provided");
-    }
-
     // Auto correct geohash to unit precision
     if (geohash.length !== worldSeed.spatial.unit.precision) {
         geohash = autoCorrectGeohashPrecision(
@@ -322,11 +185,11 @@ async function spawnWorld({
         );
     }
 
-    // Get the origin cell of the plot
+    // Get the origin cell of the plot (top left)
     geohash = childrenGeohashes(geohash.slice(0, -1))[0];
 
     // Get asset from URL or if provided
-    asset ??= await (await fetch(assetUrl!)).json();
+    const asset = await (await fetch(assetUrl)).json();
     const {
         height,
         width,
@@ -354,7 +217,7 @@ async function spawnWorld({
         width * widthMultiplier,
     );
 
-    // Get colliders
+    // Get colliders (TODO: DEPRECATE)
     let colliders = [];
     for (const { data, properties, width, height } of layers) {
         if (properties == null) {
@@ -412,9 +275,7 @@ async function spawnWorld({
         world,
         url: assetUrl || "",
         loc: plotGeohashes, // TODO: this can be optimized not just at unit precision -1
-        h: height,
-        w: width,
-        cld: colliders,
+        locT: "geohash",
     };
 
     return (await worldRepository.save(world, entity)) as WorldEntity;

@@ -1,78 +1,17 @@
-import sanctuaries from "./sanctuaries.json";
+import type { CacheInterface } from "$lib/caches";
+import type { World } from "$lib/server/crossover/redis/entities";
+import { autoCorrectGeohashPrecision, geohashToColRow } from "../utils";
+import { TILE_HEIGHT, TILE_WIDTH } from "./settings";
+import sanctuaries from "./settings/sanctuaries.json";
+import { worldSeed } from "./settings/world";
+import type { WorldAssetMetadata } from "./types";
 
-export { sanctuariesByRegion, worldSeed, type Sanctuary, type WorldSeed };
-
-/**
- * `worldSeed` is a template used to generate a `World` instance.
- */
-const worldSeed: WorldSeed = {
-    name: "yggdrasil 01",
-    description: "The beginning",
-    spatial: {
-        continent: {
-            precision: 1, // geohash precision
-        },
-        territory: {
-            precision: 2,
-        },
-        guild: {
-            precision: 3,
-        },
-        city: {
-            precision: 4,
-        },
-        town: {
-            precision: 5,
-        },
-        village: {
-            precision: 6,
-        },
-        house: {
-            precision: 7,
-        },
-        unit: {
-            precision: 8,
-        },
-    },
-    constants: {
-        maxMonstersPerContinent: 10000000000, // 10 billion
-    },
-    seeds: {
-        continent: {
-            b: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            c: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            f: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            g: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            u: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            v: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            y: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            z: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "8": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "9": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            d: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            e: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            s: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            t: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            w: { bio: 0.5, hostile: 0.2, water: 0.0 }, // no water for testing
-            x: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "2": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "3": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "6": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "7": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            k: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            m: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            q: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            r: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "0": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "1": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "4": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            "5": { bio: 0.5, hostile: 0.2, water: 0.1 },
-            h: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            j: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            n: { bio: 0.5, hostile: 0.2, water: 0.1 },
-            p: { bio: 0.5, hostile: 0.2, water: 0.1 },
-        },
-    },
+export {
+    sanctuariesByRegion,
+    traversableCellsInWorld,
+    traversableSpeedInWorld,
+    type Sanctuary,
+    type WorldSeed,
 };
 
 interface Sanctuary {
@@ -132,3 +71,130 @@ const sanctuariesByRegion = sanctuaries.reduce(
     },
     {},
 );
+
+async function fetchWorldMetadata(
+    world: World,
+    metadataCache?: CacheInterface,
+): Promise<WorldAssetMetadata> {
+    const cachedResult = await metadataCache?.get(world.url);
+    if (cachedResult) {
+        return cachedResult;
+    }
+    const metadata = await (await fetch(world.url)).json();
+    if (metadataCache) {
+        await metadataCache.set(world.url, metadata);
+    }
+    return metadata;
+}
+
+async function traversableSpeedInWorld({
+    world,
+    geohash,
+    cellHeight,
+    cellWidth,
+    metadataCache,
+    resultsCache,
+}: {
+    world: World;
+    geohash: string;
+    cellHeight?: number;
+    cellWidth?: number;
+    metadataCache?: CacheInterface;
+    resultsCache?: CacheInterface;
+}): Promise<number | undefined> {
+    const traversableCells = await traversableCellsInWorld({
+        world,
+        cellHeight: cellHeight ?? TILE_HEIGHT,
+        cellWidth: cellWidth ?? TILE_WIDTH,
+        metadataCache,
+        resultsCache,
+    });
+
+    // Top left of world
+    const worldOrigin = autoCorrectGeohashPrecision(
+        world.loc[0],
+        worldSeed.spatial.unit.precision,
+    );
+    const [worldOriginCol, worldOriginRow] = geohashToColRow(worldOrigin);
+    const [col, row] = geohashToColRow(geohash);
+
+    return traversableCells[`${col - worldOriginCol},${row - worldOriginRow}`];
+}
+
+async function traversableCellsInWorld({
+    world,
+    cellWidth,
+    cellHeight,
+    metadataCache,
+    resultsCache,
+}: {
+    world: World;
+    cellWidth: number;
+    cellHeight: number;
+    metadataCache?: CacheInterface;
+    resultsCache?: CacheInterface;
+}): Promise<Record<string, number>> {
+    const cachedResult = await resultsCache?.get(world.url);
+    if (cachedResult) {
+        return cachedResult;
+    }
+    const asset = await fetchWorldMetadata(world, metadataCache);
+
+    const { layers, tileheight, tilewidth } = asset!;
+    const heightMultiplier = tileheight / cellHeight;
+    const widthMultiplier = tilewidth / cellWidth;
+
+    let traversableCells: Record<string, number> = {};
+    for (const { data, properties, width, height } of layers) {
+        if (properties == null) {
+            continue;
+        }
+        for (const { name, value } of properties) {
+            if (name === "traversableSpeed") {
+                // Outer row
+                let outerRow = { row: 0, col: 0 };
+                for (let i = 0; i < height; i++) {
+                    // Outer col
+                    let outerCol = outerRow;
+                    for (let j = 0; j < width; j++) {
+                        if (data[i * width + j] !== 0) {
+                            // Inner row
+                            let innerRow = outerCol;
+                            for (let m = 0; m < heightMultiplier; m++) {
+                                // Inner col
+                                let innerCol = innerRow;
+                                for (let n = 0; n < widthMultiplier; n++) {
+                                    traversableCells[
+                                        `${innerCol.col},${innerCol.row}`
+                                    ] = value;
+                                    innerCol = {
+                                        row: innerCol.row,
+                                        col: innerCol.col + 1,
+                                    };
+                                }
+                                innerRow = {
+                                    row: innerRow.row + 1,
+                                    col: innerRow.col,
+                                };
+                            }
+                        }
+                        outerCol = {
+                            row: outerCol.row,
+                            col: outerCol.col + widthMultiplier,
+                        };
+                    }
+                    outerRow = {
+                        row: outerRow.row + heightMultiplier,
+                        col: outerRow.col,
+                    };
+                }
+            }
+        }
+    }
+
+    if (resultsCache) {
+        resultsCache.set(world.url, traversableCells);
+    }
+
+    return traversableCells;
+}

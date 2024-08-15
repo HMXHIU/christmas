@@ -5,7 +5,6 @@
     import * as Dialog from "$lib/components/ui/dialog";
     import { Label } from "$lib/components/ui/label/index.js";
     import {
-        abilities,
         type Abilities,
         type Ability,
     } from "$lib/crossover/world/abilities";
@@ -23,6 +22,7 @@
         Zap,
     } from "lucide-svelte";
 
+    import { abilities } from "$lib/crossover/world/settings/abilities";
     import { playerAbilities } from "../../../store";
 
     let isDialogOpen = false;

@@ -18,6 +18,7 @@ export {
     cleanString,
     confirmTransaction,
     connection,
+    divmod,
     extractQueryParams,
     generateRandomSeed,
     generateURL,
@@ -376,4 +377,8 @@ class AsyncLock {
             this.release();
         }
     }
+}
+
+function divmod(n: number, d: number): [number, number] {
+    return [Math.floor(n / d), n % d];
 }

@@ -30,15 +30,15 @@ import {
 import type { Ability } from "$lib/crossover/world/abilities";
 import { actions, type Action } from "$lib/crossover/world/actions";
 import {
-    compendium,
     EquipmentSlots,
     type EquipmentSlot,
     type Utility,
 } from "$lib/crossover/world/compendium";
 import { playerAttributes } from "$lib/crossover/world/player";
 import { MS_PER_TICK, SERVER_LATENCY } from "$lib/crossover/world/settings";
+import { compendium } from "$lib/crossover/world/settings/compendium";
+import { worldSeed } from "$lib/crossover/world/settings/world";
 import { Directions, type Direction } from "$lib/crossover/world/types";
-import { worldSeed } from "$lib/crossover/world/world";
 import type {
     Item,
     Monster,
@@ -105,6 +105,8 @@ async function updateWorlds(geohash: string) {
         }
         return wr;
     });
+
+    console.log(get(worldRecord));
 }
 
 /**

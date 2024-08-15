@@ -1,26 +1,12 @@
 import { geohashNeighbour } from "$lib/crossover/utils";
-import { abilities } from "$lib/crossover/world/abilities";
 import { monsterLUReward, monsterStats } from "$lib/crossover/world/bestiary";
-import { compendium } from "$lib/crossover/world/compendium";
-import {
-    performMonsterActions,
-    selectMonsterAbility,
-    spawnItem,
-    spawnMonster,
-} from "$lib/server/crossover/dungeonMaster";
-import {
-    initializeClients,
-    monsterRepository,
-    playerRepository,
-} from "$lib/server/crossover/redis";
-import type {
-    ItemEntity,
-    MonsterEntity,
-    PlayerEntity,
-} from "$lib/server/crossover/redis/entities";
+import { compendium } from "$lib/crossover/world/settings/compendium";
+import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
+import { initializeClients } from "$lib/server/crossover/redis";
+import type { ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
-import { buffEntity, createRandomPlayer, generateRandomGeohash } from "./utils";
+import { createRandomPlayer, generateRandomGeohash } from "./utils";
 
 test("Test Monster", async () => {
     await initializeClients(); // create redis repositories
@@ -110,52 +96,6 @@ test("Test Monster", async () => {
             level: 1,
         }),
     ).rejects.toThrow(`Cannot spawn goblin at ${woodendoorGeohash}`);
-
-    /*
-     * Test `selectMonsterAbility`
-     */
-
-    // Test monster ability selection (offensive)
-    const ability = selectMonsterAbility(goblin, playerOne as PlayerEntity);
-    expect(ability).toBe(abilities.scratch.ability);
-
-    // Test monster ability selection (healing)
-    goblin.hp = goblin.hp / 2 - 1;
-    const healingAbility = selectMonsterAbility(
-        goblin,
-        playerOne as PlayerEntity,
-    );
-    expect(healingAbility).toBe(abilities.bandage.ability);
-
-    // Test do nothing when not enough ap
-    goblin.ap = 0;
-    const noAbility = selectMonsterAbility(goblin, playerOne as PlayerEntity);
-    expect(noAbility).toBe(null);
-
-    /*
-     * Test `performMonsterActions`
-     */
-
-    // Reset `playerOne`, `goblin` stats
-    goblin = (await buffEntity(goblin.monster, {
-        level: goblin.lvl,
-    })) as MonsterEntity;
-    playerOne = (await buffEntity(playerOne.player, {
-        level: playerOne.lvl,
-    })) as PlayerEntity;
-
-    // Test monster attacking player
-    var hp = playerOne.hp;
-    var ap = goblin.ap;
-    await performMonsterActions([playerOne as PlayerEntity], [goblin]);
-
-    playerOne = (await playerRepository.fetch(
-        playerOne.player,
-    )) as PlayerEntity;
-    goblin = (await monsterRepository.fetch(goblin.monster)) as MonsterEntity;
-
-    expect(playerOne.hp).toBe(hp - 1); // test player hp reduced by scatch damage
-    expect(goblin.ap).toBe(ap - abilities.scratch.ap); // test monster ap reduced by scratch ap
 });
 
 test("Test Monster Stats", () => {

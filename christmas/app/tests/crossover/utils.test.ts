@@ -4,8 +4,8 @@ import {
     filterSortEntitiesInRange,
     geohashNeighbour,
     geohashToColRow,
+    geohashToGridCell,
 } from "$lib/crossover/utils";
-import { geohashToGridCell } from "$lib/crossover/world/utils";
 import { spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { expect, test } from "vitest";

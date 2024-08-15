@@ -1,89 +1,18 @@
+import type { CacheInterface } from "$lib/caches";
 import type {
     EntityStats,
     Monster,
     Player,
+    World,
 } from "$lib/server/crossover/redis/entities";
-import ngeohash from "ngeohash";
 import type { Attributes } from "./abilities";
 import { monsterStats } from "./bestiary";
+import { biomeAtGeohash, biomes } from "./biomes";
 import { playerStats } from "./player";
 import { MS_PER_TICK } from "./settings";
-import type { GridCell } from "./types";
+import { traversableSpeedInWorld } from "./world";
 
-export {
-    entityActualAp,
-    entityStats,
-    geohashToGridCell,
-    gridCellToGeohash,
-    gridSizeAtPrecision,
-    recoverAp,
-};
-
-const gridSizeAtPrecision: Record<number, { rows: number; cols: number }> = {
-    1: { rows: 4, cols: 8 },
-    2: { rows: 4 * 8, cols: 8 * 4 },
-    3: { rows: 4 * 8 * 4, cols: 8 * 4 * 8 },
-    4: { rows: 4 * 8 * 4 * 8, cols: 8 * 4 * 8 * 4 },
-    5: { rows: 4 * 8 * 4 * 8 * 4, cols: 8 * 4 * 8 * 4 * 8 },
-    6: { rows: 4 * 8 * 4 * 8 * 4 * 8, cols: 8 * 4 * 8 * 4 * 8 * 4 },
-    7: { rows: 4 * 8 * 4 * 8 * 4 * 8 * 4, cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 },
-    8: {
-        rows: 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8,
-        cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4,
-    },
-    9: {
-        rows: 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4,
-        cols: 8 * 4 * 8 * 4 * 8 * 4 * 8 * 4 * 8,
-    },
-};
-
-/**
- * Gets the grid cell coordinates for a given geohash.
- *
- * TODO: This is repeated for geohashToColRow?
- *
- * @param geohash - The geohash string.
- * @returns An object with the precision, row and column for the geohash in the grid.
- */
-function geohashToGridCell(geohash: string): GridCell {
-    const precision = geohash.length;
-    const { latitude, longitude } = ngeohash.decode(geohash);
-
-    // -latitude because we want top left to be (0, 0)
-    const row = Math.floor(
-        ((-latitude + 90) / 180) * gridSizeAtPrecision[precision].rows,
-    );
-    const col = Math.floor(
-        ((longitude + 180) / 360) * gridSizeAtPrecision[precision].cols,
-    );
-
-    return { precision, row, col, geohash };
-}
-
-/**
- * Converts a grid cell to a geohash string.
- *
- * @param precision - The precision level of the geohash.
- * @param row - The row index of the grid cell.
- * @param col - The column index of the grid cell.
- * @returns The geohash string representing the grid cell.
- */
-function gridCellToGeohash({
-    precision,
-    row,
-    col,
-}: {
-    precision: number;
-    row: number;
-    col: number;
-}): string {
-    const lat = -(
-        ((row + 0.5) / gridSizeAtPrecision[precision].rows) * 180 -
-        90
-    );
-    const lon = ((col + 0.5) / gridSizeAtPrecision[precision].cols) * 360 - 180;
-    return ngeohash.encode(lat, lon, precision);
-}
+export { entityActualAp, entityStats, isGeohashTraversable, recoverAp };
 
 function recoverAp(
     ap: number,
@@ -113,4 +42,47 @@ function entityStats(
               level: entity.lvl,
               beast: (entity as Monster).beast,
           });
+}
+
+async function isGeohashTraversable(
+    geohash: string,
+    hasCollidersInGeohash: (geohash: string) => Promise<boolean>,
+    getWorldForGeohash: (geohash: string) => Promise<World | undefined>,
+    options?: {
+        topologyResultCache?: CacheInterface;
+        topologyBufferCache?: CacheInterface;
+        topologyResponseCache?: CacheInterface;
+        worldAssetMetadataCache?: CacheInterface;
+        worldTraversableCellsCache?: CacheInterface;
+    },
+): Promise<boolean> {
+    // Early return false if has colliders (items)
+    if (await hasCollidersInGeohash(geohash)) {
+        return false;
+    }
+
+    // Get biome speed
+    const [biome, strength] = await biomeAtGeohash(geohash, {
+        topologyResultCache: options?.topologyResultCache,
+        topologyBufferCache: options?.topologyBufferCache,
+        topologyResponseCache: options?.topologyResponseCache,
+    });
+    const biomeSpeed = biomes[biome].traversableSpeed;
+
+    // Get world speed
+    let worldSpeed = undefined;
+    const world = await getWorldForGeohash(geohash);
+    if (world) {
+        worldSpeed = await traversableSpeedInWorld({
+            world,
+            geohash,
+            metadataCache: options?.worldAssetMetadataCache,
+            resultsCache: options?.worldTraversableCellsCache,
+        });
+    }
+
+    // worldSpeed overwrites biomeSpeed if present
+    const finalSpeed = worldSpeed ?? biomeSpeed;
+
+    return finalSpeed > 0;
 }

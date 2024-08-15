@@ -7,8 +7,9 @@ import {
 } from "$lib/crossover/utils";
 import ngeohash from "ngeohash";
 import { PNG, type PNGWithMetadata } from "pngjs";
+import { worldSeed } from "./settings/world";
 import { type AssetMetadata, type Tile } from "./types";
-import { worldSeed, type WorldSeed } from "./world";
+import { type WorldSeed } from "./world";
 export {
     biomeAtGeohash,
     biomes,
@@ -227,7 +228,7 @@ function topologyTile(geohash: string): {
     tlCol: number;
     tlRow: number;
 } {
-    // The topology is stored as 2 precision tiles (4 rows, 8 cols)
+    // The topology is stored as 2p tiles (4 rows, 8 cols)
     const tile = geohash.slice(0, 2);
     let rows = 4;
     let cols = 8;
@@ -280,9 +281,10 @@ async function topologyBuffer(
 
     // Fetch response from cache or network
     let cachedResponse = await options?.responseCache?.get(url);
-    const response = cachedResponse?.clone() ?? (await fetch(url));
+    const response = cachedResponse ?? (await fetch(url));
+
     if (cachedResponse == null && options?.responseCache != null) {
-        options.responseCache.set(url, response.clone());
+        options.responseCache.set(url, response);
     }
 
     // Save buffer to cache
@@ -358,8 +360,8 @@ async function topologyAtGeohash(
     });
 
     const { width, height, data } = png;
-    const xRaw = (width - 1) * (col / cols); // x, y is 0 indexed
-    const yRaw = (height - 1) * (row / rows);
+    const xRaw = (width - 1) * (col / (cols - 1)); // x, y is 0 indexed
+    const yRaw = (height - 1) * (row / (rows - 1));
     const x = Math.floor(xRaw); // must use floor not round!!!
     const y = Math.floor(yRaw);
     const xPixel = xRaw - Math.floor(xRaw);
@@ -461,17 +463,25 @@ async function elevationAtGeohash(
         bufferCache?: CacheInterface;
     },
 ): Promise<number> {
-    return (
-        (await options?.resultsCache?.get(geohash)) ??
-        Math.ceil(
-            (
-                await topologyAtGeohash(geohash, {
-                    responseCache: options?.responseCache,
-                    bufferCache: options?.bufferCache,
-                })
-            ).intensity * INTENSITY_TO_HEIGHT,
-        )
+    const cachedResult = await options?.resultsCache?.get(geohash);
+    if (cachedResult) {
+        return cachedResult;
+    }
+
+    const result = Math.ceil(
+        (
+            await topologyAtGeohash(geohash, {
+                responseCache: options?.responseCache,
+                bufferCache: options?.bufferCache,
+            })
+        ).intensity * INTENSITY_TO_HEIGHT,
     );
+
+    if (options?.resultsCache) {
+        options.resultsCache.set(geohash, result);
+    }
+
+    return result;
 }
 
 /**

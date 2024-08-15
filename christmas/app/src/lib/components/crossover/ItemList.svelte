@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { compendium } from "$lib/crossover/world/compendium";
+    import { compendium } from "$lib/crossover/world/settings/compendium";
     import type { Item } from "$lib/server/crossover/redis/entities";
     import { groupBy } from "lodash";
     import { itemRecord } from "../../../store";

@@ -1,5 +1,6 @@
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
-import type { Tile } from "./types";
+import type { Tile } from "../types";
+
 export {
     abyssTile,
     MS_PER_TICK,

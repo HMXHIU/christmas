@@ -1,11 +1,10 @@
 import { stream } from "$lib/crossover/client";
-import {
-    abilities,
-    patchEffectWithVariables,
-} from "$lib/crossover/world/abilities";
-import { playerStats } from "$lib/crossover/world/player";
+import { patchEffectWithVariables } from "$lib/crossover/world/abilities";
+import { playerAttributes, playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK, TICKS_PER_TURN } from "$lib/crossover/world/settings";
-import { consumeResources, recoverAp } from "$lib/server/crossover";
+import { abilities } from "$lib/crossover/world/settings/abilities";
+import { entityActualAp } from "$lib/crossover/world/utils";
+import { consumeResources } from "$lib/server/crossover";
 import { initializeClients, saveEntity } from "$lib/server/crossover/redis";
 import type {
     Player,
@@ -92,9 +91,11 @@ describe("Abilities Tests", () => {
         })) as PlayerEntity;
         expect(playerOne.ap).toBe(0);
         await sleep(MS_PER_TICK * (TICKS_PER_TURN + 1));
-        playerOne = (await recoverAp(
-            playerOne as PlayerEntity,
-        )) as PlayerEntity;
+
+        playerOne.ap = entityActualAp(playerOne, {
+            attributes: playerAttributes(playerOne),
+        });
+
         expect(playerOne.ap).toBe(4);
     });
 

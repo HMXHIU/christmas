@@ -1,9 +1,6 @@
-import {
-    abilities,
-    type Abilities,
-    type Procedure,
-} from "$lib/crossover/world/abilities";
+import { type Abilities, type Procedure } from "$lib/crossover/world/abilities";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { abilities } from "$lib/crossover/world/settings/abilities";
 import { sleep } from "$lib/utils";
 import { Sound } from "@pixi/sound";
 import { gsap } from "gsap";

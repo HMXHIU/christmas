@@ -1,14 +1,12 @@
 // EntityContainer.ts
 import {
     directionDuration,
+    geohashToGridCell,
     getEntityId,
     getPositionsForPath,
+    gridCellToGeohash,
 } from "$lib/crossover/utils";
 import { actions, type Actions } from "$lib/crossover/world/actions";
-import {
-    geohashToGridCell,
-    gridCellToGeohash,
-} from "$lib/crossover/world/utils";
 import type {
     EntityType,
     Item,

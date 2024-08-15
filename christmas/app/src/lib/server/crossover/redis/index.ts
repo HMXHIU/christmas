@@ -7,7 +7,7 @@ import {
     REDIS_USERNAME,
 } from "$env/static/private";
 import { expandGeohashes, geohashesNearby } from "$lib/crossover/utils";
-import { worldSeed } from "$lib/crossover/world/world";
+import { worldSeed } from "$lib/crossover/world/settings/world";
 import type { Search } from "redis-om";
 import { Repository } from "redis-om";
 import { LOOK_PAGE_SIZE } from "..";
@@ -202,11 +202,6 @@ async function hasCollidersInGeohash(geohash: string): Promise<boolean> {
         (await itemsInGeohashQuerySet([geohash])
             .and("cld")
             .equal(true)
-            .count()) > 0 ||
-        (await worldRepository
-            .search()
-            .where("cld")
-            .contains(`${geohash}*`)
             .count()) > 0
     );
 }
@@ -270,7 +265,7 @@ function itemsInGeohashQuerySet(geohashes: string[]): Search {
 
 /**
  * Retrieves worlds if the geohash is inside the world
- * Note: This is the same as `worldsInGeohashQuerySet` in which the world is inside the geohash
+ * Note: This is not the same as `worldsInGeohashQuerySet` in which the world is inside the geohash
  * @param geohashes - The geohashes to search for worlds in.
  * @param precision - The precision level of the geohashes (defaults to town).
  * @returns A Search object representing the query.
