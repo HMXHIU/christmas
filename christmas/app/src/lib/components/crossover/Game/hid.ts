@@ -55,7 +55,7 @@ function createHIDHandlers(stage: Container) {
         return snapXY;
     }
 
-    function handleMouseMove(e: FederatedPointerEvent) {
+    async function handleMouseMove(e: FederatedPointerEvent) {
         const snapXY = updateMouseState(e);
         if (!snapXY) return;
 
@@ -64,7 +64,7 @@ function createHIDHandlers(stage: Container) {
         if (!playerPosition || !state.isMouseDown) return;
 
         const [rowEnd, colEnd] = calculateRowColFromIso(x, y);
-        state.path = getDirectionsToPosition(playerPosition, {
+        state.path = await getDirectionsToPosition(playerPosition, {
             row: rowEnd,
             col: colEnd,
         });

@@ -6,10 +6,11 @@ import {
     worldAssetMetadataCache,
     worldTraversableCellsCache,
 } from "$lib/components/crossover/Game/caches";
+import { aStarPathfinding } from "$lib/crossover/pathfinding";
 import {
-    aStarPathfinding,
     cartToIso,
     geohashToGridCell,
+    gridCellToGeohash,
     isoToCart,
     seededRandom,
 } from "$lib/crossover/utils";
@@ -17,6 +18,7 @@ import type { Ability } from "$lib/crossover/world/abilities";
 import type { Action } from "$lib/crossover/world/actions";
 import { avatarMorphologies } from "$lib/crossover/world/bestiary";
 import { elevationAtGeohash } from "$lib/crossover/world/biomes";
+import { worldSeed } from "$lib/crossover/world/settings/world";
 import type { AssetMetadata, Direction } from "$lib/crossover/world/types";
 import { isGeohashTraversable } from "$lib/crossover/world/utils";
 import type { World } from "$lib/server/crossover/redis/entities";
@@ -209,20 +211,31 @@ function calculateRowColFromIso(isoX: number, isoY: number): [number, number] {
     return [row, col];
 }
 
-function getDirectionsToPosition(
+async function getTraversalCost(row: number, col: number): Promise<number> {
+    // 0 is walkable, 1 is not
+    return (await isGeohashTraversableClient(
+        gridCellToGeohash({
+            col,
+            row,
+            precision: worldSeed.spatial.unit.precision,
+        }),
+    ))
+        ? 0
+        : 1;
+}
+
+async function getDirectionsToPosition(
     source: { row: number; col: number },
     target: { row: number; col: number },
     range?: number,
-): Direction[] {
-    return aStarPathfinding({
+): Promise<Direction[]> {
+    return await aStarPathfinding({
         colStart: source.col,
         rowStart: source.row,
         colEnd: target.col,
         rowEnd: target.row,
         range,
-        getTraversalCost: (row, col) => {
-            return 0; // TODO: add actual traversal cost
-        },
+        getTraversalCost,
     });
 }
 

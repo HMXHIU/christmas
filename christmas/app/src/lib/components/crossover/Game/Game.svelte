@@ -132,7 +132,7 @@
                 const ability = ga as Ability;
 
                 // Get movement required to get in range
-                const path = getDirectionsToPosition(
+                const path = await getDirectionsToPosition(
                     playerPosition,
                     targetEC.isoPosition,
                     ability.range,

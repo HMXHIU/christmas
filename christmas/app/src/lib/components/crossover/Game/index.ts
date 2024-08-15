@@ -105,8 +105,6 @@ async function updateWorlds(geohash: string) {
         }
         return wr;
     });
-
-    console.log(get(worldRecord));
 }
 
 /**
@@ -414,7 +412,7 @@ async function moveInRangeOfTarget({
     const sourceGeohash = playerEntity.loc[0];
     const [targetCol, targetRow] = geohashToColRow(targetGeohash);
     const [sourceCol, sourceRow] = geohashToColRow(sourceGeohash);
-    const path = getDirectionsToPosition(
+    const path = await getDirectionsToPosition(
         {
             row: sourceRow,
             col: sourceCol,
