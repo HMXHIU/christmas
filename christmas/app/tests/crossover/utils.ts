@@ -683,6 +683,36 @@ export async function testPlayerPerformAbilityOnPlayer({
     const { hasResources, message: resourceInsufficientMessage } =
         hasResourcesForAbility(self, ability);
 
+    // Self events
+    let feedEvents: StreamEvent[] = [];
+    let entitiesEvents: UpdateEntitiesEvent[] = [];
+    let actionEvents: ActionEvent[] = [];
+    let entitiesEventsCnt = 0;
+    collectEventDataForDuration(selfStream, "entities").then((events) => {
+        entitiesEvents = events as UpdateEntitiesEvent[];
+    });
+    collectEventDataForDuration(selfStream, "feed").then((events) => {
+        feedEvents = events;
+    });
+    collectEventDataForDuration(selfStream, "action").then((events) => {
+        actionEvents = events as ActionEvent[];
+    });
+
+    // Target events
+    let targetFeedEvents: StreamEvent[] = [];
+    let targetEntitiesEvents: UpdateEntitiesEvent[] = [];
+    let targetActionEvents: ActionEvent[] = [];
+    let targetEntitiesEventsCnt = 0;
+    collectEventDataForDuration(targetStream, "entities").then((events) => {
+        targetEntitiesEvents = events as UpdateEntitiesEvent[];
+    });
+    collectEventDataForDuration(targetStream, "feed").then((events) => {
+        targetFeedEvents = events;
+    });
+    collectEventDataForDuration(targetStream, "action").then((events) => {
+        targetActionEvents = events as ActionEvent[];
+    });
+
     // Perform ability on target
     await crossoverCmdPerformAbility(
         {
@@ -692,12 +722,12 @@ export async function testPlayerPerformAbilityOnPlayer({
         { Cookie: selfCookies },
     );
 
+    await sleep(500); // wait for events to be collected
+
     // Check received feed event if not enough resources
     if (!hasResources) {
         console.log("Checking feed event for insufficient resources");
-        await expect(
-            waitForEventData(selfStream, "feed"),
-        ).resolves.toMatchObject({
+        expect(feedEvents[0]).toMatchObject({
             type: "error",
             message: resourceInsufficientMessage,
         });
@@ -709,9 +739,7 @@ export async function testPlayerPerformAbilityOnPlayer({
     // Check received feed event if target predicate is not met
     else if (!predicate.targetSelfAllowed && self.player === target.player) {
         console.log("Checking feed event for target predicate not met");
-        await expect(
-            waitForEventData(selfStream, "feed"),
-        ).resolves.toMatchObject({
+        await expect(feedEvents[0]).toMatchObject({
             type: "error",
             message: `You can't ${ability} yourself`,
         });
@@ -723,9 +751,7 @@ export async function testPlayerPerformAbilityOnPlayer({
     // Check received feed event if out of range
     else if (!inRange) {
         console.log("Checking feed event for out of range");
-        await expect(
-            waitForEventData(selfStream, "feed"),
-        ).resolves.toMatchObject({
+        expect(feedEvents[0]).resolves.toMatchObject({
             type: "error",
             message: "Target is out of range",
         });
@@ -734,46 +760,12 @@ export async function testPlayerPerformAbilityOnPlayer({
     // Check received feed event if self is busy
     else if (isBusy) {
         console.log("Checking feed event for self is busy");
-        await expect(
-            waitForEventData(selfStream, "feed"),
-        ).resolves.toMatchObject({
+        expect(feedEvents[0]).toMatchObject({
             type: "error",
             message: "You are busy at the moment.",
         });
-
         return ["busy", { self, target, selfBefore, targetBefore }];
     } else {
-        // Self events
-        let feedEvents: StreamEvent[] = [];
-        let entitiesEvents: UpdateEntitiesEvent[] = [];
-        let actionEvents: ActionEvent[] = [];
-        let entitiesEventsCnt = 0;
-        collectEventDataForDuration(selfStream, "entities").then((events) => {
-            entitiesEvents = events as UpdateEntitiesEvent[];
-        });
-        collectEventDataForDuration(selfStream, "feed").then((events) => {
-            feedEvents = events;
-        });
-        collectEventDataForDuration(selfStream, "action").then((events) => {
-            actionEvents = events as ActionEvent[];
-        });
-
-        // Target events
-        let targetFeedEvents: StreamEvent[] = [];
-        let targetEntitiesEvents: UpdateEntitiesEvent[] = [];
-        let targetActionEvents: ActionEvent[] = [];
-        let targetEntitiesEventsCnt = 0;
-        collectEventDataForDuration(targetStream, "entities").then((events) => {
-            targetEntitiesEvents = events as UpdateEntitiesEvent[];
-        });
-        collectEventDataForDuration(targetStream, "feed").then((events) => {
-            targetFeedEvents = events;
-        });
-        collectEventDataForDuration(targetStream, "action").then((events) => {
-            targetActionEvents = events as ActionEvent[];
-        });
-        await sleep(500); // wait for events to be collected
-
         // Check received action event
         expect(actionEvents[0]).toMatchObject({
             ability,

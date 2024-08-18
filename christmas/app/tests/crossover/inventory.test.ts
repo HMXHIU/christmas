@@ -19,9 +19,13 @@ import type {
 import { sleep } from "$lib/utils";
 import { beforeAll, describe, expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
-import { createRandomPlayer, waitForEventData } from "./utils";
+import {
+    createRandomPlayer,
+    generateRandomGeohash,
+    waitForEventData,
+} from "./utils";
 
-const geohash = "w21zfkem";
+const geohash = generateRandomGeohash(8, "h9");
 const region = String.fromCharCode(...getRandomRegion());
 let playerOne: Player;
 let playerOneCookies: string;
@@ -37,7 +41,6 @@ beforeAll(async () => {
         geohash,
         name: "Gandalf",
     });
-
     [playerOneStream] = await stream({ Cookie: playerOneCookies });
     await expect(
         waitForEventData(playerOneStream, "feed"),
@@ -58,16 +61,20 @@ beforeAll(async () => {
 
 describe("Inventory Tests", () => {
     test("Unable to equip item if not in inventory", async () => {
-        await crossoverCmdEquip(
-            { item: playerOneWoodenClub.item, slot: "rh" },
-            { Cookie: playerOneCookies },
-        );
+        const error = `${playerOneWoodenClub.item} is not in inventory`;
+        await expect(
+            crossoverCmdEquip(
+                { item: playerOneWoodenClub.item, slot: "rh" },
+                { Cookie: playerOneCookies },
+            ),
+        ).rejects.toThrow(error);
         await expect(
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
-            message: `${playerOneWoodenClub.item} is not in inventory`,
+            message: error,
             type: "error",
         });
+        await sleep(MS_PER_TICK * 2);
     });
 
     test("Take item and check inventory", async () => {
@@ -145,15 +152,18 @@ describe("Inventory Tests", () => {
         expect(playerOne.loc[0]).not.equal(playerOneWoodenClub.loc[0]);
 
         // Try take item
-        await crossoverCmdTake(
-            { item: playerOneWoodenClub.item },
-            { Cookie: playerOneCookies },
-        );
+        var error = `${playerOneWoodenClub.item} is not in range`;
+        await expect(
+            crossoverCmdTake(
+                { item: playerOneWoodenClub.item },
+                { Cookie: playerOneCookies },
+            ),
+        ).rejects.toThrow(error);
         await expect(
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
             type: "error",
-            message: `${playerOneWoodenClub.item} is not in range`,
+            message: error,
         });
         await sleep(MS_PER_TICK * 2);
 
@@ -186,15 +196,18 @@ describe("Inventory Tests", () => {
 
     test("Equip and unequip item", async () => {
         // Try to equip item in the wrong slot
-        await crossoverCmdEquip(
-            { item: playerOneWoodenClub.item, slot: "hd" },
-            { Cookie: playerOneCookies },
-        );
+        var error = `${playerOneWoodenClub.item} cannot be equipped in hd`;
+        await expect(
+            crossoverCmdEquip(
+                { item: playerOneWoodenClub.item, slot: "hd" },
+                { Cookie: playerOneCookies },
+            ),
+        ).rejects.toThrow(error);
         await expect(
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
             type: "error",
-            message: `${playerOneWoodenClub.item} cannot be equipped in hd`,
+            message: error,
         });
         await sleep(MS_PER_TICK * 2);
 
@@ -269,6 +282,7 @@ describe("Inventory Tests", () => {
             locationType: "geohash",
             prop: compendium.potionofhealth.prop,
         });
+        await sleep(MS_PER_TICK * 2);
 
         // Take item
         await crossoverCmdTake(
@@ -285,15 +299,18 @@ describe("Inventory Tests", () => {
         });
 
         // Try to equip potion of health
-        await crossoverCmdEquip(
-            { item: potionofhealth.item, slot: "lh" },
-            { Cookie: playerOneCookies },
-        );
+        var error = `${potionofhealth.item} is not equippable`;
+        await expect(
+            crossoverCmdEquip(
+                { item: potionofhealth.item, slot: "lh" },
+                { Cookie: playerOneCookies },
+            ),
+        ).rejects.toThrow(error);
         await expect(
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
             type: "error",
-            message: `${potionofhealth.item} is not equippable`,
+            message: error,
         });
         await sleep(MS_PER_TICK * 2);
     });
@@ -305,17 +322,21 @@ describe("Inventory Tests", () => {
             prop: compendium.potionofhealth.prop,
             owner: "anotherPlayer",
         });
+        await sleep(MS_PER_TICK * 2);
 
         // Try take item
-        await crossoverCmdTake(
-            { item: unpickablePotion.item },
-            { Cookie: playerOneCookies },
-        );
+        var error = `${unpickablePotion.item} is owned by someone else`;
+        await expect(
+            crossoverCmdTake(
+                { item: unpickablePotion.item },
+                { Cookie: playerOneCookies },
+            ),
+        ).rejects.toThrow(error);
         await expect(
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
             type: "error",
-            message: `${unpickablePotion.item} is owned by someone else`,
+            message: error,
         });
     });
 });

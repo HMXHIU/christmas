@@ -220,6 +220,8 @@ async function performInventory(player: PlayerEntity) {
         player.player,
     ).return.all()) as ItemEntity[];
 
+    console.log(JSON.stringify(inventoryItems, null, 2));
+
     publishAffectedEntitiesToPlayers(inventoryItems, {
         publishTo: [player.player],
     });

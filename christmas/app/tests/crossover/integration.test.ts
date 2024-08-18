@@ -126,9 +126,9 @@ describe("Integration Tests", () => {
             waitForEventData(playerThreeStream, "feed"),
         ).resolves.toMatchObject({
             type: "message",
-            message: "${origin} says ${message}",
+            message: "${name} says ${message}",
             variables: {
-                origin: playerOneWallet.publicKey.toBase58(),
+                name: playerOne.name,
                 cmd: "say",
                 message: "Hello, world!",
             },
@@ -139,9 +139,9 @@ describe("Integration Tests", () => {
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
             type: "message",
-            message: "${origin} says ${message}",
+            message: "${name} says ${message}",
             variables: {
-                origin: playerOneWallet.publicKey.toBase58(),
+                name: playerOne.name,
                 cmd: "say",
                 message: "Hello, world!",
             },
@@ -280,7 +280,6 @@ describe("Integration Tests", () => {
             vars: { doorsign: "A custom door sign" },
             loc: playerOne.loc,
         });
-
         await sleep(MS_PER_TICK * 2);
 
         // Configure woodendoor
@@ -301,6 +300,7 @@ describe("Integration Tests", () => {
             state: "closed",
             vars: { doorsign: "A new door sign" },
         });
+        await sleep(MS_PER_TICK * 2);
 
         // Use (open) woodendoor
         var [result, { self, selfBefore, item, itemBefore }] =
@@ -325,12 +325,14 @@ describe("Integration Tests", () => {
         // Create portalOne at playerOne (public owner)
         let portalOne = (await spawnItem({
             geohash: playerOne.loc[0],
+            locationType: "geohash",
             prop: compendium.portal.prop,
         })) as Item;
 
         // Create portalTwo at playerTwo (public owner)
         let portalTwo = (await spawnItem({
             geohash: playerTwo.loc[0],
+            locationType: "geohash",
             prop: compendium.portal.prop,
         })) as Item;
 
