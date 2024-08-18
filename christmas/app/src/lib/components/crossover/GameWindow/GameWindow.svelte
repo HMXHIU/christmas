@@ -296,10 +296,6 @@
         border-top-right-radius: 10px;
         height: 100px;
     }
-    #player-overlay {
-        position: absolute;
-        bottom: var(--game-bottom); /* computed on mount */
-    }
     #map-overlay {
         position: absolute;
         top: var(--game-top); /* computed on mount */

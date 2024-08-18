@@ -416,6 +416,7 @@ async function drawShaderTextures({
     shaderName,
     shaderTextures,
     renderOrder,
+    zOffset,
     numGeometries,
     stage,
     zScale,
@@ -423,6 +424,7 @@ async function drawShaderTextures({
     shaderName: string;
     shaderTextures: Record<string, ShaderTexture>;
     renderOrder: number;
+    zOffset: number;
     numGeometries: number;
     stage: Container;
     zScale: number;
@@ -449,6 +451,7 @@ async function drawShaderTextures({
             {
                 instanceCount: numGeometries,
                 zScale,
+                zOffset,
             },
         );
 

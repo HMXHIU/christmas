@@ -5,6 +5,7 @@ import {
     geohashNeighbour,
     geohashToColRow,
     geohashToGridCell,
+    getAllUnitGeohashes,
 } from "$lib/crossover/utils";
 import { spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
@@ -65,6 +66,12 @@ test("Test Utils", async () => {
     expect(expandGeohashes(["w21z3wcm"], 7)).toEqual(["w21z3wcm", "w21z3wc"]);
     expect(expandGeohashes(["w21z3wcm"], 8)).toEqual(["w21z3wcm"]);
     expect(expandGeohashes(["w21z3wc"], 8)).toEqual(["w21z3wc"]);
+
+    /**
+     * Test `getAllUnitGeohashes`
+     */
+    expect(getAllUnitGeohashes("w21z3wc").length).toBe(32);
+    expect(getAllUnitGeohashes("w21z3w").length).toBe(32 * 32);
 
     /**
      * Test `filterSortEntitiesInRange`

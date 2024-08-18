@@ -16,8 +16,9 @@ const abyssTile: Tile = {
     description: "You are nowhere to be found.",
 };
 
-const TILE_WIDTH = 64;
-const TILE_HEIGHT = 32;
+// Note: this is different from CELL_WIDTH / CELL_HEIGHT
+const TILE_WIDTH = 256;
+const TILE_HEIGHT = 128;
 
 const SERVER_LATENCY = 100; // ms
 const TICKS_PER_TURN = 4;

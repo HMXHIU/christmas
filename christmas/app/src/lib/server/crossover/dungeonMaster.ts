@@ -3,7 +3,6 @@ import {
     borderingGeohashes,
     calculateLocation,
     childrenGeohashes,
-    geohashNeighbour,
     getPlotsAtGeohash,
 } from "$lib/crossover/utils";
 import {
@@ -216,55 +215,6 @@ async function spawnWorld({
         height * heightMultiplier,
         width * widthMultiplier,
     );
-
-    // Get colliders (TODO: DEPRECATE)
-    let colliders = [];
-    for (const { data, properties, width, height } of layers) {
-        if (properties == null) {
-            continue;
-        }
-        for (const { name, value } of properties) {
-            if (name === "collider" && value === true) {
-                // Outer row
-                let geohashRow = geohash;
-                for (let i = 0; i < height; i++) {
-                    // Outer col
-                    let geohashCol = geohashRow;
-                    for (let j = 0; j < width; j++) {
-                        if (data[i * width + j] !== 0) {
-                            // Inner row
-                            let geohashRowInner = geohashCol;
-                            for (let m = 0; m < heightMultiplier; m++) {
-                                // Inner col
-                                let geohashColInner = geohashRowInner;
-                                for (let n = 0; n < widthMultiplier; n++) {
-                                    colliders.push(geohashColInner); // add collider
-                                    geohashColInner = geohashNeighbour(
-                                        geohashColInner,
-                                        "e",
-                                    );
-                                }
-                                geohashRowInner = geohashNeighbour(
-                                    geohashRowInner,
-                                    "s",
-                                );
-                            }
-                        }
-                        geohashCol = geohashNeighbour(
-                            geohashCol,
-                            "e",
-                            widthMultiplier,
-                        );
-                    }
-                    geohashRow = geohashNeighbour(
-                        geohashRow,
-                        "s",
-                        heightMultiplier,
-                    );
-                }
-            }
-        }
-    }
 
     // Get world count
     const count = await worldRepository.search().count();

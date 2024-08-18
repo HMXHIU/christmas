@@ -90,7 +90,7 @@ interface Position {
 }
 
 // Note: this are cartesian coordinates (CELL_HEIGHT = CELL_WIDTH;)
-const CELL_WIDTH = 96; // 64, 96, 128
+const CELL_WIDTH = 128; // 64, 96, 128
 const CELL_HEIGHT = CELL_WIDTH;
 const ISO_CELL_WIDTH = CELL_WIDTH;
 const ISO_CELL_HEIGHT = CELL_HEIGHT / 2;
@@ -109,49 +109,30 @@ const GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
 const GRID_MID_COL = Math.floor(GRID_COLS / 2);
 
 // Z layer offsets
-const Z_LAYER = ISO_CELL_HEIGHT * 2;
+const Z_LAYER = ISO_CELL_HEIGHT / 2;
 const Z_OFF: Record<string, number> = {
-    // shader
+    // Shader
     biome: 0 * Z_LAYER,
-    entity: 1 * Z_LAYER,
-    // entities
-    item: 1 * Z_LAYER,
-    monster: 1 * Z_LAYER,
-    player: 1 * Z_LAYER,
-    // layers
-    ground: 0 * Z_LAYER,
-    grass: 0 * Z_LAYER,
-    floor: 1 * Z_LAYER,
-    wall: 2 * Z_LAYER,
-    l2: 3 * Z_LAYER,
-    l3: 4 * Z_LAYER,
-    // entity: 1 * Z_LAYER,
-    // floor: 3 * Z_LAYER,
-    // wall: 4 * Z_LAYER,
-    // item: 4 * Z_LAYER,
-    // monster: 4 * Z_LAYER,
-    // player: 4 * Z_LAYER,
-    // l2: 8 * Z_LAYER,
-    // l3: 12 * Z_LAYER,
+    grass: 1 * Z_LAYER,
+    entity: 2 * Z_LAYER,
+    // Entities
+    world: 2 * Z_LAYER,
+    item: 2 * Z_LAYER,
+    monster: 2 * Z_LAYER,
+    player: 2 * Z_LAYER,
 };
 
 // This is different from depth testing (but used to control when which objects are drawn for alpha blending)
+// Sort from lower to high probability of alpha/opacity
 const RENDER_ORDER: Record<string, number> = {
-    ground: 0,
-    biome: 0,
-    floor: 0,
-    wall: 0,
-
-    // Action bubble
-    icon: 0,
-
-    // draw last because it has alpha
+    biome: 0, // biome tiles
+    icon: 0, // action bubble icon
     item: 1,
-    grass: 2,
     player: 1,
     monster: 1,
     world: 1,
-    effects: 3,
+    grass: 2, // grass (biome decorations)
+    effects: 3, // special effects
 };
 
 // In WebGL, the gl_Position.z value should be in the range [-1 (closer), 1]

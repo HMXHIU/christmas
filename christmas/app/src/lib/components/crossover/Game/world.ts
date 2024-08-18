@@ -1,22 +1,31 @@
-import { autoCorrectGeohashPrecision, cartToIso } from "$lib/crossover/utils";
+import {
+    autoCorrectGeohashPrecision,
+    cartToIso,
+    getAllUnitGeohashes,
+} from "$lib/crossover/utils";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import type { World } from "$lib/server/crossover/redis/entities";
-import { Assets, Container } from "pixi.js";
+import { Assets, Container, Graphics } from "pixi.js";
+import { get } from "svelte/store";
+import { itemRecord, worldRecord } from "../../../../store";
 import { IsoMesh } from "../shaders/IsoMesh";
 import {
     calculatePosition,
+    CELL_HEIGHT,
+    CELL_WIDTH,
     getImageForTile,
     getTilesetForTile,
-    ISO_CELL_HEIGHT,
+    isGeohashTraversableClient,
     RENDER_ORDER,
     Z_OFF,
     Z_SCALE,
     type Position,
 } from "./utils";
 
-export { cullWorlds, debugColliders, drawWorlds, loadWorld, worldMeshes };
+export { cullWorlds, debugWorld, drawWorlds, loadWorld, worldMeshes };
 
 let worldMeshes: Record<string, IsoMesh> = {};
+let colliders: Graphics[] = [];
 
 async function drawWorlds(
     worldRecord: Record<string, Record<string, World>>,
@@ -51,19 +60,18 @@ async function loadWorld({
     position: Position;
     stage: Container;
 }) {
+    console.log("loadWorld", world.world);
     // Skip if alerady loaded
     if (worldMeshes[world.world]) {
         return;
     }
 
-    // await debugColliders(worldStage, $worldRecord);
-
     const tilemap = await Assets.load(world.url);
     const { layers, tilesets, tileheight, tilewidth } = tilemap;
-    const [tileMapOffsetX, tileMapOffsetY] = cartToIso(
-        tilewidth / 2,
-        tilewidth / 2,
-    );
+
+    // Note: we need to align the tiled editor's tile (anchor at bottom-left) to the game's tile center (center)
+    const tileOffsetX = -tilewidth / 2; // move left
+    const tileOffsetY = tileheight / 2; // move down
 
     for (const layer of layers) {
         const {
@@ -73,14 +81,21 @@ async function loadWorld({
             offsety,
             width, // in tiles (1 tile might be multiple cells)
             height,
-            x,
-            y,
+            visible,
         } = layer;
+
+        // Skip of not visible (colliders)
+        if (!visible) {
+            continue;
+        }
+
         const props: { name: string; value: any; type: string }[] =
             properties ?? [];
+        const layerOffsetX = offsetx ?? 0;
+        const layerOffsetY = offsety ?? 0;
 
         // Get properties
-        const { z, traversableSpeed } = props.reduce(
+        const { z } = props.reduce(
             (acc: Record<string, any>, { name, value, type }) => {
                 acc[name] = value;
                 return acc;
@@ -99,10 +114,10 @@ async function loadWorld({
                 if (tileId === 0) {
                     continue;
                 }
-                const id = `${town}-${world.world}-${tileId}-${i}-${j}`;
+                const worldId = `${town}-${world.world}-${tileId}-${i}-${j}`;
 
                 // Skip if already created
-                if (id in worldMeshes) {
+                if (worldId in worldMeshes) {
                     continue;
                 }
 
@@ -119,52 +134,59 @@ async function loadWorld({
                 const { texture, imageheight, imagewidth } =
                     await getImageForTile(tileset.tiles, tileId - firstgid);
 
-                const [isoX, isoY] = cartToIso(
-                    j * tilewidth,
-                    i * tilewidth, // use tilewidth for cartesian
-                );
+                const xCells = imagewidth / tilewidth;
+                const yCells = imageheight / tileheight;
 
                 const mesh = new IsoMesh({
                     shaderName: "world",
                     texture,
-                    zOffset: Z_OFF[z] ?? Z_OFF.floor,
+                    zOffset: Z_OFF[z] ?? Z_OFF.world,
                     zScale: Z_SCALE,
                     renderLayer: RENDER_ORDER[z] || RENDER_ORDER.world,
-                    cellHeight: tileheight / ISO_CELL_HEIGHT,
+                    cellHeight: 1, // TODO: cant know the cell height by using image height, because the base is not defined
                 });
-                worldMeshes[id] = mesh;
+                worldMeshes[worldId] = mesh;
 
-                // Center of the bottom tile (imageheight a multiple of tileheight)
-                // const anchor = {
-                //     x: 0.5,
-                //     y: 1 - tileheight / imageheight / 2,
-                // };
+                // Set scale (should be the same for both x and y)
+                const screenWidth = xCells * CELL_WIDTH;
+                const scale = screenWidth / imagewidth;
+                mesh.scale.set(scale, scale);
 
-                const anchor = {
-                    x: 0,
-                    y: 0,
-                };
+                const [layerIsoX, layerIsoY] = cartToIso(
+                    j * CELL_WIDTH,
+                    i * CELL_WIDTH,
+                );
+
+                // Note:
+                //  - By default the tiled editor uses the bottom-left of an image as the anchor
+                //  - In pixi.js the pivot is based on the original size of the texture without scaling
+                const anchor = { x: 0, y: 1 };
+                const pivotX = anchor.x * imagewidth;
+                const pivotY = anchor.y * imageheight;
+                mesh.pivot.set(pivotX - tileOffsetX, pivotY - tileOffsetY);
 
                 // Set initial position
-                const x =
-                    isoX + // layer position
-                    (offsetx ?? 0) + // layer offset
-                    position.isoX + // world  position
-                    tileMapOffsetX + // tilemap offset (when dimensions != grid dimensions)
-                    tileSetOffsetX - // tileset offset
-                    anchor.x * imagewidth;
-                const y =
-                    isoY +
-                    (offsety ?? 0) +
-                    position.isoY +
-                    tileMapOffsetY +
-                    tileSetOffsetY -
-                    anchor.y * imageheight;
-                mesh.x = x;
-                mesh.y = y - position.elevation;
+                const isoX =
+                    layerIsoX +
+                    position.isoX +
+                    (layerOffsetX + tileSetOffsetX) * scale;
 
-                // Update depth (set as bottom of the image)
-                mesh.updateDepth(y + imageheight);
+                // Note: keep isoY for setting depth
+                const isoY =
+                    layerIsoY +
+                    position.isoY +
+                    (layerOffsetY + tileSetOffsetY) * scale;
+                mesh.x = isoX;
+                mesh.y = isoY - position.elevation;
+
+                // DEBUG MESH
+                stage.addChild(mesh.debugBounds());
+
+                // Update depth (set as center of the bottom grid cell)
+                const bounds = mesh.getBounds();
+                mesh.updateDepth(
+                    bounds.bottom - CELL_HEIGHT / 2 + position.elevation,
+                );
 
                 // Add to stage
                 if (!stage.children.includes(mesh)) {
@@ -175,43 +197,76 @@ async function loadWorld({
     }
 }
 
-async function debugColliders(
-    stage: Container,
-    worldRecord: Record<string, Record<string, World>>,
-) {
-    const colliderTexture = (await Assets.loadBundle("actions"))["actions"]
-        .textures["hiking"];
+async function debugWorld(stage: Container) {
+    // Clear colliders
+    for (const c of colliders) {
+        c.destroy();
+    }
 
-    // Draw world colliders
-    for (const worlds of Object.values(worldRecord)) {
-        for (const w of Object.values(worlds)) {
+    // Draw item colliders
+    for (const item of Object.values(get(itemRecord))) {
+        if (item.locT !== "geohash") continue;
+        for (const loc of item.loc) {
+            if (!(await isGeohashTraversableClient(loc))) {
+                const itemPosition = await calculatePosition(loc);
+                colliders.push(
+                    stage.addChild(
+                        new Graphics()
+                            .circle(
+                                itemPosition.isoX,
+                                itemPosition.isoY - itemPosition.elevation,
+                                5,
+                            )
+                            .stroke({ color: 0xff0000 }),
+                    ),
+                );
+            }
+        }
+    }
+
+    // Debug world
+    for (const [town, worlds] of Object.entries(get(worldRecord))) {
+        for (const world of Object.values(worlds)) {
+            if (world.locT !== "geohash") continue;
+
+            // Draw world origin
             const origin = autoCorrectGeohashPrecision(
-                (w as World).loc[0],
+                world.loc[0],
                 worldSeed.spatial.unit.precision,
             );
-            const position = await calculatePosition(origin);
+            const originPosition = await calculatePosition(origin);
+            colliders.push(
+                stage.addChild(
+                    new Graphics()
+                        .circle(
+                            originPosition.isoX,
+                            originPosition.isoY - originPosition.elevation,
+                            8,
+                        )
+                        .stroke({ color: 0xff00ff }),
+                ),
+            );
 
-            // TODO: draw colliders using layer props
-            // for (const cld of w.cld) {
-            //     const { row, col } = geohashToGridCell(cld);
-
-            //     // Create sprite
-            //     const sprite = new Sprite(colliderTexture);
-            //     sprite.width = CELL_WIDTH;
-            //     sprite.height =
-            //         (colliderTexture.height * sprite.width) /
-            //         colliderTexture.width;
-            //     sprite.anchor.set(0.5, 1);
-
-            //     // Convert cartesian to isometric position
-            //     const [isoX, isoY] = cartToIso(
-            //         col * CELL_WIDTH,
-            //         row * CELL_HEIGHT,
-            //     );
-            //     sprite.x = isoX;
-            //     sprite.y = isoY - position.elevation;
-            //     stage.addChild(sprite);
-            // }
+            for (const plot of world.loc) {
+                for (const loc of getAllUnitGeohashes(plot)) {
+                    // Draw world colliders
+                    if (!(await isGeohashTraversableClient(loc))) {
+                        const itemPosition = await calculatePosition(loc);
+                        colliders.push(
+                            stage.addChild(
+                                new Graphics()
+                                    .circle(
+                                        itemPosition.isoX,
+                                        itemPosition.isoY -
+                                            itemPosition.elevation,
+                                        5,
+                                    )
+                                    .stroke({ color: 0xff0000 }),
+                            ),
+                        );
+                    }
+                }
+            }
         }
     }
 }

@@ -189,6 +189,12 @@ let playerOneGeohash: string;
 
 let world: WorldEntity;
 let worldGeohash: string;
+let worldTwo: WorldEntity;
+let worldTwoGeohash: string;
+let worldThree: WorldEntity;
+let worldThreeGeohash: string;
+let worldFour: WorldEntity;
+let worldFourGeohash: string;
 
 beforeAll(async () => {
     // Create redis repositories
@@ -227,7 +233,7 @@ beforeAll(async () => {
         bucket: BUCKETS.tiled,
     });
 
-    // Spawn world
+    // Spawn worlds
     worldGeohash = "w21z8ucp"; // top left plot
     world = await spawnWorld({
         assetUrl,
@@ -235,11 +241,41 @@ beforeAll(async () => {
         tileHeight: asset.tileheight,
         tileWidth: asset.tilewidth,
     });
+    worldTwoGeohash = generateRandomGeohash(8);
+    worldTwo = await spawnWorld({
+        assetUrl,
+        geohash: worldTwoGeohash,
+        tileHeight: asset.tileheight / 2, // 128 / 2 = 64
+        tileWidth: asset.tilewidth / 2, // 256 / 2 = 128
+    });
+    worldThreeGeohash = "gbsuv7xp";
+    worldThree = await spawnWorld({
+        assetUrl,
+        geohash: worldThreeGeohash,
+        tileHeight: TILE_HEIGHT,
+        tileWidth: TILE_WIDTH,
+    });
+    worldFourGeohash = "gbsuv7xe"; // origin should be same as worldThree (same plot)
+    worldFour = await spawnWorld({
+        assetUrl,
+        geohash: worldFourGeohash,
+        tileHeight: TILE_HEIGHT,
+        tileWidth: TILE_WIDTH,
+    });
 
     // Set worldRecord
     worldRecord.set({
-        w2: {
+        [worldGeohash.slice(-2)]: {
             [world.world]: world,
+        },
+        [worldTwoGeohash.slice(-2)]: {
+            [worldTwo.world]: worldTwo,
+        },
+        [worldThreeGeohash.slice(-2)]: {
+            [worldThree.world]: worldThree,
+        },
+        [worldFourGeohash.slice(-2)]: {
+            [worldFour.world]: worldFour,
         },
     });
 });
@@ -247,13 +283,12 @@ beforeAll(async () => {
 describe("World Tests", () => {
     test("Test traversableCellsInWorld", async () => {
         // Test when cell dimensions == tile dimensions
-        let traversibleCells = await traversableCellsInWorld({
+        let traversableCells = await traversableCellsInWorld({
             world,
-            cellHeight: asset.tileheight,
-            cellWidth: asset.tilewidth,
+            tileHeight: asset.tileheight,
+            tileWidth: asset.tilewidth,
         });
-
-        expect(traversibleCells).toMatchObject({
+        expect(traversableCells).toMatchObject({
             "1,3": 0,
             "1,4": 0,
             "2,3": 0,
@@ -261,13 +296,13 @@ describe("World Tests", () => {
         });
 
         // Test when tile dimensions is 2x the cell dimensions
-        traversibleCells = await traversableCellsInWorld({
+        traversableCells = await traversableCellsInWorld({
             world,
-            cellHeight: asset.tileheight / 2,
-            cellWidth: asset.tilewidth / 2,
+            tileHeight: asset.tileheight / 2,
+            tileWidth: asset.tilewidth / 2,
         });
-        expect(Object.keys(traversibleCells).length).to.equal(4 * 4);
-        expect(traversibleCells).toMatchObject({
+        expect(Object.keys(traversableCells).length).to.equal(4 * 4);
+        expect(traversableCells).toMatchObject({
             "2,6": 0,
             "3,6": 0,
             "2,7": 0,
@@ -289,56 +324,62 @@ describe("World Tests", () => {
 
     test("Test traversableSpeedInWorld", async () => {
         // No cells with traversableSpeed
-        await expect(
-            traversableSpeedInWorld({
-                cellHeight: asset.tileheight,
-                cellWidth: asset.tilewidth,
-                geohash: "w21z8ucp",
-                world,
-            }),
-        ).resolves.toEqual(undefined);
-        await expect(
-            traversableSpeedInWorld({
-                cellHeight: asset.tileheight,
-                cellWidth: asset.tilewidth,
-                geohash: "w21z8ucb",
-                world,
-            }),
-        ).resolves.toEqual(undefined);
+        for (const geohash of ["w21z8ucp", "w21z8ucb"]) {
+            await expect(
+                traversableSpeedInWorld({
+                    tileHeight: asset.tileheight,
+                    tileWidth: asset.tilewidth,
+                    geohash,
+                    world,
+                }),
+            ).resolves.toEqual(undefined);
+        }
 
         // Cells with traversableSpeed
-        await expect(
-            traversableSpeedInWorld({
-                cellHeight: asset.tileheight,
-                cellWidth: asset.tilewidth,
-                geohash: "w21z8uck",
-                world,
-            }),
-        ).resolves.toEqual(0);
-        await expect(
-            traversableSpeedInWorld({
-                cellHeight: asset.tileheight,
-                cellWidth: asset.tilewidth,
-                geohash: "w21z8ucs",
-                world,
-            }),
-        ).resolves.toEqual(0);
-        await expect(
-            traversableSpeedInWorld({
-                cellHeight: asset.tileheight,
-                cellWidth: asset.tilewidth,
-                geohash: "w21z8uc7",
-                world,
-            }),
-        ).resolves.toEqual(0);
-        await expect(
-            traversableSpeedInWorld({
-                cellHeight: asset.tileheight,
-                cellWidth: asset.tilewidth,
-                geohash: "w21z8uce",
-                world,
-            }),
-        ).resolves.toEqual(0);
+        for (const geohash of [
+            "w21z8uck",
+            "w21z8ucs",
+            "w21z8uc7",
+            "w21z8uce",
+        ]) {
+            await expect(
+                traversableSpeedInWorld({
+                    tileHeight: asset.tileheight,
+                    tileWidth: asset.tilewidth,
+                    geohash,
+                    world,
+                }),
+            ).resolves.toEqual(0);
+        }
+
+        // Cells with traversableSpeed - tile dimensions smaller than world
+        for (const geohash of [
+            "w21z8uc9",
+            "w21z8ucc",
+            "w21z8uc8",
+            "w21z8ucb",
+            "w21z8udp",
+            "w21z8udr",
+            "w21z8udn",
+            "w21z8udq",
+            "w21z8uf1",
+            "w21z8uf3",
+            "w21z8uf0",
+            "w21z8uf2",
+            "w21z8u9x",
+            "w21z8u9z",
+            "w21z8u9w",
+            "w21z8u9y",
+        ]) {
+            await expect(
+                traversableSpeedInWorld({
+                    tileHeight: asset.tileheight / 2,
+                    tileWidth: asset.tilewidth / 2,
+                    geohash,
+                    world,
+                }),
+            ).resolves.toEqual(0);
+        }
     });
 
     test("Test isGeohashTraversable", async () => {
@@ -383,13 +424,12 @@ describe("World Tests", () => {
         var origin = childrenGeohashes(worldGeohash.slice(0, -1))[0];
         var p = geohashNeighbour(geohashNeighbour(origin, "s", 3), "e");
         var p2 = geohashNeighbour(p, "s");
-
         expect(world).toMatchObject({
             loc: [origin.slice(0, -1)],
             locT: "geohash",
         });
 
-        /* Test colliders/locations if cell dimensions is differnt from tile dimensions
+        /* Test colliders/locations if cell dimensions is different from tile dimensions
         [
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
@@ -409,20 +449,13 @@ describe("World Tests", () => {
             0, 0, 0, 0, 0, 0, 0, 0,
         ]
         */
-        worldGeohash = generateRandomGeohash(8);
-        world = await spawnWorld({
-            assetUrl,
-            geohash: worldGeohash,
-            tileHeight: asset.tileheight / 2, // 128 / 2 = 64
-            tileWidth: asset.tilewidth / 2, // 256 / 2 = 128
-        });
-        var origin = childrenGeohashes(worldGeohash.slice(0, -1))[0];
+        var origin = childrenGeohashes(worldTwoGeohash.slice(0, -1))[0];
         var p = geohashNeighbour(geohashNeighbour(origin, "s", 6), "e", 2);
         var p2 = geohashNeighbour(p, "s");
         var p3 = geohashNeighbour(p2, "s");
         var p4 = geohashNeighbour(p3, "s");
         var parentGeohash = origin.slice(0, -1);
-        expect(world.loc).to.deep.equal([
+        expect(worldTwo.loc).to.deep.equal([
             parentGeohash,
             geohashNeighbour(parentGeohash, "e"),
             geohashNeighbour(parentGeohash, "s"),
@@ -430,30 +463,15 @@ describe("World Tests", () => {
         ]);
 
         // Test retrieve worlds
-        const { town, worlds } = await crossoverWorldWorlds(worldGeohash, {
+        const { town, worlds } = await crossoverWorldWorlds(worldTwoGeohash, {
             Cookie: playerOneCookies,
         });
         expect(town.length).to.equal(worldSeed.spatial.town.precision);
-        expect(worlds).toMatchObject([{ world: world.world }]);
+        expect(worlds).toMatchObject([{ world: worldTwo.world }]);
 
-        // Test collider and location origins
-        worldGeohash = "gbsuv7xp";
-        world = await spawnWorld({
-            assetUrl,
-            geohash: worldGeohash,
-            tileHeight: TILE_HEIGHT,
-            tileWidth: TILE_WIDTH,
-        });
-        expect(world.loc[0]).toBe("gbsuv7x");
-
-        worldGeohash = "gbsuv7xe"; // origin should still be at gbsuv7xp as it is in the same
-        world = await spawnWorld({
-            assetUrl,
-            geohash: worldGeohash,
-            tileHeight: TILE_HEIGHT,
-            tileWidth: TILE_WIDTH,
-        });
-        expect(world.loc[0]).toBe("gbsuv7x");
+        // Test location origins
+        expect(worldThree.loc[0]).toBe("gbsuv7x");
+        expect(worldFour.loc[0]).toBe("gbsuv7x");
     });
 
     test("Test Topology", async () => {

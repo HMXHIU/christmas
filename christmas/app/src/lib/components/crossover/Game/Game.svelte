@@ -60,7 +60,7 @@
         registerGSAP,
         type Position,
     } from "./utils";
-    import { cullWorlds, drawWorlds } from "./world";
+    import { cullWorlds, debugWorld, drawWorlds } from "./world";
 
     // Register GSAP & PixiPlugin
     registerGSAP();
@@ -235,6 +235,8 @@
 
         // Cull world meshes outside town
         cullWorlds(position);
+
+        await debugWorld(worldStage);
     }
 
     export async function handleTrackPlayer({

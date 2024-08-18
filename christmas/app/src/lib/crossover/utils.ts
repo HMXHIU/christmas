@@ -6,7 +6,7 @@ import type {
     Player,
 } from "$lib/server/crossover/redis/entities";
 import { divmod } from "$lib/utils";
-import { pick } from "lodash-es";
+import { flatten, pick } from "lodash-es";
 import ngeohash from "ngeohash";
 import type { GameAction } from "./ir";
 import { actions } from "./world/actions";
@@ -34,6 +34,7 @@ export {
     geohashNeighbour,
     geohashToColRow,
     geohashToGridCell,
+    getAllUnitGeohashes,
     getEntityId,
     getGeohashesForPath,
     getPlotsAtGeohash,
@@ -444,6 +445,14 @@ function childrenGeohashes(geohash: string): string[] {
         return "prxznqwyjmtvhksu57eg46df139c028b".split("").map((c) => {
             return geohash + c;
         });
+    }
+}
+
+function getAllUnitGeohashes(geohash: string): string[] {
+    if (geohash.length === worldSeed.spatial.unit.precision) {
+        return [geohash];
+    } else {
+        return flatten(childrenGeohashes(geohash).map(getAllUnitGeohashes));
     }
 }
 

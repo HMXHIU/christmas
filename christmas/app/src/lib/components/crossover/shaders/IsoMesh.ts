@@ -1,4 +1,4 @@
-import { Geometry, Mesh, Shader, Texture } from "pixi.js";
+import { Container, Geometry, Graphics, Mesh, Shader, Texture } from "pixi.js";
 import { loadShaderGeometry, type OptionalShaderTextures } from ".";
 
 export { IsoMesh };
@@ -70,5 +70,22 @@ class IsoMesh extends Mesh<Geometry, Shader> {
         const ip = this.geometry.getBuffer("aInstancePosition");
         ip.data.set([0, isoY, 0]);
         ip.update();
+    }
+
+    debugBounds(): Container {
+        // Add this to the parent of this IsoMesh to debug
+        const debugContainer = new Container();
+        const { x, y, width, height } = this.getBounds();
+        // Draw bounding box
+        debugContainer.addChild(
+            new Graphics()
+                .rect(x, y, width, height)
+                .stroke({ color: 0xff0000 }),
+        );
+        // Draw origin
+        debugContainer.addChild(
+            new Graphics().circle(this.x, this.y, 2).fill({ color: 0xff0000 }),
+        );
+        return debugContainer;
     }
 }

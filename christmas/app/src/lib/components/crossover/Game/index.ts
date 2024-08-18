@@ -90,15 +90,16 @@ interface GameLogic {
  */
 async function updateWorlds(geohash: string) {
     const t = geohash.slice(0, worldSeed.spatial.town.precision);
-    // Already have world at town
+    // Already have world at town (Note: no world in town ({} is valid))
     if (get(worldRecord)[t] != null) {
         return;
     }
+
     // Get world at town
     const { town, worlds } = await crossoverWorldWorlds(geohash);
     worldRecord.update((wr) => {
         if (wr[town] == null) {
-            wr[town] = {}; // no world in town ({} is valid)
+            wr[town] = {};
         }
         for (const w of worlds) {
             wr[town][w.world] = w;

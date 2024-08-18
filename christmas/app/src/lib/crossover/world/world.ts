@@ -120,22 +120,22 @@ async function fetchWorldMetadata(
 async function traversableSpeedInWorld({
     world,
     geohash,
-    cellHeight,
-    cellWidth,
+    tileHeight,
+    tileWidth,
     metadataCache,
     resultsCache,
 }: {
     world: World;
     geohash: string;
-    cellHeight?: number;
-    cellWidth?: number;
+    tileHeight?: number;
+    tileWidth?: number;
     metadataCache?: CacheInterface;
     resultsCache?: CacheInterface;
 }): Promise<number | undefined> {
     const traversableCells = await traversableCellsInWorld({
         world,
-        cellHeight: cellHeight ?? TILE_HEIGHT,
-        cellWidth: cellWidth ?? TILE_WIDTH,
+        tileHeight: tileHeight ?? TILE_HEIGHT,
+        tileWidth: tileWidth ?? TILE_WIDTH,
         metadataCache,
         resultsCache,
     });
@@ -153,14 +153,14 @@ async function traversableSpeedInWorld({
 
 async function traversableCellsInWorld({
     world,
-    cellWidth,
-    cellHeight,
+    tileWidth,
+    tileHeight,
     metadataCache,
     resultsCache,
 }: {
     world: World;
-    cellWidth: number;
-    cellHeight: number;
+    tileWidth: number;
+    tileHeight: number;
     metadataCache?: CacheInterface;
     resultsCache?: CacheInterface;
 }): Promise<Record<string, number>> {
@@ -169,10 +169,9 @@ async function traversableCellsInWorld({
         return cachedResult;
     }
     const asset = await fetchWorldMetadata(world, metadataCache);
-
-    const { layers, tileheight, tilewidth } = asset!;
-    const heightMultiplier = tileheight / cellHeight;
-    const widthMultiplier = tilewidth / cellWidth;
+    const { layers, tileheight, tilewidth } = asset;
+    const heightMultiplier = tileheight / tileHeight;
+    const widthMultiplier = tilewidth / tileWidth;
 
     let traversableCells: Record<string, number> = {};
     for (const { data, properties, width, height } of layers) {
