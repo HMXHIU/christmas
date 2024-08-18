@@ -17,7 +17,7 @@ import type {
     PlayerDemographic,
     PlayerMetadata,
 } from "./world/player";
-import { type Direction } from "./world/types";
+import { type Direction, type GeohashLocationType } from "./world/types";
 
 export {
     crossoverAuthPlayer,
@@ -294,13 +294,19 @@ function crossoverCmdUnequip(
 }
 
 function crossoverCmdCreateItem(
-    input: { geohash: string; prop: string; variables?: ItemVariables },
+    input: {
+        geohash: string;
+        locationType: GeohashLocationType;
+        prop: string;
+        variables?: ItemVariables;
+    },
     headers: HTTPHeaders = {},
 ) {
-    const { geohash, prop, variables } = input;
+    const { geohash, prop, variables, locationType } = input;
     return trpc({ headers }).crossover.cmd.createItem.query({
         prop,
         geohash,
+        locationType,
         variables,
     });
 }
@@ -336,8 +342,15 @@ function crossoverPlayerMetadata(headers: HTTPHeaders = {}) {
  * crossover.world
  */
 
-function crossoverWorldWorlds(geohash: string, headers: HTTPHeaders = {}) {
-    return trpc({ headers }).crossover.world.worlds.query({ geohash });
+function crossoverWorldWorlds(
+    geohash: string,
+    locationType: GeohashLocationType,
+    headers: HTTPHeaders = {},
+) {
+    return trpc({ headers }).crossover.world.worlds.query({
+        geohash,
+        locationType,
+    });
 }
 
 /*

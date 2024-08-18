@@ -14,6 +14,7 @@ import {
 import { playerAttributes } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
+import { type GeohashLocationType } from "$lib/crossover/world/types";
 import { entityActualAp } from "$lib/crossover/world/utils";
 import { sleep } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
@@ -137,10 +138,18 @@ async function performAbility({
 
     // Get all players nearby self & target
     const playerIdsNearby = [];
-    playerIdsNearby.push(...(await getNearbyPlayerIds(self.loc[0])));
+    playerIdsNearby.push(
+        ...(await getNearbyPlayerIds(
+            self.loc[0],
+            self.locT as GeohashLocationType,
+        )),
+    );
     if (selfEntityId !== target) {
         playerIdsNearby.push(
-            ...(await getNearbyPlayerIds(targetEntity.loc[0])),
+            ...(await getNearbyPlayerIds(
+                targetEntity.loc[0],
+                targetEntity.locT as GeohashLocationType,
+            )),
         );
     }
 

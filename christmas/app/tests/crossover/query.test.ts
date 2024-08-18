@@ -61,6 +61,7 @@ test("Test Query", async () => {
     // Wooden Door
     let woodendoor = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
         prop: compendium.woodendoor.prop,
         variables: {
             [compendium.woodendoor.variables.doorsign.variable]:
@@ -71,18 +72,21 @@ test("Test Query", async () => {
     // Wooden club
     let woodenclub = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
     // Wooden club
     let woodenclub2 = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
     // Wooden club
     let woodenclub3 = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
@@ -90,11 +94,13 @@ test("Test Query", async () => {
     let portal = (await spawnItem({
         geohash: playerOne.loc[0], // spawn at playerOne
         prop: compendium.portal.prop,
+        locationType: "geohash",
     })) as ItemEntity;
 
     // Dragon
     let dragon = await spawnMonster({
         geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
         beast: "dragon",
         level: 1,
     });
@@ -102,18 +108,21 @@ test("Test Query", async () => {
     // Goblin
     let goblin = await spawnMonster({
         geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
         beast: "goblin",
         level: 1,
     });
 
     let goblin2 = await spawnMonster({
         geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
         beast: "goblin",
         level: 1,
     });
 
     let goblin3 = await spawnMonster({
         geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
         beast: "goblin",
         level: 1,
     });

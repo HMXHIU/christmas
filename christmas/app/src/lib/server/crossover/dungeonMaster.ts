@@ -51,9 +51,10 @@ async function spawnMonsters(players: PlayerEntity[]) {
             const monsterLimit = await monsterLimitAtGeohash(geohash);
 
             // Get number of monsters in geohash
-            const numMonsters = await monstersInGeohashQuerySet([
-                geohash,
-            ]).count();
+            const numMonsters = await monstersInGeohashQuerySet(
+                [geohash],
+                locationType as GeohashLocationType,
+            ).count();
 
             // Number of monsters to spawn
             const numMonstersToSpawn = monsterLimit - numMonsters;

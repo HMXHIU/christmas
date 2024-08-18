@@ -71,10 +71,10 @@ const Directions: Direction[] = [
 ];
 
 type LocationType =
-    | "item" // inside an item
-    | "inv" // inventory
     | GeohashLocationType // environment
-    | EquipmentSlot; // equiped
+    | EquipmentSlot // equiped
+    | "inv" // inventory
+    | "item"; // inside an item
 
 const geohashLocationTypes = new Set([
     "geohash",

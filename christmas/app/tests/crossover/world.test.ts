@@ -467,9 +467,13 @@ describe("World Tests", () => {
         ]);
 
         // Test retrieve worlds
-        const { town, worlds } = await crossoverWorldWorlds(worldTwoGeohash, {
-            Cookie: playerOneCookies,
-        });
+        const { town, worlds } = await crossoverWorldWorlds(
+            worldTwoGeohash,
+            "geohash",
+            {
+                Cookie: playerOneCookies,
+            },
+        );
         expect(town.length).to.equal(worldSeed.spatial.town.precision);
         expect(worlds).toMatchObject([{ world: worldTwo.world }]);
 

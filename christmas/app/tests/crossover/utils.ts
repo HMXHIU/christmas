@@ -1641,6 +1641,7 @@ export async function testPlayerCreateItem({
             geohash,
             prop: prop,
             variables,
+            locationType: "geohash",
         },
         { Cookie: cookies },
     );

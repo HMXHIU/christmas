@@ -73,6 +73,7 @@ async function say(player: PlayerEntity, message: string, now?: number) {
     // Get logged in players in geohash
     const players = await playersInGeohashQuerySet(
         geohashesNearby(player.loc[0].slice(0, -1), true), // use p7 square for `say` radius
+        player.locT as GeohashLocationType,
     ).return.allIds({ pageSize: LOOK_PAGE_SIZE }); // limit players using page size
 
     // Send message to all players in the geohash (non blocking)
@@ -113,7 +114,7 @@ async function moveEntity(
     for (const direction of path) {
         const [isTraversable, location] = await isDirectionTraversable(
             loc,
-            entity.locT,
+            entity.locT as GeohashLocationType,
             direction,
         );
         if (!isTraversable) {
@@ -142,7 +143,10 @@ async function moveEntity(
     entity = (await saveEntity(entity)) as PlayerEntity | MonsterEntity;
 
     // Inform all players nearby of location change
-    const nearbyPlayerIds = await getNearbyPlayerIds(entity.loc[0]);
+    const nearbyPlayerIds = await getNearbyPlayerIds(
+        entity.loc[0],
+        entity.locT as GeohashLocationType,
+    );
     publishAffectedEntitiesToPlayers(
         [minifiedEntity(entity, { location: true, demographics: true, now })],
         {
@@ -154,6 +158,7 @@ async function moveEntity(
     if (p6Changed && entityType === "player") {
         const { players, monsters, items } = await getNearbyEntities(
             entity.loc[0],
+            entity.locT as GeohashLocationType,
             LOOK_PAGE_SIZE,
         );
         publishAffectedEntitiesToPlayers(
@@ -182,6 +187,7 @@ async function performLook(
 ): Promise<GameEntity[]> {
     const { monsters, players, items } = await getNearbyEntities(
         player.loc[0],
+        player.locT as GeohashLocationType,
         LOOK_PAGE_SIZE,
     );
 
@@ -274,7 +280,10 @@ async function useItem({
     const prop = compendium[itemEntity.prop];
     const propUtility = prop.utilities[utility];
     const propAbility = propUtility.ability;
-    const nearbyPlayerIds = await getNearbyPlayerIds(self.loc[0]);
+    const nearbyPlayerIds = await getNearbyPlayerIds(
+        self.loc[0],
+        self.locT as GeohashLocationType,
+    );
 
     if (itemEntity.state !== propUtility.state.start) {
         // Set item start state
@@ -395,7 +404,10 @@ async function equipItem(
     )) as ItemEntity;
 
     // Inform all players nearby of equipment change
-    const nearbyPlayerIds = await getNearbyPlayerIds(player.loc[0]);
+    const nearbyPlayerIds = await getNearbyPlayerIds(
+        player.loc[0],
+        player.locT as GeohashLocationType,
+    );
     publishAffectedEntitiesToPlayers(
         [itemToEquip, ...exitingItemsInSlot].map((e) =>
             minifiedEntity(e, { location: true }),
@@ -444,7 +456,10 @@ async function unequipItem(player: PlayerEntity, item: string, now?: number) {
     )) as ItemEntity;
 
     // Inform all players nearby of equipment change
-    const nearbyPlayerIds = await getNearbyPlayerIds(player.loc[0]);
+    const nearbyPlayerIds = await getNearbyPlayerIds(
+        player.loc[0],
+        player.locT as GeohashLocationType,
+    );
     publishAffectedEntitiesToPlayers(
         [minifiedEntity(itemEntity, { location: true })],
         {
@@ -502,7 +517,10 @@ async function takeItem(
     )) as ItemEntity;
 
     // Inform all players nearby of item creation
-    const nearbyPlayerIds = await getNearbyPlayerIds(player.loc[0]);
+    const nearbyPlayerIds = await getNearbyPlayerIds(
+        player.loc[0],
+        player.locT as GeohashLocationType,
+    );
     publishAffectedEntitiesToPlayers(
         [minifiedEntity(itemEntity, { location: true, stats: true })],
         { publishTo: nearbyPlayerIds },
@@ -546,7 +564,10 @@ async function dropItem(player: PlayerEntity, item: string, now?: number) {
     )) as ItemEntity;
 
     // Inform all players nearby of item creation
-    const nearbyPlayerIds = await getNearbyPlayerIds(player.loc[0]);
+    const nearbyPlayerIds = await getNearbyPlayerIds(
+        player.loc[0],
+        player.locT as GeohashLocationType,
+    );
     publishAffectedEntitiesToPlayers(
         [minifiedEntity(itemEntity, { location: true, stats: true })],
         { publishTo: nearbyPlayerIds },
@@ -579,7 +600,10 @@ async function createItem(
         });
 
         // Inform all players nearby of item creation
-        const nearbyPlayerIds = await getNearbyPlayerIds(player.loc[0]);
+        const nearbyPlayerIds = await getNearbyPlayerIds(
+            player.loc[0],
+            player.locT as GeohashLocationType,
+        );
         publishAffectedEntitiesToPlayers(
             [minifiedEntity(item, { location: true, stats: true })],
             { publishTo: nearbyPlayerIds },

@@ -38,7 +38,11 @@ import { playerAttributes } from "$lib/crossover/world/player";
 import { MS_PER_TICK, SERVER_LATENCY } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import { Directions, type Direction } from "$lib/crossover/world/types";
+import {
+    Directions,
+    type Direction,
+    type GeohashLocationType,
+} from "$lib/crossover/world/types";
 import type {
     Item,
     Monster,
@@ -88,7 +92,10 @@ interface GameLogic {
  * @param geohash - geohash of the player
  * @returns
  */
-async function updateWorlds(geohash: string) {
+async function updateWorlds(
+    geohash: string,
+    locationType: GeohashLocationType,
+) {
     const t = geohash.slice(0, worldSeed.spatial.town.precision);
     // Already have world at town (Note: no world in town ({} is valid))
     if (get(worldRecord)[t] != null) {
@@ -96,7 +103,7 @@ async function updateWorlds(geohash: string) {
     }
 
     // Get world at town
-    const { town, worlds } = await crossoverWorldWorlds(geohash);
+    const { town, worlds } = await crossoverWorldWorlds(geohash, locationType);
     worldRecord.update((wr) => {
         if (wr[town] == null) {
             wr[town] = {};
@@ -242,7 +249,10 @@ async function updatePlayer(
 
         // Update worlds if location changed
         if (oldEntity == null || oldEntity.loc[0] !== newEntity.loc[0]) {
-            await updateWorlds(newEntity.loc[0]);
+            await updateWorlds(
+                newEntity.loc[0],
+                newEntity.locT as GeohashLocationType,
+            );
         }
     }
 }
@@ -592,6 +602,7 @@ async function performAction(
             return await crossoverCmdCreateItem(
                 {
                     geohash,
+                    locationType: self.locT as GeohashLocationType,
                     prop: prop,
                 },
                 headers,

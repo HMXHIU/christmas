@@ -147,10 +147,12 @@ function entityIsBusy(entity: Player | Monster): [boolean, number] {
 
 async function getWorldAtGeohash(
     geohash: string,
+    locationType: GeohashLocationType,
 ): Promise<WorldEntity | undefined> {
-    return (await worldsContainingGeohashQuerySet([geohash]).first()) as
-        | WorldEntity
-        | undefined;
+    return (await worldsContainingGeohashQuerySet(
+        [geohash],
+        locationType,
+    ).first()) as WorldEntity | undefined;
 }
 
 async function isGeohashTraversableServer(

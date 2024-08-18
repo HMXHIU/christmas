@@ -31,6 +31,7 @@ test("Test Monster", async () => {
     const dragonGeohash = generateRandomGeohash(8, "h9"); // h9* is all ice (fully traversable)
     let dragon = await spawnMonster({
         geohash: dragonGeohash,
+        locationType: "geohash",
         beast: "dragon",
         level: 1,
     });
@@ -67,6 +68,7 @@ test("Test Monster", async () => {
     // Spawn goblin (1x1 grid)
     let goblin = await spawnMonster({
         geohash: playerOneGeohash,
+        locationType: "geohash",
         beast: "goblin",
         level: 1,
     });
@@ -87,11 +89,13 @@ test("Test Monster", async () => {
     const woodendoorGeohash = generateRandomGeohash(8, "h9");
     let woodendoor = (await spawnItem({
         geohash: woodendoorGeohash,
+        locationType: "geohash",
         prop: compendium.woodendoor.prop,
     })) as ItemEntity;
     await expect(
         spawnMonster({
             geohash: woodendoorGeohash,
+            locationType: "geohash",
             beast: "goblin",
             level: 1,
         }),

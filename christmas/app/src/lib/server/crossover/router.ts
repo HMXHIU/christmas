@@ -286,13 +286,19 @@ const crossoverRouter = {
                 return world as World;
             }),
         worlds: authProcedure
-            .input(z.object({ geohash: z.string() }))
+            .input(
+                z.object({
+                    geohash: z.string(),
+                    locationType: GeohashLocationSchema,
+                }),
+            )
             .query(async ({ input }) => {
-                let { geohash } = input;
+                let { geohash, locationType } = input;
                 const town = geohash.slice(0, worldSeed.spatial.town.precision);
-                const worlds = (await worldsInGeohashQuerySet([
-                    town,
-                ]).return.all()) as WorldEntity[];
+                const worlds = (await worldsInGeohashQuerySet(
+                    [town],
+                    locationType,
+                ).return.all()) as WorldEntity[];
 
                 // TODO: hash worlds and have API to check world hashes if need for invalidation
                 return {

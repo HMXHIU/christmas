@@ -1,6 +1,7 @@
 import { geohashNeighbour } from "$lib/crossover/utils";
-import { compendium, itemAttibutes } from "$lib/crossover/world/compendium";
+import { itemAttibutes } from "$lib/crossover/world/compendium";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     configureItem,
     equipItem,
@@ -77,6 +78,7 @@ beforeAll(async () => {
     woodenDoorGeohash = generateRandomGeohash(8, "h9");
     woodenDoor = (await spawnItem({
         geohash: woodenDoorGeohash,
+        locationType: "geohash",
         prop: compendium.woodendoor.prop,
         variables: {
             [compendium.woodendoor.variables!.doorsign.variable]:
@@ -102,6 +104,7 @@ beforeAll(async () => {
     // Spawn portalOne at playerOne location
     portalOne = (await spawnItem({
         geohash: playerOneGeohash,
+        locationType: "geohash",
         prop: compendium.portal.prop,
         variables: {
             [compendium.portal.variables!.description.variable]: "Portal One",
@@ -112,6 +115,7 @@ beforeAll(async () => {
     portalTwoGeohash = generateRandomGeohash(8, "h9");
     portalTwo = (await spawnItem({
         geohash: portalTwoGeohash, // somwhere else
+        locationType: "geohash",
         prop: compendium.portal.prop,
         variables: {
             [compendium.portal.variables!.description.variable]: "Portal Two",
@@ -145,6 +149,7 @@ beforeAll(async () => {
     // Spawn playerOneWoodenClub with owner as playerOne
     playerOneWoodenClub = await spawnItem({
         geohash: playerOne.loc[0],
+        locationType: "geohash",
         prop: compendium.woodenclub.prop,
         owner: playerOne.player,
         configOwner: playerOne.player,
@@ -163,6 +168,7 @@ describe("Test Items", () => {
         await expect(
             spawnItem({
                 geohash: woodenDoorGeohash,
+                locationType: "geohash",
                 prop: compendium.woodendoor.prop,
             }),
         ).rejects.toThrowError(
@@ -363,6 +369,7 @@ describe("Test Items", () => {
         // playerTwo configure playerOneOtherWoodenClub (negative config permissions)
         let playerOneOtherWoodenClub = await spawnItem({
             geohash: playerTwo.loc[0],
+            locationType: "geohash",
             prop: compendium.woodenclub.prop,
             owner: playerOne.player,
             configOwner: playerOne.player,

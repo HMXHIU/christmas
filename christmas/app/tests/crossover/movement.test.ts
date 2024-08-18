@@ -1,6 +1,6 @@
 import { crossoverCmdMove } from "$lib/crossover/client";
+import { aStarPathfinding } from "$lib/crossover/pathfinding";
 import {
-    aStarPathfinding,
     geohashNeighbour,
     getGeohashesForPath,
     getPositionsForPath,
@@ -97,32 +97,32 @@ describe("Movement Tests", () => {
         /*
          * Test pathfinding without obstacles
          */
-        var path = aStarPathfinding({
+        var path = await aStarPathfinding({
             rowStart: 0,
             colStart: 0,
             rowEnd: 3,
             colEnd: 3,
-            getTraversalCost: (row, col) => {
+            getTraversalCost: async (row, col) => {
                 return 0;
             },
         });
         expect(path).toMatchObject(["se", "se", "se"]);
-        var path = aStarPathfinding({
+        var path = await aStarPathfinding({
             rowStart: 3,
             colStart: 3,
             rowEnd: 0,
             colEnd: 0,
-            getTraversalCost: (row, col) => {
+            getTraversalCost: async (row, col) => {
                 return 0;
             },
         });
         expect(path).toMatchObject(["nw", "nw", "nw"]);
-        var path = aStarPathfinding({
+        var path = await aStarPathfinding({
             rowStart: 3,
             colStart: 3,
             rowEnd: 3,
             colEnd: 1,
-            getTraversalCost: (row, col) => {
+            getTraversalCost: async (row, col) => {
                 return 0;
             },
         });
@@ -139,12 +139,12 @@ describe("Movement Tests", () => {
          * 0 0 0 0 0
          * 0 0 0 0 e
          */
-        var path = aStarPathfinding({
+        var path = await aStarPathfinding({
             rowStart: 0,
             colStart: 0,
             rowEnd: 4,
             colEnd: 4,
-            getTraversalCost: (row, col) => {
+            getTraversalCost: async (row, col) => {
                 if (
                     (row == 2 && col == 1) ||
                     (row == 2 && col == 2) ||
@@ -165,6 +165,7 @@ describe("Movement Tests", () => {
         const tavernGeohash = geohashNeighbour(playerOneGeohash, "s");
         let tavern = (await spawnItem({
             geohash: tavernGeohash,
+            locationType: "geohash",
             prop: compendium.tavern.prop,
         })) as ItemEntity;
         const tavernOrigin = geohashNeighbour(playerOneGeohash, "s");
@@ -195,7 +196,10 @@ describe("Movement Tests", () => {
         await sleep(MS_PER_TICK * 2);
         playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
         const biome = (
-            await biomeAtGeohash(geohashNeighbour(playerOneGeohash, "e"))
+            await biomeAtGeohash(
+                geohashNeighbour(playerOneGeohash, "e"),
+                "geohash",
+            )
         )[0];
         expect(biomes[biome].traversableSpeed).toBeGreaterThan(0);
         expect(playerOne.loc[0]).toBe(geohashNeighbour(playerOneGeohash, "e"));

@@ -48,8 +48,14 @@ function entityStats(
 async function isGeohashTraversable(
     geohash: string,
     locationType: GeohashLocationType,
-    hasCollidersInGeohash: (geohash: string) => Promise<boolean>,
-    getWorldForGeohash: (geohash: string) => Promise<World | undefined>,
+    hasCollidersInGeohash: (
+        geohash: string,
+        locationType: GeohashLocationType,
+    ) => Promise<boolean>,
+    getWorldForGeohash: (
+        geohash: string,
+        locationType: GeohashLocationType,
+    ) => Promise<World | undefined>,
     options?: {
         topologyResultCache?: CacheInterface;
         topologyBufferCache?: CacheInterface;
@@ -59,7 +65,7 @@ async function isGeohashTraversable(
     },
 ): Promise<boolean> {
     // Early return false if has colliders (items)
-    if (await hasCollidersInGeohash(geohash)) {
+    if (await hasCollidersInGeohash(geohash, locationType)) {
         return false;
     }
 
@@ -73,7 +79,7 @@ async function isGeohashTraversable(
 
     // Get world speed
     let worldSpeed = undefined;
-    const world = await getWorldForGeohash(geohash);
+    const world = await getWorldForGeohash(geohash, locationType);
     if (world) {
         worldSpeed = await traversableSpeedInWorld({
             world,

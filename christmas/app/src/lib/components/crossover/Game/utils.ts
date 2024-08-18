@@ -478,21 +478,27 @@ async function getAvatarMetadata(
     }
 }
 
-async function hasColliders(geohash: string): Promise<boolean> {
+async function hasColliders(
+    geohash: string,
+    locationType: GeohashLocationType,
+): Promise<boolean> {
     for (const item of Object.values(get(itemRecord))) {
-        if (item.locT === "geohash" && item.loc.includes(geohash)) {
+        if (item.locT === locationType && item.loc.includes(geohash)) {
             return true;
         }
     }
     return false;
 }
 
-async function getWorldForGeohash(geohash: string): Promise<World | undefined> {
+async function getWorldForGeohash(
+    geohash: string,
+    locationType: GeohashLocationType,
+): Promise<World | undefined> {
     for (const [town, worlds] of Object.entries(get(worldRecord))) {
         if (!geohash.startsWith(town)) continue;
         for (const world of Object.values(worlds)) {
             for (const loc of world.loc) {
-                if (geohash.startsWith(loc)) {
+                if (geohash.startsWith(loc) && world.locT === locationType) {
                     return world;
                 }
             }

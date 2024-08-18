@@ -84,21 +84,25 @@ test("Test Utils", async () => {
 
     let dragon = await spawnMonster({
         geohash: geohash,
+        locationType: "geohash",
         beast: "dragon",
         level: 1,
     });
     let dragon2 = await spawnMonster({
         geohash: east3,
+        locationType: "geohash",
         beast: "dragon",
         level: 1,
     });
     let giantSpider = await spawnMonster({
         geohash: east2,
+        locationType: "geohash",
         beast: "giantSpider",
         level: 1,
     });
     let goblin = await spawnMonster({
         geohash: southeast2,
+        locationType: "geohash",
         beast: "goblin",
         level: 1,
     });

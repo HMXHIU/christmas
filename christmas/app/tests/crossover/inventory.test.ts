@@ -49,6 +49,7 @@ beforeAll(async () => {
     // Spawn woodenclub
     playerOneWoodenClub = await spawnItem({
         geohash: playerOne.loc[0],
+        locationType: "geohash",
         prop: compendium.woodenclub.prop,
         owner: playerOne.player,
         configOwner: playerOne.player,
@@ -265,6 +266,7 @@ describe("Inventory Tests", () => {
     test("Unable to equip unequippable item", async () => {
         let potionofhealth = await spawnItem({
             geohash: playerOne.loc[0],
+            locationType: "geohash",
             prop: compendium.potionofhealth.prop,
         });
 
@@ -299,6 +301,7 @@ describe("Inventory Tests", () => {
     test("Unable to take item belonging to another player", async () => {
         let unpickablePotion = await spawnItem({
             geohash: playerOne.loc[0],
+            locationType: "geohash",
             prop: compendium.potionofhealth.prop,
             owner: "anotherPlayer",
         });

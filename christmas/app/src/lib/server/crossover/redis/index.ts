@@ -7,7 +7,9 @@ import {
     REDIS_USERNAME,
 } from "$env/static/private";
 import { expandGeohashes, geohashesNearby } from "$lib/crossover/utils";
+import { EquipmentSlots } from "$lib/crossover/world/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
+import type { GeohashLocationType } from "$lib/crossover/world/types";
 import type { Search } from "redis-om";
 import { Repository } from "redis-om";
 import { LOOK_PAGE_SIZE } from "..";
@@ -31,7 +33,6 @@ export {
     getNearbyEntities,
     getNearbyPlayerIds,
     hasCollidersInGeohash,
-    hasWorldCollider,
     initializeClients,
     inventoryQuerySet,
     isGeohashInWorld,
@@ -131,6 +132,7 @@ async function fetchEntity(
  */
 async function getNearbyEntities(
     geohash: string,
+    locationType: GeohashLocationType,
     playersPageSize: number,
     options: {
         monsters: boolean;
@@ -148,29 +150,42 @@ async function getNearbyEntities(
 
     return {
         players: options.players
-            ? ((await playersInGeohashQuerySet(nearbyGeohashes).return.all({
+            ? ((await playersInGeohashQuerySet(
+                  nearbyGeohashes,
+                  locationType,
+              ).return.all({
                   pageSize: playersPageSize,
               })) as PlayerEntity[])
             : [],
         monsters: options.monsters
             ? ((await monstersInGeohashQuerySet(
                   nearbyGeohashes, // no pageSize for monsters, retrive everything
+                  locationType,
               ).return.all()) as MonsterEntity[])
             : [],
         items: options.items
             ? ((await itemsInGeohashQuerySet(
                   nearbyGeohashes, // no pageSize for monsters, retrive everything
+                  locationType,
               ).return.all()) as ItemEntity[])
             : [],
     };
 }
 
-async function getNearbyPlayerIds(geohash: string): Promise<string[]> {
-    const { players } = await getNearbyEntities(geohash, LOOK_PAGE_SIZE, {
-        players: true,
-        monsters: false,
-        items: false,
-    });
+async function getNearbyPlayerIds(
+    geohash: string,
+    locationType: GeohashLocationType,
+): Promise<string[]> {
+    const { players } = await getNearbyEntities(
+        geohash,
+        locationType,
+        LOOK_PAGE_SIZE,
+        {
+            players: true,
+            monsters: false,
+            items: false,
+        },
+    );
     return players.map((p) => p.player);
 }
 
@@ -197,17 +212,28 @@ async function saveEntity(
     throw new Error("Invalid entity");
 }
 
-async function hasCollidersInGeohash(geohash: string): Promise<boolean> {
+async function hasCollidersInGeohash(
+    geohash: string,
+    locationType: GeohashLocationType,
+): Promise<boolean> {
     return (
-        (await itemsInGeohashQuerySet([geohash])
+        (await itemsInGeohashQuerySet([geohash], locationType)
             .and("cld")
             .equal(true)
             .count()) > 0
     );
 }
 
-async function isGeohashInWorld(geohash: string): Promise<boolean> {
-    return (await worldsContainingGeohashQuerySet([geohash]).count()) > 0;
+async function isGeohashInWorld(
+    geohash: string,
+    locationType: GeohashLocationType,
+): Promise<boolean> {
+    return (
+        (await worldsContainingGeohashQuerySet(
+            [geohash],
+            locationType,
+        ).count()) > 0
+    );
 }
 
 /*
@@ -227,10 +253,13 @@ function loggedInPlayersQuerySet(): Search {
  * @param geohashes The geohashes to filter players by.
  * @returns A search query set for players in the specified geohash.
  */
-function playersInGeohashQuerySet(geohashes: string[]): Search {
+function playersInGeohashQuerySet(
+    geohashes: string[],
+    locationType: GeohashLocationType,
+): Search {
     return loggedInPlayersQuerySet()
-        .where("locT")
-        .equal("geohash")
+        .and("locT")
+        .equal(locationType)
         .and("loc")
         .containOneOf(...geohashes.map((x) => `${x}*`));
 }
@@ -240,11 +269,14 @@ function playersInGeohashQuerySet(geohashes: string[]): Search {
  * @param geohashes The geohashes to filter monsters by.
  * @returns A search query set for monsters in the specified geohash.
  */
-function monstersInGeohashQuerySet(geohashes: string[]): Search {
+function monstersInGeohashQuerySet(
+    geohashes: string[],
+    locationType: GeohashLocationType,
+): Search {
     return monsterRepository
         .search()
         .where("locT")
-        .equal("geohash")
+        .equal(locationType)
         .and("loc")
         .containOneOf(...geohashes.map((x) => `${x}*`));
 }
@@ -254,11 +286,14 @@ function monstersInGeohashQuerySet(geohashes: string[]): Search {
  * @param geohashes - The geohashes to search for items in.
  * @returns A Search object representing the query.
  */
-function itemsInGeohashQuerySet(geohashes: string[]): Search {
+function itemsInGeohashQuerySet(
+    geohashes: string[],
+    locationType: GeohashLocationType,
+): Search {
     return itemRepository
         .search()
         .where("locT")
-        .equal("geohash")
+        .equal(locationType)
         .and("loc")
         .containOneOf(...geohashes.map((x) => `${x}*`));
 }
@@ -272,12 +307,15 @@ function itemsInGeohashQuerySet(geohashes: string[]): Search {
  */
 function worldsContainingGeohashQuerySet(
     geohashes: string[],
+    locationType: GeohashLocationType,
     precision?: number,
 ): Search {
     precision ??= worldSeed.spatial.town.precision;
     return worldRepository
         .search()
-        .where("loc")
+        .where("locT")
+        .equal(locationType)
+        .and("loc")
         .containOneOf(...expandGeohashes(geohashes, precision));
 }
 
@@ -286,26 +324,16 @@ function worldsContainingGeohashQuerySet(
  * @param geohashes - The geohashes to search for worlds in.
  * @returns A Search object representing the query.
  */
-function worldsInGeohashQuerySet(geohashes: string[]): Search {
+function worldsInGeohashQuerySet(
+    geohashes: string[],
+    locationType: GeohashLocationType,
+): Search {
     return worldRepository
         .search()
-        .where("loc")
+        .where("locT")
+        .equal(locationType)
+        .and("loc")
         .containOneOf(...geohashes.map((x) => `${x}*`));
-}
-
-/**
- * Checks if a geohash has a world collider.
- * @param geohash - The geohash to check.
- * @returns The search result.
- */
-async function hasWorldCollider(geohash: string): Promise<boolean> {
-    return (
-        (await worldRepository
-            .search()
-            .where("cld")
-            .contains(`${geohash}*`)
-            .count()) > 0
-    );
 }
 
 /**
@@ -326,9 +354,7 @@ function equipmentQuerySet(player: string): Search {
     return itemRepository
         .search()
         .where("locT")
-        .not.equal("geohash")
-        .and("locT")
-        .not.equal("inv")
+        .containsOneOf(...EquipmentSlots)
         .where("loc")
         .contains(player);
 }
