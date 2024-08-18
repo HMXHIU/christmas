@@ -96,7 +96,7 @@ describe("DungeonMaster Tests", () => {
 
         const numMonstersInArea = await Promise.all(
             uninhabitedGeohashes.map((geohash) =>
-                monstersInGeohashQuerySet([geohash]).count(),
+                monstersInGeohashQuerySet([geohash], "geohash").count(),
             ),
         ).then((monsterCounts) =>
             monsterCounts.reduce((acc, current) => acc + current, 0),

@@ -374,13 +374,6 @@ export async function testMonsterPerformAbilityOnPlayer({
     const monsterBefore: MonsterEntity = { ...monster };
     const sanctuary = sanctuariesByRegion[player.rgn];
 
-    // Perform ability on player
-    await performAbility({
-        self: monster,
-        target: player.player, // this will change player in place
-        ability,
-    });
-
     let feedEvents: StreamEvent[] = [];
     let entitiesEvents: UpdateEntitiesEvent[] = [];
     let entitiesEventsCnt = 0;
@@ -390,6 +383,14 @@ export async function testMonsterPerformAbilityOnPlayer({
     collectEventDataForDuration(stream, "feed").then((events) => {
         feedEvents = events;
     });
+
+    // Perform ability on player
+    await performAbility({
+        self: monster,
+        target: player.player, // this will change player in place
+        ability,
+    });
+
     await sleep(500); // wait for events to be collected
 
     // Check received 'entities' event for procedures effecting target
@@ -409,10 +410,13 @@ export async function testMonsterPerformAbilityOnPlayer({
                 console.log(`Checking effect applied to target`);
                 expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
                     players: [
-                        await performEffectOnEntity({
-                            entity: { ...playerBefore },
-                            effect: actualEffect,
-                        }),
+                        minifiedEntity(
+                            await performEffectOnEntity({
+                                entity: { ...playerBefore },
+                                effect: actualEffect,
+                            }),
+                            { location: true, stats: true, timers: true },
+                        ),
                     ],
                     monsters: [
                         {
@@ -423,6 +427,14 @@ export async function testMonsterPerformAbilityOnPlayer({
                         },
                     ],
                 });
+
+                // Update player
+                for (const p of entitiesEvents[entitiesEventsCnt].players!) {
+                    if (p.player === player.player) {
+                        player = p as PlayerEntity;
+                        break;
+                    }
+                }
             }
             entitiesEventsCnt += 1;
         }
@@ -438,14 +450,13 @@ export async function testMonsterPerformAbilityOnPlayer({
             players: [
                 {
                     player: player.player,
-                    hp: 0,
-                    loc: [sanctuary.geohash],
+                    loc: [sanctuary.geohash], // respawn at region's sanctuary with full
                 },
             ],
         });
 
         // Update player
-        for (const p of entitiesEvents[entitiesEventsCnt]?.players!) {
+        for (const p of entitiesEvents[entitiesEventsCnt].players!) {
             if (p.player === player.player) {
                 player = p as PlayerEntity;
                 break;
@@ -495,6 +506,12 @@ export async function testPlayerPerformAbilityOnMonster({
     const [isBusy, now] = entityIsBusy(player);
     const { hasResources, message: resourceInsufficientMessage } =
         hasResourcesForAbility(player, ability);
+
+    const entitiesEvents = (await collectEventDataForDuration(
+        stream,
+        "entities",
+    )) as UpdateEntitiesEvent[];
+    let entitiesEventsCnt = 0;
 
     // Perform ability on monster
     await crossoverCmdPerformAbility(
@@ -553,11 +570,7 @@ export async function testPlayerPerformAbilityOnMonster({
     }
     // Check procedure effects
     else {
-        const entitiesEvents = (await collectEventDataForDuration(
-            stream,
-            "entities",
-        )) as UpdateEntitiesEvent[];
-        let entitiesEventsCnt = 0;
+        await sleep(500); // wait for entity events to be collected
 
         // Check received 'entities' event consuming player resources
         expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
@@ -611,9 +624,16 @@ export async function testPlayerPerformAbilityOnMonster({
                         entity: monster,
                         effect: actualEffect,
                     })) as Monster;
+
                     expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
                         players: [{ player: player.player }],
-                        monsters: [monster],
+                        monsters: [
+                            minifiedEntity(monster, {
+                                location: true,
+                                stats: true,
+                                timers: true,
+                            }),
+                        ],
                     });
                 }
                 entitiesEventsCnt += 1;
@@ -751,7 +771,7 @@ export async function testPlayerPerformAbilityOnPlayer({
     // Check received feed event if out of range
     else if (!inRange) {
         console.log("Checking feed event for out of range");
-        expect(feedEvents[0]).resolves.toMatchObject({
+        expect(feedEvents[0]).toMatchObject({
             type: "error",
             message: "Target is out of range",
         });
@@ -897,14 +917,19 @@ export async function testPlayerUseItemOnMonster({
     const propAbility = propUtility.ability;
 
     // Self use item on monster
-    await crossoverCmdUseItem(
-        {
-            target: monster.monster,
-            item: item.item,
-            utility,
-        },
-        { Cookie: cookies },
-    );
+    var error;
+    try {
+        await crossoverCmdUseItem(
+            {
+                target: monster.monster,
+                item: item.item,
+                utility,
+            },
+            { Cookie: cookies },
+        );
+    } catch (err: any) {
+        error = err.message;
+    }
 
     // Check if can use item
     const { canUse, message } = canUseItem(
@@ -916,6 +941,7 @@ export async function testPlayerUseItemOnMonster({
     // Check received feed event if can't use item
     if (!canUse) {
         console.log("Checking feed event for can't use item");
+        expect(error).toEqual(message);
         await expect(waitForEventData(stream, "feed")).resolves.toMatchObject({
             type: "error",
             message,
@@ -927,17 +953,21 @@ export async function testPlayerUseItemOnMonster({
     }
 
     // Check received item start state event
-    console.log("Checking event for item start state");
-    await expect(waitForEventData(stream, "entities")).resolves.toMatchObject({
-        players: [{ player: player.player }],
-        monsters: [],
-        items: [
-            {
-                item: item.item,
-                state: propUtility.state.start,
-            },
-        ],
-    });
+    if (item.state !== propUtility.state.start) {
+        console.log("Checking event for item start state");
+        await expect(
+            waitForEventData(stream, "entities"),
+        ).resolves.toMatchObject({
+            players: [{ player: player.player }],
+            monsters: [],
+            items: [
+                {
+                    item: item.item,
+                    state: propUtility.state.start,
+                },
+            ],
+        });
+    }
 
     // Check if item has ability
     if (propAbility != null) {
@@ -1085,7 +1115,13 @@ export async function testPlayerUseItemOnMonster({
                                 entitiesEvents[entitiesEventsCnt],
                             ).toMatchObject({
                                 players: [{ player: player.player }],
-                                monsters: [monster],
+                                monsters: [
+                                    minifiedEntity(target, {
+                                        location: true,
+                                        stats: true,
+                                        timers: true,
+                                    }),
+                                ],
                             });
                         }
                         entitiesEventsCnt += 1;

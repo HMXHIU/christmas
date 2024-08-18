@@ -436,7 +436,7 @@ async function moveInRangeOfTarget({
             row: targetRow,
             col: targetCol,
         },
-        target.locT,
+        target.locT as GeohashLocationType,
         range,
     );
     await crossoverCmdMove({ path });

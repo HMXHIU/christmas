@@ -8,7 +8,6 @@ import { playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { sanctuariesByRegion } from "$lib/crossover/world/world";
 import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import {
     fetchEntity,
@@ -86,6 +85,7 @@ beforeAll(async () => {
     // Spawn monsters
     goblin = await spawnMonster({
         geohash: playerOneGeohash,
+        locationType: "geohash",
         beast: "goblin",
         level: 1,
     });
@@ -93,6 +93,7 @@ beforeAll(async () => {
     // Spawn weapon
     woodenClub = await spawnItem({
         geohash: playerOne.loc[0],
+        locationType: "geohash",
         prop: compendium.woodenclub.prop,
         owner: playerOne.player,
         configOwner: playerOne.player,
@@ -228,8 +229,6 @@ describe("Combat Tests", () => {
     });
 
     test("Player respawns when killed by monster", async () => {
-        console.log(JSON.stringify(playerOne, null, 2));
-
         // Give monster enough mana to cast disintegrate
         goblin = (await buffEntity(goblin.monster, {
             mp: 2000,
@@ -243,12 +242,5 @@ describe("Combat Tests", () => {
                 ability: abilities.disintegrate.ability,
                 stream: playerOneStream,
             });
-
-        // Should respawn at sanctuary
-        const respawnGeohash = sanctuariesByRegion[player.rgn].geohash;
-        expect(player.loc).toMatchObject([respawnGeohash]);
-
-        // TODO: Should respawn with full health after death timer
-        // expect(player.hp).toBeGreaterThan(0);
     });
 });

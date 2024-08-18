@@ -48,6 +48,7 @@ beforeAll(async () => {
     // Spawn items
     woodendoor = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
         prop: compendium.woodendoor.prop,
         variables: {
             [compendium.woodendoor.variables.doorsign.variable]:
@@ -57,33 +58,39 @@ beforeAll(async () => {
 
     woodenclub = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
     woodenclub2 = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
     woodenclub3 = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
     portal = (await spawnItem({
         geohash: playerOne.loc[0],
+        locationType: "geohash",
         prop: compendium.portal.prop,
     })) as ItemEntity;
 
     // Spawn Monsters
     dragon = await spawnMonster({
         geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
         beast: "dragon",
         level: 1,
     });
 
     goblin = await spawnMonster({
         geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
         beast: "goblin",
         level: 1,
     });
