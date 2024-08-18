@@ -404,6 +404,10 @@ async function moveInRangeOfTarget({
         throw new Error("Player is not defined");
     }
 
+    if (playerEntity.locT !== target.locT) {
+        throw new Error("Player and target are not in the same location type");
+    }
+
     if (entityInRange(playerEntity, target, range)[0]) {
         return;
     }
@@ -422,6 +426,7 @@ async function moveInRangeOfTarget({
             row: targetRow,
             col: targetCol,
         },
+        target.locT,
         range,
     );
     await crossoverCmdMove({ path });

@@ -10,6 +10,7 @@ import { monsterStats } from "./bestiary";
 import { biomeAtGeohash, biomes } from "./biomes";
 import { playerStats } from "./player";
 import { MS_PER_TICK } from "./settings";
+import type { GeohashLocationType } from "./types";
 import { traversableSpeedInWorld } from "./world";
 
 export { entityActualAp, entityStats, isGeohashTraversable, recoverAp };
@@ -46,6 +47,7 @@ function entityStats(
 
 async function isGeohashTraversable(
     geohash: string,
+    locationType: GeohashLocationType,
     hasCollidersInGeohash: (geohash: string) => Promise<boolean>,
     getWorldForGeohash: (geohash: string) => Promise<World | undefined>,
     options?: {
@@ -62,7 +64,7 @@ async function isGeohashTraversable(
     }
 
     // Get biome speed
-    const [biome, strength] = await biomeAtGeohash(geohash, {
+    const [biome, strength] = await biomeAtGeohash(geohash, locationType, {
         topologyResultCache: options?.topologyResultCache,
         topologyBufferCache: options?.topologyBufferCache,
         topologyResponseCache: options?.topologyResponseCache,

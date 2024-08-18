@@ -1,9 +1,13 @@
+import { z } from "zod";
 import { type EquipmentSlot } from "./compendium";
 
 export {
     Directions,
+    GeohashLocationSchema,
+    geohashLocationTypes,
     type AssetMetadata,
     type Direction,
+    type GeohashLocationType,
     type GridCell,
     type LocationType,
     type Tile,
@@ -45,6 +49,13 @@ interface WorldAssetMetadata {
     tileheight: number;
 }
 
+type GridCell = {
+    precision: number;
+    row: number;
+    col: number;
+    geohash: string;
+};
+
 type Direction = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw" | "u" | "d";
 const Directions: Direction[] = [
     "n",
@@ -59,28 +70,36 @@ const Directions: Direction[] = [
     "d",
 ];
 
-type InstancedWorldLocationType = string;
-
 type LocationType =
-    | "geohash" // environment
-    | "d1"
-    | "d2"
-    | "d3"
-    | "d4"
-    | "d5"
-    | "d6"
-    | "d7"
-    | "d8"
-    | "d9"
-    | "d10" // environment - underground levels
     | "item" // inside an item
     | "inv" // inventory
-    | InstancedWorldLocationType // typically a player's publicKey (loc is still a list of geohashes)
+    | GeohashLocationType // environment
     | EquipmentSlot; // equiped
 
-type GridCell = {
-    precision: number;
-    row: number;
-    col: number;
-    geohash: string;
-};
+const geohashLocationTypes = new Set([
+    "geohash",
+    "d1",
+    "d2",
+    "d3",
+    "d4",
+    "d5",
+    "d6",
+    "d7",
+    "d8",
+    "d9",
+]);
+
+type GeohashLocationType = z.infer<typeof GeohashLocationSchema>;
+
+const GeohashLocationSchema = z.enum([
+    "geohash",
+    "d1",
+    "d2",
+    "d3",
+    "d4",
+    "d5",
+    "d6",
+    "d7",
+    "d8",
+    "d9",
+]);

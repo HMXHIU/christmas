@@ -12,6 +12,9 @@ import {
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
+import type { GeohashLocationType } from "$lib/crossover/world/types";
+import { geohashLocationTypes } from "$lib/crossover/world/types";
+import { groupBy } from "lodash-es";
 import {
     itemRepository,
     monsterRepository,
@@ -34,53 +37,53 @@ export { spawnItem, spawnMonster, spawnMonsters, spawnWorld };
  * @returns A Promise that resolves when all the monsters have been spawned.
  */
 async function spawnMonsters(players: PlayerEntity[]) {
-    // Get all parent geohashes (only interested with geohashes 1 level above unit precision)
-    const parentGeohashes = players
-        .map(({ loc }) => {
+    for (const [locationType, ps] of Object.entries(groupBy(players, "locT"))) {
+        // Get all parent geohashes (only interested with geohashes 1 level above unit precision)
+        const parentGeohashes = ps.map(({ loc }) => {
             return loc[0].slice(0, -1);
-        })
-        .filter(
-            (geohash) =>
-                geohash.length === worldSeed.spatial.unit.precision - 1,
-        );
+        });
 
-    // Get all neighboring geohashes where there are no players
-    const uninhabitedGeohashes = await borderingGeohashes(parentGeohashes);
+        // Get all neighboring geohashes where there are no players
+        const uninhabitedGeohashes = await borderingGeohashes(parentGeohashes);
 
-    for (const geohash of uninhabitedGeohashes) {
-        // Get monster limit for each uninhabited geohash
-        const monsterLimit = await monsterLimitAtGeohash(geohash);
+        for (const geohash of uninhabitedGeohashes) {
+            // Get monster limit for each uninhabited geohash
+            const monsterLimit = await monsterLimitAtGeohash(geohash);
 
-        // Get number of monsters in geohash
-        const numMonsters = await monstersInGeohashQuerySet([geohash]).count();
+            // Get number of monsters in geohash
+            const numMonsters = await monstersInGeohashQuerySet([
+                geohash,
+            ]).count();
 
-        // Number of monsters to spawn
-        const numMonstersToSpawn = monsterLimit - numMonsters;
+            // Number of monsters to spawn
+            const numMonstersToSpawn = monsterLimit - numMonsters;
 
-        if (numMonstersToSpawn <= 0) {
-            continue;
-        }
+            if (numMonstersToSpawn <= 0) {
+                continue;
+            }
 
-        // Select a random set of child geo hashes to spawn monsters
-        const childGeohashes = childrenGeohashes(geohash).sort(
-            () => Math.random() - 0.5,
-        );
+            // Select a random set of child geo hashes to spawn monsters
+            const childGeohashes = childrenGeohashes(geohash).sort(
+                () => Math.random() - 0.5,
+            );
 
-        // Spawn monsters
-        for (let i = 0; i < numMonstersToSpawn; i++) {
-            // Get a random child geohash
-            const childGeohash = childGeohashes[i % childGeohashes.length];
+            // Spawn monsters
+            for (let i = 0; i < numMonstersToSpawn; i++) {
+                // Get a random child geohash
+                const childGeohash = childGeohashes[i % childGeohashes.length];
 
-            // TODO: use PG to get random beast
-            const beast = bestiary.goblin.beast;
+                // TODO: use PG to get random beast
+                const beast = bestiary.goblin.beast;
 
-            try {
-                const monster = await spawnMonster({
-                    geohash: childGeohash,
-                    beast,
-                });
-            } catch (error) {
-                console.log(`Error spawning ${beast}`, error);
+                try {
+                    const monster = await spawnMonster({
+                        geohash: childGeohash,
+                        locationType: locationType as GeohashLocationType,
+                        beast,
+                    });
+                } catch (error) {
+                    console.log(`Error spawning ${beast}`, error);
+                }
             }
         }
     }
@@ -96,15 +99,21 @@ async function spawnMonsters(players: PlayerEntity[]) {
  */
 async function spawnMonster({
     geohash,
+    locationType,
     beast,
     level,
 }: {
     geohash: string;
+    locationType: GeohashLocationType;
     beast: string;
     level?: number;
 }): Promise<MonsterEntity> {
     // TODO: Calculate level based on geohash and player level in area if not provided
     level ??= 1;
+
+    if (!geohashLocationTypes.has(locationType)) {
+        throw new Error("Can only spawn monster on GeohashLocationType");
+    }
 
     // Get monster count
     const count = await monsterRepository.search().count();
@@ -123,7 +132,7 @@ async function spawnMonster({
 
     // Check location for traversability and colliders
     const location = calculateLocation(geohash, width, height);
-    if (!(await isLocationTraversable(location))) {
+    if (!(await isLocationTraversable(location, locationType))) {
         throw new Error(`Cannot spawn ${beast} at ${geohash}`);
     }
 
@@ -134,7 +143,7 @@ async function spawnMonster({
         name: beast,
         beast,
         loc: location,
-        locT: "geohash",
+        locT: locationType,
         lvl: level,
         hp,
         mp,
@@ -167,15 +176,21 @@ async function spawnMonster({
  */
 async function spawnWorld({
     geohash,
+    locationType,
     assetUrl,
     tileHeight,
     tileWidth,
 }: {
     geohash: string;
+    locationType: GeohashLocationType;
     assetUrl: string;
     tileHeight: number;
     tileWidth: number;
 }): Promise<WorldEntity> {
+    if (!geohashLocationTypes.has(locationType)) {
+        throw new Error("Can only spawn world on GeohashLocationType");
+    }
+
     // Auto correct geohash to unit precision
     if (geohash.length !== worldSeed.spatial.unit.precision) {
         geohash = autoCorrectGeohashPrecision(
@@ -225,8 +240,10 @@ async function spawnWorld({
         world,
         url: assetUrl || "",
         loc: plotGeohashes, // TODO: this can be optimized not just at unit precision -1
-        locT: "geohash",
+        locT: locationType,
     };
+
+    // TODO: Check if there is a world at location/type
 
     return (await worldRepository.save(world, entity)) as WorldEntity;
 }
@@ -243,12 +260,14 @@ async function spawnWorld({
  */
 async function spawnItem({
     geohash,
+    locationType,
     prop,
     variables,
     owner,
     configOwner,
 }: {
     geohash: string;
+    locationType: GeohashLocationType;
     prop: string;
     owner?: string;
     configOwner?: string;
@@ -257,6 +276,10 @@ async function spawnItem({
     // Owner defaults to public
     owner ??= "";
     configOwner ??= "";
+
+    if (!geohashLocationTypes.has(locationType)) {
+        throw new Error("Can only spawn item on GeohashLocationType");
+    }
 
     // Get item count
     const count = await itemRepository.search().count();
@@ -280,7 +303,7 @@ async function spawnItem({
     const location = calculateLocation(geohash, width, height);
 
     // Check location for traversability
-    if (!(await isLocationTraversable(location))) {
+    if (!(await isLocationTraversable(location, locationType))) {
         throw new Error(`Cannot spawn ${prop} at ${location}`);
     }
 

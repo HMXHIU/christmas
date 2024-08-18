@@ -19,7 +19,11 @@ import type { Action } from "$lib/crossover/world/actions";
 import { avatarMorphologies } from "$lib/crossover/world/bestiary";
 import { elevationAtGeohash } from "$lib/crossover/world/biomes";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import type { AssetMetadata, Direction } from "$lib/crossover/world/types";
+import type {
+    AssetMetadata,
+    Direction,
+    GeohashLocationType,
+} from "$lib/crossover/world/types";
 import { isGeohashTraversable } from "$lib/crossover/world/utils";
 import type { Tileset } from "$lib/crossover/world/world";
 import type { World } from "$lib/server/crossover/redis/entities";
@@ -85,6 +89,7 @@ interface Position {
     isoX: number;
     isoY: number;
     geohash: string;
+    locationType: GeohashLocationType;
     precision: number;
     elevation: number;
 }
@@ -155,6 +160,7 @@ const Z_SCALE =
 
 async function calculatePosition(
     geohash: string,
+    locationType: GeohashLocationType,
     options?: {
         cellWidth?: number;
         cellHeight?: number;
@@ -164,14 +170,25 @@ async function calculatePosition(
     const height = options?.cellHeight ?? CELL_HEIGHT;
     const { row, col, precision } = geohashToGridCell(geohash);
     const [isoX, isoY] = cartToIso(col * width, row * height);
+
     const elevation =
         ELEVATION_TO_CELL_HEIGHT *
-        (await elevationAtGeohash(geohash, {
+        (await elevationAtGeohash(geohash, locationType, {
             responseCache: topologyResponseCache,
             resultsCache: topologyResultCache,
             bufferCache: topologyBufferCache,
         }));
-    return { row, col, isoX, isoY, geohash, precision, elevation };
+
+    return {
+        row,
+        col,
+        isoX,
+        isoY,
+        geohash,
+        precision,
+        elevation,
+        locationType,
+    };
 }
 
 function isCellInView(
@@ -193,7 +210,11 @@ function calculateRowColFromIso(isoX: number, isoY: number): [number, number] {
     return [row, col];
 }
 
-async function getTraversalCost(row: number, col: number): Promise<number> {
+async function getTraversalCost(
+    row: number,
+    col: number,
+    locationType: GeohashLocationType,
+): Promise<number> {
     // 0 is walkable, 1 is not
     return (await isGeohashTraversableClient(
         gridCellToGeohash({
@@ -201,6 +222,7 @@ async function getTraversalCost(row: number, col: number): Promise<number> {
             row,
             precision: worldSeed.spatial.unit.precision,
         }),
+        locationType,
     ))
         ? 0
         : 1;
@@ -209,6 +231,7 @@ async function getTraversalCost(row: number, col: number): Promise<number> {
 async function getDirectionsToPosition(
     source: { row: number; col: number },
     target: { row: number; col: number },
+    locationType: GeohashLocationType,
     range?: number,
 ): Promise<Direction[]> {
     return await aStarPathfinding({
@@ -217,7 +240,8 @@ async function getDirectionsToPosition(
         colEnd: target.col,
         rowEnd: target.row,
         range,
-        getTraversalCost,
+        getTraversalCost: (row, col) =>
+            getTraversalCost(row, col, locationType),
     });
 }
 
@@ -477,12 +501,21 @@ async function getWorldForGeohash(geohash: string): Promise<World | undefined> {
     return undefined;
 }
 
-async function isGeohashTraversableClient(geohash: string): Promise<boolean> {
-    return isGeohashTraversable(geohash, hasColliders, getWorldForGeohash, {
-        topologyResponseCache,
-        topologyResultCache,
-        topologyBufferCache,
-        worldAssetMetadataCache,
-        worldTraversableCellsCache,
-    });
+async function isGeohashTraversableClient(
+    geohash: string,
+    locationType: GeohashLocationType,
+): Promise<boolean> {
+    return isGeohashTraversable(
+        geohash,
+        locationType,
+        hasColliders,
+        getWorldForGeohash,
+        {
+            topologyResponseCache,
+            topologyResultCache,
+            topologyBufferCache,
+            worldAssetMetadataCache,
+            worldTraversableCellsCache,
+        },
+    );
 }

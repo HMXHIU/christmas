@@ -135,6 +135,7 @@
                 const path = await getDirectionsToPosition(
                     playerPosition,
                     targetEC.isoPosition,
+                    targetEC.isoPosition.locationType,
                     ability.range,
                 );
                 const pathPositions = getPositionsForPath(playerPosition, path);

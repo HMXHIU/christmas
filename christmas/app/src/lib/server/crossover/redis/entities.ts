@@ -1,4 +1,8 @@
-import type { Direction, LocationType } from "$lib/crossover/world/types";
+import type {
+    Direction,
+    GeohashLocationType,
+    LocationType,
+} from "$lib/crossover/world/types";
 import { Schema, type Entity } from "redis-om";
 
 export {
@@ -205,7 +209,7 @@ interface World {
     world: string;
     url: string;
     loc: string[];
-    locT: LocationType;
+    locT: GeohashLocationType;
 }
 
 type WorldEntity = World & Entity;

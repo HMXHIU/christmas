@@ -4,7 +4,10 @@ import {
     type ItemVariables,
 } from "$lib/crossover/world/compendium";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import type { Direction } from "$lib/crossover/world/types";
+import type {
+    Direction,
+    GeohashLocationType,
+} from "$lib/crossover/world/types";
 import { isGeohashTraversable } from "$lib/crossover/world/utils";
 import {
     topologyBufferCache,
@@ -150,9 +153,13 @@ async function getWorldAtGeohash(
         | undefined;
 }
 
-async function isGeohashTraversableServer(geohash: string): Promise<boolean> {
+async function isGeohashTraversableServer(
+    geohash: string,
+    locationType: GeohashLocationType,
+): Promise<boolean> {
     return await isGeohashTraversable(
         geohash,
+        locationType,
         hasCollidersInGeohash,
         getWorldAtGeohash,
         {
@@ -165,9 +172,12 @@ async function isGeohashTraversableServer(geohash: string): Promise<boolean> {
     );
 }
 
-async function isLocationTraversable(location: string[]): Promise<boolean> {
+async function isLocationTraversable(
+    location: string[],
+    locationType: GeohashLocationType,
+): Promise<boolean> {
     for (const geohash of location) {
-        if (!(await isGeohashTraversableServer(geohash))) {
+        if (!(await isGeohashTraversableServer(geohash, locationType))) {
             return false;
         }
     }
@@ -176,6 +186,7 @@ async function isLocationTraversable(location: string[]): Promise<boolean> {
 
 async function isDirectionTraversable(
     loc: string[], // entity might be more than 1 cell in size
+    locationType: GeohashLocationType,
     direction: Direction,
 ): Promise<[boolean, string[]]> {
     let location: string[] = [];
@@ -191,7 +202,7 @@ async function isDirectionTraversable(
         }
 
         // Check if geohash is traversable
-        if (!(await isGeohashTraversableServer(nextGeohash))) {
+        if (!(await isGeohashTraversableServer(nextGeohash, locationType))) {
             return [false, loc]; // early return if not traversable
         } else {
             location.push(nextGeohash);

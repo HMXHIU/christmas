@@ -78,14 +78,18 @@ async function _calculateBiomeForRowCol(
     });
 
     // Get biome properties and asset
-    const [biome, strength] = await biomeAtGeohash(geohash, {
-        topologyResponseCache,
-        topologyResultCache,
-        topologyBufferCache,
-    });
+    const [biome, strength] = await biomeAtGeohash(
+        geohash,
+        playerPosition.locationType,
+        {
+            topologyResponseCache,
+            topologyResultCache,
+            topologyBufferCache,
+        },
+    );
     const elevation =
         ELEVATION_TO_CELL_HEIGHT *
-        (await elevationAtGeohash(geohash, {
+        (await elevationAtGeohash(geohash, playerPosition.locationType, {
             responseCache: topologyResponseCache,
             resultsCache: topologyResultCache,
             bufferCache: topologyBufferCache,

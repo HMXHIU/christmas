@@ -9,7 +9,10 @@ import { actions } from "$lib/crossover/world/actions";
 import { type EquipmentSlot } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import type { Direction } from "$lib/crossover/world/types";
+import type {
+    Direction,
+    GeohashLocationType,
+} from "$lib/crossover/world/types";
 import { cloneDeep } from "lodash-es";
 import { setEntityBusy } from ".";
 import { performAbility } from "./abilities";
@@ -110,6 +113,7 @@ async function moveEntity(
     for (const direction of path) {
         const [isTraversable, location] = await isDirectionTraversable(
             loc,
+            entity.locT,
             direction,
         );
         if (!isTraversable) {
@@ -567,6 +571,7 @@ async function createItem(
         // Create item
         const item = await spawnItem({
             geohash,
+            locationType: player.locT as GeohashLocationType,
             prop,
             variables,
             owner: player.player, // owner is player

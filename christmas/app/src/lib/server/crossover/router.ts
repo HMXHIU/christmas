@@ -2,6 +2,7 @@ import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
 import { PlayerMetadataSchema } from "$lib/crossover/world/player";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/settings/world";
+import { GeohashLocationSchema } from "$lib/crossover/world/types";
 import {
     fetchEntity,
     initializeClients,
@@ -111,6 +112,7 @@ const ConfigureItemSchema = z.object({
 });
 const CreateItemSchema = z.object({
     geohash: z.string(), // TODO: if not provided, item is created in player inventory
+    locationType: GeohashLocationSchema,
     prop: z.string(),
     variables: z
         .record(z.union([z.string(), z.number(), z.boolean()]))
@@ -120,6 +122,7 @@ const CreateItemSchema = z.object({
 // Schemas - world
 const SpawnMonsterSchema = z.object({
     geohash: z.string(),
+    locationType: GeohashLocationSchema,
     level: z.number(),
     beast: z.string(),
 });
@@ -135,6 +138,7 @@ const BuffEntitySchema = z.object({
 });
 const SpawnWorldSchema = z.object({
     geohash: z.string(),
+    locationType: GeohashLocationSchema,
     tilemap: z.string(), // tilemap in `PUBLIC_TILED_MINIO_BUCKET` bucket
 });
 
@@ -245,7 +249,7 @@ const crossoverRouter = {
         spawnMonster: internalServiceProcedure
             .input(SpawnMonsterSchema)
             .mutation(async ({ input }) => {
-                const { geohash, level, beast } = input;
+                const { geohash, level, beast, locationType } = input;
 
                 // Check geohash is unit precision
                 if (geohash.length !== worldSeed.spatial.unit.precision) {
@@ -255,13 +259,18 @@ const crossoverRouter = {
                     });
                 }
 
-                const monster = await spawnMonster({ geohash, level, beast });
+                const monster = await spawnMonster({
+                    geohash,
+                    level,
+                    beast,
+                    locationType,
+                });
                 return monster;
             }),
         spawnWorld: internalServiceProcedure
             .input(SpawnWorldSchema)
             .mutation(async ({ input }) => {
-                const { geohash, tilemap } = input;
+                const { geohash, tilemap, locationType } = input;
                 const assetUrl = ObjectStorage.objectUrl({
                     owner: null,
                     bucket: "tiled",
@@ -269,6 +278,7 @@ const crossoverRouter = {
                 });
                 const world = await spawnWorld({
                     geohash,
+                    locationType,
                     assetUrl,
                     tileHeight: TILE_HEIGHT,
                     tileWidth: TILE_WIDTH,

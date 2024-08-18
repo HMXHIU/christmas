@@ -99,6 +99,11 @@ export class EntityContainer extends Container {
         const { pthst, pthdur, pthclk, pth } = pathParams;
         const now = Date.now();
 
+        if (!this.isoPosition) {
+            console.warn(`${this.entityId} has no position`);
+            return;
+        }
+
         // Avatar is moving
         if (pthclk + pthdur > now) {
             const pathPositions = getPositionsForPath(
@@ -125,7 +130,10 @@ export class EntityContainer extends Container {
                     col,
                     precision: pthst.length,
                 });
-                const isoPosition = await calculatePosition(geohash);
+                const isoPosition = await calculatePosition(
+                    geohash,
+                    this.isoPosition.locationType,
+                );
 
                 // Add tween to the timeline
                 this.tween.to(this, {

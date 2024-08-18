@@ -4,6 +4,10 @@ import {
     getAllUnitGeohashes,
 } from "$lib/crossover/utils";
 import { worldSeed } from "$lib/crossover/world/settings/world";
+import {
+    geohashLocationTypes,
+    type GeohashLocationType,
+} from "$lib/crossover/world/types";
 import type { World } from "$lib/server/crossover/redis/entities";
 import { Assets, Container, Graphics } from "pixi.js";
 import { get } from "svelte/store";
@@ -39,9 +43,13 @@ async function drawWorlds(
                 world.loc[0],
                 worldSeed.spatial.unit.precision,
             );
+
             await loadWorld({
                 world: world,
-                position: await calculatePosition(origin),
+                position: await calculatePosition(
+                    origin,
+                    world.locT as GeohashLocationType,
+                ),
                 town,
                 stage,
             });
@@ -205,10 +213,18 @@ async function debugWorld(stage: Container) {
 
     // Draw item colliders
     for (const item of Object.values(get(itemRecord))) {
-        if (item.locT !== "geohash") continue;
+        if (!geohashLocationTypes.has(item.locT)) continue;
         for (const loc of item.loc) {
-            if (!(await isGeohashTraversableClient(loc))) {
-                const itemPosition = await calculatePosition(loc);
+            if (
+                !(await isGeohashTraversableClient(
+                    loc,
+                    item.locT as GeohashLocationType,
+                ))
+            ) {
+                const itemPosition = await calculatePosition(
+                    loc,
+                    item.locT as GeohashLocationType,
+                );
                 colliders.push(
                     stage.addChild(
                         new Graphics()
@@ -227,14 +243,17 @@ async function debugWorld(stage: Container) {
     // Debug world
     for (const [town, worlds] of Object.entries(get(worldRecord))) {
         for (const world of Object.values(worlds)) {
-            if (world.locT !== "geohash") continue;
+            if (!geohashLocationTypes.has(world.locT)) continue;
 
             // Draw world origin
             const origin = autoCorrectGeohashPrecision(
                 world.loc[0],
                 worldSeed.spatial.unit.precision,
             );
-            const originPosition = await calculatePosition(origin);
+            const originPosition = await calculatePosition(
+                origin,
+                world.locT as GeohashLocationType,
+            );
             colliders.push(
                 stage.addChild(
                     new Graphics()
@@ -250,15 +269,22 @@ async function debugWorld(stage: Container) {
             for (const plot of world.loc) {
                 for (const loc of getAllUnitGeohashes(plot)) {
                     // Draw world colliders
-                    if (!(await isGeohashTraversableClient(loc))) {
-                        const itemPosition = await calculatePosition(loc);
+                    if (
+                        !(await isGeohashTraversableClient(
+                            loc,
+                            world.locT as GeohashLocationType,
+                        ))
+                    ) {
+                        const pos = await calculatePosition(
+                            loc,
+                            world.locT as GeohashLocationType,
+                        );
                         colliders.push(
                             stage.addChild(
                                 new Graphics()
                                     .circle(
-                                        itemPosition.isoX,
-                                        itemPosition.isoY -
-                                            itemPosition.elevation,
+                                        pos.isoX,
+                                        pos.isoY - pos.elevation,
                                         5,
                                     )
                                     .stroke({ color: 0xff0000 }),

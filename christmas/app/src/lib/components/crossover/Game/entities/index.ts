@@ -98,7 +98,7 @@ async function upsertEntityContainer(
         const [entityId, entityType] = getEntityId(entity);
 
         // Get position
-        const position = await calculatePosition(entity.loc[0]);
+        const position = await calculatePosition(entity.loc[0], entity.locT);
         const { row, col } = position;
 
         // Get player position & determine if tween is required if entity is in player's view

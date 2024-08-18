@@ -64,10 +64,14 @@ function createHIDHandlers(stage: Container) {
         if (!playerPosition || !state.isMouseDown) return;
 
         const [rowEnd, colEnd] = calculateRowColFromIso(x, y);
-        state.path = await getDirectionsToPosition(playerPosition, {
-            row: rowEnd,
-            col: colEnd,
-        });
+        state.path = await getDirectionsToPosition(
+            playerPosition,
+            {
+                row: rowEnd,
+                col: colEnd,
+            },
+            playerPosition.locationType,
+        );
         const pathPositions = getPositionsForPath(playerPosition, state.path);
         highlightShaderInstances("biome", getPathHighlights(pathPositions, 1));
     }

@@ -11,7 +11,6 @@ import {
 } from "$lib/crossover/utils";
 import {
     biomeAtGeohash,
-    biomesNearbyGeohash,
     elevationAtGeohash,
     topologyAtGeohash,
     topologyTile,
@@ -213,6 +212,7 @@ beforeAll(async () => {
     woodenDoorGeohash = generateRandomGeohash(8, "h9");
     woodenDoor = (await spawnItem({
         geohash: woodenDoorGeohash,
+        locationType: "geohash",
         prop: compendium.woodendoor.prop,
         variables: {
             [compendium.woodendoor.variables!.doorsign.variable]:
@@ -238,6 +238,7 @@ beforeAll(async () => {
     world = await spawnWorld({
         assetUrl,
         geohash: worldGeohash,
+        locationType: "geohash",
         tileHeight: asset.tileheight,
         tileWidth: asset.tilewidth,
     });
@@ -245,6 +246,7 @@ beforeAll(async () => {
     worldTwo = await spawnWorld({
         assetUrl,
         geohash: worldTwoGeohash,
+        locationType: "geohash",
         tileHeight: asset.tileheight / 2, // 128 / 2 = 64
         tileWidth: asset.tilewidth / 2, // 256 / 2 = 128
     });
@@ -252,6 +254,7 @@ beforeAll(async () => {
     worldThree = await spawnWorld({
         assetUrl,
         geohash: worldThreeGeohash,
+        locationType: "geohash",
         tileHeight: TILE_HEIGHT,
         tileWidth: TILE_WIDTH,
     });
@@ -259,6 +262,7 @@ beforeAll(async () => {
     worldFour = await spawnWorld({
         assetUrl,
         geohash: worldFourGeohash,
+        locationType: "geohash",
         tileHeight: TILE_HEIGHT,
         tileWidth: TILE_WIDTH,
     });
@@ -385,27 +389,27 @@ describe("World Tests", () => {
     test("Test isGeohashTraversable", async () => {
         // Wooden door collider not traversable
         await expect(
-            isGeohashTraversableServer(woodenDoorGeohash),
+            isGeohashTraversableServer(woodenDoorGeohash, "geohash"),
         ).resolves.toBe(false);
         await expect(
-            isGeohashTraversableClient(woodenDoorGeohash),
+            isGeohashTraversableClient(woodenDoorGeohash, "geohash"),
         ).resolves.toBe(false);
 
         // Ocean not traversable
-        await expect(isGeohashTraversableServer("2b67676h")).resolves.toBe(
-            false,
-        );
-        await expect(isGeohashTraversableClient("2b67676h")).resolves.toBe(
-            false,
-        );
+        await expect(
+            isGeohashTraversableServer("2b67676h", "geohash"),
+        ).resolves.toBe(false);
+        await expect(
+            isGeohashTraversableClient("2b67676h", "geohash"),
+        ).resolves.toBe(false);
 
         // World collider not traversable
-        await expect(isGeohashTraversableServer("w21z8uck")).resolves.toBe(
-            false,
-        );
-        await expect(isGeohashTraversableClient("w21z8uck")).resolves.toBe(
-            false,
-        );
+        await expect(
+            isGeohashTraversableServer("w21z8uck", "geohash"),
+        ).resolves.toBe(false);
+        await expect(
+            isGeohashTraversableClient("w21z8uck", "geohash"),
+        ).resolves.toBe(false);
     });
 
     test("Test Worlds", async () => {
@@ -557,23 +561,23 @@ describe("World Tests", () => {
         ).toMatchObject(everest);
 
         // Test heightAtGeohash with LRUCache
-        var everestHeight = await elevationAtGeohash("tvpjj3cd");
+        var everestHeight = await elevationAtGeohash("tvpjj3cd", "geohash");
         expect(everestHeight).toBe(6352);
         await expect(
-            elevationAtGeohash("tvpjj3cd", {
+            elevationAtGeohash("tvpjj3cd", "geohash", {
                 resultsCache,
                 responseCache,
                 bufferCache,
             }),
         ).resolves.toBe(everestHeight);
         await expect(
-            elevationAtGeohash("tvpjj3cd", {
+            elevationAtGeohash("tvpjj3cd", "geohash", {
                 resultsCache,
                 responseCache,
                 bufferCache,
             }),
         ).resolves.toBe(
-            await elevationAtGeohash("tvpjj3cd", {
+            await elevationAtGeohash("tvpjj3cd", "geohash", {
                 resultsCache,
                 responseCache,
                 bufferCache,
@@ -584,62 +588,15 @@ describe("World Tests", () => {
     test("Test Procedural Generation", async () => {
         // Test biomeAtGeohash
         expect(
-            (await biomeAtGeohash("w6cn25dm", { seed: worldSeed }))[0],
+            (
+                await biomeAtGeohash("w6cn25dm", "geohash", { seed: worldSeed })
+            )[0],
         ).to.equal("forest");
         expect(
-            (await biomeAtGeohash("w2gpdqgt", { seed: worldSeed }))[0],
+            (
+                await biomeAtGeohash("w2gpdqgt", "geohash", { seed: worldSeed })
+            )[0],
         ).to.equal("water");
-
-        // Test biomesNearbyGeohash - 7 digits of precision returns tiles with 8 digits of precision
-        expect(
-            await biomesNearbyGeohash("w6u7353", { seed: worldSeed }),
-        ).to.deep.equal({
-            w6u7350z: "forest",
-            w6u7351p: "forest",
-            w6u7351r: "forest",
-            w6u7351x: "forest",
-            w6u7351z: "forest",
-            w6u7352b: "forest",
-            w6u73530: "forest",
-            w6u73532: "forest",
-            w6u73538: "forest",
-            w6u7353b: "forest",
-            w6u7352c: "forest",
-            w6u73531: "forest",
-            w6u73533: "forest",
-            w6u73539: "forest",
-            w6u7353c: "water",
-            w6u7352f: "water",
-            w6u73534: "forest",
-            w6u73536: "forest",
-            w6u7353d: "forest",
-            w6u7353f: "forest",
-            w6u7352g: "forest",
-            w6u73535: "forest",
-            w6u73537: "forest",
-            w6u7353e: "forest",
-            w6u7353g: "forest",
-            w6u7352u: "water",
-            w6u7353h: "water",
-            w6u7353k: "forest",
-            w6u7353s: "forest",
-            w6u7353u: "forest",
-            w6u7352v: "forest",
-            w6u7353j: "forest",
-            w6u7353m: "forest",
-            w6u7353t: "forest",
-            w6u7353v: "forest",
-            w6u7352y: "forest",
-            w6u7353n: "forest",
-            w6u7353q: "water",
-            w6u7353w: "forest",
-            w6u7353y: "forest",
-            w6u7352z: "forest",
-            w6u7353p: "forest",
-            w6u7353r: "water",
-            w6u7353x: "forest",
-            w6u7353z: "forest",
-        });
 
         // Test geohashToGridCell
         expect(geohashToGridCell("w61z4m6f")).to.deep.equal({

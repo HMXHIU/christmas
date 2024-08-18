@@ -5,15 +5,18 @@ import {
     seededRandom,
     stringToRandomNumber,
 } from "$lib/crossover/utils";
-import ngeohash from "ngeohash";
 import { PNG, type PNGWithMetadata } from "pngjs";
 import { worldSeed } from "./settings/world";
-import { type AssetMetadata, type Tile } from "./types";
+import {
+    geohashLocationTypes,
+    type AssetMetadata,
+    type GeohashLocationType,
+    type Tile,
+} from "./types";
 import { type WorldSeed } from "./world";
 export {
     biomeAtGeohash,
     biomes,
-    biomesNearbyGeohash,
     elevationAtGeohash,
     INTENSITY_TO_HEIGHT,
     tileAtGeohash,
@@ -146,6 +149,24 @@ let biomes: Record<string, Biome> = {
                 default: 0.33,
                 alt1: 0.33,
                 alt2: 0.33,
+            },
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
+        },
+    },
+    rocks: {
+        biome: "rocks",
+        name: "Rocks",
+        description: "An untraversable wall of subterranean rocks.",
+        traversableSpeed: 0,
+        asset: {
+            path: "biomes/terrain",
+            variants: {
+                default: "rocks1",
+            },
+            prob: {
+                default: 1,
             },
             width: 1,
             height: 1,
@@ -457,12 +478,18 @@ async function topologyAtGeohash(
  */
 async function elevationAtGeohash(
     geohash: string,
+    locationType: GeohashLocationType,
     options?: {
         responseCache?: CacheInterface;
         resultsCache?: CacheInterface;
         bufferCache?: CacheInterface;
     },
 ): Promise<number> {
+    // Underground (d1, d2, d3, ...)
+    if (locationType !== "geohash") {
+        return 0;
+    }
+
     const cachedResult = await options?.resultsCache?.get(geohash);
     if (cachedResult) {
         return cachedResult;
@@ -501,6 +528,7 @@ async function elevationAtGeohash(
  */
 async function biomeAtGeohash(
     geohash: string,
+    locationType: GeohashLocationType,
     options?: {
         seed?: WorldSeed;
         topologyResultCache?: CacheInterface;
@@ -510,13 +538,22 @@ async function biomeAtGeohash(
 ): Promise<[string, number]> {
     const seed = options?.seed || worldSeed;
 
+    if (!geohashLocationTypes.has(locationType)) {
+        throw new Error("Location is not a GeohashLocationType");
+    }
+
+    // Underground
+    if (locationType !== "geohash") {
+        return [biomes.rocks.biome, 1];
+    }
+
     // Leave h9* for ice for testing (fully traversable)
     if (geohash.startsWith("h9")) {
         return [biomes.ice.biome, 1];
     }
 
     // Get topology
-    const height = await elevationAtGeohash(geohash, {
+    const height = await elevationAtGeohash(geohash, locationType, {
         responseCache: options?.topologyResponseCache,
         resultsCache: options?.topologyResultCache,
         bufferCache: options?.topologyBufferCache,
@@ -546,50 +583,6 @@ async function biomeAtGeohash(
         return [biomes.water.biome, 1 - Math.abs(rvv - waterMid) / waterMid];
     }
     return [biomes.plains.biome, 1];
-}
-
-/**
- * Generates biomes in the vincinity of the given geohash by iterating
- * over all child geohashes at a precision 1 higher than the given geohash
- *
- * @param geohash - The geohash geohash to generate biomes for.
- * @param seed - Optional world seed.
- * @returns A record of geohash to biomes generated with biomeAtGeohash().
- */
-async function biomesNearbyGeohash(
-    geohash: string,
-    options?: {
-        seed?: WorldSeed;
-        topologyResultCache?: CacheInterface;
-        topologyBufferCache?: CacheInterface;
-        topologyResponseCache?: CacheInterface;
-    },
-): Promise<Record<string, string>> {
-    const seed = options?.seed || worldSeed;
-    const [minlat, minlon, maxlat, maxlon] = ngeohash.decode_bbox(geohash);
-
-    // Get all the geohashes 1 precision higher than the geohash
-    const geohashes = ngeohash.bboxes(
-        minlat,
-        minlon,
-        maxlat,
-        maxlon,
-        geohash.length + 1,
-    );
-
-    return Object.fromEntries(
-        await Promise.all(
-            geohashes.map(async (geohash) => {
-                const [biome, _] = await biomeAtGeohash(geohash, {
-                    seed,
-                    topologyResponseCache: options?.topologyResponseCache,
-                    topologyResultCache: options?.topologyResultCache,
-                    topologyBufferCache: options?.topologyBufferCache,
-                });
-                return [geohash, biome];
-            }),
-        ),
-    );
 }
 
 /**
