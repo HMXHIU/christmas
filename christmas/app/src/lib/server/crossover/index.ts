@@ -5,6 +5,7 @@ import { playerAttributes, playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { worldSeed } from "$lib/crossover/world/settings/world";
+import { GeohashLocationSchema } from "$lib/crossover/world/types";
 import { sanctuariesByRegion } from "$lib/crossover/world/world";
 import { z } from "zod";
 import { fetchEntity, saveEntity } from "./redis";
@@ -43,7 +44,7 @@ const PlayerStateSchema = z.object({
     lum: z.number().optional(),
     umb: z.number().optional(),
     loc: z.array(z.string()).optional(),
-    locT: z.enum(["geohash"]).optional(),
+    locT: GeohashLocationSchema.optional(),
     hp: z.number().optional(),
     mp: z.number().optional(),
     st: z.number().optional(),

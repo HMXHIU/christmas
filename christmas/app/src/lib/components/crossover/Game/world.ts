@@ -15,7 +15,6 @@ import { itemRecord, worldRecord } from "../../../../store";
 import { IsoMesh } from "../shaders/IsoMesh";
 import {
     calculatePosition,
-    CELL_HEIGHT,
     CELL_WIDTH,
     getImageForTile,
     getTilesetForTile,
@@ -68,7 +67,6 @@ async function loadWorld({
     position: Position;
     stage: Container;
 }) {
-    console.log("loadWorld", world.world);
     // Skip if alerady loaded
     if (worldMeshes[world.world]) {
         return;
@@ -103,13 +101,15 @@ async function loadWorld({
         const layerOffsetY = offsety ?? 0;
 
         // Get properties
-        const { z } = props.reduce(
+        const { layer: renderLayer } = props.reduce(
             (acc: Record<string, any>, { name, value, type }) => {
                 acc[name] = value;
                 return acc;
             },
             {},
         );
+
+        console.log("renderlayer", renderLayer, Z_OFF[renderLayer]);
 
         const sortedTilesets = tilesets
             .sort((a: any, b: any) => a.firstgid - b.firstgid)
@@ -148,9 +148,10 @@ async function loadWorld({
                 const mesh = new IsoMesh({
                     shaderName: "world",
                     texture,
-                    zOffset: Z_OFF[z] ?? Z_OFF.world,
+                    zOffset: Z_OFF[renderLayer] ?? Z_OFF.world,
                     zScale: Z_SCALE,
-                    renderLayer: RENDER_ORDER[z] || RENDER_ORDER.world,
+                    renderLayer:
+                        RENDER_ORDER[renderLayer] ?? RENDER_ORDER.world,
                     cellHeight: 1, // TODO: cant know the cell height by using image height, because the base is not defined
                 });
                 worldMeshes[worldId] = mesh;
@@ -192,9 +193,7 @@ async function loadWorld({
 
                 // Update depth (set as center of the bottom grid cell)
                 const bounds = mesh.getBounds();
-                mesh.updateDepth(
-                    bounds.bottom - CELL_HEIGHT / 2 + position.elevation,
-                );
+                mesh.updateDepth(isoY);
 
                 // Add to stage
                 if (!stage.children.includes(mesh)) {

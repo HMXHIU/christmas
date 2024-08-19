@@ -40,6 +40,7 @@ import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     Directions,
+    geohashLocationTypes,
     type Direction,
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
@@ -170,7 +171,7 @@ async function updateEntityContainer<T extends Player | Monster | Item>(
     game: GameLogic,
 ) {
     updateEntityContainerLock.withLock(async () => {
-        if (newEntity.locT === "geohash") {
+        if (geohashLocationTypes.has(newEntity.locT)) {
             const [created, ec] = await upsertEntityContainer(
                 newEntity,
                 game.stage,

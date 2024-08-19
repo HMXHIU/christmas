@@ -37,7 +37,8 @@ void main() {
 
     gl_Position = vec4(
         clip.xy,
-        // Entities use instancePosition to determine the Z position
+        // Entities use instancePosition to determine the Z position -1 (closest to camera) to 1
+        // uZScale is negative small number
         0.5 + (aInstancePosition.y + uZOffset - zAlongY) * uZScale,
         1.0
     );

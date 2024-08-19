@@ -57,6 +57,8 @@ export class EntityContainer extends Container {
         this.actionBubble = new ActionBubble();
         this.addChild(this.actionBubble);
 
+        console.log(this.entityId, this.zOffset);
+
         this.cullable = true;
     }
 

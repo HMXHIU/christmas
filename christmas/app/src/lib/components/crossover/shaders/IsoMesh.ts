@@ -77,11 +77,11 @@ class IsoMesh extends Mesh<Geometry, Shader> {
         const debugContainer = new Container();
         const { x, y, width, height } = this.getBounds();
         // Draw bounding box
-        debugContainer.addChild(
-            new Graphics()
-                .rect(x, y, width, height)
-                .stroke({ color: 0xff0000 }),
-        );
+        // debugContainer.addChild(
+        //     new Graphics()
+        //         .rect(x, y, width, height)
+        //         .stroke({ color: 0xff0000 }),
+        // );
         // Draw origin
         debugContainer.addChild(
             new Graphics().circle(this.x, this.y, 2).fill({ color: 0xff0000 }),

@@ -10,6 +10,11 @@ import { playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
 import { compendium } from "$lib/crossover/world/settings/compendium";
+import {
+    GeohashLocationSchema,
+    geohashLocationTypes,
+    type GeohashLocationType,
+} from "$lib/crossover/world/types";
 import type {
     Item,
     Monster,
@@ -92,13 +97,18 @@ async function upsertEntityContainer(
     stage: Container,
 ): Promise<[boolean, SimpleEntityContainer | AvatarEntityContainer]> {
     return upsertEntityContainerLock.withLock(async () => {
-        if (entity.locT !== "geohash") {
-            throw new Error("entity location is not a geohash");
+        if (!geohashLocationTypes.has(entity.locT)) {
+            throw new Error("entity location is not a GeohashLocationType");
         }
+
+        GeohashLocationSchema;
         const [entityId, entityType] = getEntityId(entity);
 
         // Get position
-        const position = await calculatePosition(entity.loc[0], entity.locT);
+        const position = await calculatePosition(
+            entity.loc[0],
+            entity.locT as GeohashLocationType,
+        );
         const { row, col } = position;
 
         // Get player position & determine if tween is required if entity is in player's view

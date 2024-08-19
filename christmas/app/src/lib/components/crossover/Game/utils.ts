@@ -114,10 +114,11 @@ const GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
 const GRID_MID_COL = Math.floor(GRID_COLS / 2);
 
 // Z layer offsets
-const Z_LAYER = ISO_CELL_HEIGHT / 2;
+const Z_LAYER = ISO_CELL_HEIGHT * 10;
 const Z_OFF: Record<string, number> = {
     // Shader
     biome: 0 * Z_LAYER,
+    floor: 1 * Z_LAYER,
     grass: 1 * Z_LAYER,
     entity: 2 * Z_LAYER,
     // Entities

@@ -16,7 +16,9 @@ const abyssTile: Tile = {
     description: "You are nowhere to be found.",
 };
 
-// Note: this is different from CELL_WIDTH / CELL_HEIGHT
+// Note:
+//  - This is different from CELL_WIDTH / CELL_HEIGHT (scaling when rendering to screen)
+//  - This is used for converting the tilemap's `tilewidth/height` to grid cells (during spawning)
 const TILE_WIDTH = 256;
 const TILE_HEIGHT = 128;
 

@@ -31,6 +31,25 @@ const INTENSITY_TO_HEIGHT = 8850 / 255;
  * `biomes` is a collection of all the `Biome` available in the game.
  */
 let biomes: Record<string, Biome> = {
+    rocks: {
+        biome: "rocks",
+        name: "Rocks",
+        description: "An untraversable wall of subterranean rocks.",
+        traversableSpeed: 0,
+        asset: {
+            path: "biomes/terrain",
+            variants: {
+                default: "rocks1",
+            },
+            prob: {
+                default: 1,
+            },
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
+        },
+    },
+
     forest: {
         biome: "forest",
         name: "Forest",
@@ -155,24 +174,7 @@ let biomes: Record<string, Biome> = {
             precision: worldSeed.spatial.unit.precision,
         },
     },
-    rocks: {
-        biome: "rocks",
-        name: "Rocks",
-        description: "An untraversable wall of subterranean rocks.",
-        traversableSpeed: 0,
-        asset: {
-            path: "biomes/terrain",
-            variants: {
-                default: "rocks1",
-            },
-            prob: {
-                default: 1,
-            },
-            width: 1,
-            height: 1,
-            precision: worldSeed.spatial.unit.precision,
-        },
-    },
+
     ice: {
         biome: "ice",
         name: "Ice",
