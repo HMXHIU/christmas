@@ -14,6 +14,7 @@ services:
             - MINIO_ROOT_USER=user # development only
             - MINIO_ROOT_PASSWORD=password # development only
             - MINIO_DEFAULT_BUCKETS=bucket # development only
+            - MINIO_BROWSER_SESSION_DURATION=12h
 
     redis-stack-svc:
         image: redis/redis-stack:latest

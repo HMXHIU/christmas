@@ -6,7 +6,8 @@ import { Sound } from "@pixi/sound";
 import { gsap } from "gsap";
 import { Assets, Container, MeshRope, Point, type PointData } from "pixi.js";
 import type { EntityContainer } from "./entities";
-import { RENDER_ORDER, getAngle } from "./utils";
+import { layers } from "./layers";
+import { getAngle } from "./utils";
 
 export { animateAbility, animateSlash };
 
@@ -136,8 +137,7 @@ async function animateSlash(
     const rope = new MeshRope({ texture: trailTexture, points: arc });
     rope.autoUpdate = true;
 
-    rope.zIndex = RENDER_ORDER.effects * endY;
-
+    rope.zIndex = layers.layers.length; // render effects last
     stage.addChild(rope);
 
     // Animation

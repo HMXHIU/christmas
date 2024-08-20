@@ -15,7 +15,7 @@ import type {
     Player,
 } from "$lib/server/crossover/redis/entities";
 import { gsap } from "gsap";
-import { Container, Graphics, type DestroyOptions } from "pixi.js";
+import { Container, type DestroyOptions } from "pixi.js";
 import { calculatePosition, type Position } from "../utils";
 import { ActionBubble } from "./ActionBubble";
 
@@ -24,9 +24,9 @@ export class EntityContainer extends Container {
     public entityType: EntityType;
     public entity: Player | Monster | Item;
 
-    public zOffset: number = 0;
-    public zScale: number = 0;
-    public renderLayer: number = 0;
+    public depthStart: number = 0;
+    public depthScale: number = 0;
+    public depthLayer: number = 0;
 
     public isoPosition: Position | null = null;
 
@@ -35,14 +35,14 @@ export class EntityContainer extends Container {
 
     constructor({
         entity,
-        zOffset,
-        zScale,
-        renderLayer,
+        depthStart,
+        depthLayer,
+        depthScale,
     }: {
         entity: Player | Monster | Item;
-        zOffset?: number;
-        zScale?: number;
-        renderLayer?: number;
+        depthStart: number;
+        depthScale: number;
+        depthLayer: number;
     }) {
         super();
 
@@ -50,14 +50,12 @@ export class EntityContainer extends Container {
         this.entityId = entityId;
         this.entityType = entityType;
         this.entity = entity;
-        this.zOffset = zOffset ?? 0;
-        this.zScale = zScale ?? 0;
-        this.renderLayer = renderLayer ?? 1;
+        this.depthStart = depthStart;
+        this.depthScale = depthScale;
+        this.depthLayer = depthLayer;
 
         this.actionBubble = new ActionBubble();
         this.addChild(this.actionBubble);
-
-        console.log(this.entityId, this.zOffset);
 
         this.cullable = true;
     }
@@ -77,24 +75,6 @@ export class EntityContainer extends Container {
                 this.actionBubble.updateDepth(this.isoPosition.isoY);
             }
         }
-    }
-
-    public debugBoundingBox(): Graphics {
-        const bounds = this.getBounds();
-        return new Graphics()
-            .rect(
-                bounds.rectangle.x,
-                bounds.rectangle.y,
-                bounds.rectangle.width,
-                bounds.rectangle.height,
-            )
-            .stroke({ color: "0xff0000" });
-    }
-
-    public debugOrigin() {
-        this.addChild(
-            new Graphics().circle(0, 0, 5).fill({ color: "0xff0000" }),
-        );
     }
 
     async followPath(pathParams: PathParams) {
@@ -160,7 +140,7 @@ export class EntityContainer extends Container {
         }
     }
 
-    public updateIsoPosition(isoPosition: Position, duration?: number) {
+    public setIsoPosition(isoPosition: Position, duration?: number) {
         // Skip if position is the same
         if (
             this.isoPosition != null &&
@@ -202,9 +182,9 @@ export class EntityContainer extends Container {
         }
     }
 
-    public updateDepth(isoY: number): void {
-        this.zIndex = this.renderLayer * isoY;
-        this.actionBubble.updateDepth(isoY);
+    public updateDepth(depth: number): void {
+        this.zIndex = this.depthLayer + depth * this.depthScale;
+        this.actionBubble.updateDepth(depth);
     }
 
     public highlight(highlight: number) {}

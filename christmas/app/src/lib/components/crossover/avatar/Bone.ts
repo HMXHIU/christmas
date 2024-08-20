@@ -7,15 +7,17 @@ import type { BoneMetadata, BoneTextureTransform } from "./types";
 
 export class Bone extends Container {
     public name: string;
+    public entityId: string;
     public mesh: IsoMesh | null = null;
     public boneMetadata: BoneMetadata;
     public textures: Record<string, string>;
     public textureKey: string | null = null;
     public overlayTextureKey: string | null = null;
 
-    public zOffset: number = 0;
-    public zScale: number = 0;
-    public renderLayer: number = 0;
+    public depthStart: number = 0;
+    public depthScale: number = 0;
+    public depthLayer: number = 0;
+
     public boneRenderLayer: number = 0;
 
     constructor({
@@ -23,29 +25,32 @@ export class Bone extends Container {
         boneMetadata,
         textureKey,
         textures,
-        zOffset,
-        zScale,
-        renderLayer,
+        depthScale,
+        depthStart,
+        depthLayer,
         boneRenderLayer,
+        entityId,
     }: {
         name: string;
         boneMetadata: BoneMetadata;
         textures: Record<string, string>;
+        depthStart: number;
+        depthScale: number;
+        depthLayer: number;
+        entityId: string;
         textureKey?: string;
-        zOffset?: number;
-        zScale?: number;
-        renderLayer?: number;
         boneRenderLayer?: number;
     }) {
         super();
 
         // Note: don't set textureKey here, only in setTexture
         this.name = name;
+        this.entityId = entityId;
         this.boneMetadata = cloneDeep(boneMetadata);
         this.textures = textures;
-        this.zOffset = zOffset ?? 0;
-        this.zScale = zScale ?? 0;
-        this.renderLayer = renderLayer ?? 0;
+        this.depthStart = depthStart;
+        this.depthScale = depthScale;
+        this.depthLayer = depthLayer;
         this.boneRenderLayer = boneRenderLayer ?? 0;
         this.sortableChildren = true;
 
@@ -151,7 +156,6 @@ export class Bone extends Container {
     async setTexture(
         textureKey: string,
         options?: {
-            uid?: string;
             path?: string;
         },
     ) {
@@ -169,12 +173,12 @@ export class Bone extends Container {
         // Create mesh if it doesn't exist
         if (!this.mesh) {
             this.mesh = new IsoMesh({
-                shaderName: "entity", // use `entity` shader
+                shaderName: "entity",
                 texture,
-                zOffset: this.zOffset,
-                zScale: this.zScale,
-                renderLayer: this.renderLayer,
-                uid: options?.uid,
+                depthLayer: this.depthLayer,
+                depthScale: this.depthScale,
+                depthStart: this.depthStart,
+                geometryUid: `${this.entityId}-${this.name}`,
                 textures: {
                     uOverlayTexture: { texture, enabled: 0 },
                 },
@@ -201,22 +205,16 @@ export class Bone extends Container {
         this.mesh.shader.resources.uniforms.uniforms.uTint = tint;
     }
 
-    updateDepth(isoY: number, recursive?: boolean): void {
-        // Update zIndex (draw order for alpha blending - alpha should be last)
-        this.zIndex = this.renderLayer * isoY + this.boneRenderLayer;
+    updateDepth(depth: number): void {
+        // this.zIndex = this.boneRenderLayer;
+        this.zIndex =
+            this.depthLayer +
+            this.depthScale * depth +
+            this.boneRenderLayer / 10;
 
-        // Update mesh depth
         if (this.mesh) {
-            this.mesh.updateDepth(isoY + this.boneRenderLayer);
-        }
-
-        // Update all childbones
-        if (recursive) {
-            for (const child of this.children) {
-                if (child instanceof Bone) {
-                    child.updateDepth(isoY, recursive);
-                }
-            }
+            // TODO: the precision is too low * 10 - but this might cause it to go in front of the adjacent tile
+            this.mesh.updateDepth(depth + this.boneRenderLayer / 10);
         }
     }
 }

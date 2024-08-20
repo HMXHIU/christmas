@@ -1,4 +1,4 @@
-precision mediump float;
+precision highp float;
 
 attribute vec2 aPosition;
 attribute vec2 aUV;
@@ -16,8 +16,6 @@ uniform mat3 uProjectionMatrix;
 uniform mat3 uWorldTransformMatrix;
 uniform mat3 uTransformMatrix;
 uniform float uTextureHeight;
-uniform float uZScale;
-uniform float uZOffset;
 
 void main() {
     vUV = aUV;

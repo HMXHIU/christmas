@@ -5,6 +5,7 @@ import type { Item } from "$lib/server/crossover/redis/entities";
 import type { Container } from "pixi.js";
 import { Avatar } from "../../avatar/Avatar";
 import type { Bone } from "../../avatar/Bone";
+import { layers } from "../layers";
 import { EntityContainer } from "./EntityContainer";
 
 export { AvatarEntityContainer };
@@ -22,11 +23,7 @@ class AvatarEntityContainer extends EntityContainer {
 
     constructor(props: ConstructorParameters<typeof EntityContainer>[0]) {
         super(props);
-        this.avatar = new Avatar({
-            zOffset: this.zOffset,
-            zScale: this.zScale,
-            renderLayer: this.renderLayer,
-        });
+        this.avatar = new Avatar(layers.depthPartition("entity"));
         this.addChild(this.avatar);
     }
 
@@ -135,12 +132,12 @@ class AvatarEntityContainer extends EntityContainer {
         return this.avatar.asSpriteContainer();
     }
 
-    updateDepth(isoY: number): void {
-        super.updateDepth(isoY);
+    updateDepth(depth: number): void {
+        super.updateDepth(depth);
 
         // Update mesh depth
         if (this.avatar) {
-            this.avatar.updateDepth(isoY);
+            this.avatar.updateDepth(depth);
         }
     }
 }

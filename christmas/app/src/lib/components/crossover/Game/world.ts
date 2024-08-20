@@ -1,6 +1,5 @@
 import {
     autoCorrectGeohashPrecision,
-    cartToIso,
     getAllUnitGeohashes,
 } from "$lib/crossover/utils";
 import { worldSeed } from "$lib/crossover/world/settings/world";
@@ -12,22 +11,18 @@ import type { World } from "$lib/server/crossover/redis/entities";
 import { Assets, Container, Graphics } from "pixi.js";
 import { get } from "svelte/store";
 import { itemRecord, worldRecord } from "../../../../store";
-import { IsoMesh } from "../shaders/IsoMesh";
+import { WorldEntityContainer } from "./entities/WorldEntityContainer";
 import {
     calculatePosition,
-    CELL_WIDTH,
     getImageForTile,
     getTilesetForTile,
     isGeohashTraversableClient,
-    RENDER_ORDER,
-    Z_OFF,
-    Z_SCALE,
     type Position,
 } from "./utils";
 
 export { cullWorlds, debugWorld, drawWorlds, loadWorld, worldMeshes };
 
-let worldMeshes: Record<string, IsoMesh> = {};
+let worldMeshes: Record<string, WorldEntityContainer> = {};
 let colliders: Graphics[] = [];
 
 async function drawWorlds(
@@ -71,15 +66,14 @@ async function loadWorld({
     if (worldMeshes[world.world]) {
         return;
     }
-
     const tilemap = await Assets.load(world.url);
-    const { layers, tilesets, tileheight, tilewidth } = tilemap;
+    const { layers: tileMapLayers, tilesets, tileheight, tilewidth } = tilemap;
 
     // Note: we need to align the tiled editor's tile (anchor at bottom-left) to the game's tile center (center)
     const tileOffsetX = -tilewidth / 2; // move left
     const tileOffsetY = tileheight / 2; // move down
 
-    for (const layer of layers) {
+    for (const layer of tileMapLayers) {
         const {
             data, // 1D array of tile indices
             properties,
@@ -108,8 +102,6 @@ async function loadWorld({
             },
             {},
         );
-
-        console.log("renderlayer", renderLayer, Z_OFF[renderLayer]);
 
         const sortedTilesets = tilesets
             .sort((a: any, b: any) => a.firstgid - b.firstgid)
@@ -142,62 +134,36 @@ async function loadWorld({
                 const { texture, imageheight, imagewidth } =
                     await getImageForTile(tileset.tiles, tileId - firstgid);
 
-                const xCells = imagewidth / tilewidth;
-                const yCells = imageheight / tileheight;
-
-                const mesh = new IsoMesh({
-                    shaderName: "world",
+                const ec = new WorldEntityContainer({
                     texture,
-                    zOffset: Z_OFF[renderLayer] ?? Z_OFF.world,
-                    zScale: Z_SCALE,
-                    renderLayer:
-                        RENDER_ORDER[renderLayer] ?? RENDER_ORDER.world,
-                    cellHeight: 1, // TODO: cant know the cell height by using image height, because the base is not defined
+                    layer: renderLayer,
+                    cellHeight: 1,
+                    imageHeight: imageheight,
+                    imageWidth: imagewidth,
+                    tileHeight: tileheight,
+                    tileWidth: tilewidth,
+                    tileOffset: { x: tileOffsetX, y: tileOffsetY },
+                    layerOffset: { x: layerOffsetX, y: layerOffsetY },
+                    textureOffset: { x: tileSetOffsetX, y: tileSetOffsetY },
+                    tileId: worldId,
                 });
-                worldMeshes[worldId] = mesh;
 
-                // Set scale (should be the same for both x and y)
-                const screenWidth = xCells * CELL_WIDTH;
-                const scale = screenWidth / imagewidth;
-                mesh.scale.set(scale, scale);
+                worldMeshes[worldId] = ec;
 
-                const [layerIsoX, layerIsoY] = cartToIso(
-                    j * CELL_WIDTH,
-                    i * CELL_WIDTH,
-                );
+                ec.setIsoPosition({
+                    row: position.row + i,
+                    col: position.col + j,
+                    elevation: position.elevation,
+                });
 
-                // Note:
-                //  - By default the tiled editor uses the bottom-left of an image as the anchor
-                //  - In pixi.js the pivot is based on the original size of the texture without scaling
-                const anchor = { x: 0, y: 1 };
-                const pivotX = anchor.x * imagewidth;
-                const pivotY = anchor.y * imageheight;
-                mesh.pivot.set(pivotX - tileOffsetX, pivotY - tileOffsetY);
-
-                // Set initial position
-                const isoX =
-                    layerIsoX +
-                    position.isoX +
-                    (layerOffsetX + tileSetOffsetX) * scale;
-
-                // Note: keep isoY for setting depth
-                const isoY =
-                    layerIsoY +
-                    position.isoY +
-                    (layerOffsetY + tileSetOffsetY) * scale;
-                mesh.x = isoX;
-                mesh.y = isoY - position.elevation;
-
-                // DEBUG MESH
-                stage.addChild(mesh.debugBounds());
-
-                // Update depth (set as center of the bottom grid cell)
-                const bounds = mesh.getBounds();
-                mesh.updateDepth(isoY);
+                // // Debug bounds
+                // if (ec.mesh && renderLayer === "entity") {
+                //     stage.addChild(debugBounds(ec, 0xffff00));
+                // }
 
                 // Add to stage
-                if (!stage.children.includes(mesh)) {
-                    stage.addChild(mesh);
+                if (!stage.children.includes(ec)) {
+                    stage.addChild(ec);
                 }
             }
         }

@@ -33,8 +33,10 @@ import * as PIXI from "pixi.js";
 import {
     Assets,
     Container,
+    Graphics,
     Mesh,
     Sprite,
+    type ColorSource,
     type Geometry,
     type Shader,
     type Texture,
@@ -51,6 +53,7 @@ export {
     CANVAS_WIDTH,
     CELL_HEIGHT,
     CELL_WIDTH,
+    debugBounds,
     decodeTiledSource,
     destroyContainer,
     ELEVATION_TO_CELL_HEIGHT,
@@ -61,8 +64,10 @@ export {
     getPathHighlights,
     getPlayerPosition,
     getTilesetForTile,
+    GRID_COLS,
     GRID_MID_COL,
     GRID_MID_ROW,
+    GRID_ROWS,
     HALF_ISO_CELL_HEIGHT,
     HALF_ISO_CELL_WIDTH,
     initAssetManager,
@@ -73,13 +78,9 @@ export {
     loadAssetTexture,
     positionsInRange,
     registerGSAP,
-    RENDER_ORDER,
     scaleToFitAndMaintainAspectRatio,
     WORLD_HEIGHT,
     WORLD_WIDTH,
-    Z_LAYER,
-    Z_OFF,
-    Z_SCALE,
     type Position,
 };
 
@@ -94,6 +95,7 @@ interface Position {
     elevation: number;
 }
 
+// TODO: move tos settings
 // Note: this are cartesian coordinates (CELL_HEIGHT = CELL_WIDTH;)
 const CELL_WIDTH = 128; // 64, 96, 128
 const CELL_HEIGHT = CELL_WIDTH;
@@ -113,51 +115,8 @@ const GRID_COLS = CANVAS_COLS * OVERDRAW_MULTIPLE;
 const GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
 const GRID_MID_COL = Math.floor(GRID_COLS / 2);
 
-// Z layer offsets
-const Z_LAYER = ISO_CELL_HEIGHT * 10;
-const Z_OFF: Record<string, number> = {
-    // Shader
-    biome: 0 * Z_LAYER,
-    floor: 1 * Z_LAYER,
-    grass: 1 * Z_LAYER,
-    entity: 2 * Z_LAYER,
-    // Entities
-    world: 2 * Z_LAYER,
-    item: 2 * Z_LAYER,
-    monster: 2 * Z_LAYER,
-    player: 2 * Z_LAYER,
-};
-
-// This is different from depth testing (but used to control when which objects are drawn for alpha blending)
-// Sort from lower to high probability of alpha/opacity
-const RENDER_ORDER: Record<string, number> = {
-    biome: 0, // biome tiles
-    icon: 0, // action bubble icon
-    item: 1,
-    player: 1,
-    monster: 1,
-    world: 1,
-    grass: 2, // grass (biome decorations)
-    effects: 3, // special effects
-};
-
 // In WebGL, the gl_Position.z value should be in the range [-1 (closer), 1]
 const ELEVATION_TO_CELL_HEIGHT = CELL_HEIGHT / 2 / 8; // 1 meter = 1/8 a cell elevation (on isometric coordinates)
-
-/*
- * Depth test scaling and offsets
- * Note: Map the range from [-1, 1] to [-0.5, 0.5], then in the shader add 0.5 to map it to [0, 1]
- *       Leave [-1, 0] alone so that we can display sprites above the depth tested meshes
- */
-const { row: bottomRightRow, col: bottomRightCol } =
-    geohashToGridCell("pbzupuzv");
-const Z_SCALE =
-    -1 /
-    (4 *
-        cartToIso(
-            bottomRightCol * CELL_WIDTH,
-            bottomRightRow * CELL_HEIGHT,
-        )[1]);
 
 async function calculatePosition(
     geohash: string,
@@ -525,4 +484,22 @@ async function isGeohashTraversableClient(
             worldTraversableCellsCache,
         },
     );
+}
+
+function debugBounds(c: Container, color?: ColorSource): Container {
+    // Add this to the parent of this IsoMesh to debug
+    const debugContainer = new Container();
+    const { x, y, width, height } = c.getBounds();
+    // Draw bounding box
+    debugContainer.addChild(
+        new Graphics()
+            .rect(x, y, width, height)
+            .stroke({ color: color ?? 0xff0000 }),
+    );
+    // Draw origin
+    debugContainer.addChild(
+        new Graphics().circle(c.x, c.y, 5).fill({ color: color ?? 0xff0000 }),
+    );
+
+    return debugContainer;
 }

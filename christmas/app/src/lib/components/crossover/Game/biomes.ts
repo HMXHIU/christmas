@@ -23,6 +23,7 @@ import {
     MAX_SHADER_GEOMETRIES,
     type ShaderTexture,
 } from "../shaders";
+import { layers } from "./layers";
 import {
     CELL_HEIGHT,
     CELL_WIDTH,
@@ -32,9 +33,6 @@ import {
     HALF_ISO_CELL_HEIGHT,
     HALF_ISO_CELL_WIDTH,
     loadAssetTexture,
-    RENDER_ORDER,
-    Z_OFF,
-    Z_SCALE,
     type Position,
 } from "./utils";
 
@@ -232,7 +230,6 @@ async function _calculateBiomeDecorationsForRowCol({
 }
 
 const drawBiomeShadersLock = new AsyncLock();
-
 async function drawBiomeShaders(playerPosition: Position, stage: Container) {
     drawBiomeShadersLock.withLock(async () => {
         // Reset instances
@@ -398,21 +395,16 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
         await drawShaderTextures({
             shaderName: "biome",
             shaderTextures: biomeTexturePositions,
-            // Note: instanced geometry, cant set zIndex for individual grass blades (HOW???)
-            renderOrder: RENDER_ORDER.biome * playerPosition.isoY,
-            zOffset: Z_OFF.biome,
             numGeometries: MAX_SHADER_GEOMETRIES,
             stage,
-            zScale: Z_SCALE,
+            ...layers.depthPartition("biome"),
         });
         await drawShaderTextures({
             shaderName: "grass",
             shaderTextures: biomeDecorationsTexturePositions,
-            renderOrder: RENDER_ORDER.grass * playerPosition.isoY,
-            zOffset: Z_OFF.grass,
             numGeometries: MAX_SHADER_GEOMETRIES,
             stage,
-            zScale: Z_SCALE,
+            ...layers.depthPartition("entity"), // grass is at the entity layer
         });
     });
 }

@@ -47,7 +47,7 @@ export {
 const MAX_SHADER_GEOMETRIES = 2000;
 
 interface ShaderGeometry {
-    shaderUid: string;
+    shaderGeometryUid: string;
     shaderName: string;
     shader: Shader;
     geometry: Geometry;
@@ -70,7 +70,10 @@ type OptionalShaderTexture = { texture: Texture; enabled: number };
 type OptionalShaderTextures = Record<string, OptionalShaderTexture>;
 
 let instancedShaderMeshes: Record<string, Mesh<Geometry, Shader>> = {};
-let loadedShaderGeometries: Record<string, ShaderGeometry> = {};
+
+const loadedShaderGeometries: Record<string, ShaderGeometry> = {};
+const loadedShaders: Record<string, Shader> = {};
+const loadedGeometries: Record<string, Geometry> = {};
 
 const shaders: Record<string, { vertex: string; fragment: string }> = {
     grass: {
@@ -107,16 +110,16 @@ const shaders: Record<string, { vertex: string; fragment: string }> = {
     },
 };
 
-function destroyShaderGeometry(shaderUid: string) {
-    if (loadedShaderGeometries[shaderUid] != null) {
+function destroyShaderGeometry(shaderGeometryUid: string) {
+    if (loadedShaderGeometries[shaderGeometryUid] != null) {
         // Remove the references let the garbage collector handle the rest
-        delete loadedShaderGeometries[shaderUid];
+        delete loadedShaderGeometries[shaderGeometryUid];
     }
 }
 
 function destroyShaders() {
-    for (const shaderUid of Object.keys(loadedShaderGeometries)) {
-        destroyShaderGeometry(shaderUid);
+    for (const shaderGeometryUid of Object.keys(loadedShaderGeometries)) {
+        destroyShaderGeometry(shaderGeometryUid);
     }
 }
 
@@ -127,9 +130,12 @@ function clearInstancedShaderMeshes() {
     instancedShaderMeshes = {};
 }
 
-function updateShaderUniforms({ deltaTime }: { deltaTime: number }) {
+function updateShaderUniforms({ deltaTime }: { deltaTime?: number }) {
     for (const shaderGeometry of Object.values(loadedShaderGeometries)) {
-        shaderGeometry.shader.resources.uniforms.uniforms.uTime += deltaTime;
+        if (deltaTime != null) {
+            shaderGeometry.shader.resources.uniforms.uniforms.uTime +=
+                deltaTime;
+        }
     }
 }
 
@@ -155,68 +161,101 @@ function swapMeshTexture(
 }
 
 function loadShaderGeometry(
-    shaderName: string,
-    texture: Texture,
-    width: number,
-    height: number,
+    {
+        shaderName,
+        texture,
+        width,
+        height,
+        depthScale,
+        depthStart,
+        geometryUid,
+    }: {
+        shaderName: string;
+        texture: Texture;
+        width: number;
+        height: number;
+        depthStart: number;
+        depthScale: number;
+        geometryUid: string; // use the texture.uid for instanced geometry (only 1 geometry)
+    },
     options: {
         instanceCount?: number;
-        uid?: string;
-        zScale?: number;
-        zOffset?: number;
         cellHeight?: number;
         textures?: OptionalShaderTextures; // set any other textures here
     } = {},
 ): ShaderGeometry {
     const instanceCount = options.instanceCount ?? 1;
-    const shaderUid = `${shaderName}-${options.uid ?? texture.uid}`;
-    const shaderGeometry = loadedShaderGeometries[shaderUid];
+    const shaderUid = `${shaderName}-${texture.uid}`;
+    const shaderGeometryUid = `${shaderUid}-${geometryUid}`;
+    const shaderGeometry = loadedShaderGeometries[shaderGeometryUid];
 
     if (shaderGeometry == null) {
-        const geometry =
-            instanceCount > 1
-                ? createInstancedTexturedQuadGeometry(instanceCount)
-                : createTexturedQuadGeometry(
-                      texture,
-                      width,
-                      height,
-                      options.cellHeight,
-                  );
+        // Get/Create geometry
+        let geometry = loadedGeometries[geometryUid];
+        if (!geometry) {
+            geometry =
+                instanceCount > 1
+                    ? createInstancedTexturedQuadGeometry(instanceCount)
+                    : createTexturedQuadGeometry(
+                          texture,
+                          width,
+                          height,
+                          options.cellHeight,
+                      );
+            loadedGeometries[geometryUid] = geometry;
+        }
 
-        // TODO: shader does not need to be recreated if its the same dont use shaderUid
-        loadedShaderGeometries[shaderUid] = {
-            shaderUid,
+        // Get/Create shader
+        let shader = loadedShaders[shaderUid];
+        if (!shader) {
+            shader = createShader(
+                {
+                    shaderName,
+                    texture,
+                    depthScale: depthScale,
+                    depthStart: depthStart,
+                },
+                {
+                    height,
+                    width,
+                    textures: options.textures,
+                },
+            );
+            loadedShaders[shaderUid] = shader;
+        }
+
+        loadedShaderGeometries[shaderGeometryUid] = {
+            shaderGeometryUid,
             shaderName,
             instanceCount,
-            shader: createShader(shaderName, texture, {
-                height,
-                width,
-                zScale: options.zScale,
-                zOffset: options.zOffset,
-                textures: options.textures,
-            }),
+            shader,
             geometry,
         };
     }
 
-    return loadedShaderGeometries[shaderUid];
+    return loadedShaderGeometries[shaderGeometryUid];
 }
 
 function createShader(
-    s: string,
-    texture: Texture,
+    {
+        shaderName,
+        depthScale,
+        depthStart,
+        texture,
+    }: {
+        shaderName: string;
+        depthStart: number;
+        depthScale: number;
+        texture: Texture;
+    },
     options?: {
         height?: number;
         width?: number;
-        zScale?: number;
-        zOffset?: number;
         textures?: OptionalShaderTextures; // set any other textures here
     },
 ): Shader {
     const height = options?.height ?? texture.frame.height;
     const width = options?.width ?? texture.frame.width;
-    const zScale = options?.zScale ?? 0;
-    const zOffset = options?.zOffset ?? 0;
     const resources: any = {
         uTexture: texture.source,
         uOverlayTexture: Texture.WHITE.source,
@@ -237,12 +276,12 @@ function createShader(
                 value: width,
                 type: "f32",
             },
-            uZScale: {
-                value: zScale,
+            uDepthStart: {
+                value: depthStart,
                 type: "f32",
             },
-            uZOffset: {
-                value: zOffset,
+            uDepthScale: {
+                value: depthScale,
                 type: "f32",
             },
             uOverlayTextureEnabled: {
@@ -265,7 +304,7 @@ function createShader(
     }
 
     return Shader.from({
-        gl: shaders[s],
+        gl: shaders[shaderName],
         resources,
     });
 }
@@ -415,19 +454,19 @@ function sortInstancePositions(
 async function drawShaderTextures({
     shaderName,
     shaderTextures,
-    renderOrder,
-    zOffset,
     numGeometries,
     stage,
-    zScale,
+    depthScale,
+    depthStart,
+    depthLayer,
 }: {
     shaderName: string;
     shaderTextures: Record<string, ShaderTexture>;
-    renderOrder: number;
-    zOffset: number;
     numGeometries: number;
     stage: Container;
-    zScale: number;
+    depthStart: number;
+    depthScale: number;
+    depthLayer: number;
 }) {
     for (const [
         textureUid,
@@ -444,14 +483,17 @@ async function drawShaderTextures({
         },
     ] of Object.entries(shaderTextures)) {
         const { shader, geometry } = loadShaderGeometry(
-            shaderName,
-            texture,
-            width,
-            height,
+            {
+                shaderName,
+                texture,
+                width,
+                height,
+                depthScale,
+                depthStart,
+                geometryUid: textureUid,
+            },
             {
                 instanceCount: numGeometries,
-                zScale,
-                zOffset,
             },
         );
 
@@ -525,7 +567,7 @@ async function drawShaderTextures({
         const meshUid = `${shaderName}-${textureUid}`;
         if (instancedShaderMeshes[meshUid] == null) {
             const mesh = new Mesh<Geometry, Shader>({ geometry, shader });
-            mesh.zIndex = renderOrder;
+            mesh.zIndex = depthLayer;
             instancedShaderMeshes[meshUid] = mesh;
             stage.addChild(mesh);
         }

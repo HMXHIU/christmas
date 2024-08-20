@@ -1,4 +1,4 @@
-precision mediump float;
+precision highp float;
 
 varying vec2 vUV;
 varying vec2 vPosition;
@@ -8,11 +8,16 @@ uniform sampler2D uTexture;
 
 void main() {
 
-    vec4 textureColor = texture2D(uTexture, vUV);
+    vec4 color = texture2D(uTexture, vUV);
+
+    // Discard the fragment if alpha is 0
+    if (color.a < 0.001) {
+        discard;
+    }
 
     // Apply alpha mask (fade out from top to bottom)
     float alpha = mix(1.0, 0.0, vPosition.y / vInstanceSize.y);
 
-    gl_FragColor = textureColor * alpha;
+    gl_FragColor = color * alpha;
 }
 

@@ -4,6 +4,7 @@
     import { onMount } from "svelte";
     import { Avatar } from "./avatar/Avatar";
     import type { AnimationMetadata, AvatarMetadata } from "./avatar/types";
+    import { layers } from "./Game/layers";
 
     export let metadata: {
         avatarMetadata: AvatarMetadata;
@@ -13,6 +14,7 @@
 
     export let anchor: { x: number; y: number } = { x: 0, y: 0 };
     export let scale: number = 1;
+    export let entityId: string;
 
     let containerElement: HTMLDivElement;
     let app: Application | null = null;
@@ -47,8 +49,8 @@
         }
 
         // Create avatar from metadata
-        avatar = new Avatar({ renderLayer: 1, zScale: -0.00001 }); // just need to be a negative small number
-        await avatar.loadFromMetadata(avatarMetadata);
+        avatar = new Avatar(layers.depthPartition("entity")); // just need to be a negative small number
+        await avatar.loadFromMetadata(avatarMetadata, entityId);
 
         // Load humanoid animation and pose
         avatar.animationManager.load(animationMetadata);

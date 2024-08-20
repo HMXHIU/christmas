@@ -4,7 +4,7 @@ import { gsap } from "gsap";
 import { Assets, Container, Texture, type DestroyOptions } from "pixi.js";
 import { swapMeshTexture } from "../../shaders";
 import { IsoMesh } from "../../shaders/IsoMesh";
-import { RENDER_ORDER, Z_OFF, Z_SCALE } from "../utils";
+import { layers } from "../layers";
 
 export { ActionBubble };
 
@@ -13,6 +13,10 @@ const ROT_45 = Math.PI / 4;
 class ActionBubble extends Container {
     public isoMesh: IsoMesh | null = null;
     public tween: gsap.core.Tween | null = null;
+
+    public depthStart: number = 0;
+    public depthScale: number = 0;
+    public depthLayer: number = 0;
 
     async setAction(action: Actions) {
         const { ticks, icon } = actions[action];
@@ -25,13 +29,20 @@ class ActionBubble extends Container {
 
         // Create isoMesh
         if (!this.isoMesh) {
+            const { depthLayer, depthScale, depthStart } =
+                layers.depthPartition("floor");
+            this.depthLayer = depthLayer;
+            this.depthScale = depthScale;
+            this.depthStart = depthStart;
+
             // Create the IsoMesh
             this.isoMesh = new IsoMesh({
                 shaderName: "entity",
                 texture,
-                zOffset: Z_OFF.entity,
-                zScale: Z_SCALE,
-                renderLayer: RENDER_ORDER.icon,
+                depthLayer,
+                depthScale,
+                depthStart,
+                geometryUid: "action-bubble", // doesn't matter for action bubble to share the same geometry (1D on floor layer)
             });
             this.isoMesh.visible = false;
             this.addChild(this.isoMesh);
@@ -74,10 +85,10 @@ class ActionBubble extends Container {
         );
     }
 
-    updateDepth(isoY: number) {
-        this.zIndex = RENDER_ORDER.icon * isoY;
+    updateDepth(depth: number) {
+        this.zIndex = this.depthLayer + this.depthScale * depth;
         if (this.isoMesh) {
-            this.isoMesh.updateDepth(isoY);
+            this.isoMesh.updateDepth(depth);
         }
     }
 

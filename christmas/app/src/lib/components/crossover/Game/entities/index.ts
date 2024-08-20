@@ -11,7 +11,6 @@ import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
-    GeohashLocationSchema,
     geohashLocationTypes,
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
@@ -25,16 +24,14 @@ import { AsyncLock } from "$lib/utils";
 import { Container } from "pixi.js";
 import { get } from "svelte/store";
 import { player, target } from "../../../../../store";
+import { layers } from "../layers";
 import {
     calculatePosition,
     getAvatarMetadata,
     isCellInView,
     ISO_CELL_HEIGHT,
     ISO_CELL_WIDTH,
-    RENDER_ORDER,
     scaleToFitAndMaintainAspectRatio,
-    Z_OFF,
-    Z_SCALE,
     type Position,
 } from "../utils";
 import { AvatarEntityContainer } from "./AvatarEntityContainer";
@@ -100,8 +97,6 @@ async function upsertEntityContainer(
         if (!geohashLocationTypes.has(entity.locT)) {
             throw new Error("entity location is not a GeohashLocationType");
         }
-
-        GeohashLocationSchema;
         const [entityId, entityType] = getEntityId(entity);
 
         // Get position
@@ -139,10 +134,10 @@ async function upsertEntityContainer(
 
         // Set initial position
         if (created) {
-            ec.updateIsoPosition(position);
+            ec.setIsoPosition(position);
 
-            stage.addChild(ec.debugBoundingBox());
-            ec.debugOrigin();
+            // Debug bounds
+            // stage.addChild(debugBounds(ec));
         }
 
         // Update position
@@ -152,10 +147,10 @@ async function upsertEntityContainer(
                 if (isEntityInMotion(entity as Player | Monster)) {
                     await ec.followPath(entity as PathParams);
                 } else {
-                    ec.updateIsoPosition(position);
+                    ec.setIsoPosition(position);
                 }
             } else {
-                ec.updateIsoPosition(
+                ec.setIsoPosition(
                     position,
                     tween
                         ? (actions.move.ticks * MS_PER_TICK) / 1000
@@ -181,11 +176,10 @@ async function upsertAvatarContainer(
         }
 
         const { avatar, animation } = await getAvatarMetadata(entity.avatar);
+
         ec = new AvatarEntityContainer({
             entity,
-            zOffset: Z_OFF.entity,
-            zScale: Z_SCALE,
-            renderLayer: RENDER_ORDER[entityType],
+            ...layers.depthPartition("entity"),
         });
         await ec.avatar.loadFromMetadata(avatar, entityId);
         ec.avatar.animationManager.load(animation);
@@ -223,9 +217,7 @@ async function upsertSimpleContainer(
         // Create entity container
         ec = new SimpleEntityContainer({
             entity,
-            zOffset: Z_OFF.entity,
-            zScale: Z_SCALE,
-            renderLayer: RENDER_ORDER[entityType],
+            ...layers.depthPartition("entity"),
         });
         entityContainers[entityId] = ec;
 
@@ -245,16 +237,20 @@ async function upsertSimpleContainer(
 
             // Set size pf dropped equipment
             if (prop.equipmentSlot != null) {
-                const { width, height, scale } =
-                    scaleToFitAndMaintainAspectRatio(
-                        ec.width,
-                        ec.height,
-                        ISO_CELL_WIDTH * (asset.width ?? 1),
-                        ISO_CELL_HEIGHT * (asset.height ?? 1),
-                    );
+                const { scale } = scaleToFitAndMaintainAspectRatio(
+                    ec.width,
+                    ec.height,
+                    ISO_CELL_WIDTH * (asset.width ?? 1),
+                    ISO_CELL_HEIGHT * (asset.height ?? 1),
+                );
                 ec.scale.x = scale;
                 ec.scale.y = scale;
             }
+        }
+        // Load player (for testing - should be avatar ec)
+        else if (entityType === "player") {
+            const asset = bestiary["goblin"].asset;
+            await ec.loadAsset(asset, { anchor: { x: 0.5, y: 1 } });
         }
 
         // Set event listeners

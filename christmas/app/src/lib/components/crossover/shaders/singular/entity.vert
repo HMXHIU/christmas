@@ -1,4 +1,4 @@
-precision mediump float;
+precision highp float;
 
 attribute vec2 aPosition;
 attribute vec2 aUV;
@@ -16,8 +16,9 @@ uniform mat3 uProjectionMatrix;
 uniform mat3 uWorldTransformMatrix;
 uniform mat3 uTransformMatrix;
 uniform float uTextureHeight;
-uniform float uZScale;
-uniform float uZOffset;
+
+uniform float uDepthStart;
+uniform float uDepthScale;
 
 void main() {
     vUV = aUV;
@@ -38,8 +39,7 @@ void main() {
     gl_Position = vec4(
         clip.xy,
         // Entities use instancePosition to determine the Z position -1 (closest to camera) to 1
-        // uZScale is negative small number
-        0.5 + (aInstancePosition.y + uZOffset - zAlongY) * uZScale,
+        uDepthStart - ((aInstancePosition.y - zAlongY) * uDepthScale),
         1.0
     );
 }

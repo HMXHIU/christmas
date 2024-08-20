@@ -11,21 +11,25 @@ export class Avatar extends Container {
     public animationManager: AnimationManager;
     public metadata: AvatarMetadata | null = null;
 
-    public zOffset: number = 0;
-    public zScale: number = 0;
-    public renderLayer: number = 0;
+    public depthStart: number = 0;
+    public depthScale: number = 0;
+    public depthLayer: number = 0;
 
-    constructor(options?: {
-        zOffset?: number;
-        zScale?: number;
-        renderLayer?: number;
+    constructor({
+        depthStart,
+        depthLayer,
+        depthScale,
+    }: {
+        depthStart: number;
+        depthScale: number;
+        depthLayer: number;
     }) {
         super({});
         this.animationManager = new AnimationManager();
         this.sortableChildren = true;
-        this.zOffset = options?.zOffset ?? 0;
-        this.zScale = options?.zScale ?? 0;
-        this.renderLayer = options?.renderLayer ?? 1; // Note: min renderLayer is 1
+        this.depthStart = depthStart;
+        this.depthScale = depthScale;
+        this.depthLayer = depthLayer;
         this.cullable = true;
     }
 
@@ -70,7 +74,7 @@ export class Avatar extends Container {
 
     async loadFromMetadata(
         metadata: AvatarMetadata,
-        uid?: string,
+        entityId: string,
     ): Promise<void> {
         this.metadata = cloneDeep(metadata);
 
@@ -93,9 +97,10 @@ export class Avatar extends Container {
                 boneMetadata: boneMetadata,
                 textures: metadata.textures,
                 textureKey,
-                zOffset: this.zOffset,
-                zScale: this.zScale,
-                renderLayer: this.renderLayer,
+                depthLayer: this.depthLayer,
+                depthScale: this.depthScale,
+                depthStart: this.depthStart,
+                entityId,
             });
             bone.eventMode = "none"; // Prevents inheritance of parent eventMode
             this.bones[boneName] = bone;
@@ -103,9 +108,7 @@ export class Avatar extends Container {
             // Auto-rig the texture (use the first texture as default)
             const boneTextureTransform = boneMetadata.textures[textureKey];
             if (textureKey && boneTextureTransform) {
-                const shaderUid =
-                    uid != null ? `${uid}_${boneName}` : undefined;
-                await bone.setTexture(textureKey, { uid: shaderUid });
+                await bone.setTexture(textureKey);
             }
         }
 
@@ -215,15 +218,13 @@ export class Avatar extends Container {
         };
     }
 
-    updateDepth(isoY: number): void {
+    updateDepth(depth: number): void {
         // Update zIndex
-        this.zIndex = this.renderLayer * isoY;
+        this.zIndex = this.depthLayer + this.depthScale * depth;
 
-        // Update bone depth
-        for (const bone of this.getAllBones().sort(
-            (a, b) => a.boneRenderLayer - b.boneRenderLayer,
-        )) {
-            bone.updateDepth(isoY);
+        // Update bones depth
+        for (const bone of this.getAllBones()) {
+            bone.updateDepth(depth);
         }
     }
 

@@ -2,6 +2,7 @@ import type { AssetMetadata } from "$lib/crossover/world/types";
 import { Container, Sprite } from "pixi.js";
 import { swapMeshTexture } from "../../shaders";
 import { IsoMesh } from "../../shaders/IsoMesh";
+import { layers } from "../layers";
 import {
     CELL_WIDTH,
     loadAssetTexture,
@@ -35,11 +36,9 @@ class SimpleEntityContainer extends EntityContainer {
             this.mesh = new IsoMesh({
                 shaderName: "entity",
                 texture,
-                zOffset: this.zOffset,
-                zScale: this.zScale,
-                renderLayer: this.renderLayer,
                 cellHeight: asset.height,
-                uid: this.entityId,
+                geometryUid: this.entityId,
+                ...layers.depthPartition("entity"),
             });
             this.mesh.eventMode = "none"; // Prevents inheritance of parent eventMode
             this.addChild(this.mesh);
@@ -103,12 +102,12 @@ class SimpleEntityContainer extends EntityContainer {
         swapMeshTexture(this.mesh, texture);
     }
 
-    updateDepth(isoY: number): void {
-        super.updateDepth(isoY);
+    updateDepth(depth: number): void {
+        super.updateDepth(depth);
 
         // Update mesh depth
         if (this.mesh) {
-            this.mesh.updateDepth(isoY);
+            this.mesh.updateDepth(depth);
         }
     }
 

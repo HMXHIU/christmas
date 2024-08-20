@@ -11,7 +11,7 @@
     import { compendium } from "$lib/crossover/world/settings/compendium";
     import type { GeohashLocationType } from "$lib/crossover/world/types";
     import { cn } from "$lib/shadcn";
-    import { gsap } from "gsap";
+    import gsap from "gsap";
     import {
         Application,
         Container,
@@ -79,6 +79,9 @@
     let mouseMove: (e: FederatedPointerEvent) => void;
     let mouseDown: (e: FederatedPointerEvent) => void;
     let mouseUp: (e: FederatedPointerEvent) => void;
+
+    let cameraX: number = 0;
+    let cameraY: number = 0;
 
     $: resize(clientHeight, clientWidth);
     $: handlePreviewCommand(previewCommand);
@@ -229,15 +232,13 @@
             return;
         }
 
-        // Update biomes
-        await drawBiomeShaders(position, worldStage);
-
         // Cull entity meshes outside view
         garbageCollectEntityContainers(position);
 
         // Cull world meshes outside town
         cullWorlds(position);
 
+        // Debug World
         // await debugWorld(worldStage);
     }
 
@@ -251,8 +252,12 @@
         if (worldStage == null) {
             return;
         }
-        const cameraX = position.isoX + CELL_WIDTH / 2 - clientWidth / 2;
-        const cameraY = position.isoY - position.elevation - clientHeight / 2;
+
+        // Update biomes
+        await drawBiomeShaders(position, worldStage);
+
+        cameraX = position.isoX + CELL_WIDTH / 2 - clientWidth / 2;
+        cameraY = position.isoY - position.elevation - clientHeight / 2;
         if (duration != null) {
             cameraTween = gsap.to(worldStage.pivot, {
                 x: cameraX,
@@ -286,6 +291,7 @@
             height: CANVAS_HEIGHT,
             antialias: true,
             preference: "webgl",
+            roundPixels: true,
         });
 
         // Set up depth test
@@ -338,6 +344,7 @@
                     handleTrackPlayer,
                 },
             );
+
             await drawWorlds($worldRecord, worldStage);
         }
     }

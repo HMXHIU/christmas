@@ -5,6 +5,7 @@
     import { Application, Assets, Geometry, Mesh, Shader } from "pixi.js";
     import { onMount } from "svelte";
     import { player } from "../../../../store";
+    import { layers } from "../Game/layers";
     import { loadShaderGeometry } from "../shaders";
 
     interface MapMesh {
@@ -74,11 +75,16 @@
         // Load shader and geometry (TODO: possible to create texture from cached png?)
         const texture = await Assets.load(url);
         const parchmentTexture = await Assets.load("/textures/parchment.png");
+
         const { shader, geometry } = loadShaderGeometry(
-            "map",
-            texture,
-            width,
-            height,
+            {
+                shaderName: "map",
+                texture,
+                width,
+                height,
+                ...layers.depthPartition("entity"),
+                geometryUid: mapId,
+            },
             {
                 textures: {
                     uParchmentTexture: {

@@ -1,4 +1,4 @@
-precision mediump float;
+precision highp float;
 
 attribute vec3 aInstancePosition;
 attribute float aInstanceVertIndex;
@@ -17,8 +17,9 @@ uniform mat3 uProjectionMatrix;
 uniform mat3 uWorldTransformMatrix;
 uniform mat3 uTransformMatrix;
 uniform float uTime;
-uniform float uZScale;
-uniform float uZOffset;
+
+uniform float uDepthStart;
+uniform float uDepthScale;
 
 // Function to create a 2D rotation matrix
 mat2 rotationMatrix(float angle) {
@@ -70,7 +71,7 @@ void main() {
 
     gl_Position = vec4(
         rotationMatrix(angle) * clip.xy,
-        0.5 + (aInstancePosition.y + uZOffset) * uZScale,
+        uDepthStart - (aInstancePosition.y * uDepthScale),
         1.0
     );
 }

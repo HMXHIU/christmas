@@ -1,4 +1,4 @@
-precision mediump float;
+precision highp float;
 
 attribute vec3 aInstancePosition;
 attribute float aInstanceHighlight;
@@ -16,8 +16,9 @@ varying float vInstanceHighlight;
 uniform mat3 uProjectionMatrix;
 uniform mat3 uWorldTransformMatrix;
 uniform mat3 uTransformMatrix;
-uniform float uZScale;
-uniform float uZOffset;
+
+uniform float uDepthStart;
+uniform float uDepthScale;
 
 void main() {
 
@@ -47,7 +48,7 @@ void main() {
     );
     gl_Position = vec4(
         clip.xy,
-        0.5 + (aInstancePosition.y + uZOffset) * uZScale,
+        uDepthStart - (aInstancePosition.y * uDepthScale),
         1.0
     );
 }
