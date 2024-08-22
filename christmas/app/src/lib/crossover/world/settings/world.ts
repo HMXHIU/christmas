@@ -1,6 +1,6 @@
 import type { WorldSeed } from "../world";
 
-export { worldSeed };
+export { worldSeed, type WorldSeed };
 
 /**
  * `worldSeed` is a template used to generate a `World` instance.

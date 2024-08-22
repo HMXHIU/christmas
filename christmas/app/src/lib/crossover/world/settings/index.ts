@@ -1,20 +1,6 @@
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
-import type { Tile } from "../types";
 
-export {
-    abyssTile,
-    MS_PER_TICK,
-    SERVER_LATENCY,
-    TICKS_PER_TURN,
-    TILE_HEIGHT,
-    TILE_WIDTH,
-};
-
-const abyssTile: Tile = {
-    name: "The Abyss",
-    geohash: "59ke577h",
-    description: "You are nowhere to be found.",
-};
+export { MS_PER_TICK, SERVER_LATENCY, TICKS_PER_TURN, TILE_HEIGHT, TILE_WIDTH };
 
 // Note:
 //  - This is different from CELL_WIDTH / CELL_HEIGHT (scaling when rendering to screen)

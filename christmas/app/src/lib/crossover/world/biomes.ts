@@ -11,7 +11,6 @@ import {
     geohashLocationTypes,
     type AssetMetadata,
     type GeohashLocationType,
-    type Tile,
 } from "./types";
 import { type WorldSeed } from "./world";
 export {
@@ -19,7 +18,6 @@ export {
     biomes,
     elevationAtGeohash,
     INTENSITY_TO_HEIGHT,
-    tileAtGeohash,
     topologyAtGeohash,
     topologyTile,
     type Biome,
@@ -585,19 +583,4 @@ async function biomeAtGeohash(
         return [biomes.water.biome, 1 - Math.abs(rvv - waterMid) / waterMid];
     }
     return [biomes.plains.biome, 1];
-}
-
-/**
- * Retrieves the tile information based on the given geohash and biome.
- *
- * @param geohash - The geohash representing the location of the tile.
- * @param biome - The biome of the tile.
- * @returns The tile information including geohash, name, and description.
- */
-function tileAtGeohash(geohash: string, biome: string): Tile {
-    return {
-        geohash,
-        name: geohash, // TODO: get name from POI
-        description: biomes[biome].description,
-    };
 }

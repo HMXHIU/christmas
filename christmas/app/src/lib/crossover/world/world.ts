@@ -7,6 +7,7 @@ import { worldSeed } from "./settings/world";
 import type { WorldAssetMetadata } from "./types";
 
 export {
+    sanctuaries,
     sanctuariesByRegion,
     traversableCellsInWorld,
     traversableSpeedInWorld,
