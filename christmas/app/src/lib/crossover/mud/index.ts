@@ -6,6 +6,7 @@ import type {
     Player,
 } from "$lib/server/crossover/redis/entities";
 import { groupBy } from "lodash-es";
+import { seededRandom, stringToRandomNumber } from "../utils";
 import { biomeAtGeohash, type Biome } from "../world/biomes";
 import { bestiary } from "../world/settings/bestiary";
 import { compendium } from "../world/settings/compendium";
@@ -23,6 +24,8 @@ interface Descriptor {
     name: string;
     descriptions: {
         location: string;
+        time: string;
+        weather: string;
         players: string;
         monsters: string;
         items: string;
@@ -61,14 +64,27 @@ class MudDescriptionGenerator {
         },
     ): Promise<Descriptor> {
         const time = options?.time ?? Date.now();
+        const {
+            description: timeDescription,
+            timeOfDay,
+            season,
+        } = this.getTimeInfo(time);
 
         const descriptor: Descriptor = {
-            name: "The Abyss",
+            name: location || "The Abyss", // TODO: Get appropriate name
             descriptions: {
                 location: "You are nowhere to be found",
                 players: "",
                 monsters: "",
                 items: "",
+                time: timeDescription,
+                weather: this.getWeatherInfo({
+                    location,
+                    locationType,
+                    time,
+                    season,
+                    timeOfDay,
+                }),
             },
             location,
             locationType,
@@ -79,7 +95,7 @@ class MudDescriptionGenerator {
                 location,
                 locationType as GeohashLocationType,
             );
-            descriptor.location = this.biomes[biome].description;
+            descriptor.descriptions.location = this.biomes[biome].description;
         }
 
         if (options?.monsters) {
@@ -102,6 +118,128 @@ class MudDescriptionGenerator {
         }
 
         return descriptor;
+    }
+
+    getTimeInfo(time: number): {
+        timeOfDay: string;
+        season: string;
+        dayOfYear: number;
+        description: string;
+    } {
+        const { dayLengthHours, yearLengthDays, seasonLengthDays } =
+            this.worldSeed.time;
+
+        const hourOfDay = (time / (1000 * 60 * 60)) % dayLengthHours;
+        const dayOfYear =
+            Math.floor(time / (1000 * 60 * 60 * 24)) % yearLengthDays;
+        const season = Math.floor(dayOfYear / seasonLengthDays) % 4;
+
+        let timeOfDay: string;
+        if (hourOfDay < 6) timeOfDay = "night";
+        else if (hourOfDay < 12) timeOfDay = "morning";
+        else if (hourOfDay < 18) timeOfDay = "afternoon";
+        else timeOfDay = "evening";
+
+        const seasons = ["spring", "summer", "autumn", "winter"];
+        const currentSeason = seasons[season];
+
+        return {
+            timeOfDay,
+            season: currentSeason,
+            dayOfYear,
+            description: `It is ${timeOfDay} during the ${currentSeason} season.`,
+        };
+    }
+
+    private getWeatherInfo({
+        location,
+        locationType,
+        timeOfDay,
+        season,
+        time,
+    }: {
+        location: string;
+        locationType: LocationType;
+        time: number;
+        timeOfDay: string;
+        season: string;
+    }): string {
+        const continent = this.worldSeed.seeds.continent[location.charAt(0)];
+        if (!geohashLocationTypes.has(locationType) || !continent) {
+            return "";
+        }
+
+        const {
+            baseTemperature,
+            temperatureVariation,
+            rainProbability,
+            stormProbability,
+        } = continent.weather;
+
+        // Use location and time to seed the random number generation
+        const rv = seededRandom(
+            stringToRandomNumber(location + time.toString()),
+        );
+        // Adjust temperature based on season and time of day
+        let temperatureAdjustment = 0;
+        switch (season) {
+            case "summer":
+                temperatureAdjustment += temperatureVariation / 2;
+                break;
+            case "winter":
+                temperatureAdjustment -= temperatureVariation / 2;
+                break;
+        }
+
+        switch (timeOfDay) {
+            case "night":
+                temperatureAdjustment -= temperatureVariation / 4;
+                break;
+            case "afternoon":
+                temperatureAdjustment += temperatureVariation / 4;
+                break;
+        }
+
+        const temperature =
+            baseTemperature + rv * temperatureVariation + temperatureAdjustment;
+
+        // Adjust rain and storm probabilities based on season
+        let rainAdjustment = 0;
+        let stormAdjustment = 0;
+        switch (season) {
+            case "spring":
+                rainAdjustment = 0.1;
+                break;
+            case "autumn":
+                rainAdjustment = 0.05;
+                stormAdjustment = 0.05;
+                break;
+        }
+        const isRaining = rv < rainProbability + rainAdjustment;
+        const isStorming = rv < stormProbability + stormAdjustment;
+
+        let weatherDescription = `The temperature is ${Math.round(temperature)}°C.`;
+
+        if (isStorming) {
+            weatherDescription +=
+                " A fierce storm is raging, with heavy rain and strong winds.";
+            const humidityDesc = getHumidityDesc(continent.water, temperature);
+            weatherDescription += ` The air feels ${getTempDesc(temperature)}${humidityDesc ? " and " + humidityDesc : ""}.`;
+        } else if (isRaining) {
+            weatherDescription += " It is raining steadily.";
+            const humidityDesc = getHumidityDesc(continent.water, temperature);
+            weatherDescription += ` The air feels ${getTempDesc(temperature)}${humidityDesc ? " and " + humidityDesc : ""}.`;
+        } else {
+            weatherDescription += " The sky is clear.";
+            const humidityDesc = getHumidityDesc(continent.water, temperature);
+            if (humidityDesc) {
+                weatherDescription += ` The air is ${getTempDesc(temperature)} and ${humidityDesc}.`;
+            } else {
+                weatherDescription += ` The air is ${getTempDesc(temperature)}.`;
+            }
+        }
+
+        return weatherDescription;
     }
 }
 
@@ -137,6 +275,26 @@ const languageRules: Record<EntityType, LanguageRules> = {
             [Infinity, "You see {count} {name}s"],
         ],
     },
+};
+
+// Function to get humidity description based on continent water level
+const getHumidityDesc = (water: number, temp: number) => {
+    if (water > 0.5) {
+        if (temp > 25) return "humid";
+        if (temp < 10) return "damp";
+        return "moist";
+    } else if (water < 0.2) {
+        return "dry";
+    }
+    return ""; // For moderate humidity, we'll omit it from the description
+};
+
+// Function to get temperature description
+const getTempDesc = (temp: number) => {
+    if (temp > 30) return "hot";
+    if (temp > 20) return "warm";
+    if (temp > 10) return "cool";
+    return "cold";
 };
 
 function applyLanguageRules(

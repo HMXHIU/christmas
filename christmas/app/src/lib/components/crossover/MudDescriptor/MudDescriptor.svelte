@@ -43,8 +43,6 @@
                     ),
                 },
             );
-
-            console.log(JSON.stringify(descriptor, null, 2));
         }
     }
 
@@ -72,6 +70,11 @@
         <!-- Location -->
         <p class="text-sm text-muted-foreground">
             {descriptor.descriptions.location}
+        </p>
+        <!-- Time/Season/Weather -->
+        <p class="text-sm text-muted-foreground">
+            {descriptor.descriptions.time}
+            {descriptor.descriptions.weather}
         </p>
         <div class="flex flex-col">
             <!-- Monsters -->

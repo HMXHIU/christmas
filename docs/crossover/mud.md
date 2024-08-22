@@ -334,5 +334,6 @@ let biomes: Record<string, Biome> = {
 
 ## Tasks
 
-- [ ] Deprecate `tileAtGeohash` and replace with `MudDescriptionGenerator.descriptionAtGeohash`
-- [ ] Deprecate `Tile` with `Descriptor`
+- [x] Deprecate `tileAtGeohash` and replace with `MudDescriptionGenerator.descriptionAtGeohash`
+- [x] Deprecate `Tile` with `Descriptor`
+- [ ] Implement weather, season, day/night cycle descriptors

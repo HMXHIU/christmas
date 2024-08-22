@@ -61,8 +61,19 @@ interface WorldSeed {
                 bio: number;
                 hostile: number;
                 water: number;
+                weather: {
+                    baseTemperature: number;
+                    temperatureVariation: number;
+                    rainProbability: number;
+                    stormProbability: number;
+                };
             };
         };
+    };
+    time: {
+        dayLengthHours: number;
+        yearLengthDays: number;
+        seasonLengthDays: number;
     };
 }
 
