@@ -215,12 +215,12 @@ async function loadAssetTexture(
 
     // Determine variant
     if (variant == null) {
-        if (asset.prob != null) {
+        if (asset.probability != null) {
             const rv = seededRandom(seed);
-            const entries = Object.entries(asset.prob);
+            const entries = Object.entries(asset.probability);
             let acc = entries[0][1];
             variant = entries[0][0];
-            for (const [v, p] of Object.entries(asset.prob)) {
+            for (const [v, p] of Object.entries(asset.probability)) {
                 if (rv < acc) {
                     variant = v;
                     break;

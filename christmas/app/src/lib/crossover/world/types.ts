@@ -10,6 +10,7 @@ export {
     type GeohashLocationType,
     type GridCell,
     type LocationType,
+    type NoiseType,
     type Tile,
     type WorldAssetMetadata,
 };
@@ -20,11 +21,13 @@ interface Tile {
     description: string;
 }
 
+type NoiseType = "simplex" | "random";
+
 interface AssetMetadata {
     path: string; // eg. bundle/name or url (must start with http)
     animations?: Record<string, string>; // create an animation pointing to an in the sprite.json
     variants?: Record<string, string>; // create a variant pointing to a frame in the sprite.json
-    prob?: Record<string, number>; // probability of each variant
+    probability?: Record<string, number>; // probability of each variant
     width?: number; // number of horizontal cells at the geohash precision, origin is always top left (default: 1)
     height?: number; // number of vertical cells at the geohash precision, origin is always top left (default: 1)
     precision?: number; // geohash precision (default: unit)

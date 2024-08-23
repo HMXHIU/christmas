@@ -37,6 +37,7 @@ import {
     loadAssetTexture,
     type Position,
 } from "./utils";
+import { noise2D } from "./world";
 
 export {
     calculateBiomeDecorationsForRowCol,
@@ -160,8 +161,6 @@ async function _calculateBiomeDecorationsForRowCol({
 }): Promise<Record<string, ShaderTexture>> {
     const texturePositions: Record<string, ShaderTexture> = {};
 
-    // TODO: Skip decorations in world
-
     // Get biome decorations
     const decorations = biomes[biome].decorations;
     if (!decorations) {
@@ -171,11 +170,15 @@ async function _calculateBiomeDecorationsForRowCol({
 
     for (const [
         name,
-        { asset, probability, minInstances, maxInstances, radius },
+        { asset, noise, probability, minInstances, maxInstances, radius },
     ] of Object.entries(decorations)) {
         // Determine if this geohash should have decorations
         const dice = seededRandom(geohashSeed);
-        if (dice > probability) {
+        if (noise === "simplex") {
+            if ((noise2D(col / 100, row / 100) + 1) / 2 > probability) {
+                continue;
+            }
+        } else if (dice > probability) {
             continue;
         }
 

@@ -1,5 +1,5 @@
 import { PUBLIC_TOPOLOGY_ENDPOINT } from "$env/static/public";
-import { LRUMemoryCache, type CacheInterface } from "$lib/caches";
+import { type CacheInterface } from "$lib/caches";
 import {
     geohashToColRow,
     seededRandom,
@@ -12,6 +12,7 @@ import {
     geohashLocationTypes,
     type AssetMetadata,
     type GeohashLocationType,
+    type NoiseType,
 } from "./types";
 import { type WorldSeed } from "./world";
 export {
@@ -27,8 +28,6 @@ export {
     type BiomeParameters,
     type BiomeType,
 };
-
-const biomeCityCache = new LRUMemoryCache({ max: 100 });
 
 const INTENSITY_TO_HEIGHT = 8850 / 255;
 
@@ -57,13 +56,13 @@ interface Decoration {
     minInstances: number;
     maxInstances: number;
     probability: number;
+    noise: NoiseType;
     radius: number; // in cells
 }
 
 interface Biome {
     biome: BiomeType;
     name: string;
-    description: string;
     traversableSpeed: number; // 0.0 - 1.0
     asset?: AssetMetadata;
     decorations?: Record<string, Decoration>;
@@ -76,14 +75,13 @@ let biomes: Record<BiomeType, Biome> = {
     underground: {
         biome: "underground",
         name: "Rocks",
-        description: "An untraversable wall of subterranean rocks.",
         traversableSpeed: 0,
         asset: {
             path: "biomes/terrain",
             variants: {
                 default: "rocks1",
             },
-            prob: {
+            probability: {
                 default: 1,
             },
             width: 1,
@@ -94,8 +92,6 @@ let biomes: Record<BiomeType, Biome> = {
     forest: {
         biome: "forest",
         name: "Forest",
-        description:
-            "A dense collection of trees and vegetation, home to a variety of wildlife.",
         traversableSpeed: 0.8,
         asset: {
             path: "biomes/terrain",
@@ -104,7 +100,7 @@ let biomes: Record<BiomeType, Biome> = {
                 alt1: "grass2",
                 alt2: "grass3",
             },
-            prob: {
+            probability: {
                 default: 0.33,
                 alt1: 0.33,
                 alt2: 0.33,
@@ -115,7 +111,8 @@ let biomes: Record<BiomeType, Biome> = {
         },
         decorations: {
             grass: {
-                probability: 0.5, // TODO: to be modified by how strong the perlin noice affects the tile eg. how much "forest" this tile is
+                probability: 0.5,
+                noise: "simplex",
                 minInstances: 1,
                 maxInstances: 5,
                 radius: 1,
@@ -126,7 +123,7 @@ let biomes: Record<BiomeType, Biome> = {
                         alt1: "0052",
                         alt2: "0054",
                     },
-                    prob: {
+                    probability: {
                         default: 0.33,
                         alt1: 0.33,
                         alt2: 0.33,
@@ -141,8 +138,6 @@ let biomes: Record<BiomeType, Biome> = {
     grassland: {
         biome: "grassland",
         name: "Grassland",
-        description:
-            "A region dominated by grasses, with few trees and a diverse range of wildlife.",
         traversableSpeed: 1.0,
         asset: {
             path: "biomes/terrain",
@@ -151,7 +146,7 @@ let biomes: Record<BiomeType, Biome> = {
                 alt1: "grass2",
                 alt2: "grass3",
             },
-            prob: {
+            probability: {
                 default: 0.33,
                 alt1: 0.33,
                 alt2: 0.33,
@@ -160,12 +155,35 @@ let biomes: Record<BiomeType, Biome> = {
             height: 1,
             precision: worldSeed.spatial.unit.precision,
         },
+        decorations: {
+            grass: {
+                probability: 0.5,
+                noise: "simplex",
+                minInstances: 1,
+                maxInstances: 5,
+                radius: 1,
+                asset: {
+                    path: "biomes/grass",
+                    variants: {
+                        default: "0053",
+                        alt1: "0052",
+                        alt2: "0054",
+                    },
+                    probability: {
+                        default: 0.33,
+                        alt1: 0.33,
+                        alt2: 0.33,
+                    },
+                    width: 0.5,
+                    height: 0.5,
+                    precision: worldSeed.spatial.unit.precision,
+                },
+            },
+        },
     },
     desert: {
         biome: "desert",
         name: "Desert",
-        description:
-            "A dry, arid region with extreme temperatures, sparse vegetation, and limited wildlife.",
         traversableSpeed: 1.0,
         asset: {
             path: "biomes/terrain",
@@ -174,7 +192,7 @@ let biomes: Record<BiomeType, Biome> = {
                 alt1: "grass2",
                 alt2: "grass3",
             },
-            prob: {
+            probability: {
                 default: 0.33,
                 alt1: 0.33,
                 alt2: 0.33,
@@ -187,8 +205,6 @@ let biomes: Record<BiomeType, Biome> = {
     tundra: {
         biome: "tundra",
         name: "Tundra",
-        description:
-            "A cold, treeless area with a frozen subsoil, limited vegetation, and adapted wildlife.",
         traversableSpeed: 1.0,
         asset: {
             path: "biomes/terrain",
@@ -197,7 +213,7 @@ let biomes: Record<BiomeType, Biome> = {
                 alt1: "grass2",
                 alt2: "grass3",
             },
-            prob: {
+            probability: {
                 default: 0.33,
                 alt1: 0.33,
                 alt2: 0.33,
@@ -210,7 +226,6 @@ let biomes: Record<BiomeType, Biome> = {
     aquatic: {
         biome: "aquatic",
         name: "Water",
-        description: "A large body of water, with a variety of aquatic life.",
         traversableSpeed: 0,
         asset: {
             path: "biomes/terrain",
@@ -219,7 +234,7 @@ let biomes: Record<BiomeType, Biome> = {
                 alt1: "rocks2",
                 alt2: "rocks3",
             },
-            prob: {
+            probability: {
                 default: 0.33,
                 alt1: 0.33,
                 alt2: 0.33,
@@ -510,7 +525,6 @@ async function elevationAtGeohash(
  * @param seed - Optional world seed to use. Defaults to globally set seed.
  * @returns The name of the biome and strength at that geohash.
  *
- * TODO: Add caching to avoid redundant calls to biomeAtGeohash().
  * TODO: Replace with simplex noise etc..
  *
  * |----(bio)----|

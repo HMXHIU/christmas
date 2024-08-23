@@ -92,7 +92,7 @@ Need to translate the biome paramters to pick a biome tile to show including its
 - [ ] The probability should be dynamically alterable, procedurally
 - [ ] The decorations & their probability should also be dynamically alterable, procedurally
 - [ ] Biome strength should determine the number of decorations
-- [ ] Noise function for decorations eg. random, perlin
+- [x] Noise function for decorations eg. random, perlin
 
 ```ts
 

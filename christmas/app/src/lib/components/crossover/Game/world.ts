@@ -1,6 +1,8 @@
 import {
     autoCorrectGeohashPrecision,
     getAllUnitGeohashes,
+    seededRandom,
+    stringToRandomNumber,
 } from "$lib/crossover/utils";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
@@ -9,6 +11,7 @@ import {
 } from "$lib/crossover/world/types";
 import type { World } from "$lib/server/crossover/redis/entities";
 import { Assets, Container, Graphics } from "pixi.js";
+import { createNoise2D } from "simplex-noise";
 import { get } from "svelte/store";
 import { itemRecord, worldRecord } from "../../../../store";
 import { WorldEntityContainer } from "./entities/WorldEntityContainer";
@@ -20,7 +23,12 @@ import {
     type Position,
 } from "./utils";
 
-export { cullWorlds, debugWorld, drawWorlds, loadWorld, worldMeshes };
+export { cullWorlds, debugWorld, drawWorlds, loadWorld, noise2D, worldMeshes };
+
+// Simplex noise function
+const noise2D = createNoise2D(() => {
+    return seededRandom(stringToRandomNumber(worldSeed.name));
+});
 
 let worldMeshes: Record<string, WorldEntityContainer> = {};
 let colliders: Graphics[] = [];

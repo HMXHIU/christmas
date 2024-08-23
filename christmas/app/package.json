@@ -92,6 +92,7 @@
     "pixi.js": "^8.2.2",
     "pngjs": "^7.0.0",
     "redis-om": "^0.4.3",
+    "simplex-noise": "^4.0.3",
     "solana-connect": "^0.1.10",
     "svelte-sonner": "^0.3.19",
     "tailwind-merge": "^2.2.1",
