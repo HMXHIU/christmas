@@ -10,6 +10,8 @@ import type {
 } from "$lib/crossover/world/types";
 import { isGeohashTraversable } from "$lib/crossover/world/utils";
 import {
+    biomeAtGeohashCache,
+    biomeParametersAtCityCache,
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
@@ -161,6 +163,8 @@ async function isGeohashTraversableServer(
             topologyResponseCache,
             worldTraversableCellsCache,
             worldAssetMetadataCache,
+            biomeAtGeohashCache,
+            biomeParametersAtCityCache,
         },
     );
 }

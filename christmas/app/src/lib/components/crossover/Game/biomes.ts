@@ -1,5 +1,7 @@
 import { LRUMemoryCache, memoize } from "$lib/caches";
 import {
+    biomeAtGeohashCache,
+    biomeParametersAtCityCache,
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
@@ -15,8 +17,8 @@ import {
     biomeAtGeohash,
     biomes,
     elevationAtGeohash,
+    type BiomeType,
 } from "$lib/crossover/world/biomes";
-import { AsyncLock } from "$lib/utils";
 import type { Container, Texture } from "pixi.js";
 import {
     drawShaderTextures,
@@ -63,7 +65,7 @@ async function _calculateBiomeForRowCol(
     isoX: number;
     isoY: number;
     elevation: number;
-    biome: string;
+    biome: BiomeType;
     geohash: string;
     strength: number;
     width: number;
@@ -83,6 +85,8 @@ async function _calculateBiomeForRowCol(
             topologyResponseCache,
             topologyResultCache,
             topologyBufferCache,
+            biomeAtGeohashCache,
+            biomeParametersAtCityCache,
         },
     );
     const elevation =
@@ -146,7 +150,7 @@ async function _calculateBiomeDecorationsForRowCol({
     elevation,
 }: {
     geohash: string;
-    biome: string;
+    biome: BiomeType;
     strength: number;
     row: number;
     col: number;
@@ -229,47 +233,115 @@ async function _calculateBiomeDecorationsForRowCol({
     return texturePositions;
 }
 
-const drawBiomeShadersLock = new AsyncLock();
 async function drawBiomeShaders(playerPosition: Position, stage: Container) {
-    drawBiomeShadersLock.withLock(async () => {
-        // Reset instances
-        for (const r of Object.values(biomeTexturePositions)) {
-            r.instances = 0;
-        }
-        for (const r of Object.values(biomeDecorationsTexturePositions)) {
-            r.instances = 0;
-        }
+    // Reset instances
+    for (const r of Object.values(biomeTexturePositions)) {
+        r.instances = 0;
+    }
+    for (const r of Object.values(biomeDecorationsTexturePositions)) {
+        r.instances = 0;
+    }
 
-        // Create biome shader instances
+    // Create biome shader instances
+    for (
+        let row = playerPosition.row - GRID_MID_ROW;
+        row <= playerPosition.row + GRID_MID_ROW;
+        row++
+    ) {
         for (
-            let row = playerPosition.row - GRID_MID_ROW;
-            row <= playerPosition.row + GRID_MID_ROW;
-            row++
+            let col = playerPosition.col - GRID_MID_COL;
+            col <= playerPosition.col + GRID_MID_COL;
+            col++
         ) {
-            for (
-                let col = playerPosition.col - GRID_MID_COL;
-                col <= playerPosition.col + GRID_MID_COL;
-                col++
-            ) {
-                // Fill biomeTexturePositions
-                const {
-                    isoX,
-                    isoY,
+            // Fill biomeTexturePositions
+            const {
+                isoX,
+                isoY,
+                texture,
+                elevation,
+                biome,
+                geohash,
+                strength,
+                width,
+                height,
+            } = await calculateBiomeForRowCol(playerPosition, row, col);
+
+            // Use the entire sprite sheet as the texture (Note: must all be in the same sheet)
+            const textureUid = texture.source.label;
+            const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
+
+            if (biomeTexturePositions[textureUid] == null) {
+                biomeTexturePositions[textureUid] = {
                     texture,
-                    elevation,
-                    biome,
-                    geohash,
-                    strength,
+                    positions: new Float32Array(MAX_SHADER_GEOMETRIES * 3).fill(
+                        -1,
+                    ), // x, y, elevation
+                    uvsX: new Float32Array(MAX_SHADER_GEOMETRIES * 4), // x0, x1, x2, x3
+                    uvsY: new Float32Array(MAX_SHADER_GEOMETRIES * 4), // y0, y1, y2, y3
+                    sizes: new Float32Array(MAX_SHADER_GEOMETRIES * 2), // w, h
+                    anchors: new Float32Array(MAX_SHADER_GEOMETRIES * 2), // x, y
                     width,
                     height,
-                } = await calculateBiomeForRowCol(playerPosition, row, col);
+                    instances: 0,
+                };
+            } else {
+                let ref = biomeTexturePositions[textureUid];
 
+                // Set instance positions
+                const stp = ref.instances * 3;
+                ref.positions![stp] = isoX;
+                ref.positions![stp + 1] = isoY;
+                ref.positions![stp + 2] = elevation;
+
+                // Set instance uvs
+                const stuv = ref.instances * 4;
+                ref.uvsX![stuv] = x0;
+                ref.uvsX![stuv + 1] = x1;
+                ref.uvsX![stuv + 2] = x2;
+                ref.uvsX![stuv + 3] = x3;
+                ref.uvsY![stuv] = y0;
+                ref.uvsY![stuv + 1] = y1;
+                ref.uvsY![stuv + 2] = y2;
+                ref.uvsY![stuv + 3] = y3;
+
+                // Set instance sizes
+                const sts = ref.instances * 2;
+                ref.sizes![sts] = width;
+                ref.sizes![sts + 1] = height;
+
+                // Set instance anchors
+                ref.anchors![sts] = texture.defaultAnchor?.x || 0.5;
+                ref.anchors![sts + 1] = texture.defaultAnchor?.y || 0.5;
+
+                // Increment instances
+                ref.instances += 1;
+            }
+
+            // Fill biomeDecorationsTexturePositions
+            for (const {
+                positions,
+                texture,
+                height,
+                width,
+                instances,
+            } of Object.values(
+                await calculateBiomeDecorationsForRowCol({
+                    geohash,
+                    biome,
+                    strength,
+                    row,
+                    col,
+                    isoX,
+                    isoY,
+                    elevation,
+                }),
+            )) {
                 // Use the entire sprite sheet as the texture (Note: must all be in the same sheet)
                 const textureUid = texture.source.label;
                 const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
 
-                if (biomeTexturePositions[textureUid] == null) {
-                    biomeTexturePositions[textureUid] = {
+                if (biomeDecorationsTexturePositions[textureUid] == null) {
+                    biomeDecorationsTexturePositions[textureUid] = {
                         texture,
                         positions: new Float32Array(
                             MAX_SHADER_GEOMETRIES * 3,
@@ -283,13 +355,13 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
                         instances: 0,
                     };
                 } else {
-                    let ref = biomeTexturePositions[textureUid];
+                    const ref = biomeDecorationsTexturePositions[textureUid];
 
                     // Set instance positions
-                    const stp = ref.instances * 3;
-                    ref.positions![stp] = isoX;
-                    ref.positions![stp + 1] = isoY;
-                    ref.positions![stp + 2] = elevation;
+                    ref.positions!.set(
+                        positions!.subarray(0, instances * 3),
+                        ref.instances * 3, // offset
+                    );
 
                     // Set instance uvs
                     const stuv = ref.instances * 4;
@@ -314,97 +386,23 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
                     // Increment instances
                     ref.instances += 1;
                 }
-
-                // Fill biomeDecorationsTexturePositions
-                for (const {
-                    positions,
-                    texture,
-                    height,
-                    width,
-                    instances,
-                } of Object.values(
-                    await calculateBiomeDecorationsForRowCol({
-                        geohash,
-                        biome,
-                        strength,
-                        row,
-                        col,
-                        isoX,
-                        isoY,
-                        elevation,
-                    }),
-                )) {
-                    // Use the entire sprite sheet as the texture (Note: must all be in the same sheet)
-                    const textureUid = texture.source.label;
-                    const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
-
-                    if (biomeDecorationsTexturePositions[textureUid] == null) {
-                        biomeDecorationsTexturePositions[textureUid] = {
-                            texture,
-                            positions: new Float32Array(
-                                MAX_SHADER_GEOMETRIES * 3,
-                            ).fill(-1), // x, y, elevation
-                            uvsX: new Float32Array(MAX_SHADER_GEOMETRIES * 4), // x0, x1, x2, x3
-                            uvsY: new Float32Array(MAX_SHADER_GEOMETRIES * 4), // y0, y1, y2, y3
-                            sizes: new Float32Array(MAX_SHADER_GEOMETRIES * 2), // w, h
-                            anchors: new Float32Array(
-                                MAX_SHADER_GEOMETRIES * 2,
-                            ), // x, y
-                            width,
-                            height,
-                            instances: 0,
-                        };
-                    } else {
-                        const ref =
-                            biomeDecorationsTexturePositions[textureUid];
-
-                        // Set instance positions
-                        ref.positions!.set(
-                            positions!.subarray(0, instances * 3),
-                            ref.instances * 3, // offset
-                        );
-
-                        // Set instance uvs
-                        const stuv = ref.instances * 4;
-                        ref.uvsX![stuv] = x0;
-                        ref.uvsX![stuv + 1] = x1;
-                        ref.uvsX![stuv + 2] = x2;
-                        ref.uvsX![stuv + 3] = x3;
-                        ref.uvsY![stuv] = y0;
-                        ref.uvsY![stuv + 1] = y1;
-                        ref.uvsY![stuv + 2] = y2;
-                        ref.uvsY![stuv + 3] = y3;
-
-                        // Set instance sizes
-                        const sts = ref.instances * 2;
-                        ref.sizes![sts] = width;
-                        ref.sizes![sts + 1] = height;
-
-                        // Set instance anchors
-                        ref.anchors![sts] = texture.defaultAnchor?.x || 0.5;
-                        ref.anchors![sts + 1] = texture.defaultAnchor?.y || 0.5;
-
-                        // Increment instances
-                        ref.instances += 1;
-                    }
-                }
             }
         }
+    }
 
-        // Draw shaders
-        await drawShaderTextures({
-            shaderName: "biome",
-            shaderTextures: biomeTexturePositions,
-            numGeometries: MAX_SHADER_GEOMETRIES,
-            stage,
-            ...layers.depthPartition("biome"),
-        });
-        await drawShaderTextures({
-            shaderName: "grass",
-            shaderTextures: biomeDecorationsTexturePositions,
-            numGeometries: MAX_SHADER_GEOMETRIES,
-            stage,
-            ...layers.depthPartition("entity"), // grass is at the entity layer
-        });
+    // Draw shaders
+    await drawShaderTextures({
+        shaderName: "biome",
+        shaderTextures: biomeTexturePositions,
+        numGeometries: MAX_SHADER_GEOMETRIES,
+        stage,
+        ...layers.depthPartition("biome"),
+    });
+    await drawShaderTextures({
+        shaderName: "grass",
+        shaderTextures: biomeDecorationsTexturePositions,
+        numGeometries: MAX_SHADER_GEOMETRIES,
+        stage,
+        ...layers.depthPartition("entity"), // grass is at the entity layer
     });
 }

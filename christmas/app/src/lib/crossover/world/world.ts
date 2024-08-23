@@ -1,6 +1,7 @@
 import type { CacheInterface } from "$lib/caches";
 import type { World } from "$lib/server/crossover/redis/entities";
 import { autoCorrectGeohashPrecision, geohashToColRow } from "../utils";
+import type { BiomeParameters } from "./biomes";
 import { TILE_HEIGHT, TILE_WIDTH } from "./settings";
 import sanctuaries from "./settings/sanctuaries.json";
 import { worldSeed } from "./settings/world";
@@ -58,9 +59,7 @@ interface WorldSeed {
     seeds: {
         continent: {
             [key: string]: {
-                bio: number;
-                hostile: number;
-                water: number;
+                biome: BiomeParameters;
                 weather: {
                     baseTemperature: number;
                     temperatureVariation: number;

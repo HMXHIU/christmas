@@ -62,6 +62,8 @@ async function isGeohashTraversable(
         topologyResponseCache?: CacheInterface;
         worldAssetMetadataCache?: CacheInterface;
         worldTraversableCellsCache?: CacheInterface;
+        biomeAtGeohashCache?: CacheInterface;
+        biomeParametersAtCityCache?: CacheInterface;
     },
 ): Promise<boolean> {
     // Early return false if has colliders (items)
@@ -74,6 +76,8 @@ async function isGeohashTraversable(
         topologyResultCache: options?.topologyResultCache,
         topologyBufferCache: options?.topologyBufferCache,
         topologyResponseCache: options?.topologyResponseCache,
+        biomeAtGeohashCache: options?.biomeAtGeohashCache,
+        biomeParametersAtCityCache: options?.biomeParametersAtCityCache,
     });
     const biomeSpeed = biomes[biome].traversableSpeed;
 

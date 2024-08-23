@@ -15,10 +15,10 @@ const worldSeed: WorldSeed = {
         territory: {
             precision: 2,
         },
-        guild: {
+        city: {
             precision: 3,
         },
-        city: {
+        guild: {
             precision: 4,
         },
         town: {
@@ -45,9 +45,12 @@ const worldSeed: WorldSeed = {
     seeds: {
         continent: {
             b: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -56,9 +59,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             c: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -67,9 +73,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             f: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -78,9 +87,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             g: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -89,9 +101,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             u: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -100,9 +115,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             v: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -111,9 +129,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             y: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -122,9 +143,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             z: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -133,9 +157,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             "8": {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -144,9 +171,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             "9": {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -155,9 +185,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             d: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -166,9 +199,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             e: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -177,9 +213,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             s: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -188,9 +227,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             t: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -199,9 +241,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             w: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.0,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -210,9 +255,12 @@ const worldSeed: WorldSeed = {
                 },
             }, // no water for testing
             x: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -221,9 +269,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             "2": {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -232,9 +283,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             "3": {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -243,9 +297,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             "6": {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -254,9 +311,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             "7": {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -265,9 +325,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             k: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -276,9 +339,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             m: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -287,9 +353,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             q: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -298,9 +367,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             r: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -309,9 +381,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             "0": {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -320,9 +395,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             "1": {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -331,9 +409,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             "4": {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -342,9 +423,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             "5": {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -353,9 +437,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             h: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -364,9 +451,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             j: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -375,9 +465,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             n: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,
@@ -386,9 +479,12 @@ const worldSeed: WorldSeed = {
                 },
             },
             p: {
-                bio: 0.5,
-                hostile: 0.2,
-                water: 0.1,
+                biome: {
+                    forest: 0.1,
+                    grassland: 0.7,
+                    desert: 0.1,
+                    tundra: 0.1,
+                },
                 weather: {
                     baseTemperature: 25,
                     temperatureVariation: 10,

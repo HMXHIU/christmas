@@ -1,5 +1,7 @@
 import { PUBLIC_TILED_MINIO_BUCKET } from "$env/static/public";
 import {
+    biomeAtGeohashCache,
+    biomeParametersAtCityCache,
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
@@ -482,6 +484,8 @@ async function isGeohashTraversableClient(
             topologyBufferCache,
             worldAssetMetadataCache,
             worldTraversableCellsCache,
+            biomeAtGeohashCache,
+            biomeParametersAtCityCache,
         },
     );
 }

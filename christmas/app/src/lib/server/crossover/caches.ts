@@ -1,6 +1,8 @@
 import { LRUMemoryCache } from "$lib/caches";
 
 export {
+    biomeAtGeohashCache,
+    biomeParametersAtCityCache,
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
@@ -14,3 +16,5 @@ const topologyResponseCache = new LRUMemoryCache({ max: 100 }); // server can't 
 const topologyBufferCache = new LRUMemoryCache({ max: 100 });
 const worldAssetMetadataCache = new LRUMemoryCache({ max: 100 });
 const worldTraversableCellsCache = new LRUMemoryCache({ max: 100 });
+const biomeAtGeohashCache = new LRUMemoryCache({ max: 1000 });
+const biomeParametersAtCityCache = new LRUMemoryCache({ max: 1000 });

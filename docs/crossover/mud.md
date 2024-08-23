@@ -11,7 +11,7 @@ Problem:
 
 1. The `biome` of the area which is procedurally generated from the `worldSeed` (see `lib/crossover/world/settings/world.ts`)
 2. The `continent` (the first character of the geohash location)
-   - [ ] Each continent has certain properies such as bio, water, hostile, description, etc ... (described in the world seeed)
+   - [x] Each continent has certain properies such as bio, water, hostile, description, etc ... (described in the world seeed)
    - [ ] Typically the continent descriptions are more dealing with geography, topology, fauna,
    - [ ] Generate descriptions for each continent
 3. The `region` which the location is closest to which is determined by the closest `santuary` (see `lib/crossover/world/settings/sanctuaries.json`)
@@ -33,6 +33,131 @@ These factors are dynamic becase they need to be queried from the database
 2. The `Monster` entities at that location
 3. The `Player` entities at that location
 4. The `World` description at that location
+
+#### Biome Descriptors
+
+At the continent level, there are 4 major land biome types, sub types can be generated from the 4 major types.
+See https://education.nationalgeographic.org/resource/five-major-types-biomes/
+
+Factors affecting subtypes
+
+- Elevation
+- Temperature
+- Surrounding biomes (there should be a gradual transition from biome to biome not abrubt)
+
+1. grassland
+   - savannas
+   - tropical
+   - temperate
+2. forest
+   - tropical
+   - temperate
+   - boreal
+3. desert
+   - hot & dry
+   - cold
+4. tundra
+   - arctic
+   - alpine
+
+```ts
+seeds: {
+  continent: {
+      b: {
+          // Change to this format
+          biome: {
+            grassland: 0.1,
+            forest: 0.1,
+            desert: 0.1,
+            tundra: 0.1,
+          },
+          factions: {
+            goblins: 0.1,
+            orcs: 0.2,
+          },
+          weather: {
+              baseTemperature: 25,
+              temperatureVariation: 10,
+              rainProbability: 0.2,
+              stormProbability: 0.05,
+          },
+      },
+  }
+}
+```
+
+Need to translate the biome paramters to pick a biome tile to show including its decorations
+
+- [ ] The variants could represent the sub types of the biome and the strength/probability
+- [ ] The probability should be dynamically alterable, procedurally
+- [ ] The decorations & their probability should also be dynamically alterable, procedurally
+- [ ] Biome strength should determine the number of decorations
+- [ ] Noise function for decorations eg. random, perlin
+
+```ts
+
+```
+
+```ts
+let biomes: Record<string, Biome> = {
+  // Add all subtypes
+  forestTropical: {},
+  forestTemperate: {},
+  forest: {
+    biome: "forest",
+    name: "Forest",
+    traversableSpeed: 0.8,
+    asset: {
+      path: "biomes/terrain/forest",
+      variants: {
+        tropical: "tropical", // frames in the sprite sheet
+        temperate: "temperate",
+        boreal: "boreal",
+      },
+      prob: {
+        tropical: 0.33,
+        temperate: 0.33,
+        boreal: 0.33,
+      },
+      width: 1,
+      height: 1,
+      precision: worldSeed.spatial.unit.precision,
+    },
+    decorations: {
+      grass: {
+        // TODO:
+        probability: 0.5, // tune based on the strength of the biome
+        minInstances: 1, // tune based on the strength of the biome
+        maxInstances: 5, // tune based on the strength of the biome
+        noise: "perlin", // noise function to use
+
+        radius: 1,
+        asset: {
+          path: "biomes/grass",
+          variants: {
+            default: "0053",
+            alt1: "0052",
+            alt2: "0054",
+          },
+          prob: {
+            default: 0.33,
+            alt1: 0.33,
+            alt2: 0.33,
+          },
+          width: 0.5,
+          height: 0.5,
+          precision: worldSeed.spatial.unit.precision,
+        },
+      },
+    },
+  },
+};
+```
+
+- [ ] `biomeAtGeohash` determines the biome tile to use at a geohash
+- [ ] Deprecate the description from biomes
+- [ ] Generate descriptor for biome at `city` level using the biome parameters
+- [ ] weather and temperature should take into account elevation
 
 ## MUD Generator
 
@@ -332,8 +457,19 @@ let biomes: Record<string, Biome> = {
 ];
 ```
 
-## Tasks
+## Weather effects on spells
+
+- Dry: +fire, -lightning, -cold
+- Wet: -fire, +lightning, +cold
+- Hot: +cold
+- Cold: +fire
+- Day: +night
+- Night: +day
+
+#### Tasks
 
 - [x] Deprecate `tileAtGeohash` and replace with `MudDescriptionGenerator.descriptionAtGeohash`
 - [x] Deprecate `Tile` with `Descriptor`
-- [ ] Implement weather, season, day/night cycle descriptors
+- [x] Implement weather, season, day/night cycle descriptors
+- [x] Create a function to generate high precison paramters from lower ones using noise (only need to specify at continent level)
+- [x] Generate biome location descriptor from `city` level parameters

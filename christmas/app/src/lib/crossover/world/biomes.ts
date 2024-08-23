@@ -1,10 +1,11 @@
 import { PUBLIC_TOPOLOGY_ENDPOINT } from "$env/static/public";
-import type { CacheInterface } from "$lib/caches";
+import { LRUMemoryCache, type CacheInterface } from "$lib/caches";
 import {
     geohashToColRow,
     seededRandom,
     stringToRandomNumber,
 } from "$lib/crossover/utils";
+import { cloneDeep } from "lodash-es";
 import { PNG, type PNGWithMetadata } from "pngjs";
 import { worldSeed } from "./settings/world";
 import {
@@ -15,22 +16,65 @@ import {
 import { type WorldSeed } from "./world";
 export {
     biomeAtGeohash,
+    biomeParametersAtCity,
     biomes,
+    biomeTypes,
     elevationAtGeohash,
     INTENSITY_TO_HEIGHT,
     topologyAtGeohash,
     topologyTile,
     type Biome,
+    type BiomeParameters,
+    type BiomeType,
 };
 
+const biomeCityCache = new LRUMemoryCache({ max: 100 });
+
 const INTENSITY_TO_HEIGHT = 8850 / 255;
+
+const biomeTypes: BiomeType[] = [
+    "grassland",
+    "forest",
+    "desert",
+    "tundra",
+    "underground",
+    "aquatic",
+];
+type BiomeType =
+    | "grassland"
+    | "forest"
+    | "desert"
+    | "tundra"
+    | "underground"
+    | "aquatic";
+
+type BiomeParameters = {
+    [s in BiomeType]?: number;
+};
+
+interface Decoration {
+    asset: AssetMetadata;
+    minInstances: number;
+    maxInstances: number;
+    probability: number;
+    radius: number; // in cells
+}
+
+interface Biome {
+    biome: BiomeType;
+    name: string;
+    description: string;
+    traversableSpeed: number; // 0.0 - 1.0
+    asset?: AssetMetadata;
+    decorations?: Record<string, Decoration>;
+}
 
 /**
  * `biomes` is a collection of all the `Biome` available in the game.
  */
-let biomes: Record<string, Biome> = {
-    rocks: {
-        biome: "rocks",
+let biomes: Record<BiomeType, Biome> = {
+    underground: {
+        biome: "underground",
         name: "Rocks",
         description: "An untraversable wall of subterranean rocks.",
         traversableSpeed: 0,
@@ -47,7 +91,6 @@ let biomes: Record<string, Biome> = {
             precision: worldSeed.spatial.unit.precision,
         },
     },
-
     forest: {
         biome: "forest",
         name: "Forest",
@@ -95,12 +138,51 @@ let biomes: Record<string, Biome> = {
             },
         },
     },
+    grassland: {
+        biome: "grassland",
+        name: "Grassland",
+        description:
+            "A region dominated by grasses, with few trees and a diverse range of wildlife.",
+        traversableSpeed: 1.0,
+        asset: {
+            path: "biomes/terrain",
+            variants: {
+                default: "grass1",
+                alt1: "grass2",
+                alt2: "grass3",
+            },
+            prob: {
+                default: 0.33,
+                alt1: 0.33,
+                alt2: 0.33,
+            },
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
+        },
+    },
     desert: {
         biome: "desert",
         name: "Desert",
         description:
             "A dry, arid region with extreme temperatures, sparse vegetation, and limited wildlife.",
         traversableSpeed: 1.0,
+        asset: {
+            path: "biomes/terrain",
+            variants: {
+                default: "grass1",
+                alt1: "grass2",
+                alt2: "grass3",
+            },
+            prob: {
+                default: 0.33,
+                alt1: 0.33,
+                alt2: 0.33,
+            },
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
+        },
     },
     tundra: {
         biome: "tundra",
@@ -108,50 +190,25 @@ let biomes: Record<string, Biome> = {
         description:
             "A cold, treeless area with a frozen subsoil, limited vegetation, and adapted wildlife.",
         traversableSpeed: 1.0,
+        asset: {
+            path: "biomes/terrain",
+            variants: {
+                default: "grass1",
+                alt1: "grass2",
+                alt2: "grass3",
+            },
+            prob: {
+                default: 0.33,
+                alt1: 0.33,
+                alt2: 0.33,
+            },
+            width: 1,
+            height: 1,
+            precision: worldSeed.spatial.unit.precision,
+        },
     },
-    grassland: {
-        biome: "grassland",
-        name: "Grassland",
-        description:
-            "A region dominated by grasses, with few trees and a diverse range of wildlife.",
-        traversableSpeed: 1.0,
-    },
-    wetland: {
-        biome: "wetland",
-        name: "Wetland",
-        description:
-            "An area saturated with water, supporting aquatic plants and a rich biodiversity.",
-        traversableSpeed: 0.5,
-    },
-    mountain: {
-        biome: "mountain",
-        name: "Mountain",
-        description:
-            "A high elevation region with steep terrain, diverse ecosystems, and unique wildlife.",
-        traversableSpeed: 0,
-    },
-    hills: {
-        biome: "hills",
-        name: "Hills",
-        description:
-            "A region of elevated terrain, with a variety of wildlife.",
-        traversableSpeed: 0.5,
-    },
-    plains: {
-        biome: "plains",
-        name: "Plains",
-        description: "A large area of flat land, with a variety of wildlife.",
-        traversableSpeed: 1.0,
-    },
-    swamp: {
-        biome: "swamp",
-        name: "Swamp",
-        description:
-            "A wetland area with a variety of vegetation, supporting a diverse range of wildlife.",
-        traversableSpeed: 0.7,
-    },
-    water: {
-        biome: "water",
+    aquatic: {
+        biome: "aquatic",
         name: "Water",
         description: "A large body of water, with a variety of aquatic life.",
         traversableSpeed: 0,
@@ -172,72 +229,7 @@ let biomes: Record<string, Biome> = {
             precision: worldSeed.spatial.unit.precision,
         },
     },
-
-    ice: {
-        biome: "ice",
-        name: "Ice",
-        description:
-            "A region covered in ice, with limited vegetation and wildlife.",
-        traversableSpeed: 0.8,
-        asset: {
-            path: "biomes/terrain",
-            variants: {
-                default: "desert1", // frames in the sprite sheet
-                alt1: "desert2",
-                alt2: "desert3",
-            },
-            prob: {
-                default: 0.33,
-                alt1: 0.33,
-                alt2: 0.33,
-            },
-            width: 1,
-            height: 1,
-            precision: worldSeed.spatial.unit.precision,
-        },
-        decorations: {
-            grass: {
-                probability: 0.5, // TODO: to be modified by how strong the perlin noice affects the tile eg. how much "forest" this tile is
-                minInstances: 1,
-                maxInstances: 5,
-                radius: 1,
-                asset: {
-                    path: "biomes/grass",
-                    variants: {
-                        default: "0053",
-                        alt1: "0052",
-                        alt2: "0054",
-                    },
-                    prob: {
-                        default: 0.33,
-                        alt1: 0.33,
-                        alt2: 0.33,
-                    },
-                    width: 0.5,
-                    height: 0.5,
-                    precision: worldSeed.spatial.unit.precision,
-                },
-            },
-        },
-    },
 };
-
-interface Decoration {
-    asset: AssetMetadata;
-    minInstances: number;
-    maxInstances: number;
-    probability: number;
-    radius: number; // in cells
-}
-
-interface Biome {
-    biome: string;
-    name: string;
-    description: string;
-    traversableSpeed: number; // 0.0 - 1.0
-    asset?: AssetMetadata;
-    decorations?: Record<string, Decoration>;
-}
 
 function topologyTile(geohash: string): {
     url: string;
@@ -305,7 +297,7 @@ async function topologyBuffer(
     const response = cachedResponse ?? (await fetch(url));
 
     if (cachedResponse == null && options?.responseCache != null) {
-        options.responseCache.set(url, response);
+        options.responseCache.set(url, response.clone()); // Need to clone BrowserCache responses as it can only be used once
     }
 
     // Save buffer to cache
@@ -534,53 +526,111 @@ async function biomeAtGeohash(
         topologyResultCache?: CacheInterface;
         topologyBufferCache?: CacheInterface;
         topologyResponseCache?: CacheInterface;
+        biomeAtGeohashCache?: CacheInterface;
+        biomeParametersAtCityCache?: CacheInterface;
     },
-): Promise<[string, number]> {
-    const seed = options?.seed || worldSeed;
+): Promise<[BiomeType, number]> {
+    // Get from cache
+    const cacheKey = `${geohash}-${locationType}`;
+    const cachedResult = await options?.biomeAtGeohashCache?.get(cacheKey);
+    if (cachedResult) return cachedResult;
 
     if (!geohashLocationTypes.has(locationType)) {
         throw new Error("Location is not a GeohashLocationType");
     }
 
+    const seed = options?.seed || worldSeed;
+    let result: [BiomeType, number] = ["grassland", 1];
+
     // Underground
     if (locationType !== "geohash") {
-        return [biomes.rocks.biome, 1];
+        result = [biomes.underground.biome, 1];
     }
-
     // Leave h9* for ice for testing (fully traversable)
-    if (geohash.startsWith("h9")) {
-        return [biomes.ice.biome, 1];
+    else if (geohash.startsWith("h9")) {
+        result = [biomes.tundra.biome, 0]; // strength=0 no decorations
+    } else {
+        // Get elevation
+        const height = await elevationAtGeohash(geohash, locationType, {
+            responseCache: options?.topologyResponseCache,
+            resultsCache: options?.topologyResultCache,
+            bufferCache: options?.topologyBufferCache,
+        });
+
+        // Below sea level
+        if (height < 1) {
+            result = [biomes.aquatic.biome, 1];
+        }
+        // Biome parameters are determined at the `city` level similar to descriptions
+        else {
+            const city = geohash.slice(0, seed.spatial.city.precision);
+            const biomeParameters = await biomeParametersAtCity(city, {
+                seed,
+                biomeParametersAtCityCache: options?.biomeParametersAtCityCache,
+            });
+
+            const biomeProbs = biomeTypes.map(
+                (biome) => biomeParameters[biome] || 0,
+            );
+            const totalProb = biomeProbs.reduce((sum, prob) => sum + prob, 0);
+            const rv = seededRandom(stringToRandomNumber(geohash)) * totalProb;
+
+            let cumulativeProb = 0;
+            for (let i = 0; i < biomeTypes.length; i++) {
+                cumulativeProb += biomeProbs[i];
+                if (rv < cumulativeProb) {
+                    const biomeMid = cumulativeProb - biomeProbs[i] / 2;
+                    const intensity =
+                        1 - Math.abs(rv - biomeMid) / (biomeProbs[i] / 2);
+                    result = [biomeTypes[i], intensity];
+                    break;
+                }
+            }
+        }
     }
 
-    // Get topology
-    const height = await elevationAtGeohash(geohash, locationType, {
-        responseCache: options?.topologyResponseCache,
-        resultsCache: options?.topologyResultCache,
-        bufferCache: options?.topologyBufferCache,
-    });
-
-    // Below sea level
-    if (height < 1) {
-        return [biomes.water.biome, 1];
+    if (options?.biomeAtGeohashCache) {
+        await options.biomeAtGeohashCache.set(cacheKey, result);
     }
 
-    const continent = geohash.charAt(0);
-    const probBio = seed.seeds.continent[continent].bio;
-    const probWater = seed.seeds.continent[continent].water;
-    const totalProb = probBio + probWater;
+    return result;
+}
 
-    // Use the geohash as the random seed (must be reproducible)
-    const rv = seededRandom(stringToRandomNumber(geohash)) * totalProb;
+async function biomeParametersAtCity(
+    city: string,
+    options?: {
+        seed?: WorldSeed;
+        biomeParametersAtCityCache?: CacheInterface;
+    },
+): Promise<BiomeParameters> {
+    // Get from cache
+    const cachedResult = await options?.biomeParametersAtCityCache?.get(city);
+    if (cachedResult) return cachedResult;
 
-    // Select biome
-    if (rv < probBio) {
-        const bioMid = probBio / 2;
-        return [biomes.forest.biome, 1 - Math.abs(rv - bioMid) / bioMid];
+    const seed = options?.seed ?? worldSeed;
+    const continent = city.charAt(0);
+    const biomeParameters = cloneDeep(seed.seeds.continent[continent].biome); // don't change the original seed
+    // Add noise/variation at the city level
+    for (const [biome, prob] of Object.entries(biomeParameters)) {
+        const rv = seededRandom(stringToRandomNumber(city + biome)) - 0.5;
+        biomeParameters[biome as BiomeType] = Math.max(
+            0.7 * prob + 0.3 * rv,
+            0,
+        );
     }
-    if (rv < probBio + probWater) {
-        const rvv = rv - probBio;
-        const waterMid = probWater / 2;
-        return [biomes.water.biome, 1 - Math.abs(rvv - waterMid) / waterMid];
+    // Re-normalize
+    const totalNoise = Object.values(biomeParameters).reduce(
+        (sum, value) => sum + value,
+        0,
+    );
+    for (const [biome, prob] of Object.entries(biomeParameters)) {
+        biomeParameters[biome as BiomeType] = prob / totalNoise;
     }
-    return [biomes.plains.biome, 1];
+
+    // Set cache
+    if (options?.biomeParametersAtCityCache) {
+        await options?.biomeParametersAtCityCache.set(city, biomeParameters);
+    }
+
+    return biomeParameters;
 }

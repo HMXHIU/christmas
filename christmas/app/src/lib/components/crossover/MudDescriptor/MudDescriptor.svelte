@@ -18,40 +18,61 @@
         player,
         playerRecord,
     } from "../../../../store";
+    import {
+        topologyBufferCache,
+        topologyResponseCache,
+        topologyResultCache,
+    } from "../Game/caches";
 
     const descriptionGenerator = new MudDescriptionGenerator({
         worldSeed,
         sanctuaries,
         biomes,
+        topologyResultCache,
+        topologyBufferCache,
+        topologyResponseCache,
     });
-    let descriptor: Descriptor | null = null;
+    let locationDescriptor: Descriptor | null = null;
+    let playerDescriptor = "";
+    let monsterDescriptor = "";
+    let itemDescriptor = "";
 
     async function updateDescriptor() {
         if ($player) {
-            descriptor = await descriptionGenerator.descriptionAtLocation(
-                $player.loc[0],
-                $player.locT as LocationType,
-                {
-                    players: Object.values($playerRecord).filter((p) =>
-                        geohashLocationTypes.has(p.locT),
-                    ),
-                    monsters: Object.values($monsterRecord).filter((m) =>
-                        geohashLocationTypes.has(m.locT),
-                    ),
-                    items: Object.values($itemRecord).filter((i) =>
-                        geohashLocationTypes.has(i.locT),
-                    ),
-                },
-            );
+            locationDescriptor =
+                await descriptionGenerator.locationDescriptions(
+                    $player.loc[0],
+                    $player.locT as LocationType,
+                );
         }
     }
 
     onMount(() => {
         const subscriptions = [
             player.subscribe(updateDescriptor),
-            monsterRecord.subscribe(updateDescriptor),
-            itemRecord.subscribe(updateDescriptor),
-            playerRecord.subscribe(updateDescriptor),
+            monsterRecord.subscribe(async (mr) => {
+                monsterDescriptor =
+                    await descriptionGenerator.monsterDescriptions(
+                        Object.values(mr).filter((p) =>
+                            geohashLocationTypes.has(p.locT),
+                        ),
+                    );
+            }),
+            itemRecord.subscribe(async (ir) => {
+                itemDescriptor = await descriptionGenerator.itemDescriptions(
+                    Object.values(ir).filter((p) =>
+                        geohashLocationTypes.has(p.locT),
+                    ),
+                );
+            }),
+            playerRecord.subscribe(async (pr) => {
+                playerDescriptor =
+                    await descriptionGenerator.playerDescriptions(
+                        Object.values(pr).filter((p) =>
+                            geohashLocationTypes.has(p.locT),
+                        ),
+                    );
+            }),
         ];
         return () => {
             for (const unsubscribe of subscriptions) {
@@ -61,38 +82,38 @@
     });
 </script>
 
-{#if descriptor}
+{#if locationDescriptor}
     <div class={cn("w-full flex flex-col gap-2", $$restProps.class)}>
         <!-- Location Name -->
         <p class="text-sm text-primary-background">
-            {descriptor.name || descriptor.location}
+            {locationDescriptor.name || locationDescriptor.location}
         </p>
         <!-- Location -->
         <p class="text-sm text-muted-foreground">
-            {descriptor.descriptions.location}
+            {locationDescriptor.descriptions.location}
         </p>
         <!-- Time/Season/Weather -->
         <p class="text-sm text-muted-foreground">
-            {descriptor.descriptions.time}
-            {descriptor.descriptions.weather}
+            {locationDescriptor.descriptions.time}
+            {locationDescriptor.descriptions.weather}
         </p>
         <div class="flex flex-col">
             <!-- Monsters -->
-            {#if descriptor.descriptions.monsters}
+            {#if monsterDescriptor}
                 <p class="text-sm text-rose-400">
-                    {descriptor.descriptions.monsters}
+                    {monsterDescriptor}
                 </p>
             {/if}
             <!-- items -->
-            {#if descriptor.descriptions.items}
+            {#if itemDescriptor}
                 <p class="text-sm text-sky-400">
-                    {descriptor.descriptions.items}
+                    {itemDescriptor}
                 </p>
             {/if}
             <!-- Players -->
-            {#if descriptor.descriptions.players}
+            {#if playerDescriptor}
                 <p class="text-sm text-lime-400">
-                    {descriptor.descriptions.players}
+                    {playerDescriptor}
                 </p>
             {/if}
         </div>

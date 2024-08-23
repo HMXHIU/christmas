@@ -80,9 +80,6 @@
     let mouseDown: (e: FederatedPointerEvent) => void;
     let mouseUp: (e: FederatedPointerEvent) => void;
 
-    let cameraX: number = 0;
-    let cameraY: number = 0;
-
     $: resize(clientHeight, clientWidth);
     $: handlePreviewCommand(previewCommand);
 
@@ -256,8 +253,8 @@
         // Update biomes
         await drawBiomeShaders(position, worldStage);
 
-        cameraX = position.isoX + CELL_WIDTH / 2 - clientWidth / 2;
-        cameraY = position.isoY - position.elevation - clientHeight / 2;
+        const cameraX = position.isoX + CELL_WIDTH / 2 - clientWidth / 2;
+        const cameraY = position.isoY - position.elevation - clientHeight / 2;
         if (duration != null) {
             cameraTween = gsap.to(worldStage.pivot, {
                 x: cameraX,
