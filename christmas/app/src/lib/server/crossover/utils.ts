@@ -12,6 +12,7 @@ import { isGeohashTraversable } from "$lib/crossover/world/utils";
 import {
     biomeAtGeohashCache,
     biomeParametersAtCityCache,
+    dungeonGraphCache,
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
@@ -165,6 +166,7 @@ async function isGeohashTraversableServer(
             worldAssetMetadataCache,
             biomeAtGeohashCache,
             biomeParametersAtCityCache,
+            dungeonGraphCache,
         },
     );
 }

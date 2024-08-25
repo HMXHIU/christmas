@@ -93,7 +93,6 @@ const geohashLocationTypes = new Set([
 ]);
 
 type GeohashLocationType = z.infer<typeof GeohashLocationSchema>;
-
 const GeohashLocationSchema = z.enum([
     "geohash",
     "d1",

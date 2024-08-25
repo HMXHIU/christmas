@@ -26,10 +26,12 @@ export {
     directionVectors,
     entityDimensions,
     entityInRange,
+    evenGeohashCharacters,
     expandGeohashes,
     filterSortEntitiesInRange,
     gameActionId,
     generateEvenlySpacedPoints,
+    geohashDistance,
     geohashesNearby,
     geohashNeighbour,
     geohashToColRow,
@@ -45,6 +47,7 @@ export {
     isEntityInMotion,
     isoToCart,
     minifiedEntity,
+    oddGeohashCharacters,
     REGEX_STRIP_ENTITY_TYPE,
     seededRandom,
     snapToGrid,
@@ -243,17 +246,24 @@ const directionVectors: Record<Direction, [number, number]> = {
  *
  * @param geohash - The geohash to be corrected.
  * @param precision - The desired precision of the geohash.
+ * @param rv - Random variable (0-1) if present will randomize the child geohash selected
  * @returns The corrected geohash with the specified precision.
  */
 function autoCorrectGeohashPrecision(
     geohash: string,
     precision: number,
+    rv?: number,
 ): string {
     if (geohash.length !== precision) {
         const delta = precision - geohash.length;
         if (delta > 0) {
             for (let i = 0; i < delta; i++) {
-                geohash = childrenGeohashes(geohash)[0];
+                if (rv == null) {
+                    geohash = childrenGeohashes(geohash)[0];
+                } else {
+                    const gs = childrenGeohashes(geohash);
+                    geohash = gs[Math.floor(rv * gs.length)];
+                }
             }
         } else if (delta < 0) {
             geohash = geohash.slice(0, precision);
@@ -425,6 +435,9 @@ function getPlotsAtGeohash(
     return geohashes;
 }
 
+const oddGeohashCharacters = "bcfguvyz89destwx2367kmqr0145hjnp";
+const evenGeohashCharacters = "prxznqwyjmtvhksu57eg46df139c028b";
+
 /**
  * Generates an array of geohashes representing the children of the given geohash.
  * The order of the children starts from the top left.
@@ -437,12 +450,13 @@ function childrenGeohashes(geohash: string): string[] {
         throw new Error("Geohash must be at least length 1");
     }
 
+    // if even geohash, add 1 odd geohash character
     if (geohash.length % 2 === 0) {
-        return "bcfguvyz89destwx2367kmqr0145hjnp".split("").map((c) => {
+        return oddGeohashCharacters.split("").map((c) => {
             return geohash + c;
         });
     } else {
-        return "prxznqwyjmtvhksu57eg46df139c028b".split("").map((c) => {
+        return evenGeohashCharacters.split("").map((c) => {
             return geohash + c;
         });
     }
@@ -797,6 +811,12 @@ function entityInRange(
     const { row: r2, col: c2 } = geohashToGridCell(target.loc[0]);
 
     return inRange({ r1, c1, r2, c2, range, diagonal });
+}
+
+function geohashDistance(geohash1: string, geohash2: string): number {
+    const [col1, row1] = geohashToColRow(geohash1);
+    const [col2, row2] = geohashToColRow(geohash2);
+    return Math.sqrt(Math.pow(col2 - col1, 2) + Math.pow(row2 - row1, 2));
 }
 
 function inRange({

@@ -172,6 +172,7 @@ async function updateEntityContainer<T extends Player | Monster | Item>(
 ) {
     updateEntityContainerLock.withLock(async () => {
         if (geohashLocationTypes.has(newEntity.locT)) {
+            // Update entity container
             const [created, ec] = await upsertEntityContainer(
                 newEntity,
                 game.stage,
@@ -438,7 +439,7 @@ async function moveInRangeOfTarget({
             col: targetCol,
         },
         target.locT as GeohashLocationType,
-        range,
+        { range },
     );
     await crossoverCmdMove({ path });
 

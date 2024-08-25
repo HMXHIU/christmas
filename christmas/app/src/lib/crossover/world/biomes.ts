@@ -7,6 +7,7 @@ import {
 } from "$lib/crossover/utils";
 import { cloneDeep } from "lodash-es";
 import { PNG, type PNGWithMetadata } from "pngjs";
+import { dungeonBiomeAtGeohash } from "./dungeons";
 import { worldSeed } from "./settings/world";
 import {
     geohashLocationTypes,
@@ -542,6 +543,7 @@ async function biomeAtGeohash(
         topologyResponseCache?: CacheInterface;
         biomeAtGeohashCache?: CacheInterface;
         biomeParametersAtCityCache?: CacheInterface;
+        dungeonGraphCache?: CacheInterface;
     },
 ): Promise<[BiomeType, number]> {
     // Get from cache
@@ -556,9 +558,12 @@ async function biomeAtGeohash(
     const seed = options?.seed || worldSeed;
     let result: [BiomeType, number] = ["grassland", 1];
 
-    // Underground
+    // Underground / Dungeon
     if (locationType !== "geohash") {
-        result = [biomes.underground.biome, 1];
+        result = await dungeonBiomeAtGeohash(geohash, locationType, {
+            dungeonGraphCache: options?.dungeonGraphCache,
+        });
+        // result = [biomes.grassland.biome, 1];
     }
     // Leave h9* for ice for testing (fully traversable)
     else if (geohash.startsWith("h9")) {

@@ -2,6 +2,7 @@ import { PUBLIC_TILED_MINIO_BUCKET } from "$env/static/public";
 import {
     biomeAtGeohashCache,
     biomeParametersAtCityCache,
+    dungeonGraphCache,
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
@@ -176,13 +177,14 @@ async function getTraversalCost(
     row: number,
     col: number,
     locationType: GeohashLocationType,
+    precision?: number,
 ): Promise<number> {
     // 0 is walkable, 1 is not
     return (await isGeohashTraversableClient(
         gridCellToGeohash({
             col,
             row,
-            precision: worldSeed.spatial.unit.precision,
+            precision: precision ?? worldSeed.spatial.unit.precision,
         }),
         locationType,
     ))
@@ -194,16 +196,19 @@ async function getDirectionsToPosition(
     source: { row: number; col: number },
     target: { row: number; col: number },
     locationType: GeohashLocationType,
-    range?: number,
+    options?: {
+        range?: number;
+        precision?: number;
+    },
 ): Promise<Direction[]> {
     return await aStarPathfinding({
         colStart: source.col,
         rowStart: source.row,
         colEnd: target.col,
         rowEnd: target.row,
-        range,
+        range: options?.range,
         getTraversalCost: (row, col) =>
-            getTraversalCost(row, col, locationType),
+            getTraversalCost(row, col, locationType, options?.precision),
     });
 }
 
@@ -486,6 +491,7 @@ async function isGeohashTraversableClient(
             worldTraversableCellsCache,
             biomeAtGeohashCache,
             biomeParametersAtCityCache,
+            dungeonGraphCache,
         },
     );
 }

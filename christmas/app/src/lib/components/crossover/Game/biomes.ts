@@ -2,6 +2,7 @@ import { LRUMemoryCache, memoize } from "$lib/caches";
 import {
     biomeAtGeohashCache,
     biomeParametersAtCityCache,
+    dungeonGraphCache,
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
@@ -88,6 +89,7 @@ async function _calculateBiomeForRowCol(
             topologyBufferCache,
             biomeAtGeohashCache,
             biomeParametersAtCityCache,
+            dungeonGraphCache,
         },
     );
     const elevation =
@@ -175,7 +177,7 @@ async function _calculateBiomeDecorationsForRowCol({
         // Determine if this geohash should have decorations
         const dice = seededRandom(geohashSeed);
         if (noise === "simplex") {
-            if ((noise2D(col / 100, row / 100) + 1) / 2 > probability) {
+            if ((noise2D(col / 10, row / 10) + 1) / 2 > probability) {
                 continue;
             }
         } else if (dice > probability) {
