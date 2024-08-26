@@ -249,7 +249,6 @@
         if (worldStage == null) {
             return;
         }
-
         // Update biomes
         await drawBiomeShaders(position, worldStage);
 

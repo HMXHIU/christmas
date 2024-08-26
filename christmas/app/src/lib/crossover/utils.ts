@@ -360,8 +360,8 @@ async function borderingGeohashes(geohashes: string[]): Promise<string[]> {
 
 /**
  * Retrieves the geohashes in the surroundings (24x20 or 20x24) of a given geohash (including itself).
- * If precision is odd, the geohash grid is 8x4, 8 neighbours will give 24x12 grid, add 3 more neighbours to the east and west
- * If precision is even, the geohash grid is 4x8, 8 neighbours will give 12x24 grid, add 3 more neighbours to the north and south
+ * If precision is odd, the geohash grid is 8x4, 8 neighbours will give 24x12 grid, add 3 more neighbours to the north and south
+ * If precision is even, the geohash grid is 4x8, 8 neighbours will give 12x24 grid, add 3 more neighbours to the east and west
  *
  * @param geohash - The geohash for which to retrieve the surrounding geohashes.
  * @param square - Optional parameter to specify if the grid should be square (default is false).
@@ -377,21 +377,22 @@ function geohashesNearby(geohash: string, square: boolean = false): string[] {
 
     const additionalNeghbours = evenPrecision
         ? [
-              ngeohash.neighbor(n, [1, 0]),
-              ngeohash.neighbor(nw, [1, 0]),
-              ngeohash.neighbor(ne, [1, 0]),
-              ngeohash.neighbor(s, [-1, 0]),
-              ngeohash.neighbor(sw, [-1, 0]),
-              ngeohash.neighbor(se, [-1, 0]),
-          ]
-        : [
               ngeohash.neighbor(w, [0, -1]),
               ngeohash.neighbor(nw, [0, -1]),
               ngeohash.neighbor(sw, [0, -1]),
               ngeohash.neighbor(e, [0, 1]),
               ngeohash.neighbor(ne, [0, 1]),
               ngeohash.neighbor(se, [0, 1]),
+          ]
+        : [
+              ngeohash.neighbor(n, [1, 0]),
+              ngeohash.neighbor(nw, [1, 0]),
+              ngeohash.neighbor(ne, [1, 0]),
+              ngeohash.neighbor(s, [-1, 0]),
+              ngeohash.neighbor(sw, [-1, 0]),
+              ngeohash.neighbor(se, [-1, 0]),
           ];
+
     return [geohash, n, ne, e, se, s, sw, w, nw, ...additionalNeghbours];
 }
 

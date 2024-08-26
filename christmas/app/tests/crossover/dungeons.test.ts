@@ -1,10 +1,18 @@
 import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
 import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
-import { generateDungeonGraph } from "$lib/crossover/world/dungeons";
+import {
+    generateDungeonGraph,
+    getAllDungeons,
+} from "$lib/crossover/world/dungeons";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { describe, expect, test } from "vitest";
 
 describe("Dungeons Tests", () => {
+    test("Test `getAllDungeons`", async () => {
+        const dungeons = await getAllDungeons("d1");
+        expect(Object.keys(dungeons).length).toBe(32 * 32);
+    });
+
     test("Test `generateDungeonGraph`", async () => {
         const territory = "v7";
         const locationType = "d1";
@@ -30,6 +38,8 @@ describe("Dungeons Tests", () => {
         );
         var [biome, strength] = await biomeAtGeohash(geohash, locationType);
         expect(biomes[biome].traversableSpeed).greaterThan(0);
+
+        console.log(geohash);
 
         // Test can traverse from any room to any room
         // const room2 = dg.rooms[1].geohash;

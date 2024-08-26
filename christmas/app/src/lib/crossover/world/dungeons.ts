@@ -11,6 +11,7 @@ import {
     stringToRandomNumber,
 } from "../utils";
 import type { BiomeType } from "./biomes";
+import { worldSeed } from "./settings/world";
 import { geohashLocationTypes, type GeohashLocationType } from "./types";
 
 export { dungeonBiomeAtGeohash, generateDungeonGraph, getAllDungeons };
@@ -76,14 +77,12 @@ async function generateDungeonGraph(
     let graph = await dungeonGraphCache?.get(cacheKey);
     if (graph) return graph;
 
-    console.log("GENERASTE DUNGROGRAPH", dungeonGraphCache, territory);
-
     const rv = seededRandom(stringToRandomNumber(territory + locationType));
 
     // Dungeon location is city precision
     const city = autoCorrectGeohashPrecision(
         territory,
-        territory.length + 1,
+        worldSeed.spatial.city.precision,
         rv,
     );
 
@@ -94,14 +93,18 @@ async function generateDungeonGraph(
         const roomRv = seededRandom(
             stringToRandomNumber(territory + locationType) + i,
         );
-        const town = autoCorrectGeohashPrecision(city, city.length + 2, roomRv);
+        const town = autoCorrectGeohashPrecision(
+            city,
+            worldSeed.spatial.town.precision,
+            roomRv,
+        );
         rooms.push({ geohash: town, connections: [] });
     }
     rooms = uniqBy(rooms, (r) => r.geohash); // remove repeated
 
     // Connect rooms and generate corridors
     const corridors = new Set<string>();
-    const corridorPrecision = city.length + 3; // corridor should be thinner than the room (town)
+    const corridorPrecision = worldSeed.spatial.house.precision; // corridor should be thinner than the room (town)
     const connectedRooms = new Set<string>();
     let currentRoom = rooms[Math.floor(rv * rooms.length)];
     connectedRooms.add(currentRoom.geohash);

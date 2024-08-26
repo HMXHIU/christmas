@@ -37,7 +37,7 @@ interface WorldSeed {
         territory: {
             precision: number;
         };
-        guild: {
+        region: {
             precision: number;
         };
         city: {

@@ -65,7 +65,7 @@ continent:
 
 territory:
 
-- 1 major dungeon
+- 1 major dungeon (pseudo random)
 
 city:
 
@@ -105,6 +105,31 @@ territory:
 - At `entrance` the player can interact with the `item` using `down` & `up`
 - A dungeon `entrance` can just be an `item` that has a `teleport` ability that changes `locT` from `geohash` to `d1` and vice versa
 - 1 major dungeon at every `territory` level eg. wp, v7, ...
+
+#### Dungeon Locations and Entrances
+
+- Each territory has a major dungeon
+- If location is not set manually, it uses the territory as a seed to determine the location
+- Create `dungeonLocations` to manually determine the location of a dungeon on a territory
+
+```ts
+dungeonLocations = {
+  // territory
+  w2: {
+    dungeons: {
+      // city
+      w21: {
+        rooms: {
+          // town
+          w21z9: {
+            entraces: [],
+          },
+        },
+      },
+    },
+  },
+};
+```
 
 #### Pseudo Algorithm
 

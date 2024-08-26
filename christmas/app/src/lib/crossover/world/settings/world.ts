@@ -15,10 +15,10 @@ const worldSeed: WorldSeed = {
         territory: {
             precision: 2,
         },
-        city: {
+        region: {
             precision: 3,
         },
-        guild: {
+        city: {
             precision: 4,
         },
         town: {
