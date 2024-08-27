@@ -11,6 +11,7 @@ import {
     stringToRandomNumber,
 } from "../utils";
 import type { BiomeType } from "./biomes";
+import type { Dungeon } from "./settings/dungeons";
 import { worldSeed } from "./settings/world";
 import { geohashLocationTypes, type GeohashLocationType } from "./types";
 
@@ -37,6 +38,7 @@ async function dungeonBiomeAtGeohash(
     locationType: GeohashLocationType,
     options?: {
         dungeonGraphCache?: CacheInterface;
+        dungeons?: Dungeon[]; // for manually specifying dungeon locations
     },
 ): Promise<[BiomeType, number]> {
     if (!geohashLocationTypes.has(locationType)) {
@@ -45,13 +47,17 @@ async function dungeonBiomeAtGeohash(
     if (locationType === "geohash") {
         throw new Error("Location is not underground");
     }
-
     const territory = geohash.slice(0, 2);
-    let graph = await generateDungeonGraph(
-        territory,
-        locationType,
-        options?.dungeonGraphCache,
-    );
+
+    let dungeon: Dungeon | undefined;
+    if (options?.dungeons) {
+        dungeon = options.dungeons.find((d) => d.dungeon.startsWith(territory));
+    }
+
+    let graph = await generateDungeonGraph(territory, locationType, {
+        dungeonGraphCache: options?.dungeonGraphCache,
+        dungeon,
+    });
 
     // geohash is in a room/chamber
     if (graph.rooms.some((r) => geohash.startsWith(r.geohash))) {
@@ -70,25 +76,43 @@ async function dungeonBiomeAtGeohash(
 async function generateDungeonGraph(
     territory: string,
     locationType: GeohashLocationType,
-    dungeonGraphCache?: CacheInterface,
+    options?: {
+        dungeon?: Dungeon;
+        dungeonGraphCache?: CacheInterface;
+    },
 ): Promise<DungeonGraph> {
     // Get from cache
     const cacheKey = `${territory}-${locationType}`;
-    let graph = await dungeonGraphCache?.get(cacheKey);
+    let graph = await options?.dungeonGraphCache?.get(cacheKey);
     if (graph) return graph;
 
     const rv = seededRandom(stringToRandomNumber(territory + locationType));
 
     // Dungeon location is city precision
-    const city = autoCorrectGeohashPrecision(
-        territory,
-        worldSeed.spatial.city.precision,
-        rv,
-    );
+    const dungeon = options?.dungeon;
+    const city = dungeon
+        ? dungeon.dungeon
+        : autoCorrectGeohashPrecision(
+              territory,
+              worldSeed.spatial.city.precision,
+              rv,
+          );
 
-    // Generate rooms (town precision)
-    const numRooms = Math.floor(rv * (MAX_ROOMS - MIN_ROOMS + 1)) + MIN_ROOMS;
     let rooms: Room[] = [];
+
+    // Generate rooms (town precision) - manually defined
+    if (dungeon) {
+        for (const { room, entrances } of dungeon.rooms) {
+            const town = autoCorrectGeohashPrecision(
+                room,
+                worldSeed.spatial.town.precision,
+            );
+            rooms.push({ geohash: town, connections: [] });
+        }
+    }
+
+    // Generate rooms (town precision) - randomly
+    const numRooms = Math.floor(rv * (MAX_ROOMS - MIN_ROOMS + 1)) + MIN_ROOMS;
     for (let i = 0; i < numRooms; i++) {
         const roomRv = seededRandom(
             stringToRandomNumber(territory + locationType) + i,
@@ -141,8 +165,8 @@ async function generateDungeonGraph(
     graph = { rooms, corridors, corridorPrecision, locationType, territory };
 
     // Set cache
-    if (dungeonGraphCache) {
-        dungeonGraphCache.set(cacheKey, graph);
+    if (options?.dungeonGraphCache) {
+        options.dungeonGraphCache.set(cacheKey, graph);
     }
 
     return graph;

@@ -4,6 +4,7 @@ import {
     generateDungeonGraph,
     getAllDungeons,
 } from "$lib/crossover/world/dungeons";
+import { dungeons } from "$lib/crossover/world/settings/dungeons";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { describe, expect, test } from "vitest";
 
@@ -11,6 +12,23 @@ describe("Dungeons Tests", () => {
     test("Test `getAllDungeons`", async () => {
         const dungeons = await getAllDungeons("d1");
         expect(Object.keys(dungeons).length).toBe(32 * 32);
+    });
+
+    test("Test manual dungeons", async () => {
+        const territory = "w2";
+        const locationType = "d1";
+
+        // Get dungeon
+        const dungeon = dungeons.find((d) => d.dungeon.startsWith(territory));
+        expect(dungeon?.dungeon.startsWith(territory)).toBe(true);
+        const dg = await generateDungeonGraph(territory, locationType, {
+            dungeon,
+        });
+
+        for (const { room, entrances } of dungeon!.rooms) {
+            // Check all manually defined rooms are present
+            expect(dg.rooms.some((r) => r.geohash === room)).toBe(true);
+        }
     });
 
     test("Test `generateDungeonGraph`", async () => {

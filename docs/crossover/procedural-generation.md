@@ -108,9 +108,9 @@ territory:
 
 #### Dungeon Locations and Entrances
 
-- Each territory has a major dungeon
-- If location is not set manually, it uses the territory as a seed to determine the location
-- Create `dungeonLocations` to manually determine the location of a dungeon on a territory
+- [x] Each territory has a major dungeon
+- [x] If location is not set manually, it uses the territory as a seed to determine the location
+- [x] Create `dungeonLocations` to manually determine the location of a dungeon on a territory
 
 ```ts
 dungeonLocations = {
