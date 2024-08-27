@@ -2,7 +2,7 @@ import { isItemEquipped } from "$lib/crossover/world/compendium";
 import { compendium, tints } from "$lib/crossover/world/settings/compendium";
 import type { AssetMetadata } from "$lib/crossover/world/types";
 import type { Item } from "$lib/server/crossover/redis/entities";
-import type { Container } from "pixi.js";
+import type { Container, DestroyOptions } from "pixi.js";
 import { Avatar } from "../../avatar/Avatar";
 import type { Bone } from "../../avatar/Bone";
 import { layers } from "../layers";
@@ -139,5 +139,10 @@ class AvatarEntityContainer extends EntityContainer {
         if (this.avatar) {
             this.avatar.updateDepth(depth);
         }
+    }
+
+    public destroy(options?: DestroyOptions): void {
+        this.avatar.destroy();
+        super.destroy(options);
     }
 }

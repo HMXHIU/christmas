@@ -209,6 +209,11 @@ export class AnimationManager {
                     onComplete?.();
                 }
             },
+            onUpdate: () => {
+                if (!this.currentAnimation) {
+                    timeline.kill();
+                }
+            },
         });
 
         // Create tweens for each bone

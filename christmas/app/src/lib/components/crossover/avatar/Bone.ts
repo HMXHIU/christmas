@@ -206,15 +206,11 @@ export class Bone extends Container {
     }
 
     updateDepth(depth: number): void {
-        // this.zIndex = this.boneRenderLayer;
         this.zIndex =
             this.depthLayer +
-            this.depthScale * depth +
-            this.boneRenderLayer / 10;
-
+            this.depthScale * (depth + this.boneRenderLayer / 20); // max 20 bones
         if (this.mesh) {
-            // TODO: the precision is too low * 10 - but this might cause it to go in front of the adjacent tile
-            this.mesh.updateDepth(depth + this.boneRenderLayer / 10);
+            this.mesh.updateDepth(depth + this.boneRenderLayer / 20); // max 20 bones
         }
     }
 }

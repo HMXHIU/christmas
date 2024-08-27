@@ -106,7 +106,7 @@ interface Position {
 
 // TODO: move tos settings
 // Note: this are cartesian coordinates (CELL_HEIGHT = CELL_WIDTH;)
-const CELL_WIDTH = 64; // 64, 96, 128
+const CELL_WIDTH = 96; // 64, 96, 128
 const CELL_HEIGHT = CELL_WIDTH;
 const ISO_CELL_WIDTH = CELL_WIDTH;
 const ISO_CELL_HEIGHT = CELL_HEIGHT / 2;

@@ -12,9 +12,11 @@
     } from "$lib/crossover/world/abilities";
     import { actions, type Action } from "$lib/crossover/world/actions";
     import { type Utility } from "$lib/crossover/world/compendium";
+    import { MS_PER_TICK } from "$lib/crossover/world/settings";
     import { compendium } from "$lib/crossover/world/settings/compendium";
     import type { GeohashLocationType } from "$lib/crossover/world/types";
     import { cn } from "$lib/shadcn";
+    import { sleep } from "$lib/utils";
     import gsap from "gsap";
     import {
         Application,
@@ -29,6 +31,7 @@
     import {
         actionEvent,
         entitiesEvent,
+        equipmentRecord,
         itemRecord,
         loginEvent,
         monsterRecord,
@@ -66,7 +69,11 @@
         registerGSAP,
         type Position,
     } from "./utils";
-    import { cullWorlds, drawWorlds } from "./world";
+    import {
+        cullAllWorldEntityContainers,
+        drawWorlds,
+        garbageCollectWorldEntityContainers,
+    } from "./world";
 
     // Register GSAP & PixiPlugin
     registerGSAP();
@@ -238,7 +245,15 @@
         garbageCollectEntityContainers(position);
 
         // Cull world meshes outside town
-        cullWorlds(position);
+        garbageCollectWorldEntityContainers(position);
+
+        // Check if need to reload the game (typically because the `worldOfffset` as strayed too far)
+        const cols = Math.abs($worldOffset.col - position.col);
+        const rows = Math.abs($worldOffset.row - position.row);
+        const maxDistance = 5;
+        if (cols > maxDistance || rows > maxDistance) {
+            await reloadGame();
+        }
 
         // Debug World
         // await debugWorld(worldStage);
@@ -350,6 +365,42 @@
         }
     }
 
+    async function reloadGame() {
+        if ($player) {
+            console.log("Reloading world ...");
+
+            // Stop tweens
+            stopTweens();
+
+            playerRecord.set({});
+            itemRecord.set({});
+            monsterRecord.set({});
+            equipmentRecord.set({});
+            worldRecord.set({});
+
+            // Clear all entity containers (items, monsters, players, worlds)
+            cullAllEntityContainers();
+            cullAllWorldEntityContainers();
+
+            await sleep(1000);
+
+            // Set worldOffset
+            const [col, row] = geohashToColRow($player.loc[0]);
+            worldOffset.set({ col, row });
+
+            // Look at surroundings & update inventory
+            await updateWorlds(
+                $player.loc[0],
+                $player.locT as GeohashLocationType,
+            );
+
+            await sleep(MS_PER_TICK * actions.move.ticks);
+            await executeGameCommand([actions.look, { self: $player }]);
+            await sleep(MS_PER_TICK * actions.move.ticks);
+            await executeGameCommand([actions.inventory, { self: $player }]);
+        }
+    }
+
     onMount(() => {
         // Initialize game
         init();
@@ -412,14 +463,18 @@
         };
     });
 
+    function stopTweens() {
+        if (cameraTween) {
+            cameraTween.kill();
+        }
+    }
+
     onDestroy(() => {
         if (app && worldStage) {
             isInitialized = false; // set this so ticker stops before removing other things
 
             // Stop tweens
-            if (cameraTween) {
-                cameraTween.kill();
-            }
+            stopTweens();
 
             // Remove HID events
             app.stage.off("pointerup", mouseUp);

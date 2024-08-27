@@ -128,6 +128,12 @@ export class EntityContainer extends Container {
                         this.updateDepth(isoPosition.isoY);
                         this.emitPositionUpdate();
                     },
+                    onUpdate: () => {
+                        // Safely kill the timeline if 'this' is destroyed
+                        if (!this) {
+                            (this as EntityContainer).tween?.kill();
+                        }
+                    },
                 });
                 finalPosition = isoPosition;
             }
@@ -199,6 +205,7 @@ export class EntityContainer extends Container {
 
     public destroy(options?: DestroyOptions): void {
         if (this.tween != null) {
+            console.log("KILL TWEEN");
             this.tween.kill();
         }
         super.destroy(options);

@@ -23,14 +23,22 @@ import {
     type Position,
 } from "./utils";
 
-export { cullWorlds, debugWorld, drawWorlds, loadWorld, noise2D, worldMeshes };
+export {
+    cullAllWorldEntityContainers,
+    debugWorld,
+    drawWorlds,
+    garbageCollectWorldEntityContainers,
+    loadWorld,
+    noise2D,
+    worldEntityContainers,
+};
 
 // Simplex noise function
 const noise2D = createNoise2D(() => {
     return seededRandom(stringToRandomNumber(worldSeed.name));
 });
 
-let worldMeshes: Record<string, WorldEntityContainer> = {};
+let worldEntityContainers: Record<string, WorldEntityContainer> = {};
 let colliders: Graphics[] = [];
 
 async function drawWorlds(
@@ -71,7 +79,7 @@ async function loadWorld({
     stage: Container;
 }) {
     // Skip if alerady loaded
-    if (worldMeshes[world.world]) {
+    if (worldEntityContainers[world.world]) {
         return;
     }
     const tilemap = await Assets.load(world.url);
@@ -125,7 +133,7 @@ async function loadWorld({
                 const worldId = `${town}-${world.world}-${tileId}-${i}-${j}`;
 
                 // Skip if already created
-                if (worldId in worldMeshes) {
+                if (worldId in worldEntityContainers) {
                     continue;
                 }
 
@@ -156,7 +164,7 @@ async function loadWorld({
                     tileId: worldId,
                 });
 
-                worldMeshes[worldId] = ec;
+                worldEntityContainers[worldId] = ec;
 
                 ec.setIsoPosition({
                     row: position.row + i,
@@ -270,16 +278,23 @@ async function debugWorld(stage: Container) {
     }
 }
 
-function cullWorlds(playerPosition: Position) {
+function garbageCollectWorldEntityContainers(playerPosition: Position) {
     // Cull world meshes outside town
     const town = playerPosition.geohash.slice(
         0,
         worldSeed.spatial.town.precision,
     );
-    for (const [id, mesh] of Object.entries(worldMeshes)) {
+    for (const [id, ec] of Object.entries(worldEntityContainers)) {
         if (!id.startsWith(town)) {
-            mesh.destroy();
-            delete worldMeshes[id];
+            ec.destroy();
+            delete worldEntityContainers[id];
         }
+    }
+}
+
+function cullAllWorldEntityContainers() {
+    for (const [id, ec] of Object.entries(worldEntityContainers)) {
+        ec.destroy();
+        delete worldEntityContainers[id];
     }
 }

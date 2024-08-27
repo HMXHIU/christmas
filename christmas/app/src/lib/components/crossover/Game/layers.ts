@@ -47,12 +47,8 @@ class Layers {
     }
 }
 
-const { row: bottomRightRow, col: bottomRightCol } =
-    geohashToGridCell("pbzupuzv");
-const maxIsoY = cartToIso(
-    bottomRightCol * CELL_WIDTH,
-    bottomRightRow * CELL_WIDTH,
-)[1]; // 33093136
+const { row: brRow, col: brCol } = geohashToGridCell("pbzupuzv");
+const maxIsoY = cartToIso(brCol * CELL_WIDTH, brRow * CELL_WIDTH)[1]; // 33093136
 
 const layers = new Layers({
     layers: ["biome", "floor", "entity"],
