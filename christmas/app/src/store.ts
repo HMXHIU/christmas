@@ -58,6 +58,11 @@ export let worldRecord = writable<Record<string, Record<string, World>>>({});
 export let messageFeed = writable<MessageFeed[]>([]);
 export let target = writable<Player | Monster | Item | null>(null);
 
+export let worldOffset = writable<{ row: number; col: number }>({
+    row: 0,
+    col: 0,
+});
+
 export let entitiesEvent = writable<UpdateEntitiesEvent>();
 export let actionEvent = writable<ActionEvent>();
 export let feedEvent = writable<FeedEvent>();

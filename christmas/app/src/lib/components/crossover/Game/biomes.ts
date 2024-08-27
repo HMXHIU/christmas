@@ -9,7 +9,6 @@ import {
 } from "$lib/components/crossover/Game/caches";
 import {
     autoCorrectGeohashPrecision,
-    cartToIso,
     generateEvenlySpacedPoints,
     geohashesNearby,
     geohashToColRow,
@@ -33,6 +32,7 @@ import {
 } from "../shaders";
 import { layers } from "./layers";
 import {
+    cartToIso,
     CELL_HEIGHT,
     CELL_WIDTH,
     ELEVATION_TO_CELL_HEIGHT,

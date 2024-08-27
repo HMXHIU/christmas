@@ -11,10 +11,8 @@ import {
 } from "$lib/components/crossover/Game/caches";
 import { aStarPathfinding } from "$lib/crossover/pathfinding";
 import {
-    cartToIso,
     geohashToGridCell,
     gridCellToGeohash,
-    isoToCart,
     seededRandom,
 } from "$lib/crossover/utils";
 import type { Ability } from "$lib/crossover/world/abilities";
@@ -45,7 +43,12 @@ import {
     type Texture,
 } from "pixi.js";
 import { get } from "svelte/store";
-import { itemRecord, player, worldRecord } from "../../../../store";
+import {
+    itemRecord,
+    player,
+    worldOffset,
+    worldRecord,
+} from "../../../../store";
 import type { AnimationMetadata, AvatarMetadata } from "../avatar/types";
 import { entityContainers } from "./entities";
 
@@ -54,6 +57,7 @@ export {
     calculateRowColFromIso,
     CANVAS_HEIGHT,
     CANVAS_WIDTH,
+    cartToIso,
     CELL_HEIGHT,
     CELL_WIDTH,
     debugBounds,
@@ -78,10 +82,12 @@ export {
     isGeohashTraversableClient,
     ISO_CELL_HEIGHT,
     ISO_CELL_WIDTH,
+    isoToCart,
     loadAssetTexture,
     positionsInRange,
     registerGSAP,
     scaleToFitAndMaintainAspectRatio,
+    snapToGrid,
     WORLD_HEIGHT,
     WORLD_WIDTH,
     type Position,
@@ -164,6 +170,53 @@ function isCellInView(
         cell.col <= playerPosition.col + GRID_MID_COL &&
         cell.col >= playerPosition.col - GRID_MID_COL
     );
+}
+
+function snapToGrid(
+    x: number,
+    y: number,
+    snapX: number,
+    snapY: number,
+): [number, number] {
+    return [Math.round(x / snapX) * snapX, Math.round(y / snapY) * snapY];
+}
+
+/**
+ * Rotate clockwise by 45 degrees, scale vertically by 0.5
+ * An offset is needed to ensure no large numbers which causes floating point errors
+ *
+ * [x, y] * [ 0.5  0.25 ]
+ *          [ -0.5 0.25 ]
+ */
+function cartToIso(
+    x: number,
+    y: number,
+    snap?: {
+        x: number;
+        y: number;
+    },
+) {
+    const offset = get(worldOffset);
+
+    x -= offset.col * CELL_WIDTH;
+    y -= offset.row * CELL_HEIGHT;
+
+    if (snap != null) {
+        return snapToGrid(
+            x * 0.5 + y * -0.5,
+            x * 0.25 + y * 0.25,
+            snap.x,
+            snap.y,
+        );
+    }
+
+    return [x * 0.5 + y * -0.5, x * 0.25 + y * 0.25];
+}
+
+function isoToCart(x: number, y: number) {
+    const [cartX, cartY] = [x * 1 + y * 2, x * -1 + y * 2];
+    const offset = get(worldOffset);
+    return [cartX + offset.col * CELL_WIDTH, cartY + offset.row * CELL_HEIGHT];
 }
 
 function calculateRowColFromIso(isoX: number, isoY: number): [number, number] {

@@ -1,7 +1,11 @@
 <script lang="ts">
     import { crossoverPlayerMetadata } from "$lib/crossover/client";
     import { getGameActionId, type GameCommand } from "$lib/crossover/ir";
-    import { getEntityId, getPositionsForPath } from "$lib/crossover/utils";
+    import {
+        geohashToColRow,
+        getEntityId,
+        getPositionsForPath,
+    } from "$lib/crossover/utils";
     import {
         getPlayerAbilities,
         type Ability,
@@ -33,6 +37,7 @@
         playerRecord,
         target,
         userMetadata,
+        worldOffset,
         worldRecord,
     } from "../../../../store";
     import {
@@ -353,10 +358,17 @@
         const subscriptions = [
             loginEvent.subscribe(async (p) => {
                 if (!p) return;
+
+                // Set worldOffset
+                const [col, row] = geohashToColRow(p.loc[0]);
+                worldOffset.set({ col, row });
+
                 // Fetch player metadata
                 userMetadata.set(await crossoverPlayerMetadata());
+
                 // Fetch player abilities
                 playerAbilities.set(getPlayerAbilities(p));
+
                 // Look at surroundings & update inventory
                 await updateWorlds(p.loc[0], p.locT as GeohashLocationType);
                 await executeGameCommand([actions.look, { self: p }]);

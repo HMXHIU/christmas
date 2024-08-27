@@ -20,7 +20,6 @@ export {
     borderingGeohashes,
     calculateLocation,
     calculatePathDuration,
-    cartToIso,
     childrenGeohashes,
     directionDuration,
     directionVectors,
@@ -45,23 +44,12 @@ export {
     gridSizeAtPrecision,
     inRange,
     isEntityInMotion,
-    isoToCart,
     minifiedEntity,
     oddGeohashCharacters,
     REGEX_STRIP_ENTITY_TYPE,
     seededRandom,
-    snapToGrid,
     stringToRandomNumber,
 };
-
-interface Node {
-    row: number;
-    col: number;
-    g: number;
-    h: number;
-    f: number;
-    parent: Node | null;
-}
 
 const REGEX_STRIP_ENTITY_TYPE = /^(monster_|item_)/;
 
@@ -187,45 +175,6 @@ function stringToRandomNumber(str: string): number {
 function seededRandom(seed: number): number {
     var x = Math.sin(seed) * 10000; // how many decimal places
     return x - Math.floor(x);
-}
-
-function snapToGrid(
-    x: number,
-    y: number,
-    snapX: number,
-    snapY: number,
-): [number, number] {
-    return [Math.round(x / snapX) * snapX, Math.round(y / snapY) * snapY];
-}
-
-/**
- * Rotate clockwise by 45 degrees, scale vertically by 0.5
- *
- * [x, y] * [ 0.5  0.25 ]
- *          [ -0.5 0.25 ]
- */
-function cartToIso(
-    x: number,
-    y: number,
-    snap?: {
-        x: number;
-        y: number;
-    },
-) {
-    if (snap != null) {
-        return snapToGrid(
-            x * 0.5 + y * -0.5,
-            x * 0.25 + y * 0.25,
-            snap.x,
-            snap.y,
-        );
-    }
-
-    return [x * 0.5 + y * -0.5, x * 0.25 + y * 0.25];
-}
-
-function isoToCart(x: number, y: number) {
-    return [x * 1 + y * 2, x * -1 + y * 2];
 }
 
 const directionVectors: Record<Direction, [number, number]> = {

@@ -1,8 +1,7 @@
-import { cartToIso } from "$lib/crossover/utils";
 import { Container, Texture } from "pixi.js";
 import { IsoMesh } from "../../shaders/IsoMesh";
 import { layers } from "../layers";
-import { CELL_WIDTH } from "../utils";
+import { cartToIso, CELL_WIDTH } from "../utils";
 
 export { WorldEntityContainer };
 

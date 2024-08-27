@@ -1,5 +1,5 @@
 import { crossoverCmdMove } from "$lib/crossover/client";
-import { getPositionsForPath, snapToGrid } from "$lib/crossover/utils";
+import { getPositionsForPath } from "$lib/crossover/utils";
 import type { Direction } from "$lib/crossover/world/types";
 import type { Container, FederatedPointerEvent } from "pixi.js";
 import { highlightShaderInstances } from "../shaders";
@@ -10,6 +10,7 @@ import {
     getPlayerPosition,
     HALF_ISO_CELL_HEIGHT,
     HALF_ISO_CELL_WIDTH,
+    snapToGrid,
 } from "./utils";
 
 export { createHIDHandlers };
