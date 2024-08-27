@@ -19,19 +19,22 @@ export { dungeonBiomeAtGeohash, generateDungeonGraph, getAllDungeons };
 
 interface Room {
     geohash: string; // town
-    connections: string[]; // Connected room geohashes
+    connections: string[]; // connected room geohashes
+    entrances: string[]; // to connect above to below ground
 }
 
 interface DungeonGraph {
     rooms: Room[];
     territory: string;
     locationType: GeohashLocationType;
-    corridors: Set<string>; // Set of all corridor geohashes
-    corridorPrecision: number; // Precision of corridor geohashes
+    corridors: Set<string>; // set of all corridor geohashes
+    corridorPrecision: number; // precision of corridor geohashes
 }
 
 const MIN_ROOMS = 12;
 const MAX_ROOMS = 18;
+const MIN_ENTRANCES = 1;
+const MAX_ENTRANCES = 3;
 
 async function dungeonBiomeAtGeohash(
     geohash: string,
@@ -107,12 +110,15 @@ async function generateDungeonGraph(
                 room,
                 worldSeed.spatial.town.precision,
             );
-            rooms.push({ geohash: town, connections: [] });
+            rooms.push({ geohash: town, connections: [], entrances });
         }
     }
 
     // Generate rooms (town precision) - randomly
     const numRooms = Math.floor(rv * (MAX_ROOMS - MIN_ROOMS + 1)) + MIN_ROOMS;
+    const numEntrances =
+        Math.floor(rv * (MAX_ENTRANCES - MIN_ENTRANCES + 1)) + MIN_ENTRANCES;
+    let entranceCount = 0;
     for (let i = 0; i < numRooms; i++) {
         const roomRv = seededRandom(
             stringToRandomNumber(territory + locationType) + i,
@@ -122,9 +128,23 @@ async function generateDungeonGraph(
             worldSeed.spatial.town.precision,
             roomRv,
         );
-        rooms.push({ geohash: town, connections: [] });
+
+        // Generate entrance
+        const entrances: string[] = [];
+        if (entranceCount < numEntrances) {
+            entrances.push(
+                autoCorrectGeohashPrecision(
+                    town,
+                    worldSeed.spatial.unit.precision,
+                    roomRv,
+                ),
+            );
+            entranceCount += 1;
+        }
+
+        rooms.push({ geohash: town, connections: [], entrances });
     }
-    rooms = uniqBy(rooms, (r) => r.geohash); // remove repeated
+    rooms = uniqBy(rooms, (r) => r.geohash);
 
     // Connect rooms and generate corridors
     const corridors = new Set<string>();

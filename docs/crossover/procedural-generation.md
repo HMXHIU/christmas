@@ -110,26 +110,33 @@ territory:
 
 - [x] Each territory has a major dungeon
 - [x] If location is not set manually, it uses the territory as a seed to determine the location
-- [x] Create `dungeonLocations` to manually determine the location of a dungeon on a territory
+- [x] Create `dungeons` to manually determine the location of a dungeon on a territory
 
 ```ts
-dungeonLocations = {
-  // territory
-  w2: {
-    dungeons: {
-      // city
-      w21: {
-        rooms: {
-          // town
-          w21z9: {
-            entraces: [],
-          },
-        },
+interface Dungeon {
+  dungeon: string;
+  rooms: {
+    room: string;
+    entrances: string[];
+  }[];
+}
+
+const dungeons: Dungeon[] = [
+  {
+    dungeon: "w21",
+    rooms: [
+      {
+        room: "w21z9",
+        entrances: ["w21z9edk"],
       },
-    },
+    ],
   },
-};
+];
 ```
+
+- [ ] Create dungeon entrance/exit items which teleport player down or up by changing the locationType
+- [ ] Create init script to create dungeon entrace/exit items at entrances
+- [x] Randomly generated dungeons need to entrances/exit randomly via a seed
 
 #### Pseudo Algorithm
 

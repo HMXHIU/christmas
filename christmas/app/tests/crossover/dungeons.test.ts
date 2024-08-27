@@ -6,6 +6,7 @@ import {
 } from "$lib/crossover/world/dungeons";
 import { dungeons } from "$lib/crossover/world/settings/dungeons";
 import { worldSeed } from "$lib/crossover/world/settings/world";
+import { flatten } from "lodash-es";
 import { describe, expect, test } from "vitest";
 
 describe("Dungeons Tests", () => {
@@ -25,10 +26,19 @@ describe("Dungeons Tests", () => {
             dungeon,
         });
 
+        // Check all manually defined rooms are present
         for (const { room, entrances } of dungeon!.rooms) {
-            // Check all manually defined rooms are present
             expect(dg.rooms.some((r) => r.geohash === room)).toBe(true);
         }
+
+        // Check entrances
+        const definedEntrances = flatten(
+            dungeon?.rooms.map((r) => r.entrances),
+        );
+        const generatedEntrances = flatten(dg.rooms.map((r) => r.entrances));
+        expect(
+            definedEntrances.every((e) => generatedEntrances.includes(e)),
+        ).toBe(true);
     });
 
     test("Test `generateDungeonGraph`", async () => {
@@ -57,7 +67,9 @@ describe("Dungeons Tests", () => {
         var [biome, strength] = await biomeAtGeohash(geohash, locationType);
         expect(biomes[biome].traversableSpeed).greaterThan(0);
 
-        console.log(geohash);
+        // Check entrances
+        const entrances = flatten(dg.rooms.map((r) => r.entrances));
+        expect(entrances.length).greaterThan(1);
 
         // Test can traverse from any room to any room
         // const room2 = dg.rooms[1].geohash;
