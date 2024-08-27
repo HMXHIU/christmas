@@ -11,7 +11,7 @@ import {
     stringToRandomNumber,
 } from "../utils";
 import type { BiomeType } from "./biomes";
-import type { Dungeon } from "./settings/dungeons";
+import { dungeons, type Dungeon } from "./settings/dungeons";
 import { worldSeed } from "./settings/world";
 import { geohashLocationTypes, type GeohashLocationType } from "./types";
 
@@ -51,11 +51,9 @@ async function dungeonBiomeAtGeohash(
         throw new Error("Location is not underground");
     }
     const territory = geohash.slice(0, 2);
-
-    let dungeon: Dungeon | undefined;
-    if (options?.dungeons) {
-        dungeon = options.dungeons.find((d) => d.dungeon.startsWith(territory));
-    }
+    let dungeon = (options?.dungeons ?? dungeons).find((d) =>
+        d.dungeon.startsWith(territory),
+    );
 
     let graph = await generateDungeonGraph(territory, locationType, {
         dungeonGraphCache: options?.dungeonGraphCache,
@@ -218,17 +216,22 @@ function generateLine(start: string, end: string, precision: number): string[] {
 
 async function getAllDungeons(
     locationType: GeohashLocationType,
+    options?: { dungeons?: Dungeon[] },
 ): Promise<Record<string, DungeonGraph>> {
-    const dungeons: Record<string, DungeonGraph> = {};
+    const dungeonGraphs: Record<string, DungeonGraph> = {};
     for (const a of oddGeohashCharacters) {
         for (const b of evenGeohashCharacters) {
             const territory = a + b;
-            dungeons[territory] = await generateDungeonGraph(
+            let dungeon = (options?.dungeons ?? dungeons).find((d) =>
+                d.dungeon.startsWith(territory),
+            );
+            dungeonGraphs[territory] = await generateDungeonGraph(
                 territory,
                 locationType,
+                { dungeon },
             );
         }
     }
 
-    return dungeons;
+    return dungeonGraphs;
 }

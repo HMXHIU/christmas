@@ -205,7 +205,6 @@ export class EntityContainer extends Container {
 
     public destroy(options?: DestroyOptions): void {
         if (this.tween != null) {
-            console.log("KILL TWEEN");
             this.tween.kill();
         }
         super.destroy(options);

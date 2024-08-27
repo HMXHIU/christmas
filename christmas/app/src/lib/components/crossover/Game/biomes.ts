@@ -53,9 +53,9 @@ export {
 const biomeCache = new LRUMemoryCache({ max: 1000 });
 const decorationsCache = new LRUMemoryCache({ max: 1000 });
 
+// Buffers
 let biomeTexturePositions: Record<string, ShaderTexture> = {};
 let decorationsTexturePositions: Record<string, ShaderTexture> = {};
-
 let biomeTextureBuffers = new LRUMemoryCache<Record<string, ShaderTexture>>({
     max: 32,
 });
@@ -513,6 +513,7 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
             h,
             playerPosition.locationType,
         );
+
         if (biomeBuffers) {
             insertTextureBuffer(biomeBuffers, biomeTexturePositions);
         }

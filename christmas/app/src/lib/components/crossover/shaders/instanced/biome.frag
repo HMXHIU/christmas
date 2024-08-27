@@ -10,7 +10,7 @@ void main() {
     vec4 color = texture2D(uTexture, vUV);
 
     // Discard the fragment if alpha is 0
-    if (color.a < 0.1) {
+    if (color.a < 0.001) {
         discard;
     }
 

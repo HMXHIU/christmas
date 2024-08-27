@@ -12,7 +12,6 @@
     } from "$lib/crossover/world/abilities";
     import { actions, type Action } from "$lib/crossover/world/actions";
     import { type Utility } from "$lib/crossover/world/compendium";
-    import { MS_PER_TICK } from "$lib/crossover/world/settings";
     import { compendium } from "$lib/crossover/world/settings/compendium";
     import type { GeohashLocationType } from "$lib/crossover/world/types";
     import { cn } from "$lib/shadcn";
@@ -250,7 +249,7 @@
         // Check if need to reload the game (typically because the `worldOfffset` as strayed too far)
         const cols = Math.abs($worldOffset.col - position.col);
         const rows = Math.abs($worldOffset.row - position.row);
-        const maxDistance = 5;
+        const maxDistance = 15000;
         if (cols > maxDistance || rows > maxDistance) {
             await reloadGame();
         }
@@ -382,11 +381,11 @@
             cullAllEntityContainers();
             cullAllWorldEntityContainers();
 
+            // Wait for busy
             await sleep(1000);
 
-            // Set worldOffset
-            const [col, row] = geohashToColRow($player.loc[0]);
-            worldOffset.set({ col, row });
+            // Calibrate worldOffset
+            calibrateWorldOffset($player.loc[0]);
 
             // Look at surroundings & update inventory
             await updateWorlds(
@@ -394,11 +393,14 @@
                 $player.locT as GeohashLocationType,
             );
 
-            await sleep(MS_PER_TICK * actions.move.ticks);
             await executeGameCommand([actions.look, { self: $player }]);
-            await sleep(MS_PER_TICK * actions.move.ticks);
             await executeGameCommand([actions.inventory, { self: $player }]);
         }
+    }
+
+    function calibrateWorldOffset(geohash: string) {
+        const [col, row] = geohashToColRow(geohash);
+        worldOffset.set({ col: col, row: row });
     }
 
     onMount(() => {
@@ -410,9 +412,8 @@
             loginEvent.subscribe(async (p) => {
                 if (!p) return;
 
-                // Set worldOffset
-                const [col, row] = geohashToColRow(p.loc[0]);
-                worldOffset.set({ col, row });
+                // Calibrate worldOffset
+                calibrateWorldOffset(p.loc[0]);
 
                 // Fetch player metadata
                 userMetadata.set(await crossoverPlayerMetadata());
