@@ -1,6 +1,7 @@
 <script lang="ts">
     import { geohashToColRow } from "$lib/crossover/utils";
     import { topologyAtGeohash } from "$lib/crossover/world/biomes";
+    import { geohashLocationTypes } from "$lib/crossover/world/types";
     import { cn } from "$lib/shadcn";
     import { Application, Assets, Geometry, Mesh, Shader } from "pixi.js";
     import { onMount } from "svelte";
@@ -122,7 +123,11 @@
         init();
 
         const unsubscribePlayer = player.subscribe(async (p) => {
-            if (app === null || p === null || p.locT !== "geohash") {
+            if (
+                app === null ||
+                p === null ||
+                !geohashLocationTypes.has(p.locT)
+            ) {
                 return;
             }
 

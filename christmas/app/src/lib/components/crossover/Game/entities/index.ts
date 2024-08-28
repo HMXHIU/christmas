@@ -285,9 +285,18 @@ function garbageCollectEntityContainers(playerPosition: Position) {
     const p5s = geohashesNearby(playerPosition.geohash.slice(0, -2));
     for (const [id, ec] of Object.entries(entityContainers)) {
         const geohash = ec.isoPosition?.geohash;
-        if (geohash) {
-            // Very far away
-            if (!p5s.some((gh) => geohash.startsWith(gh))) {
+        const locationType = ec.isoPosition?.locationType;
+        if (geohash && locationType) {
+            // Both are geohash locations but are not equal (ie. underground vs above ground)
+            if (
+                geohashLocationTypes.has(locationType) &&
+                geohashLocationTypes.has(playerPosition.locationType) &&
+                playerPosition.locationType !== locationType
+            ) {
+                cullEntityContainerById(id);
+            }
+            // Not nearby
+            else if (!p5s.some((gh) => geohash.startsWith(gh))) {
                 cullEntityContainerById(id);
             }
         }

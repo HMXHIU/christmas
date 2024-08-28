@@ -117,7 +117,7 @@ async function loadPlayerEntity(
         lgn: options.loggedIn,
     };
 
-    // Auto correct player's geohash precision
+    // Auto correct player's geohash precision (try fix if corrupted, unstuck player)
     if (player.loc[0].length !== worldSeed.spatial.unit.precision) {
         player.loc = [
             autoCorrectGeohashPrecision(

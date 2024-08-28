@@ -9,9 +9,10 @@ import { actions } from "$lib/crossover/world/actions";
 import { type EquipmentSlot } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import type {
-    Direction,
-    GeohashLocationType,
+import {
+    geohashLocationTypes,
+    type Direction,
+    type GeohashLocationType,
 } from "$lib/crossover/world/types";
 import { cloneDeep } from "lodash-es";
 import { setEntityBusy } from ".";
@@ -555,9 +556,17 @@ async function dropItem(player: PlayerEntity, item: string, now?: number) {
         return;
     }
 
+    if (!geohashLocationTypes.has(player.locT)) {
+        publishFeedEvent(player.player, {
+            type: "error",
+            message: `You cannot drop ${item} here`,
+        });
+        return;
+    }
+
     // Drop item
     itemEntity.loc = player.loc;
-    itemEntity.locT = "geohash";
+    itemEntity.locT = player.locT;
     itemEntity = (await itemRepository.save(
         itemEntity.item,
         itemEntity,

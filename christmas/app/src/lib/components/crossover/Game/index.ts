@@ -2,6 +2,7 @@ import Root from "./Game.svelte";
 
 import {
     getDirectionsToPosition,
+    getPlayerPosition,
     type Position,
 } from "$lib/components/crossover/Game/utils";
 import { addMessageFeed } from "$lib/components/crossover/GameWindow";
@@ -68,10 +69,12 @@ import {
     cullEntityContainerById,
     entityContainers,
     entitySigils,
+    garbageCollectEntityContainers,
     upsertEntityContainer,
     upsertEntitySigil,
 } from "./entities";
 import { AvatarEntityContainer } from "./entities/AvatarEntityContainer";
+import { garbageCollectWorldEntityContainers } from "./world";
 
 export { executeGameCommand, updateEntities, updateWorlds, type GameLogic };
 
@@ -250,11 +253,20 @@ async function updatePlayer(
         player.set(newEntity);
 
         // Update worlds if location changed
-        if (oldEntity == null || oldEntity.loc[0] !== newEntity.loc[0]) {
+        if (
+            oldEntity == null ||
+            oldEntity.loc[0] !== newEntity.loc[0] ||
+            oldEntity.locT !== newEntity.locT
+        ) {
             await updateWorlds(
                 newEntity.loc[0],
                 newEntity.locT as GeohashLocationType,
             );
+        }
+
+        // Perform `look` if locT changed
+        if (oldEntity && oldEntity.locT !== newEntity.locT) {
+            await executeGameCommand([actions.look, { self: newEntity }]);
         }
     }
 }
@@ -270,7 +282,7 @@ async function updateEquipment(
     newItem: Item,
     game: GameLogic,
 ) {
-    if (newItem.locT !== "geohash") {
+    if (!geohashLocationTypes.has(newItem.locT)) {
         equipmentRecord.update((er) => {
             const entityId = newItem.loc[0];
             if (er[entityId]) {
@@ -289,7 +301,9 @@ function loadInventory(record: Record<string, Item>) {
     const playerId = get(player)?.player;
     for (const [entityId, items] of Object.entries(
         groupBy(
-            Object.values(record).filter((i) => i.locT !== "geohash"),
+            Object.values(record).filter(
+                (i) => !geohashLocationTypes.has(i.locT),
+            ),
             (i) => i.loc[0],
         ),
     )) {
@@ -350,6 +364,13 @@ function updateEntities(
                 displayEntityEffects,
             ],
         });
+    }
+
+    // Garbage collect irrelevant ecs, the player might have moved to a different `locT`
+    const position = getPlayerPosition();
+    if (position) {
+        garbageCollectEntityContainers(position);
+        garbageCollectWorldEntityContainers(position);
     }
 }
 

@@ -8,6 +8,7 @@ import type { GameActionEntities, TokenPositions } from "../ir";
 import { getEntityId } from "../utils";
 import { EquipmentSlots, type EquipmentSlot } from "./compendium";
 import { TICKS_PER_TURN } from "./settings";
+import { geohashLocationTypes } from "./types";
 
 export {
     actions,
@@ -270,8 +271,8 @@ function resolveActionEntities({
             }
             // Can only take an item from environment
             else if (action.action === actions.take.action) {
-                targetList = targetList.filter(
-                    (item) => item.locT === "geohash",
+                targetList = targetList.filter((item) =>
+                    geohashLocationTypes.has(item.locT),
                 );
             }
             // Can only drop an item from inventory/equipped
