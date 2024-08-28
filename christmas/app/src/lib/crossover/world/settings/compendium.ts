@@ -485,7 +485,7 @@ let compendium: Record<string, Prop> = {
         durability: 100,
         charges: 100,
         weight: -1,
-        collider: false,
+        collider: true, // untraversable, cannot spawn 2 in same location
         defaultState: "default",
         states: {
             default: {
