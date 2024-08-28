@@ -44,6 +44,7 @@ import { noise2D } from "./world";
 export {
     calculateBiomeDecorationsForRowCol,
     calculateBiomeForRowCol,
+    clearBiomeBuffers,
     drawBiomeShaders,
 };
 
@@ -64,7 +65,7 @@ let decorationsTextureBuffers = new LRUMemoryCache<
 const calculateBiomeForRowCol = memoize(
     _calculateBiomeForRowCol,
     biomeCache,
-    (row, col, locationType, precision?) => `${row}-${col}`,
+    (row, col, locationType, precision?) => `${row}-${col}-${locationType}`,
 );
 async function _calculateBiomeForRowCol(
     row: number,
@@ -145,7 +146,7 @@ async function _calculateBiomeForRowCol(
 const calculateBiomeDecorationsForRowCol = memoize(
     _calculateBiomeDecorationsForRowCol,
     decorationsCache,
-    ({ row, col }) => `${row}-${col}`,
+    ({ row, col, locationType }) => `${row}-${col}-${locationType}`,
 );
 async function _calculateBiomeDecorationsForRowCol({
     geohash,
@@ -156,6 +157,7 @@ async function _calculateBiomeDecorationsForRowCol({
     isoX,
     isoY,
     elevation,
+    locationType,
 }: {
     geohash: string;
     biome: BiomeType;
@@ -165,6 +167,7 @@ async function _calculateBiomeDecorationsForRowCol({
     isoX: number;
     isoY: number;
     elevation: number;
+    locationType: GeohashLocationType;
 }): Promise<Record<string, ShaderTexture>> {
     const texturePositions: Record<string, ShaderTexture> = {};
 
@@ -173,7 +176,7 @@ async function _calculateBiomeDecorationsForRowCol({
     if (!decorations) {
         return texturePositions;
     }
-    const geohashSeed = stringToRandomNumber(geohash);
+    const geohashSeed = stringToRandomNumber(geohash + locationType);
 
     for (const [
         name,
@@ -252,9 +255,12 @@ async function calculateTextureBuffers(
         Record<string, ShaderTexture> | undefined,
     ]
 > {
+    const bufferKey = `${house}-${locationType}`;
+
     // Skip if already in cache
-    const biomeShaderTextures = await biomeTextureBuffers.get(house);
-    const decorationShaderTextures = await decorationsTextureBuffers.get(house);
+    const biomeShaderTextures = await biomeTextureBuffers.get(bufferKey);
+    const decorationShaderTextures =
+        await decorationsTextureBuffers.get(bufferKey);
     if (biomeShaderTextures && decorationShaderTextures) {
         return [biomeShaderTextures, decorationShaderTextures];
     }
@@ -302,9 +308,9 @@ async function calculateTextureBuffers(
             const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
 
             // Init texture buffers for texture
-            if (!(await biomeTextureBuffers.get(house))) {
+            if (!(await biomeTextureBuffers.get(bufferKey))) {
                 await biomeTextureBuffers.set(
-                    house,
+                    bufferKey,
                     initShaderTextureRecord({}, textureUid, {
                         width,
                         height,
@@ -312,7 +318,9 @@ async function calculateTextureBuffers(
                     }),
                 );
             }
-            const tbuf = (await biomeTextureBuffers.get(house))![textureUid];
+            const tbuf = (await biomeTextureBuffers.get(bufferKey))![
+                textureUid
+            ];
 
             // Set instance positions
             const stp = tbuf.instances * 3;
@@ -360,6 +368,7 @@ async function calculateTextureBuffers(
                     isoX,
                     isoY,
                     elevation,
+                    locationType,
                 }),
             )) {
                 // Use the entire sprite sheet as the texture (Note: must all be in the same sheet)
@@ -367,9 +376,9 @@ async function calculateTextureBuffers(
                 const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;
 
                 // Init texture buffers for decorations
-                if (!(await decorationsTextureBuffers.get(house))) {
+                if (!(await decorationsTextureBuffers.get(bufferKey))) {
                     await decorationsTextureBuffers.set(
-                        house,
+                        bufferKey,
                         initShaderTextureRecord({}, textureUid, {
                             width,
                             height,
@@ -377,7 +386,7 @@ async function calculateTextureBuffers(
                         }),
                     );
                 }
-                const tbuf = (await decorationsTextureBuffers.get(house))![
+                const tbuf = (await decorationsTextureBuffers.get(bufferKey))![
                     textureUid
                 ];
 
@@ -414,8 +423,8 @@ async function calculateTextureBuffers(
     }
 
     return [
-        await biomeTextureBuffers.get(house),
-        await decorationsTextureBuffers.get(house),
+        await biomeTextureBuffers.get(bufferKey),
+        await decorationsTextureBuffers.get(bufferKey),
     ];
 }
 
@@ -541,4 +550,13 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
         depthStart,
         depthLayer: depthLayer - depthSize, // bump the zIndex for grass down 1 layer for alpha blending
     });
+}
+
+async function clearBiomeBuffers() {
+    for await (const [k, v] of biomeTextureBuffers.entries()) {
+        await biomeTextureBuffers.delete(k);
+    }
+    for await (const [k, v] of decorationsTextureBuffers.entries()) {
+        await decorationsTextureBuffers.delete(k);
+    }
 }
