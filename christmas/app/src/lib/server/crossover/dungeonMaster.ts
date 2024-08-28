@@ -313,7 +313,7 @@ async function spawnItem({
         name: defaultName,
         prop,
         loc: location,
-        locT: "geohash",
+        locT: locationType,
         own: owner,
         cfg: configOwner,
         cld: collider,

@@ -135,7 +135,7 @@ const dungeons: Dungeon[] = [
 ```
 
 - [ ] Create dungeon entrance/exit items which teleport player down or up by changing the locationType
-- [ ] Create init script to create dungeon entrace/exit items at entrances
+- [x] Create init script to create dungeon entrace/exit items at entrances
 - [x] Randomly generated dungeons need to entrances/exit randomly via a seed
 
 #### Pseudo Algorithm

@@ -180,6 +180,7 @@ describe("Abilities Tests", () => {
     });
 
     test("Patch effect with variables", () => {
+        // Test teleport
         const teleportEffect = abilities.teleport.procedures[0][1];
         const actualEffect = patchEffectWithVariables({
             self: playerOne as PlayerEntity,
@@ -189,9 +190,50 @@ describe("Abilities Tests", () => {
         expect(actualEffect).toMatchObject({
             target: "self",
             states: {
-                state: "loc",
-                value: playerTwo.loc,
-                op: "change",
+                loc: {
+                    value: playerTwo.loc, // patch array
+                    op: "change",
+                },
+                locT: {
+                    value: playerTwo.locT, // patch string
+                    op: "change",
+                },
+            },
+        });
+
+        // Test hpswap
+        playerOne.hp = 10;
+        playerTwo.hp = 20;
+        const swapEffect1 = abilities.hpswap.procedures[0][1];
+        const swapEffect2 = abilities.hpswap.procedures[1][1];
+        expect(
+            patchEffectWithVariables({
+                self: playerOne as PlayerEntity,
+                target: playerTwo as PlayerEntity,
+                effect: swapEffect1,
+            }),
+        ).toMatchObject({
+            target: "self",
+            states: {
+                hp: {
+                    value: playerTwo.hp, // patch number
+                    op: "change",
+                },
+            },
+        });
+        expect(
+            patchEffectWithVariables({
+                self: playerOne as PlayerEntity,
+                target: playerTwo as PlayerEntity,
+                effect: swapEffect2,
+            }),
+        ).toMatchObject({
+            target: "target",
+            states: {
+                hp: {
+                    value: playerOne.hp, // patch number
+                    op: "change",
+                },
             },
         });
     });

@@ -319,9 +319,14 @@ const abilities: Record<string, Ability> = {
                 {
                     target: "self",
                     states: {
-                        state: "loc",
-                        value: "{{target.loc}}", // {{}} for variable access
-                        op: "change",
+                        loc: {
+                            value: "{{target.loc}}", // {{}} for variable access
+                            op: "change",
+                        },
+                        locT: {
+                            value: "{{target.locT}}",
+                            op: "change",
+                        },
                     },
                     ticks: TICKS_PER_TURN,
                 },
@@ -337,6 +342,50 @@ const abilities: Record<string, Ability> = {
             self: ["player", "monster"],
             target: ["player", "monster", "item"],
             targetSelfAllowed: true,
+        },
+    },
+    hpswap: {
+        ability: "hpswap",
+        type: "offensive",
+        description: "Swap HP with target.",
+        procedures: [
+            [
+                "action",
+                {
+                    target: "self",
+                    states: {
+                        hp: {
+                            value: "{{target.hp}}", // {{}} for variable access
+                            op: "change",
+                        },
+                    },
+                    ticks: TICKS_PER_TURN,
+                },
+            ],
+            [
+                "action",
+                {
+                    target: "target",
+                    states: {
+                        hp: {
+                            value: "{{self.hp}}", // {{}} for variable access
+                            op: "change",
+                        },
+                    },
+                    ticks: TICKS_PER_TURN,
+                },
+            ],
+        ],
+        ap: 4,
+        st: 0,
+        hp: 0,
+        mp: 20,
+        range: 2,
+        aoe: 0,
+        predicate: {
+            self: ["player", "monster"],
+            target: ["player", "monster", "item"],
+            targetSelfAllowed: false,
         },
     },
 };

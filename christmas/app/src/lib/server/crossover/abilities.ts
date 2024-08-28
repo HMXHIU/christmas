@@ -265,25 +265,26 @@ async function performEffectOnEntity({
 
     // State
     if (effect.states) {
-        const { state, op, value } = effect.states;
-        if (entity.hasOwnProperty(state)) {
-            if (op === "change") {
-                (entity as any)[state] = value;
-            } else if (op === "subtract" && state) {
-                (entity as any)[state] -= value as number;
-            } else if (op === "add") {
-                (entity as any)[state] += value as number;
-            }
+        for (const [state, { op, value }] of Object.entries(effect.states)) {
+            if (entity.hasOwnProperty(state)) {
+                if (op === "change") {
+                    (entity as any)[state] = value;
+                } else if (op === "subtract" && state) {
+                    (entity as any)[state] -= value as number;
+                } else if (op === "add") {
+                    (entity as any)[state] += value as number;
+                }
 
-            // Patch location (if the location dimensions have changed beyond the asset's dimensions)
-            if (state === "loc") {
-                const { width, height } = entityDimensions(entity);
-                if (entity[state].length !== width * height) {
-                    entity[state] = calculateLocation(
-                        entity[state][0],
-                        width,
-                        height,
-                    );
+                // Patch location (if the location dimensions have changed beyond the asset's dimensions)
+                if (state === "loc") {
+                    const { width, height } = entityDimensions(entity);
+                    if (entity[state].length !== width * height) {
+                        entity[state] = calculateLocation(
+                            entity[state][0],
+                            width,
+                            height,
+                        );
+                    }
                 }
             }
         }

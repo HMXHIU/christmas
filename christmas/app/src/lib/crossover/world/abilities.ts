@@ -23,6 +23,7 @@ export {
     type Debuff,
     type Procedure,
     type ProcedureEffect,
+    type ProcedureStateEffects,
 };
 
 type AbilityType = "offensive" | "defensive" | "healing" | "neutral"; // to allow AI to choose abilities based on the situation
@@ -73,7 +74,8 @@ type Abilities =
     | "breathFire"
     | "paralyze"
     | "blind"
-    | "teleport";
+    | "teleport"
+    | "hpswap";
 
 interface Ability {
     ability: Abilities;
@@ -93,6 +95,8 @@ interface Ability {
     };
 }
 
+type ProcedureStateEffects = "loc" | "locT" | "ap" | "hp" | "mp" | "st";
+
 type Procedure = ["action" | "check", ProcedureEffect];
 interface ProcedureEffect {
     target: "self" | "target";
@@ -110,9 +114,10 @@ interface ProcedureEffect {
         op: "push" | "pop" | "contains" | "doesNotContain";
     };
     states?: {
-        state: "loc" | "ap" | "hp" | "mp" | "st";
-        op: "change" | "subtract" | "add";
-        value: number | string | boolean | string[];
+        [state in ProcedureStateEffects]?: {
+            op: "change" | "subtract" | "add";
+            value: number | string | boolean | string[];
+        };
     };
 }
 
@@ -141,32 +146,51 @@ function patchEffectWithVariables({
             self,
             target,
         });
-
         // Check that value is a string else throw error
         if (typeof value !== "string") {
             throw new Error("Variable is not a string");
         }
-
         effectClone.damage.amount = parseInt(value);
     }
 
     // States
-    if (typeof effectClone.states?.value === "string") {
-        const value = substituteVariables(effectClone.states.value, {
-            self,
-            target,
-        });
-        // Location requires variable access eg. {{target.loc}}
-        if (effectClone.states.state === "loc") {
-            if (!Array.isArray(value)) {
-                throw new Error("Variable is not a loc string[]");
+    if (effectClone.states) {
+        for (const [s, state] of Object.entries(effectClone.states)) {
+            if (typeof state.value === "string") {
+                const value = substituteVariables(state.value, {
+                    self,
+                    target,
+                });
+
+                console.log("sub", value);
+                // loc
+                if (s === "loc") {
+                    if (!Array.isArray(value)) {
+                        throw new Error(
+                            "Patched value for `loc` must be type string[]",
+                        );
+                    }
+                    state.value = value;
+                }
+                // locT
+                else if (s === "locT") {
+                    if (typeof value !== "string") {
+                        throw new Error(
+                            "Patched value for `locT` must be type `string`",
+                        );
+                    }
+                    state.value = value;
+                }
+                // ap, mp, hp, st
+                else {
+                    if (typeof value !== "number") {
+                        throw new Error(
+                            "Patched value for hp/mp/ap/st must be type `number`",
+                        );
+                    }
+                    state.value = parseInt(value);
+                }
             }
-            effectClone.states.value = value;
-        } else {
-            if (typeof value !== "string") {
-                throw new Error("Variable is not a string");
-            }
-            effectClone.states.value = parseInt(value);
         }
     }
 

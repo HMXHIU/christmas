@@ -1,4 +1,8 @@
-import { type Direction, type GridCell } from "$lib/crossover/world/types";
+import {
+    geohashLocationTypes,
+    type Direction,
+    type GridCell,
+} from "$lib/crossover/world/types";
 import type {
     EntityType,
     Item,
@@ -745,7 +749,7 @@ function entityInRange(
     diagonal: boolean = true,
 ): [boolean, number] {
     // If the target is not a geohash, check if the target is on self
-    if (target.locT !== "geohash") {
+    if (!geohashLocationTypes.has(target.locT)) {
         // Allow targeting items on self
         if (target.loc[0] === getEntityId(self)[0]) {
             return [true, 0];
@@ -784,6 +788,7 @@ function inRange({
     range: number;
     diagonal?: boolean;
 }): [boolean, number] {
+    // range=-1 means always in range
     if (diagonal) {
         const deltaX = Math.abs(r1 - r2);
         const deltaY = Math.abs(c1 - c2);
