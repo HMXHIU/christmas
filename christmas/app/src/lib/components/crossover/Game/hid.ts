@@ -3,13 +3,12 @@ import { getPositionsForPath } from "$lib/crossover/utils";
 import type { Direction } from "$lib/crossover/world/types";
 import type { Container, FederatedPointerEvent } from "pixi.js";
 import { highlightShaderInstances } from "../shaders";
+import { HALF_ISO_CELL_HEIGHT, HALF_ISO_CELL_WIDTH } from "./settings";
 import {
     calculateRowColFromIso,
     getDirectionsToPosition,
     getPathHighlights,
     getPlayerPosition,
-    HALF_ISO_CELL_HEIGHT,
-    HALF_ISO_CELL_WIDTH,
     snapToGrid,
 } from "./utils";
 

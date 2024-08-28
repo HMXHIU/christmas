@@ -1,7 +1,8 @@
 import { Container, Texture } from "pixi.js";
 import { IsoMesh } from "../../shaders/IsoMesh";
 import { layers } from "../layers";
-import { cartToIso, CELL_WIDTH } from "../utils";
+import { CELL_WIDTH } from "../settings";
+import { cartToIso } from "../utils";
 
 export { WorldEntityContainer };
 

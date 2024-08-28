@@ -11,6 +11,7 @@ import {
 } from "$lib/components/crossover/Game/caches";
 import { aStarPathfinding } from "$lib/crossover/pathfinding";
 import {
+    geohashToColRow,
     geohashToGridCell,
     gridCellToGeohash,
     seededRandom,
@@ -51,19 +52,23 @@ import {
 } from "../../../../store";
 import type { AnimationMetadata, AvatarMetadata } from "../avatar/types";
 import { entityContainers } from "./entities";
+import {
+    CELL_HEIGHT,
+    CELL_WIDTH,
+    ELEVATION_TO_CELL_HEIGHT,
+    GRID_MID_COL,
+    GRID_MID_ROW,
+    HALF_ISO_CELL_HEIGHT,
+    HALF_ISO_CELL_WIDTH,
+} from "./settings";
 
 export {
     calculatePosition,
     calculateRowColFromIso,
-    CANVAS_HEIGHT,
-    CANVAS_WIDTH,
     cartToIso,
-    CELL_HEIGHT,
-    CELL_WIDTH,
     debugBounds,
     decodeTiledSource,
     destroyContainer,
-    ELEVATION_TO_CELL_HEIGHT,
     getAngle,
     getAvatarMetadata,
     getDirectionsToPosition,
@@ -71,27 +76,27 @@ export {
     getPathHighlights,
     getPlayerPosition,
     getTilesetForTile,
-    GRID_COLS,
-    GRID_MID_COL,
-    GRID_MID_ROW,
-    GRID_ROWS,
-    HALF_ISO_CELL_HEIGHT,
-    HALF_ISO_CELL_WIDTH,
     initAssetManager,
     isCellInView,
     isGeohashTraversableClient,
-    ISO_CELL_HEIGHT,
-    ISO_CELL_WIDTH,
     isoToCart,
     loadAssetTexture,
     positionsInRange,
     registerGSAP,
     scaleToFitAndMaintainAspectRatio,
     snapToGrid,
-    WORLD_HEIGHT,
-    WORLD_WIDTH,
+    WORLD_COL_MAX,
+    WORLD_ISOY_MAX,
+    WORLD_ROW_MAX,
     type Position,
 };
+
+const [WORLD_COL_MAX, WORLD_ROW_MAX] = geohashToColRow("pbzupuzv");
+
+const WORLD_ISOY_MAX = cartToIso(
+    WORLD_COL_MAX * CELL_WIDTH,
+    WORLD_ROW_MAX * CELL_WIDTH,
+)[1]; // 33093136
 
 interface Position {
     row: number;
@@ -103,29 +108,6 @@ interface Position {
     precision: number;
     elevation: number;
 }
-
-// TODO: move tos settings
-// Note: this are cartesian coordinates (CELL_HEIGHT = CELL_WIDTH;)
-const CELL_WIDTH = 96; // 64, 96, 128
-const CELL_HEIGHT = CELL_WIDTH;
-const ISO_CELL_WIDTH = CELL_WIDTH;
-const ISO_CELL_HEIGHT = CELL_HEIGHT / 2;
-const HALF_ISO_CELL_WIDTH = ISO_CELL_WIDTH / 2;
-const HALF_ISO_CELL_HEIGHT = ISO_CELL_HEIGHT / 2;
-const CANVAS_ROWS = 9;
-const CANVAS_COLS = 9;
-const OVERDRAW_MULTIPLE = 4;
-const CANVAS_WIDTH = CELL_WIDTH * CANVAS_COLS;
-const CANVAS_HEIGHT = CELL_HEIGHT * CANVAS_ROWS;
-const WORLD_WIDTH = CANVAS_WIDTH * OVERDRAW_MULTIPLE;
-const WORLD_HEIGHT = CANVAS_HEIGHT * OVERDRAW_MULTIPLE;
-const GRID_ROWS = CANVAS_ROWS * OVERDRAW_MULTIPLE;
-const GRID_COLS = CANVAS_COLS * OVERDRAW_MULTIPLE;
-const GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
-const GRID_MID_COL = Math.floor(GRID_COLS / 2);
-
-// In WebGL, the gl_Position.z value should be in the range [-1 (closer), 1]
-const ELEVATION_TO_CELL_HEIGHT = CELL_HEIGHT / 2 / 8; // 1 meter = 1/8 a cell elevation (on isometric coordinates)
 
 async function calculatePosition(
     geohash: string,

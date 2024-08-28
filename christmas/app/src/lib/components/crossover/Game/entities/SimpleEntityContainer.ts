@@ -3,11 +3,8 @@ import { Container, Sprite } from "pixi.js";
 import { swapMeshTexture } from "../../shaders";
 import { IsoMesh } from "../../shaders/IsoMesh";
 import { layers } from "../layers";
-import {
-    CELL_WIDTH,
-    loadAssetTexture,
-    scaleToFitAndMaintainAspectRatio,
-} from "../utils";
+import { CELL_WIDTH } from "../settings";
+import { loadAssetTexture, scaleToFitAndMaintainAspectRatio } from "../utils";
 import { EntityContainer } from "./EntityContainer";
 
 export { SimpleEntityContainer };

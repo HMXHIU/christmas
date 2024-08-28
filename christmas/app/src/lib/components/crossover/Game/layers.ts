@@ -1,27 +1,22 @@
-import { WORLD_COL_MAX, WORLD_ROW_MAX } from "./settings";
-import { cartToIso, CELL_WIDTH } from "./utils";
+import { WORLD_ISOY_MAX } from "./utils";
 
 export { Layers, layers };
-
-const WORLD_ISOY_MAX = cartToIso(
-    WORLD_COL_MAX * CELL_WIDTH,
-    WORLD_ROW_MAX * CELL_WIDTH,
-)[1]; // 33093136
 
 class Layers {
     public layers: string[] = [];
     // worldHeight is used as the conversion factor to convert isoY to depth
     public worldHeight: number = 0;
+    public depthSize: number = 1;
+    public depthScale: number = 1;
 
-    constructor({
-        layers,
-        worldHeight,
-    }: {
-        layers: string[];
-        worldHeight: number;
-    }) {
+    constructor({ layers }: { layers: string[] }) {
         this.layers = layers;
-        this.worldHeight = worldHeight;
+        // ~33k cells (this means we need to recalculate the `worldOffset` every time the player moves past 33k cells)
+        this.worldHeight = WORLD_ISOY_MAX / 1000;
+        // Depth size is the depth range allocated to the layer ([1, 0] usable range, [0, -1] reserved for sprites)
+        this.depthSize = 1 / this.layers.length;
+        // Depth scale is used to convert the isoY coordinate to a depth within (depthStart to depthStart + depthSize)
+        this.depthScale = this.depthSize / this.worldHeight;
     }
 
     public depthLayer(layer: string): number {
@@ -39,9 +34,6 @@ class Layers {
             depthLayer = 0;
             console.warn(`Missing layer ${layer}, default to 0`);
         }
-        // Depth size is the depth range allocated to the layer ([1, 0] usable range, [0, -1] reserved for sprites)
-        const depthSize = 1 / this.layers.length; // [1 (furthest), 0]
-        const depthStart = 0.5 - depthLayer * depthSize;
 
         /*  
             Note: 
@@ -49,17 +41,16 @@ class Layers {
             - `isoY` ranges from [-worldHeight/2, +worldHeight/2]
             - this the 0.5 to calibrate it back to [0, 1]
         */
+        const depthStart = 0.5 - depthLayer * this.depthSize;
 
         return {
             depthLayer,
             depthStart,
-            // Depth scale is used to convert the isoY coordinate to a depth within (depthStart to depthStart + depthSize)
-            depthScale: depthSize / this.worldHeight,
+            depthScale: this.depthScale,
         };
     }
 }
 
 const layers = new Layers({
     layers: ["biome", "floor", "entity"],
-    worldHeight: WORLD_ISOY_MAX / 1000, // ~33k cells (this means we need to recalculate the `worldOffset` every time the player moves past 33k cells)
 });

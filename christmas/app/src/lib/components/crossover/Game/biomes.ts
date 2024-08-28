@@ -32,15 +32,13 @@ import {
 } from "../shaders";
 import { layers } from "./layers";
 import {
-    cartToIso,
     CELL_HEIGHT,
     CELL_WIDTH,
     ELEVATION_TO_CELL_HEIGHT,
     HALF_ISO_CELL_HEIGHT,
     HALF_ISO_CELL_WIDTH,
-    loadAssetTexture,
-    type Position,
-} from "./utils";
+} from "./settings";
+import { cartToIso, loadAssetTexture, type Position } from "./utils";
 import { noise2D } from "./world";
 
 export {

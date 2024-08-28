@@ -1,5 +1,38 @@
-import { geohashToColRow } from "$lib/crossover/utils";
+export {
+    CANVAS_HEIGHT,
+    CANVAS_WIDTH,
+    CELL_HEIGHT,
+    CELL_WIDTH,
+    ELEVATION_TO_CELL_HEIGHT,
+    GRID_COLS,
+    GRID_MID_COL,
+    GRID_MID_ROW,
+    HALF_ISO_CELL_HEIGHT,
+    HALF_ISO_CELL_WIDTH,
+    ISO_CELL_HEIGHT,
+    ISO_CELL_WIDTH,
+    WORLD_HEIGHT,
+    WORLD_WIDTH,
+};
 
-export { WORLD_COL_MAX, WORLD_ROW_MAX };
+// Note: this are cartesian coordinates (CELL_HEIGHT = CELL_WIDTH;)
+const CELL_WIDTH = 96; // 64, 96, 128
+const CELL_HEIGHT = CELL_WIDTH;
+const ISO_CELL_WIDTH = CELL_WIDTH;
+const ISO_CELL_HEIGHT = CELL_HEIGHT / 2;
+const HALF_ISO_CELL_WIDTH = ISO_CELL_WIDTH / 2;
+const HALF_ISO_CELL_HEIGHT = ISO_CELL_HEIGHT / 2;
+const CANVAS_ROWS = 9;
+const CANVAS_COLS = 9;
+const OVERDRAW_MULTIPLE = 4;
+const CANVAS_WIDTH = CELL_WIDTH * CANVAS_COLS;
+const CANVAS_HEIGHT = CELL_HEIGHT * CANVAS_ROWS;
+const WORLD_WIDTH = CANVAS_WIDTH * OVERDRAW_MULTIPLE;
+const WORLD_HEIGHT = CANVAS_HEIGHT * OVERDRAW_MULTIPLE;
+const GRID_ROWS = CANVAS_ROWS * OVERDRAW_MULTIPLE;
+const GRID_COLS = CANVAS_COLS * OVERDRAW_MULTIPLE;
+const GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
+const GRID_MID_COL = Math.floor(GRID_COLS / 2);
 
-const [WORLD_COL_MAX, WORLD_ROW_MAX] = geohashToColRow("pbzupuzv");
+// In WebGL, the gl_Position.z value should be in the range [-1 (closer), 1]
+const ELEVATION_TO_CELL_HEIGHT = CELL_HEIGHT / 2 / 8; // 1 meter = 1/8 a cell elevation (on isometric coordinates)

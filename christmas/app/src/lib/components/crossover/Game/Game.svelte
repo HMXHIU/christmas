@@ -56,11 +56,9 @@
         garbageCollectEntityContainers,
     } from "./entities";
     import { createHIDHandlers } from "./hid";
+    import { CANVAS_HEIGHT, CANVAS_WIDTH, CELL_WIDTH } from "./settings";
     import { drawTargetUI } from "./ui";
     import {
-        CANVAS_HEIGHT,
-        CANVAS_WIDTH,
-        CELL_WIDTH,
         getDirectionsToPosition,
         getPathHighlights,
         getPlayerPosition,

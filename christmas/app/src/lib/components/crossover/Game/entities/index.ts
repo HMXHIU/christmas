@@ -25,12 +25,11 @@ import { Container } from "pixi.js";
 import { get } from "svelte/store";
 import { player, target } from "../../../../../store";
 import { layers } from "../layers";
+import { ISO_CELL_HEIGHT, ISO_CELL_WIDTH } from "../settings";
 import {
     calculatePosition,
     getAvatarMetadata,
     isCellInView,
-    ISO_CELL_HEIGHT,
-    ISO_CELL_WIDTH,
     scaleToFitAndMaintainAspectRatio,
     type Position,
 } from "../utils";
