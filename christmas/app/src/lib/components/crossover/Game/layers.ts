@@ -28,6 +28,7 @@ class Layers {
         depthStart: number;
         depthScale: number;
         depthLayer: number;
+        depthSize: number;
     } {
         let depthLayer = this.depthLayer(layer);
         if (depthLayer < 0) {
@@ -47,6 +48,7 @@ class Layers {
             depthLayer,
             depthStart,
             depthScale: this.depthScale,
+            depthSize: this.depthSize,
         };
     }
 }
