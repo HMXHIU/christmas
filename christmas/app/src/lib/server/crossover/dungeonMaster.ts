@@ -20,6 +20,7 @@ import {
     monsterRepository,
     monstersInGeohashQuerySet,
     worldRepository,
+    worldsContainingGeohashQuerySet,
 } from "./redis";
 import type {
     ItemEntity,
@@ -232,6 +233,16 @@ async function spawnWorld({
         width * widthMultiplier,
     );
 
+    const existingWorlds = await worldsContainingGeohashQuerySet(
+        plotGeohashes,
+        locationType,
+    ).all();
+    if (existingWorlds.length > 0) {
+        throw new Error(
+            `Cannot spawn world on existing worlds ${existingWorlds.map((w) => (w as WorldEntity).world)}`,
+        );
+    }
+
     // Get world count
     const count = await worldRepository.search().count();
     const world = `world_${count}`;
@@ -243,8 +254,6 @@ async function spawnWorld({
         loc: plotGeohashes, // TODO: this can be optimized not just at unit precision -1
         locT: locationType,
     };
-
-    // TODO: Check if there is a world at location/type
 
     return (await worldRepository.save(world, entity)) as WorldEntity;
 }

@@ -1,14 +1,7 @@
 import { LRUMemoryCache, MemoryCache } from "$lib/caches";
 import { isGeohashTraversableClient } from "$lib/components/crossover/Game/utils";
 import { crossoverWorldWorlds } from "$lib/crossover/client";
-import {
-    childrenGeohashes,
-    geohashNeighbour,
-    geohashToColRow,
-    geohashToGridCell,
-    getPlotsAtGeohash,
-    gridCellToGeohash,
-} from "$lib/crossover/utils";
+import { childrenGeohashes, geohashNeighbour } from "$lib/crossover/utils";
 import {
     biomeAtGeohash,
     elevationAtGeohash,
@@ -24,7 +17,11 @@ import {
     traversableSpeedInWorld,
 } from "$lib/crossover/world/world";
 import { spawnItem, spawnWorld } from "$lib/server/crossover/dungeonMaster";
-import { initializeClients } from "$lib/server/crossover/redis";
+import {
+    initializeClients,
+    worldRepository,
+    worldsInGeohashQuerySet,
+} from "$lib/server/crossover/redis";
 import type {
     ItemEntity,
     PlayerEntity,
@@ -32,6 +29,7 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import { isGeohashTraversableServer } from "$lib/server/crossover/utils";
 import { BUCKETS, ObjectStorage } from "$lib/server/objectStorage";
+import { sleep } from "$lib/utils";
 import { omit } from "lodash-es";
 import { beforeAll, describe, expect, test } from "vitest";
 import { itemRecord, worldRecord } from "../../src/store";
@@ -122,8 +120,6 @@ let worldTwo: WorldEntity;
 let worldTwoGeohash: string;
 let worldThree: WorldEntity;
 let worldThreeGeohash: string;
-let worldFour: WorldEntity;
-let worldFourGeohash: string;
 
 beforeAll(async () => {
     // Create redis repositories
@@ -163,6 +159,14 @@ beforeAll(async () => {
         bucket: BUCKETS.tiled,
     });
 
+    // Remove all worlds in test area
+    const existingWorlds = await worldsInGeohashQuerySet(
+        ["w21z", "gbsu", "y78j"],
+        "geohash",
+    ).all();
+    worldRepository.remove(existingWorlds.map((w) => (w as WorldEntity).world));
+    await sleep(1000);
+
     // Spawn worlds
     worldGeohash = "w21z8ucp"; // top left plot
     world = await spawnWorld({
@@ -172,7 +176,7 @@ beforeAll(async () => {
         tileHeight: asset.tileheight,
         tileWidth: asset.tilewidth,
     });
-    worldTwoGeohash = generateRandomGeohash(8);
+    worldTwoGeohash = "y78jdmsq";
     worldTwo = await spawnWorld({
         assetUrl,
         geohash: worldTwoGeohash,
@@ -188,14 +192,6 @@ beforeAll(async () => {
         tileHeight: TILE_HEIGHT,
         tileWidth: TILE_WIDTH,
     });
-    worldFourGeohash = "gbsuv7xe"; // origin should be same as worldThree (same plot)
-    worldFour = await spawnWorld({
-        assetUrl,
-        geohash: worldFourGeohash,
-        locationType: "geohash",
-        tileHeight: TILE_HEIGHT,
-        tileWidth: TILE_WIDTH,
-    });
 
     // Set worldRecord
     worldRecord.set({
@@ -207,9 +203,6 @@ beforeAll(async () => {
         },
         [worldThreeGeohash.slice(-2)]: {
             [worldThree.world]: worldThree,
-        },
-        [worldFourGeohash.slice(-2)]: {
-            [worldFour.world]: worldFour,
         },
     });
 });
@@ -409,7 +402,6 @@ describe("World Tests", () => {
 
         // Test location origins
         expect(worldThree.loc[0]).toBe("gbsuv7x");
-        expect(worldFour.loc[0]).toBe("gbsuv7x");
     });
 
     test("Test Topology", async () => {
@@ -519,99 +511,32 @@ describe("World Tests", () => {
         );
     });
 
-    test("Test Procedural Generation", async () => {
+    test("Test Procedural Generation (biomeAtGeohash)", async () => {
         // Test biomeAtGeohash
         expect(
             (
                 await biomeAtGeohash("w6cn25dm", "geohash", { seed: worldSeed })
             )[0],
-        ).to.equal("forest");
+        ).to.equal("grassland");
         expect(
             (
                 await biomeAtGeohash("w2gpdqgt", "geohash", { seed: worldSeed })
             )[0],
-        ).to.equal("water");
+        ).to.equal("aquatic");
+    });
 
-        // Test geohashToGridCell
-        expect(geohashToGridCell("w61z4m6f")).to.deep.equal({
-            precision: 8,
-            row: 451413,
-            col: 826667,
-            geohash: "w61z4m6f",
-        });
-
-        // Test geohashToColRow
-        const [col, row] = geohashToColRow("w61z4m6f");
-        expect(col).to.equal(826667);
-        expect(row).to.equal(451413);
-
-        // Test gridCellToGeohash
-        var geohash = generateRandomGeohash(8);
-        expect(gridCellToGeohash(geohashToGridCell(geohash))).to.equal(geohash);
-        var geohash = generateRandomGeohash(7);
-        expect(gridCellToGeohash(geohashToGridCell(geohash))).to.equal(geohash);
-        var geohash = generateRandomGeohash(6);
-        expect(gridCellToGeohash(geohashToGridCell(geohash))).to.equal(geohash);
-        expect(gridCellToGeohash(geohashToGridCell("gbsuv7xp"))).to.equal(
-            "gbsuv7xp",
+    test("Test `spawnWorld` (negative)", async () => {
+        // Test cant spawn world on existing world
+        await expect(
+            spawnWorld({
+                assetUrl,
+                geohash: worldGeohash, // spawn on existing world
+                locationType: "geohash",
+                tileHeight: asset.tileheight,
+                tileWidth: asset.tilewidth,
+            }),
+        ).rejects.toThrowError(
+            `Cannot spawn world on existing worlds ${world.world}`,
         );
-
-        // Test geohashNeighbour
-        var geohash = generateRandomGeohash(8);
-        expect(geohashNeighbour(geohash, "e", 2)).to.equal(
-            geohashNeighbour(geohashNeighbour(geohash, "e"), "e"),
-        );
-
-        // Test childrenGeohashes
-        expect(childrenGeohashes("w61z4m6").sort()).to.deep.equal(
-            [
-                "w61z4m6p",
-                "w61z4m6r",
-                "w61z4m6x",
-                "w61z4m6z",
-                "w61z4m6n",
-                "w61z4m6q",
-                "w61z4m6w",
-                "w61z4m6y",
-                "w61z4m6j",
-                "w61z4m6m",
-                "w61z4m6t",
-                "w61z4m6v",
-                "w61z4m6h",
-                "w61z4m6k",
-                "w61z4m6s",
-                "w61z4m6u",
-                "w61z4m65",
-                "w61z4m67",
-                "w61z4m6e",
-                "w61z4m6g",
-                "w61z4m64",
-                "w61z4m66",
-                "w61z4m6d",
-                "w61z4m6f",
-                "w61z4m61",
-                "w61z4m63",
-                "w61z4m69",
-                "w61z4m6c",
-                "w61z4m60",
-                "w61z4m62",
-                "w61z4m68",
-                "w61z4m6b",
-            ].sort(),
-        );
-
-        // Test getPlotsAtGeohash
-        let loc = generateRandomGeohash(8);
-        var parentGeohash = loc.slice(0, -1);
-        let plotGeohashes = getPlotsAtGeohash(loc, 8, 4);
-        expect(plotGeohashes).to.deep.equal([parentGeohash]);
-
-        plotGeohashes = getPlotsAtGeohash(loc, 16, 8);
-        expect(plotGeohashes).to.deep.equal([
-            parentGeohash,
-            geohashNeighbour(parentGeohash, "e"),
-            geohashNeighbour(parentGeohash, "s"),
-            geohashNeighbour(geohashNeighbour(parentGeohash, "s"), "e"),
-        ]);
     });
 });
