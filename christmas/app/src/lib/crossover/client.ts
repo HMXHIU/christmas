@@ -37,6 +37,7 @@ export {
     crossoverGenerateAvatar,
     crossoverPlayerInventory,
     crossoverPlayerMetadata,
+    crossoverWorldPOI,
     crossoverWorldWorlds,
     login,
     logout,
@@ -351,6 +352,10 @@ function crossoverWorldWorlds(
         geohash,
         locationType,
     });
+}
+
+function crossoverWorldPOI(headers: HTTPHeaders = {}) {
+    return trpc({ headers }).crossover.world.poi.query();
 }
 
 /*

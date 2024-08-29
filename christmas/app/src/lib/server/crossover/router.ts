@@ -4,8 +4,12 @@ import { PlayerMetadataSchema } from "$lib/crossover/world/player";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import { GeohashLocationSchema } from "$lib/crossover/world/types";
 import {
+    GeohashLocationSchema,
+    type GeohashLocationType,
+} from "$lib/crossover/world/types";
+import {
+    dungeonEntrancesQuerySet,
     fetchEntity,
     initializeClients,
     itemRepository,
@@ -55,6 +59,7 @@ import {
 import { probeEquipment } from "./player";
 import { loggedInPlayersQuerySet } from "./redis";
 import type {
+    Item,
     ItemEntity,
     MonsterEntity,
     Player,
@@ -337,6 +342,23 @@ const crossoverRouter = {
                 });
                 return world as World;
             }),
+        poi: playerAuthProcedure.query(async ({ ctx }) => {
+            const { player } = ctx;
+            const territory = player.loc[0].slice(
+                0,
+                worldSeed.spatial.territory.precision,
+            );
+
+            const dungeonEntrances: Item[] = (await dungeonEntrancesQuerySet(
+                territory,
+                player.locT as GeohashLocationType,
+            ).all()) as ItemEntity[];
+
+            return {
+                territory,
+                dungeonEntrances,
+            };
+        }),
         worlds: authProcedure
             .input(
                 z.object({

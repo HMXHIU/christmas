@@ -8,6 +8,7 @@ import {
 } from "$env/static/private";
 import { expandGeohashes, geohashesNearby } from "$lib/crossover/utils";
 import { EquipmentSlots } from "$lib/crossover/world/compendium";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import type { GeohashLocationType } from "$lib/crossover/world/types";
 import type { Search } from "redis-om";
@@ -28,6 +29,7 @@ import {
 
 // Exports
 export {
+    dungeonEntrancesQuerySet,
     equipmentQuerySet,
     fetchEntity,
     getNearbyEntities,
@@ -357,4 +359,18 @@ function equipmentQuerySet(player: string): Search {
         .containsOneOf(...EquipmentSlots)
         .where("loc")
         .contains(player);
+}
+
+function dungeonEntrancesQuerySet(
+    territory: string,
+    locationType: GeohashLocationType,
+): Search {
+    return itemRepository
+        .search()
+        .where("prop")
+        .equal(compendium.dungeonentrance.prop)
+        .and("locT")
+        .equal(locationType)
+        .and("loc")
+        .containOneOf(`${territory}*`);
 }

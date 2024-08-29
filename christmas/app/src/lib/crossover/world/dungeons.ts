@@ -215,7 +215,8 @@ function generateCorridor(
     const dy = y2 - y1;
 
     // Randomly decide whether to move horizontally or vertically first
-    const moveHorizontalFirst = Math.random() < 0.5;
+    const moveHorizontalFirst =
+        seededRandom(stringToRandomNumber(start + end)) < 0.5;
 
     while (currentX !== x2 || currentY !== y2) {
         if (moveHorizontalFirst) {

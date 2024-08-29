@@ -6,8 +6,17 @@ import {
 } from "$lib/crossover/world/dungeons";
 import { dungeons } from "$lib/crossover/world/settings/dungeons";
 import { worldSeed } from "$lib/crossover/world/settings/world";
+import {
+    dungeonEntrancesQuerySet,
+    initializeClients,
+} from "$lib/server/crossover/redis";
+import type { ItemEntity } from "$lib/server/crossover/redis/entities";
 import { flatten } from "lodash-es";
-import { describe, expect, test } from "vitest";
+import { beforeAll, describe, expect, test } from "vitest";
+
+beforeAll(async () => {
+    await initializeClients(); // create redis repositories
+});
 
 describe("Dungeons Tests", () => {
     test("Test `getAllDungeons`", async () => {
@@ -70,54 +79,31 @@ describe("Dungeons Tests", () => {
         // Check entrances
         const entrances = flatten(dg.rooms.map((r) => r.entrances));
         expect(entrances.length).greaterThan(1);
+    });
 
-        // Test can traverse from any room to any room
-        // const room2 = dg.rooms[1].geohash;
-        // const start = autoCorrectGeohashPrecision(
-        //     room,
-        //     dg.corridorPrecision + 1,
-        // );
-        // const end = autoCorrectGeohashPrecision(
-        //     room2,
-        //     dg.corridorPrecision + 1,
-        // );
+    test("Test `dungeonEntrancesQuerySet`", async () => {
+        // Make sure to initialize world before running this test
 
-        // const [c1, r1] = geohashToColRow(start);
-        // const [c2, r2] = geohashToColRow(end);
+        const dungeon = dungeons[0];
+        const territory = dungeon.dungeon.slice(
+            0,
+            worldSeed.spatial.territory.precision,
+        );
+        const locationType = "geohash";
+        const definedEntraceLocations = flatten(
+            dungeon.rooms.map((r) => r.entrances),
+        );
 
-        // const directions = await getDirectionsToPosition(
-        //     { row: r1, col: c1 },
-        //     { row: r2, col: c2 },
-        //     locationType,
-        //     { precision: dg.corridorPrecision + 1 },
-        // );
+        const entrances = (await dungeonEntrancesQuerySet(
+            territory,
+            locationType,
+        ).all()) as ItemEntity[];
+        expect(entrances.length).greaterThan(1);
 
-        // for (const room1 of dg.rooms) {
-        //     for (const room2 of dg.rooms) {
-        //         if (room1.geohash !== room2.geohash) {
-        //             const start = autoCorrectGeohashPrecision(
-        //                 room1.geohash,
-        //                 dg.corridorPrecision + 1,
-        //             );
-        //             const end = autoCorrectGeohashPrecision(
-        //                 room2.geohash,
-        //                 dg.corridorPrecision + 1,
-        //             );
-
-        //             const [c1, r1] = geohashToColRow(start);
-        //             const [c2, r2] = geohashToColRow(end);
-
-        //             console.log(c1, r1, c2, r2);
-
-        //             const directions = await getDirectionsToPosition(
-        //                 { row: r1, col: c1 },
-        //                 { row: r2, col: c2 },
-        //                 locationType,
-        //                 { precision: dg.corridorPrecision + 1 },
-        //             );
-        //             console.log(directions);
-        //         }
-        //     }
-        // }
+        // Test all entrances defined are present
+        const entranceLocations = flatten(entrances.map((e) => e.loc));
+        expect(
+            definedEntraceLocations.every((e) => entranceLocations.includes(e)),
+        ).toBe(true);
     });
 });

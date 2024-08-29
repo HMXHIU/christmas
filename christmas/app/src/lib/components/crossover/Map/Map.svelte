@@ -1,9 +1,23 @@
 <script lang="ts">
+    import { LRUMemoryCache } from "$lib/caches";
+    import { crossoverWorldPOI } from "$lib/crossover/client";
     import { geohashToColRow } from "$lib/crossover/utils";
     import { topologyAtGeohash } from "$lib/crossover/world/biomes";
-    import { geohashLocationTypes } from "$lib/crossover/world/types";
+    import { worldSeed } from "$lib/crossover/world/settings/world";
+    import {
+        geohashLocationTypes,
+        type GeohashLocationType,
+    } from "$lib/crossover/world/types";
+    import type { Item } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
-    import { Application, Assets, Geometry, Mesh, Shader } from "pixi.js";
+    import {
+        Application,
+        Assets,
+        Geometry,
+        Graphics,
+        Mesh,
+        Shader,
+    } from "pixi.js";
     import { onMount } from "svelte";
     import { player } from "../../../../store";
     import { layers } from "../Game/layers";
@@ -15,22 +29,28 @@
         texelY: number;
     }
 
+    type PlayerMapPosition = {
+        col: number;
+        row: number;
+        geohash: string;
+        mapId: string;
+        locationType: GeohashLocationType;
+    };
+
     let containerElement: HTMLDivElement;
     let app: Application | null = null;
     let mapMeshes: Record<string, MapMesh> = {};
     let clientHeight: number;
     let clientWidth: number;
-    let playerPosition: {
-        col: number;
-        row: number;
-        geohash: string;
-        mapId: string;
-    } | null = null;
+    let playerMapPosition: PlayerMapPosition | null = null;
+
+    // Caches
+    const dungeonEntrancesCache = new LRUMemoryCache({ max: 10 });
 
     $: resize(clientHeight, clientWidth);
 
     function resize(height: number, width: number) {
-        if (app == null || playerPosition == null) {
+        if (app == null || playerMapPosition == null) {
             return;
         }
         app.renderer.resize(width, height);
@@ -40,36 +60,31 @@
     function updateCamera() {
         if (
             app === null ||
-            playerPosition === null ||
-            mapMeshes[playerPosition.mapId] == null
+            playerMapPosition === null ||
+            mapMeshes[playerMapPosition.mapId] == null
         ) {
             return;
         }
 
         // Center map on player location (in pixel coordinates)
-        const { texelX, texelY } = mapMeshes[playerPosition.mapId];
+        const { texelX, texelY } = mapMeshes[playerMapPosition.mapId];
         app.stage.pivot.set(
-            playerPosition.col * texelX - clientWidth / 2,
-            playerPosition.row * texelY - clientHeight / 2,
+            playerMapPosition.col * texelX - clientWidth / 2,
+            playerMapPosition.row * texelY - clientHeight / 2,
         );
     }
 
     async function updateMapMesh(geohash: string) {
-        if (app === null) {
-            return;
-        }
-
         const mapId = geohash.slice(0, 2);
 
-        // Check if map mesh already exists
-        if (mapMeshes[mapId]) {
+        // Map mesh already exists
+        if (app === null || mapMeshes[mapId]) {
             return;
         }
 
+        // Convert origin to pixel coordinates
         const { url, width, height, x, y, tile } =
             await topologyAtGeohash(geohash);
-
-        // Convert origin to pixel coordinates
         const texelX = width / tile.cols;
         const texelY = height / tile.rows;
 
@@ -83,7 +98,7 @@
                 texture,
                 width,
                 height,
-                ...layers.depthPartition("entity"),
+                ...layers.depthPartition("biome"), // map use biome layer
                 geometryUid: mapId,
             },
             {
@@ -109,6 +124,64 @@
         app.stage.addChild(mesh);
     }
 
+    async function updatePOIs(playerMapPosition: PlayerMapPosition) {
+        if (!app) {
+            return;
+        }
+
+        const { texelX, texelY } = mapMeshes[playerMapPosition.mapId];
+
+        // Player sprite
+        const p = new Graphics()
+            .circle(
+                playerMapPosition.col * texelX,
+                playerMapPosition.row * texelY,
+                3,
+            )
+            .fill({ color: 0xff0000 });
+        app.stage.addChild(p);
+
+        // Dungeon entrance sprites
+        const dungeonEntrances = await dungeonEntrancesNeaby(
+            playerMapPosition.mapId,
+            playerMapPosition.locationType,
+        );
+        for (const { loc, locT } of dungeonEntrances) {
+            const [col, row] = geohashToColRow(loc[0]);
+            if (locT === playerMapPosition.locationType) {
+                const d = new Graphics()
+                    .circle(col * texelX, row * texelY, 3)
+                    .fill({ color: 0x00ffff });
+                app.stage.addChild(d);
+            }
+        }
+
+        // Outpost sprites
+
+        // City sprites
+    }
+
+    async function dungeonEntrancesNeaby(
+        territory: string,
+        locationType: GeohashLocationType,
+    ): Promise<Item[]> {
+        // Check if in cache
+        const cacheKey = `${territory}-${locationType}`;
+        const entrances = await dungeonEntrancesCache.get(cacheKey);
+        if (entrances) return entrances;
+
+        // Get POIs nearby
+        const { dungeonEntrances, territory: t } = await crossoverWorldPOI();
+        if (t !== territory) {
+            throw new Error(`Cannot retrive POIs (not in territory)`);
+        }
+
+        // Set cache
+        await dungeonEntrancesCache.set(cacheKey, dungeonEntrances);
+
+        return dungeonEntrances;
+    }
+
     async function init() {
         app = new Application();
         await app.init({
@@ -126,26 +199,27 @@
             if (
                 app === null ||
                 p === null ||
-                !geohashLocationTypes.has(p.locT)
+                !geohashLocationTypes.has(p.locT) ||
+                playerMapPosition?.geohash === p.loc[0] // no change in position
             ) {
                 return;
             }
 
-            // Check if player location has changed
-            if (playerPosition?.geohash === p.loc[0]) {
-                return;
-            }
-
+            // Recalculate player position
             const [col, row] = geohashToColRow(p.loc[0]);
-            playerPosition = {
+            playerMapPosition = {
                 col,
                 row,
                 geohash: p.loc[0],
-                mapId: p.loc[0].slice(0, 2),
+                mapId: p.loc[0].slice(0, worldSeed.spatial.territory.precision),
+                locationType: p.locT as GeohashLocationType,
             };
 
             // Update map mesh
-            await updateMapMesh(playerPosition.geohash);
+            await updateMapMesh(playerMapPosition.geohash);
+
+            // Update POIs
+            await updatePOIs(playerMapPosition);
 
             // Center map on player location (in pixel coordinates)
             updateCamera();
@@ -168,7 +242,7 @@
     ></div>
     <!-- TODO: Add copy button to copy geohash -->
     <p class="pt-2 text-muted-foreground text-xs text-center">
-        {playerPosition?.geohash ?? ""}
+        {playerMapPosition?.geohash ?? ""}
     </p>
 </div>
 
