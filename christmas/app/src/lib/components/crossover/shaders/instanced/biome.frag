@@ -10,9 +10,9 @@ void main() {
     vec4 color = texture2D(uTexture, vUV);
 
     // Discard the fragment if alpha is 0
-    if (color.a < 0.001) {
-        discard;
-    }
+    // if (color.a < 0.001) {
+    //     discard;
+    // }
 
     if (vInstanceHighlight > 1.0) {
         color *= vec4(0.5, 1.0, 0.5, 1.0);

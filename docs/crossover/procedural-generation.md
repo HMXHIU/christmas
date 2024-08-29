@@ -14,10 +14,10 @@ seeds: {
         territory: {
             precision: 2,
         },
-        city: {
+        region: {
             precision: 3,
         },
-        guild: {
+        city: {
             precision: 4,
         },
         town: {
@@ -67,13 +67,13 @@ territory:
 
 - 1 major dungeon (pseudo random)
 
-city:
+region:
 
 - 1 city
 
-guild:
+city:
 
-- 1 guild outpost
+- 0-1 outpost (also act as starting point of the player)
 
 #### Settings
 
@@ -300,3 +300,47 @@ async function biomeParametersAtCity(
   return biomeParameters;
 }
 ```
+
+## Outposts
+
+Can use the same idea as dungeons, however is it possible to
+
+- Outposts can be controlled by factions
+- Can be taken over
+- Can be supplied with a resource that drives out monsters
+- Can be taken over by monsters if not enough resources is provided
+
+#### M1
+
+- Use a seed to assign a world template to location
+- If we spawnWorld at all the outputs, how many worlds would that be?
+- There is an issue if the ground is not flat, the world assets would not line up nicely
+  - One solution would be to flatten the world plot (not nice)
+
+#### M2
+
+- Use a seed to assign a plot of land for the outpost
+- Create a blue print that can be inexact
+
+  - number of items/buildings (`prop`) of certain type
+  - there are no actual `item` instances (in database)
+
+  - the blueprint items/buildings cannot be interacted with since there is no state in the server
+  - alternatively a script can run through all the blueprints and spawn all the required items. If every city (4p) has 2 outposts ~ 32 _ 32 _ 32 _ 32 _ 2 = 2 million cities, 20 million items
+  - reduce to 1 outpost every region (3p) ~ 32k, half water ~16k, if we further sparse it out such that not all regions have outposts ~ 8k, 80k items might be reasonable
+
+- Parameters which control the distribution of the buildings
+  - min,max spacing of buildings
+  - noise
+- PG algorithm should check for flat elevation to place items on (reproducable)
+- The seed chooses which blueprint should be used for that plot
+- Each instance needs to be identifiable uniquely (blueprint, plot)
+  - eg. `instance=bp_[blueprint_id]_[geohash]`
+- Each item in the instance needs to be identifiable
+  - eg. `instance_`
+
+Notes:
+
+- Similar to dungeons we can manually overwrite the location for a outpost
+
+## Cities

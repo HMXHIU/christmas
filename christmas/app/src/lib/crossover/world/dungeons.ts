@@ -167,7 +167,7 @@ async function generateDungeonGraph(
         );
         for (let i = 0; i < numConnections; i++) {
             const nextRoom = unconnectedRooms[i];
-            generateLine(
+            generateCorridor(
                 currentRoom.geohash,
                 nextRoom.geohash,
                 corridorPrecision,
@@ -195,20 +195,47 @@ function inCorridor(geohash: string, graph: DungeonGraph): boolean {
     return graph.corridors.has(corridorGeohash);
 }
 
-function generateLine(start: string, end: string, precision: number): string[] {
+function generateCorridor(
+    start: string,
+    end: string,
+    precision: number,
+): string[] {
     start = autoCorrectGeohashPrecision(start, precision);
     end = autoCorrectGeohashPrecision(end, precision);
 
     const [x1, y1] = geohashToColRow(start);
     const [x2, y2] = geohashToColRow(end);
     const points: string[] = [];
-    const steps = Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1));
 
-    for (let i = 0; i <= steps; i++) {
-        const t = steps === 0 ? 0 : i / steps;
-        const x = Math.round(x1 + t * (x2 - x1));
-        const y = Math.round(y1 + t * (y2 - y1));
-        points.push(gridCellToGeohash({ col: x, row: y, precision }));
+    let currentX = x1;
+    let currentY = y1;
+
+    // Determine the overall direction
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+
+    // Randomly decide whether to move horizontally or vertically first
+    const moveHorizontalFirst = Math.random() < 0.5;
+
+    while (currentX !== x2 || currentY !== y2) {
+        if (moveHorizontalFirst) {
+            // Move horizontally first
+            if (currentX !== x2) {
+                currentX += dx > 0 ? 1 : -1;
+            } else if (currentY !== y2) {
+                currentY += dy > 0 ? 1 : -1;
+            }
+        } else {
+            // Move vertically first
+            if (currentY !== y2) {
+                currentY += dy > 0 ? 1 : -1;
+            } else if (currentX !== x2) {
+                currentX += dx > 0 ? 1 : -1;
+            }
+        }
+        points.push(
+            gridCellToGeohash({ col: currentX, row: currentY, precision }),
+        );
     }
 
     return points;
