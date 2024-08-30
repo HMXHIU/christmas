@@ -25,6 +25,7 @@ export {
     calculateLocation,
     calculatePathDuration,
     childrenGeohashes,
+    childrenGeohashesAtPrecision,
     directionDuration,
     directionVectors,
     entityDimensions,
@@ -413,6 +414,27 @@ function childrenGeohashes(geohash: string): string[] {
         return evenGeohashCharacters.split("").map((c) => {
             return geohash + c;
         });
+    }
+}
+
+function childrenGeohashesAtPrecision(
+    geohash: string,
+    precision: number,
+): string[] {
+    if (precision === geohash.length) {
+        return [];
+    } else if (precision === geohash.length + 1) {
+        return childrenGeohashes(geohash);
+    } else if (precision > geohash.length + 1) {
+        return flatten(
+            childrenGeohashes(geohash).map((g) =>
+                childrenGeohashesAtPrecision(g, precision),
+            ),
+        );
+    } else {
+        throw new Error(
+            `geohash ${geohash} must be smaller than precision ${precision} of children`,
+        );
     }
 }
 

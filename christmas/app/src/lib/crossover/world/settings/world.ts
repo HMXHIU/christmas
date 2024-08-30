@@ -1,6 +1,22 @@
-import type { WorldSeed } from "../world";
+import type { Sanctuary, WorldSeed } from "../world";
+import sanctuariesJSON from "./sanctuaries.json";
+import topologicalAnalysisJSON from "./topological_analysis.json";
 
-export { worldSeed, type WorldSeed };
+export { sanctuaries, topologicalAnalysis, worldSeed, type WorldSeed };
+
+const topologicalAnalysis: TopologicalAnalysis = topologicalAnalysisJSON;
+const sanctuaries: Sanctuary[] = sanctuariesJSON;
+
+interface TopologicalAnalysis {
+    [territory: string]: {
+        water: number;
+        land: number;
+        elevation: {
+            mean: number;
+            iqr: number;
+        };
+    };
+}
 
 /**
  * `worldSeed` is a template used to generate a `World` instance.

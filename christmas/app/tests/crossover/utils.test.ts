@@ -12,6 +12,7 @@ import {
 } from "$lib/crossover/utils";
 import { spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
+import { sampleFrom } from "$lib/utils";
 import { expect, test } from "vitest";
 import { generateRandomGeohash } from "./utils";
 
@@ -207,4 +208,25 @@ test("Test Utils", async () => {
         geohashNeighbour(parentGeohash, "s"),
         geohashNeighbour(geohashNeighbour(parentGeohash, "s"), "e"),
     ]);
+
+    /*
+     * Test `sampleFrom`
+     */
+
+    const samples = sampleFrom([{ i: 1 }, { i: 2 }, { i: 3 }, { i: 4 }], 2, 10);
+    expect(samples.length).toBe(2);
+    expect(samples).toMatchObject([
+        {
+            i: 2,
+        },
+        {
+            i: 3,
+        },
+    ]);
+    // Test reproducibility
+    expect(
+        sampleFrom([{ i: 1 }, { i: 2 }, { i: 3 }, { i: 4 }], 2, 10),
+    ).toMatchObject(
+        sampleFrom([{ i: 1 }, { i: 2 }, { i: 3 }, { i: 4 }], 2, 10),
+    );
 });

@@ -4,12 +4,14 @@
         type Descriptor,
     } from "$lib/crossover/mud";
     import { biomes } from "$lib/crossover/world/biomes";
-    import { worldSeed } from "$lib/crossover/world/settings/world";
+    import {
+        sanctuaries,
+        worldSeed,
+    } from "$lib/crossover/world/settings/world";
     import {
         geohashLocationTypes,
         type LocationType,
     } from "$lib/crossover/world/types";
-    import { sanctuaries } from "$lib/crossover/world/world";
     import { cn } from "$lib/shadcn";
     import { onMount } from "svelte";
     import {

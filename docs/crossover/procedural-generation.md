@@ -318,3 +318,111 @@ async function biomeParametersAtCity(
 - Can be taken over
 - Can be supplied with a resource that drives out monsters
 - Can be taken over by monsters if not enough resources is provided
+
+#### Pseudo Algorithm
+
+```ts
+function bluePrintsAtTerritory(
+  territory: string, // 2 precision geohash
+  locationType: GeohashLocationType
+): TerritoryBlueprint {}
+
+interface TerritoryBlueprint {
+  territory: string;
+  props: {
+    [geohash]: string; // eg. "w21zc5cs": "tavern"
+  };
+}
+```
+
+In a territory there can be different types of blueprint instances of different types, we need to make sure none of them overlap. We are given the frequency information `blueprint.frequency` (how many of the instances should be present at each geohash precision level), the blue print size `blueprint.plotPrecision`.
+
+0. Keep a set of blueprint locations `blueprintLocations`
+1. Sort the `blueprints` by descending `plotPrecision`
+2. For each `blueprint.frequency` get the `precision` (it should be less than the `territory`)
+3. Iterate over all the `blueprint.frequency.precision` over the `territory` (known as a plot)
+   - ie. Get all the children geohashes of precision=blueprint.frequency.precision in the territory geohash
+4. For each plot, determine the number of instances of the blue print (use the plot as a seed)
+5. Choose that number of plots from the children geohashes (use the seed as the rng), do not choose locations in `blueprintLocations`
+6. For the chosen plots, procedurally generate the prop locations and save in in `TerritoryBlueprint`
+7. Add the plot to the set of blueprint locations
+8. Repeat for the next blueprint in the sorted `blueprints`
+9. Cache the `TerritoryBlueprint` for each territory
+
+Procedurally generating the prop locations in the plot
+
+1. TODO ...
+
+```ts
+type templates = "outpost" | "town";
+
+interface BluePrint {
+  template: templates;
+  frequency: {
+    precision: number; // eg. region (how many instances of the blueprint in the region)
+    instances: {
+      min: number;
+      max: number;
+    };
+  };
+  plotPrecision: number; // eg. town (the actual size of the blueprint)
+  clusters: {
+    [cluster: string]: {
+      props: {
+        [prop: string]: {
+          instances: {
+            min: number;
+            max: number;
+          };
+        };
+      };
+      position: "random" | "center" | "periphral";
+    };
+  };
+}
+
+const blueprints: Record<templates, BluePrint> = {
+  outpost: {
+    template: "outpost",
+    frequency: {
+      precision: worldSeed.spatial.region.precision,
+      instances: {
+        min: 0,
+        max: 1,
+      },
+    },
+    plotPrecision: worldSeed.spatial.town.precision,
+    clusters: {
+      market: {
+        props: {
+          tavern: {
+            instances: { min: 1, max: 1 },
+          },
+        },
+        position: "random",
+      },
+    },
+  },
+  town: {
+    template: "town",
+    frequency: {
+      precision: worldSeed.spatial.region.precision,
+      instances: {
+        min: 0,
+        max: 1,
+      },
+    },
+    plotPrecision: worldSeed.spatial.town.precision,
+    clusters: {
+      market: {
+        props: {
+          tavern: {
+            instances: { min: 1, max: 1 },
+          },
+        },
+        position: "random",
+      },
+    },
+  },
+};
+```

@@ -4,9 +4,8 @@ import { monsterLUReward, monsterStats } from "$lib/crossover/world/bestiary";
 import { playerAttributes, playerStats } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
-import { worldSeed } from "$lib/crossover/world/settings/world";
+import { sanctuaries, worldSeed } from "$lib/crossover/world/settings/world";
 import { GeohashLocationSchema } from "$lib/crossover/world/types";
-import { sanctuariesByRegion } from "$lib/crossover/world/world";
 import { z } from "zod";
 import { fetchEntity, saveEntity } from "./redis";
 import {
@@ -167,6 +166,12 @@ async function handleMonsterKillsPlayer(
     player: PlayerEntity,
     playersNearby: string[],
 ) {
+    // Get player's sanctuary
+    const sanctuary = sanctuaries.find((s) => s.region === player.rgn);
+    if (!sanctuary) {
+        throw new Error(`${player.player} has no sanctuary`);
+    }
+
     player = {
         ...player,
         // Recover all stats
@@ -175,7 +180,7 @@ async function handleMonsterKillsPlayer(
             attributes: playerAttributes(player),
         }),
         // Respawn at player's region
-        loc: [sanctuariesByRegion[player.rgn].geohash],
+        loc: [sanctuary.geohash],
         // Lose half exp
         umb: Math.floor(player.lum / 2),
         lum: Math.floor(player.umb / 2),

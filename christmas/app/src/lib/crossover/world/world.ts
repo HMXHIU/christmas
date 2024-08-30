@@ -3,13 +3,10 @@ import type { World } from "$lib/server/crossover/redis/entities";
 import { autoCorrectGeohashPrecision, geohashToColRow } from "../utils";
 import type { BiomeParameters } from "./biomes";
 import { TILE_HEIGHT, TILE_WIDTH } from "./settings";
-import sanctuaries from "./settings/sanctuaries.json";
 import { worldSeed } from "./settings/world";
 import type { WorldAssetMetadata } from "./types";
 
 export {
-    sanctuaries,
-    sanctuariesByRegion,
     traversableCellsInWorld,
     traversableSpeedInWorld,
     type Sanctuary,
@@ -104,14 +101,6 @@ interface Tileset {
     type: string;
     version: string;
 }
-
-const sanctuariesByRegion = sanctuaries.reduce(
-    (acc: Record<string, Sanctuary>, s) => {
-        acc[s.region] = s;
-        return acc;
-    },
-    {},
-);
 
 async function fetchWorldMetadata(
     world: World,

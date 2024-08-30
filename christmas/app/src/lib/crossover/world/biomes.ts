@@ -357,7 +357,6 @@ function bilinearInterpolation({
     return I;
 }
 
-// TODO: cache the results of this function
 async function topologyAtGeohash(
     geohash: string,
     options?: {
@@ -383,79 +382,101 @@ async function topologyAtGeohash(
     };
 }> {
     const { rows, cols, url, row, col, tlCol, tlRow } = topologyTile(geohash);
+
     const png = await topologyBuffer(url, {
         responseCache: options?.responseCache,
         bufferCache: options?.bufferCache,
     });
-
     const { width, height, data } = png;
+
     const xRaw = (width - 1) * (col / (cols - 1)); // x, y is 0 indexed
     const yRaw = (height - 1) * (row / (rows - 1));
     const x = Math.floor(xRaw); // must use floor not round!!!
     const y = Math.floor(yRaw);
-    const xPixel = xRaw - Math.floor(xRaw);
-    const yPixel = yRaw - Math.floor(yRaw);
-
-    // Smooth out the intensity by averaging the surrounding pixels
-    const index = y * width + x;
-    const ym = Math.max(y - 1, 0);
-    const yp = Math.min(y + 1, height - 1);
-    const xm = Math.max(x - 1, 0);
-    const xp = Math.min(x + 1, width - 1);
-    const nwIdx = ym * width + xm;
-    const nIdx = ym * width + x;
-    const neIdx = ym * width + xp;
-    const wIdx = y * width + xm;
-    const eIdx = y * width + xp;
-    const swIdx = yp * width + xm;
-    const sIdx = yp * width + x;
-    const seIdx = yp * width + xp;
 
     let intensity = 0;
 
-    if (xPixel < 0.5) {
-        if (yPixel < 0.5) {
-            // nw, n, w, current
-            intensity = bilinearInterpolation({
-                tl: { x: -0.5, y: -0.5, intensity: data[nwIdx * 4] }, // nw
-                tr: { x: 0.5, y: -0.5, intensity: data[nIdx * 4] }, // n
-                bl: { x: -0.5, y: 0.5, intensity: data[wIdx * 4] }, // w
-                br: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
-                x: xPixel,
-                y: yPixel,
-            });
-        } else {
-            // w, current, sw, s
-            intensity = bilinearInterpolation({
-                tl: { x: -0.5, y: 0.5, intensity: data[wIdx * 4] }, // w
-                tr: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
-                bl: { x: -0.5, y: 1.5, intensity: data[swIdx * 4] }, // sw
-                br: { x: 0.5, y: 1.5, intensity: data[sIdx * 4] }, // s
-                x: xPixel,
-                y: yPixel,
-            });
+    // Tile dimensions are smaller than the png image dimensions (use average intensity)
+    if (width > cols) {
+        // It is too slow if we iterate over all the pixels, sample 16x16 grid
+        const xPixels = Math.floor(width / cols);
+        const yPixels = Math.floor(height / rows);
+        let xStep = Math.max(Math.floor(xPixels / 16), 1);
+        let yStep = Math.max(Math.floor(yPixels / 16), 1);
+
+        let total = 0;
+        for (let i = x; i < x + xPixels; i += xStep) {
+            for (let j = y; j < y + yPixels; j += yStep) {
+                intensity += data[(j * width + i) * 4];
+                total += 1;
+            }
         }
-    } else {
-        if (yPixel < 0.5) {
-            // n, ne, current, e
-            intensity = bilinearInterpolation({
-                tl: { x: 0.5, y: -0.5, intensity: data[nIdx * 4] }, // n
-                tr: { x: 1.5, y: -0.5, intensity: data[neIdx * 4] }, // ne
-                bl: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
-                br: { x: 1.5, y: 0.5, intensity: data[eIdx * 4] }, // e
-                x: xPixel,
-                y: yPixel,
-            });
+        intensity = intensity / total;
+    }
+    // Interpolate pixel value if tile dimensions are larger than the png image
+    else {
+        const xPixel = xRaw - Math.floor(xRaw);
+        const yPixel = yRaw - Math.floor(yRaw);
+
+        // Smooth out the intensity by averaging the surrounding pixels
+        const index = y * width + x;
+        const ym = Math.max(y - 1, 0);
+        const yp = Math.min(y + 1, height - 1);
+        const xm = Math.max(x - 1, 0);
+        const xp = Math.min(x + 1, width - 1);
+        const nwIdx = ym * width + xm;
+        const nIdx = ym * width + x;
+        const neIdx = ym * width + xp;
+        const wIdx = y * width + xm;
+        const eIdx = y * width + xp;
+        const swIdx = yp * width + xm;
+        const sIdx = yp * width + x;
+        const seIdx = yp * width + xp;
+
+        if (xPixel < 0.5) {
+            if (yPixel < 0.5) {
+                // nw, n, w, current
+                intensity = bilinearInterpolation({
+                    tl: { x: -0.5, y: -0.5, intensity: data[nwIdx * 4] }, // nw
+                    tr: { x: 0.5, y: -0.5, intensity: data[nIdx * 4] }, // n
+                    bl: { x: -0.5, y: 0.5, intensity: data[wIdx * 4] }, // w
+                    br: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
+                    x: xPixel,
+                    y: yPixel,
+                });
+            } else {
+                // w, current, sw, s
+                intensity = bilinearInterpolation({
+                    tl: { x: -0.5, y: 0.5, intensity: data[wIdx * 4] }, // w
+                    tr: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
+                    bl: { x: -0.5, y: 1.5, intensity: data[swIdx * 4] }, // sw
+                    br: { x: 0.5, y: 1.5, intensity: data[sIdx * 4] }, // s
+                    x: xPixel,
+                    y: yPixel,
+                });
+            }
         } else {
-            // current, e, s, se
-            intensity = bilinearInterpolation({
-                tl: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
-                tr: { x: 1.5, y: 0.5, intensity: data[eIdx * 4] }, // e
-                bl: { x: 0.5, y: 1.5, intensity: data[sIdx * 4] }, // s
-                br: { x: 1.5, y: 1.5, intensity: data[seIdx * 4] }, // se
-                x: xPixel,
-                y: yPixel,
-            });
+            if (yPixel < 0.5) {
+                // n, ne, current, e
+                intensity = bilinearInterpolation({
+                    tl: { x: 0.5, y: -0.5, intensity: data[nIdx * 4] }, // n
+                    tr: { x: 1.5, y: -0.5, intensity: data[neIdx * 4] }, // ne
+                    bl: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
+                    br: { x: 1.5, y: 0.5, intensity: data[eIdx * 4] }, // e
+                    x: xPixel,
+                    y: yPixel,
+                });
+            } else {
+                // current, e, s, se
+                intensity = bilinearInterpolation({
+                    tl: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
+                    tr: { x: 1.5, y: 0.5, intensity: data[eIdx * 4] }, // e
+                    bl: { x: 0.5, y: 1.5, intensity: data[sIdx * 4] }, // s
+                    br: { x: 1.5, y: 1.5, intensity: data[seIdx * 4] }, // se
+                    x: xPixel,
+                    y: yPixel,
+                });
+            }
         }
     }
 

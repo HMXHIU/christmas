@@ -11,6 +11,7 @@ import BN from "bn.js";
 import bs58 from "bs58";
 import { z } from "zod";
 import type { TransactionResult } from "./anchorClient/types";
+import { seededRandom } from "./crossover/utils";
 
 export {
     AsyncLock,
@@ -29,6 +30,7 @@ export {
     isBrowser,
     parseZodErrors,
     retry,
+    sampleFrom,
     signAndSendTransaction,
     sleep,
     storage_uri_to_url,
@@ -386,4 +388,22 @@ function divmod(n: number, d: number): [number, number] {
 
 function isBrowser(): boolean {
     return typeof window !== "undefined";
+}
+
+function sampleFrom<T>(items: T[], count: number, seed: number): T[] {
+    const shuffled = [...items];
+    let currentIndex = shuffled.length;
+    let randomIndex: number;
+
+    while (currentIndex !== 0) {
+        randomIndex = Math.floor(seededRandom(seed++) * currentIndex);
+        currentIndex--;
+
+        [shuffled[currentIndex], shuffled[randomIndex]] = [
+            shuffled[randomIndex],
+            shuffled[currentIndex],
+        ];
+    }
+
+    return shuffled.slice(0, count);
 }

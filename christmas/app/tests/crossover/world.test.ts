@@ -208,6 +208,48 @@ beforeAll(async () => {
 });
 
 describe("World Tests", () => {
+    test("Test `topologyTile`", async () => {
+        // Test at different precisions
+
+        // Check with https://geohash.softeng.co/w21z
+        var tile = await topologyTile("w21z");
+        expect(tile).toMatchObject({
+            cols: 32,
+            rows: 32,
+            col: 7,
+            row: 24,
+            topLeft: "w2bp",
+        });
+
+        // Check with https://geohash.softeng.co/skbpb
+        var tile = await topologyTile("skbk8");
+        expect(tile).toMatchObject({
+            cols: 256,
+            rows: 128,
+            col: 8,
+            row: 13,
+            topLeft: "skbpb",
+        });
+    });
+
+    test("Test `topologyAtGeohash`", async () => {
+        // Test at different precisions
+        var topology = await topologyAtGeohash("w21z");
+        expect(topology.intensity).greaterThan(0.05);
+        var topology = await topologyAtGeohash("w269");
+        expect(topology.intensity).toBe(0);
+        var topology = await topologyAtGeohash("skbk8");
+        expect(topology.intensity).greaterThan(10);
+    });
+
+    test("Test `elevationAtGeohash`", async () => {
+        // Test at different precisions
+        var elevation = await elevationAtGeohash("w21z", "geohash");
+        expect(elevation).toBe(2);
+        var elevation = await elevationAtGeohash("w269", "geohash");
+        expect(elevation).toBe(0);
+    });
+
     test("Test traversableCellsInWorld", async () => {
         // Test when cell dimensions == tile dimensions
         let traversableCells = await traversableCellsInWorld({
