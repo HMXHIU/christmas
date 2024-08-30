@@ -67,9 +67,18 @@ async function blueprintsAtTerritory(
         topologyResponseCache?: CacheInterface;
         topologyResultCache?: CacheInterface;
         topologyBufferCache?: CacheInterface;
+        blueprintsAtTerritoryCache?: CacheInterface;
     },
 ): Promise<TerritoryBlueprint> {
-    const territoryBlueprint: TerritoryBlueprint = {
+    // Get from cache
+    const cacheKey = `${territory}-${locationType}`;
+    let territoryBlueprint: TerritoryBlueprint =
+        await options?.blueprintsAtTerritoryCache?.get(cacheKey);
+    if (territoryBlueprint) {
+        return territoryBlueprint;
+    }
+
+    territoryBlueprint = {
         territory,
         locationType,
         props: {},
@@ -167,6 +176,14 @@ async function blueprintsAtTerritory(
                 blueprintLocations.add(location);
             }
         }
+    }
+
+    // Set cache
+    if (options?.blueprintsAtTerritoryCache) {
+        await options.blueprintsAtTerritoryCache.set(
+            cacheKey,
+            territoryBlueprint,
+        );
     }
 
     return territoryBlueprint;

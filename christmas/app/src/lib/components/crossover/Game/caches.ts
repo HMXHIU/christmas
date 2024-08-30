@@ -4,6 +4,7 @@ import { isBrowser } from "$lib/utils";
 export {
     biomeAtGeohashCache,
     biomeParametersAtCityCache,
+    blueprintsAtTerritoryCache,
     dungeonGraphCache,
     topologyBufferCache,
     topologyResponseCache,
@@ -23,3 +24,4 @@ const worldTraversableCellsCache = new LRUMemoryCache({ max: 100 });
 const biomeAtGeohashCache = new LRUMemoryCache({ max: 100 });
 const biomeParametersAtCityCache = new LRUMemoryCache({ max: 100 });
 const dungeonGraphCache = new LRUMemoryCache({ max: 10 });
+const blueprintsAtTerritoryCache = new LRUMemoryCache({ max: 32 });

@@ -3,6 +3,14 @@
     import { crossoverWorldPOI } from "$lib/crossover/client";
     import { geohashToColRow } from "$lib/crossover/utils";
     import { topologyAtGeohash } from "$lib/crossover/world/biomes";
+    import {
+        blueprintsAtTerritory,
+        type Templates,
+    } from "$lib/crossover/world/blueprint";
+    import {
+        blueprintOrder,
+        blueprints,
+    } from "$lib/crossover/world/settings/blueprint";
     import { worldSeed } from "$lib/crossover/world/settings/world";
     import {
         geohashLocationTypes,
@@ -10,6 +18,7 @@
     } from "$lib/crossover/world/types";
     import type { Item } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
+    import { groupBy, uniqBy } from "lodash-es";
     import {
         Application,
         Assets,
@@ -20,6 +29,12 @@
     } from "pixi.js";
     import { onMount } from "svelte";
     import { player } from "../../../../store";
+    import {
+        blueprintsAtTerritoryCache,
+        topologyBufferCache,
+        topologyResponseCache,
+        topologyResultCache,
+    } from "../Game/caches";
     import { layers } from "../Game/layers";
     import { loadShaderGeometry } from "../shaders";
 
@@ -156,9 +171,42 @@
             }
         }
 
-        // Outpost sprites
+        // Blueprint sprites
+        const bps = await blueprintsAtTerritory(
+            playerMapPosition.mapId,
+            playerMapPosition.locationType,
+            blueprints,
+            blueprintOrder,
+            {
+                topologyBufferCache,
+                topologyResponseCache,
+                topologyResultCache,
+                blueprintsAtTerritoryCache,
+            },
+        );
 
-        // City sprites
+        const blueprintProps = groupBy(
+            Object.entries(bps.props),
+            ([loc, p]) => p.blueprint,
+        );
+        for (const [blueprint, entries] of Object.entries(blueprintProps)) {
+            const plotPrecision =
+                blueprints[blueprint as Templates].plotPrecision;
+            const propLocations = entries.map((xs) => xs[0]);
+            const blueprintLocations = uniqBy(propLocations, (l) =>
+                l.slice(0, plotPrecision),
+            );
+            for (const loc of blueprintLocations) {
+                const [col, row] = geohashToColRow(loc);
+
+                if ((blueprint as Templates) === "outpost") {
+                    const d = new Graphics()
+                        .circle(col * texelX, row * texelY, 5)
+                        .fill({ color: 0xff00ff });
+                    app.stage.addChild(d);
+                }
+            }
+        }
     }
 
     async function dungeonEntrancesNeaby(
