@@ -1,6 +1,7 @@
 import type { Account, Coupon, Store } from "$lib/anchorClient/types";
 import type { MessageFeed } from "$lib/components/crossover/GameWindow";
 import type { Ability } from "$lib/crossover/world/abilities";
+import type { LandGrading } from "$lib/crossover/world/biomes";
 import type {
     CouponMetadataSchema,
     StoreMetadataSchema,
@@ -56,6 +57,7 @@ export let equipmentRecord = writable<Record<string, Record<string, Item>>>({});
 export let worldRecord = writable<Record<string, Record<string, World>>>({});
 export let messageFeed = writable<MessageFeed[]>([]);
 export let target = writable<Player | Monster | Item | null>(null);
+export let landGrading = writable<LandGrading>({});
 
 export let worldOffset = writable<{ row: number; col: number }>({
     row: 0,

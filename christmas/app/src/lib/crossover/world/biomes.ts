@@ -28,6 +28,7 @@ export {
     type Biome,
     type BiomeParameters,
     type BiomeType,
+    type LandGrading,
 };
 
 const INTENSITY_TO_HEIGHT = 8850 / 255;
@@ -51,6 +52,11 @@ type BiomeType =
 type BiomeParameters = {
     [s in BiomeType]?: number;
 };
+
+type LandGrading = Record<
+    string,
+    { locationType: GeohashLocationType; elevation: number }
+>;
 
 interface Decoration {
     asset: AssetMetadata;
@@ -512,8 +518,15 @@ async function elevationAtGeohash(
         responseCache?: CacheInterface;
         resultsCache?: CacheInterface;
         bufferCache?: CacheInterface;
+        landGrading?: LandGrading;
     },
 ): Promise<number> {
+    // Check if land grading exists (overwrite calculation)
+    const grading = options?.landGrading?.[geohash];
+    if (grading && grading.locationType === locationType) {
+        return grading.elevation;
+    }
+
     // Underground (d1, d2, d3, ...)
     if (locationType !== "geohash") {
         return 0;

@@ -307,6 +307,7 @@ async function biomeParametersAtCity(
 - Generation is lazy (similar to dungeon)
 - Spaning items is done via script (one time) similar to spawning dungeon entrances
 - Modify `elevationAtGeohash` to check if there is a `prop`, if there is flatten the elevation
+  - Might only need to do this during rendering items whose weight = -1 (immovable) and width/height > 1
 - Procedural generation should take into account of the traversability (biome, water, etc ...)
 
 ### Outposts
@@ -348,10 +349,7 @@ In a territory there can be different types of blueprint instances of different 
 7. Add the plot to the set of blueprint locations
 8. Repeat for the next blueprint in the sorted `blueprints`
 9. Cache the `TerritoryBlueprint` for each territory
-
-Procedurally generating the prop locations in the plot
-
-1. TODO ...
+10. Procedurally generating the prop locations in the plot
 
 ```ts
 type templates = "outpost" | "town";

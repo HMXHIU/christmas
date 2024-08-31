@@ -58,6 +58,7 @@ import { get, type Writable } from "svelte/store";
 import {
     equipmentRecord,
     itemRecord,
+    landGrading,
     monsterRecord,
     player,
     playerEquippedItems,
@@ -65,6 +66,7 @@ import {
     playerRecord,
     worldRecord,
 } from "../../../../store";
+import { calculateLandGrading } from "./biomes";
 import {
     cullEntityContainerById,
     entityContainers,
@@ -344,7 +346,14 @@ function updateEntities(
                 updateEntityContainer,
                 displayEntityEffects,
             ],
-            onComplete: loadInventory,
+            onComplete: async (record) => {
+                // Load player inventory
+                loadInventory(record);
+                // Update the land grading
+                landGrading.set(
+                    await calculateLandGrading(Object.values(record)),
+                );
+            },
         });
     }
 

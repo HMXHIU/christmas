@@ -1,8 +1,6 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
-import { getAllDungeons } from "$lib/crossover/world/dungeons";
 import { PlayerMetadataSchema } from "$lib/crossover/world/player";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
-import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     GeohashLocationSchema,
@@ -12,7 +10,6 @@ import {
     dungeonEntrancesQuerySet,
     fetchEntity,
     initializeClients,
-    itemRepository,
     playerRepository,
     saveEntity,
     worldsInGeohashQuerySet,
@@ -51,7 +48,7 @@ import {
     useItem,
 } from "./actions";
 import {
-    spawnItem,
+    initializeGame,
     spawnMonster,
     spawnMonsters,
     spawnWorld,
@@ -71,7 +68,6 @@ import {
     entityIsBusy,
     getPlayerState,
     getUserMetadata,
-    parseItemVariables,
     publishFeedEvent,
     savePlayerState,
 } from "./utils";
@@ -245,47 +241,7 @@ const crossoverRouter = {
                 });
             }),
         initialize: internalServiceProcedure.mutation(async () => {
-            // Initialize the game world (only need to do once)
-            // Create all dungeon entrances
-            const dgs = await getAllDungeons("d1");
-            for (const { rooms } of Object.values(dgs)) {
-                for (const { entrances } of rooms) {
-                    for (const entrance of entrances) {
-                        try {
-                            // Spawn entrance at geohash and d1 and link them together
-                            let exit = await spawnItem({
-                                geohash: entrance,
-                                locationType: "d1",
-                                prop: compendium.dungeonentrance.prop,
-                            });
-                            let enter = await spawnItem({
-                                geohash: entrance,
-                                locationType: "geohash",
-                                prop: compendium.dungeonentrance.prop,
-                            });
-                            // Configure the item targets to point to each other
-                            exit.vars = parseItemVariables(
-                                { target: enter.item },
-                                exit.prop,
-                            );
-                            exit = (await itemRepository.save(
-                                exit.item,
-                                exit,
-                            )) as ItemEntity;
-                            enter.vars = parseItemVariables(
-                                { target: exit.item },
-                                enter.prop,
-                            );
-                            enter = (await itemRepository.save(
-                                enter.item,
-                                enter,
-                            )) as ItemEntity;
-                        } catch (error: any) {
-                            console.warn(error.message);
-                        }
-                    }
-                }
-            }
+            await initializeGame();
         }),
         respawnMonsters: internalServiceProcedure.mutation(async () => {
             const start = performance.now();

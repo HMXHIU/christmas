@@ -9,12 +9,27 @@ import {
     monsterLimitAtGeohash,
     monsterStats,
 } from "$lib/crossover/world/bestiary";
+import { blueprintsAtTerritory } from "$lib/crossover/world/blueprint";
+import { getAllDungeons } from "$lib/crossover/world/dungeons";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
+import {
+    blueprintOrder,
+    blueprints,
+} from "$lib/crossover/world/settings/blueprint";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { worldSeed } from "$lib/crossover/world/settings/world";
+import {
+    topologicalAnalysis,
+    worldSeed,
+} from "$lib/crossover/world/settings/world";
 import type { GeohashLocationType } from "$lib/crossover/world/types";
 import { geohashLocationTypes } from "$lib/crossover/world/types";
 import { groupBy } from "lodash-es";
+import {
+    blueprintsAtTerritoryCache,
+    topologyBufferCache,
+    topologyResponseCache,
+    topologyResultCache,
+} from "./caches";
 import {
     itemRepository,
     monsterRepository,
@@ -30,7 +45,7 @@ import type {
 } from "./redis/entities";
 import { isLocationTraversable, parseItemVariables } from "./utils";
 
-export { spawnItem, spawnMonster, spawnMonsters, spawnWorld };
+export { initializeGame, spawnItem, spawnMonster, spawnMonsters, spawnWorld };
 
 /**
  * Spawns monsters in the game world based on the given players' locations.
@@ -335,4 +350,83 @@ async function spawnItem({
     };
 
     return (await itemRepository.save(item, entity)) as ItemEntity;
+}
+
+/**
+ * Initialize the game world (only need to do once)
+ */
+async function initializeGame() {
+    // Spawn all blueprint items
+    const locationType: GeohashLocationType = "geohash";
+    for (const [territory, { land }] of Object.entries(topologicalAnalysis)) {
+        if (land > 0.2) {
+            console.info(`spawning items for blueprints at ${territory}`);
+
+            const bps = await blueprintsAtTerritory(
+                territory,
+                locationType,
+                blueprints,
+                blueprintOrder,
+                {
+                    topologyBufferCache,
+                    topologyResponseCache,
+                    topologyResultCache,
+                    blueprintsAtTerritoryCache,
+                },
+            );
+
+            for (const [loc, { prop, blueprint }] of Object.entries(
+                bps.props,
+            )) {
+                try {
+                    await spawnItem({ geohash: loc, locationType, prop });
+                } catch (error: any) {
+                    console.warn(error.message);
+                }
+            }
+        }
+    }
+
+    return;
+
+    // Create all dungeon entrances
+    const dgs = await getAllDungeons("d1");
+    for (const { rooms } of Object.values(dgs)) {
+        for (const { entrances } of rooms) {
+            for (const entrance of entrances) {
+                try {
+                    // Spawn entrance at geohash and d1 and link them together
+                    let exit = await spawnItem({
+                        geohash: entrance,
+                        locationType: "d1",
+                        prop: compendium.dungeonentrance.prop,
+                    });
+                    let enter = await spawnItem({
+                        geohash: entrance,
+                        locationType: "geohash",
+                        prop: compendium.dungeonentrance.prop,
+                    });
+                    // Configure the item targets to point to each other
+                    exit.vars = parseItemVariables(
+                        { target: enter.item },
+                        exit.prop,
+                    );
+                    exit = (await itemRepository.save(
+                        exit.item,
+                        exit,
+                    )) as ItemEntity;
+                    enter.vars = parseItemVariables(
+                        { target: exit.item },
+                        enter.prop,
+                    );
+                    enter = (await itemRepository.save(
+                        enter.item,
+                        enter,
+                    )) as ItemEntity;
+                } catch (error: any) {
+                    console.warn(error.message);
+                }
+            }
+        }
+    }
 }

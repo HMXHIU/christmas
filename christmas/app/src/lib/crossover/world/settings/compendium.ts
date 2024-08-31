@@ -366,7 +366,7 @@ let compendium: Record<string, Prop> = {
         asset: {
             path: "props/gothic",
             variants: {
-                default: "tavern",
+                default: "wood-door-1",
             },
             width: 2,
             height: 2,

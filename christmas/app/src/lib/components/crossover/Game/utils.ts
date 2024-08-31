@@ -46,6 +46,7 @@ import {
 import { get } from "svelte/store";
 import {
     itemRecord,
+    landGrading,
     player,
     worldOffset,
     worldRecord,
@@ -128,6 +129,7 @@ async function calculatePosition(
             responseCache: topologyResponseCache,
             resultsCache: topologyResultCache,
             bufferCache: topologyBufferCache,
+            landGrading: get(landGrading),
         }));
 
     return {

@@ -21,10 +21,18 @@ import {
     biomes,
     elevationAtGeohash,
     type BiomeType,
+    type LandGrading,
 } from "$lib/crossover/world/biomes";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import type { GeohashLocationType } from "$lib/crossover/world/types";
+import {
+    geohashLocationTypes,
+    type GeohashLocationType,
+} from "$lib/crossover/world/types";
+import type { Item } from "$lib/server/crossover/redis/entities";
 import type { Container, Texture } from "pixi.js";
+import { get } from "svelte/store";
+import { landGrading } from "../../../../store";
 import {
     drawShaderTextures,
     MAX_SHADER_GEOMETRIES,
@@ -44,13 +52,14 @@ import { noise2D } from "./world";
 export {
     calculateBiomeDecorationsForRowCol,
     calculateBiomeForRowCol,
+    calculateLandGrading,
     clearBiomeBuffers,
     drawBiomeShaders,
 };
 
 // Caches
-const biomeCache = new LRUMemoryCache({ max: 1000 });
-const decorationsCache = new LRUMemoryCache({ max: 1000 });
+const biomeCache = new LRUMemoryCache({ max: 2000 });
+const decorationsCache = new LRUMemoryCache({ max: 2000 });
 
 // Buffers
 let biomeTexturePositions: Record<string, ShaderTexture> = {};
@@ -62,12 +71,38 @@ let decorationsTextureBuffers = new LRUMemoryCache<
     Record<string, ShaderTexture>
 >({ max: 32 });
 
-const calculateBiomeForRowCol = memoize(
-    _calculateBiomeForRowCol,
-    biomeCache,
-    (row, col, locationType, precision?) => `${row}-${col}-${locationType}`,
-);
-async function _calculateBiomeForRowCol(
+async function calculateLandGrading(items: Item[]): Promise<LandGrading> {
+    const landGrading: LandGrading = {};
+
+    for (const item of items) {
+        const prop = compendium[item.prop];
+        // Immovable objects with dimensions greater than 1 cell
+        if (
+            geohashLocationTypes.has(item.locT) &&
+            prop.weight < 0 &&
+            item.loc.length > 1
+        ) {
+            const elevation = await elevationAtGeohash(
+                item.loc[0],
+                item.locT as GeohashLocationType,
+                {
+                    responseCache: topologyResponseCache,
+                    resultsCache: topologyResultCache,
+                    bufferCache: topologyBufferCache,
+                },
+            );
+            for (const l of item.loc) {
+                landGrading[l] = {
+                    elevation,
+                    locationType: item.locT as GeohashLocationType,
+                };
+            }
+        }
+    }
+    return landGrading;
+}
+
+async function calculateBiomeForRowCol(
     row: number,
     col: number,
     locationType: GeohashLocationType,
@@ -83,6 +118,11 @@ async function _calculateBiomeForRowCol(
     width: number;
     height: number;
 }> {
+    // Get from cache
+    const cacheKey = `${row}-${col}-${locationType}`;
+    const cached = await biomeCache.get(cacheKey);
+    if (cached) return cached;
+
     const geohash = gridCellToGeohash({
         precision: precision ?? worldSeed.spatial.unit.precision,
         row,
@@ -98,12 +138,14 @@ async function _calculateBiomeForRowCol(
         biomeParametersAtCityCache,
         dungeonGraphCache,
     });
+
     const elevation =
         ELEVATION_TO_CELL_HEIGHT *
         (await elevationAtGeohash(geohash, locationType, {
             responseCache: topologyResponseCache,
             resultsCache: topologyResultCache,
             bufferCache: topologyBufferCache,
+            landGrading: get(landGrading),
         }));
 
     const asset = biomes[biome].asset;
@@ -130,7 +172,7 @@ async function _calculateBiomeForRowCol(
         y: HALF_ISO_CELL_HEIGHT,
     });
 
-    return {
+    const result = {
         geohash,
         biome,
         strength,
@@ -141,6 +183,11 @@ async function _calculateBiomeForRowCol(
         width,
         height,
     };
+
+    // Set cache
+    await biomeCache.set(cacheKey, result);
+
+    return result;
 }
 
 const calculateBiomeDecorationsForRowCol = memoize(
