@@ -82,6 +82,7 @@ async function upsertEntitySigil(
         anchor: { x: 0, y: -0.825 },
         radius: 48,
     });
+    sigil.zIndex = layers.layers.length + 1; // UI
     entitySigils[ec.entityId] = sigil;
     stage.addChild(sigil);
     return entitySigils[ec.entityId];

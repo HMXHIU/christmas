@@ -92,7 +92,6 @@ class EntitySigil extends Container {
 
     recoverAp() {
         if (this.apBar) {
-            console.log("recovered");
             this.apBar.scale.y =
                 recoverAp(
                     (this.entityContainer.entity as Player | Monster).ap,

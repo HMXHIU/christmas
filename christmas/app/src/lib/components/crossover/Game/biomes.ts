@@ -588,6 +588,7 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
     // Draw decoration shader
     const { depthScale, depthStart, depthLayer, depthSize } =
         layers.depthPartition("entity"); // grass is at the same depth as entities
+
     await drawShaderTextures({
         shaderName: "grass",
         shaderTextures: decorationsTexturePositions,

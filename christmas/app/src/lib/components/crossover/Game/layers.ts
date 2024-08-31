@@ -40,9 +40,11 @@ class Layers {
             Note: 
             - `isoY` can be negative after `worldOffset`
             - `isoY` ranges from [-worldHeight/2, +worldHeight/2]
-            - this the 0.5 to calibrate it back to [0, 1]
         */
-        const depthStart = 0.5 - depthLayer * this.depthSize;
+        const depthStart =
+            1 -
+            depthLayer * this.depthSize -
+            (this.worldHeight / 2) * this.depthScale;
 
         return {
             depthLayer,
