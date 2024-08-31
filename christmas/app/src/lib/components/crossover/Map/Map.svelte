@@ -198,7 +198,6 @@
             );
             for (const loc of blueprintLocations) {
                 const [col, row] = geohashToColRow(loc);
-
                 if ((blueprint as Templates) === "outpost") {
                     const d = new Graphics()
                         .circle(col * texelX, row * texelY, 5)

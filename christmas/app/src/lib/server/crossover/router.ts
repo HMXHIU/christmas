@@ -287,10 +287,6 @@ const crossoverRouter = {
                 }
             }
         }),
-    }),
-    // World
-    world: t.router({
-        // TODO: Move to dm
         respawnMonsters: internalServiceProcedure.mutation(async () => {
             const start = performance.now();
             // Get all logged in players
@@ -302,8 +298,7 @@ const crossoverRouter = {
             const end = performance.now();
             return { status: "success", time: end - start };
         }),
-        // TODO: Move to dm
-        spawnMonster: internalServiceProcedure
+        spawnMonster: dmServiceProcedure
             .input(SpawnMonsterSchema)
             .mutation(async ({ input }) => {
                 const { geohash, level, beast, locationType } = input;
@@ -324,7 +319,7 @@ const crossoverRouter = {
                 });
                 return monster;
             }),
-        spawnWorld: internalServiceProcedure
+        spawnWorld: dmServiceProcedure
             .input(SpawnWorldSchema)
             .mutation(async ({ input }) => {
                 const { geohash, tilemap, locationType } = input;
@@ -342,6 +337,35 @@ const crossoverRouter = {
                 });
                 return world as World;
             }),
+        buffEntity: dmServiceProcedure
+            .input(BuffEntitySchema)
+            .mutation(async ({ input }) => {
+                const { entity, hp, mp, st, ap, level, buffs, debuffs } = input;
+
+                // Get `player` or `monster` enity
+                let fetchedEntity = await tryFetchEntity(entity);
+                if (!fetchedEntity.player && !fetchedEntity.monster) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `${entity} is not a player or monster`,
+                    });
+                }
+
+                // Buff entity
+                fetchedEntity.lvl = level ?? fetchedEntity.lvl;
+                fetchedEntity.hp = hp ?? fetchedEntity.hp;
+                fetchedEntity.mp = mp ?? fetchedEntity.mp;
+                fetchedEntity.st = st ?? fetchedEntity.st;
+                fetchedEntity.ap = ap ?? fetchedEntity.ap;
+                fetchedEntity.buf = buffs ?? fetchedEntity.buf;
+                fetchedEntity.dbuf = debuffs ?? fetchedEntity.dbuf;
+
+                // Save entity
+                return await saveEntity(fetchedEntity);
+            }),
+    }),
+    // World
+    world: t.router({
         poi: playerAuthProcedure.query(async ({ ctx }) => {
             const { player } = ctx;
             const territory = player.loc[0].slice(
@@ -379,33 +403,6 @@ const crossoverRouter = {
                     town,
                     worlds: worlds as World[],
                 };
-            }),
-        // TODO: Move to dm
-        buffEntity: internalServiceProcedure
-            .input(BuffEntitySchema)
-            .mutation(async ({ input }) => {
-                const { entity, hp, mp, st, ap, level, buffs, debuffs } = input;
-
-                // Get `player` or `monster` enity
-                let fetchedEntity = await tryFetchEntity(entity);
-                if (!fetchedEntity.player && !fetchedEntity.monster) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
-                        message: `${entity} is not a player or monster`,
-                    });
-                }
-
-                // Buff entity
-                fetchedEntity.lvl = level ?? fetchedEntity.lvl;
-                fetchedEntity.hp = hp ?? fetchedEntity.hp;
-                fetchedEntity.mp = mp ?? fetchedEntity.mp;
-                fetchedEntity.st = st ?? fetchedEntity.st;
-                fetchedEntity.ap = ap ?? fetchedEntity.ap;
-                fetchedEntity.buf = buffs ?? fetchedEntity.buf;
-                fetchedEntity.dbuf = debuffs ?? fetchedEntity.dbuf;
-
-                // Save entity
-                return await saveEntity(fetchedEntity);
             }),
     }),
     // Player
