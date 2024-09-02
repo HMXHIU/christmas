@@ -142,6 +142,7 @@ async function performAbility({
         ...(await getNearbyPlayerIds(
             self.loc[0],
             self.locT as GeohashLocationType,
+            self.locI,
         )),
     );
     if (selfEntityId !== target) {
@@ -149,6 +150,7 @@ async function performAbility({
             ...(await getNearbyPlayerIds(
                 targetEntity.loc[0],
                 targetEntity.locT as GeohashLocationType,
+                targetEntity.locI,
             )),
         );
     }

@@ -133,6 +133,7 @@ const CreateItemSchema = z.object({
 const SpawnMonsterSchema = z.object({
     geohash: z.string(),
     locationType: GeohashLocationSchema,
+    locationInstance: z.string(),
     level: z.number(),
     beast: z.string(),
 });
@@ -257,7 +258,13 @@ const crossoverRouter = {
         spawnMonster: dmServiceProcedure
             .input(SpawnMonsterSchema)
             .mutation(async ({ input }) => {
-                const { geohash, level, beast, locationType } = input;
+                const {
+                    geohash,
+                    level,
+                    beast,
+                    locationType,
+                    locationInstance,
+                } = input;
 
                 // Check geohash is unit precision
                 if (geohash.length !== worldSeed.spatial.unit.precision) {
@@ -272,6 +279,7 @@ const crossoverRouter = {
                     level,
                     beast,
                     locationType,
+                    locationInstance,
                 });
                 return monster;
             }),

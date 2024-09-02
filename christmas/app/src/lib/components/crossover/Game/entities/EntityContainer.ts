@@ -115,6 +115,7 @@ export class EntityContainer extends Container {
                 const isoPosition = await calculatePosition(
                     geohash,
                     this.isoPosition.locationType,
+                    this.isoPosition.locationInstance,
                 );
 
                 // Add tween to the timeline

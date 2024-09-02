@@ -135,6 +135,7 @@ async function fetchEntity(
 async function getNearbyEntities(
     geohash: string,
     locationType: GeohashLocationType,
+    locationInstance: string,
     playersPageSize: number,
     options: {
         monsters: boolean;
@@ -155,6 +156,7 @@ async function getNearbyEntities(
             ? ((await playersInGeohashQuerySet(
                   nearbyGeohashes,
                   locationType,
+                  locationInstance,
               ).return.all({
                   pageSize: playersPageSize,
               })) as PlayerEntity[])
@@ -163,12 +165,14 @@ async function getNearbyEntities(
             ? ((await monstersInGeohashQuerySet(
                   nearbyGeohashes, // no pageSize for monsters, retrive everything
                   locationType,
+                  locationInstance,
               ).return.all()) as MonsterEntity[])
             : [],
         items: options.items
             ? ((await itemsInGeohashQuerySet(
                   nearbyGeohashes, // no pageSize for monsters, retrive everything
                   locationType,
+                  locationInstance,
               ).return.all()) as ItemEntity[])
             : [],
     };
@@ -177,10 +181,12 @@ async function getNearbyEntities(
 async function getNearbyPlayerIds(
     geohash: string,
     locationType: GeohashLocationType,
+    locationInstance: string,
 ): Promise<string[]> {
     const { players } = await getNearbyEntities(
         geohash,
         locationType,
+        locationInstance,
         LOOK_PAGE_SIZE,
         {
             players: true,
@@ -217,9 +223,10 @@ async function saveEntity(
 async function hasCollidersInGeohash(
     geohash: string,
     locationType: GeohashLocationType,
+    locationInstance: string,
 ): Promise<boolean> {
     return (
-        (await itemsInGeohashQuerySet([geohash], locationType)
+        (await itemsInGeohashQuerySet([geohash], locationType, locationInstance)
             .and("cld")
             .equal(true)
             .count()) > 0
@@ -258,10 +265,13 @@ function loggedInPlayersQuerySet(): Search {
 function playersInGeohashQuerySet(
     geohashes: string[],
     locationType: GeohashLocationType,
+    locationInstance: string,
 ): Search {
     return loggedInPlayersQuerySet()
         .and("locT")
         .equal(locationType)
+        .and("locI")
+        .equal(locationInstance)
         .and("loc")
         .containOneOf(...geohashes.map((x) => `${x}*`));
 }
@@ -274,11 +284,14 @@ function playersInGeohashQuerySet(
 function monstersInGeohashQuerySet(
     geohashes: string[],
     locationType: GeohashLocationType,
+    locationInstance: string,
 ): Search {
     return monsterRepository
         .search()
         .where("locT")
         .equal(locationType)
+        .and("locI")
+        .equal(locationInstance)
         .and("loc")
         .containOneOf(...geohashes.map((x) => `${x}*`));
 }
@@ -291,11 +304,14 @@ function monstersInGeohashQuerySet(
 function itemsInGeohashQuerySet(
     geohashes: string[],
     locationType: GeohashLocationType,
+    locationInstance: string,
 ): Search {
     return itemRepository
         .search()
         .where("locT")
         .equal(locationType)
+        .and("locI")
+        .equal(locationInstance)
         .and("loc")
         .containOneOf(...geohashes.map((x) => `${x}*`));
 }

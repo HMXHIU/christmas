@@ -48,9 +48,11 @@ function entityStats(
 async function isGeohashTraversable(
     geohash: string,
     locationType: GeohashLocationType,
+    locationInstance: string,
     hasCollidersInGeohash: (
         geohash: string,
         locationType: GeohashLocationType,
+        locationInstance: string,
     ) => Promise<boolean>,
     getWorldForGeohash: (
         geohash: string,
@@ -68,7 +70,7 @@ async function isGeohashTraversable(
     },
 ): Promise<boolean> {
     // Early return false if has colliders (items)
-    if (await hasCollidersInGeohash(geohash, locationType)) {
+    if (await hasCollidersInGeohash(geohash, locationType, locationInstance)) {
         return false;
     }
 

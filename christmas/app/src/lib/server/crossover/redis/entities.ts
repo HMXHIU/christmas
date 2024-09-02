@@ -39,6 +39,7 @@ interface EntityStats {
 interface EntityState {
     loc: string[];
     locT: LocationType;
+    locI: string; // location instance ("" for actual world)
     lvl: number;
     ap: number; // action points (require to perform abilities)
     hp: number; // health points
@@ -80,6 +81,7 @@ const PlayerEntitySchema = new Schema("Player", {
     // EntityState
     loc: { type: "string[]" },
     locT: { type: "string" },
+    locI: { type: "string" },
     lvl: { type: "number" },
     ap: { type: "number" }, // action points (require to perform abilities)
     hp: { type: "number" }, // health points
@@ -124,6 +126,7 @@ const MonsterEntitySchema = new Schema("Monster", {
     // EntityState
     loc: { type: "string[]" },
     locT: { type: "string" },
+    locI: { type: "string" },
     lvl: { type: "number" },
     ap: { type: "number" }, // action points (require to perform abilities)
     hp: { type: "number" }, // health points
@@ -165,6 +168,7 @@ const ItemEntitySchema = new Schema("Item", {
     // Item state
     loc: { type: "string[]" },
     locT: { type: "string" },
+    locI: { type: "string" },
     dur: { type: "number" },
     chg: { type: "number" }, // charges
     dbuf: { type: "string[]" },
@@ -183,6 +187,7 @@ interface Item {
     // Item state
     loc: string[];
     locT: LocationType;
+    locI: string;
     dur: number;
     chg: number;
     state: string;

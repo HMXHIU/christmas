@@ -75,6 +75,7 @@ function createHIDHandlers(stage: Container) {
                     col: colEnd,
                 },
                 playerPosition.locationType,
+                playerPosition.locationInstance,
             );
             const pathPositions = getPositionsForPath(
                 playerPosition,

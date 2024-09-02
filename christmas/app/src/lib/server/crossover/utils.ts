@@ -152,10 +152,12 @@ async function getWorldAtGeohash(
 async function isGeohashTraversableServer(
     geohash: string,
     locationType: GeohashLocationType,
+    locationInstance: string,
 ): Promise<boolean> {
     return await isGeohashTraversable(
         geohash,
         locationType,
+        locationInstance,
         hasCollidersInGeohash,
         getWorldAtGeohash,
         {
@@ -174,9 +176,16 @@ async function isGeohashTraversableServer(
 async function isLocationTraversable(
     location: string[],
     locationType: GeohashLocationType,
+    locationInstance: string,
 ): Promise<boolean> {
     for (const geohash of location) {
-        if (!(await isGeohashTraversableServer(geohash, locationType))) {
+        if (
+            !(await isGeohashTraversableServer(
+                geohash,
+                locationType,
+                locationInstance,
+            ))
+        ) {
             return false;
         }
     }
@@ -186,6 +195,7 @@ async function isLocationTraversable(
 async function isDirectionTraversable(
     loc: string[], // entity might be more than 1 cell in size
     locationType: GeohashLocationType,
+    locationInstance: string,
     direction: Direction,
 ): Promise<[boolean, string[]]> {
     let location: string[] = [];
@@ -201,7 +211,13 @@ async function isDirectionTraversable(
         }
 
         // Check if geohash is traversable
-        if (!(await isGeohashTraversableServer(nextGeohash, locationType))) {
+        if (
+            !(await isGeohashTraversableServer(
+                nextGeohash,
+                locationType,
+                locationInstance,
+            ))
+        ) {
             return [false, loc]; // early return if not traversable
         } else {
             location.push(nextGeohash);

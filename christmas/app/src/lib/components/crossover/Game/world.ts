@@ -45,6 +45,8 @@ async function drawWorlds(
     worldRecord: Record<string, Record<string, World>>,
     stage: Container,
 ) {
+    const locationInstance = ""; // worlds are the same in all instances
+
     // Load worlds
     for (const [town, worlds] of Object.entries(worldRecord)) {
         for (const [worldId, world] of Object.entries(worlds)) {
@@ -59,6 +61,7 @@ async function drawWorlds(
                 position: await calculatePosition(
                     origin,
                     world.locT as GeohashLocationType,
+                    locationInstance,
                 ),
                 town,
                 stage,
@@ -187,6 +190,8 @@ async function loadWorld({
 }
 
 async function debugWorld(stage: Container) {
+    const locationInstance = ""; // worlds are the same in all instances
+
     // Clear colliders
     for (const c of colliders) {
         c.destroy();
@@ -200,11 +205,13 @@ async function debugWorld(stage: Container) {
                 !(await isGeohashTraversableClient(
                     loc,
                     item.locT as GeohashLocationType,
+                    item.locI,
                 ))
             ) {
                 const itemPosition = await calculatePosition(
                     loc,
                     item.locT as GeohashLocationType,
+                    locationInstance,
                 );
                 colliders.push(
                     stage.addChild(
@@ -234,6 +241,7 @@ async function debugWorld(stage: Container) {
             const originPosition = await calculatePosition(
                 origin,
                 world.locT as GeohashLocationType,
+                locationInstance,
             );
             colliders.push(
                 stage.addChild(
@@ -254,11 +262,13 @@ async function debugWorld(stage: Container) {
                         !(await isGeohashTraversableClient(
                             loc,
                             world.locT as GeohashLocationType,
+                            "", // World instances are the same across all instances
                         ))
                     ) {
                         const pos = await calculatePosition(
                             loc,
                             world.locT as GeohashLocationType,
+                            locationInstance,
                         );
                         colliders.push(
                             stage.addChild(

@@ -75,6 +75,7 @@ async function say(player: PlayerEntity, message: string, now?: number) {
     const players = await playersInGeohashQuerySet(
         geohashesNearby(player.loc[0].slice(0, -1), true), // use p7 square for `say` radius
         player.locT as GeohashLocationType,
+        player.locI,
     ).return.allIds({ pageSize: LOOK_PAGE_SIZE }); // limit players using page size
 
     // Send message to all players in the geohash (non blocking)
@@ -116,6 +117,7 @@ async function moveEntity(
         const [isTraversable, location] = await isDirectionTraversable(
             loc,
             entity.locT as GeohashLocationType,
+            entity.locI,
             direction,
         );
         if (!isTraversable) {
@@ -147,6 +149,7 @@ async function moveEntity(
     const nearbyPlayerIds = await getNearbyPlayerIds(
         entity.loc[0],
         entity.locT as GeohashLocationType,
+        entity.locI,
     );
     publishAffectedEntitiesToPlayers(
         [minifiedEntity(entity, { location: true, demographics: true, now })],
@@ -160,6 +163,7 @@ async function moveEntity(
         const { players, monsters, items } = await getNearbyEntities(
             entity.loc[0],
             entity.locT as GeohashLocationType,
+            entity.locI,
             LOOK_PAGE_SIZE,
         );
         publishAffectedEntitiesToPlayers(
@@ -189,6 +193,7 @@ async function performLook(
     const { monsters, players, items } = await getNearbyEntities(
         player.loc[0],
         player.locT as GeohashLocationType,
+        player.locI,
         LOOK_PAGE_SIZE,
     );
 
@@ -284,6 +289,7 @@ async function useItem({
     const nearbyPlayerIds = await getNearbyPlayerIds(
         self.loc[0],
         self.locT as GeohashLocationType,
+        self.locI,
     );
 
     if (itemEntity.state !== propUtility.state.start) {
@@ -408,6 +414,7 @@ async function equipItem(
     const nearbyPlayerIds = await getNearbyPlayerIds(
         player.loc[0],
         player.locT as GeohashLocationType,
+        player.locI,
     );
     publishAffectedEntitiesToPlayers(
         [itemToEquip, ...exitingItemsInSlot].map((e) =>
@@ -460,6 +467,7 @@ async function unequipItem(player: PlayerEntity, item: string, now?: number) {
     const nearbyPlayerIds = await getNearbyPlayerIds(
         player.loc[0],
         player.locT as GeohashLocationType,
+        player.locI,
     );
     publishAffectedEntitiesToPlayers(
         [minifiedEntity(itemEntity, { location: true })],
@@ -521,6 +529,7 @@ async function takeItem(
     const nearbyPlayerIds = await getNearbyPlayerIds(
         player.loc[0],
         player.locT as GeohashLocationType,
+        player.locI,
     );
     publishAffectedEntitiesToPlayers(
         [minifiedEntity(itemEntity, { location: true, stats: true })],
@@ -576,6 +585,7 @@ async function dropItem(player: PlayerEntity, item: string, now?: number) {
     const nearbyPlayerIds = await getNearbyPlayerIds(
         player.loc[0],
         player.locT as GeohashLocationType,
+        player.locI,
     );
     publishAffectedEntitiesToPlayers(
         [minifiedEntity(itemEntity, { location: true, stats: true })],
@@ -602,6 +612,7 @@ async function createItem(
         const item = await spawnItem({
             geohash,
             locationType: player.locT as GeohashLocationType,
+            locationInstance: player.locI,
             prop,
             variables,
             owner: player.player, // owner is player
@@ -612,6 +623,7 @@ async function createItem(
         const nearbyPlayerIds = await getNearbyPlayerIds(
             player.loc[0],
             player.locT as GeohashLocationType,
+            player.locI,
         );
         publishAffectedEntitiesToPlayers(
             [minifiedEntity(item, { location: true, stats: true })],

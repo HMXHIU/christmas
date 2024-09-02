@@ -106,6 +106,7 @@ interface Position {
     isoY: number;
     geohash: string;
     locationType: GeohashLocationType;
+    locationInstance: string;
     precision: number;
     elevation: number;
 }
@@ -113,6 +114,7 @@ interface Position {
 async function calculatePosition(
     geohash: string,
     locationType: GeohashLocationType,
+    locationInstance: string,
     options?: {
         cellWidth?: number;
         cellHeight?: number;
@@ -141,6 +143,7 @@ async function calculatePosition(
         precision,
         elevation,
         locationType,
+        locationInstance,
     };
 }
 
@@ -214,6 +217,7 @@ async function getTraversalCost(
     row: number,
     col: number,
     locationType: GeohashLocationType,
+    locationInstance: string,
     precision?: number,
 ): Promise<number> {
     // 0 is walkable, 1 is not
@@ -224,6 +228,7 @@ async function getTraversalCost(
             precision: precision ?? worldSeed.spatial.unit.precision,
         }),
         locationType,
+        locationInstance,
     ))
         ? 0
         : 1;
@@ -233,6 +238,7 @@ async function getDirectionsToPosition(
     source: { row: number; col: number },
     target: { row: number; col: number },
     locationType: GeohashLocationType,
+    locationInstance: string,
     options?: {
         range?: number;
         precision?: number;
@@ -245,7 +251,13 @@ async function getDirectionsToPosition(
         rowEnd: target.row,
         range: options?.range,
         getTraversalCost: (row, col) =>
-            getTraversalCost(row, col, locationType, options?.precision),
+            getTraversalCost(
+                row,
+                col,
+                locationType,
+                locationInstance,
+                options?.precision,
+            ),
     });
 }
 
@@ -485,9 +497,14 @@ async function getAvatarMetadata(
 async function hasColliders(
     geohash: string,
     locationType: GeohashLocationType,
+    locationInstance: string,
 ): Promise<boolean> {
     for (const item of Object.values(get(itemRecord))) {
-        if (item.locT === locationType && item.loc.includes(geohash)) {
+        if (
+            item.locT === locationType &&
+            item.loc.includes(geohash) &&
+            item.locI === locationInstance
+        ) {
             return true;
         }
     }
@@ -514,10 +531,12 @@ async function getWorldForGeohash(
 async function isGeohashTraversableClient(
     geohash: string,
     locationType: GeohashLocationType,
+    locationInstance: string,
 ): Promise<boolean> {
     return isGeohashTraversable(
         geohash,
         locationType,
+        locationInstance,
         hasColliders,
         getWorldForGeohash,
         {

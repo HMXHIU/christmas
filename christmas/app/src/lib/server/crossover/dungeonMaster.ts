@@ -53,6 +53,8 @@ export { initializeGame, spawnItem, spawnMonster, spawnMonsters, spawnWorld };
  * @returns A Promise that resolves when all the monsters have been spawned.
  */
 async function spawnMonsters(players: PlayerEntity[]) {
+    const locationInstance = ""; // spawn in actual game instance
+
     for (const [locationType, ps] of Object.entries(groupBy(players, "locT"))) {
         // Get all parent geohashes (only interested with geohashes 1 level above unit precision)
         const parentGeohashes = ps.map(({ loc }) => {
@@ -70,6 +72,7 @@ async function spawnMonsters(players: PlayerEntity[]) {
             const numMonsters = await monstersInGeohashQuerySet(
                 [geohash],
                 locationType as GeohashLocationType,
+                locationInstance,
             ).count();
 
             // Number of monsters to spawn
@@ -97,6 +100,7 @@ async function spawnMonsters(players: PlayerEntity[]) {
                         geohash: childGeohash,
                         locationType: locationType as GeohashLocationType,
                         beast,
+                        locationInstance,
                     });
                 } catch (error) {
                     console.log(`Error spawning ${beast}`, error);
@@ -117,11 +121,13 @@ async function spawnMonsters(players: PlayerEntity[]) {
 async function spawnMonster({
     geohash,
     locationType,
+    locationInstance,
     beast,
     level,
 }: {
     geohash: string;
     locationType: GeohashLocationType;
+    locationInstance: string;
     beast: string;
     level?: number;
 }): Promise<MonsterEntity> {
@@ -149,7 +155,9 @@ async function spawnMonster({
 
     // Check location for traversability and colliders
     const location = calculateLocation(geohash, width, height);
-    if (!(await isLocationTraversable(location, locationType))) {
+    if (
+        !(await isLocationTraversable(location, locationType, locationInstance))
+    ) {
         throw new Error(`Cannot spawn ${beast} at ${geohash}`);
     }
 
@@ -161,6 +169,7 @@ async function spawnMonster({
         beast,
         loc: location,
         locT: locationType,
+        locI: locationInstance,
         lvl: level,
         hp,
         mp,
@@ -286,6 +295,7 @@ async function spawnWorld({
 async function spawnItem({
     geohash,
     locationType,
+    locationInstance,
     prop,
     variables,
     owner,
@@ -293,6 +303,7 @@ async function spawnItem({
 }: {
     geohash: string;
     locationType: GeohashLocationType;
+    locationInstance: string;
     prop: string;
     owner?: string;
     configOwner?: string;
@@ -328,7 +339,9 @@ async function spawnItem({
     const location = calculateLocation(geohash, width, height);
 
     // Check location for traversability
-    if (!(await isLocationTraversable(location, locationType))) {
+    if (
+        !(await isLocationTraversable(location, locationType, locationInstance))
+    ) {
         throw new Error(`Cannot spawn ${prop} at ${location}`);
     }
 
@@ -338,6 +351,7 @@ async function spawnItem({
         prop,
         loc: location,
         locT: locationType,
+        locI: locationInstance,
         own: owner,
         cfg: configOwner,
         cld: collider,
@@ -356,6 +370,8 @@ async function spawnItem({
  * Initialize the game world (only need to do once)
  */
 async function initializeGame() {
+    const locationInstance = ""; // spawn in actual game instance
+
     // Spawn all blueprint items
     const locationType: GeohashLocationType = "geohash";
     for (const [territory, { land }] of Object.entries(topologicalAnalysis)) {
@@ -379,15 +395,18 @@ async function initializeGame() {
                 bps.props,
             )) {
                 try {
-                    await spawnItem({ geohash: loc, locationType, prop });
+                    await spawnItem({
+                        geohash: loc,
+                        locationType,
+                        prop,
+                        locationInstance,
+                    });
                 } catch (error: any) {
                     console.warn(error.message);
                 }
             }
         }
     }
-
-    return;
 
     // Create all dungeon entrances
     const dgs = await getAllDungeons("d1");
@@ -400,11 +419,13 @@ async function initializeGame() {
                         geohash: entrance,
                         locationType: "d1",
                         prop: compendium.dungeonentrance.prop,
+                        locationInstance,
                     });
                     let enter = await spawnItem({
                         geohash: entrance,
                         locationType: "geohash",
                         prop: compendium.dungeonentrance.prop,
+                        locationInstance,
                     });
                     // Configure the item targets to point to each other
                     exit.vars = parseItemVariables(

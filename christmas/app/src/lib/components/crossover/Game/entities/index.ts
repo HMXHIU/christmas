@@ -103,6 +103,7 @@ async function upsertEntityContainer(
         const position = await calculatePosition(
             entity.loc[0],
             entity.locT as GeohashLocationType,
+            entity.locI,
         );
         const { row, col } = position;
 

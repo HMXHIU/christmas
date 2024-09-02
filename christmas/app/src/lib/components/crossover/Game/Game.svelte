@@ -146,6 +146,7 @@
                     playerPosition,
                     targetEC.isoPosition,
                     targetEC.isoPosition.locationType,
+                    targetEC.isoPosition.locationInstance,
                     { range: ability.range },
                 );
                 const pathPositions = getPositionsForPath(playerPosition, path);

@@ -1,12 +1,18 @@
 # Location System
 
-## Location string
+## Location and Location Type
+
+### Underground
+
+Underground locations are geohash locations with `locationType=d1,d2,d3,...`
 
 ### Objects in the world
 
+Note: In redis `location=loc` and `locationType=locT`
+
 Objects which are located in the world:
 
-```js
+```ts
 {
   "location": ["w21z3wwv"], // array because an object can be in multiple cells
   "locationType": "geohash"
@@ -64,9 +70,9 @@ This ensure that only 1 item in the slot can be equiped at a time.
 }
 ```
 
-## Object spanning more than 1 cell
+##### Object spanning more than 1 cell
 
-Objects which span more than 1 cell should have location as a `string[]`
+Objects may span more than 1 cell, thus `location` is a `string[]` of geohashes
 Such objects should have the origin at center of the top left cell with a `width` and `height` property in the `prop`
 During item creation (where the `item` is created from the `prop`), the `location` should be calculated by including all the cells the object spans.
 
@@ -81,3 +87,38 @@ To search for items which span more than 1 cell:
 ```js
 await itemRepository.search().where("locations").contain("9q8y*").return.all();
 ```
+
+## Instanced Locations
+
+Instanced locations are required when a player enters:
+
+- Solo dungeon
+- Player housing
+- A building
+
+Instanced locations have the following:
+
+- `location` is a geohash
+- `locationType` is a `GeohashLocationType` (i.e geohash, d1, d2, d3, ...)
+- `instance` (`locI` in redis) if empty refers to the actual game, if not another instance of the game (a replica of the actual world)
+- `loc`, `locT`, `locI` determine the location of the player
+
+Instances are parallel worlds
+
+- The house, building, dungeon exist in the actual world `locI=""`
+- When the player enters an instance:
+  - Actual world entities (items, players, monsters) are filtered off and uninteractable
+  - Items on player such as equipment are tied to the player instead of the instance
+  - World entities persists (worlds and biomes are the same across all parallel worlds)
+  - A new set of (items, monsters) neeed to be spawned by the server to prepare the instance
+  - The instances are typically temporary (with exceptions such as player housing etc...)
+- Use player id as the `locI` for player instances such as solo dungeons
+- World template should include metadata for spawn points of items and monsters
+- When server creates world instance, it should also spawn the monsters and items in the preparation phase
+
+Entering and exiting instances
+
+- Solo dungeons, player housing, buildings should only have a single exit point to bring the player back to the actual world
+- This is to prevent him from exploring outside the instance into the parallel world
+- Scripts should not spawn monsters/items into instanced worlds (only during the preparation phase)
+- [ ] An endpoint to prepare the world should take in a `world` template and spawn the required items/monsters in that template only

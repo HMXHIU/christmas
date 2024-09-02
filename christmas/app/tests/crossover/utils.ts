@@ -26,7 +26,7 @@ import { archetypes, type PlayerMetadata } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { sanctuariesByRegion } from "$lib/crossover/world/world";
+import { sanctuaries } from "$lib/crossover/world/settings/world";
 import {
     performAbility,
     performEffectOnEntity,
@@ -372,7 +372,7 @@ export async function testMonsterPerformAbilityOnPlayer({
     const { procedures, mp, st, hp } = abilities[ability];
     const playerBefore: PlayerEntity = { ...player };
     const monsterBefore: MonsterEntity = { ...monster };
-    const sanctuary = sanctuariesByRegion[player.rgn];
+    const sanctuary = sanctuaries.find((s) => s.region === player.rgn);
 
     let feedEvents: StreamEvent[] = [];
     let entitiesEvents: UpdateEntitiesEvent[] = [];
@@ -450,7 +450,7 @@ export async function testMonsterPerformAbilityOnPlayer({
             players: [
                 {
                     player: player.player,
-                    loc: [sanctuary.geohash], // respawn at region's sanctuary with full
+                    loc: [sanctuary!.geohash], // respawn at region's sanctuary with full
                 },
             ],
         });

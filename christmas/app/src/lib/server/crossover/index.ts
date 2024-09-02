@@ -93,6 +93,7 @@ async function loadPlayerEntity(
         rgn: options.region,
         loc: [options.geohash],
         locT: "geohash",
+        locI: "",
         lvl: 1,
         ...playerStats({ level: 1 }),
         apclk: 0,
