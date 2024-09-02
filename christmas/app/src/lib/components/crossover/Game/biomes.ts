@@ -1,4 +1,4 @@
-import { LRUMemoryCache, memoize } from "$lib/caches";
+import { LRUMemoryCache } from "$lib/caches";
 import {
     biomeAtGeohashCache,
     biomeParametersAtCityCache,
@@ -190,12 +190,7 @@ async function calculateBiomeForRowCol(
     return result;
 }
 
-const calculateBiomeDecorationsForRowCol = memoize(
-    _calculateBiomeDecorationsForRowCol,
-    decorationsCache,
-    ({ row, col, locationType }) => `${row}-${col}-${locationType}`,
-);
-async function _calculateBiomeDecorationsForRowCol({
+async function calculateBiomeDecorationsForRowCol({
     geohash,
     biome,
     strength,
@@ -216,6 +211,11 @@ async function _calculateBiomeDecorationsForRowCol({
     elevation: number;
     locationType: GeohashLocationType;
 }): Promise<Record<string, ShaderTexture>> {
+    // Get from cache
+    const cacheKey = `${row}-${col}-${locationType}`;
+    const cached = await decorationsCache.get(cacheKey);
+    if (cached) return cached;
+
     const texturePositions: Record<string, ShaderTexture> = {};
 
     // Get biome decorations
@@ -290,6 +290,10 @@ async function _calculateBiomeDecorationsForRowCol({
             ref.instances += 1;
         }
     }
+
+    // Set cache
+    await decorationsCache.set(cacheKey, texturePositions);
+
     return texturePositions;
 }
 

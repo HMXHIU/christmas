@@ -10,8 +10,8 @@ import {
 import BN from "bn.js";
 import bs58 from "bs58";
 import { z } from "zod";
-import type { TransactionResult } from "./anchorClient/types";
-import { seededRandom } from "./crossover/utils";
+import type { TransactionResult } from "../anchorClient/types";
+import { seededRandom } from "../crossover/utils";
 
 export {
     AsyncLock,
