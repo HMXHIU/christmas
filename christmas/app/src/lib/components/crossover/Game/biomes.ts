@@ -30,6 +30,7 @@ import {
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
 import type { Item } from "$lib/server/crossover/redis/entities";
+import { KdTree } from "$lib/utils/kdtree";
 import type { Container, Texture } from "pixi.js";
 import { get } from "svelte/store";
 import { landGrading } from "../../../../store";
@@ -55,7 +56,10 @@ export {
     calculateLandGrading,
     clearBiomeBuffers,
     drawBiomeShaders,
+    screenToGeohashKDtree,
 };
+
+const screenToGeohashKDtree = new KdTree<string>(2); // [screenX, screenY] => geohash
 
 // Caches
 const biomeCache = new LRUMemoryCache({ max: 2000 });
@@ -353,6 +357,10 @@ async function calculateTextureBuffers(
                 width,
                 height,
             } = await calculateBiomeForRowCol(row, col, locationType);
+
+            // Update screenToGeohashKDtree (for hittesting screen coordiates to the geohash)
+            // TODO: need to garbage collect
+            screenToGeohashKDtree.insert([isoX, isoY - elevation], geohash);
 
             // Use the entire sprite sheet as the texture (Note: must all be in the same sheet)
             const textureUid = texture.source.label;

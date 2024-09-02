@@ -1,11 +1,11 @@
 import { crossoverCmdMove } from "$lib/crossover/client";
-import { getPositionsForPath } from "$lib/crossover/utils";
+import { geohashToColRow, getPositionsForPath } from "$lib/crossover/utils";
 import type { Direction } from "$lib/crossover/world/types";
 import type { Container, FederatedPointerEvent } from "pixi.js";
 import { highlightShaderInstances } from "../shaders";
+import { screenToGeohashKDtree } from "./biomes";
 import { HALF_ISO_CELL_HEIGHT, HALF_ISO_CELL_WIDTH } from "./settings";
 import {
-    calculateRowColFromIso,
     getDirectionsToPosition,
     getPathHighlights,
     getPlayerPosition,
@@ -37,7 +37,7 @@ function createHIDHandlers(stage: Container) {
 
         return snapToGrid(
             e.global.x + stage.pivot.x,
-            e.global.y + stage.pivot.y + playerPosition.elevation,
+            e.global.y + stage.pivot.y,
             HALF_ISO_CELL_WIDTH,
             HALF_ISO_CELL_HEIGHT,
         );
@@ -63,17 +63,28 @@ function createHIDHandlers(stage: Container) {
         const playerPosition = getPlayerPosition();
         if (!playerPosition || !state.isMouseDown) return;
 
-        const [rowEnd, colEnd] = calculateRowColFromIso(x, y);
-        state.path = await getDirectionsToPosition(
-            playerPosition,
-            {
-                row: rowEnd,
-                col: colEnd,
-            },
-            playerPosition.locationType,
-        );
-        const pathPositions = getPositionsForPath(playerPosition, state.path);
-        highlightShaderInstances("biome", getPathHighlights(pathPositions, 1));
+        // Convert screenXY to actual biome geohash
+        const node = screenToGeohashKDtree.findNearest([x, y]);
+        if (node) {
+            const [colEnd, rowEnd] = geohashToColRow(node.data);
+
+            state.path = await getDirectionsToPosition(
+                playerPosition,
+                {
+                    row: rowEnd,
+                    col: colEnd,
+                },
+                playerPosition.locationType,
+            );
+            const pathPositions = getPositionsForPath(
+                playerPosition,
+                state.path,
+            );
+            highlightShaderInstances(
+                "biome",
+                getPathHighlights(pathPositions, 1),
+            );
+        }
     }
 
     async function handleMouseUp(e: FederatedPointerEvent) {
