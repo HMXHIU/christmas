@@ -166,6 +166,26 @@ Get the `imageheight` and the `imagewidth` from the `tileset`
 }
 ```
 
+#### Spawn points for items and monsters
+
+In the tiled editor, create an object layer, with POIs with the following format
+
+```ts
+// Items
+{
+  prop: "woodenclub",
+  // Variables are flat, because tiled does not support json
+  etching: "heavily used."
+}
+// Monsters
+{
+  beast: "goblin",
+  level: 2
+}
+```
+
+during `spawnWorld` the server should read the object layer, find the closest geohash and spawn the items and monsters
+
 #### Notes
 
 - Standardize `TILE_WIDTH=tilewidth=128` and `TILE_HEIGHT=tileheight=64`

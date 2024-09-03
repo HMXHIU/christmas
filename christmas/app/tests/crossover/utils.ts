@@ -18,16 +18,16 @@ import {
     patchEffectWithVariables,
 } from "$lib/crossover/world/abilities";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
-import {
-    type EquipmentSlot,
-    type ItemVariables,
-} from "$lib/crossover/world/compendium";
+import { type ItemVariables } from "$lib/crossover/world/compendium";
 import { archetypes, type PlayerMetadata } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { sanctuaries } from "$lib/crossover/world/settings/world";
-import type { WorldAssetMetadata } from "$lib/crossover/world/types";
+import type {
+    EquipmentSlot,
+    WorldAssetMetadata,
+} from "$lib/crossover/world/types";
 import {
     performAbility,
     performEffectOnEntity,
@@ -131,6 +131,69 @@ const testWorldAsset: WorldAssetMetadata = {
             ],
             type: "tilelayer",
             width: 4,
+            x: 0,
+            y: 0,
+        },
+        {
+            name: "pois",
+            objects: [
+                {
+                    point: true,
+                    properties: [
+                        {
+                            name: "poi",
+                            type: "string",
+                            value: "enter",
+                        },
+                    ],
+                    x: 1844.61744966443,
+                    y: 3637.26174496644,
+                },
+                {
+                    point: true,
+                    properties: [
+                        {
+                            name: "poi",
+                            type: "string",
+                            value: "exit",
+                        },
+                    ],
+                    x: 619.114093959732,
+                    y: 1764.77852348993,
+                },
+                // Item
+                {
+                    point: true,
+                    properties: [
+                        {
+                            name: "prop",
+                            type: "string",
+                            value: "potionofhealth",
+                        },
+                    ],
+                    x: 619.114093959732,
+                    y: 1764.77852348993,
+                },
+                // Monster
+                {
+                    point: true,
+                    properties: [
+                        {
+                            name: "beast",
+                            type: "string",
+                            value: "goblin",
+                        },
+                        {
+                            name: "level",
+                            type: "int",
+                            value: 2,
+                        },
+                    ],
+                    x: 619.114093959732,
+                    y: 1764.77852348993,
+                },
+            ],
+            type: "objectgroup",
             x: 0,
             y: 0,
         },

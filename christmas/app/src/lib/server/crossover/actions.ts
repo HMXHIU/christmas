@@ -6,13 +6,13 @@ import {
     minifiedEntity,
 } from "$lib/crossover/utils";
 import { actions } from "$lib/crossover/world/actions";
-import { type EquipmentSlot } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     geohashLocationTypes,
     type Direction,
+    type EquipmentSlot,
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
 import { substituteVariables } from "$lib/utils";

@@ -30,19 +30,17 @@ import {
 } from "$lib/crossover/utils";
 import type { Ability } from "$lib/crossover/world/abilities";
 import { actions, type Action } from "$lib/crossover/world/actions";
-import {
-    EquipmentSlots,
-    type EquipmentSlot,
-    type Utility,
-} from "$lib/crossover/world/compendium";
+import { type Utility } from "$lib/crossover/world/compendium";
 import { playerAttributes } from "$lib/crossover/world/player";
 import { MS_PER_TICK, SERVER_LATENCY } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     Directions,
+    EquipmentSlots,
     geohashLocationTypes,
     type Direction,
+    type EquipmentSlot,
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
 import type {
@@ -494,7 +492,7 @@ async function executeGameCommand(
     command: GameCommand,
     headers: HTTPHeaders = {},
 ): Promise<void> {
-    const [action, { self, target, item }, variables] = command;
+    const [gameAction, { self, target, item }, variables] = command;
 
     try {
         // Use Item
@@ -507,14 +505,14 @@ async function executeGameCommand(
                         (target as Item)?.item ||
                         undefined,
                     item: item.item,
-                    utility: (action as Utility).utility,
+                    utility: (gameAction as Utility).utility,
                 },
                 headers,
             );
         }
         // Perform ability
-        else if ("ability" in action) {
-            const ability = action as Ability;
+        else if ("ability" in gameAction) {
+            const ability = gameAction as Ability;
 
             // Move in range of target
             await moveInRangeOfTarget({
@@ -534,10 +532,10 @@ async function executeGameCommand(
             );
         }
         // Action (variables are required)
-        else if ("action" in action) {
+        else if ("action" in gameAction) {
             return await performAction({
                 self,
-                action,
+                action: gameAction as Action,
                 target,
                 variables,
             });

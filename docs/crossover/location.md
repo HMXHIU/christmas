@@ -128,4 +128,4 @@ Location variable substitute
 - [ ] Teleport support `locI` variable substitute
 - [ ] `performEffectOnEntity` support for `locI` change
 - [ ] When `locI` changes, need to reload world, look, etc ... similar to `locT` change
-- [ ] Use item id (eg. tavern) as `locationInstance` when entering
+- [ ] Use itemId (eg. tavern) as `locationInstance` when entering

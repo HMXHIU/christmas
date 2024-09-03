@@ -11,13 +11,17 @@ import type {
     StreamEvent,
 } from "../../routes/api/crossover/stream/+server";
 import { player } from "../../store";
-import { type EquipmentSlot, type ItemVariables } from "./world/compendium";
+import { type ItemVariables } from "./world/compendium";
 import type {
     PlayerAppearance,
     PlayerDemographic,
     PlayerMetadata,
 } from "./world/player";
-import { type Direction, type GeohashLocationType } from "./world/types";
+import {
+    type Direction,
+    type EquipmentSlot,
+    type GeohashLocationType,
+} from "./world/types";
 
 export {
     crossoverAuthPlayer,

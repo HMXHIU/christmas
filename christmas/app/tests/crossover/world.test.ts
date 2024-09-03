@@ -1,28 +1,25 @@
-import { LRUMemoryCache, MemoryCache } from "$lib/caches";
-import { isGeohashTraversableClient } from "$lib/components/crossover/Game/utils";
 import { crossoverWorldWorlds } from "$lib/crossover/client";
 import { childrenGeohashes, geohashNeighbour } from "$lib/crossover/utils";
-import {
-    biomeAtGeohash,
-    elevationAtGeohash,
-    topologyAtGeohash,
-    topologyTile,
-} from "$lib/crossover/world/biomes";
 import {
     LOCATION_INSTANCE,
     TILE_HEIGHT,
     TILE_WIDTH,
 } from "$lib/crossover/world/settings";
-import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import type { WorldAssetMetadata } from "$lib/crossover/world/types";
 import {
+    poisInWorld,
     traversableCellsInWorld,
     traversableSpeedInWorld,
 } from "$lib/crossover/world/world";
-import { spawnItem, spawnWorld } from "$lib/server/crossover/dungeonMaster";
+import {
+    spawnWorld,
+    spawnWorldPOIs,
+} from "$lib/server/crossover/dungeonMaster";
 import {
     initializeClients,
+    itemRepository,
+    monsterRepository,
     worldRepository,
     worldsInGeohashQuerySet,
 } from "$lib/server/crossover/redis";
@@ -31,16 +28,10 @@ import type {
     PlayerEntity,
     WorldEntity,
 } from "$lib/server/crossover/redis/entities";
-import { isGeohashTraversableServer } from "$lib/server/crossover/utils";
 import { sleep } from "$lib/utils";
-import { omit } from "lodash-es";
 import { beforeAll, describe, expect, test } from "vitest";
-import { itemRecord, worldRecord } from "../../src/store";
-import {
-    createGandalfSarumanSauron,
-    createWorldAsset,
-    generateRandomGeohash,
-} from "./utils";
+import { worldRecord } from "../../src/store";
+import { createGandalfSarumanSauron, createWorldAsset } from "./utils";
 
 let assetUrl: string;
 let asset: WorldAssetMetadata;
@@ -73,24 +64,6 @@ beforeAll(async () => {
         playerOneCookies,
         playerOneStream,
     } = await createGandalfSarumanSauron());
-
-    // Spawn items
-    woodenDoorGeohash = generateRandomGeohash(8, "h9");
-    woodenDoor = (await spawnItem({
-        geohash: woodenDoorGeohash,
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        prop: compendium.woodendoor.prop,
-        variables: {
-            [compendium.woodendoor.variables!.doorsign.variable]:
-                "A custom door sign",
-        },
-    })) as ItemEntity;
-
-    // Set itemRecord
-    itemRecord.set({
-        [woodenDoor.item]: woodenDoor,
-    });
 
     // Store the test world asset in storage and get the url
     const worldAsset = await createWorldAsset();
@@ -146,48 +119,6 @@ beforeAll(async () => {
 });
 
 describe("World Tests", () => {
-    test("Test `topologyTile`", async () => {
-        // Test at different precisions
-
-        // Check with https://geohash.softeng.co/w21z
-        var tile = await topologyTile("w21z");
-        expect(tile).toMatchObject({
-            cols: 32,
-            rows: 32,
-            col: 7,
-            row: 24,
-            topLeft: "w2bp",
-        });
-
-        // Check with https://geohash.softeng.co/skbpb
-        var tile = await topologyTile("skbk8");
-        expect(tile).toMatchObject({
-            cols: 256,
-            rows: 128,
-            col: 8,
-            row: 13,
-            topLeft: "skbpb",
-        });
-    });
-
-    test("Test `topologyAtGeohash`", async () => {
-        // Test at different precisions
-        var topology = await topologyAtGeohash("w21z");
-        expect(topology.intensity).greaterThan(0.05);
-        var topology = await topologyAtGeohash("w269");
-        expect(topology.intensity).toBe(0);
-        var topology = await topologyAtGeohash("skbk8");
-        expect(topology.intensity).greaterThan(10);
-    });
-
-    test("Test `elevationAtGeohash`", async () => {
-        // Test at different precisions
-        var elevation = await elevationAtGeohash("w21z", "geohash");
-        expect(elevation).toBe(2);
-        var elevation = await elevationAtGeohash("w269", "geohash");
-        expect(elevation).toBe(0);
-    });
-
     test("Test traversableCellsInWorld", async () => {
         // Test when cell dimensions == tile dimensions
         let traversableCells = await traversableCellsInWorld({
@@ -289,57 +220,7 @@ describe("World Tests", () => {
         }
     });
 
-    test("Test isGeohashTraversable", async () => {
-        // Wooden door collider not traversable
-        await expect(
-            isGeohashTraversableServer(
-                woodenDoorGeohash,
-                "geohash",
-                LOCATION_INSTANCE,
-            ),
-        ).resolves.toBe(false);
-        await expect(
-            isGeohashTraversableClient(
-                woodenDoorGeohash,
-                "geohash",
-                LOCATION_INSTANCE,
-            ),
-        ).resolves.toBe(false);
-
-        // Ocean not traversable
-        await expect(
-            isGeohashTraversableServer(
-                "2b67676h",
-                "geohash",
-                LOCATION_INSTANCE,
-            ),
-        ).resolves.toBe(false);
-        await expect(
-            isGeohashTraversableClient(
-                "2b67676h",
-                "geohash",
-                LOCATION_INSTANCE,
-            ),
-        ).resolves.toBe(false);
-
-        // World collider not traversable
-        await expect(
-            isGeohashTraversableServer(
-                "w21z8uck",
-                "geohash",
-                LOCATION_INSTANCE,
-            ),
-        ).resolves.toBe(false);
-        await expect(
-            isGeohashTraversableClient(
-                "w21z8uck",
-                "geohash",
-                LOCATION_INSTANCE,
-            ),
-        ).resolves.toBe(false);
-    });
-
-    test("Test Worlds", async () => {
+    test("Test World tilelayer", async () => {
         /* Test world colliders/locations
         [
             0, 0, 0, 0,
@@ -408,125 +289,55 @@ describe("World Tests", () => {
         expect(worldThree.loc[0]).toBe("gbsuv7x");
     });
 
-    test("Test Topology", async () => {
-        // Test topologyTile
-        expect(topologyTile("w2bpbpbp")).toMatchObject({
-            topLeft: "w2bpbpbp",
-            rows: 32768,
-            cols: 32768,
-            col: 0,
-            row: 0,
-        });
-        expect(topologyTile("w2pbpbpb")).toMatchObject({
-            topLeft: "w2bpbpbp",
-            rows: 32768,
-            cols: 32768,
-            col: 32767,
-            row: 32767,
-        });
+    test("Test World objectlayer", async () => {
+        // Test `poisInWorld`
+        const pois = await poisInWorld(worldTwo);
 
-        // Test topologyAtGeohash
-        expect(
-            omit(await topologyAtGeohash("w2bpbpbp"), ["png"]), // top left
-        ).toMatchObject({
-            width: 3507,
-            height: 1753,
-            x: 0,
-            y: 0,
-        });
-        expect(
-            omit(await topologyAtGeohash("w2pbpbpb"), ["png"]), // bottom right
-        ).toMatchObject({
-            width: 3507,
-            height: 1753,
-            x: 3506,
-            y: 1752,
-        });
+        console.log(JSON.stringify(pois, null, 2));
+        expect(pois).toMatchObject([
+            {
+                prop: "potionofhealth",
+                geohash: "y78jdmk9",
+            },
+            {
+                beast: "goblin",
+                geohash: "y78jdmk9",
+                level: 2,
+            },
+        ]);
 
-        var chile = omit(await topologyAtGeohash("67z1ekgt"), ["png"]);
-        expect(chile).toMatchObject({
-            width: 3507,
-            height: 1753,
-            x: 3113,
-            y: 347,
-            intensity: 108,
-        });
+        // Test `items` and `monsters` spawned in world
+        await spawnWorldPOIs(worldTwo.world, LOCATION_INSTANCE);
 
-        var everest = omit(await topologyAtGeohash("tvpjj3cd"), ["png"]);
-        expect(everest).toMatchObject({
-            width: 3507,
-            height: 1753,
-            x: 3140,
-            y: 1475,
-            intensity: 183,
-        });
-        var redsea = omit(await topologyAtGeohash("sgekek77"), ["png"]);
-        expect(redsea).toMatchObject({
-            width: 3507,
-            height: 1753,
-            x: 1470,
-            y: 622,
-            intensity: 0,
-        });
-        var bukittimahhill = omit(await topologyAtGeohash("w21z9qx9"), ["png"]);
-        expect(bukittimahhill).toMatchObject({
-            width: 3507,
-            height: 1753,
-            x: 787,
-            y: 1330,
-            intensity: 3,
-        });
+        // Check entities spawned
+        const potionofhealth = await itemRepository
+            .search()
+            .where("prop")
+            .equal("potionofhealth")
+            .and("loc")
+            .containOneOf("y78jdmk9")
+            .and("locI")
+            .equal(LOCATION_INSTANCE)
+            .and("locT")
+            .equal(worldTwo.locT)
+            .all();
 
-        // Test topologyAtGeohash with caching
-        const bufferCache = new MemoryCache(); // caches the png buffer
-        const responseCache = new MemoryCache(); // caches the fetch response
-        const resultsCache = new LRUMemoryCache({ max: 100 }); // caches the results
-        expect(
-            omit(await topologyAtGeohash("tvpjj3cd", { bufferCache }), "png"),
-        ).toMatchObject(
-            omit(await topologyAtGeohash("tvpjj3cd", { bufferCache }), "png"),
-        );
-        expect(
-            omit(await topologyAtGeohash("tvpjj3cd", { bufferCache }), "png"),
-        ).toMatchObject(everest);
+        const goblin = await monsterRepository
+            .search()
+            .where("beast")
+            .equal("goblin")
+            .and("loc")
+            .containOneOf("y78jdmk9")
+            .and("locI")
+            .equal(LOCATION_INSTANCE)
+            .and("locT")
+            .equal(worldTwo.locT)
+            .all();
 
-        // Test heightAtGeohash with LRUCache
-        var everestHeight = await elevationAtGeohash("tvpjj3cd", "geohash");
-        expect(everestHeight).toBe(6352);
-        await expect(
-            elevationAtGeohash("tvpjj3cd", "geohash", {
-                resultsCache,
-                responseCache,
-                bufferCache,
-            }),
-        ).resolves.toBe(everestHeight);
-        await expect(
-            elevationAtGeohash("tvpjj3cd", "geohash", {
-                resultsCache,
-                responseCache,
-                bufferCache,
-            }),
-        ).resolves.toBe(
-            await elevationAtGeohash("tvpjj3cd", "geohash", {
-                resultsCache,
-                responseCache,
-                bufferCache,
-            }),
-        );
-    });
-
-    test("Test Procedural Generation (biomeAtGeohash)", async () => {
-        // Test biomeAtGeohash
-        expect(
-            (
-                await biomeAtGeohash("w6cn25dm", "geohash", { seed: worldSeed })
-            )[0],
-        ).to.equal("grassland");
-        expect(
-            (
-                await biomeAtGeohash("w2gpdqgt", "geohash", { seed: worldSeed })
-            )[0],
-        ).to.equal("aquatic");
+        expect(potionofhealth != null).toBe(true);
+        expect(goblin != null).toBe(true);
+        expect(potionofhealth.length).toBe(1);
+        expect(goblin.length).toBe(1);
     });
 
     test("Test `spawnWorld` (negative)", async () => {

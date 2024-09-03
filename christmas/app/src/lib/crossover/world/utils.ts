@@ -92,8 +92,8 @@ async function isGeohashTraversable(
         worldSpeed = await traversableSpeedInWorld({
             world,
             geohash,
-            metadataCache: options?.worldAssetMetadataCache,
-            resultsCache: options?.worldTraversableCellsCache,
+            worldAssetMetadataCache: options?.worldAssetMetadataCache,
+            worldTraversableCellsCache: options?.worldTraversableCellsCache,
         });
     }
 

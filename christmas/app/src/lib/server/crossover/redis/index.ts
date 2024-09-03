@@ -7,10 +7,10 @@ import {
     REDIS_USERNAME,
 } from "$env/static/private";
 import { expandGeohashes, geohashesNearby } from "$lib/crossover/utils";
-import { EquipmentSlots } from "$lib/crossover/world/compendium";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import type { GeohashLocationType } from "$lib/crossover/world/types";
+import { EquipmentSlots } from "$lib/crossover/world/types";
 import type { Search } from "redis-om";
 import { Repository } from "redis-om";
 import { LOOK_PAGE_SIZE } from "..";

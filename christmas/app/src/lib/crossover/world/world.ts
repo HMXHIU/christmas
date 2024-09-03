@@ -1,12 +1,17 @@
 import type { CacheInterface } from "$lib/caches";
 import type { World } from "$lib/server/crossover/redis/entities";
-import { autoCorrectGeohashPrecision, geohashToColRow } from "../utils";
+import {
+    autoCorrectGeohashPrecision,
+    geohashToColRow,
+    gridCellToGeohash,
+} from "../utils";
 import type { BiomeParameters } from "./biomes";
 import { TILE_HEIGHT, TILE_WIDTH } from "./settings";
 import { worldSeed } from "./settings/world";
-import type { WorldAssetMetadata } from "./types";
+import type { ObjectLayer, TileLayer, WorldAssetMetadata } from "./types";
 
 export {
+    poisInWorld,
     traversableCellsInWorld,
     traversableSpeedInWorld,
     type Sanctuary,
@@ -104,15 +109,15 @@ interface Tileset {
 
 async function fetchWorldMetadata(
     world: World,
-    metadataCache?: CacheInterface,
+    worldAssetMetadataCache?: CacheInterface,
 ): Promise<WorldAssetMetadata> {
-    const cachedResult = await metadataCache?.get(world.url);
+    const cachedResult = await worldAssetMetadataCache?.get(world.url);
     if (cachedResult) {
         return cachedResult;
     }
     const metadata = await (await fetch(world.url)).json();
-    if (metadataCache) {
-        await metadataCache.set(world.url, metadata);
+    if (worldAssetMetadataCache) {
+        await worldAssetMetadataCache.set(world.url, metadata);
     }
     return metadata;
 }
@@ -122,22 +127,22 @@ async function traversableSpeedInWorld({
     geohash,
     tileHeight,
     tileWidth,
-    metadataCache,
-    resultsCache,
+    worldAssetMetadataCache,
+    worldTraversableCellsCache,
 }: {
     world: World;
     geohash: string;
     tileHeight?: number;
     tileWidth?: number;
-    metadataCache?: CacheInterface;
-    resultsCache?: CacheInterface;
+    worldAssetMetadataCache?: CacheInterface;
+    worldTraversableCellsCache?: CacheInterface;
 }): Promise<number | undefined> {
     const traversableCells = await traversableCellsInWorld({
         world,
         tileHeight: tileHeight ?? TILE_HEIGHT,
         tileWidth: tileWidth ?? TILE_WIDTH,
-        metadataCache,
-        resultsCache,
+        worldAssetMetadataCache,
+        worldTraversableCellsCache,
     });
 
     // Top left of world
@@ -155,26 +160,30 @@ async function traversableCellsInWorld({
     world,
     tileWidth,
     tileHeight,
-    metadataCache,
-    resultsCache,
+    worldAssetMetadataCache,
+    worldTraversableCellsCache,
 }: {
     world: World;
     tileWidth: number;
     tileHeight: number;
-    metadataCache?: CacheInterface;
-    resultsCache?: CacheInterface;
+    worldAssetMetadataCache?: CacheInterface;
+    worldTraversableCellsCache?: CacheInterface;
 }): Promise<Record<string, number>> {
-    const cachedResult = await resultsCache?.get(world.url);
+    const cachedResult = await worldTraversableCellsCache?.get(world.url);
     if (cachedResult) {
         return cachedResult;
     }
-    const asset = await fetchWorldMetadata(world, metadataCache);
-    const { layers, tileheight, tilewidth } = asset;
+    const asset = await fetchWorldMetadata(world, worldAssetMetadataCache);
+    let { layers, tileheight, tilewidth } = asset;
+
+    // Get tilelayers
+    layers = layers.filter((l) => l.type === "tilelayer");
+
     const heightMultiplier = tileheight / tileHeight;
     const widthMultiplier = tilewidth / tileWidth;
 
     let traversableCells: Record<string, number> = {};
-    for (const { data, properties, width, height } of layers) {
+    for (const { data, properties, width, height } of layers as TileLayer[]) {
         if (properties == null) {
             continue;
         }
@@ -221,9 +230,101 @@ async function traversableCellsInWorld({
         }
     }
 
-    if (resultsCache) {
-        resultsCache.set(world.url, traversableCells);
+    if (worldTraversableCellsCache) {
+        worldTraversableCellsCache.set(world.url, traversableCells);
     }
 
     return traversableCells;
+}
+
+interface SpawnItemPOI {
+    prop: string;
+    geohash: string;
+}
+
+interface SpawnMonsterPOI {
+    beast: string;
+    geohash: string;
+    level: number;
+}
+
+type WorldPOIs = (SpawnItemPOI | SpawnMonsterPOI)[];
+
+async function poisInWorld(
+    world: World,
+    options?: {
+        worldAssetMetadataCache?: CacheInterface;
+        worldPOIsCache?: CacheInterface;
+    },
+): Promise<WorldPOIs> {
+    // Get from cache
+    const cacheKey = world.url;
+    const cached = await options?.worldPOIsCache?.get(cacheKey);
+    if (cached) return cached;
+
+    const pois: WorldPOIs = [];
+
+    const asset = await fetchWorldMetadata(
+        world,
+        options?.worldAssetMetadataCache,
+    );
+    let { layers, tileheight, tilewidth } = asset;
+
+    // Get objectgroup
+    layers = layers.filter((l) => l.type === "objectgroup");
+
+    for (const { objects } of layers as ObjectLayer[]) {
+        for (const obj of objects) {
+            if (obj.point) {
+                // Get object properties
+                const properties = obj.properties.reduce(
+                    (acc: Record<string, any>, { name, value, type }) => {
+                        acc[name] = value;
+                        return acc;
+                    },
+                    {},
+                );
+
+                console.log(JSON.stringify(properties, null, 2));
+
+                // Convert x, y to geohash
+                const cols = Math.round(obj.x / tilewidth);
+                const rows = Math.round(obj.y / tileheight);
+                const originGeohash = autoCorrectGeohashPrecision(
+                    world.loc[0],
+                    worldSeed.spatial.unit.precision,
+                );
+                const [oCol, oRow] = geohashToColRow(originGeohash);
+                const geohash = gridCellToGeohash({
+                    row: oRow + rows,
+                    col: oCol + cols,
+                    precision: worldSeed.spatial.unit.precision,
+                });
+
+                // Item poi
+                if (properties.prop) {
+                    pois.push({
+                        prop: properties.prop,
+                        geohash,
+                    });
+                }
+
+                // Monster poi
+                else if (properties.beast) {
+                    pois.push({
+                        beast: properties.beast,
+                        geohash,
+                        level: properties.level ?? 1,
+                    });
+                }
+            }
+        }
+    }
+
+    // Set cache
+    if (options?.worldPOIsCache) {
+        await options.worldPOIsCache.set(cacheKey, pois);
+    }
+
+    return pois;
 }

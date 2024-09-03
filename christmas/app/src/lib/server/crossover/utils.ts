@@ -1,11 +1,9 @@
 import { geohashNeighbour } from "$lib/crossover/utils";
-import {
-    type EquipmentSlot,
-    type ItemVariables,
-} from "$lib/crossover/world/compendium";
+import { type ItemVariables } from "$lib/crossover/world/compendium";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import type {
     Direction,
+    EquipmentSlot,
     GeohashLocationType,
 } from "$lib/crossover/world/types";
 import { isGeohashTraversable } from "$lib/crossover/world/utils";

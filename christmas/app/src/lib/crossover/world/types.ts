@@ -1,25 +1,54 @@
 import { z } from "zod";
-import { type EquipmentSlot } from "./compendium";
 
 export {
     Directions,
+    EquipmentSlots,
     GeohashLocationSchema,
     geohashLocationTypes,
     type AssetMetadata,
     type Direction,
+    type EquipmentSlot,
     type GeohashLocationType,
     type GridCell,
     type LocationType,
     type NoiseType,
-    type Tile,
+    type ObjectLayer,
+    type TileLayer,
     type WorldAssetMetadata,
 };
 
-interface Tile {
-    geohash: string;
-    name: string;
-    description: string;
-}
+type EquipmentSlot =
+    // armor
+    | "ch" // chest
+    | "lg" // legs
+    | "ft" // feet
+    | "sh" // shoulders
+    | "gl" // gloves
+    // weapons
+    | "rh" // right hand
+    | "lh" // left hand
+    // non visible
+    | "hd" // head
+    | "nk" // neck
+    | "r1" // ring 1
+    | "r2"; // ring 2
+
+const EquipmentSlots: EquipmentSlot[] = [
+    // armor
+    "ch",
+    "lg",
+    "ft",
+    "sh",
+    "gl",
+    // weapons
+    "rh",
+    "lh",
+    // non visible
+    "hd",
+    "nk",
+    "r1",
+    "r2",
+];
 
 type NoiseType = "simplex" | "random";
 
@@ -33,19 +62,34 @@ interface AssetMetadata {
     precision?: number; // geohash precision (default: unit)
 }
 
-interface WorldAssetMetadata {
-    layers: {
-        data: number[];
-        properties?: { name: string; value: any; type: string }[];
-        offsetx?: number; // offset in pixels
-        offsety?: number;
-        height: number; // height in tiles
-        width: number;
-        name: string;
-        type: "tilelayer";
-        x: number; // x coordinate in tiles
+interface TileLayer {
+    data: number[];
+    properties?: { name: string; value: any; type: string }[];
+    offsetx?: number; // offset in pixels
+    offsety?: number;
+    height: number; // height in tiles
+    width: number;
+    name: string;
+    type: "tilelayer";
+    x: number; // x coordinate in tiles
+    y: number;
+}
+
+interface ObjectLayer {
+    x: number;
+    y: number;
+    type: "objectgroup";
+    name: string;
+    objects: {
+        point: boolean;
+        x: number;
         y: number;
+        properties: { name: string; value: any; type: string }[];
     }[];
+}
+
+interface WorldAssetMetadata {
+    layers: (TileLayer | ObjectLayer)[];
     height: number;
     width: number;
     tilewidth: number;

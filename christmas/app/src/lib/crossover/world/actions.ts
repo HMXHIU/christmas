@@ -6,8 +6,11 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import type { GameActionEntities, TokenPositions } from "../ir";
 import { getEntityId } from "../utils";
-import { EquipmentSlots, type EquipmentSlot } from "./compendium";
-import { geohashLocationTypes } from "./types";
+import {
+    EquipmentSlots,
+    geohashLocationTypes,
+    type EquipmentSlot,
+} from "./types";
 
 export {
     actions,

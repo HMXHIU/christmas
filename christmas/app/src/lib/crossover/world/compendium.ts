@@ -9,53 +9,23 @@ import { cloneDeep } from "lodash-es";
 import { getEntityId } from "../utils";
 import type { Actions } from "./actions";
 import { compendium } from "./settings/compendium";
-import { type AssetMetadata, type GeohashLocationType } from "./types";
+import {
+    EquipmentSlots,
+    type AssetMetadata,
+    type EquipmentSlot,
+    type GeohashLocationType,
+} from "./types";
 
 export {
-    EquipmentSlots,
     isItemEquipped,
     itemAttibutes,
     itemName,
     type EquipmentAsset,
-    type EquipmentSlot,
     type ItemVariables,
     type Prop,
     type PropWorld,
     type Utility,
 };
-
-type EquipmentSlot =
-    // armor
-    | "ch" // chest
-    | "lg" // legs
-    | "ft" // feet
-    | "sh" // shoulders
-    | "gl" // gloves
-    // weapons
-    | "rh" // right hand
-    | "lh" // left hand
-    // non visible
-    | "hd" // head
-    | "nk" // neck
-    | "r1" // ring 1
-    | "r2"; // ring 2
-
-const EquipmentSlots: EquipmentSlot[] = [
-    // armor
-    "ch",
-    "lg",
-    "ft",
-    "sh",
-    "gl",
-    // weapons
-    "rh",
-    "lh",
-    // non visible
-    "hd",
-    "nk",
-    "r1",
-    "r2",
-];
 
 interface PropWorld {
     locationInstance: string; // variable substitutable to self.item
