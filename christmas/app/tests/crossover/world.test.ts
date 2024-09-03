@@ -292,8 +292,6 @@ describe("World Tests", () => {
     test("Test World objectlayer", async () => {
         // Test `poisInWorld`
         const pois = await poisInWorld(worldTwo);
-
-        console.log(JSON.stringify(pois, null, 2));
         expect(pois).toMatchObject([
             {
                 prop: "potionofhealth",

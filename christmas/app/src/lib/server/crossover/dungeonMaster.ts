@@ -487,28 +487,56 @@ async function spawnWorldPOIs(
         try {
             // Spawn item
             if ("prop" in poi) {
-                const item = await spawnItem({
-                    geohash: poi.geohash,
-                    prop: poi.prop,
-                    locationType: worldEntity.locT,
-                    locationInstance,
-                });
-                console.info(
-                    `Spawned ${item.item} in ${worldEntity.world} at ${locationInstance}`,
-                );
+                // Check if item is already spawned
+                const existing = await itemRepository
+                    .search()
+                    .where("prop")
+                    .equal(poi.prop)
+                    .and("loc")
+                    .containOneOf(poi.geohash)
+                    .and("locI")
+                    .equal(locationInstance)
+                    .and("locT")
+                    .equal(worldEntity.locT)
+                    .count();
+                if (!existing) {
+                    const item = await spawnItem({
+                        geohash: poi.geohash,
+                        prop: poi.prop,
+                        locationType: worldEntity.locT,
+                        locationInstance,
+                    });
+                    console.info(
+                        `Spawned ${item.item} in ${worldEntity.world} at ${locationInstance}`,
+                    );
+                }
             }
             // Spawn monster
             else if ("beast" in poi) {
-                const monster = await spawnMonster({
-                    geohash: poi.geohash,
-                    locationType: worldEntity.locT,
-                    locationInstance,
-                    beast: poi.beast,
-                    level: poi.level,
-                });
-                console.info(
-                    `Spawned ${monster.monster} in ${worldEntity.world} at ${locationInstance}`,
-                );
+                const existing = await monsterRepository
+                    .search()
+                    .where("beast")
+                    .equal(poi.beast)
+                    .and("loc")
+                    .containOneOf(poi.geohash)
+                    .and("locI")
+                    .equal(locationInstance)
+                    .and("locT")
+                    .equal(worldEntity.locT)
+                    .count();
+
+                if (!existing) {
+                    const monster = await spawnMonster({
+                        geohash: poi.geohash,
+                        locationType: worldEntity.locT,
+                        locationInstance,
+                        beast: poi.beast,
+                        level: poi.level,
+                    });
+                    console.info(
+                        `Spawned ${monster.monster} in ${worldEntity.world} at ${locationInstance}`,
+                    );
+                }
             }
         } catch (error: any) {
             console.warn(error.message);
