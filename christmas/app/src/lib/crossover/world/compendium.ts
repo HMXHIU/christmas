@@ -7,8 +7,9 @@ import type {
 import { substituteVariables } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import { getEntityId } from "../utils";
+import type { Actions } from "./actions";
 import { compendium } from "./settings/compendium";
-import { type AssetMetadata } from "./types";
+import { type AssetMetadata, type GeohashLocationType } from "./types";
 
 export {
     EquipmentSlots,
@@ -19,6 +20,7 @@ export {
     type EquipmentSlot,
     type ItemVariables,
     type Prop,
+    type PropWorld,
     type Utility,
 };
 
@@ -55,6 +57,14 @@ const EquipmentSlots: EquipmentSlot[] = [
     "r2",
 ];
 
+interface PropWorld {
+    locationInstance: string; // variable substitutable to self.item
+    locationType: GeohashLocationType;
+    geohash: string; // location to spawn world (variable substitutable to self.loc[0])
+    world: string; // id (variable substitutable to self.item)
+    url: string; // url to world tilemap
+}
+
 /**
  * `Prop` is a template used to create an `item` instance
  */
@@ -72,6 +82,8 @@ interface Prop {
     collider: boolean; // cannot have more than 1 collidable item in the same location, cannot walk through collidable items
     equipmentSlot?: EquipmentSlot[]; // can be used to tell if item is an equipment
     equipmentAssets?: Record<string, EquipmentAsset>; // maps bone to EquipmentAsset
+    // Spawn a world (lazily) related to this instance (eg. tavern, interior)
+    world?: PropWorld;
 }
 
 interface EquipmentAsset {
@@ -99,6 +111,7 @@ interface Utility {
     };
     // abilities[ability] `self` and `target` will be provided when `useItem` is called but can be overwritten via `variables`
     ability?: string;
+    action?: Actions;
     requireEquipped?: boolean; // defaults to false
 }
 

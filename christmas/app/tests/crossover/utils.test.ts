@@ -10,17 +10,22 @@ import {
     getPlotsAtGeohash,
     gridCellToGeohash,
 } from "$lib/crossover/utils";
+import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { sampleFrom } from "$lib/utils";
 import { KdTree } from "$lib/utils/kdtree";
-import { beforeEach, describe, expect, it, test } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, test } from "vitest";
 import { generateRandomGeohash } from "./utils";
 
 interface TestData {
     id: string;
 }
 let tree: KdTree<TestData>;
+
+beforeAll(async () => {
+    await initializeClients(); // create redis repositories
+});
 
 describe("Test KD Tree", async () => {
     beforeEach(() => {
@@ -137,6 +142,66 @@ describe("Test Utils", () => {
         );
     });
 
+    test("Test Entities", async () => {
+        /*
+         * Test `filterSortEntitiesInRange`
+         */
+        var geohash = generateRandomGeohash(8, "h9");
+        var east2 = geohashNeighbour(geohash, "e", 2);
+        var east3 = geohashNeighbour(east2, "e");
+        var southeast2 = geohashNeighbour(east2, "s", 2);
+
+        let dragon = await spawnMonster({
+            geohash: geohash,
+            locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
+            beast: "dragon",
+            level: 1,
+        });
+        let dragon2 = await spawnMonster({
+            geohash: east3,
+            locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
+            beast: "dragon",
+            level: 1,
+        });
+        let giantSpider = await spawnMonster({
+            geohash: east2,
+            locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
+            beast: "giantSpider",
+            level: 1,
+        });
+        let goblin = await spawnMonster({
+            geohash: southeast2,
+            locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
+            beast: "goblin",
+            level: 1,
+        });
+        expect(
+            filterSortEntitiesInRange(
+                dragon,
+                [giantSpider, goblin, dragon2],
+                2,
+            ),
+        ).toMatchObject([
+            {
+                monster: giantSpider.monster,
+            },
+            {
+                monster: goblin.monster,
+            },
+        ]);
+        expect(
+            filterSortEntitiesInRange(
+                dragon,
+                [giantSpider, goblin, dragon2],
+                1,
+            ),
+        ).toMatchObject([]);
+    });
+
     test("Test Geohash", async () => {
         await initializeClients(); // create redis repositories
 
@@ -223,60 +288,6 @@ describe("Test Utils", () => {
          */
         expect(getAllUnitGeohashes("w21z3wc").length).toBe(32);
         expect(getAllUnitGeohashes("w21z3w").length).toBe(32 * 32);
-
-        /*
-         * Test `filterSortEntitiesInRange`
-         */
-        var geohash = generateRandomGeohash(8, "h9");
-        var east2 = geohashNeighbour(geohash, "e", 2);
-        var east3 = geohashNeighbour(east2, "e");
-        var southeast2 = geohashNeighbour(east2, "s", 2);
-
-        let dragon = await spawnMonster({
-            geohash: geohash,
-            locationType: "geohash",
-            beast: "dragon",
-            level: 1,
-        });
-        let dragon2 = await spawnMonster({
-            geohash: east3,
-            locationType: "geohash",
-            beast: "dragon",
-            level: 1,
-        });
-        let giantSpider = await spawnMonster({
-            geohash: east2,
-            locationType: "geohash",
-            beast: "giantSpider",
-            level: 1,
-        });
-        let goblin = await spawnMonster({
-            geohash: southeast2,
-            locationType: "geohash",
-            beast: "goblin",
-            level: 1,
-        });
-        expect(
-            filterSortEntitiesInRange(
-                dragon,
-                [giantSpider, goblin, dragon2],
-                2,
-            ),
-        ).toMatchObject([
-            {
-                monster: giantSpider.monster,
-            },
-            {
-                monster: goblin.monster,
-            },
-        ]);
-        expect(
-            filterSortEntitiesInRange(
-                dragon,
-                [giantSpider, goblin, dragon2],
-                1,
-            ),
-        ).toMatchObject([]);
 
         /*
          * Test `geohashNeighbour`

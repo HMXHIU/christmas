@@ -545,7 +545,6 @@ function minifiedEntity(
         stats?: boolean; // hp, mp, st, etc ...
         demographics?: boolean; // archetype, gender, race
         timers?: boolean; // apclk, buclk
-        now?: number;
     },
 ): Player | Monster | Item {
     const [entityId, entityType] = getEntityId(entity);
@@ -594,7 +593,7 @@ function minifiedEntity(
 
     // Location
     if (options?.location) {
-        fields.push("loc", "locT");
+        fields.push("loc", "locT", "locI");
     }
 
     return pick(entity, fields) as Player | Monster | Item;

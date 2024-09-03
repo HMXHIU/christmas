@@ -7,7 +7,6 @@ import type {
 import type { GameActionEntities, TokenPositions } from "../ir";
 import { getEntityId } from "../utils";
 import { EquipmentSlots, type EquipmentSlot } from "./compendium";
-import { TICKS_PER_TURN } from "./settings";
 import { geohashLocationTypes } from "./types";
 
 export {
@@ -30,6 +29,7 @@ type Actions =
     | "create"
     | "configure"
     | "inventory"
+    | "enter" // targets a item's world property
     | "rest";
 
 type ActionTargets = EntityType | "none";
@@ -199,12 +199,27 @@ const actions: Record<Actions, Action> = {
             target: ["none"],
             tokenPositions: { action: 0 },
         },
-        ticks: TICKS_PER_TURN * 4,
+        ticks: 4,
         icon: {
             path: "actions/actions",
             icon: "night-sleep",
         },
         range: 0,
+    },
+    // Spawn and enter an item's world property (only applicable if item as `world`)
+    enter: {
+        action: "enter",
+        description: "Enter.",
+        predicate: {
+            target: ["item"],
+            tokenPositions: { action: 0, target: 1 },
+        },
+        ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "walk",
+        },
+        range: 1,
     },
 };
 function resolveActionEntities({

@@ -2,7 +2,7 @@ import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
 import { actions, type Actions } from "$lib/crossover/world/actions";
 import { monsterLUReward, monsterStats } from "$lib/crossover/world/bestiary";
 import { playerAttributes, playerStats } from "$lib/crossover/world/player";
-import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { sanctuaries, worldSeed } from "$lib/crossover/world/settings/world";
 import { GeohashLocationSchema } from "$lib/crossover/world/types";
@@ -93,7 +93,7 @@ async function loadPlayerEntity(
         rgn: options.region,
         loc: [options.geohash],
         locT: "geohash",
-        locI: "",
+        locI: LOCATION_INSTANCE,
         lvl: 1,
         ...playerStats({ level: 1 }),
         apclk: 0,

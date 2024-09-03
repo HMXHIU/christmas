@@ -268,7 +268,7 @@ function playersInGeohashQuerySet(
     locationInstance: string,
 ): Search {
     return loggedInPlayersQuerySet()
-        .and("locT")
+        .where("locT")
         .equal(locationType)
         .and("locI")
         .equal(locationInstance)

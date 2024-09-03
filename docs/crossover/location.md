@@ -100,12 +100,12 @@ Instanced locations have the following:
 
 - `location` is a geohash
 - `locationType` is a `GeohashLocationType` (i.e geohash, d1, d2, d3, ...)
-- `instance` (`locI` in redis) if empty refers to the actual game, if not another instance of the game (a replica of the actual world)
-- `loc`, `locT`, `locI` determine the location of the player
+- [x] `locationInstance` (`locI` in redis) if `@` refers to the actual game, if not another instance of the game (a replica of the actual world)
+- [x] `loc`, `locT`, `locI` determine the location of the player
 
 Instances are parallel worlds
 
-- The house, building, dungeon exist in the actual world `locI=""`
+- The house, building, dungeon exist in the actual world `locI="@"` (Note: redis cant search for empty)
 - When the player enters an instance:
   - Actual world entities (items, players, monsters) are filtered off and uninteractable
   - Items on player such as equipment are tied to the player instead of the instance
@@ -122,3 +122,10 @@ Entering and exiting instances
 - This is to prevent him from exploring outside the instance into the parallel world
 - Scripts should not spawn monsters/items into instanced worlds (only during the preparation phase)
 - [ ] An endpoint to prepare the world should take in a `world` template and spawn the required items/monsters in that template only
+
+Location variable substitute
+
+- [ ] Teleport support `locI` variable substitute
+- [ ] `performEffectOnEntity` support for `locI` change
+- [ ] When `locI` changes, need to reload world, look, etc ... similar to `locT` change
+- [ ] Use item id (eg. tavern) as `locationInstance` when entering

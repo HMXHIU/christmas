@@ -1,3 +1,4 @@
+import { actions } from "../actions";
 import { type Prop } from "../compendium";
 import { abilities } from "./abilities";
 
@@ -383,12 +384,24 @@ let compendium: Record<string, Prop> = {
                 variant: "default",
             },
         },
+        world: {
+            locationInstance: "{{self.item}}",
+            locationType: "in",
+            geohash: "{{self.loc[0]}}",
+            world: "{{self.item}}",
+            url: "${url}",
+        },
         utilities: {},
         variables: {
             description: {
                 variable: "description",
                 type: "string",
-                value: "A plain wooden door greets you.",
+                value: "A plain wooden door of the tavern greets you.",
+            },
+            url: {
+                variable: "url",
+                type: "string",
+                value: "",
             },
         },
     },
@@ -514,6 +527,50 @@ let compendium: Record<string, Prop> = {
                     end: "default",
                 },
                 ability: abilities.teleport.ability,
+            },
+        },
+    },
+    dungeonkey: {
+        prop: "dungeonkey",
+        defaultName: "Dungeon",
+        asset: {
+            path: "props/gothic",
+            variants: {
+                default: "ritual-circle",
+            },
+        },
+        durability: 1,
+        charges: 1,
+        weight: 0.1,
+        collider: false,
+        defaultState: "default",
+        states: {
+            default: {
+                destructible: false,
+                description: "A key to a dungeon.",
+                variant: "default",
+            },
+        },
+        variables: {
+            target: {
+                variable: "target",
+                type: "item",
+                value: "",
+            },
+        },
+        utilities: {
+            use: {
+                utility: "use",
+                description: "Use the key.",
+                cost: {
+                    charges: 1,
+                    durability: 0,
+                },
+                state: {
+                    start: "default",
+                    end: "default",
+                },
+                action: actions.enter.action, // spawn and enter into a world defined by this key
             },
         },
     },

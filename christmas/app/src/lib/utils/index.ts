@@ -9,6 +9,7 @@ import {
 } from "@solana/web3.js";
 import BN from "bn.js";
 import bs58 from "bs58";
+import { mapValues } from "lodash-es";
 import { z } from "zod";
 import type { TransactionResult } from "../anchorClient/types";
 import { seededRandom } from "../crossover/utils";
@@ -36,42 +37,72 @@ export {
     storage_uri_to_url,
     stringToBase58,
     stringToUint8Array,
+    substituteValues,
     substituteVariables,
     timeStampToDate,
 };
 
 const connection = new Connection(PUBLIC_RPC_ENDPOINT, "processed");
 
+function substituteValues(
+    d: Record<string, string>,
+    variables: Record<string, any>,
+) {
+    return mapValues(d, (v) => substituteVariables(v, variables));
+}
+
 function substituteVariables(template: string, variables: Record<string, any>) {
-    // Variable access eg. {{target.loc}}
-    if (template.startsWith("{{") && template.endsWith("}}")) {
-        const parts = template
-            .replace(/{{(.*?)}}/g, "$1")
-            .trim()
-            .split(".");
-        let value = variables;
-        for (const part of parts) {
-            if (value && typeof value === "object" && part in value) {
-                value = value[part];
-            }
-        }
-        return value;
+    function getValueFromPath(obj: any, path: string): any {
+        return path
+            .split(/\.|\[|\]/g)
+            .filter(Boolean) // Remove any empty strings from the array
+            .reduce((acc, key) => acc && acc[key], obj);
     }
 
-    // String substitution eg. ${description}
+    // Variable access eg. {{target.loc}} or {{points[0]}}
+    if (template.startsWith("{{") && template.endsWith("}}")) {
+        const path = template.replace(/{{(.*?)}}/g, "$1").trim();
+        return getValueFromPath(variables, path);
+    }
+
+    // String substitution eg. ${description} or ${points[0]}
     return template.replace(/\${(.*?)}/g, (match, v) => {
-        const parts = v.trim().split(".");
-        let value = variables;
-        for (const part of parts) {
-            if (value && typeof value === "object" && part in value) {
-                value = value[part];
-            } else {
-                return match;
-            }
-        }
-        return String(value);
+        const path = v.trim();
+        const value = getValueFromPath(variables, path);
+        return value !== undefined ? String(value) : match;
     });
 }
+
+// function substituteVariables(template: string, variables: Record<string, any>) {
+//     // Variable access eg. {{target.loc}}
+//     if (template.startsWith("{{") && template.endsWith("}}")) {
+//         const parts = template
+//             .replace(/{{(.*?)}}/g, "$1")
+//             .trim()
+//             .split(".");
+//         let value = variables;
+//         for (const part of parts) {
+//             if (value && typeof value === "object" && part in value) {
+//                 value = value[part];
+//             }
+//         }
+//         return value;
+//     }
+
+//     // String substitution eg. ${description}
+//     return template.replace(/\${(.*?)}/g, (match, v) => {
+//         const parts = v.trim().split(".");
+//         let value = variables;
+//         for (const part of parts) {
+//             if (value && typeof value === "object" && part in value) {
+//                 value = value[part];
+//             } else {
+//                 return match;
+//             }
+//         }
+//         return String(value);
+//     });
+// }
 
 function cleanString(s: string) {
     return s.replace(/\u0000+$/, "");

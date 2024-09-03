@@ -8,16 +8,18 @@ import {
 import { actions } from "$lib/crossover/world/actions";
 import { type EquipmentSlot } from "$lib/crossover/world/compendium";
 import { playerStats } from "$lib/crossover/world/player";
+import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     geohashLocationTypes,
     type Direction,
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
+import { substituteVariables } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import { setEntityBusy } from ".";
 import { performAbility } from "./abilities";
-import { spawnItem } from "./dungeonMaster";
+import { spawnItem, spawnWorld } from "./dungeonMaster";
 import {
     fetchEntity,
     getNearbyEntities,
@@ -27,6 +29,7 @@ import {
     playerRepository,
     playersInGeohashQuerySet,
     saveEntity,
+    worldRepository,
 } from "./redis";
 import {
     type GameEntity,
@@ -48,6 +51,7 @@ export {
     configureItem,
     createItem,
     dropItem,
+    enterItem,
     equipItem,
     LOOK_PAGE_SIZE,
     moveEntity,
@@ -152,7 +156,7 @@ async function moveEntity(
         entity.locI,
     );
     publishAffectedEntitiesToPlayers(
-        [minifiedEntity(entity, { location: true, demographics: true, now })],
+        [minifiedEntity(entity, { location: true, demographics: true })],
         {
             publishTo: nearbyPlayerIds,
         },
@@ -698,6 +702,104 @@ async function configureItem(
     });
 
     return itemEntity;
+}
+
+async function enterItem(
+    player: PlayerEntity,
+    item: string,
+    now?: number,
+): Promise<PlayerEntity> {
+    // Set busy
+    player = (await setEntityBusy({
+        entity: player,
+        action: actions.enter.action,
+        now: now,
+    })) as PlayerEntity;
+
+    // Get item
+    let itemEntity = (await fetchEntity(item)) as ItemEntity;
+    if (itemEntity == null) {
+        publishFeedEvent(player.player, {
+            type: "error",
+            message: `Item ${item} not found`,
+        });
+        throw new Error(`Item ${item} not found`);
+    }
+
+    // Check in range
+    if (!entityInRange(player, itemEntity, actions.enter.range)[0]) {
+        publishFeedEvent(player.player, {
+            type: "error",
+            message: `${item} is not in range`,
+        });
+        throw new Error(`${item} is not in range`);
+    }
+
+    // Check if can item can be entered
+    const prop = compendium[itemEntity.prop];
+    const world = prop.world;
+    if (!world) {
+        const message = `${prop.defaultName} is not something you can enter`;
+        publishFeedEvent(player.player, {
+            type: "error",
+            message,
+        });
+        throw new Error(message);
+    }
+
+    // Substitute world variables
+    const locationInstance = substituteVariables(world.locationInstance, {
+        self: itemEntity,
+    }) as string;
+    const geohash = substituteVariables(world.geohash, {
+        self: itemEntity,
+    }) as string;
+    const worldId = substituteVariables(world.world, {
+        self: itemEntity,
+    }) as string;
+    const url = substituteVariables(world.url, {
+        ...itemEntity.vars,
+        self: itemEntity,
+    }) as string;
+    const locationType = world.locationType;
+
+    // Spawn world (if not exists)
+    let worldEntity = await worldRepository
+        .search()
+        .where("world")
+        .equal(worldId)
+        .first();
+    if (!worldEntity) {
+        worldEntity = await spawnWorld({
+            geohash,
+            locationType,
+            assetUrl: url,
+            tileHeight: TILE_HEIGHT, // do not change this
+            tileWidth: TILE_WIDTH,
+        });
+    }
+
+    const nearbyPlayerIds = await getNearbyPlayerIds(
+        player.loc[0],
+        player.locT as GeohashLocationType,
+        player.locI,
+    );
+
+    // Change player location to world
+    player.loc = [geohash]; // TODO: find world spawn point
+    player.locT = locationType;
+    player.locI = locationInstance;
+
+    // Save player
+    player = (await saveEntity(player)) as PlayerEntity;
+
+    // Inform all players of self location change
+    publishAffectedEntitiesToPlayers(
+        [minifiedEntity(player, { location: true, stats: true })],
+        { publishTo: nearbyPlayerIds },
+    );
+
+    return player;
 }
 
 async function rest(player: PlayerEntity, now?: number) {

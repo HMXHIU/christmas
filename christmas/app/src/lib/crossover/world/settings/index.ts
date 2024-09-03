@@ -1,6 +1,13 @@
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 
-export { MS_PER_TICK, SERVER_LATENCY, TICKS_PER_TURN, TILE_HEIGHT, TILE_WIDTH };
+export {
+    LOCATION_INSTANCE,
+    MS_PER_TICK,
+    SERVER_LATENCY,
+    TICKS_PER_TURN,
+    TILE_HEIGHT,
+    TILE_WIDTH,
+};
 
 // Note:
 //  - This is different from CELL_WIDTH / CELL_HEIGHT (scaling when rendering to screen)
@@ -12,3 +19,5 @@ const SERVER_LATENCY = 100; // ms
 const TICKS_PER_TURN = 4;
 const MS_PER_TICK = PUBLIC_ENVIRONMENT === "development" ? 100 : 500;
 // const MS_PER_TICK = 500;
+
+const LOCATION_INSTANCE = "@"; // actual world

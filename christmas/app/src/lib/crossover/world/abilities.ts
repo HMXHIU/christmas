@@ -63,6 +63,7 @@ interface Attributes {
     fth: number; // mana, spell resistance
 }
 
+// TODO: Should not be defined here
 type Abilities =
     | "bandage"
     | "disintegrate"
@@ -75,6 +76,7 @@ type Abilities =
     | "paralyze"
     | "blind"
     | "teleport"
+    | "enterworld"
     | "hpswap";
 
 interface Ability {
@@ -95,7 +97,14 @@ interface Ability {
     };
 }
 
-type ProcedureStateEffects = "loc" | "locT" | "ap" | "hp" | "mp" | "st";
+type ProcedureStateEffects =
+    | "loc"
+    | "locT"
+    | "locI"
+    | "ap"
+    | "hp"
+    | "mp"
+    | "st";
 
 type Procedure = ["action" | "check", ProcedureEffect];
 interface ProcedureEffect {
@@ -162,7 +171,6 @@ function patchEffectWithVariables({
                     target,
                 });
 
-                console.log("sub", value);
                 // loc
                 if (s === "loc") {
                     if (!Array.isArray(value)) {
@@ -177,6 +185,15 @@ function patchEffectWithVariables({
                     if (typeof value !== "string") {
                         throw new Error(
                             "Patched value for `locT` must be type `string`",
+                        );
+                    }
+                    state.value = value;
+                }
+                // locT
+                else if (s === "locI") {
+                    if (typeof value !== "string") {
+                        throw new Error(
+                            "Patched value for `locI` must be type `string`",
                         );
                     }
                     state.value = value;

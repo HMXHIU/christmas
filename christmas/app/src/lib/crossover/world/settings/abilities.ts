@@ -327,6 +327,10 @@ const abilities: Record<string, Ability> = {
                             value: "{{target.locT}}",
                             op: "change",
                         },
+                        locI: {
+                            value: "{{target.locI}}",
+                            op: "change",
+                        },
                     },
                     ticks: TICKS_PER_TURN,
                 },

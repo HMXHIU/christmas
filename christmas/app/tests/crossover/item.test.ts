@@ -1,9 +1,11 @@
 import { geohashNeighbour } from "$lib/crossover/utils";
-import { itemAttibutes } from "$lib/crossover/world/compendium";
-import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { itemAttibutes, type PropWorld } from "$lib/crossover/world/compendium";
+import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
+import type { WorldAssetMetadata } from "$lib/crossover/world/types";
 import {
     configureItem,
+    enterItem,
     equipItem,
     takeItem,
     useItem,
@@ -19,12 +21,13 @@ import type {
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
 import { itemVariableValue } from "$lib/server/crossover/utils";
-import { sleep } from "$lib/utils";
+import { sleep, substituteValues } from "$lib/utils";
 import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { cloneDeep } from "lodash";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import {
     createGandalfSarumanSauron,
+    createWorldAsset,
     generateRandomGeohash,
     testPlayerUseItemOnPlayer,
     waitForEventData,
@@ -52,6 +55,11 @@ let portalOne: ItemEntity;
 let portalTwo: ItemEntity;
 let portalTwoGeohash: string;
 let playerOneGeohash: string;
+let tavern: ItemEntity;
+let tavernGeohash: string;
+
+let worldAssetUrl: string;
+let worldAsset: WorldAssetMetadata;
 
 let playerOneWoodenClub: ItemEntity;
 
@@ -79,6 +87,7 @@ beforeAll(async () => {
     woodenDoor = (await spawnItem({
         geohash: woodenDoorGeohash,
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodendoor.prop,
         variables: {
             [compendium.woodendoor.variables!.doorsign.variable]:
@@ -105,6 +114,7 @@ beforeAll(async () => {
     portalOne = (await spawnItem({
         geohash: playerOneGeohash,
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.portal.prop,
         variables: {
             [compendium.portal.variables!.description.variable]: "Portal One",
@@ -116,6 +126,7 @@ beforeAll(async () => {
     portalTwo = (await spawnItem({
         geohash: portalTwoGeohash, // somwhere else
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.portal.prop,
         variables: {
             [compendium.portal.variables!.description.variable]: "Portal Two",
@@ -150,25 +161,80 @@ beforeAll(async () => {
     playerOneWoodenClub = await spawnItem({
         geohash: playerOne.loc[0],
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
         owner: playerOne.player,
         configOwner: playerOne.player,
     });
+
+    // Spawn tavern
+    tavernGeohash = generateRandomGeohash(8, "h9");
+    const asset = await createWorldAsset();
+    worldAsset = asset.asset;
+    worldAssetUrl = asset.url;
+
+    tavern = (await spawnItem({
+        geohash: tavernGeohash,
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.tavern.prop,
+        variables: {
+            url: worldAssetUrl,
+        },
+    })) as ItemEntity;
 });
 
 beforeEach(async () => {
     // Reset playerOne location
     playerOne.loc = [playerOneGeohash];
+    playerOne.locT = "geohash";
+    playerOne.locI = LOCATION_INSTANCE;
     playerOne = (await saveEntity(playerOne)) as PlayerEntity;
 });
 
 describe("Test Items", () => {
+    test("Test Enter Item", async () => {
+        // Move playerOne to tavern
+        playerOne.loc = [tavernGeohash];
+        playerOne.locT = tavern.locT;
+        playerOne.locI = tavern.locI;
+        playerOne = (await saveEntity(playerOne)) as PlayerEntity;
+
+        // Get world prop attribute
+        const worldProp = compendium[tavern.prop].world as PropWorld;
+        expect(worldProp != null).toBe(true);
+
+        // Get world prop attributes after variable substitution
+        const worldPropSub = substituteValues(worldProp as any, {
+            ...tavern.vars,
+            self: tavern,
+        });
+
+        expect(worldPropSub).toMatchObject({
+            locationInstance: tavern.item, // use tavern.item as the locationInstance
+            locationType: "in",
+            geohash: tavern.loc[0],
+            world: tavern.item, // use tavern.item as the unique worldId
+            url: worldAssetUrl,
+        });
+
+        // playerOne enter tavern (check player location is inside the tavern)
+        const playerAfter = await enterItem(playerOne, tavern.item);
+        expect(playerAfter.loc[0]).toBe(tavern.loc[0]);
+        expect(playerAfter).toMatchObject({
+            loc: [worldPropSub.geohash],
+            locT: worldPropSub.locationType,
+            locI: worldPropSub.locationInstance,
+        });
+    });
+
     test("Test Spawn", async () => {
         // Test cannot spawn item on collider
         await expect(
             spawnItem({
                 geohash: woodenDoorGeohash,
                 locationType: "geohash",
+                locationInstance: LOCATION_INSTANCE,
                 prop: compendium.woodendoor.prop,
             }),
         ).rejects.toThrowError(
@@ -370,6 +436,7 @@ describe("Test Items", () => {
         let playerOneOtherWoodenClub = await spawnItem({
             geohash: playerTwo.loc[0],
             locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
             prop: compendium.woodenclub.prop,
             owner: playerOne.player,
             configOwner: playerOne.player,

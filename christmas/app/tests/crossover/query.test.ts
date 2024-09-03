@@ -10,6 +10,7 @@ import {
 } from "$lib/crossover/world/abilities";
 import { actions } from "$lib/crossover/world/actions";
 import { type Utility } from "$lib/crossover/world/compendium";
+import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
@@ -62,6 +63,7 @@ test("Test Query", async () => {
     let woodendoor = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodendoor.prop,
         variables: {
             [compendium.woodendoor.variables.doorsign.variable]:
@@ -73,6 +75,7 @@ test("Test Query", async () => {
     let woodenclub = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
@@ -80,6 +83,7 @@ test("Test Query", async () => {
     let woodenclub2 = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
@@ -87,6 +91,7 @@ test("Test Query", async () => {
     let woodenclub3 = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
@@ -95,12 +100,14 @@ test("Test Query", async () => {
         geohash: playerOne.loc[0], // spawn at playerOne
         prop: compendium.portal.prop,
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
     })) as ItemEntity;
 
     // Dragon
     let dragon = await spawnMonster({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         beast: "dragon",
         level: 1,
     });
@@ -109,6 +116,7 @@ test("Test Query", async () => {
     let goblin = await spawnMonster({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         beast: "goblin",
         level: 1,
     });
@@ -116,6 +124,7 @@ test("Test Query", async () => {
     let goblin2 = await spawnMonster({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         beast: "goblin",
         level: 1,
     });
@@ -123,6 +132,7 @@ test("Test Query", async () => {
     let goblin3 = await spawnMonster({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         beast: "goblin",
         level: 1,
     });

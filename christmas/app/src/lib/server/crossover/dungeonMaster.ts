@@ -11,6 +11,7 @@ import {
 } from "$lib/crossover/world/bestiary";
 import { blueprintsAtTerritory } from "$lib/crossover/world/blueprint";
 import { getAllDungeons } from "$lib/crossover/world/dungeons";
+import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
 import {
     blueprintOrder,
@@ -53,7 +54,7 @@ export { initializeGame, spawnItem, spawnMonster, spawnMonsters, spawnWorld };
  * @returns A Promise that resolves when all the monsters have been spawned.
  */
 async function spawnMonsters(players: PlayerEntity[]) {
-    const locationInstance = ""; // spawn in actual game instance
+    const locationInstance = LOCATION_INSTANCE; // spawn in actual game instance
 
     for (const [locationType, ps] of Object.entries(groupBy(players, "locT"))) {
         // Get all parent geohashes (only interested with geohashes 1 level above unit precision)
@@ -370,7 +371,7 @@ async function spawnItem({
  * Initialize the game world (only need to do once)
  */
 async function initializeGame() {
-    const locationInstance = ""; // spawn in actual game instance
+    const locationInstance = LOCATION_INSTANCE; // spawn in actual game instance
 
     // Spawn all blueprint items
     const locationType: GeohashLocationType = "geohash";

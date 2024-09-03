@@ -27,6 +27,7 @@ import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { sanctuaries } from "$lib/crossover/world/settings/world";
+import type { WorldAssetMetadata } from "$lib/crossover/world/types";
 import {
     performAbility,
     performEffectOnEntity,
@@ -45,7 +46,7 @@ import {
     entityIsBusy,
     itemVariableValue,
 } from "$lib/server/crossover/utils";
-import { ObjectStorage } from "$lib/server/objectStorage";
+import { BUCKETS, ObjectStorage } from "$lib/server/objectStorage";
 import { generateRandomSeed, sleep } from "$lib/utils";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { uniqBy } from "lodash";
@@ -66,6 +67,92 @@ export type PerformAbilityTestResults =
     | "itemConditionsNotMet"
     | "failure"
     | "success";
+
+const testWorldAsset: WorldAssetMetadata = {
+    height: 8,
+    width: 4,
+    tileheight: 128,
+    tilewidth: 256,
+    layers: [
+        {
+            data: [
+                0, 0, 0, 0, 94, 94, 94, 0, 85, 85, 85, 0, 85, 85, 85, 0, 85, 85,
+                85, 0, 95, 139, 95, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ],
+            height: 8,
+            name: "platform",
+            type: "tilelayer",
+            width: 4,
+            x: 0,
+            y: 0,
+        },
+        // collider
+        {
+            data: [
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 74, 74, 0, 0, 74, 74, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ],
+            height: 8,
+            name: "floor",
+            offsetx: 0,
+            offsety: -42.6820872917527,
+            properties: [
+                {
+                    name: "traversableSpeed",
+                    type: "float",
+                    value: 0,
+                },
+                {
+                    name: "interior",
+                    type: "bool",
+                    value: true,
+                },
+            ],
+            type: "tilelayer",
+            width: 4,
+            x: 0,
+            y: 0,
+        },
+        {
+            data: [
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 218, 218, 0, 220, 0, 0, 0, 220, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ],
+            height: 8,
+            name: "wall_ne",
+            offsetx: 12.010347376201,
+            offsety: -37.1388500411984,
+            properties: [
+                {
+                    name: "interior",
+                    type: "bool",
+                    value: true,
+                },
+            ],
+            type: "tilelayer",
+            width: 4,
+            x: 0,
+            y: 0,
+        },
+    ],
+};
+
+export async function createWorldAsset(): Promise<{
+    url: string;
+    asset: WorldAssetMetadata;
+}> {
+    const url = await ObjectStorage.putJSONObject({
+        owner: null,
+        name: "tilemaps/test_world_asset.json",
+        data: testWorldAsset,
+        bucket: BUCKETS.tiled,
+    });
+
+    return {
+        url,
+        asset: testWorldAsset,
+    };
+}
 
 /**
  * Creates a random player with the specified geohash, region, and name.

@@ -8,7 +8,11 @@ import {
     topologyAtGeohash,
     topologyTile,
 } from "$lib/crossover/world/biomes";
-import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
+import {
+    LOCATION_INSTANCE,
+    TILE_HEIGHT,
+    TILE_WIDTH,
+} from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import type { WorldAssetMetadata } from "$lib/crossover/world/types";
@@ -28,82 +32,18 @@ import type {
     WorldEntity,
 } from "$lib/server/crossover/redis/entities";
 import { isGeohashTraversableServer } from "$lib/server/crossover/utils";
-import { BUCKETS, ObjectStorage } from "$lib/server/objectStorage";
 import { sleep } from "$lib/utils";
 import { omit } from "lodash-es";
 import { beforeAll, describe, expect, test } from "vitest";
 import { itemRecord, worldRecord } from "../../src/store";
-import { createGandalfSarumanSauron, generateRandomGeohash } from "./utils";
+import {
+    createGandalfSarumanSauron,
+    createWorldAsset,
+    generateRandomGeohash,
+} from "./utils";
 
-const asset: WorldAssetMetadata = {
-    height: 8,
-    width: 4,
-    tileheight: 128,
-    tilewidth: 256,
-    layers: [
-        {
-            data: [
-                0, 0, 0, 0, 94, 94, 94, 0, 85, 85, 85, 0, 85, 85, 85, 0, 85, 85,
-                85, 0, 95, 139, 95, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ],
-            height: 8,
-            name: "platform",
-            type: "tilelayer",
-            width: 4,
-            x: 0,
-            y: 0,
-        },
-        // collider
-        {
-            data: [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 74, 74, 0, 0, 74, 74, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ],
-            height: 8,
-            name: "floor",
-            offsetx: 0,
-            offsety: -42.6820872917527,
-            properties: [
-                {
-                    name: "traversableSpeed",
-                    type: "float",
-                    value: 0,
-                },
-                {
-                    name: "interior",
-                    type: "bool",
-                    value: true,
-                },
-            ],
-            type: "tilelayer",
-            width: 4,
-            x: 0,
-            y: 0,
-        },
-        {
-            data: [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 218, 218, 0, 220, 0, 0, 0, 220, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ],
-            height: 8,
-            name: "wall_ne",
-            offsetx: 12.010347376201,
-            offsety: -37.1388500411984,
-            properties: [
-                {
-                    name: "interior",
-                    type: "bool",
-                    value: true,
-                },
-            ],
-            type: "tilelayer",
-            width: 4,
-            x: 0,
-            y: 0,
-        },
-    ],
-};
 let assetUrl: string;
+let asset: WorldAssetMetadata;
 
 let region: string;
 let geohash: string;
@@ -139,6 +79,7 @@ beforeAll(async () => {
     woodenDoor = (await spawnItem({
         geohash: woodenDoorGeohash,
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodendoor.prop,
         variables: {
             [compendium.woodendoor.variables!.doorsign.variable]:
@@ -152,12 +93,9 @@ beforeAll(async () => {
     });
 
     // Store the test world asset in storage and get the url
-    assetUrl = await ObjectStorage.putJSONObject({
-        owner: null,
-        name: "tilemaps/test_world_asset.json",
-        data: asset,
-        bucket: BUCKETS.tiled,
-    });
+    const worldAsset = await createWorldAsset();
+    asset = worldAsset.asset;
+    assetUrl = worldAsset.url;
 
     // Remove all worlds in test area
     const existingWorlds = await worldsInGeohashQuerySet(
@@ -354,26 +292,50 @@ describe("World Tests", () => {
     test("Test isGeohashTraversable", async () => {
         // Wooden door collider not traversable
         await expect(
-            isGeohashTraversableServer(woodenDoorGeohash, "geohash"),
+            isGeohashTraversableServer(
+                woodenDoorGeohash,
+                "geohash",
+                LOCATION_INSTANCE,
+            ),
         ).resolves.toBe(false);
         await expect(
-            isGeohashTraversableClient(woodenDoorGeohash, "geohash"),
+            isGeohashTraversableClient(
+                woodenDoorGeohash,
+                "geohash",
+                LOCATION_INSTANCE,
+            ),
         ).resolves.toBe(false);
 
         // Ocean not traversable
         await expect(
-            isGeohashTraversableServer("2b67676h", "geohash"),
+            isGeohashTraversableServer(
+                "2b67676h",
+                "geohash",
+                LOCATION_INSTANCE,
+            ),
         ).resolves.toBe(false);
         await expect(
-            isGeohashTraversableClient("2b67676h", "geohash"),
+            isGeohashTraversableClient(
+                "2b67676h",
+                "geohash",
+                LOCATION_INSTANCE,
+            ),
         ).resolves.toBe(false);
 
         // World collider not traversable
         await expect(
-            isGeohashTraversableServer("w21z8uck", "geohash"),
+            isGeohashTraversableServer(
+                "w21z8uck",
+                "geohash",
+                LOCATION_INSTANCE,
+            ),
         ).resolves.toBe(false);
         await expect(
-            isGeohashTraversableClient("w21z8uck", "geohash"),
+            isGeohashTraversableClient(
+                "w21z8uck",
+                "geohash",
+                LOCATION_INSTANCE,
+            ),
         ).resolves.toBe(false);
     });
 

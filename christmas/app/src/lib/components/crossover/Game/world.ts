@@ -4,6 +4,7 @@ import {
     seededRandom,
     stringToRandomNumber,
 } from "$lib/crossover/utils";
+import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     geohashLocationTypes,
@@ -45,8 +46,6 @@ async function drawWorlds(
     worldRecord: Record<string, Record<string, World>>,
     stage: Container,
 ) {
-    const locationInstance = ""; // worlds are the same in all instances
-
     // Load worlds
     for (const [town, worlds] of Object.entries(worldRecord)) {
         for (const [worldId, world] of Object.entries(worlds)) {
@@ -61,7 +60,7 @@ async function drawWorlds(
                 position: await calculatePosition(
                     origin,
                     world.locT as GeohashLocationType,
-                    locationInstance,
+                    LOCATION_INSTANCE, // worlds are the same in all instances
                 ),
                 town,
                 stage,
@@ -190,7 +189,7 @@ async function loadWorld({
 }
 
 async function debugWorld(stage: Container) {
-    const locationInstance = ""; // worlds are the same in all instances
+    const locationInstance = LOCATION_INSTANCE; // worlds are the same in all instances
 
     // Clear colliders
     for (const c of colliders) {
