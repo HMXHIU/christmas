@@ -15,11 +15,13 @@ import {
     type EquipmentSlot,
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
-import { substituteVariables } from "$lib/utils";
+import type { WorldPOIs } from "$lib/crossover/world/world";
+import { substituteValues } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import { setEntityBusy } from ".";
 import { performAbility } from "./abilities";
-import { spawnItem, spawnWorld } from "./dungeonMaster";
+import { worldAssetMetadataCache, worldPOIsCache } from "./caches";
+import { spawnItem, spawnWorld, spawnWorldPOIs } from "./dungeonMaster";
 import {
     fetchEntity,
     getNearbyEntities,
@@ -29,7 +31,6 @@ import {
     playerRepository,
     playersInGeohashQuerySet,
     saveEntity,
-    worldRepository,
 } from "./redis";
 import {
     type GameEntity,
@@ -708,7 +709,7 @@ async function enterItem(
     player: PlayerEntity,
     item: string,
     now?: number,
-): Promise<PlayerEntity> {
+): Promise<{ player: PlayerEntity; pois: WorldPOIs }> {
     // Set busy
     player = (await setEntityBusy({
         entity: player,
@@ -737,8 +738,7 @@ async function enterItem(
 
     // Check if can item can be entered
     const prop = compendium[itemEntity.prop];
-    const world = prop.world;
-    if (!world) {
+    if (!prop.world) {
         const message = `${prop.defaultName} is not something you can enter`;
         publishFeedEvent(player.player, {
             type: "error",
@@ -748,36 +748,35 @@ async function enterItem(
     }
 
     // Substitute world variables
-    const locationInstance = substituteVariables(world.locationInstance, {
-        self: itemEntity,
-    }) as string;
-    const geohash = substituteVariables(world.geohash, {
-        self: itemEntity,
-    }) as string;
-    const worldId = substituteVariables(world.world, {
-        self: itemEntity,
-    }) as string;
-    const url = substituteVariables(world.url, {
-        ...itemEntity.vars,
-        self: itemEntity,
-    }) as string;
-    const locationType = world.locationType;
+    const { locationInstance, geohash, world, url, locationType } =
+        substituteValues(prop.world as any, {
+            ...itemEntity.vars,
+            self: itemEntity,
+        });
 
     // Spawn world (if not exists)
-    let worldEntity = await worldRepository
-        .search()
-        .where("world")
-        .equal(worldId)
-        .first();
-    if (!worldEntity) {
-        worldEntity = await spawnWorld({
-            geohash,
-            locationType,
-            assetUrl: url,
-            tileHeight: TILE_HEIGHT, // do not change this
-            tileWidth: TILE_WIDTH,
-        });
-    }
+    let worldEntity = await spawnWorld({
+        world, // specify the worldId manually
+        geohash,
+        locationType,
+        assetUrl: url,
+        tileHeight: TILE_HEIGHT, // do not change this
+        tileWidth: TILE_WIDTH,
+    });
+
+    // Spawn world POIs
+    const { pois } = await spawnWorldPOIs(world, locationInstance, {
+        worldAssetMetadataCache: worldAssetMetadataCache,
+        worldPOIsCache: worldPOIsCache,
+    });
+
+    // Check for player spawn point (use item)
+    const playerSpawnPOI = pois.find(
+        (p) => "spawn" in p && p.spawn === "player",
+    );
+    const playerLocation = playerSpawnPOI
+        ? [playerSpawnPOI.geohash]
+        : [geohash];
 
     const nearbyPlayerIds = await getNearbyPlayerIds(
         player.loc[0],
@@ -786,7 +785,7 @@ async function enterItem(
     );
 
     // Change player location to world
-    player.loc = [geohash]; // TODO: find world spawn point
+    player.loc = playerLocation;
     player.locT = locationType;
     player.locI = locationInstance;
 
@@ -799,7 +798,7 @@ async function enterItem(
         { publishTo: nearbyPlayerIds },
     );
 
-    return player;
+    return { player, pois };
 }
 
 async function rest(player: PlayerEntity, now?: number) {

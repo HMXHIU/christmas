@@ -161,6 +161,19 @@ const testWorldAsset: WorldAssetMetadata = {
                     x: 619.114093959732,
                     y: 1764.77852348993,
                 },
+                // Player Spawn Point
+                {
+                    point: true,
+                    properties: [
+                        {
+                            name: "spawn",
+                            type: "string",
+                            value: "player",
+                        },
+                    ],
+                    x: 619.114093959732,
+                    y: 1764.77852348993,
+                },
                 // Item
                 {
                     point: true,
@@ -169,6 +182,23 @@ const testWorldAsset: WorldAssetMetadata = {
                             name: "prop",
                             type: "string",
                             value: "potionofhealth",
+                        },
+                    ],
+                    x: 619.114093959732,
+                    y: 1764.77852348993,
+                },
+                {
+                    point: true,
+                    properties: [
+                        {
+                            name: "prop",
+                            type: "string",
+                            value: "woodenclub",
+                        },
+                        {
+                            name: "etching",
+                            type: "string",
+                            value: "well used",
                         },
                     ],
                     x: 619.114093959732,

@@ -1,5 +1,6 @@
 import type { CacheInterface } from "$lib/caches";
 import type { World } from "$lib/server/crossover/redis/entities";
+import { omit } from "lodash-es";
 import {
     autoCorrectGeohashPrecision,
     geohashToColRow,
@@ -16,6 +17,7 @@ export {
     traversableSpeedInWorld,
     type Sanctuary,
     type Tileset,
+    type WorldPOIs,
     type WorldSeed,
 };
 
@@ -240,6 +242,7 @@ async function traversableCellsInWorld({
 interface SpawnItemPOI {
     prop: string;
     geohash: string;
+    variables: Record<string, string | number | boolean>;
 }
 
 interface SpawnMonsterPOI {
@@ -248,7 +251,12 @@ interface SpawnMonsterPOI {
     level: number;
 }
 
-type WorldPOIs = (SpawnItemPOI | SpawnMonsterPOI)[];
+interface SpawnPlayerPOI {
+    geohash: string;
+    spawn: "player";
+}
+
+type WorldPOIs = (SpawnItemPOI | SpawnMonsterPOI | SpawnPlayerPOI)[];
 
 async function poisInWorld(
     world: World,
@@ -284,9 +292,6 @@ async function poisInWorld(
                     },
                     {},
                 );
-
-                console.log(JSON.stringify(properties, null, 2));
-
                 // Convert x, y to geohash
                 const cols = Math.round(obj.x / tilewidth);
                 const rows = Math.round(obj.y / tileheight);
@@ -306,6 +311,7 @@ async function poisInWorld(
                     pois.push({
                         prop: properties.prop,
                         geohash,
+                        variables: omit(properties, "prop"), // for items, everything other than `prop` is a variable
                     });
                 }
 
@@ -315,6 +321,14 @@ async function poisInWorld(
                         beast: properties.beast,
                         geohash,
                         level: properties.level ?? 1,
+                    });
+                }
+
+                // Player spawn poi
+                else if (properties.spawn === "player") {
+                    pois.push({
+                        spawn: "player",
+                        geohash,
                     });
                 }
             }

@@ -294,8 +294,19 @@ describe("World Tests", () => {
         const pois = await poisInWorld(worldTwo);
         expect(pois).toMatchObject([
             {
+                spawn: "player",
+                geohash: "y78jdmk9",
+            },
+            {
                 prop: "potionofhealth",
                 geohash: "y78jdmk9",
+            },
+            {
+                prop: "woodenclub",
+                geohash: "y78jdmk9",
+                variables: {
+                    etching: "well used",
+                },
             },
             {
                 beast: "goblin",
@@ -320,6 +331,18 @@ describe("World Tests", () => {
             .equal(worldTwo.locT)
             .all();
 
+        const woodenclub = await itemRepository
+            .search()
+            .where("prop")
+            .equal("woodenclub")
+            .and("loc")
+            .containOneOf("y78jdmk9")
+            .and("locI")
+            .equal(LOCATION_INSTANCE)
+            .and("locT")
+            .equal(worldTwo.locT)
+            .all();
+
         const goblin = await monsterRepository
             .search()
             .where("beast")
@@ -332,8 +355,10 @@ describe("World Tests", () => {
             .equal(worldTwo.locT)
             .all();
 
+        expect(woodenclub != null).toBe(true);
         expect(potionofhealth != null).toBe(true);
         expect(goblin != null).toBe(true);
+        expect(woodenclub.length).toBe(1);
         expect(potionofhealth.length).toBe(1);
         expect(goblin.length).toBe(1);
     });

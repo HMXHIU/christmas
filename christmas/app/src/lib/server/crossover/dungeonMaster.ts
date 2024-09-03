@@ -25,7 +25,7 @@ import {
 } from "$lib/crossover/world/settings/world";
 import type { GeohashLocationType } from "$lib/crossover/world/types";
 import { geohashLocationTypes } from "$lib/crossover/world/types";
-import { poisInWorld } from "$lib/crossover/world/world";
+import { poisInWorld, type WorldPOIs } from "$lib/crossover/world/world";
 import { groupBy } from "lodash-es";
 import {
     blueprintsAtTerritoryCache,
@@ -216,13 +216,25 @@ async function spawnWorld({
     assetUrl,
     tileHeight,
     tileWidth,
+    world,
 }: {
+    world?: string; // use this as the worldId if specified
     geohash: string;
     locationType: GeohashLocationType;
     assetUrl: string;
     tileHeight: number;
     tileWidth: number;
 }): Promise<WorldEntity> {
+    // If world is specified, check if world already exists
+    if (world) {
+        const worldEntity = await worldRepository
+            .search()
+            .where("world")
+            .equal(world)
+            .first();
+        if (worldEntity) return worldEntity as WorldEntity;
+    }
+
     if (!geohashLocationTypes.has(locationType)) {
         throw new Error("Can only spawn world on GeohashLocationType");
     }
@@ -279,7 +291,7 @@ async function spawnWorld({
 
     // Get world count
     const count = await worldRepository.search().count();
-    const world = `world_${count}`;
+    world = world ?? `world_${count}`; // use world if specified
 
     // Create world asset
     const entity: WorldEntity = {
@@ -469,7 +481,11 @@ async function spawnWorldPOIs(
         worldAssetMetadataCache?: CacheInterface;
         worldPOIsCache?: CacheInterface;
     },
-) {
+): Promise<{
+    pois: WorldPOIs;
+    items?: ItemEntity[];
+    monsters?: MonsterEntity[];
+}> {
     // Get world entity
     const worldEntity = (await worldRepository
         .search()
@@ -483,12 +499,15 @@ async function spawnWorldPOIs(
     // Get pois
     const pois = await poisInWorld(worldEntity, options);
 
+    const items: ItemEntity[] = [];
+    const monsters: MonsterEntity[] = [];
+
     for (const poi of pois) {
         try {
             // Spawn item
             if ("prop" in poi) {
                 // Check if item is already spawned
-                const existing = await itemRepository
+                let item = (await itemRepository
                     .search()
                     .where("prop")
                     .equal(poi.prop)
@@ -498,22 +517,24 @@ async function spawnWorldPOIs(
                     .equal(locationInstance)
                     .and("locT")
                     .equal(worldEntity.locT)
-                    .count();
-                if (!existing) {
-                    const item = await spawnItem({
+                    .first()) as ItemEntity;
+                if (!item) {
+                    item = await spawnItem({
                         geohash: poi.geohash,
                         prop: poi.prop,
                         locationType: worldEntity.locT,
                         locationInstance,
+                        variables: poi.variables,
                     });
                     console.info(
                         `Spawned ${item.item} in ${worldEntity.world} at ${locationInstance}`,
                     );
                 }
+                items.push(item);
             }
             // Spawn monster
             else if ("beast" in poi) {
-                const existing = await monsterRepository
+                let monster = (await monsterRepository
                     .search()
                     .where("beast")
                     .equal(poi.beast)
@@ -523,10 +544,9 @@ async function spawnWorldPOIs(
                     .equal(locationInstance)
                     .and("locT")
                     .equal(worldEntity.locT)
-                    .count();
-
-                if (!existing) {
-                    const monster = await spawnMonster({
+                    .first()) as MonsterEntity;
+                if (!monster) {
+                    monster = await spawnMonster({
                         geohash: poi.geohash,
                         locationType: worldEntity.locT,
                         locationInstance,
@@ -537,9 +557,12 @@ async function spawnWorldPOIs(
                         `Spawned ${monster.monster} in ${worldEntity.world} at ${locationInstance}`,
                     );
                 }
+                monsters.push(monster);
             }
         } catch (error: any) {
             console.warn(error.message);
         }
     }
+
+    return { pois, monsters, items };
 }

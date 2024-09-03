@@ -9,6 +9,7 @@ export {
     topologyResponseCache,
     topologyResultCache,
     worldAssetMetadataCache,
+    worldPOIsCache,
     worldTraversableCellsCache,
 };
 
@@ -17,6 +18,7 @@ const topologyResultCache = new LRUMemoryCache({ max: 1000 }); // TODO: use redi
 const topologyResponseCache = new LRUMemoryCache({ max: 100 }); // server can't use browser cache
 const topologyBufferCache = new LRUMemoryCache({ max: 100 });
 const worldAssetMetadataCache = new LRUMemoryCache({ max: 100 });
+const worldPOIsCache = new LRUMemoryCache({ max: 100 });
 const worldTraversableCellsCache = new LRUMemoryCache({ max: 100 });
 const biomeAtGeohashCache = new LRUMemoryCache({ max: 1000 });
 const biomeParametersAtCityCache = new LRUMemoryCache({ max: 1000 });

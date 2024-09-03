@@ -1,5 +1,5 @@
 import { geohashNeighbour } from "$lib/crossover/utils";
-import { itemAttibutes, type PropWorld } from "$lib/crossover/world/compendium";
+import { itemAttibutes } from "$lib/crossover/world/compendium";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { WorldAssetMetadata } from "$lib/crossover/world/types";
@@ -200,17 +200,20 @@ describe("Test Items", () => {
         playerOne.locI = tavern.locI;
         playerOne = (await saveEntity(playerOne)) as PlayerEntity;
 
-        // Get world prop attribute
-        const worldProp = compendium[tavern.prop].world as PropWorld;
-        expect(worldProp != null).toBe(true);
+        // Test prop as world attribute
+        expect(compendium[tavern.prop].world != null).toBe(true);
 
-        // Get world prop attributes after variable substitution
-        const worldPropSub = substituteValues(worldProp as any, {
-            ...tavern.vars,
-            self: tavern,
-        });
+        // Variable substitution `prop.world`
+        const propWorld = substituteValues(
+            compendium[tavern.prop].world as any,
+            {
+                ...tavern.vars,
+                self: tavern,
+            },
+        );
 
-        expect(worldPropSub).toMatchObject({
+        // Test variable substitution
+        expect(propWorld).toMatchObject({
             locationInstance: tavern.item, // use tavern.item as the locationInstance
             locationType: "in",
             geohash: tavern.loc[0],
@@ -218,13 +221,26 @@ describe("Test Items", () => {
             url: worldAssetUrl,
         });
 
-        // playerOne enter tavern (check player location is inside the tavern)
-        const playerAfter = await enterItem(playerOne, tavern.item);
-        expect(playerAfter.loc[0]).toBe(tavern.loc[0]);
+        // playerOne enter tavern
+        const { player: playerAfter, pois } = await enterItem(
+            playerOne,
+            tavern.item,
+        );
+
+        // Check player spawn point
+        const spawnPoint = pois.find(
+            (p) => "spawn" in p && p.spawn === "player",
+        );
+        if (spawnPoint) {
+            expect(playerAfter.loc[0]).toBe(spawnPoint.geohash);
+        }
+        // Check player location is inside the tavern (if no spawn point)
+        else {
+            expect(playerAfter.loc[0]).toBe(tavern.loc[0]);
+        }
         expect(playerAfter).toMatchObject({
-            loc: [worldPropSub.geohash],
-            locT: worldPropSub.locationType,
-            locI: worldPropSub.locationInstance,
+            locT: propWorld.locationType,
+            locI: propWorld.locationInstance,
         });
     });
 
