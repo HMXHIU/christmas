@@ -17,6 +17,7 @@ import {
     hasResourcesForAbility,
     patchEffectWithVariables,
 } from "$lib/crossover/world/abilities";
+import { actions } from "$lib/crossover/world/actions";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
 import { type ItemVariables } from "$lib/crossover/world/compendium";
 import { archetypes, type PlayerMetadata } from "$lib/crossover/world/player";
@@ -67,6 +68,21 @@ export type PerformAbilityTestResults =
     | "itemConditionsNotMet"
     | "failure"
     | "success";
+
+export const allActions = [
+    actions.say,
+    actions.look,
+    actions.move,
+    actions.take,
+    actions.drop,
+    actions.equip,
+    actions.unequip,
+    actions.create,
+    actions.configure,
+    actions.inventory,
+    actions.rest,
+    actions.enter,
+];
 
 const testWorldAsset: WorldAssetMetadata = {
     height: 8,

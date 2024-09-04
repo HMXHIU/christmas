@@ -1,4 +1,3 @@
-import { actions } from "../actions";
 import { type Prop } from "../compendium";
 import { abilities } from "./abilities";
 
@@ -570,7 +569,7 @@ let compendium: Record<string, Prop> = {
                     start: "default",
                     end: "default",
                 },
-                action: actions.enter.action, // spawn and enter into a world defined by this key
+                action: "enter", // spawn and enter into a world defined by this key
             },
         },
     },

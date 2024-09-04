@@ -5,7 +5,6 @@ import {
     tokenize,
 } from "$lib/crossover/ir";
 import { type Ability } from "$lib/crossover/world/abilities";
-import { actions } from "$lib/crossover/world/actions";
 import type { Utility } from "$lib/crossover/world/compendium";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
@@ -21,6 +20,7 @@ import type {
 import { beforeAll, describe, expect, it } from "vitest";
 import { getRandomRegion } from "../utils";
 import {
+    allActions,
     createRandomPlayer,
     createWorldAsset,
     generateRandomGeohash,
@@ -36,29 +36,13 @@ let woodendoor: Item;
 let woodenclub: Item;
 let woodenclub2: Item;
 let woodenclub3: Item;
+let tavern: ItemEntity;
+let tavernGeohash: string;
 let portal: Item;
 let dragon: Monster;
 let goblin: Monster;
 let playerOneGeohash: string;
 let playerTwoGeohash: string;
-
-let tavern: ItemEntity;
-let tavernGeohash: string;
-
-const allActions = [
-    actions.say,
-    actions.look,
-    actions.move,
-    actions.take,
-    actions.drop,
-    actions.equip,
-    actions.unequip,
-    actions.create,
-    actions.configure,
-    actions.inventory,
-    actions.rest,
-    actions.enter,
-];
 
 describe("IR Tests", () => {
     beforeAll(async () => {

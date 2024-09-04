@@ -6,6 +6,7 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import type { GameActionEntities, TokenPositions } from "../ir";
 import { getEntityId } from "../utils";
+import { compendium } from "./settings/compendium";
 import {
     EquipmentSlots,
     geohashLocationTypes,
@@ -299,6 +300,12 @@ function resolveActionEntities({
                     (item) =>
                         item.locT === "inv" ||
                         EquipmentSlots.includes(item.locT as EquipmentSlot),
+                );
+            }
+            // Can only enter an item with a world
+            else if (action.action === actions.enter.action) {
+                targetList = (targetList as Item[]).filter(
+                    (item) => compendium[item.prop].world != null,
                 );
             }
         } else {

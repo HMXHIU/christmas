@@ -37,6 +37,7 @@ import {
     configureItem,
     createItem,
     dropItem,
+    enterItem,
     equipItem,
     moveEntity,
     performInventory,
@@ -473,6 +474,13 @@ const crossoverRouter = {
             .query(async ({ ctx, input }) => {
                 const { item, variables } = input;
                 await configureItem(ctx.player, item, variables, ctx.now);
+            }),
+        // cmd.enterItem
+        enterItem: playerAuthBusyProcedure
+            .input(TargetItemSchema)
+            .query(async ({ ctx, input }) => {
+                const { item } = input;
+                await enterItem(ctx.player, item, ctx.now);
             }),
         // cmd.rest
         rest: playerAuthBusyProcedure.query(async ({ ctx }) => {

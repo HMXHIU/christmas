@@ -28,6 +28,7 @@ import {
     crossoverCmdConfigureItem,
     crossoverCmdCreateItem,
     crossoverCmdDrop,
+    crossoverCmdEnterItem,
     crossoverCmdEquip,
     crossoverCmdLook,
     crossoverCmdMove,
@@ -168,12 +169,15 @@ async function executeGameCommand(
     }
     // Action (variables are required)
     else if ("action" in gameAction) {
-        return await performAction({
-            self,
-            action: gameAction as Action,
-            target,
-            variables,
-        });
+        return await performAction(
+            {
+                self,
+                action: gameAction as Action,
+                target,
+                variables,
+            },
+            headers,
+        );
     }
 }
 
@@ -274,6 +278,13 @@ async function performAction(
         const [key, val] = variables.queryIrrelevant.split(":");
         return await crossoverCmdConfigureItem(
             { item: getEntityId(target as Item)[0], variables: { [key]: val } },
+            headers,
+        );
+    }
+    // enter
+    else if (action.action === "enter") {
+        return await crossoverCmdEnterItem(
+            { item: getEntityId(target as Item)[0] },
             headers,
         );
     }

@@ -29,6 +29,7 @@ export {
     crossoverCmdConfigureItem,
     crossoverCmdCreateItem,
     crossoverCmdDrop,
+    crossoverCmdEnterItem,
     crossoverCmdEquip,
     crossoverCmdLook,
     crossoverCmdMove,
@@ -324,6 +325,16 @@ function crossoverCmdConfigureItem(
     return trpc({ headers }).crossover.cmd.configureItem.query({
         item,
         variables,
+    });
+}
+
+function crossoverCmdEnterItem(
+    input: { item: string },
+    headers: HTTPHeaders = {},
+) {
+    const { item } = input;
+    return trpc({ headers }).crossover.cmd.enterItem.query({
+        item,
     });
 }
 

@@ -25,7 +25,9 @@ import { sleep } from "$lib/utils";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import {
+    allActions,
     createRandomPlayer,
+    createWorldAsset,
     generateRandomGeohash,
     waitForEventData,
 } from "./utils";
@@ -43,25 +45,11 @@ let woodendoor: Item;
 let woodenclub: Item;
 let woodenclub2: Item;
 let woodenclub3: Item;
+let tavern: ItemEntity;
+let tavernGeohash: string;
 let portal: Item;
 let dragon: Monster;
 let goblin: Monster;
-
-beforeEach(async () => {
-    // Reset stats
-    playerOne = { ...playerOne, ...playerStats({ level: playerOne.lvl }) };
-    playerOne = (await saveEntity(playerOne as PlayerEntity)) as Player;
-    goblin = {
-        ...goblin,
-        ...monsterStats({ level: goblin.lvl, beast: goblin.beast }),
-    };
-    goblin = (await saveEntity(goblin as MonsterEntity)) as Monster;
-    dragon = {
-        ...dragon,
-        ...monsterStats({ level: dragon.lvl, beast: dragon.beast }),
-    };
-    dragon = (await saveEntity(dragon as MonsterEntity)) as Monster;
-});
 
 beforeAll(async () => {
     await initializeClients(); // create redis repositories
@@ -134,6 +122,18 @@ beforeAll(async () => {
         prop: compendium.portal.prop,
     })) as ItemEntity;
 
+    tavernGeohash = generateRandomGeohash(8, "h9");
+    const { url } = await createWorldAsset();
+    tavern = (await spawnItem({
+        geohash: tavernGeohash,
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.tavern.prop,
+        variables: {
+            url,
+        },
+    })) as ItemEntity;
+
     dragon = await spawnMonster({
         geohash: geohashNeighbour(geohashNeighbour(playerOneGeohash, "s"), "s"),
         locationType: "geohash",
@@ -151,7 +151,113 @@ beforeAll(async () => {
     });
 });
 
+beforeEach(async () => {
+    // Reset stats
+    playerOne = {
+        ...playerOne,
+        ...playerStats({ level: playerOne.lvl }),
+        loc: [playerOneGeohash],
+    };
+    playerOne = (await saveEntity(playerOne as PlayerEntity)) as Player;
+    goblin = {
+        ...goblin,
+        ...monsterStats({ level: goblin.lvl, beast: goblin.beast }),
+    };
+    goblin = (await saveEntity(goblin as MonsterEntity)) as Monster;
+    dragon = {
+        ...dragon,
+        ...monsterStats({ level: dragon.lvl, beast: dragon.beast }),
+    };
+    dragon = (await saveEntity(dragon as MonsterEntity)) as Monster;
+});
+
 describe("Command Tests", () => {
+    test("Enter tavern", async () => {
+        // Move to tavern
+        playerOne.loc = [tavernGeohash];
+        playerOne = (await saveEntity(playerOne as PlayerEntity)) as Player;
+
+        // Test `searchPossibleCommands`
+        const { commands, queryTokens, tokenPositions } =
+            searchPossibleCommands({
+                query: "enter tavern",
+                player: playerOne,
+                playerAbilities: [
+                    abilities.scratch,
+                    abilities.bandage,
+                    abilities.swing,
+                ],
+                playerItems: [woodenclub],
+                actions: allActions,
+                monsters: [goblin, dragon],
+                players: [playerOne],
+                items: [woodendoor, tavern],
+            });
+        expect(queryTokens).toMatchObject(["enter", "tavern"]);
+        expect(tokenPositions).toMatchObject({
+            [tavern.item]: {
+                "1": {
+                    token: "tavern",
+                    score: 1,
+                },
+            },
+            enter: {
+                "0": {
+                    token: "enter",
+                    score: 1,
+                },
+            },
+        });
+        expect(commands).toMatchObject([
+            [
+                {
+                    action: "enter",
+                    description: "Enter.",
+                    predicate: {
+                        target: ["item"],
+                        tokenPositions: {
+                            action: 0,
+                            target: 1,
+                        },
+                    },
+                },
+                {
+                    self: {
+                        player: playerOne.player,
+                    },
+                    target: {
+                        item: tavern.item,
+                    },
+                },
+                {
+                    query: "enter tavern",
+                    queryIrrelevant: "",
+                },
+            ],
+        ]);
+
+        // Test enter tavern
+        const enterTavern = commands[0];
+        setTimeout(
+            () => executeGameCommand(enterTavern, { Cookie: playerOneCookies }),
+            10,
+        );
+        let result = await waitForEventData(eventStreamOne, "entities");
+        expect(result).toMatchObject({
+            event: "entities",
+            players: [
+                {
+                    player: playerOne.player,
+                    locT: "in",
+                    locI: tavern.item,
+                },
+            ],
+            monsters: [],
+            items: [],
+            op: "upsert",
+        });
+    });
+
     test("Open and close door", async () => {
         // Test open door
         const openDoor: GameCommand = searchPossibleCommands({
