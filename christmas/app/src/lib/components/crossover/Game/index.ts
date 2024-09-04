@@ -229,7 +229,8 @@ async function updatePlayer(
         if (
             oldEntity == null ||
             oldEntity.loc[0] !== newEntity.loc[0] ||
-            oldEntity.locT !== newEntity.locT
+            oldEntity.locT !== newEntity.locT ||
+            oldEntity.locI !== newEntity.locI
         ) {
             await updateWorlds(
                 newEntity.loc[0],
@@ -237,8 +238,12 @@ async function updatePlayer(
             );
         }
 
-        // Perform `look` if locT changed
-        if (oldEntity && oldEntity.locT !== newEntity.locT) {
+        // Perform `look` if locT/I changed
+        if (
+            oldEntity &&
+            (oldEntity.locT !== newEntity.locT ||
+                oldEntity.locI !== newEntity.locI)
+        ) {
             await tryExecuteGameCommand([actions.look, { self: newEntity }]);
         }
     }

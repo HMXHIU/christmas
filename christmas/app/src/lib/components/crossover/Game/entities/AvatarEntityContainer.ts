@@ -1,5 +1,6 @@
 import { isItemEquipped } from "$lib/crossover/world/compendium";
-import { compendium, tints } from "$lib/crossover/world/settings/compendium";
+import { tints } from "$lib/crossover/world/materials";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { AssetMetadata } from "$lib/crossover/world/types";
 import type { Item } from "$lib/server/crossover/redis/entities";
 import type { Container, DestroyOptions } from "pixi.js";

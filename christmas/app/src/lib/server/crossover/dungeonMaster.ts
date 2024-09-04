@@ -26,6 +26,7 @@ import {
 import type { GeohashLocationType } from "$lib/crossover/world/types";
 import { geohashLocationTypes } from "$lib/crossover/world/types";
 import { poisInWorld, type WorldPOIs } from "$lib/crossover/world/world";
+import { substituteValues } from "$lib/utils";
 import { groupBy } from "lodash-es";
 import {
     blueprintsAtTerritoryCache,
@@ -478,6 +479,7 @@ async function spawnWorldPOIs(
     world: string,
     locationInstance: string,
     options?: {
+        source?: ItemEntity | PlayerEntity; // who spawned the world (used in variable substitution)
         worldAssetMetadataCache?: CacheInterface;
         worldPOIsCache?: CacheInterface;
     },
@@ -486,6 +488,9 @@ async function spawnWorldPOIs(
     items?: ItemEntity[];
     monsters?: MonsterEntity[];
 }> {
+    // Note: This should only be done once, else it will spawn multiple items/monsters!
+    // TODO: how to respawn monsters/item? can set the id of monsters/items in words to be unique??
+
     // Get world entity
     const worldEntity = (await worldRepository
         .search()
@@ -498,7 +503,6 @@ async function spawnWorldPOIs(
 
     // Get pois
     const pois = await poisInWorld(worldEntity, options);
-
     const items: ItemEntity[] = [];
     const monsters: MonsterEntity[] = [];
 
@@ -506,8 +510,16 @@ async function spawnWorldPOIs(
         try {
             // Spawn item
             if ("prop" in poi) {
-                // Check if item is already spawned
-                let item = (await itemRepository
+                // Substutite variables with `source` if provided
+
+                const variables = options?.source
+                    ? substituteValues(poi.variables as any, {
+                          source: options.source,
+                      })
+                    : poi.variables;
+
+                // Remove existing items
+                var existing = (await itemRepository
                     .search()
                     .where("prop")
                     .equal(poi.prop)
@@ -517,19 +529,21 @@ async function spawnWorldPOIs(
                     .equal(locationInstance)
                     .and("locT")
                     .equal(worldEntity.locT)
-                    .first()) as ItemEntity;
-                if (!item) {
-                    item = await spawnItem({
-                        geohash: poi.geohash,
-                        prop: poi.prop,
-                        locationType: worldEntity.locT,
-                        locationInstance,
-                        variables: poi.variables,
-                    });
-                    console.info(
-                        `Spawned ${item.item} in ${worldEntity.world} at ${locationInstance}`,
-                    );
-                }
+                    .all()) as ItemEntity[];
+
+                await itemRepository.remove(...existing.map((i) => i.item));
+
+                // Spawn item
+                const item = await spawnItem({
+                    geohash: poi.geohash,
+                    prop: poi.prop,
+                    locationType: worldEntity.locT,
+                    locationInstance,
+                    variables,
+                });
+                console.info(
+                    `Spawned ${item.item} in ${worldEntity.world} at ${locationInstance}`,
+                );
                 items.push(item);
             }
             // Spawn monster

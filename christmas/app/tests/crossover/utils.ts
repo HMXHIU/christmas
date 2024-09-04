@@ -220,6 +220,29 @@ const testWorldAsset: WorldAssetMetadata = {
                     x: 619.114093959732,
                     y: 1764.77852348993,
                 },
+                // Item - spawn portal back to the actual world
+                {
+                    point: true,
+                    properties: [
+                        {
+                            name: "prop",
+                            type: "string",
+                            value: "portal",
+                        },
+                        {
+                            name: "target",
+                            type: "string",
+                            value: "{{source.item}}", // source is a special variable to be substituted when spawning worlds
+                        },
+                        {
+                            name: "description",
+                            type: "string",
+                            value: "Tavern exit",
+                        },
+                    ],
+                    x: 619.114093959732,
+                    y: 1764.77852348993,
+                },
                 // Monster
                 {
                     point: true,

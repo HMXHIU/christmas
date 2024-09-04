@@ -306,6 +306,8 @@ async function poisInWorld(
                     precision: worldSeed.spatial.unit.precision,
                 });
 
+                // Note: A POI can implement multiple POI interfaces (hence `if` not `else if`)
+
                 // Item poi
                 if (properties.prop) {
                     pois.push({
@@ -316,7 +318,7 @@ async function poisInWorld(
                 }
 
                 // Monster poi
-                else if (properties.beast) {
+                if (properties.beast) {
                     pois.push({
                         beast: properties.beast,
                         geohash,
@@ -325,7 +327,7 @@ async function poisInWorld(
                 }
 
                 // Player spawn poi
-                else if (properties.spawn === "player") {
+                if (properties.spawn === "player") {
                     pois.push({
                         spawn: "player",
                         geohash,

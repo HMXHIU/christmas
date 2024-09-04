@@ -768,6 +768,7 @@ async function enterItem(
     const { pois } = await spawnWorldPOIs(world, locationInstance, {
         worldAssetMetadataCache: worldAssetMetadataCache,
         worldPOIsCache: worldPOIsCache,
+        source: itemEntity,
     });
 
     // Check for player spawn point (use item)

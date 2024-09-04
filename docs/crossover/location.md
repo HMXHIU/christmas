@@ -121,11 +121,11 @@ Entering and exiting instances
 - Solo dungeons, player housing, buildings should only have a single exit point to bring the player back to the actual world
 - This is to prevent him from exploring outside the instance into the parallel world
 - Scripts should not spawn monsters/items into instanced worlds (only during the preparation phase)
-- [ ] An endpoint to prepare the world should take in a `world` template and spawn the required items/monsters in that template only
+- [x] An endpoint to prepare the world should take in a `world` template and spawn the required items/monsters in that template only
 
 Location variable substitute
 
-- [ ] Teleport support `locI` variable substitute
-- [ ] `performEffectOnEntity` support for `locI` change
-- [ ] When `locI` changes, need to reload world, look, etc ... similar to `locT` change
-- [ ] Use itemId (eg. tavern) as `locationInstance` when entering
+- [x] Teleport support `locI` variable substitute
+- [x] `performEffectOnEntity` support for `locI` change
+- [x] When `locI` changes, need to reload world, look, etc ... similar to `locT` change
+- [x] Use itemId (eg. tavern) as `locationInstance` when entering

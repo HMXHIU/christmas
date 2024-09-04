@@ -5,6 +5,7 @@ import {
     TILE_HEIGHT,
     TILE_WIDTH,
 } from "$lib/crossover/world/settings";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import type { WorldAssetMetadata } from "$lib/crossover/world/types";
 import {
@@ -13,6 +14,7 @@ import {
     traversableSpeedInWorld,
 } from "$lib/crossover/world/world";
 import {
+    spawnItem,
     spawnWorld,
     spawnWorldPOIs,
 } from "$lib/server/crossover/dungeonMaster";
@@ -31,7 +33,11 @@ import type {
 import { sleep } from "$lib/utils";
 import { beforeAll, describe, expect, test } from "vitest";
 import { worldRecord } from "../../src/store";
-import { createGandalfSarumanSauron, createWorldAsset } from "./utils";
+import {
+    createGandalfSarumanSauron,
+    createWorldAsset,
+    generateRandomGeohash,
+} from "./utils";
 
 let assetUrl: string;
 let asset: WorldAssetMetadata;
@@ -77,6 +83,18 @@ beforeAll(async () => {
     ).all();
     worldRepository.remove(existingWorlds.map((w) => (w as WorldEntity).world));
     await sleep(1000);
+
+    woodenDoorGeohash = generateRandomGeohash(8, "h9");
+    woodenDoor = (await spawnItem({
+        geohash: woodenDoorGeohash,
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.woodendoor.prop,
+        variables: {
+            [compendium.woodendoor.variables!.doorsign.variable]:
+                "A custom door sign",
+        },
+    })) as ItemEntity;
 
     // Spawn worlds
     worldGeohash = "w21z8ucp"; // top left plot
@@ -309,6 +327,13 @@ describe("World Tests", () => {
                 },
             },
             {
+                prop: "portal",
+                geohash: "y78jdmk9",
+                variables: {
+                    target: "{{source.item}}",
+                },
+            },
+            {
                 beast: "goblin",
                 geohash: "y78jdmk9",
                 level: 2,
@@ -316,7 +341,9 @@ describe("World Tests", () => {
         ]);
 
         // Test `items` and `monsters` spawned in world
-        await spawnWorldPOIs(worldTwo.world, LOCATION_INSTANCE);
+        await spawnWorldPOIs(worldTwo.world, LOCATION_INSTANCE, {
+            source: woodenDoor, // use woodenDoor as the source for variable substitution
+        });
 
         // Check entities spawned
         const potionofhealth = await itemRepository
@@ -355,12 +382,27 @@ describe("World Tests", () => {
             .equal(worldTwo.locT)
             .all();
 
-        expect(woodenclub != null).toBe(true);
-        expect(potionofhealth != null).toBe(true);
-        expect(goblin != null).toBe(true);
-        expect(woodenclub.length).toBe(1);
-        expect(potionofhealth.length).toBe(1);
-        expect(goblin.length).toBe(1);
+        const portal = await itemRepository
+            .search()
+            .where("prop")
+            .equal("portal")
+            .and("loc")
+            .containOneOf("y78jdmk9")
+            .and("locI")
+            .equal(LOCATION_INSTANCE)
+            .and("locT")
+            .equal(worldTwo.locT)
+            .all();
+
+        expect(woodenclub != null && woodenclub.length === 1).toBe(true);
+        expect(potionofhealth != null && potionofhealth.length === 1).toBe(
+            true,
+        );
+        expect(goblin != null && goblin.length === 1).toBe(true);
+        expect(portal != null && portal.length === 1).toBe(true);
+
+        // Check portal variable substitution (source during spawing)
+        expect((portal[0] as ItemEntity).vars.target).toBe(woodenDoor.item);
     });
 
     test("Test `spawnWorld` (negative)", async () => {

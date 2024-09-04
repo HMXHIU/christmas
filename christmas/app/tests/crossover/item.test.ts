@@ -203,7 +203,7 @@ describe("Test Items", () => {
         // Test prop as world attribute
         expect(compendium[tavern.prop].world != null).toBe(true);
 
-        // Variable substitution `prop.world`
+        // Test variable substitution
         const propWorld = substituteValues(
             compendium[tavern.prop].world as any,
             {
@@ -211,8 +211,6 @@ describe("Test Items", () => {
                 self: tavern,
             },
         );
-
-        // Test variable substitution
         expect(propWorld).toMatchObject({
             locationInstance: tavern.item, // use tavern.item as the locationInstance
             locationType: "in",

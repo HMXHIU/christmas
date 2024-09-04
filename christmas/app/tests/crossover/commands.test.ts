@@ -256,6 +256,8 @@ describe("Command Tests", () => {
             items: [],
             op: "upsert",
         });
+
+        // Test exit tavern
     });
 
     test("Open and close door", async () => {
