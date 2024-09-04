@@ -6,7 +6,7 @@ import {
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
-} from "$lib/components/crossover/Game/caches";
+} from "$lib/crossover/caches";
 import {
     autoCorrectGeohashPrecision,
     generateEvenlySpacedPoints,

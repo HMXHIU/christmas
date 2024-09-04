@@ -1,5 +1,11 @@
 <script lang="ts">
     import { LRUMemoryCache } from "$lib/caches";
+    import {
+        blueprintsAtTerritoryCache,
+        topologyBufferCache,
+        topologyResponseCache,
+        topologyResultCache,
+    } from "$lib/crossover/caches";
     import { crossoverWorldPOI } from "$lib/crossover/client";
     import { geohashToColRow } from "$lib/crossover/utils";
     import { topologyAtGeohash } from "$lib/crossover/world/biomes";
@@ -29,12 +35,6 @@
     } from "pixi.js";
     import { onMount } from "svelte";
     import { player } from "../../../../store";
-    import {
-        blueprintsAtTerritoryCache,
-        topologyBufferCache,
-        topologyResponseCache,
-        topologyResultCache,
-    } from "../Game/caches";
     import { layers } from "../Game/layers";
     import { loadShaderGeometry } from "../shaders";
 

@@ -1,34 +1,23 @@
 import { PUBLIC_TILED_MINIO_BUCKET } from "$env/static/public";
 import {
-    biomeAtGeohashCache,
-    biomeParametersAtCityCache,
-    dungeonGraphCache,
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
-    worldAssetMetadataCache,
-    worldTraversableCellsCache,
-} from "$lib/components/crossover/Game/caches";
-import { aStarPathfinding } from "$lib/crossover/pathfinding";
+} from "$lib/crossover/caches";
 import {
     geohashToColRow,
     geohashToGridCell,
-    gridCellToGeohash,
     seededRandom,
 } from "$lib/crossover/utils";
 import type { Ability } from "$lib/crossover/world/abilities";
 import type { Action } from "$lib/crossover/world/actions";
 import { avatarMorphologies } from "$lib/crossover/world/bestiary";
 import { elevationAtGeohash } from "$lib/crossover/world/biomes";
-import { worldSeed } from "$lib/crossover/world/settings/world";
 import type {
     AssetMetadata,
-    Direction,
     GeohashLocationType,
 } from "$lib/crossover/world/types";
-import { isGeohashTraversable } from "$lib/crossover/world/utils";
 import type { Tileset } from "$lib/crossover/world/world";
-import type { World } from "$lib/server/crossover/redis/entities";
 import { gsap } from "gsap";
 import { PixiPlugin } from "gsap/PixiPlugin";
 import * as PIXI from "pixi.js";
@@ -44,13 +33,7 @@ import {
     type Texture,
 } from "pixi.js";
 import { get } from "svelte/store";
-import {
-    itemRecord,
-    landGrading,
-    player,
-    worldOffset,
-    worldRecord,
-} from "../../../../store";
+import { landGrading, player, worldOffset } from "../../../../store";
 import type { AnimationMetadata, AvatarMetadata } from "../avatar/types";
 import { entityContainers } from "./entities";
 import {
@@ -72,14 +55,12 @@ export {
     destroyContainer,
     getAngle,
     getAvatarMetadata,
-    getDirectionsToPosition,
     getImageForTile,
     getPathHighlights,
     getPlayerPosition,
     getTilesetForTile,
     initAssetManager,
     isCellInView,
-    isGeohashTraversableClient,
     isoToCart,
     loadAssetTexture,
     positionsInRange,
@@ -211,54 +192,6 @@ function calculateRowColFromIso(isoX: number, isoY: number): [number, number] {
     const col = Math.round(cartX / CELL_WIDTH);
     const row = Math.round(cartY / CELL_HEIGHT);
     return [row, col];
-}
-
-async function getTraversalCost(
-    row: number,
-    col: number,
-    locationType: GeohashLocationType,
-    locationInstance: string,
-    precision?: number,
-): Promise<number> {
-    // 0 is walkable, 1 is not
-    return (await isGeohashTraversableClient(
-        gridCellToGeohash({
-            col,
-            row,
-            precision: precision ?? worldSeed.spatial.unit.precision,
-        }),
-        locationType,
-        locationInstance,
-    ))
-        ? 0
-        : 1;
-}
-
-async function getDirectionsToPosition(
-    source: { row: number; col: number },
-    target: { row: number; col: number },
-    locationType: GeohashLocationType,
-    locationInstance: string,
-    options?: {
-        range?: number;
-        precision?: number;
-    },
-): Promise<Direction[]> {
-    return await aStarPathfinding({
-        colStart: source.col,
-        rowStart: source.row,
-        colEnd: target.col,
-        rowEnd: target.row,
-        range: options?.range,
-        getTraversalCost: (row, col) =>
-            getTraversalCost(
-                row,
-                col,
-                locationType,
-                locationInstance,
-                options?.precision,
-            ),
-    });
 }
 
 async function loadAssetTexture(
@@ -492,64 +425,6 @@ async function getAvatarMetadata(
             animation,
         };
     }
-}
-
-async function hasColliders(
-    geohash: string,
-    locationType: GeohashLocationType,
-    locationInstance: string,
-): Promise<boolean> {
-    for (const item of Object.values(get(itemRecord))) {
-        if (
-            item.locT === locationType &&
-            item.loc.includes(geohash) &&
-            item.locI === locationInstance
-        ) {
-            return true;
-        }
-    }
-    return false;
-}
-
-async function getWorldForGeohash(
-    geohash: string,
-    locationType: GeohashLocationType,
-): Promise<World | undefined> {
-    for (const [town, worlds] of Object.entries(get(worldRecord))) {
-        if (!geohash.startsWith(town)) continue;
-        for (const world of Object.values(worlds)) {
-            for (const loc of world.loc) {
-                if (geohash.startsWith(loc) && world.locT === locationType) {
-                    return world;
-                }
-            }
-        }
-    }
-    return undefined;
-}
-
-async function isGeohashTraversableClient(
-    geohash: string,
-    locationType: GeohashLocationType,
-    locationInstance: string,
-): Promise<boolean> {
-    return isGeohashTraversable(
-        geohash,
-        locationType,
-        locationInstance,
-        hasColliders,
-        getWorldForGeohash,
-        {
-            topologyResponseCache,
-            topologyResultCache,
-            topologyBufferCache,
-            worldAssetMetadataCache,
-            worldTraversableCellsCache,
-            biomeAtGeohashCache,
-            biomeParametersAtCityCache,
-            dungeonGraphCache,
-        },
-    );
 }
 
 function debugBounds(c: Container, color?: ColorSource): Container {

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { crossoverPlayerMetadata } from "$lib/crossover/client";
+    import { getDirectionsToPosition } from "$lib/crossover/game";
     import { getGameActionId, type GameCommand } from "$lib/crossover/ir";
     import {
         geohashToColRow,
@@ -25,7 +26,7 @@
         WebGLRenderer,
     } from "pixi.js";
     import { onDestroy, onMount } from "svelte";
-    import { executeGameCommand, updateEntities, updateWorlds } from ".";
+    import { tryExecuteGameCommand, updateEntities, updateWorlds } from ".";
     import type { ActionEvent } from "../../../../routes/api/crossover/stream/+server";
     import {
         actionEvent,
@@ -59,7 +60,6 @@
     import { CANVAS_HEIGHT, CANVAS_WIDTH, CELL_WIDTH } from "./settings";
     import { drawTargetUI } from "./ui";
     import {
-        getDirectionsToPosition,
         getPathHighlights,
         getPlayerPosition,
         positionsInRange,
@@ -392,8 +392,8 @@
                 $player.locT as GeohashLocationType,
             );
 
-            await executeGameCommand([actions.look, { self: $player }]);
-            await executeGameCommand([actions.inventory, { self: $player }]);
+            await tryExecuteGameCommand([actions.look, { self: $player }]);
+            await tryExecuteGameCommand([actions.inventory, { self: $player }]);
         }
     }
 
@@ -422,8 +422,8 @@
 
                 // Look at surroundings & update inventory
                 await updateWorlds(p.loc[0], p.locT as GeohashLocationType);
-                await executeGameCommand([actions.look, { self: p }]);
-                await executeGameCommand([actions.inventory, { self: p }]);
+                await tryExecuteGameCommand([actions.look, { self: p }]);
+                await tryExecuteGameCommand([actions.inventory, { self: p }]);
             }),
             actionEvent.subscribe(async (e) => {
                 if (!e) return;

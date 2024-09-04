@@ -1,16 +1,12 @@
 import { crossoverCmdMove } from "$lib/crossover/client";
+import { getDirectionsToPosition } from "$lib/crossover/game";
 import { geohashToColRow, getPositionsForPath } from "$lib/crossover/utils";
 import type { Direction } from "$lib/crossover/world/types";
 import type { Container, FederatedPointerEvent } from "pixi.js";
 import { highlightShaderInstances } from "../shaders";
 import { screenToGeohashKDtree } from "./biomes";
 import { HALF_ISO_CELL_HEIGHT, HALF_ISO_CELL_WIDTH } from "./settings";
-import {
-    getDirectionsToPosition,
-    getPathHighlights,
-    getPlayerPosition,
-    snapToGrid,
-} from "./utils";
+import { getPathHighlights, getPlayerPosition, snapToGrid } from "./utils";
 
 export { createHIDHandlers };
 

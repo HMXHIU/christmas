@@ -1,24 +1,28 @@
-import { executeGameCommand } from "$lib/components/crossover/Game";
 import {
     crossoverCmdEquip,
     crossoverCmdTake,
     stream,
 } from "$lib/crossover/client";
+import { executeGameCommand } from "$lib/crossover/game";
 import { searchPossibleCommands, type GameCommand } from "$lib/crossover/ir";
 import { geohashNeighbour } from "$lib/crossover/utils";
-import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { monsterStats } from "$lib/crossover/world/bestiary";
+import { playerStats } from "$lib/crossover/world/player";
+import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
-import { initializeClients } from "$lib/server/crossover/redis";
+import { initializeClients, saveEntity } from "$lib/server/crossover/redis";
 import type {
     Item,
     ItemEntity,
     Monster,
+    MonsterEntity,
     Player,
+    PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
-import { beforeAll, describe, expect, test } from "vitest";
+import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import {
     createRandomPlayer,
@@ -42,6 +46,22 @@ let woodenclub3: Item;
 let portal: Item;
 let dragon: Monster;
 let goblin: Monster;
+
+beforeEach(async () => {
+    // Reset stats
+    playerOne = { ...playerOne, ...playerStats({ level: playerOne.lvl }) };
+    playerOne = (await saveEntity(playerOne as PlayerEntity)) as Player;
+    goblin = {
+        ...goblin,
+        ...monsterStats({ level: goblin.lvl, beast: goblin.beast }),
+    };
+    goblin = (await saveEntity(goblin as MonsterEntity)) as Monster;
+    dragon = {
+        ...dragon,
+        ...monsterStats({ level: dragon.lvl, beast: dragon.beast }),
+    };
+    dragon = (await saveEntity(dragon as MonsterEntity)) as Monster;
+});
 
 beforeAll(async () => {
     await initializeClients(); // create redis repositories
@@ -79,6 +99,7 @@ beforeAll(async () => {
         geohash: geohashNeighbour(playerOneGeohash, "n"),
         prop: compendium.woodendoor.prop,
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         variables: {
             [compendium.woodendoor.variables.doorsign.variable]:
                 "A custom door sign",
@@ -88,30 +109,35 @@ beforeAll(async () => {
     woodenclub = (await spawnItem({
         geohash: playerOneGeohash,
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
     woodenclub2 = (await spawnItem({
         geohash: playerOneGeohash,
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
     woodenclub3 = (await spawnItem({
         geohash: playerOneGeohash,
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
     portal = (await spawnItem({
         geohash: playerOne.loc[0],
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.portal.prop,
     })) as ItemEntity;
 
     dragon = await spawnMonster({
         geohash: geohashNeighbour(geohashNeighbour(playerOneGeohash, "s"), "s"),
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         beast: "dragon",
         level: 1,
     });
@@ -119,6 +145,7 @@ beforeAll(async () => {
     goblin = await spawnMonster({
         geohash: playerOneGeohash,
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         beast: "goblin",
         level: 1,
     });
@@ -126,6 +153,7 @@ beforeAll(async () => {
 
 describe("Command Tests", () => {
     test("Open and close door", async () => {
+        // Test open door
         const openDoor: GameCommand = searchPossibleCommands({
             query: "open woodendoor",
             player: playerOne,
@@ -140,28 +168,19 @@ describe("Command Tests", () => {
             players: [playerOne],
             items: [woodendoor],
         }).commands[0];
-
         setTimeout(
             () => executeGameCommand(openDoor, { Cookie: playerOneCookies }),
-            0,
+            10,
         );
-
         let result = await waitForEventData(eventStreamOne, "entities");
         expect(result).toMatchObject({
             event: "entities",
-            players: [{ player: playerOne.player }],
-            monsters: [],
-            items: [{ item: woodendoor.item, state: "closed" }],
-        });
-
-        result = await waitForEventData(eventStreamOne, "entities");
-        expect(result).toMatchObject({
-            event: "entities",
-            players: [{ player: playerOne.player }],
+            players: [],
             monsters: [],
             items: [{ item: woodendoor.item, state: "open" }],
         });
 
+        // Test close door
         const closeDoor: GameCommand = searchPossibleCommands({
             query: "close woodendoor",
             player: playerOne,
@@ -176,24 +195,14 @@ describe("Command Tests", () => {
             players: [playerOne],
             items: [woodendoor],
         }).commands[0];
-
         setTimeout(
             () => executeGameCommand(closeDoor, { Cookie: playerOneCookies }),
-            0,
+            10,
         );
-
         result = await waitForEventData(eventStreamOne, "entities");
         expect(result).toMatchObject({
             event: "entities",
-            players: [{ player: playerOne.player }],
-            monsters: [],
-            items: [{ item: woodendoor.item, state: "open" }],
-        });
-
-        result = await waitForEventData(eventStreamOne, "entities");
-        expect(result).toMatchObject({
-            event: "entities",
-            players: [{ player: playerOne.player }],
+            players: [],
             monsters: [],
             items: [{ item: woodendoor.item, state: "closed" }],
         });
@@ -285,29 +294,17 @@ describe("Command Tests", () => {
             },
         ]);
         await executeGameCommand(swingGoblin, { Cookie: playerOneCookies });
-
         let result = await waitForEventData(eventStreamOne, "entities");
         expect(result).toMatchObject({
             event: "entities",
-            players: [{ player: playerOne.player }],
-            monsters: [],
-            items: [
-                { item: woodenclub.item, dur: 100, chg: 0, state: "default" },
-            ],
-        });
-
-        result = await waitForEventData(eventStreamOne, "entities");
-        expect(result).toMatchObject({
-            event: "entities",
-            players: [{ player: playerOne.player, hp: 10, mp: 10, st: 9 }],
-            monsters: [{ monster: goblin.monster, hp: 18 }],
+            players: [{ player: playerOne.player, hp: 10, mp: 10, st: 10 }],
+            monsters: [{ monster: goblin.monster, hp: 19 }],
             items: [],
         });
-
         result = await waitForEventData(eventStreamOne, "entities");
         expect(result).toMatchObject({
             event: "entities",
-            players: [{ player: playerOne.player }],
+            players: [],
             monsters: [],
             items: [
                 { item: woodenclub.item, dur: 99, chg: 0, state: "default" },

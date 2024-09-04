@@ -348,4 +348,5 @@ const playerActions = [
     actions.configure,
     actions.inventory,
     actions.rest,
+    actions.enter,
 ];

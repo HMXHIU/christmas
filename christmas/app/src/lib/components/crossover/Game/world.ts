@@ -1,3 +1,4 @@
+import { isGeohashTraversableClient } from "$lib/crossover/game";
 import {
     autoCorrectGeohashPrecision,
     getAllUnitGeohashes,
@@ -20,7 +21,6 @@ import {
     calculatePosition,
     getImageForTile,
     getTilesetForTile,
-    isGeohashTraversableClient,
     type Position,
 } from "./utils";
 

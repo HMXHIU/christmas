@@ -305,11 +305,11 @@ let compendium: Record<string, Prop> = {
         asset: {
             path: "props/gothic",
             variants: {
-                default: "wood-door-2", // open
+                default: "wood-door-2",
                 closed: "wood-door-1",
             },
         },
-        defaultState: "closed",
+        defaultState: "closed", // default state is closed
         durability: 100,
         charges: 0,
         weight: -1,

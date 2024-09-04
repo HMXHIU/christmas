@@ -58,6 +58,7 @@ function getGameActionId(gameAction: GameAction): [string, GameActionType] {
  * @param queryTokens - The query tokens used to filter the abilities and utilities.
  * @param abilities - The list of abilities to filter.
  * @param itemUtilities - The list of [item, utilities] to filter.
+ * @param actions - The list of actions to filter.
  * @returns An object containing the filtered abilities and itemUtilities.
  */
 function gameActionsIR({

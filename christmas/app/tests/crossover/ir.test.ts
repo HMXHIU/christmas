@@ -5,7 +5,9 @@ import {
     tokenize,
 } from "$lib/crossover/ir";
 import { type Ability } from "$lib/crossover/world/abilities";
+import { actions } from "$lib/crossover/world/actions";
 import type { Utility } from "$lib/crossover/world/compendium";
+import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
@@ -18,7 +20,11 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import { beforeAll, describe, expect, it } from "vitest";
 import { getRandomRegion } from "../utils";
-import { createRandomPlayer, generateRandomGeohash } from "./utils";
+import {
+    createRandomPlayer,
+    createWorldAsset,
+    generateRandomGeohash,
+} from "./utils";
 
 const region = String.fromCharCode(...getRandomRegion());
 
@@ -35,6 +41,24 @@ let dragon: Monster;
 let goblin: Monster;
 let playerOneGeohash: string;
 let playerTwoGeohash: string;
+
+let tavern: ItemEntity;
+let tavernGeohash: string;
+
+const allActions = [
+    actions.say,
+    actions.look,
+    actions.move,
+    actions.take,
+    actions.drop,
+    actions.equip,
+    actions.unequip,
+    actions.create,
+    actions.configure,
+    actions.inventory,
+    actions.rest,
+    actions.enter,
+];
 
 describe("IR Tests", () => {
     beforeAll(async () => {
@@ -60,6 +84,7 @@ describe("IR Tests", () => {
         woodendoor = (await spawnItem({
             geohash: generateRandomGeohash(8, "h9"),
             locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
             prop: compendium.woodendoor.prop,
             variables: {
                 [compendium.woodendoor.variables!.doorsign.variable]:
@@ -70,31 +95,48 @@ describe("IR Tests", () => {
         woodenclub = await spawnItem({
             geohash: generateRandomGeohash(8, "h9"),
             locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
             prop: compendium.woodenclub.prop,
         });
 
         woodenclub2 = await spawnItem({
             geohash: generateRandomGeohash(8, "h9"),
             locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
             prop: compendium.woodenclub.prop,
         });
 
         woodenclub3 = await spawnItem({
             geohash: generateRandomGeohash(8, "h9"),
             locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
             prop: compendium.woodenclub.prop,
         });
 
         portal = (await spawnItem({
             geohash: playerOneGeohash,
             locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
             prop: compendium.portal.prop,
+        })) as ItemEntity;
+
+        tavernGeohash = generateRandomGeohash(8, "h9");
+        const { url } = await createWorldAsset();
+        tavern = (await spawnItem({
+            geohash: tavernGeohash,
+            locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
+            prop: compendium.tavern.prop,
+            variables: {
+                url,
+            },
         })) as ItemEntity;
 
         // Monsters
         dragon = await spawnMonster({
             geohash: generateRandomGeohash(8, "h9"),
             locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
             beast: "dragon",
             level: 1,
         });
@@ -102,6 +144,7 @@ describe("IR Tests", () => {
         goblin = await spawnMonster({
             geohash: generateRandomGeohash(8, "h9"),
             locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
             beast: "goblin",
             level: 1,
         });
@@ -382,14 +425,51 @@ describe("IR Tests", () => {
         let itemUtilities: [Item, Utility][], playerAbilities: Ability[];
 
         beforeAll(() => {
-            itemUtilities = [woodenclub, woodendoor, portal].flatMap((item) => {
-                return Object.values(compendium[item.prop].utilities).map(
-                    (utility): [Item, Utility] => {
-                        return [item, utility];
-                    },
-                );
-            });
+            itemUtilities = [woodenclub, woodendoor, portal, tavern].flatMap(
+                (item) => {
+                    return Object.values(compendium[item.prop].utilities).map(
+                        (utility): [Item, Utility] => {
+                            return [item, utility];
+                        },
+                    );
+                },
+            );
             playerAbilities = Object.values(abilities);
+        });
+
+        it("`enter` action on eligible item", () => {
+            const ga = gameActionsIR({
+                queryTokens: tokenize("enter tavern"),
+                abilities: playerAbilities,
+                itemUtilities,
+                actions: allActions,
+            });
+
+            expect(ga).toMatchObject({
+                abilities: [],
+                itemUtilities: [],
+                actions: [
+                    {
+                        action: "enter",
+                        description: "Enter.",
+                        predicate: {
+                            target: ["item"],
+                            tokenPositions: {
+                                action: 0,
+                                target: 1,
+                            },
+                        },
+                    },
+                ],
+                tokenPositions: {
+                    enter: {
+                        "0": {
+                            token: "enter",
+                            score: 1,
+                        },
+                    },
+                },
+            });
         });
 
         it("should match an item utility action", () => {

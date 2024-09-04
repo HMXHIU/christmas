@@ -1,5 +1,10 @@
 <script lang="ts">
     import {
+        topologyBufferCache,
+        topologyResponseCache,
+        topologyResultCache,
+    } from "$lib/crossover/caches";
+    import {
         MudDescriptionGenerator,
         type Descriptor,
     } from "$lib/crossover/mud";
@@ -20,11 +25,6 @@
         player,
         playerRecord,
     } from "../../../../store";
-    import {
-        topologyBufferCache,
-        topologyResponseCache,
-        topologyResultCache,
-    } from "../Game/caches";
 
     const descriptionGenerator = new MudDescriptionGenerator({
         worldSeed,

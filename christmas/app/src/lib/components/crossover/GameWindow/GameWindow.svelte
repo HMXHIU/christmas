@@ -24,7 +24,7 @@
     import AutocompleteGC from "../AutocompleteGC.svelte";
     import ChatInput from "../ChatInput.svelte";
     import ChatWindow from "../ChatWindow.svelte";
-    import Game, { executeGameCommand } from "../Game";
+    import Game, { tryExecuteGameCommand } from "../Game";
     import { initAssetManager } from "../Game/utils";
     import Map from "../Map/Map.svelte";
     import MudDescriptor from "../MudDescriptor/MudDescriptor.svelte";
@@ -99,7 +99,7 @@
     }
 
     async function onGameCommand(command: GameCommand) {
-        await executeGameCommand(command);
+        await tryExecuteGameCommand(command);
     }
 
     onMount(() => {
