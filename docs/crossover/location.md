@@ -98,8 +98,8 @@ Instanced locations are required when a player enters:
 
 Instanced locations have the following:
 
-- `location` is a geohash
-- `locationType` is a `GeohashLocationType` (i.e geohash, d1, d2, d3, ...)
+- [x] `location` is a geohash
+- [x] `locationType` is a `GeohashLocationType` (i.e geohash, d1, d2, d3, ...)
 - [x] `locationInstance` (`locI` in redis) if `@` refers to the actual game, if not another instance of the game (a replica of the actual world)
 - [x] `loc`, `locT`, `locI` determine the location of the player
 
@@ -121,7 +121,7 @@ Entering and exiting instances
 - Solo dungeons, player housing, buildings should only have a single exit point to bring the player back to the actual world
 - This is to prevent him from exploring outside the instance into the parallel world
 - Scripts should not spawn monsters/items into instanced worlds (only during the preparation phase)
-- [x] An endpoint to prepare the world should take in a `world` template and spawn the required items/monsters in that template only
+- [x] An endpoint `enterItem` to spawn the world and its entities
 
 Location variable substitute
 

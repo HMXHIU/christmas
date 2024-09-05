@@ -153,30 +153,6 @@ const testWorldAsset: WorldAssetMetadata = {
         {
             name: "pois",
             objects: [
-                {
-                    point: true,
-                    properties: [
-                        {
-                            name: "poi",
-                            type: "string",
-                            value: "enter",
-                        },
-                    ],
-                    x: 1844.61744966443,
-                    y: 3637.26174496644,
-                },
-                {
-                    point: true,
-                    properties: [
-                        {
-                            name: "poi",
-                            type: "string",
-                            value: "exit",
-                        },
-                    ],
-                    x: 619.114093959732,
-                    y: 1764.77852348993,
-                },
                 // Player Spawn Point
                 {
                     point: true,

@@ -1,6 +1,6 @@
-# Problem: Too much entity data
+# Game State Synchronization
 
----
+Problem: Too much entity data
 
 When moving or looking (non targetted), the player receives the full entity data from redis. Instead it should only receive the required information to draw the entity on screen. Only provide more information when a player looks at a certain entity
 

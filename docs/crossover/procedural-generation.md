@@ -1,4 +1,25 @@
-# Procedural Generation of World
+# Procedural Generation (PG)
+
+The different PG content are:
+
+1. Biomes
+
+   - Topology
+   - Forests, Deserts, etc ...
+
+2. Mud descriptions
+
+   - Weather
+   - Time (night/day)
+   - Seasons
+
+3. Dungeons
+4. Blueprints
+   - Outposts
+   - Cities
+   - Spawn points (monsters)
+
+## PG Parameters At Different Spatial Precisions
 
 - Split map into 32 (8 \* 4) squares, give it general attributes, let procedural generation generate new attributes for lower grid levels
 - Start at the higest level `continent`
@@ -53,92 +74,83 @@ seeds: {
 },
 ```
 
-## Landmarks & settings at each geohash precision
+# Landmarks & settings at each geohash precision
 
-#### Landmarks
+## Landmarks at precisions
 
-continent:
+_continent_:
 
 - 1 citadel (highest ranked city)
 - 1 portal located at the citadel (highest ranked city)
 - Portal may be used to teleport to other cities
 
-territory:
+_territory_:
 
 - 1 major dungeon (pseudo random)
 
-region:
+_region_:
 
 - 1 city
 
-city:
+_city_:
 
 - 0-1 outpost (also act as starting point of the player)
 
-#### Settings
+## PG Settings at precisions
 
-continent:
+_continent_:
 
 - `biome` & `weather` parameters
 
-territory:
+_territory_:
 
 - `faction` parameters eg. beasts
 
-## Biome
+# Biome PG
 
 - See `biomeParametersAtCity`, `biomeAtGeohash`
-- biome parameters are generated at the `city` level
-- using `BiomeParameters`, `biomeAtGeohash` generates the biome tiles at each unit precision procedurally
+- Biome parameters are generated at the `city` level
+- Using `BiomeParameters`, `biomeAtGeohash` generates the biome tiles at each unit precision procedurally
 
 ## Descriptions
 
 - See `biomeParametersAtCity`, `MudDescriptionGenerator.locationDescriptions`
 - Location descriptions are at the `city` level
 
-## Dungeons
+# Dungeon PG (see `dungeons.ts`, `settings/dungeons.ts`)
 
 - Dungeons are underground `locT=d1`, the default biome for for underground is `underground` which is untraversable
-- Need some kind of noise function which is fast and reproducible in both javascript and python
-- Noise function generates traversable pockets in the underground biome
-- Procedurally generate `entrance`s that links the `locT=geohash` (above ground) to `locT=d1` (underground)
-- At `entrance` the player can interact with the `item` using `down` & `up`
-- A dungeon `entrance` can just be an `item` that has a `teleport` ability that changes `locT` from `geohash` to `d1` and vice versa
 - 1 major dungeon at every `territory` level eg. wp, v7, ...
+- Procedurally generate `entrance`s that links the `locT=geohash` (above ground) to `locT=d1` (underground)
+- A dungeon `entrance` can just be an `item` that has a `teleport` ability that changes `locT` from `geohash` to `d1` and vice versa
 
-#### Dungeon Locations and Entrances
+## Dungeon Locations and Entrances
 
 - [x] Each territory has a major dungeon
 - [x] If location is not set manually, it uses the territory as a seed to determine the location
 - [x] Create `dungeons` to manually determine the location of a dungeon on a territory
 
 ```ts
-interface Dungeon {
-  dungeon: string;
-  rooms: {
-    room: string;
-    entrances: string[];
-  }[];
+interface Room {
+  geohash: string; // town
+  connections: string[]; // connected room geohashes
+  entrances: string[]; // to connect above to below ground
 }
 
-const dungeons: Dungeon[] = [
-  {
-    dungeon: "w21",
-    rooms: [
-      {
-        room: "w21z9",
-        entrances: ["w21z9edk"],
-      },
-    ],
-  },
-];
+interface DungeonGraph {
+  rooms: Room[];
+  territory: string;
+  locationType: GeohashLocationType;
+  corridors: Set<string>; // set of all corridor geohashes
+  corridorPrecision: number; // precision of corridor geohashes
+}
 ```
 
 - [x] Create dungeon entrance/exit items which teleport player down or up by changing the locationType
 - [x] Create init script to create dungeon entrace/exit items at entrances
 - [x] Randomly generated dungeons need to entrances/exit randomly via a seed
 
-#### Pseudo Algorithm
+## Pseudo Algorithm
 
 ```ts
 function dungeonFeatureAtGeohash(
@@ -301,26 +313,27 @@ async function biomeParametersAtCity(
 }
 ```
 
-## Blueprints (Outposts, Towns, etc ...)
+# Blueprints PG (see `blueprint.ts`, `settings/blueprint.ts`)
 
+- For PG spawning of Outposts, Towns, etc ...
 - Script will read blueprints and spawns the items specified in the blueprint on location
-- Generation is lazy (similar to dungeon)
-- Spaning items is done via script (one time) similar to spawning dungeon entrances
-- Modify `elevationAtGeohash` to check if there is a `prop`, if there is flatten the elevation
-  - Might only need to do this during rendering items whose weight = -1 (immovable) and width/height > 1
-- Procedural generation should take into account of the traversability (biome, water, etc ...)
+- Generation is lazy (similar to dungeons at territory precision) to know what blueprints are in a `territory`, use `blueprintsAtTerritory`
+- Spawning items in the blueprints is done via an endpoint `initializeGame` (one time)
+- `landGrading` creates a cached record of the items which are more than 1 cell and are immovable (weight = -1 (immovable) and width/height > 1)
+- `elevationAtGeohash` takes in `landGrading` and flattens the land around the item is on
+- PG uses `topologicalAnalysis` to determine where to spawn the blueprints (not on water)
 
-### Outposts
+## Outpost Blueprint
 
-- Uses `blueprint`
-- 0-1 outpost every region (3p) ~8k outposts (32^3 / 2 (water) / 2 (sparse))
+- 0-1 outpost every region (3p)
+- ~8k outposts (32^3 / 2 (water) / 2 (sparse))
 - ~ 80k items (if each outpost as about 10 items)
-- Outposts can be controlled by factions
-- Can be taken over
-- Can be supplied with a resource that drives out monsters
-- Can be taken over by monsters if not enough resources is provided
+- [ ] Outposts can be controlled by factions
+- [ ] Can be taken over
+- [ ] Can be supplied with a resource that drives out monsters
+- [ ] Can be taken over by monsters if not enough resources is provided
 
-#### Pseudo Algorithm
+### Pseudo Algorithm
 
 ```ts
 function bluePrintsAtTerritory(

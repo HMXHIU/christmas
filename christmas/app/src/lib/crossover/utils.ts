@@ -781,6 +781,10 @@ function entityInRange(
             return [false, 0];
         }
     }
+    // Check if self and target are in the same locT and locI
+    else if (target.locI !== self.locI || target.locT !== self.locT) {
+        return [false, 0];
+    }
 
     const { row: r1, col: c1 } = geohashToGridCell(self.loc[0]);
     const { row: r2, col: c2 } = geohashToGridCell(target.loc[0]);

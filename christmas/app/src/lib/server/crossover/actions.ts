@@ -581,6 +581,7 @@ async function dropItem(player: PlayerEntity, item: string, now?: number) {
     // Drop item
     itemEntity.loc = player.loc;
     itemEntity.locT = player.locT;
+    itemEntity.locI = player.locI;
     itemEntity = (await itemRepository.save(
         itemEntity.item,
         itemEntity,

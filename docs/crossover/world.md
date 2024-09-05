@@ -1,7 +1,7 @@
-## Worlds
+# Worlds
 
-1. Worlds are hand designed levels created with the tiled editor
-2. World instances are create at a location from a template (tiled json format)
+1. Worlds are hand designed levels created using the `tiled` editor _(see tilemap.md)_
+2. World instances are create at a location from a tilemap template (tiled json format)
 3. Worlds are overlaid over existing biomes
 4. The url fo the world acts as the template id, similar to props for items and beast for monsters
 5. Pathfinding involves checking the `biome` at location, then checking for overrides to `traversableSpeed` in the layer props for that cell
@@ -12,29 +12,39 @@ const WorldEntitySchema = new Schema("World", {
   world: { type: "string" }, // instance id
   url: { type: "string" }, // url to the tiledmap json (template id)
   loc: { type: "string[]" }, // geohashes of plots (whole grids - 32 cells)
-  locT: LocationType, // TODO: add location type for world (geohash, d1, u1, ....)
+  locT: LocationType, // geohash, d1, in
   h: { type: "number" }, // height TODO: remove can be determined from geohash
   w: { type: "number" }, // width TODO: remove can be determined from geohash
   cld: { type: "string[]" }, // colliders TODO: remove this use layer properties
 });
 ```
 
-## New Location Types
+# Overlaying Worlds Over Location Types
 
-In addition to `geohash` location type (`locT`) which represent the surface, add new `geohash` location types:
+In addition to `geohash` location type (`locT`) which represent the surface `d1, in` are location types which represent underground and inside buildings:
 
 ```ts
-underground = [`d1`, `d2`, `d3`, `d4`, `d5`, `d6`, `d7`, `d8`, `d9`, `d10`];
-aboveground = [`u1`, `u2`, `u3`, `u4`, `u5`, `u6`, `u7`, `u8`, `u9`, `u10`];
+const geohashLocationTypes = new Set([
+  "geohash",
+  "d1", // underground
+  "d2",
+  "d3",
+  "d4",
+  "d5",
+  "d6",
+  "d7",
+  "d8",
+  "d9",
+  "in", // inside
+]);
 ```
 
-#### biomeAtGeohash
+## Determining traversibility (eg. in underground biomes)
 
-In `biomeAtGeohash`, return rocks with `traversableSpeed=0` when `locT=d*`
+Underground biomes (eg. `locT=d*`) `biomeAtGeohash`, return rocks with `traversableSpeed=0`.
+For a world spawned underground, it should have a layer which defines `traversableSpeed>0` to override the biome traversableSpeed.
 
-## Determining traversibility
-
-For a world underground eg. locT=d1, the biome will be rocks and thus not traversable. Instead a layer in the template can be used to overwrite the `traversableSpeed` using the `properties`. When determining traversibility, first determine the biome at the geohash, then for that cell, check all the layers in the template for `traversableSpeed` and overwrite it.
+For a world underground eg. `locT=d1`, the biome will be rocks and thus not traversable. Instead, a layer in the tilemap can be used to overwrite the `traversableSpeed` using the `properties`. When determining traversibility, first determine the biome at the geohash, then for that cell, check all the layers in the template for `traversableSpeed` and overwrite it.
 
 For optimisation purposes, the server should cache the function `isWorldTraversable` called from `isGeohashTraversable`.
 
@@ -48,144 +58,231 @@ function isWorldTraversable(
 }
 ```
 
-## Isolated worlds
+# Isolated worlds (see `location.md`)
 
-Examples:
+Isolated worlds are typically `enter`ed into using an item, the item spawns a world separate from the action world (`locI=@`)
+
+Examples of isolated worlds:
 
 - Tutorials
 - Player houses
 - Interior of houses
 
-In this case the `locT` can be set as a uuid `publicKey` and the `loc` should still be a list of geohash plots. This way the player can still move around the world via geohashes, but the world is isolated.
+## Location Instance (locI)
 
-#### Example: spawning a 1 time tutorial map for player
+- `locI` specifies the game instance of the world (actual world is at `locI=@`)
+- An item's id can be used as `locI` for instance when entering a tavern (in addition to `locT=in`)
+- A player's id can be used for player unique game instances such as tutorials (This way the player can still move around the world via geohashes, but the world is isolated.)
+
+## Spawn POIs for items, monsters & players
+
+In the tiled editor, create an object layer, with POIs with the following format
+
+```json
+{
+  "name": "pois",
+  "objects": [
+    // Player Spawn Point
+    {
+      "point": true,
+      "properties": [
+        {
+          "name": "spawn",
+          "type": "string",
+          "value": "player"
+        }
+      ],
+      "x": 619.114093959732,
+      "y": 1764.77852348993
+    },
+    // Item
+    {
+      "point": true,
+      "properties": [
+        {
+          "name": "prop",
+          "type": "string",
+          "value": "potionofhealth"
+        }
+      ],
+      "x": 619.114093959732,
+      "y": 1764.77852348993
+    },
+    {
+      "point": true,
+      "properties": [
+        {
+          "name": "prop",
+          "type": "string",
+          "value": "woodenclub"
+        },
+        {
+          "name": "etching",
+          "type": "string",
+          "value": "well used"
+        }
+      ],
+      "x": 619.114093959732,
+      "y": 1764.77852348993
+    },
+    // Item - spawn portal back to the actual world
+    {
+      "point": true,
+      "properties": [
+        {
+          "name": "prop",
+          "type": "string",
+          "value": "portal"
+        },
+        {
+          "name": "target",
+          "type": "string",
+          "value": "{{source.item}}" // source is a special variable to be substituted when spawning worlds
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "value": "Tavern exit"
+        }
+      ],
+      "x": 619.114093959732,
+      "y": 1764.77852348993
+    },
+    // Monster
+    {
+      "point": true,
+      "properties": [
+        {
+          "name": "beast",
+          "type": "string",
+          "value": "goblin"
+        },
+        {
+          "name": "level",
+          "type": "int",
+          "value": 2
+        }
+      ],
+      "x": 619.114093959732,
+      "y": 1764.77852348993
+    }
+  ],
+  "type": "objectgroup",
+  "x": 0,
+  "y": 0
+}
+```
+
+- During `enterItem` the world and the entities defined in the POIs are spawned
+
+### Example: Entering tavern
+
+The tavern prop defines a `world` property it includes information of:
+
+- The world tilemap to spawn when the player `enter` the item (set in `variables.url`)
+- The location of the player once `enter` the item (`loc`, `locT`, `locI`)
+- Inside the tilemap itself, an exit is spawned to let the player exit out of the instance
+- `source` is a special variable substitution key for the item/source which spawned the world instance
+
+```json
+{
+  "tavern": {
+    "prop": "tavern",
+    "defaultName": "Tavern",
+    "asset": {
+      "path": "props/gothic",
+      "variants": {
+        "default": "wood-door-1"
+      },
+      "width": 2,
+      "height": 2
+    },
+    "defaultState": "default",
+    "durability": 100,
+    "charges": 0,
+    "weight": -1,
+    "collider": true,
+    "states": {
+      "default": {
+        "destructible": false,
+        "description": "A humble tavern. ${description}",
+        "variant": "default"
+      }
+    },
+    // World property
+    "world": {
+      "locationInstance": "{{self.item}}",
+      "locationType": "in",
+      "geohash": "{{self.loc[0]}}",
+      "world": "{{self.item}}",
+      "url": "${url}"
+    },
+    "utilities": {},
+    "variables": {
+      "description": {
+        "variable": "description",
+        "type": "string",
+        "value": "A plain wooden door of the tavern greets you."
+      },
+      "url": {
+        "variable": "url", // configure the tilemap asset url for the world to spawn
+        "type": "string",
+        "value": ""
+      }
+    }
+  }
+}
+```
+
+```json
+// Item - Spawn portal back to the actual world
+{
+  "point": true,
+  "properties": [
+    {
+      "name": "prop",
+      "type": "string",
+      "value": "portal"
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "value": "{{source.item}}" // source is a special variable to be substituted when spawning worlds
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "value": "Tavern exit"
+    }
+  ],
+  "x": 619.114093959732,
+  "y": 1764.77852348993
+}
+```
+
+### Example: Spawning a 1 time tutorial instance for the player
+
+TODO
+
+- Similar to entering a tavern, but instead of using the item id as the `locI` we can use the player id
+- `player` is a special variable substitution key for the player which used the item
+
+```json
+{
+  "world": {
+    "locationInstance": "{{player.player}}",
+    "locationType": "in",
+    "geohash": "{{self.loc[0]}}",
+    "world": "{{player.player}}",
+    "url": "${url}"
+  }
+}
+```
 
 - Using the tutorial template, spawn a new world using the player's public key at any geohash location
 - Do not save this to S3 long term storage
 - Once player is done, delete the world from redis
 
-#### Example: entering player housing
+### Example: loading isolated world from NFT
 
-#### Example: loading isolated world from NFT
-
-## Tilemaps
-
-The game defines `TILE_WIDTH` and `TILE_HEIGHT`, and `CELL_WIDTH` and `CELL_HEIGHT` separately.
-
-```ts
-// settings/index.ts
-const TILE_WIDTH = 64;
-const TILE_HEIGHT = 32;
-
-// Game/utils.ts
-const CELL_WIDTH = 96; // 64, 96, 128
-const CELL_HEIGHT = CELL_WIDTH;
-```
-
-- `tilemaps` created in the `Tiled Map Editor` format defines the `tilewidth` and `tileheight` which defines the grid size of tile tilemap
-- `TILE_WIDTH` and `TILE_HEIGHT` is the units used to convert a `tilemap`'s `tilewidth` and `tileheight` to cells
-- `CELL_WIDTH` and `CELL_HEIGHT` affect the actual size of a cell when rendering to the screen, it is independant from `TILE_WIDTH` and `TILE_HEIGHT`
-- Ideally, the `tilewidth` and `tileheight` in the tilemap should be equal to `TILE_WIDTH` and `TILE_HEIGHT` as defined in the game. When they are equal, then one cell in the tilemap is 1 cell in the game.
-
-```ts
-{
-    height: 8,
-    width: 4,
-    tileheight: 128, // grid size of tilemap
-    tilewidth: 256, // grid size of tilemap
-    layers: [
-        {
-            data: [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 74, 74, 0, 0, 74, 74, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ],
-            height: 8,
-            name: "floor",
-            offsetx: 0,
-            offsety: -42.6820872917527,
-            properties: [
-                {
-                    name: "traversableSpeed",
-                    type: "float",
-                    value: 0,
-                },
-                {
-                    name: "interior",
-                    type: "bool",
-                    value: true,
-                },
-            ],
-            type: "tilelayer",
-            width: 4,
-            x: 0,
-            y: 0,
-        },
-    ],
-}
-```
-
-#### How tilemaps are converted to screen
-
-1. Determine how many cells should the image take by using `TILE_WIDTH` and `TILE_HEIGHT` with `tilewidth` and `tileheight`
-2. Determine the screen dimensions using `CELL_WIDTH` and `CELL_HEIGHT` and the number of cells
-3. Scale the image to fill correct screen dimensions
-
-Get the `imageheight` and the `imagewidth` from the `tileset`
-
-```json
-// tileset
-{
-  "columns": 0,
-  "grid": {
-    "height": 1,
-    "orientation": "isometric",
-    "width": 1
-  },
-  "margin": 0,
-  "name": "Houses Exterior",
-  "objectalignment": "topleft",
-  "spacing": 0,
-  "tilecount": 1,
-  "tiledversion": "1.10.2",
-  "tileheight": 512,
-  "tileoffset": {
-    "x": -256,
-    "y": 0
-  },
-  "tiles": [
-    {
-      "id": 3,
-      "image": "../images/ComfyUI_temp_iupoc_00063_.png",
-      "imageheight": 512,
-      "imagewidth": 512
-    }
-  ],
-  "tilewidth": 512,
-  "type": "tileset",
-  "version": "1.10"
-}
-```
-
-#### Spawn points for items and monsters
-
-In the tiled editor, create an object layer, with POIs with the following format
-
-```ts
-// Items
-{
-  prop: "woodenclub",
-  // Variables are flat, because tiled does not support json
-  etching: "heavily used."
-}
-// Monsters
-{
-  beast: "goblin",
-  level: 2
-}
-```
-
-during `spawnWorld` the server should read the object layer, find the closest geohash and spawn the items and monsters
-
-#### Notes
-
-- Standardize `TILE_WIDTH=tilewidth=128` and `TILE_HEIGHT=tileheight=64`
+TODO
