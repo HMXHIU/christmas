@@ -25,7 +25,13 @@
     let currentTime: number;
 
     onMount(() => {
-        avatar.set(new Avatar());
+        avatar.set(
+            new Avatar({
+                depthStart: 0,
+                depthScale: 1,
+                depthLayer: 0,
+            }),
+        );
     });
 </script>
 
