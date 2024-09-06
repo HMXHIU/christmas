@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "quest-generator"
+version = "0.1.0"
+description = ""
+authors = ["benjaminhon <benjaminhon86@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+langchain = "^0.2.16"
+pydantic = "^2.9.0"
+python-dotenv = "^1.0.1"
+geohash2 = "^1.1"
+requests = "^2.32.3"
+pytest = "^8.3.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
