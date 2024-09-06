@@ -1,9 +1,12 @@
 import requests
 from langchain.llms.base import LLM
 from langchain.callbacks.manager import CallbackManagerForLLMRun
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
+from langchain.output_parsers import PydanticOutputParser
+from .models import QuestTemplate, QuestEntity, QuestInputs
+from langchain.pydantic_v1 import BaseModel, Field
 
 
 class OllamaLLM(LLM):
@@ -31,10 +34,17 @@ class OllamaLLM(LLM):
 
 def create_llm_chain():
     llm = OllamaLLM()
+    input_parser = PydanticOutputParser(pydantic_object=QuestInputs)
+    output_parser = PydanticOutputParser(pydantic_object=QuestTemplate)
+
     prompt_template = PromptTemplate(
-        input_variables=["locations", "monsters", "items", "players"],
         template="""
         Generate a quest based on the following information:
+
+        Input Schema:
+        {input_schema}
+
+        Provided Data:
         Locations: {locations}
         Monsters: {monsters}
         Items: {items}
@@ -42,49 +52,38 @@ def create_llm_chain():
 
         The quest should be coherent with the locations provided. Ensure that objectives involve traveling between nearby locations.
         
-        Output the quest in the following JSON format:
-        {{
-            "quest": "quest_id",
-            "name": "Quest Name",
-            "description": "Quest Description",
-            "objectives": [
-                {{
-                    "objective": "objective_id",
-                    "description": "Objective Description",
-                    "completion_items": [
-                        {{"item": "item_id", "prop": "item_prop", "quantity": 1}}
-                    ]
-                }}
-            ],
-            "entities": {{
-                "monsters": [{{"monster": "monster_id"}}],
-                "items": [{{"item": "item_id"}}],
-                "players": [{{"player": "player_id"}}]
-            }},
-            "dialogues": [
-                {{
-                    "entityId": "entity_id",
-                    "text": "Dialogue text",
-                    "triggerOnObjective": "objective_id"
-                }}
-            ],
-            "rewards": {{
-                "items": [{{"prop": "item_prop", "quantity": 1}}],
-                "lumina": 100,
-                "umbra": 0
-            }},
-            "isCompleted": false
-        }}
+        Please follow these guidelines when creating the quest:
+        1. Create a unique identifier for the quest.
+        2. Give the quest a short, catchy name.
+        3. Provide a detailed description of the quest's story and goals.
+        4. Use the provided entities (monsters, items, players) in the quest. You can also introduce new entities if necessary.
+        5. Create one or more objectives for the quest. Each objective should have:
+           - A unique identifier
+           - A clear description of what needs to be done
+           - Any items required for completion (if applicable)
+        6. Define appropriate rewards for completing the quest, including items, lumina (light currency), and umbra (dark currency).
+        7. Set isCompleted to false, as this is a new quest.
+
+        Output the quest in the following format:
+        {format_instructions}
+
+        Ensure that the quest is challenging but achievable, and that the rewards are appropriate for the difficulty of the quest. Use the provided entities and locations to create a coherent and interesting quest narrative.
         """,
+        input_variables=["locations", "monsters", "items", "players"],
+        partial_variables={
+            "input_schema": input_parser.get_format_instructions(),
+            "format_instructions": output_parser.get_format_instructions(),
+        },
     )
-    return LLMChain(llm=llm, prompt=prompt_template)
+
+    return LLMChain(llm=llm, prompt=prompt_template, output_parser=output_parser)
 
 
-def generate_quest_with_llm(chain, enriched_inputs):
+def generate_quest_with_llm(chain, enriched_inputs: QuestInputs) -> QuestTemplate:
     response = chain.run(
-        locations=str(enriched_inputs["locations"]),
-        monsters=str(enriched_inputs["monsters"]),
-        items=str(enriched_inputs["items"]),
-        players=str(enriched_inputs["players"]),
+        locations=enriched_inputs.locations,
+        monsters=enriched_inputs.monsters,
+        items=enriched_inputs.items,
+        players=enriched_inputs.players,
     )
-    return response
+    return response  # This will now return a QuestTemplate object
