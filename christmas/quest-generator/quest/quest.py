@@ -11,7 +11,6 @@ from langchain.prompts import PromptTemplate
 from langchain.output_parsers import (
     PydanticOutputParser,
     RetryOutputParser,
-    OutputFixingParser,
 )
 
 # Working models llama3.1:8b, mistral-nemo:12b, gemma2:27b

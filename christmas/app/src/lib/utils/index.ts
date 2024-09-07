@@ -73,37 +73,6 @@ function substituteVariables(template: string, variables: Record<string, any>) {
     });
 }
 
-// function substituteVariables(template: string, variables: Record<string, any>) {
-//     // Variable access eg. {{target.loc}}
-//     if (template.startsWith("{{") && template.endsWith("}}")) {
-//         const parts = template
-//             .replace(/{{(.*?)}}/g, "$1")
-//             .trim()
-//             .split(".");
-//         let value = variables;
-//         for (const part of parts) {
-//             if (value && typeof value === "object" && part in value) {
-//                 value = value[part];
-//             }
-//         }
-//         return value;
-//     }
-
-//     // String substitution eg. ${description}
-//     return template.replace(/\${(.*?)}/g, (match, v) => {
-//         const parts = v.trim().split(".");
-//         let value = variables;
-//         for (const part of parts) {
-//             if (value && typeof value === "object" && part in value) {
-//                 value = value[part];
-//             } else {
-//                 return match;
-//             }
-//         }
-//         return String(value);
-//     });
-// }
-
 function cleanString(s: string) {
     return s.replace(/\u0000+$/, "");
 }

@@ -348,8 +348,8 @@ const abilities: Record<string, Ability> = {
             targetSelfAllowed: true,
         },
     },
-    hpswap: {
-        ability: "hpswap",
+    hpSwap: {
+        ability: "hpSwap",
         type: "offensive",
         description: "Swap HP with target.",
         procedures: [

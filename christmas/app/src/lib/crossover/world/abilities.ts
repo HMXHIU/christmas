@@ -76,8 +76,7 @@ type Abilities =
     | "paralyze"
     | "blind"
     | "teleport"
-    | "enterworld"
-    | "hpswap";
+    | "hpSwap";
 
 interface Ability {
     ability: Abilities;
@@ -205,7 +204,7 @@ function patchEffectWithVariables({
                             "Patched value for hp/mp/ap/st must be type `number`",
                         );
                     }
-                    state.value = parseInt(value);
+                    state.value = parseInt(value as any);
                 }
             }
         }
