@@ -20,7 +20,7 @@ def test_generate_quest():
         ],
     )
 
-    quest = generate_quest(quest_inputs)
+    quest = generate_quest("llama2", "http://localhost:11434", quest_inputs)
 
     assert quest.quest is not None
     assert quest.name is not None
