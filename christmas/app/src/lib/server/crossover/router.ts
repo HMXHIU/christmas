@@ -277,7 +277,6 @@ const crossoverRouter = {
 
                 const monster = await spawnMonster({
                     geohash,
-                    level,
                     beast,
                     locationType,
                     locationInstance,

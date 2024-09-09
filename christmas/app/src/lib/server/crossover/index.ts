@@ -1,7 +1,7 @@
 import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
 import { actions, type Actions } from "$lib/crossover/world/actions";
-import { monsterLUReward, monsterStats } from "$lib/crossover/world/bestiary";
-import { playerAttributes, playerStats } from "$lib/crossover/world/player";
+import { monsterLUReward } from "$lib/crossover/world/bestiary";
+import { entityStats } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { sanctuaries, worldSeed } from "$lib/crossover/world/settings/world";
@@ -48,7 +48,6 @@ const PlayerStateSchema = z.object({
     mp: z.number().optional(),
     st: z.number().optional(),
     ap: z.number().optional(),
-    lvl: z.number().optional(),
     buf: z.array(z.string()).optional(),
     dbuf: z.array(z.string()).optional(),
 });
@@ -94,8 +93,10 @@ async function loadPlayerEntity(
         loc: [options.geohash],
         locT: "geohash",
         locI: LOCATION_INSTANCE,
-        lvl: 1,
-        ...playerStats({ level: 1 }),
+        hp: 0,
+        mp: 0,
+        st: 0,
+        ap: 0,
         apclk: 0,
         buclk: 0,
         dbuf: [],
@@ -105,11 +106,14 @@ async function loadPlayerEntity(
         arch: demographic.archetype,
         gen: demographic.gender,
         race: demographic.race,
+        skills: {},
         pthclk: 0,
         pthdur: 0,
         pth: [],
         pthst: "",
     };
+    defaultState = { ...defaultState, ...entityStats(defaultState) };
+
     let player: PlayerEntity = {
         ...defaultState,
         ...playerState,
@@ -145,10 +149,7 @@ async function handlePlayerKillsMonster(
 ) {
     // Note: changes player, monster in place
     // Give player rewards
-    const { lumina, umbra } = monsterLUReward({
-        level: monster.lvl,
-        beast: monster.beast,
-    });
+    const { lumina, umbra } = monsterLUReward(monster);
     player.lum += lumina;
     player.umb += umbra;
     // Save & publish player
@@ -176,10 +177,7 @@ async function handleMonsterKillsPlayer(
     player = {
         ...player,
         // Recover all stats
-        ...playerStats({
-            level: player.lvl,
-            attributes: playerAttributes(player),
-        }),
+        ...entityStats(player),
         // Respawn at player's region
         loc: [sanctuary.geohash],
         // Lose half exp
@@ -321,17 +319,7 @@ async function consumeResources(
     now = now ?? Date.now();
 
     // Get max stats (also fixes stats when it goes over max)
-    const {
-        ap: maxAp,
-        hp: maxHp,
-        st: maxSt,
-        mp: maxMp,
-    } = entity.player
-        ? playerStats({ level: entity.lvl })
-        : monsterStats({
-              level: entity.lvl,
-              beast: (entity as MonsterEntity).beast,
-          });
+    const { ap: maxAp, hp: maxHp, st: maxSt, mp: maxMp } = entityStats(entity);
 
     if (ap != null && ap !== 0) {
         entity.ap = Math.max(Math.min(maxAp, entity.ap - ap), 0);

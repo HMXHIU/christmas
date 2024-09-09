@@ -1,5 +1,5 @@
+import { recoverAp } from "$lib/crossover/world/entity";
 import { MS_PER_TICK, TICKS_PER_TURN } from "$lib/crossover/world/settings";
-import { recoverAp } from "$lib/crossover/world/utils";
 import type {
     EntityStats,
     Monster,
@@ -23,12 +23,14 @@ class EntitySigil extends Container {
         hp: 0,
         st: 0,
         mp: 0,
+        apclk: 0,
     };
     private stats: EntityStats = {
         ap: 0,
         hp: 0,
         st: 0,
         mp: 0,
+        apclk: 0,
     };
 
     private hpBar: Graphics | null = null;

@@ -17,7 +17,6 @@ export {
     type Abilities,
     type Ability,
     type AbilityType,
-    type Attributes,
     type Buff,
     type DamageType,
     type Debuff,
@@ -55,16 +54,9 @@ type Debuff =
     | "diseased";
 type Buff = "haste" | "regeneration" | "shield" | "invisibility" | "berserk";
 
-interface Attributes {
-    dex: number; // stamina
-    str: number; // stamina
-    con: number; // health, phy resistance
-    int: number; // mana
-    fth: number; // mana, spell resistance
-}
-
 // TODO: Should not be defined here
 type Abilities =
+    | "jab"
     | "bandage"
     | "disintegrate"
     | "scratch"

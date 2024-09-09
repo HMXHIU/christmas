@@ -7,6 +7,32 @@ export { abilities };
  * `abilities` is a collection of all the `Ability` available in the game.
  */
 const abilities: Record<string, Ability> = {
+    jab: {
+        ability: "jab",
+        type: "offensive",
+        description: "Jab at your opponent.",
+        procedures: [
+            [
+                "action",
+                {
+                    target: "target",
+                    damage: { amount: 1, damageType: "blunt" },
+                    ticks: TICKS_PER_TURN / 2,
+                },
+            ],
+        ],
+        ap: 1,
+        st: 1,
+        hp: 0,
+        mp: 0,
+        range: 1,
+        aoe: 0,
+        predicate: {
+            self: ["player", "monster"],
+            target: ["player", "monster"],
+            targetSelfAllowed: false,
+        },
+    },
     bandage: {
         ability: "bandage",
         type: "healing",

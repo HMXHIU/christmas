@@ -1,9 +1,10 @@
 import { PUBLIC_HOST } from "$env/static/public";
-import type { EntityStats } from "$lib/server/crossover/redis/entities";
+import type { Monster } from "$lib/server/crossover/redis/entities";
 import { seededRandom, stringToRandomNumber } from "../utils";
-import { type AbilityType } from "./abilities";
+import { entityLevel } from "./entity";
 import { bestiary } from "./settings/bestiary";
 import { worldSeed } from "./settings/world";
+import type { SkillLines } from "./skills";
 import type { AssetMetadata } from "./types";
 import { type WorldSeed } from "./world";
 
@@ -11,7 +12,6 @@ export {
     avatarMorphologies,
     monsterLimitAtGeohash,
     monsterLUReward,
-    monsterStats,
     type Alignment,
     type AvatarMorphology,
     type Beast,
@@ -40,37 +40,9 @@ type Alignment = "good" | "neutral" | "evil";
 interface Beast {
     beast: string;
     description: string;
-    attack: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-    defense: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-    health: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-    magic: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-    endurance: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-    speed: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-    rarity: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-    abilities: Record<AbilityType, string[]>;
-    behaviours: string[];
+    skillLines: Partial<Record<SkillLines, number>>;
     alignment: Alignment;
-    spawnRate: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-    spawnBiomes: string[];
-    spawnHostileThreshold: number;
     asset: AssetMetadata;
-}
-
-function monsterStats({
-    level,
-    beast,
-}: {
-    level: number;
-    beast: string;
-}): EntityStats {
-    const beastTemplate = bestiary[beast];
-    const multiplier = 1 + Math.log(level) + level; // make monsters stronger than players
-    return {
-        hp: Math.ceil(beastTemplate.health * 10 * multiplier),
-        mp: Math.ceil(beastTemplate.magic * 10 * multiplier),
-        st: Math.ceil(beastTemplate.endurance * 10 * multiplier),
-        ap: Math.ceil(beastTemplate.speed + 10),
-    };
 }
 
 /**
@@ -83,12 +55,12 @@ function monsterStats({
 function monsterLimitAtGeohash(geohash: string, seed?: WorldSeed): number {
     seed = seed || worldSeed;
     const continent = geohash.charAt(0);
-    const probHostile = seed.seeds.continent[continent].bio;
+
+    // TODO: deprecate this
 
     // Every precision down divides by 32 the number of monsters
     const maxMonsters =
-        (seed.constants.maxMonstersPerContinent * probHostile) /
-        32 ** (geohash.length - 1);
+        seed.constants.maxMonstersPerContinent / 32 ** (geohash.length - 1);
 
     // Use the geohash as the random seed (must be reproducible)
     const rv = seededRandom(stringToRandomNumber(geohash));
@@ -96,19 +68,23 @@ function monsterLimitAtGeohash(geohash: string, seed?: WorldSeed): number {
     return Math.ceil(rv * maxMonsters);
 }
 
-function monsterLUReward({ level, beast }: { level: number; beast: string }): {
+function monsterLUReward(monster: Monster): {
     lumina: number;
     umbra: number;
 } {
-    const { rarity, alignment } = bestiary[beast];
+    const { alignment } = bestiary[monster.beast];
+    const level = entityLevel(monster);
+
+    // TODO: Calculate reward using attributes, skills, etc...
+
     if (alignment === "evil") {
         return {
-            lumina: Math.ceil(level * rarity),
+            lumina: Math.ceil(level),
             umbra: 0,
         };
     }
     return {
-        lumina: Math.ceil(level * rarity),
+        lumina: Math.ceil(level),
         umbra: 0,
     };
 }

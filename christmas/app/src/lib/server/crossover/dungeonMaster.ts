@@ -6,12 +6,10 @@ import {
     childrenGeohashes,
     getPlotsAtGeohash,
 } from "$lib/crossover/utils";
-import {
-    monsterLimitAtGeohash,
-    monsterStats,
-} from "$lib/crossover/world/bestiary";
+import { monsterLimitAtGeohash } from "$lib/crossover/world/bestiary";
 import { blueprintsAtTerritory } from "$lib/crossover/world/blueprint";
 import { getAllDungeons } from "$lib/crossover/world/dungeons";
+import { entityStats } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
 import {
@@ -134,17 +132,12 @@ async function spawnMonster({
     locationType,
     locationInstance,
     beast,
-    level,
 }: {
     geohash: string;
     locationType: GeohashLocationType;
     locationInstance: string;
     beast: string;
-    level?: number;
 }): Promise<MonsterEntity> {
-    // TODO: Calculate level based on geohash and player level in area if not provided
-    level ??= 1;
-
     if (!geohashLocationTypes.has(locationType)) {
         throw new Error("Can only spawn monster on GeohashLocationType");
     }
@@ -173,19 +166,18 @@ async function spawnMonster({
     }
 
     // Get monster stats
-    const { hp, mp, st, ap } = monsterStats({ level, beast });
-    const monster: MonsterEntity = {
+    let monster: MonsterEntity = {
         monster: monsterId, // unique monster id
         name: beast,
         beast,
         loc: location,
         locT: locationType,
         locI: locationInstance,
-        lvl: level,
-        hp,
-        mp,
-        st,
-        ap,
+        hp: 0,
+        mp: 0,
+        st: 0,
+        ap: 0,
+        skills: bestiary[beast].skillLines,
         apclk: Date.now(),
         buclk: 0,
         buf: [],
@@ -195,6 +187,8 @@ async function spawnMonster({
         pth: [],
         pthst: "",
     };
+    monster = { ...monster, ...entityStats(monster) };
+
     return (await monsterRepository.save(monsterId, monster)) as MonsterEntity;
 }
 
@@ -565,7 +559,6 @@ async function spawnWorldPOIs(
                         locationType: worldEntity.locT,
                         locationInstance,
                         beast: poi.beast,
-                        level: poi.level,
                     });
                     console.info(
                         `Spawned ${monster.monster} in ${worldEntity.world} at ${locationInstance}`,

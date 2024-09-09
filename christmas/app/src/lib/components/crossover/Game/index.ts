@@ -10,7 +10,7 @@ import { executeGameCommand } from "$lib/crossover/game";
 import type { GameCommand } from "$lib/crossover/ir";
 import { getEntityId } from "$lib/crossover/utils";
 import { actions } from "$lib/crossover/world/actions";
-import { playerAttributes } from "$lib/crossover/world/player";
+import { entityAttributes } from "$lib/crossover/world/entity";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     geohashLocationTypes,
@@ -183,7 +183,7 @@ async function updateEntityContainer<T extends Player | Monster | Item>(
                         const sigil = await upsertEntitySigil(
                             ec,
                             game.app.stage,
-                            playerAttributes(self),
+                            entityAttributes(self),
                         );
                         const bounds = sigil.getBounds();
                         const padding = 10;

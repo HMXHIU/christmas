@@ -11,11 +11,10 @@ import {
     type Abilities,
     type ProcedureEffect,
 } from "$lib/crossover/world/abilities";
-import { playerAttributes } from "$lib/crossover/world/player";
+import { entityActualAp } from "$lib/crossover/world/entity";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { type GeohashLocationType } from "$lib/crossover/world/types";
-import { entityActualAp } from "$lib/crossover/world/utils";
 import { sleep } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import { consumeResources, performActionConsequences, setEntityBusy } from ".";
@@ -70,12 +69,8 @@ async function performAbility({
 
     const { procedures, ap, mp, st, hp, range, predicate } = abilities[ability];
 
-    // Recover AP (for player need to get attributes)
-    const attributes =
-        selfEntityType === "player"
-            ? playerAttributes(self as Player)
-            : undefined;
-    self.ap = entityActualAp(self, { now, attributes });
+    // Recover AP
+    self.ap = entityActualAp(self, { now });
     self = (await saveEntity(self)) as PlayerEntity | MonsterEntity;
 
     // Check if self has enough resources to perform ability

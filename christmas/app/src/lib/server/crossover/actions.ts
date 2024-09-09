@@ -6,7 +6,7 @@ import {
     minifiedEntity,
 } from "$lib/crossover/utils";
 import { actions } from "$lib/crossover/world/actions";
-import { playerStats } from "$lib/crossover/world/player";
+import { entityStats } from "$lib/crossover/world/entity";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
@@ -812,9 +812,10 @@ async function rest(player: PlayerEntity, now?: number) {
     })) as PlayerEntity;
 
     // Rest player
-    player.hp = playerStats({ level: player.lvl }).hp;
-    player.mp = playerStats({ level: player.lvl }).mp;
-    player.st = playerStats({ level: player.lvl }).st;
+    const { hp, mp, st } = entityStats(player);
+    player.hp = hp;
+    player.mp = mp;
+    player.st = st;
 
     // Save player
     player = (await playerRepository.save(

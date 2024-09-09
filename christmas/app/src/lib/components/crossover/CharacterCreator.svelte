@@ -6,31 +6,42 @@
     import * as Select from "$lib/components/ui/select/index.js";
     import { Textarea } from "$lib/components/ui/textarea";
     import { crossoverAvailableAvatars } from "$lib/crossover/client";
+    import type { Abilities } from "$lib/crossover/world/abilities";
+    import { actions, type Actions } from "$lib/crossover/world/actions";
     import {
-        PlayerAppearanceSchema,
-        PlayerDemographicSchema,
-        PlayerMetadataSchema,
         ageTypes,
-        archetypes,
         bodyTypes,
         eyeColors,
         eyeTypes,
         faceTypes,
-        genderTypes,
         hairColors,
         hairTypes,
         personalityTypes,
-        playerStats,
-        raceTypes,
         skinTypes,
+    } from "$lib/crossover/world/appearance";
+    import {
+        abilitiesFromDemographics,
+        actionsFromDemographics,
+        archetypes,
+        attributesFromDemographics,
+        genders,
+        races,
+        skillsFromDemographics,
+    } from "$lib/crossover/world/demographic";
+    import { type Attributes } from "$lib/crossover/world/entity";
+    import {
+        PlayerAppearanceSchema,
+        PlayerDemographicSchema,
+        PlayerMetadataSchema,
         type PlayerAppearance,
         type PlayerDemographic,
         type PlayerMetadata,
     } from "$lib/crossover/world/player";
+    import { abilities } from "$lib/crossover/world/settings/abilities";
+    import type { SkillLines } from "$lib/crossover/world/skills";
     import { cn } from "$lib/shadcn";
     import { parseZodErrors } from "$lib/utils";
     import { onMount } from "svelte";
-    import { player } from "../../../store";
     import LabelField from "../common/LabelField.svelte";
     import SeparatorWithText from "../common/SeparatorWithText.svelte";
     import { Label } from "../ui/label";
@@ -52,6 +63,10 @@
     let name: string = "";
     let description: string = "";
     let avatar: string = "";
+    let attributes: Partial<Attributes> = {};
+    let playerActions: Actions[] = [];
+    let playerAbilities: Abilities[] = [];
+    let playerSkills: Partial<Record<SkillLines, number>> = {};
 
     let selectedHairType = hairTypes[0];
     let selectedHairColor = hairColors[0];
@@ -62,21 +77,19 @@
     let selectedSkinType = skinTypes[0];
     let selectedAgeType = ageTypes[0];
     let selectedPersonalityType = personalityTypes[0];
-    let selectedRaceType = raceTypes[0];
-    let selectedGenderType = genderTypes[0];
+    let selectedRace = { value: races.human.race, label: races.human.label };
+    let selectedGender = {
+        value: genders.male.gender,
+        label: genders.male.label,
+    };
     let selectedArchetype = {
-        label: archetypes["fighter"].label,
-        value: archetypes["fighter"].archetype,
+        value: archetypes.chosenOne.archetype,
+        label: archetypes.chosenOne.label,
     };
 
     let avatarSelection: AvatarSelection = {};
     let errors: Record<string, string> = {};
 
-    $: attributes = archetypes[selectedArchetype.value].attributes;
-    $: stats = playerStats({
-        level: 1,
-        attributes: attributes,
-    });
     $: selectedHairType &&
         selectedHairColor &&
         selectedEyeColor &&
@@ -86,10 +99,10 @@
         selectedSkinType &&
         selectedAgeType &&
         selectedPersonalityType &&
-        selectedRaceType &&
-        selectedGenderType &&
+        selectedRace &&
+        selectedGender &&
         selectedArchetype &&
-        getAvailableAvatars();
+        refresh();
 
     function validatePlayerMetadata(): PlayerMetadata | null {
         try {
@@ -99,11 +112,10 @@
                 description,
                 avatar,
                 demographic: {
-                    gender: selectedGenderType.value,
-                    race: selectedRaceType.value,
+                    gender: selectedGender.value,
+                    race: selectedRace.value,
                     archetype: selectedArchetype.value,
                 },
-                attributes,
                 appearance: {
                     hair: {
                         type: selectedHairType.value,
@@ -148,8 +160,8 @@
                     age: selectedAgeType.value,
                 }),
                 demographic: PlayerDemographicSchema.parse({
-                    gender: selectedGenderType.value,
-                    race: selectedRaceType.value,
+                    gender: selectedGender.value,
+                    race: selectedRace.value,
                     archetype: selectedArchetype.value,
                 }),
             };
@@ -159,7 +171,47 @@
         }
     }
 
-    async function getAvailableAvatars() {
+    function refresh() {
+        refreshAvailableAvatars();
+        refreshAttributes();
+        refreshActions();
+        refreshAbilities();
+        refreshSkills();
+    }
+
+    function refreshSkills() {
+        playerSkills = skillsFromDemographics({
+            race: selectedRace.value,
+            gender: selectedGender.value,
+            archetype: selectedArchetype.value,
+        });
+    }
+
+    function refreshAttributes() {
+        attributes = attributesFromDemographics({
+            race: selectedRace.value,
+            gender: selectedGender.value,
+            archetype: selectedArchetype.value,
+        });
+    }
+
+    function refreshActions() {
+        playerActions = actionsFromDemographics({
+            race: selectedRace.value,
+            gender: selectedGender.value,
+            archetype: selectedArchetype.value,
+        });
+    }
+
+    function refreshAbilities() {
+        playerAbilities = abilitiesFromDemographics({
+            race: selectedRace.value,
+            gender: selectedGender.value,
+            archetype: selectedArchetype.value,
+        });
+    }
+
+    async function refreshAvailableAvatars() {
         const meta = validateAvatarMetadata();
         if (meta) {
             const m: AvatarSelection = {};
@@ -171,16 +223,20 @@
     }
 
     function onCreate() {
+        console.log("ON CREATE");
         const playerMetadata = validatePlayerMetadata();
+
         if (playerMetadata) {
+            console.log(JSON.stringify(playerMetadata, null, 2));
+
             onCreateCharacter(playerMetadata);
             errors = {};
         }
     }
 
     onMount(() => {
-        // Get default on load
-        getAvailableAvatars();
+        // Refresh default on load
+        refresh();
     });
 </script>
 
@@ -209,22 +265,22 @@
                 </LabelField>
                 <!-- Race -->
                 <LabelField label="Race" class="text-left">
-                    <Select.Root bind:selected={selectedRaceType}>
+                    <Select.Root bind:selected={selectedRace}>
                         <Select.Trigger>
                             <Select.Value placeholder="" />
                         </Select.Trigger>
                         <Select.Content>
                             <Select.Group>
-                                {#each raceTypes as raceType}
+                                {#each Object.values(races) as race}
                                     <Select.Item
-                                        value={raceType.value}
-                                        label={raceType.label}
-                                        >{raceType.label}</Select.Item
+                                        value={race.race}
+                                        label={race.label}
+                                        >{race.label}</Select.Item
                                     >
                                 {/each}
                             </Select.Group>
                         </Select.Content>
-                        <Select.Input name="raceType" />
+                        <Select.Input name="race" />
                     </Select.Root>
                     {#if errors.race}
                         <p class="text-xs text-destructive">
@@ -234,22 +290,22 @@
                 </LabelField>
                 <!-- Gender -->
                 <LabelField label="Gender" class="text-left">
-                    <Select.Root bind:selected={selectedGenderType}>
+                    <Select.Root bind:selected={selectedGender}>
                         <Select.Trigger>
                             <Select.Value placeholder="" />
                         </Select.Trigger>
                         <Select.Content>
                             <Select.Group>
-                                {#each genderTypes as genderType}
+                                {#each Object.values(genders) as gender}
                                     <Select.Item
-                                        value={genderType.value}
-                                        label={genderType.label}
-                                        >{genderType.label}</Select.Item
+                                        value={gender.gender}
+                                        label={gender.label}
+                                        >{gender.label}</Select.Item
                                     >
                                 {/each}
                             </Select.Group>
                         </Select.Content>
-                        <Select.Input name="genderType" />
+                        <Select.Input name="gender" />
                     </Select.Root>
                     {#if errors.gender}
                         <p class="text-xs text-destructive">
@@ -274,7 +330,7 @@
                                 {/each}
                             </Select.Group>
                         </Select.Content>
-                        <Select.Input name="archetypeType" />
+                        <Select.Input name="archetype" />
                     </Select.Root>
                     {#if errors.archetype}
                         <p class="text-xs text-destructive">
@@ -308,50 +364,62 @@
         </Card.Header>
         <Card.Content>
             <div class="grid grid-cols-2 gap-4">
-                <div class="grid gap-2">
+                <div class="grid gap-2 content-start">
                     <SeparatorWithText>Attributes</SeparatorWithText>
-                    <div class="p-2">
+                    <div class="p-2 text-left">
                         <p class="text-xs">
                             <span class="font-bold">Strength:</span>
-                            {attributes.str}
+                            {attributes.str ?? 0}
                         </p>
                         <p class="text-xs">
                             <span class="font-bold">Dexterity:</span>
-                            {attributes.dex}
+                            {attributes.dex ?? 0}
                         </p>
                         <p class="text-xs">
                             <span class="font-bold">Constitution:</span>
-                            {attributes.con}
+                            {attributes.con ?? 0}
                         </p>
                         <p class="text-xs">
                             <span class="font-bold">Intelligence:</span>
-                            {attributes.int}
+                            {attributes.int ?? 0}
                         </p>
                         <p class="text-xs">
                             <span class="font-bold">Faith:</span>
-                            {attributes.fth}
+                            {attributes.fth ?? 0}
                         </p>
                     </div>
                 </div>
-                <div>
-                    <SeparatorWithText>Stats</SeparatorWithText>
-                    <div class="p-2">
-                        <p class="text-xs">
-                            <span class="font-bold">Level:</span>
-                            {$player?.lvl ?? 1}
-                        </p>
-                        <p class="text-xs">
-                            <span class="font-bold">Health:</span>
-                            {stats.hp}
-                        </p>
-                        <p class="text-xs">
-                            <span class="font-bold">Mana:</span>
-                            {stats.mp}
-                        </p>
-                        <p class="text-xs">
-                            <span class="font-bold">Stamina:</span>
-                            {stats.st}
-                        </p>
+                <div class="grid gap-2 content-start">
+                    <SeparatorWithText>Skills</SeparatorWithText>
+                    <div class="p-2 text-left">
+                        {#each Object.entries(playerSkills) as [skill, level]}
+                            <p class="text-xs">
+                                <span class="font-bold">{skill}:</span>
+                                {level}
+                            </p>
+                        {/each}
+                    </div>
+                </div>
+                <div class="grid gap-2 content-start">
+                    <SeparatorWithText>Actions</SeparatorWithText>
+                    <div class="p-2 text-left">
+                        {#each playerActions as action}
+                            <p class="text-xs">
+                                <span class="font-bold">{action}:</span>
+                                {actions[action].description}
+                            </p>
+                        {/each}
+                    </div>
+                </div>
+                <div class="grid gap-2 content-start">
+                    <SeparatorWithText>Abilities</SeparatorWithText>
+                    <div class="p-2 text-left">
+                        {#each playerAbilities as ability}
+                            <p class="text-xs">
+                                <span class="font-bold">{ability}:</span>
+                                {abilities[ability].description}
+                            </p>
+                        {/each}
                     </div>
                 </div>
             </div>
@@ -601,6 +669,7 @@
                                     animationMetadata: metadata.animation,
                                     avatarMetadata: metadata.avatar,
                                 }}
+                                entityId=""
                             ></AvatarViewer>
                         </Label>
                     {/each}

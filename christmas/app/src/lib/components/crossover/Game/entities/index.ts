@@ -3,10 +3,9 @@ import {
     getEntityId,
     isEntityInMotion,
 } from "$lib/crossover/utils";
-import type { Attributes } from "$lib/crossover/world/abilities";
 import { actions } from "$lib/crossover/world/actions";
-import { monsterStats } from "$lib/crossover/world/bestiary";
-import { playerStats } from "$lib/crossover/world/player";
+import type { Attributes } from "$lib/crossover/world/entity";
+import { entityStats } from "$lib/crossover/world/entity";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
 import { compendium } from "$lib/crossover/world/settings/compendium";
@@ -67,17 +66,7 @@ async function upsertEntitySigil(
     }
 
     // Create
-    let maxStats =
-        ec.entityType === "player"
-            ? playerStats({
-                  level: entity.lvl,
-                  attributes: attributes,
-              })
-            : monsterStats({
-                  level: entity.lvl,
-                  beast: (entity as Monster).beast,
-              });
-
+    let maxStats = entityStats(ec.entity as Player | Monster);
     const sigil = new EntitySigil(ec, maxStats, entity, {
         anchor: { x: 0, y: -0.825 },
         radius: 48,

@@ -1,49 +1,10 @@
 import type { CacheInterface } from "$lib/caches";
-import type {
-    EntityStats,
-    Monster,
-    Player,
-    World,
-} from "$lib/server/crossover/redis/entities";
-import type { Attributes } from "./abilities";
-import { monsterStats } from "./bestiary";
+import type { World } from "$lib/server/crossover/redis/entities";
 import { biomeAtGeohash, biomes } from "./biomes";
-import { playerStats } from "./player";
-import { MS_PER_TICK } from "./settings";
 import type { GeohashLocationType } from "./types";
 import { traversableSpeedInWorld } from "./world";
 
-export { entityActualAp, entityStats, isGeohashTraversable, recoverAp };
-
-function recoverAp(
-    ap: number,
-    maxAp: number,
-    apclk: number,
-    now: number,
-): number {
-    return Math.min(maxAp, Math.floor(ap + (now - apclk) / MS_PER_TICK));
-}
-
-function entityActualAp(
-    entity: Player | Monster,
-    opts?: { attributes?: Attributes; now?: number; maxAp?: number },
-): number {
-    const now = opts?.now ?? Date.now();
-    const maxAp = opts?.maxAp ?? entityStats(entity, opts?.attributes).ap;
-    return recoverAp(entity.ap, maxAp, entity.apclk, now);
-}
-
-function entityStats(
-    entity: Player | Monster,
-    attributes?: Attributes,
-): EntityStats {
-    return (entity as Player).player
-        ? playerStats({ level: entity.lvl, attributes: attributes })
-        : monsterStats({
-              level: entity.lvl,
-              beast: (entity as Monster).beast,
-          });
-}
+export { isGeohashTraversable };
 
 async function isGeohashTraversable(
     geohash: string,
