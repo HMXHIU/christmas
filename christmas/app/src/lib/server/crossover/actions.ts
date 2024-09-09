@@ -9,6 +9,11 @@ import { actions } from "$lib/crossover/world/actions";
 import { entityStats } from "$lib/crossover/world/entity";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
+import { skillLines } from "$lib/crossover/world/settings/skills";
+import {
+    skillLevelProgression,
+    type SkillLines,
+} from "$lib/crossover/world/skills";
 import {
     geohashLocationTypes,
     type Direction,
@@ -49,6 +54,7 @@ import {
 } from "./utils";
 
 export {
+    canLearnSkillFrom,
     configureItem,
     createItem,
     dropItem,
@@ -801,6 +807,35 @@ async function enterItem(
     );
 
     return { player, pois };
+}
+
+function canLearnSkillFrom(
+    player: PlayerEntity,
+    teacher: PlayerEntity,
+    skill: SkillLines,
+): [boolean, string] {
+    // Can only learn up to teacher's skill level - 1
+    const playerSkillLevel = player.skills[skill] ?? 0;
+    const currency = skillLines[skill].currency;
+    const playerCurrency = currency.reduce((p, c) => p + player[c], 0);
+    const requiredCurrency = skillLevelProgression(playerSkillLevel + 1);
+
+    if (
+        !teacher.skills[skill] ||
+        teacher.skills[skill] - 1 < playerSkillLevel
+    ) {
+        return [
+            false,
+            `${teacher.name} furrows his brow. 'This skill lies beyond even my grasp. Seek out one more learned than I.'`,
+        ];
+    } else if (playerCurrency < requiredCurrency) {
+        return [
+            false,
+            "Despite your best efforts, the skill eludes you, perhaps with more experience...",
+        ];
+    }
+
+    return [true, ""];
 }
 
 async function rest(player: PlayerEntity, now?: number) {

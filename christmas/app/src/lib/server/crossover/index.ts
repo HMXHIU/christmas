@@ -149,9 +149,9 @@ async function handlePlayerKillsMonster(
 ) {
     // Note: changes player, monster in place
     // Give player rewards
-    const { lumina, umbra } = monsterLUReward(monster);
-    player.lum += lumina;
-    player.umb += umbra;
+    const { lum, umb } = monsterLUReward(monster);
+    player.lum += lum;
+    player.umb += umb;
     // Save & publish player
     player = (await saveEntity(player)) as PlayerEntity;
     publishAffectedEntitiesToPlayers([player]); // publish full entity to self

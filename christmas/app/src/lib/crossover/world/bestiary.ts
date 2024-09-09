@@ -5,7 +5,7 @@ import { entityLevel } from "./entity";
 import { bestiary } from "./settings/bestiary";
 import { worldSeed } from "./settings/world";
 import type { SkillLines } from "./skills";
-import type { AssetMetadata } from "./types";
+import type { AssetMetadata, Currency } from "./types";
 import { type WorldSeed } from "./world";
 
 export {
@@ -68,10 +68,7 @@ function monsterLimitAtGeohash(geohash: string, seed?: WorldSeed): number {
     return Math.ceil(rv * maxMonsters);
 }
 
-function monsterLUReward(monster: Monster): {
-    lumina: number;
-    umbra: number;
-} {
+function monsterLUReward(monster: Monster): Record<Currency, number> {
     const { alignment } = bestiary[monster.beast];
     const level = entityLevel(monster);
 
@@ -79,12 +76,12 @@ function monsterLUReward(monster: Monster): {
 
     if (alignment === "evil") {
         return {
-            lumina: Math.ceil(level),
-            umbra: 0,
+            lum: Math.ceil(level),
+            umb: 0,
         };
     }
     return {
-        lumina: Math.ceil(level),
-        umbra: 0,
+        lum: Math.ceil(level),
+        umb: 0,
     };
 }

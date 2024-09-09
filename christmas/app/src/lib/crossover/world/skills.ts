@@ -2,11 +2,13 @@ import type { Abilities } from "./abilities";
 import type { Actions } from "./actions";
 import { type Attribute, type Attributes } from "./entity";
 import { skillLines } from "./settings/skills";
+import type { Currency } from "./types";
 
 export {
     abilitiesFromSkills,
     actionsFromSkills,
     attributesFromSkills,
+    skillLevelProgression,
     type SkillLine,
     type SkillLines,
 };
@@ -21,12 +23,41 @@ type SkillLines =
 
 interface SkillLine {
     skillLine: SkillLines;
+    currency: Currency[];
     description: string;
     abilitiesAtSkillLevel?: Record<number, Abilities[]>;
     actionsAtSkillLevel?: Record<number, Actions[]>;
     attributesAtSkillLevel?: Record<number, Partial<Attributes>>;
 }
 
+function skillLevelProgression(level: number): number {
+    const xpTable: number[] = [
+        100, // Level 1
+        300, // Level 2
+        900, // Level 3
+        2700, // Level 4
+        6500, // Level 5
+        14000, // Level 6
+        23000, // Level 7
+        34000, // Level 8
+        48000, // Level 9
+        64000, // Level 10
+        85000, // Level 11
+        100000, // Level 12
+        120000, // Level 13
+        140000, // Level 14
+        165000, // Level 15
+        195000, // Level 16
+        225000, // Level 17
+        265000, // Level 18
+        305000, // Level 19
+        355000, // Level 20
+    ];
+    if (level > 20) {
+        return xpTable.slice(-1)[0] + 100000 * (level - 20);
+    }
+    return xpTable[level - 1];
+}
 function attributesFromSkills(
     skills: Partial<Record<SkillLines, number>>,
 ): Attributes {

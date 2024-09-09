@@ -6,6 +6,7 @@ export {
     GeohashLocationSchema,
     geohashLocationTypes,
     type AssetMetadata,
+    type Currency,
     type Direction,
     type EquipmentSlot,
     type GeohashLocationType,
@@ -16,6 +17,8 @@ export {
     type TileLayer,
     type WorldAssetMetadata,
 };
+
+type Currency = "lum" | "umb";
 
 type EquipmentSlot =
     // armor

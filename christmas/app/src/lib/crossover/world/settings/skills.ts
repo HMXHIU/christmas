@@ -7,6 +7,7 @@ const skillLines: Record<SkillLines, SkillLine> = {
     firstaid: {
         skillLine: "firstaid",
         description: "First Aid",
+        currency: ["lum", "umb"],
         abilitiesAtSkillLevel: {
             1: ["bandage"],
         },
@@ -22,6 +23,7 @@ const skillLines: Record<SkillLines, SkillLine> = {
     exploration: {
         skillLine: "exploration",
         description: "Exploration",
+        currency: ["lum", "umb"],
         actionsAtSkillLevel: {
             1: ["look", "say", "move", "inventory"],
             3: ["take", "equip", "unequip", "drop"],
@@ -44,6 +46,7 @@ const skillLines: Record<SkillLines, SkillLine> = {
     dirtyfighting: {
         skillLine: "dirtyfighting",
         description: "Dirty Fighting",
+        currency: ["lum", "umb"],
         abilitiesAtSkillLevel: {
             1: ["eyePoke"],
         },
@@ -60,6 +63,7 @@ const skillLines: Record<SkillLines, SkillLine> = {
     beast: {
         skillLine: "beast",
         description: "Beast",
+        currency: ["lum", "umb"],
         abilitiesAtSkillLevel: {
             1: ["scratch"],
         },
@@ -74,6 +78,7 @@ const skillLines: Record<SkillLines, SkillLine> = {
     arachnid: {
         skillLine: "arachnid",
         description: "Arachnid",
+        currency: ["lum", "umb"],
         abilitiesAtSkillLevel: {
             1: ["bite"],
             3: ["paralyze"],
@@ -89,6 +94,7 @@ const skillLines: Record<SkillLines, SkillLine> = {
     draconic: {
         skillLine: "draconic",
         description: "Draconic",
+        currency: ["lum", "umb"],
         abilitiesAtSkillLevel: {
             1: ["bite"],
             3: ["paralyze"],
