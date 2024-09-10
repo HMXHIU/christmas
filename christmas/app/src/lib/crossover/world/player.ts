@@ -1,16 +1,16 @@
 import { z } from "zod";
 import {
-    AGE_TYPES,
-    BODY_TYPES,
-    EYE_COLORS,
-    EYE_TYPES,
-    FACE_TYPES,
-    HAIR_COLORS,
-    HAIR_TYPES,
-    PERSONALITY_TYPES,
-    SKIN_TYPES,
+    AgesEnum,
+    BodyTypesEnum,
+    EyeColorsEnum,
+    EyeShapesEnum,
+    FaceTypesEnum,
+    HairColorsEnum,
+    HairStylesEnum,
+    PersonalitiesEnum,
+    SkinTypesEnum,
 } from "./appearance";
-import { ARCHETYPE_TYPES, GENDER_TYPES, RACE_TYPES } from "./demographic";
+import { ArchetypesEnum, GendersEnum, RacesEnum } from "./demographic";
 
 export {
     PlayerAppearanceSchema,
@@ -29,24 +29,24 @@ type PlayerAttributes = z.infer<typeof PlayerAttributesSchema>;
 
 const PlayerAppearanceSchema = z.object({
     hair: z.object({
-        type: z.enum(HAIR_TYPES),
-        color: z.enum(HAIR_COLORS),
+        type: z.enum(HairStylesEnum),
+        color: z.enum(HairColorsEnum),
     }),
     eye: z.object({
-        type: z.enum(EYE_TYPES),
-        color: z.enum(EYE_COLORS),
+        type: z.enum(EyeShapesEnum),
+        color: z.enum(EyeColorsEnum),
     }),
-    face: z.enum(FACE_TYPES),
-    body: z.enum(BODY_TYPES),
-    skin: z.enum(SKIN_TYPES),
-    personality: z.enum(PERSONALITY_TYPES),
-    age: z.enum(AGE_TYPES),
+    face: z.enum(FaceTypesEnum),
+    body: z.enum(BodyTypesEnum),
+    skin: z.enum(SkinTypesEnum),
+    personality: z.enum(PersonalitiesEnum),
+    age: z.enum(AgesEnum),
 });
 
 const PlayerDemographicSchema = z.object({
-    gender: z.enum(GENDER_TYPES),
-    race: z.enum(RACE_TYPES),
-    archetype: z.enum(ARCHETYPE_TYPES),
+    gender: z.enum(GendersEnum),
+    race: z.enum(RacesEnum),
+    archetype: z.enum(ArchetypesEnum),
 });
 
 const PlayerAttributesSchema = z.object({

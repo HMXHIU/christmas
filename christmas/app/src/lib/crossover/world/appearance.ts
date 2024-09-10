@@ -1,25 +1,57 @@
 export {
-    AGE_TYPES,
-    BODY_TYPES,
-    EYE_COLORS,
-    EYE_TYPES,
-    FACE_TYPES,
-    HAIR_COLORS,
-    HAIR_TYPES,
-    PERSONALITY_TYPES,
-    SKIN_TYPES,
-    ageTypes,
-    bodyTypes,
-    eyeColors,
-    eyeTypes,
-    faceTypes,
-    hairColors,
-    hairTypes,
-    personalityTypes,
-    skinTypes,
+    AgesEnum,
+    AgesSelection,
+    BodyTypesEnum,
+    BodyTypesSelection,
+    EyeColorsEnum,
+    EyeColorsSelection,
+    EyeShapesEnum,
+    EyeShapesSelection,
+    FaceTypesEnum,
+    FaceTypesSelection,
+    HairColorsEnum,
+    HairColorsSelection,
+    HairStylesEnum,
+    HairStylesSelection,
+    PersonalitiesEnum,
+    PersonalitiesSelection,
+    SkinTypesEnum,
+    SkinTypesSelection,
+    type Ages,
+    type BodyTypes,
+    type EyeColors,
+    type EyeShapes,
+    type FaceTypes,
+    type HairColors,
+    type HairStyles,
+    type Personalities,
+    type SkinTypes,
 };
 
-const PERSONALITY_TYPES = [
+// TODO: change to 16 personality types
+type Personalities =
+    | "introverted"
+    | "extroverted"
+    | "confident"
+    | "shy"
+    | "adventurous"
+    | "cautious"
+    | "optimistic"
+    | "pessimistic"
+    | "empathetic"
+    | "logical"
+    | "emotional"
+    | "ambitious"
+    | "easygoing"
+    | "perfectionist"
+    | "spontaneous"
+    | "organized"
+    | "creative"
+    | "analytical"
+    | "sympathetic"
+    | "rebellious";
+
+const PersonalitiesEnum = [
     "introverted",
     "extroverted",
     "confident",
@@ -42,7 +74,7 @@ const PERSONALITY_TYPES = [
     "rebellious",
 ] as const;
 
-const personalityTypes = [
+const PersonalitiesSelection = [
     {
         value: "introverted",
         label: "Introverted",
@@ -145,7 +177,20 @@ const personalityTypes = [
     },
 ];
 
-const AGE_TYPES = [
+type Ages =
+    | "teenager"
+    | "young_adult"
+    | "middle_aged"
+    | "elderly"
+    | "adult"
+    | "senior_citizen"
+    | "youthful"
+    | "mature"
+    | "middle_aged"
+    | "golden_years"
+    | "prime_of_life";
+
+const AgesEnum = [
     "teenager",
     "young_adult",
     "middle_aged",
@@ -159,7 +204,7 @@ const AGE_TYPES = [
     "prime_of_life",
 ] as const;
 
-const ageTypes = [
+const AgesSelection = [
     {
         value: "teenager",
         label: "Teenager",
@@ -213,7 +258,29 @@ const ageTypes = [
     },
 ];
 
-const BODY_TYPES = [
+type BodyTypes =
+    | "athletic"
+    | "slim"
+    | "average"
+    | "curvy"
+    | "stocky"
+    | "petite"
+    | "tall"
+    | "broad_shouldered"
+    | "narrow"
+    | "full_figured"
+    | "muscular"
+    | "lean"
+    | "plump"
+    | "lanky"
+    | "hourglass"
+    | "rectangular"
+    | "pear_shaped"
+    | "inverted_triangle"
+    | "ectomorph"
+    | "endomorph";
+
+const BodyTypesEnum = [
     "athletic",
     "slim",
     "average",
@@ -236,7 +303,7 @@ const BODY_TYPES = [
     "endomorph",
 ] as const;
 
-const bodyTypes = [
+const BodyTypesSelection = [
     {
         value: "athletic",
         label: "Athletic",
@@ -295,7 +362,29 @@ const bodyTypes = [
     },
 ];
 
-const SKIN_TYPES = [
+type SkinTypes =
+    | "fair"
+    | "light"
+    | "medium"
+    | "olive"
+    | "tan"
+    | "dark"
+    | "deep"
+    | "bronze"
+    | "peach"
+    | "ebony"
+    | "alabaster"
+    | "caramel"
+    | "golden"
+    | "sable"
+    | "mocha"
+    | "porcelain"
+    | "amber"
+    | "chestnut"
+    | "mahogany"
+    | "honey";
+
+const SkinTypesEnum = [
     "fair",
     "light",
     "medium",
@@ -318,7 +407,7 @@ const SKIN_TYPES = [
     "honey",
 ] as const;
 
-const skinTypes = [
+const SkinTypesSelection = [
     { value: "fair", label: "Fair", description: "Very light complexion." },
     { value: "light", label: "Light", description: "Pale, light tone." },
     { value: "medium", label: "Medium", description: "Moderate, beige tone." },
@@ -369,7 +458,28 @@ const skinTypes = [
     { value: "honey", label: "Honey", description: "Warm, golden undertones." },
 ];
 
-const EYE_TYPES = [
+type EyeShapes =
+    | "almond"
+    | "round"
+    | "monolid"
+    | "hooded"
+    | "upturned"
+    | "downturned"
+    | "deep_set"
+    | "close_set"
+    | "wide_set"
+    | "protruding"
+    | "large"
+    | "small"
+    | "cat_eye"
+    | "droopy"
+    | "narrow"
+    | "diamond"
+    | "oval"
+    | "heart"
+    | "piercing"
+    | "gentle";
+const EyeShapesEnum = [
     "almond",
     "round",
     "monolid",
@@ -392,7 +502,7 @@ const EYE_TYPES = [
     "gentle",
 ] as const;
 
-const eyeTypes = [
+const EyeShapesSelection = [
     { value: "almond", label: "Almond", description: "Classic almond shape." },
     { value: "round", label: "Round", description: "Large and expressive." },
     { value: "monolid", label: "Monolid", description: "Smooth, no crease." },
@@ -447,7 +557,28 @@ const eyeTypes = [
     { value: "gentle", label: "Gentle", description: "Soft, kind expression." },
 ];
 
-const EYE_COLORS = [
+type EyeColors =
+    | "blue"
+    | "green"
+    | "brown"
+    | "hazel"
+    | "gray"
+    | "amber"
+    | "violet"
+    | "black"
+    | "golden"
+    | "aquamarine"
+    | "turquoise"
+    | "amber_green"
+    | "light_brown"
+    | "dark_brown"
+    | "sea_green"
+    | "silver"
+    | "emerald"
+    | "chestnut"
+    | "navy_blue"
+    | "icy_blue";
+const EyeColorsEnum = [
     "blue",
     "green",
     "brown",
@@ -470,7 +601,7 @@ const EYE_COLORS = [
     "icy_blue",
 ] as const;
 
-const eyeColors = [
+const EyeColorsSelection = [
     { value: "blue", label: "Blue", description: "Clear, sky-blue shade." },
     { value: "green", label: "Green", description: "Vivid, forest green." },
     { value: "brown", label: "Brown", description: "Warm, deep brown." },
@@ -521,7 +652,29 @@ const eyeColors = [
     { value: "icy_blue", label: "Icy Blue", description: "Pale, frosty blue." },
 ];
 
-const HAIR_TYPES = [
+type HairStyles =
+    | "short_straight"
+    | "long_curly"
+    | "buzz_cut"
+    | "bob"
+    | "pixie_cut"
+    | "long_wavy"
+    | "afro"
+    | "ponytail"
+    | "mohawk"
+    | "braids"
+    | "dreadlocks"
+    | "bun"
+    | "long_straight"
+    | "medium_wavy"
+    | "undercut"
+    | "pigtails"
+    | "layered"
+    | "faux_hawk"
+    | "curly_bob"
+    | "top_knot";
+
+const HairStylesEnum = [
     "short_straight",
     "long_curly",
     "buzz_cut",
@@ -544,7 +697,7 @@ const HAIR_TYPES = [
     "top_knot",
 ] as const;
 
-const hairTypes = [
+const HairStylesSelection = [
     {
         value: "short_straight",
         label: "Short Straight",
@@ -639,7 +792,29 @@ const hairTypes = [
     },
 ];
 
-const HAIR_COLORS = [
+type HairColors =
+    | "blonde"
+    | "brunette"
+    | "black"
+    | "red"
+    | "auburn"
+    | "platinum"
+    | "gray"
+    | "white"
+    | "blue"
+    | "green"
+    | "pink"
+    | "purple"
+    | "orange"
+    | "teal"
+    | "burgundy"
+    | "honey"
+    | "chestnut"
+    | "ash_blonde"
+    | "silver"
+    | "lavender";
+
+const HairColorsEnum = [
     "blonde",
     "brunette",
     "black",
@@ -662,7 +837,7 @@ const HAIR_COLORS = [
     "lavender",
 ] as const;
 
-const hairColors = [
+const HairColorsSelection = [
     { value: "blonde", label: "Blonde", description: "Light and golden." },
     { value: "brunette", label: "Brunette", description: "Rich brown shade." },
     { value: "black", label: "Black", description: "Deep and dark." },
@@ -697,7 +872,29 @@ const hairColors = [
     },
 ];
 
-const FACE_TYPES = [
+type FaceTypes =
+    | "oval"
+    | "round"
+    | "square"
+    | "heart"
+    | "diamond"
+    | "triangular"
+    | "rectangular"
+    | "oblong"
+    | "pear"
+    | "inverted_triangle"
+    | "chiseled"
+    | "soft"
+    | "long"
+    | "wide"
+    | "narrow"
+    | "angular"
+    | "petite"
+    | "gaunt"
+    | "strong_jawline"
+    | "soft_square";
+
+const FaceTypesEnum = [
     "oval",
     "round",
     "square",
@@ -719,7 +916,8 @@ const FACE_TYPES = [
     "strong_jawline",
     "soft_square",
 ] as const;
-const faceTypes = [
+
+const FaceTypesSelection = [
     { value: "oval", label: "Oval", description: "Balanced and proportional." },
     {
         value: "round",

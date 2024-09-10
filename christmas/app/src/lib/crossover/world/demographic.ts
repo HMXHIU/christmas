@@ -10,13 +10,13 @@ import {
 export {
     abilitiesFromDemographics,
     actionsFromDemographics,
-    ARCHETYPE_TYPES,
     archetypes,
+    ArchetypesEnum,
     attributesFromDemographics,
-    GENDER_TYPES,
     genders,
-    RACE_TYPES,
+    GendersEnum,
     races,
+    RacesEnum,
     skillsFromDemographics,
     type Archetype,
     type Archetypes,
@@ -108,7 +108,7 @@ function actionsFromDemographics({
  * Gender
  */
 type Genders = "male" | "female";
-const GENDER_TYPES = ["male", "female"] as const; // for use in zod schema
+const GendersEnum = ["male", "female"] as const; // for use in zod schema
 
 interface Gender {
     gender: Genders;
@@ -141,7 +141,7 @@ const genders: Record<Genders, Gender> = {
  */
 
 type Races = "human" | "elf";
-const RACE_TYPES = ["human", "elf"] as const;
+const RacesEnum = ["human", "elf"] as const;
 
 interface Race {
     race: Races;
@@ -196,7 +196,8 @@ type Archetypes =
     | "mage"
     | "rougueAntiHero"
     | "stuckUpPaladin";
-const ARCHETYPE_TYPES = [
+
+const ArchetypesEnum = [
     "believer",
     "protagonist",
     "chosenOne",

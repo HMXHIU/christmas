@@ -69,7 +69,12 @@ let connectedUsers: Record<string, ConnectedUser> = {};
  */
 async function loadPlayerEntity(
     publicKey: string,
-    options: { geohash: string; region: string; loggedIn: boolean },
+    options: {
+        geohash: string;
+        region: string;
+        loggedIn: boolean;
+        locationInstance?: string;
+    },
 ): Promise<PlayerEntity> {
     // Get user metadata
     const userMetadata = await getUserMetadata(publicKey);
@@ -92,7 +97,7 @@ async function loadPlayerEntity(
         rgn: options.region,
         loc: [options.geohash],
         locT: "geohash",
-        locI: LOCATION_INSTANCE,
+        locI: options.locationInstance ?? LOCATION_INSTANCE,
         hp: 0,
         mp: 0,
         st: 0,

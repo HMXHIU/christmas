@@ -9,15 +9,15 @@
     import type { Abilities } from "$lib/crossover/world/abilities";
     import { actions, type Actions } from "$lib/crossover/world/actions";
     import {
-        ageTypes,
-        bodyTypes,
-        eyeColors,
-        eyeTypes,
-        faceTypes,
-        hairColors,
-        hairTypes,
-        personalityTypes,
-        skinTypes,
+        AgesSelection,
+        BodyTypesSelection,
+        EyeColorsSelection,
+        EyeShapesSelection,
+        FaceTypesSelection,
+        HairColorsSelection,
+        HairStylesSelection,
+        PersonalitiesSelection,
+        SkinTypesSelection,
     } from "$lib/crossover/world/appearance";
     import {
         abilitiesFromDemographics,
@@ -68,15 +68,15 @@
     let playerAbilities: Abilities[] = [];
     let playerSkills: Partial<Record<SkillLines, number>> = {};
 
-    let selectedHairType = hairTypes[0];
-    let selectedHairColor = hairColors[0];
-    let selectedEyeColor = eyeColors[0];
-    let selectedEyeType = eyeTypes[0];
-    let selectedFaceType = faceTypes[0];
-    let selectedBodyType = bodyTypes[0];
-    let selectedSkinType = skinTypes[0];
-    let selectedAgeType = ageTypes[0];
-    let selectedPersonalityType = personalityTypes[0];
+    let selectedHairType = HairStylesSelection[0];
+    let selectedHairColor = HairColorsSelection[0];
+    let selectedEyeColor = EyeColorsSelection[0];
+    let selectedEyeType = EyeShapesSelection[0];
+    let selectedFaceType = FaceTypesSelection[0];
+    let selectedBodyType = BodyTypesSelection[0];
+    let selectedSkinType = SkinTypesSelection[0];
+    let selectedAgeType = AgesSelection[0];
+    let selectedPersonalityType = PersonalitiesSelection[0];
     let selectedRace = { value: races.human.race, label: races.human.label };
     let selectedGender = {
         value: genders.male.gender,
@@ -444,7 +444,7 @@
                             </Select.Trigger>
                             <Select.Content>
                                 <Select.Group>
-                                    {#each faceTypes as faceType}
+                                    {#each FaceTypesSelection as faceType}
                                         <Select.Item
                                             value={faceType.value}
                                             label={faceType.label}
@@ -464,7 +464,7 @@
                             </Select.Trigger>
                             <Select.Content>
                                 <Select.Group>
-                                    {#each eyeTypes as eyeType}
+                                    {#each EyeShapesSelection as eyeType}
                                         <Select.Item
                                             value={eyeType.value}
                                             label={eyeType.label}
@@ -484,7 +484,7 @@
                             </Select.Trigger>
                             <Select.Content>
                                 <Select.Group>
-                                    {#each eyeColors as eyeColor}
+                                    {#each EyeColorsSelection as eyeColor}
                                         <Select.Item
                                             value={eyeColor.value}
                                             label={eyeColor.label}
@@ -508,7 +508,7 @@
                             </Select.Trigger>
                             <Select.Content>
                                 <Select.Group>
-                                    {#each hairTypes as hairType}
+                                    {#each HairStylesSelection as hairType}
                                         <Select.Item
                                             value={hairType.value}
                                             label={hairType.label}
@@ -528,7 +528,7 @@
                             </Select.Trigger>
                             <Select.Content>
                                 <Select.Group>
-                                    {#each hairColors as hairColor}
+                                    {#each HairColorsSelection as hairColor}
                                         <Select.Item
                                             value={hairColor.value}
                                             label={hairColor.label}
@@ -552,7 +552,7 @@
                             </Select.Trigger>
                             <Select.Content>
                                 <Select.Group>
-                                    {#each bodyTypes as bodyType}
+                                    {#each BodyTypesSelection as bodyType}
                                         <Select.Item
                                             value={bodyType.value}
                                             label={bodyType.label}
@@ -572,7 +572,7 @@
                             </Select.Trigger>
                             <Select.Content>
                                 <Select.Group>
-                                    {#each skinTypes as skinType}
+                                    {#each SkinTypesSelection as skinType}
                                         <Select.Item
                                             value={skinType.value}
                                             label={skinType.label}
@@ -596,7 +596,7 @@
                             </Select.Trigger>
                             <Select.Content>
                                 <Select.Group>
-                                    {#each ageTypes as ageType}
+                                    {#each AgesSelection as ageType}
                                         <Select.Item
                                             value={ageType.value}
                                             label={ageType.label}
@@ -616,7 +616,7 @@
                             </Select.Trigger>
                             <Select.Content>
                                 <Select.Group>
-                                    {#each personalityTypes as personalityType}
+                                    {#each PersonalitiesSelection as personalityType}
                                         <Select.Item
                                             value={personalityType.value}
                                             label={personalityType.label}

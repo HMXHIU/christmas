@@ -32,6 +32,7 @@ const BUCKETS = {
     store: "store",
     image: "image",
     player: "player",
+    npc: "npc",
     avatar: "avatar",
     tiled: "tiled",
 };
@@ -318,6 +319,49 @@ class ObjectStorage {
     }): Promise<object> {
         const readable = await this.getObject({ owner, bucket, name });
         return JSON.parse(await readable.read());
+    }
+
+    static async countObjects({
+        owner,
+        bucket,
+        prefix,
+        recursive,
+    }: {
+        owner: string | null;
+        bucket: string;
+        prefix?: string;
+        recursive?: boolean;
+    }): Promise<number> {
+        const acl = owner ? "private" : "public";
+        prefix = prefix ? `${acl}/${prefix}` : `${acl}/`;
+
+        // Check valid bucket
+        if (!Object.values(BUCKETS).includes(bucket)) {
+            throw new Error(`Invalid bucket: ${bucket}`);
+        }
+
+        const getObjectCount = new Promise<number>((resolve, reject) => {
+            const stream = client.listObjectsV2(
+                bucket,
+                prefix,
+                recursive ?? false,
+            );
+            let count = 0;
+
+            stream.on("data", function () {
+                count++;
+            });
+
+            stream.on("error", function (err) {
+                reject(err);
+            });
+
+            stream.on("end", function () {
+                resolve(count);
+            });
+        });
+
+        return getObjectCount;
     }
 
     static async listObjects({
