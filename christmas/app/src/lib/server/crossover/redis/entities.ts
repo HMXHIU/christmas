@@ -10,12 +10,17 @@ import type {
     LocationType,
 } from "$lib/crossover/world/types";
 import { Schema, type Entity } from "redis-om";
+import type { NPCs } from "../npc";
 
 export {
+    DialogueSchema,
     ItemEntitySchema,
     MonsterEntitySchema,
     PlayerEntitySchema,
     WorldEntitySchema,
+    type Dialogue,
+    type DialogueEntity,
+    type Dialogues,
     type EntityState,
     type EntityStats,
     type EntityType,
@@ -196,3 +201,31 @@ const WorldEntitySchema = new Schema("World", {
     locT: { type: "string" },
     loc: { type: "string[]" }, // geohashes of plots (whole grids less than unit precision)
 });
+
+/**
+ * Dialogue
+ */
+
+type Dialogues = "grt" | "ign";
+
+interface Dialogue {
+    msg: string; // message template to respond
+    dia: Dialogues;
+    // Conditions (best match)
+    npc?: NPCs;
+    race?: Races;
+    gen?: Genders;
+    arch?: Archetypes;
+}
+
+const DialogueSchema = new Schema("Dialogue", {
+    msg: { type: "string" }, // message template to respond
+    dia: { type: "string" },
+    // Conditions (best match)
+    npc: { type: "string" },
+    race: { type: "string" },
+    gen: { type: "string" },
+    arch: { type: "string" },
+});
+
+type DialogueEntity = Dialogue & Entity;

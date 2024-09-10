@@ -54,9 +54,10 @@ import { ObjectStorage } from "../objectStorage";
 import { playerRepository } from "./redis";
 import type { PlayerEntity } from "./redis/entities";
 import { UserMetadataSchema } from "./router";
+import { npcs } from "./settings/npc";
 import { getUserMetadata, savePlayerState } from "./utils";
 
-export { generateNPC, generateNPCMetadata, npcs };
+export { generateNPC, generateNPCMetadata, type NPC, type NPCs };
 
 /**
  * `NPC` is a template used to create an NPC `player` instance
@@ -70,45 +71,6 @@ interface NPC {
     descriptionTemplate: string;
     asset: AssetMetadata;
 }
-
-const npcs: Record<NPCs, NPC> = {
-    innkeep: {
-        npc: "innkeep",
-        nameTemplate: "Inn Keeper",
-        descriptionTemplate:
-            "The innkeeper tends to the inn with efficiency, offering food, drink, and a place to rest for travelers. Always attentive to guests, they know much about the town and its visitors",
-        asset: {
-            path: "",
-        },
-    },
-    grocer: {
-        npc: "grocer",
-        nameTemplate: "Grocer",
-        descriptionTemplate:
-            "The grocer diligently organizes shelves and manages the shop with care. Always ready to assist customers, they have a keen knowledge of local produce and supplies, offering fair deals to all who pass through",
-        asset: {
-            path: "",
-        },
-    },
-    blacksmith: {
-        npc: "blacksmith",
-        nameTemplate: "Blacksmith",
-        descriptionTemplate:
-            "The blacksmith works steadily at the forge, crafting and repairing weapons and tools with precision. Known for their skill and reliability, they provide essential services to adventurers and townsfolk alike",
-        asset: {
-            path: "",
-        },
-    },
-    alchemist: {
-        npc: "alchemist",
-        nameTemplate: "Alchemist",
-        descriptionTemplate:
-            "The alchemist carefully mixes potions and brews, always experimenting with new concoctions. Knowledgeable in herbs and mystical ingredients, they offer remedies and rare elixirs to those seeking both healing and power.",
-        asset: {
-            path: "",
-        },
-    },
-};
 
 async function generateNPCMetadata({
     player,

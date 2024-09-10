@@ -11,14 +11,18 @@ import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import type { GeohashLocationType } from "$lib/crossover/world/types";
 import { EquipmentSlots } from "$lib/crossover/world/types";
+import { hashObject } from "$lib/server";
 import type { Search } from "redis-om";
 import { Repository } from "redis-om";
 import { LOOK_PAGE_SIZE } from "..";
+import { dialogues } from "../settings/npc";
 import {
+    DialogueSchema,
     ItemEntitySchema,
     MonsterEntitySchema,
     PlayerEntitySchema,
     WorldEntitySchema,
+    type DialogueEntity,
     type Item,
     type ItemEntity,
     type Monster,
@@ -29,6 +33,7 @@ import {
 
 // Exports
 export {
+    dialogueRepository,
     dungeonEntrancesQuerySet,
     equipmentQuerySet,
     fetchEntity,
@@ -58,6 +63,7 @@ let playerRepository: Repository;
 let monsterRepository: Repository;
 let itemRepository: Repository;
 let worldRepository: Repository;
+let dialogueRepository: Repository;
 
 // Create clients
 const redisClient = createClient({
@@ -79,7 +85,10 @@ async function initializeClients() {
         registerSchemas();
 
         // Create Indexes
-        createIndexes();
+        await createIndexes();
+
+        // Index Dialogues
+        await indexDialogues();
     }
     if (!redisSubscribeClient.isOpen) {
         await redisSubscribeClient.connect();
@@ -93,14 +102,33 @@ function registerSchemas() {
     monsterRepository = new Repository(MonsterEntitySchema, redisClient);
     itemRepository = new Repository(ItemEntitySchema, redisClient);
     worldRepository = new Repository(WorldEntitySchema, redisClient);
+    dialogueRepository = new Repository(DialogueSchema, redisClient);
 }
 
-function createIndexes() {
+async function createIndexes() {
     console.log("Creating indexes for redis schemas");
-    playerRepository.createIndex();
-    monsterRepository.createIndex();
-    itemRepository.createIndex();
-    worldRepository.createIndex();
+    await playerRepository.createIndex();
+    await monsterRepository.createIndex();
+    await itemRepository.createIndex();
+    await worldRepository.createIndex();
+    await dialogueRepository.createIndex();
+}
+
+async function indexDialogues() {
+    // TODO: - lock the redis table here (multiple servers might be indexing at the same time)
+    //       - hash the dialogues table and store in redis (skip if the same)
+    console.log("Re-Indexing all dialogues");
+    for (const [_, ds] of Object.entries(dialogues)) {
+        for (const d of ds) {
+            const dialogueId = hashObject(d, "md5"); // md5 is shorter
+            const dialogueEntity = (await dialogueRepository.fetch(
+                dialogueId,
+            )) as DialogueEntity;
+            if (!dialogueEntity.dia) {
+                await dialogueRepository.save(dialogueId, d as DialogueEntity);
+            }
+        }
+    }
 }
 
 /*

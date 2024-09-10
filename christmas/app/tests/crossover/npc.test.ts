@@ -1,13 +1,14 @@
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
-import { generateNPC, npcs } from "$lib/server/crossover/npc";
+import { generateNPC } from "$lib/server/crossover/npc";
 import { initializeClients } from "$lib/server/crossover/redis";
 import type {
     Item,
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
+import { npcs } from "$lib/server/crossover/settings/npc";
 import { getUserMetadata } from "$lib/server/crossover/utils";
 import { beforeAll, expect, test } from "vitest";
 import { getRandomRegion } from "../utils";

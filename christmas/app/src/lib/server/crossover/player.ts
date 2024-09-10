@@ -54,7 +54,7 @@ function generateAvatarHash({
     textures: Record<string, string>;
 }): { selector: string; texture: string; hash: string } {
     // Searching by using the prefix as the selector will give multiple texture combinations
-    const s = hashObject({ demographic, appearance });
-    const t = hashObject({ textures });
+    const s = hashObject({ demographic, appearance }, "md5"); // md5 is shorter
+    const t = hashObject({ textures }, "md5");
     return { selector: s, texture: t, hash: `${s}_${t}` };
 }

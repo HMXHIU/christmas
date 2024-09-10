@@ -1,42 +1,44 @@
-import jwt, { type JwtPayload } from "jsonwebtoken";
-import type {
-    SolanaSignInInput,
-    SolanaSignInOutput,
-} from "@solana/wallet-standard-features";
-import { verifySignIn } from "@solana/wallet-standard-util";
-import { ENVIRONMENT } from "$env/static/private";
+import {
+    ENVIRONMENT,
+    FEE_PAYER_PRIVATE_KEY as FEE_PAYER_PRIVATE_KEY_JSON,
+} from "$env/static/private";
 import {
     PUBLIC_FEE_PAYER_PUBKEY,
     PUBLIC_HOST,
     PUBLIC_RPC_ENDPOINT,
 } from "$env/static/public";
-import { FEE_PAYER_PRIVATE_KEY as FEE_PAYER_PRIVATE_KEY_JSON } from "$env/static/private";
-import base58 from "bs58";
-import { getRandomValues, createHash } from "crypto";
 import { AnchorClient } from "$lib/anchorClient";
+import { PROGRAM_ID } from "$lib/anchorClient/defs";
+import type {
+    SolanaSignInInput,
+    SolanaSignInOutput,
+} from "@solana/wallet-standard-features";
+import { verifySignIn } from "@solana/wallet-standard-util";
 import {
-    PublicKey,
+    Connection,
     Keypair,
+    PublicKey,
     Transaction,
     TransactionInstruction,
-    Connection,
     type Signer,
 } from "@solana/web3.js";
-import { PROGRAM_ID } from "$lib/anchorClient/defs";
 import { error, type RequestEvent } from "@sveltejs/kit";
+import base58 from "bs58";
+import { createHash, getRandomValues } from "crypto";
+import jwt, { type JwtPayload } from "jsonwebtoken";
 
 // Exports
 export {
+    createSerializedTransaction,
+    createSignInDataForSIWS,
     FEE_PAYER_PUBKEY,
     feePayerKeypair,
+    hashObject,
+    requireLogin,
     serverAnchorClient,
-    verifySIWS,
-    createSignInDataForSIWS,
     signJWT,
     verifyJWT,
-    requireLogin,
-    hashObject,
-    createSerializedTransaction,
+    verifySIWS,
 };
 
 // Load fee payer keypair
@@ -146,9 +148,9 @@ function requireLogin(request: RequestEvent): App.UserSession {
     return request.locals.user;
 }
 
-function hashObject(obj: any): string {
+function hashObject(obj: any, algorithm?: string): string {
     const str = sortedStringify(obj);
-    const hash = createHash("sha256");
+    const hash = createHash(algorithm ?? "sha256");
     hash.update(str);
     return hash.digest("hex");
 }
