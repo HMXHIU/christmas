@@ -9,10 +9,8 @@ import {
 } from "@solana/web3.js";
 import BN from "bn.js";
 import bs58 from "bs58";
-import { mapValues } from "lodash-es";
 import { z } from "zod";
 import type { TransactionResult } from "../anchorClient/types";
-import { seededRandom } from "../crossover/utils";
 
 export {
     AsyncLock,
@@ -32,10 +30,12 @@ export {
     parseZodErrors,
     retry,
     sampleFrom,
+    seededRandom,
     signAndSendTransaction,
     sleep,
     storage_uri_to_url,
     stringToBase58,
+    stringToRandomNumber,
     stringToUint8Array,
     substituteValues,
     substituteVariables,
@@ -44,11 +44,47 @@ export {
 
 const connection = new Connection(PUBLIC_RPC_ENDPOINT, "processed");
 
+/**
+ * Converts a string (seed) to a random number.
+ *
+ * @param str - The string to convert.
+ * @returns The random number generated from the string (seed).
+ */
+function stringToRandomNumber(str: string): number {
+    var hash = 0;
+    if (str.length === 0) return hash;
+    for (var i = 0; i < str.length; i++) {
+        var char = str.charCodeAt(i);
+        hash = (hash << 5) - hash + char; // Bitwise left shift and subtraction
+        hash &= hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash); // Ensure positive number
+}
+
+/**
+ * Generates a seeded random number between 0 and 1.
+ *
+ * @param seed - The seed value used to generate the random number.
+ * @returns A random number between 0 (inclusive) and 1 (exclusive).
+ */
+function seededRandom(seed: number): number {
+    var x = Math.sin(seed) * 10000; // how many decimal places
+    return x - Math.floor(x);
+}
+
 function substituteValues(
     d: Record<string, string>,
     variables: Record<string, any>,
 ) {
-    return mapValues(d, (v) => substituteVariables(v, variables));
+    const result: Record<string, string> = {};
+
+    for (const key in d) {
+        if (d.hasOwnProperty(key)) {
+            result[key] = substituteVariables(d[key], variables);
+        }
+    }
+
+    return result;
 }
 
 function substituteVariables(template: string, variables: Record<string, any>) {

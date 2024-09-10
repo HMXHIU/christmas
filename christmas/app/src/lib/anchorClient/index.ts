@@ -30,7 +30,6 @@ import BN from "bn.js";
 import bs58 from "bs58";
 import idl from "../../../../target/idl/christmas.json";
 import { type Christmas } from "../../../../target/types/christmas";
-import { timeStampToDate } from "../utils";
 import {
     DISCRIMINATOR_SIZE,
     GEOHASH_SIZE,
@@ -53,6 +52,10 @@ import type {
     User,
 } from "./types";
 import { getMarketCouponsFilterCombinations } from "./utils";
+
+function timeStampToDate(timeStamp: BN): Date {
+    return new Date(timeStamp.toNumber());
+}
 
 /**
  * Do not instantiate this on the client side, only on the server side.
@@ -1019,13 +1022,17 @@ export class AnchorClient {
     async createUser({
         region,
         uri,
+        wallet,
+        signers,
     }: {
         region: number[];
         uri: string;
+        wallet?: PublicKey | null; // the user pubkey (defaults to this.wallet.publicKey)
+        signers?: Array<Signer>;
     }): Promise<TransactionResult> {
         const tx = new Transaction();
-        tx.add(await this.createUserIx({ region, uri }));
-        return await this.executeTransaction({ tx });
+        tx.add(await this.createUserIx({ region, uri, wallet }));
+        return await this.executeTransaction({ tx, signers });
     }
 
     async createUserIx({
@@ -1055,13 +1062,17 @@ export class AnchorClient {
     async updateUser({
         region,
         uri,
+        wallet,
+        signers,
     }: {
         region: number[];
         uri: string;
+        wallet?: PublicKey | null; // the user pubkey (defaults to this.wallet.publicKey)
+        signers?: Array<Signer>;
     }): Promise<TransactionResult> {
         const tx = new Transaction();
-        tx.add(await this.updateUserIx({ region, uri }));
-        return await this.executeTransaction({ tx });
+        tx.add(await this.updateUserIx({ region, uri, wallet }));
+        return await this.executeTransaction({ tx, signers });
     }
 
     async updateUserIx({

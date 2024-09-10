@@ -1,45 +1,12 @@
-# Christmas Protocol
+## Build, Test, Deploy
 
-Christmas Protocol on Solana
-### How it works
-
-#### Overview
-![Intro](resources/intro.jpg)
-
-### Technical Info
-
-#### Components
-Our Program: christmas
-
-#### Functions
-
-1. mint_nft
-
-caller: seller
-account: Hash(christmas, seller_pubkey)
-
-```
-transaction(
-    pay advertising fee,
-    upload image + metadata stored in arweave (metaplex),
-    program create a temporary account which owns this NFT (needs to store some lamports),
-)
+```bash
+anchor build
+anchor test --skip-local-validator # see Anchor.toml for specific tests
+anchor deploy
 ```
 
-2. consume_nft
-
-burn the nft
-
-caller: buyer
-
-```
-transaction(
-    buyer with the nft check with seller QR code that it matched,
-    burn the nft
-)
-```
-
-### Setup Solana Localnet
+## Setup Solana (Localnet)
 
 _Helpful Commands_
 
@@ -72,7 +39,7 @@ _Airdrop till you drop_
 solana airdrop 1000
 ```
 
-### Testing & Exploring on Local Validator
+## Testing & Exploring on Local Validator
 
 1. Go to [Solana Explorer](https://explorer.solana.com/)
 2. Select Custom RPC URL (http://localhost:8899)

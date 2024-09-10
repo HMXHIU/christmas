@@ -2,8 +2,6 @@ import { isGeohashTraversableClient } from "$lib/crossover/game";
 import {
     autoCorrectGeohashPrecision,
     getAllUnitGeohashes,
-    seededRandom,
-    stringToRandomNumber,
 } from "$lib/crossover/utils";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/settings/world";
@@ -12,6 +10,7 @@ import {
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
 import type { World } from "$lib/server/crossover/redis/entities";
+import { seededRandom, stringToRandomNumber } from "$lib/utils";
 import { Assets, Container, Graphics } from "pixi.js";
 import { createNoise2D } from "simplex-noise";
 import { get } from "svelte/store";

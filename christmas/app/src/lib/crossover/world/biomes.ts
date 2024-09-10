@@ -1,10 +1,7 @@
 import { PUBLIC_TOPOLOGY_ENDPOINT } from "$env/static/public";
 import { type CacheInterface } from "$lib/caches";
-import {
-    geohashToColRow,
-    seededRandom,
-    stringToRandomNumber,
-} from "$lib/crossover/utils";
+import { geohashToColRow } from "$lib/crossover/utils";
+import { seededRandom, stringToRandomNumber } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import { PNG, type PNGWithMetadata } from "pngjs";
 import { dungeonBiomeAtGeohash } from "./dungeons";

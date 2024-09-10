@@ -4,11 +4,7 @@ import {
     topologyResponseCache,
     topologyResultCache,
 } from "$lib/crossover/caches";
-import {
-    geohashToColRow,
-    geohashToGridCell,
-    seededRandom,
-} from "$lib/crossover/utils";
+import { geohashToColRow, geohashToGridCell } from "$lib/crossover/utils";
 import type { Ability } from "$lib/crossover/world/abilities";
 import type { Action } from "$lib/crossover/world/actions";
 import { avatarMorphologies } from "$lib/crossover/world/bestiary";
@@ -18,6 +14,7 @@ import type {
     GeohashLocationType,
 } from "$lib/crossover/world/types";
 import type { Tileset } from "$lib/crossover/world/world";
+import { seededRandom } from "$lib/utils";
 import { gsap } from "gsap";
 import { PixiPlugin } from "gsap/PixiPlugin";
 import * as PIXI from "pixi.js";

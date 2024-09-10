@@ -52,8 +52,6 @@ export {
     minifiedEntity,
     oddGeohashCharacters,
     REGEX_STRIP_ENTITY_TYPE,
-    seededRandom,
-    stringToRandomNumber,
 };
 
 const REGEX_STRIP_ENTITY_TYPE = /^(monster_|item_)/;
@@ -153,34 +151,6 @@ const invertedEvenColRow: Record<string, string> = Object.fromEntries(
 const invertedOddColRow: Record<string, string> = Object.fromEntries(
     Object.entries(oddColRow).map(([char, [x, y]]) => [`${x},${y}`, char]),
 );
-
-/**
- * Converts a string (seed) to a random number.
- *
- * @param str - The string to convert.
- * @returns The random number generated from the string (seed).
- */
-function stringToRandomNumber(str: string): number {
-    var hash = 0;
-    if (str.length === 0) return hash;
-    for (var i = 0; i < str.length; i++) {
-        var char = str.charCodeAt(i);
-        hash = (hash << 5) - hash + char; // Bitwise left shift and subtraction
-        hash &= hash; // Convert to 32bit integer
-    }
-    return Math.abs(hash); // Ensure positive number
-}
-
-/**
- * Generates a seeded random number between 0 and 1.
- *
- * @param seed - The seed value used to generate the random number.
- * @returns A random number between 0 (inclusive) and 1 (exclusive).
- */
-function seededRandom(seed: number): number {
-    var x = Math.sin(seed) * 10000; // how many decimal places
-    return x - Math.floor(x);
-}
 
 const directionVectors: Record<Direction, [number, number]> = {
     n: [-1, 0],

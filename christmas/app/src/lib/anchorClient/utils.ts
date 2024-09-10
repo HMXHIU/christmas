@@ -1,13 +1,13 @@
 import bs58 from "bs58";
 import {
-    OFFSET_TO_VALID_FROM_HASH,
-    OFFSET_TO_VALID_TO_HASH,
-    MS_PER_DAY,
-    DAYS_SINCE_1_JAN_2024,
     DATE_HASH_BITS,
     DATE_HASH_SIZE,
+    DAYS_SINCE_1_JAN_2024,
+    MS_PER_DAY,
     OFFSET_TO_DATE_HASH_OVERFLOW,
     OFFSET_TO_MEMCMP_BLOCK,
+    OFFSET_TO_VALID_FROM_HASH,
+    OFFSET_TO_VALID_TO_HASH,
 } from "./defs";
 import type { MemCmp } from "./types";
 

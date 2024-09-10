@@ -13,8 +13,6 @@ import {
     geohashesNearby,
     geohashToColRow,
     gridCellToGeohash,
-    seededRandom,
-    stringToRandomNumber,
 } from "$lib/crossover/utils";
 import {
     biomeAtGeohash,
@@ -30,6 +28,7 @@ import {
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
 import type { Item } from "$lib/server/crossover/redis/entities";
+import { seededRandom, stringToRandomNumber } from "$lib/utils";
 import { KdTree } from "$lib/utils/kdtree";
 import type { Container, Texture } from "pixi.js";
 import { get } from "svelte/store";

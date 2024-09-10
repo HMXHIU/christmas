@@ -20,7 +20,8 @@ import {
 import { actions } from "$lib/crossover/world/actions";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
 import { type ItemVariables } from "$lib/crossover/world/compendium";
-import { archetypes, type PlayerMetadata } from "$lib/crossover/world/player";
+import { ArchetypesEnum } from "$lib/crossover/world/demographic";
+import { type PlayerMetadata } from "$lib/crossover/world/player";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
@@ -285,11 +286,10 @@ export async function createRandomPlayer({
         name,
         description: "",
         avatar: "",
-        attributes: archetypes.fighter.attributes,
         demographic: {
             gender: "male",
             race: "human",
-            archetype: "fighter",
+            archetype: ArchetypesEnum[0],
         },
         appearance: {
             hair: {
@@ -838,16 +838,13 @@ export async function testPlayerPerformAbilityOnMonster({
         // Check received 'entities' event for monster reward
         if (monsterBefore.hp > 0 && monster.hp <= 0) {
             console.log("Checking event for LUs gain after killing monster");
-            const { lumina, umbra } = monsterLUReward({
-                level: monster.lvl,
-                beast: monster.beast,
-            });
+            const { lum, umb } = monsterLUReward(monster);
             expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
                 players: [
                     {
                         player: player.player,
-                        lum: playerBefore.lum + lumina,
-                        umb: playerBefore.umb + umbra,
+                        lum: playerBefore.lum + lum,
+                        umb: playerBefore.umb + umb,
                     },
                 ],
             });
@@ -1333,16 +1330,13 @@ export async function testPlayerUseItemOnMonster({
                     console.log(
                         "Checking event for LUs gain after killing monster",
                     );
-                    const { lumina, umbra } = monsterLUReward({
-                        level: (target as Monster).lvl,
-                        beast: (target as Monster).beast,
-                    });
+                    const { lum, umb } = monsterLUReward(target as Monster);
                     expect(entitiesEvents[entitiesEventsCnt]).toMatchObject({
                         players: [
                             {
                                 player: self.player,
-                                lum: (selfBefore as Player).lum + lumina,
-                                umb: (selfBefore as Player).umb + umbra,
+                                lum: (selfBefore as Player).lum + lum,
+                                umb: (selfBefore as Player).umb + umb,
                             },
                         ],
                     });

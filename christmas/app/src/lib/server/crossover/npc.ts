@@ -1,8 +1,10 @@
-import { PUBLIC_FEE_PAYER_PUBKEY } from "$env/static/public";
 import {
-    autoCorrectGeohashPrecision,
-    stringToRandomNumber,
-} from "$lib/crossover/utils";
+    PUBLIC_FEE_PAYER_PUBKEY,
+    PUBLIC_RPC_ENDPOINT,
+} from "$env/static/public";
+import { AnchorClient } from "$lib/anchorClient";
+import { PROGRAM_ID } from "$lib/anchorClient/defs";
+import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
 import {
     AgesEnum,
     BodyTypesEnum,
@@ -39,10 +41,14 @@ import {
 } from "$lib/crossover/world/player";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import type { AssetMetadata } from "$lib/crossover/world/types";
-import { sampleFrom, stringToUint8Array } from "$lib/utils";
-import { Keypair } from "@solana/web3.js";
+import {
+    sampleFrom,
+    stringToRandomNumber,
+    stringToUint8Array,
+} from "$lib/utils";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { loadPlayerEntity } from ".";
-import { hashObject, serverAnchorClient } from "..";
+import { feePayerKeypair, hashObject } from "..";
 import { getAvatars } from "../../../routes/api/crossover/avatar/[...path]/+server";
 import { ObjectStorage } from "../objectStorage";
 import { playerRepository } from "./redis";
@@ -50,7 +56,7 @@ import type { PlayerEntity } from "./redis/entities";
 import { UserMetadataSchema } from "./router";
 import { getUserMetadata, savePlayerState } from "./utils";
 
-export { generateNPC, generateNPCMetadata };
+export { generateNPC, generateNPCMetadata, npcs };
 
 /**
  * `NPC` is a template used to create an NPC `player` instance
@@ -198,16 +204,23 @@ async function generateNPC(
     // Generate keys (store private keys in MINIO)
     const keypair = Keypair.generate();
     const playerId = keypair.publicKey.toString();
-    const region = "@"; // special region reserved for NPCs
+    const region = "@@@"; // special region reserved for NPCs
     const locationInstance = playerId; // spawn initially in its own world
     const geohash = autoCorrectGeohashPrecision(
         "w2",
         worldSeed.spatial.unit.precision,
     );
 
+    // Get fee payer anchor client
+    const anchorClient = new AnchorClient({
+        programId: new PublicKey(PROGRAM_ID),
+        keypair: feePayerKeypair,
+        cluster: PUBLIC_RPC_ENDPOINT,
+    });
+
     // Generate and validate NPC player metadata
     const playerMetadata = await PlayerMetadataSchema.parse(
-        generateNPCMetadata({
+        await generateNPCMetadata({
             player: playerId,
             demographic: options.demographic,
             appearance: options.appearance,
@@ -229,9 +242,11 @@ async function generateNPC(
         },
         { "Content-Type": "application/json" },
     );
-    await serverAnchorClient.createUser({
+    await anchorClient.createUser({
         region: Array.from(stringToUint8Array(region)),
         uri: userMetadataUrl,
+        wallet: keypair.publicKey,
+        signers: [keypair],
     });
 
     // Get user metadata
@@ -257,9 +272,11 @@ async function generateNPC(
     });
 
     // Update account with metadata uri
-    await serverAnchorClient.updateUser({
+    await anchorClient.updateUser({
         region: Array.from(stringToUint8Array(region)),
         uri: userMetadataUrl,
+        wallet: keypair.publicKey,
+        signers: [keypair],
     });
 
     // Get instance

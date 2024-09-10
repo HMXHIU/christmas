@@ -1,7 +1,7 @@
 export const DEFAULT_GEOHASH_PRECISION = 6;
 
 export const COUNTRY_DETAILS: { [countryCode: string]: [string, string] } = {
-    "@": ["@", "@"], // Reserved for game world
+    "@@@": ["@@@", "@@@"], // Reserved for game world
     AF: ["AFG", "Afghanistan"],
     AFG: ["AFG", "Afghanistan"],
     AL: ["ALB", "Albania"],

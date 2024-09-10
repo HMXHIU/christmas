@@ -83,6 +83,7 @@ pub fn code_bytes_to_country(code_bytes: &[u8; 3]) -> Option<String> {
 
 pub fn code_to_country(code: &str) -> Option<String> {
     match code {
+        "@@@" => Some("@@@".to_string()),
         "AFG" => Some("Afghanistan".to_string()),
         "ALB" => Some("Albania".to_string()),
         "DZA" => Some("Algeria".to_string()),
