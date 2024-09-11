@@ -421,7 +421,10 @@ const crossoverRouter = {
         say: playerAuthBusyProcedure
             .input(SaySchema)
             .query(async ({ ctx, input }) => {
-                await say(ctx.player, input.message, input.target, ctx.now);
+                await say(ctx.player, input.message, {
+                    target: input.target,
+                    now: ctx.now,
+                });
             }),
         // cmd.look
         look: playerAuthBusyProcedure

@@ -78,20 +78,23 @@ const LOOK_PAGE_SIZE = 20;
 async function say(
     player: PlayerEntity,
     message: string,
-    target?: string,
-    now?: number,
+    options?: {
+        target?: string;
+        now?: number;
+        overwrite?: boolean;
+    },
 ) {
     // Set busy
     player = (await setEntityBusy({
         entity: player,
         action: actions.say.action,
-        now: now,
+        now: options?.now,
     })) as PlayerEntity;
 
     // Say to specific player
     let players: string[] = [];
-    if (target) {
-        const targetEntity = await fetchEntity(target);
+    if (options?.target) {
+        const targetEntity = await fetchEntity(options.target);
         if (targetEntity && "player" in targetEntity) {
             // Say to npc
             if (targetEntity.npc) {
@@ -109,7 +112,7 @@ async function say(
                     targetEntity.loc[0].startsWith(g),
                 )
             ) {
-                players = [target];
+                players = [options.target];
             }
         }
     }
@@ -127,7 +130,9 @@ async function say(
     for (const publicKey of players) {
         publishFeedEvent(publicKey, {
             type: "message",
-            message: "${name} says ${message}",
+            message: options?.overwrite
+                ? "${message}"
+                : "${name} says ${message}",
             variables: {
                 cmd: "say",
                 player: player.player,

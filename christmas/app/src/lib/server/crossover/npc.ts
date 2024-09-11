@@ -47,14 +47,18 @@ import {
     sampleFrom,
     stringToRandomNumber,
     stringToUint8Array,
+    substituteVariables,
 } from "$lib/utils";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { loadPlayerEntity } from ".";
 import { feePayerKeypair, hashObject } from "..";
 import { getAvatars } from "../../../routes/api/crossover/avatar/[...path]/+server";
 import { ObjectStorage } from "../objectStorage";
-import { playerRepository } from "./redis";
+import { say } from "./actions";
+import { dialogueRepository, playerRepository } from "./redis";
 import type {
+    DialogueEntity,
+    Dialogues,
     GameEntity,
     Monster,
     Player,
@@ -87,6 +91,12 @@ interface NPC {
     asset: AssetMetadata;
 }
 
+function dialogueVariables() {
+    return {
+        timeOfDay: "",
+    };
+}
+
 /**
  * NPCs do not have websocket connections, this method should be hooked into the
  * player actions/abilities so that the npc can perform actions/abilities
@@ -101,16 +111,81 @@ async function npcRespondToAction({
     action,
 }: {
     entity: Player | Monster;
-    target: Player;
+    target: Player; // the NPC
     action: Actions;
 }) {
     if (target.npc) {
         const npc = target.npc.split("_")[0] as NPCs;
         const entityIsHuman = isEntityActualPlayer(entity);
+        const tags = [`npc=${npc}`];
 
+        // Respond to `say`
         if (action === "say") {
+            // Search for greeting dialogue
+            let dialogues = await searchDialogues("grt", tags);
+            if (dialogues.length < 1) {
+                // Search for ignore dialogue
+                dialogues = await searchDialogues("ign", tags);
+            }
+
+            // Get best dialogue
+            const dialogue = dialogues[0];
+
+            if (dialogue && entityIsHuman) {
+                const { msg, tgt } = dialogue;
+
+                const message = substituteVariables(msg, {
+                    self: target,
+                    player: entity as Player,
+                });
+
+                const targetId = tgt
+                    ? substituteVariables(tgt, {
+                          self: target,
+                          player: entity as Player,
+                      })
+                    : undefined;
+                // Respond to target/surrounding players
+                await say(target as PlayerEntity, message, {
+                    target: targetId,
+                    overwrite: true,
+                });
+            }
         }
     }
+}
+
+async function searchDialogues(
+    dialogue: Dialogues,
+    tags: string[],
+): Promise<DialogueEntity[]> {
+    console.log("searching", dialogue, tags);
+
+    // Note: OR and MUST are mutually exclusive (choose either OR or MUST when defining the dialogue)
+    let query = dialogueRepository
+        .search()
+        .where("dia")
+        .equal(dialogue)
+        .and("exc")
+        .does.not.containsOneOf(...tags);
+
+    // Check or condition
+    let dialogues = (await query
+        .and("or")
+        .containsOneOf(...tags)
+        .returnAll()) as DialogueEntity[];
+
+    // Check must condition - 2 Step process (first get all relevant entries, then manually filter)
+    if (dialogues.length < 1) {
+        dialogues = (await tags
+            .reduce((acc, c) => acc.or("mst").contains(c), query)
+            .returnAll()) as DialogueEntity[];
+        dialogues = dialogues.filter(
+            (d) => d.mst && d.mst.every((t) => tags.includes(t)),
+        );
+    }
+
+    return dialogues;
 }
 
 async function npcRespondToAbility({
