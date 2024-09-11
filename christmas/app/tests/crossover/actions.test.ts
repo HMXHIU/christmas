@@ -1,5 +1,7 @@
+import { crossoverCmdSay } from "$lib/crossover/client";
 import { searchPossibleCommands } from "$lib/crossover/ir";
 import { actions } from "$lib/crossover/world/actions";
+import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
@@ -11,14 +13,27 @@ import type {
     MonsterEntity,
     Player,
 } from "$lib/server/crossover/redis/entities";
+import { sleep } from "$lib/utils";
 import { beforeAll, describe, expect, test } from "vitest";
-import { getRandomRegion } from "../utils";
-import { createRandomPlayer, generateRandomGeohash } from "./utils";
+import {
+    createGandalfSarumanSauron,
+    generateRandomGeohash,
+    waitForEventData,
+} from "./utils";
 
-const region = String.fromCharCode(...getRandomRegion());
+let region: string;
+let geohash: string;
 
 let playerOne: Player;
+let playerOneCookies: string;
+let playerOneStream: EventTarget;
 let playerTwo: Player;
+let playerTwoCookies: string;
+let playerTwoStream: EventTarget;
+let playerThree: Player;
+let playerThreeCookies: string;
+let playerThreeStream: EventTarget;
+
 let woodendoor: Item;
 let woodenclub: Item;
 let woodenclub2: Item;
@@ -30,25 +45,26 @@ let goblin: Monster;
 beforeAll(async () => {
     await initializeClients(); // create redis repositories
 
-    // Player one
-    const playerOneGeohash = generateRandomGeohash(8, "h9");
-    [, , playerOne] = await createRandomPlayer({
+    // Create players
+    ({
         region,
-        geohash: playerOneGeohash,
-        name: "Gandalf",
-    });
-
-    // Player two
-    [, , playerTwo] = await createRandomPlayer({
-        region,
-        geohash: playerOneGeohash,
-        name: "Saruman",
-    });
+        geohash,
+        playerOne,
+        playerOneCookies,
+        playerOneStream,
+        playerTwo,
+        playerTwoCookies,
+        playerTwoStream,
+        playerThree,
+        playerThreeCookies,
+        playerThreeStream,
+    } = await createGandalfSarumanSauron());
 
     // Spawn items
     woodendoor = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodendoor.prop,
         variables: {
             [compendium.woodendoor.variables.doorsign.variable]:
@@ -59,24 +75,28 @@ beforeAll(async () => {
     woodenclub = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
     woodenclub2 = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
     woodenclub3 = (await spawnItem({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
     portal = (await spawnItem({
         geohash: playerOne.loc[0],
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.portal.prop,
     })) as ItemEntity;
 
@@ -85,18 +105,77 @@ beforeAll(async () => {
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
         beast: "dragon",
-        level: 1,
+        locationInstance: LOCATION_INSTANCE,
     });
 
     goblin = await spawnMonster({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
         beast: "goblin",
-        level: 1,
+        locationInstance: LOCATION_INSTANCE,
     });
 });
 
 describe("Actions Tests", () => {
+    test("`say` to specific `target`", async () => {
+        // `playerOne` says hello to `playerTwo`
+        crossoverCmdSay(
+            { message: "hello", target: playerTwo.player },
+            { Cookie: playerOneCookies },
+        );
+        var feed = await waitForEventData(playerTwoStream, "feed");
+        expect(feed).toMatchObject({
+            type: "message",
+            message: "${name} says ${message}",
+            variables: {
+                cmd: "say",
+                player: playerOne.player,
+                name: playerOne.name,
+                message: "hello",
+            },
+            event: "feed",
+        });
+        await sleep(MS_PER_TICK * 2);
+
+        // `playerOne` says hello to `playerTwo`, `playerThree` should not get message
+        crossoverCmdSay(
+            { message: "hello", target: playerTwo.player },
+            { Cookie: playerOneCookies },
+        );
+        await expect(
+            waitForEventData(playerThreeStream, "feed"),
+        ).rejects.toThrowError("Timeout occurred while waiting for event");
+        await sleep(MS_PER_TICK * 2);
+
+        // `playerOne` says to everyone
+        crossoverCmdSay({ message: "hello" }, { Cookie: playerOneCookies });
+        await expect(
+            waitForEventData(playerTwoStream, "feed"),
+        ).resolves.toMatchObject({
+            type: "message",
+            message: "${name} says ${message}",
+            variables: {
+                cmd: "say",
+                player: playerOne.player,
+                name: playerOne.name,
+                message: "hello",
+            },
+            event: "feed",
+        });
+        await expect(
+            waitForEventData(playerThreeStream, "feed"),
+        ).resolves.toMatchObject({
+            type: "message",
+            message: "${name} says ${message}",
+            variables: {
+                cmd: "say",
+                player: playerOne.player,
+                name: playerOne.name,
+                message: "hello",
+            },
+            event: "feed",
+        });
+    });
     test("Look action without target", () => {
         const commands = searchPossibleCommands({
             query: "look",

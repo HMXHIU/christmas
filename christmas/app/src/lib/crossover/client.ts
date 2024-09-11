@@ -227,11 +227,11 @@ async function signup(
  */
 
 function crossoverCmdSay(
-    input: { message: string },
+    input: { message: string; target?: string },
     headers: HTTPHeaders = {},
 ) {
-    const { message } = input;
-    return trpc({ headers }).crossover.cmd.say.query({ message });
+    const { message, target } = input;
+    return trpc({ headers }).crossover.cmd.say.query({ message, target });
 }
 
 async function crossoverCmdLook(

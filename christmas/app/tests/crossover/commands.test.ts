@@ -6,8 +6,7 @@ import {
 import { executeGameCommand } from "$lib/crossover/game";
 import { searchPossibleCommands, type GameCommand } from "$lib/crossover/ir";
 import { geohashNeighbour } from "$lib/crossover/utils";
-import { monsterStats } from "$lib/crossover/world/bestiary";
-import { playerStats } from "$lib/crossover/world/player";
+import { entityStats } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
@@ -139,7 +138,6 @@ beforeAll(async () => {
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
         beast: "dragon",
-        level: 1,
     });
 
     goblin = await spawnMonster({
@@ -147,7 +145,6 @@ beforeAll(async () => {
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
         beast: "goblin",
-        level: 1,
     });
 });
 
@@ -155,18 +152,18 @@ beforeEach(async () => {
     // Reset stats
     playerOne = {
         ...playerOne,
-        ...playerStats({ level: playerOne.lvl }),
+        ...entityStats(playerOne),
         loc: [playerOneGeohash],
     };
     playerOne = (await saveEntity(playerOne as PlayerEntity)) as Player;
     goblin = {
         ...goblin,
-        ...monsterStats({ level: goblin.lvl, beast: goblin.beast }),
+        ...entityStats(goblin),
     };
     goblin = (await saveEntity(goblin as MonsterEntity)) as Monster;
     dragon = {
         ...dragon,
-        ...monsterStats({ level: dragon.lvl, beast: dragon.beast }),
+        ...entityStats(dragon),
     };
     dragon = (await saveEntity(dragon as MonsterEntity)) as Monster;
 });

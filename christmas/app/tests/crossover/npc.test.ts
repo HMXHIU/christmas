@@ -97,7 +97,13 @@ test("Test `generateNPC`", async () => {
         },
     });
 
+    // Test npc field
+    expect(npc.npc?.startsWith("innkeep")).toBe(true);
+    expect(npcUserMetadata?.crossover?.npc?.startsWith("innkeep")).toBe(true);
+
     // Test avatar
     const avatarMetadata = await (await fetch(npc.avatar)).json();
     expect(Object.keys(avatarMetadata)).includes("head");
+
+    // Test secret key storage
 });

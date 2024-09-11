@@ -5,6 +5,8 @@ import {
 import { AnchorClient } from "$lib/anchorClient";
 import { PROGRAM_ID } from "$lib/anchorClient/defs";
 import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
+import type { Abilities } from "$lib/crossover/world/abilities";
+import type { Actions } from "$lib/crossover/world/actions";
 import {
     AgesEnum,
     BodyTypesEnum,
@@ -52,12 +54,25 @@ import { feePayerKeypair, hashObject } from "..";
 import { getAvatars } from "../../../routes/api/crossover/avatar/[...path]/+server";
 import { ObjectStorage } from "../objectStorage";
 import { playerRepository } from "./redis";
-import type { PlayerEntity } from "./redis/entities";
+import type {
+    GameEntity,
+    Monster,
+    Player,
+    PlayerEntity,
+} from "./redis/entities";
 import { UserMetadataSchema } from "./router";
 import { npcs } from "./settings/npc";
 import { getUserMetadata, savePlayerState } from "./utils";
 
-export { generateNPC, generateNPCMetadata, type NPC, type NPCs };
+export {
+    generateNPC,
+    generateNPCMetadata,
+    isEntityActualPlayer,
+    isEntityNPC,
+    npcRespondToAction,
+    type NPC,
+    type NPCs,
+};
 
 /**
  * `NPC` is a template used to create an NPC `player` instance
@@ -70,6 +85,192 @@ interface NPC {
     nameTemplate: string;
     descriptionTemplate: string;
     asset: AssetMetadata;
+}
+
+/**
+ * NPCs do not have websocket connections, this method should be hooked into the
+ * player actions/abilities so that the npc can perform actions/abilities
+ *
+ * TODO:
+ * Eventually when NPCs become autonomous agents, their logic can be run through websockets
+ * and NPCs become programs in ICP with better intelligence
+ */
+async function npcRespondToAction({
+    entity,
+    target,
+    action,
+}: {
+    entity: Player | Monster;
+    target: Player;
+    action: Actions;
+}) {
+    if (target.npc) {
+        const npc = target.npc.split("_")[0] as NPCs;
+        const entityIsHuman = isEntityActualPlayer(entity);
+
+        if (action === "say") {
+        }
+    }
+}
+
+async function npcRespondToAbility({
+    entity,
+    target,
+    ability,
+}: {
+    entity: Player | Monster;
+    target: Player;
+    ability: Abilities;
+}) {
+    if (target.npc) {
+        const npc = target.npc.split("_")[0] as NPCs;
+        const entityIsHuman = isEntityActualPlayer(entity);
+
+        // Dialogues spoken directly to an actual player
+        if (isEntityActualPlayer(entity)) {
+        }
+        // Dialogues spoken to all
+        else {
+        }
+    }
+}
+
+function isEntityNPC(entity: GameEntity): boolean {
+    if ("player" in entity && entity.npc) {
+        return true;
+    }
+    return false;
+}
+
+function isEntityActualPlayer(entity: GameEntity): boolean {
+    if ("player" in entity && !entity.npc) {
+        return true;
+    }
+    return false;
+}
+
+async function generateNPC(
+    npc: NPCs,
+    options: {
+        name?: string;
+        description?: string;
+        demographic: Partial<PlayerDemographic>;
+        appearance: Partial<PlayerAppearance>;
+    },
+): Promise<PlayerEntity> {
+    // Generate keys (store private keys in MINIO)
+    const keypair = Keypair.generate();
+    const playerId = keypair.publicKey.toString();
+    const region = "@@@"; // special region reserved for NPCs
+    const locationInstance = playerId; // spawn initially in its own world
+    const geohash = autoCorrectGeohashPrecision(
+        "w2",
+        worldSeed.spatial.unit.precision,
+    );
+
+    // Get fee payer anchor client
+    const anchorClient = new AnchorClient({
+        programId: new PublicKey(PROGRAM_ID),
+        keypair: feePayerKeypair,
+        cluster: PUBLIC_RPC_ENDPOINT,
+    });
+
+    // Get instance
+    const numInstances = await ObjectStorage.countObjects({
+        owner: PUBLIC_FEE_PAYER_PUBKEY,
+        bucket: "npc",
+        prefix: npc,
+    });
+    const npcInstanceId = `${npc}_${numInstances}`;
+
+    // Generate and validate NPC player metadata
+    const playerMetadata = await PlayerMetadataSchema.parse(
+        await generateNPCMetadata({
+            player: playerId,
+            demographic: options.demographic,
+            appearance: options.appearance,
+            npc: npcs[npc],
+            name: options.name,
+            description: options.description,
+        }),
+    );
+    playerMetadata.npc = npcInstanceId; // store the npc instance id on MINIO
+
+    // Create user account
+    let userMetadataUrl = await ObjectStorage.putJSONObject(
+        {
+            owner: null,
+            bucket: "user",
+            name: hashObject(["user", playerId]),
+            data: UserMetadataSchema.parse({
+                publicKey: playerId,
+            }),
+        },
+        { "Content-Type": "application/json" },
+    );
+    await anchorClient.createUser({
+        region: Array.from(stringToUint8Array(region)),
+        uri: userMetadataUrl,
+        wallet: keypair.publicKey,
+        signers: [keypair],
+    });
+
+    // Get user metadata
+    let userMetadata = await getUserMetadata(playerId);
+
+    // Check if player metadata (userMetadata.crossover) already exists (should not be since we generate a new key pair)
+    if (userMetadata?.crossover != null) {
+        throw new Error(`Player ${playerId} already exists (storage)`);
+    }
+
+    // Update user metadata with player metadata
+    userMetadata = await UserMetadataSchema.parse({
+        ...userMetadata,
+        crossover: playerMetadata,
+    });
+
+    // Store new user metadata and get url
+    userMetadataUrl = await ObjectStorage.putJSONObject({
+        bucket: "user",
+        owner: null,
+        data: userMetadata,
+        name: hashObject(["user", playerId]),
+    });
+
+    // Update account with metadata uri
+    await anchorClient.updateUser({
+        region: Array.from(stringToUint8Array(region)),
+        uri: userMetadataUrl,
+        wallet: keypair.publicKey,
+        signers: [keypair],
+    });
+
+    // Store the secret keys in MINIO
+    await ObjectStorage.putJSONObject({
+        owner: PUBLIC_FEE_PAYER_PUBKEY,
+        bucket: "npc",
+        name: `${npc}/${playerId}`,
+        data: {
+            npc,
+            instance: npcInstanceId,
+            publicKey: playerId,
+            secretKey: keypair.secretKey,
+        },
+    });
+
+    // Get or load player entity
+    let player = await loadPlayerEntity(playerId, {
+        geohash,
+        region,
+        loggedIn: true,
+        locationInstance: locationInstance,
+    });
+
+    // Save player state & entity
+    player = (await playerRepository.save(playerId, player)) as PlayerEntity;
+    await savePlayerState(playerId); // must save after player entity
+
+    return player;
 }
 
 async function generateNPCMetadata({
@@ -152,127 +353,4 @@ async function generateNPCMetadata({
         demographic: demographic as PlayerDemographic,
         appearance: appearance as PlayerAppearance,
     };
-}
-
-async function generateNPC(
-    npc: NPCs,
-    options: {
-        name?: string;
-        description?: string;
-        demographic: Partial<PlayerDemographic>;
-        appearance: Partial<PlayerAppearance>;
-    },
-): Promise<PlayerEntity> {
-    // Generate keys (store private keys in MINIO)
-    const keypair = Keypair.generate();
-    const playerId = keypair.publicKey.toString();
-    const region = "@@@"; // special region reserved for NPCs
-    const locationInstance = playerId; // spawn initially in its own world
-    const geohash = autoCorrectGeohashPrecision(
-        "w2",
-        worldSeed.spatial.unit.precision,
-    );
-
-    // Get fee payer anchor client
-    const anchorClient = new AnchorClient({
-        programId: new PublicKey(PROGRAM_ID),
-        keypair: feePayerKeypair,
-        cluster: PUBLIC_RPC_ENDPOINT,
-    });
-
-    // Generate and validate NPC player metadata
-    const playerMetadata = await PlayerMetadataSchema.parse(
-        await generateNPCMetadata({
-            player: playerId,
-            demographic: options.demographic,
-            appearance: options.appearance,
-            npc: npcs[npc],
-            name: options.name,
-            description: options.description,
-        }),
-    );
-
-    // Create user account
-    let userMetadataUrl = await ObjectStorage.putJSONObject(
-        {
-            owner: null,
-            bucket: "user",
-            name: hashObject(["user", playerId]),
-            data: UserMetadataSchema.parse({
-                publicKey: playerId,
-            }),
-        },
-        { "Content-Type": "application/json" },
-    );
-    await anchorClient.createUser({
-        region: Array.from(stringToUint8Array(region)),
-        uri: userMetadataUrl,
-        wallet: keypair.publicKey,
-        signers: [keypair],
-    });
-
-    // Get user metadata
-    let userMetadata = await getUserMetadata(playerId);
-
-    // Check if player metadata (userMetadata.crossover) already exists (should not be since we generate a new key pair)
-    if (userMetadata?.crossover != null) {
-        throw new Error(`Player ${playerId} already exists (storage)`);
-    }
-
-    // Update user metadata with player metadata
-    userMetadata = await UserMetadataSchema.parse({
-        ...userMetadata,
-        crossover: playerMetadata,
-    });
-
-    // Store new user metadata and get url
-    userMetadataUrl = await ObjectStorage.putJSONObject({
-        bucket: "user",
-        owner: null,
-        data: userMetadata,
-        name: hashObject(["user", playerId]),
-    });
-
-    // Update account with metadata uri
-    await anchorClient.updateUser({
-        region: Array.from(stringToUint8Array(region)),
-        uri: userMetadataUrl,
-        wallet: keypair.publicKey,
-        signers: [keypair],
-    });
-
-    // Get instance
-    const numInstances = await ObjectStorage.countObjects({
-        owner: PUBLIC_FEE_PAYER_PUBKEY,
-        bucket: "npc",
-        prefix: npc,
-    });
-    const instanceId = `${npc}_${numInstances}`;
-
-    // Store the secret keys in MINIO
-    const url = await ObjectStorage.putJSONObject({
-        owner: PUBLIC_FEE_PAYER_PUBKEY,
-        bucket: "npc",
-        name: `${npc}/${playerId}`,
-        data: {
-            npc,
-            instance: instanceId,
-            publicKey: playerId,
-            secretKey: keypair.secretKey,
-        },
-    });
-
-    // Get or load player entity
-    let player = await loadPlayerEntity(playerId, {
-        geohash,
-        region,
-        loggedIn: true,
-        locationInstance: locationInstance,
-    });
-
-    // Save player state & entity
-    player = (await playerRepository.save(playerId, player)) as PlayerEntity;
-    await savePlayerState(playerId); // must save after player entity
-
-    return player;
 }

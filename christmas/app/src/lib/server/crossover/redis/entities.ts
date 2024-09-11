@@ -10,7 +10,6 @@ import type {
     LocationType,
 } from "$lib/crossover/world/types";
 import { Schema, type Entity } from "redis-om";
-import type { NPCs } from "../npc";
 
 export {
     DialogueSchema,
@@ -90,6 +89,7 @@ interface Player extends EntityState, CharacterParams, CurrencyParams {
     name: string;
     rgn: string;
     lgn: boolean;
+    npc?: string; // npc instance id (if player is an NPC)
 }
 
 type PlayerEntity = Player & Entity;
@@ -111,6 +111,9 @@ const PlayerEntitySchema = new Schema("Player", {
     loc: { type: "string[]" },
     locT: { type: "string" },
     locI: { type: "string" },
+
+    // NPC
+    npc: { type: "string" }, // npc instance id
 });
 
 /*
@@ -206,26 +209,26 @@ const WorldEntitySchema = new Schema("World", {
  * Dialogue
  */
 
-type Dialogues = "grt" | "ign";
+type Dialogues = "grt" | "ign" | "agro";
 
 interface Dialogue {
-    msg: string; // message template to respond
-    dia: Dialogues;
-    // Conditions (best match)
-    npc?: NPCs;
-    race?: Races;
-    gen?: Genders;
-    arch?: Archetypes;
+    msg: string; // message template (variable substituted before indexing)
+    dia: Dialogues; // dialogue type
+    tgt: string; // target to send the message to (empty = all)
+    // Tags (variable substituted before indexing)
+    mst?: string[]; // must contain all of these tags
+    or?: string[]; // must match any these tags
+    exc?: string[]; // must not contain these tags
 }
 
 const DialogueSchema = new Schema("Dialogue", {
-    msg: { type: "string" }, // message template to respond
+    msg: { type: "string" },
     dia: { type: "string" },
-    // Conditions (best match)
-    npc: { type: "string" },
-    race: { type: "string" },
-    gen: { type: "string" },
-    arch: { type: "string" },
+    tgt: { type: "string" },
+    // Tags
+    mst: { type: "string[]" },
+    or: { type: "string[]" },
+    exc: { type: "string[]" },
 });
 
 type DialogueEntity = Dialogue & Entity;

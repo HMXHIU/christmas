@@ -87,6 +87,7 @@ const LoginSchema = z.object({
 // Schemas - cmd
 const SaySchema = z.object({
     message: z.string(),
+    target: z.string().optional(),
 });
 const LookSchema = z.object({
     target: z.string().optional(),
@@ -420,7 +421,7 @@ const crossoverRouter = {
         say: playerAuthBusyProcedure
             .input(SaySchema)
             .query(async ({ ctx, input }) => {
-                await say(ctx.player, input.message, ctx.now);
+                await say(ctx.player, input.message, input.target, ctx.now);
             }),
         // cmd.look
         look: playerAuthBusyProcedure

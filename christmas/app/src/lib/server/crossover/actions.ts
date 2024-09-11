@@ -27,6 +27,7 @@ import { setEntityBusy } from ".";
 import { performAbility } from "./abilities";
 import { worldAssetMetadataCache, worldPOIsCache } from "./caches";
 import { spawnItem, spawnWorld, spawnWorldPOIs } from "./dungeonMaster";
+import { npcRespondToAction } from "./npc";
 import {
     fetchEntity,
     getNearbyEntities,
@@ -74,7 +75,12 @@ export {
 
 const LOOK_PAGE_SIZE = 20;
 
-async function say(player: PlayerEntity, message: string, now?: number) {
+async function say(
+    player: PlayerEntity,
+    message: string,
+    target?: string,
+    now?: number,
+) {
     // Set busy
     player = (await setEntityBusy({
         entity: player,
@@ -82,12 +88,40 @@ async function say(player: PlayerEntity, message: string, now?: number) {
         now: now,
     })) as PlayerEntity;
 
-    // Get logged in players in geohash
-    const players = await playersInGeohashQuerySet(
-        geohashesNearby(player.loc[0].slice(0, -1), true), // use p7 square for `say` radius
-        player.locT as GeohashLocationType,
-        player.locI,
-    ).return.allIds({ pageSize: LOOK_PAGE_SIZE }); // limit players using page size
+    // Say to specific player
+    let players: string[] = [];
+    if (target) {
+        const targetEntity = await fetchEntity(target);
+        if (targetEntity && "player" in targetEntity) {
+            // Say to npc
+            if (targetEntity.npc) {
+                npcRespondToAction({
+                    entity: player,
+                    target: targetEntity as PlayerEntity,
+                    action: "say",
+                });
+            }
+            // Say to human player (in range)
+            else if (
+                player.locI === targetEntity.locI &&
+                player.locT === targetEntity.locT &&
+                geohashesNearby(player.loc[0].slice(0, -1), true).find((g) =>
+                    targetEntity.loc[0].startsWith(g),
+                )
+            ) {
+                players = [target];
+            }
+        }
+    }
+    // Say to nearby player
+    else {
+        // Get logged in players in geohash
+        players = await playersInGeohashQuerySet(
+            geohashesNearby(player.loc[0].slice(0, -1), true), // use p7 square for `say` radius
+            player.locT as GeohashLocationType,
+            player.locI,
+        ).return.allIds({ pageSize: LOOK_PAGE_SIZE }); // limit players using page size
+    }
 
     // Send message to all players in the geohash (non blocking)
     for (const publicKey of players) {
@@ -765,7 +799,7 @@ async function enterItem(
     let worldEntity = await spawnWorld({
         world, // specify the worldId manually
         geohash,
-        locationType,
+        locationType: locationType as GeohashLocationType,
         assetUrl: url,
         tileHeight: TILE_HEIGHT, // do not change this
         tileWidth: TILE_WIDTH,
@@ -794,7 +828,7 @@ async function enterItem(
 
     // Change player location to world
     player.loc = playerLocation;
-    player.locT = locationType;
+    player.locT = locationType as GeohashLocationType;
     player.locI = locationInstance;
 
     // Save player

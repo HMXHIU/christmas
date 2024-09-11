@@ -84,7 +84,7 @@ async function loadPlayerEntity(
     if (userMetadata.crossover == null) {
         throw new Error(`Player ${publicKey} missing crossover metadata`);
     }
-    const { avatar, name, demographic } = userMetadata.crossover;
+    const { avatar, name, demographic, npc } = userMetadata.crossover;
 
     // Merge default, player state, player entity
     let playerEntity = (await fetchEntity(publicKey)) || {};
@@ -116,6 +116,7 @@ async function loadPlayerEntity(
         pthdur: 0,
         pth: [],
         pthst: "",
+        npc,
     };
     defaultState = { ...defaultState, ...entityStats(defaultState) };
 

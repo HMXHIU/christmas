@@ -64,4 +64,5 @@ const PlayerMetadataSchema = z.object({
     avatar: z.string().url(),
     demographic: PlayerDemographicSchema,
     appearance: PlayerAppearanceSchema,
+    npc: z.string().optional(),
 });

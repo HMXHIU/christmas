@@ -205,7 +205,10 @@ async function performAction(
     // say
     else if (action.action === "say" && variables != null) {
         return await crossoverCmdSay(
-            { message: variables.queryIrrelevant },
+            {
+                message: variables.queryIrrelevant,
+                target: target ? getEntityId(target)[0] : undefined,
+            },
             headers,
         );
     }

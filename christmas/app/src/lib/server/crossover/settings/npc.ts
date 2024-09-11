@@ -46,7 +46,15 @@ const greetings: Dialogue[] = [
     // general
     {
         dia: "grt",
-        msg: "${name} greets you, 'Well met kin, you may *rest* here ${timeOfDay}'",
+        msg: "{{self.name}} greets you, 'Well met {{player.name}}'",
+        tgt: "{{player.player}}",
+    },
+    // innkeep
+    {
+        dia: "grt",
+        mst: ["npc=innkeep"],
+        msg: "{{self.name}} greets you, 'Well met {{player.name}}, you may *rest* here this ${timeOfDay}'",
+        tgt: "{{player.player}}",
     },
 ];
 
@@ -54,13 +62,38 @@ const ignores: Dialogue[] = [
     // general
     {
         dia: "ign",
-        msg: "${name} ignores you",
+        msg: "{{self.name}} ignores you",
+        tgt: "{{player.player}}",
     },
     // innkeep
     {
         dia: "ign",
-        npc: "innkeep",
-        msg: "${name} ignores you, 'Get lost, we don't deal with your types around here!'.",
+        mst: ["npc=innkeep"],
+        msg: "{{self.name}} ignores you, 'Get lost, we don't deal with your types around here!'.",
+        tgt: "{{player.player}}",
+    },
+];
+
+const agros: Dialogue[] = [
+    // general
+    {
+        dia: "agro",
+        msg: "{{self.name}} looks at you menacingly, 'You've picked the wrong fight, my friend!'",
+        tgt: "",
+    },
+    // innkeep
+    {
+        dia: "agro",
+        or: ["npc=innkeep"],
+        msg: "Are you out of your mind {{player.name}}? You can't just start a brawl in my inn!",
+        tgt: "",
+    },
+    // traders
+    {
+        dia: "agro",
+        or: ["npc=blacksmith", "npc=grocer", "npc=alchemist"],
+        msg: "{{self.name}} cries out in desperation, 'Guards!, we have a thief over here!'",
+        tgt: "",
     },
 ];
 
@@ -68,4 +101,5 @@ const ignores: Dialogue[] = [
 const dialogues: Record<Dialogues, Dialogue[]> = {
     grt: greetings,
     ign: ignores,
+    agro: agros,
 };
