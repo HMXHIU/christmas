@@ -169,6 +169,46 @@ beforeEach(async () => {
 });
 
 describe("Command Tests", () => {
+    test("Learn from player", async () => {
+        // Test `searchPossibleCommands`
+        const { commands, queryTokens, tokenPositions } =
+            searchPossibleCommands({
+                query: `learn exploration from ${playerTwo.name}`,
+                player: playerOne,
+                playerAbilities: [
+                    abilities.scratch,
+                    abilities.bandage,
+                    abilities.swing,
+                ],
+                playerItems: [woodenclub],
+                actions: allActions,
+                monsters: [goblin, dragon],
+                players: [playerOne, playerTwo],
+                items: [woodendoor, tavern],
+            });
+
+        expect(commands).toMatchObject([
+            [
+                {
+                    action: "learn",
+                    description: "Learn a skill from a teacher.",
+                },
+                {
+                    self: {
+                        player: playerOne.player,
+                    },
+                    target: {
+                        player: playerTwo.player,
+                    },
+                },
+                {
+                    query: "learn exploration from saruman",
+                    queryIrrelevant: "exploration from",
+                },
+            ],
+        ]);
+    });
+
     test("Enter tavern", async () => {
         // Move to tavern
         playerOne.loc = [tavernGeohash];

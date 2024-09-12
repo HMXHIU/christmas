@@ -83,6 +83,7 @@ export const allActions = [
     actions.inventory,
     actions.rest,
     actions.enter,
+    actions.learn,
 ];
 
 const testWorldAsset: WorldAssetMetadata = {

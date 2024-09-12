@@ -122,7 +122,6 @@ describe("IR Tests", () => {
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,
             beast: "dragon",
-            level: 1,
         });
 
         goblin = await spawnMonster({
@@ -130,7 +129,6 @@ describe("IR Tests", () => {
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,
             beast: "goblin",
-            level: 1,
         });
     });
 

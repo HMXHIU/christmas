@@ -30,6 +30,7 @@ import {
     crossoverCmdDrop,
     crossoverCmdEnterItem,
     crossoverCmdEquip,
+    crossoverCmdLearn,
     crossoverCmdLook,
     crossoverCmdMove,
     crossoverCmdPerformAbility,
@@ -40,14 +41,21 @@ import {
     crossoverCmdUseItem,
     crossoverPlayerInventory,
 } from "./client";
-import type { GameCommand, GameCommandVariables } from "./ir";
+import {
+    documentsScore,
+    tokenize,
+    type GameCommand,
+    type GameCommandVariables,
+} from "./ir";
 import { aStarPathfinding } from "./pathfinding";
 import type { Ability } from "./world/abilities";
 import { actions, type Action } from "./world/actions";
 import type { Utility } from "./world/compendium";
 import { MS_PER_TICK, SERVER_LATENCY } from "./world/settings";
 import { compendium } from "./world/settings/compendium";
+import { skillLines } from "./world/settings/skills";
 import { worldSeed } from "./world/settings/world";
+import { SkillLinesEnum } from "./world/skills";
 import {
     Directions,
     EquipmentSlots,
@@ -212,6 +220,40 @@ async function performAction(
             headers,
         );
     }
+
+    // learn
+    else if (action.action === "learn" && variables != null) {
+        const teacher = target ? getEntityId(target)[0] : undefined;
+        if (!teacher) {
+            throw new Error(`Who are you trying to learn from?`);
+        }
+
+        // Find skill in query
+        const matchedScores = SkillLinesEnum.map((s) => {
+            return {
+                skill: s,
+                matchedScore: documentsScore(
+                    tokenize(variables.queryIrrelevant),
+                    [s, skillLines[s].description],
+                ),
+            };
+        })
+            .filter(({ matchedScore }) => matchedScore.score > 0.6)
+            .sort((a, b) => b.matchedScore.score - a.matchedScore.score);
+
+        if (matchedScores.length < 1) {
+            throw new Error(`What are you trying to learn?`);
+        }
+
+        return await crossoverCmdLearn(
+            {
+                skill: matchedScores[0].skill,
+                teacher,
+            },
+            headers,
+        );
+    }
+
     // move
     else if (action.action === "move" && variables != null) {
         const direction = variables.queryIrrelevant as Direction;

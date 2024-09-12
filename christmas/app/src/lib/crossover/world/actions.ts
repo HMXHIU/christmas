@@ -217,8 +217,8 @@ const actions: Record<Actions, Action> = {
         action: "learn",
         description: "Learn a skill from a teacher.",
         predicate: {
-            target: ["none"],
-            tokenPositions: { action: 0 },
+            target: ["player"],
+            tokenPositions: { action: 0, target: 3 }, // learn [skill] from [target]
         },
         ticks: 4,
         icon: {

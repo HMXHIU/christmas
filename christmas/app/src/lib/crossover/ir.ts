@@ -11,6 +11,8 @@ import { compendium } from "./world/settings/compendium";
 
 export {
     COMMAND_SEARCH_RANGE,
+    documentScore,
+    documentsScore,
     entitiesIR,
     fuzzyMatch,
     gameActionsIR,
@@ -234,6 +236,28 @@ function tokenMatchAny(token: string, matchAny: string[]): number {
         }
     }
     return 0;
+}
+
+function documentsScore(
+    queryTokens: string[],
+    documents: string[],
+): {
+    matchedTokens: MatchedTokenPosition;
+    score: number;
+} {
+    let highestScoreResult = {
+        matchedTokens: {} as MatchedTokenPosition,
+        score: 0,
+    };
+
+    for (const document of documents) {
+        const result = documentScore(queryTokens, document);
+        if (result.score > highestScoreResult.score) {
+            highestScoreResult = result;
+        }
+    }
+
+    return highestScoreResult;
 }
 
 /**
