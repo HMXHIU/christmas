@@ -121,46 +121,51 @@ async function npcRespondToAction({
 
         // Respond to `say`
         if (action === "say") {
-            // Search for greeting dialogue
-            let dialogues = await searchDialogues("grt", tags);
-            if (dialogues.length < 1) {
-                // Search for ignore dialogue
-                dialogues = await searchDialogues("ign", tags);
-            }
-
-            // Get best dialogue
-            const dialogue = dialogues[0];
-
-            if (dialogue && entityIsHuman) {
-                const { msg, tgt } = dialogue;
-
-                const message = substituteVariables(msg, {
-                    self: target,
-                    player: entity as Player,
-                });
-
-                const targetId = tgt
-                    ? substituteVariables(tgt, {
-                          self: target,
-                          player: entity as Player,
-                      })
-                    : undefined;
+            let response = await npcGreetResponse(tags);
+            if (response && entityIsHuman) {
                 // Respond to target/surrounding players
-                await say(target as PlayerEntity, message, {
-                    target: targetId,
-                    overwrite: true,
-                });
+                await say(
+                    target as PlayerEntity,
+                    substituteVariables(response.msg, {
+                        self: target,
+                        player: entity as Player,
+                    }),
+                    {
+                        target: response.tgt
+                            ? substituteVariables(response.tgt, {
+                                  self: target,
+                                  player: entity as Player,
+                              })
+                            : undefined,
+                        overwrite: true,
+                    },
+                );
             }
         }
     }
+}
+
+async function npcGreetResponse(
+    tags: string[],
+): Promise<DialogueEntity | undefined> {
+    // Search for greeting dialogue
+    let dialogues = await searchDialogues("grt", tags);
+
+    // Search for ignore dialogue
+    if (dialogues.length < 1) {
+        dialogues = await searchDialogues("ign", tags);
+    }
+
+    // Get best dialogue
+    const dialogue = dialogues[0];
+
+    return dialogue;
 }
 
 async function searchDialogues(
     dialogue: Dialogues,
     tags: string[],
 ): Promise<DialogueEntity[]> {
-    console.log("searching", dialogue, tags);
-
     // Note: OR and MUST are mutually exclusive (choose either OR or MUST when defining the dialogue)
     let query = dialogueRepository
         .search()

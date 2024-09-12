@@ -34,6 +34,8 @@ type Actions =
     | "configure"
     | "inventory"
     | "enter" // targets a item's world property
+    | "learn"
+    | "trade"
     | "rest";
 
 type ActionTargets = EntityType | "none";
@@ -196,20 +198,6 @@ const actions: Record<Actions, Action> = {
         },
         range: 0,
     },
-    rest: {
-        action: "rest",
-        description: "Rest and recover.",
-        predicate: {
-            target: ["none"],
-            tokenPositions: { action: 0 },
-        },
-        ticks: 4,
-        icon: {
-            path: "actions/actions",
-            icon: "night-sleep",
-        },
-        range: 0,
-    },
     // Spawn and enter an item's world property (only applicable if item as `world`)
     enter: {
         action: "enter",
@@ -224,6 +212,48 @@ const actions: Record<Actions, Action> = {
             icon: "walk",
         },
         range: 1,
+    },
+    learn: {
+        action: "learn",
+        description: "Learn a skill from a teacher.",
+        predicate: {
+            target: ["none"],
+            tokenPositions: { action: 0 },
+        },
+        ticks: 4,
+        icon: {
+            path: "actions/actions",
+            icon: "night-sleep",
+        },
+        range: 0,
+    },
+    trade: {
+        action: "trade",
+        description: "Buy and sell goods.",
+        predicate: {
+            target: ["none"],
+            tokenPositions: { action: 0 },
+        },
+        ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "night-sleep",
+        },
+        range: 0,
+    },
+    rest: {
+        action: "rest",
+        description: "Rest and recover.",
+        predicate: {
+            target: ["none"],
+            tokenPositions: { action: 0 },
+        },
+        ticks: 4,
+        icon: {
+            path: "actions/actions",
+            icon: "night-sleep",
+        },
+        range: 0,
     },
 };
 function resolveActionEntities({

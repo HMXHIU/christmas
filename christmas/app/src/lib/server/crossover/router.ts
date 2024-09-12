@@ -2,6 +2,7 @@ import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
 import { PlayerMetadataSchema } from "$lib/crossover/world/player";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/settings/world";
+import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import {
     GeohashLocationSchema,
     type GeohashLocationType,
@@ -39,6 +40,7 @@ import {
     dropItem,
     enterItem,
     equipItem,
+    learn,
     moveEntity,
     performInventory,
     performLook,
@@ -88,6 +90,10 @@ const LoginSchema = z.object({
 const SaySchema = z.object({
     message: z.string(),
     target: z.string().optional(),
+});
+const LearnSchema = z.object({
+    teacher: z.string(),
+    skill: z.enum(SkillLinesEnum),
 });
 const LookSchema = z.object({
     target: z.string().optional(),
@@ -425,6 +431,12 @@ const crossoverRouter = {
                     target: input.target,
                     now: ctx.now,
                 });
+            }),
+        learn: playerAuthBusyProcedure
+            .input(LearnSchema)
+            .query(async ({ ctx, input }) => {
+                const { skill, teacher } = input;
+                await learn(ctx.player, teacher, skill);
             }),
         // cmd.look
         look: playerAuthBusyProcedure

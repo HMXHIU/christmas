@@ -7,10 +7,15 @@ import {
 } from "$lib/crossover/utils";
 import { actions } from "$lib/crossover/world/actions";
 import { entityStats } from "$lib/crossover/world/entity";
-import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
+import {
+    MS_PER_TICK,
+    TILE_HEIGHT,
+    TILE_WIDTH,
+} from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { skillLines } from "$lib/crossover/world/settings/skills";
 import {
+    learningDialoguesForSkill,
     skillLevelProgression,
     type SkillLines,
 } from "$lib/crossover/world/skills";
@@ -21,13 +26,13 @@ import {
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
 import type { WorldPOIs } from "$lib/crossover/world/world";
-import { substituteValues } from "$lib/utils";
+import { sleep, substituteValues } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import { setEntityBusy } from ".";
 import { performAbility } from "./abilities";
 import { worldAssetMetadataCache, worldPOIsCache } from "./caches";
 import { spawnItem, spawnWorld, spawnWorldPOIs } from "./dungeonMaster";
-import { npcRespondToAction } from "./npc";
+import { isEntityActualPlayer, npcRespondToAction } from "./npc";
 import {
     fetchEntity,
     getNearbyEntities,
@@ -50,8 +55,10 @@ import {
     isDirectionTraversable,
     itemVariableValue,
     parseItemVariables,
+    publishActionEvent,
     publishAffectedEntitiesToPlayers,
     publishFeedEvent,
+    savePlayerState,
 } from "./utils";
 
 export {
@@ -61,6 +68,7 @@ export {
     dropItem,
     enterItem,
     equipItem,
+    learn,
     LOOK_PAGE_SIZE,
     moveEntity,
     performInventory,
@@ -848,17 +856,102 @@ async function enterItem(
     return { player, pois };
 }
 
+async function learn(
+    player: PlayerEntity,
+    teacher: string,
+    skill: SkillLines,
+): Promise<PlayerEntity> {
+    const teacherEntity = (await fetchEntity(teacher)) as PlayerEntity;
+    const [canLearn, cannotLearnMessage] = canLearnSkillFrom(
+        player,
+        teacherEntity,
+        skill,
+    );
+
+    if (canLearn) {
+        const nearbyPlayerIds = await getNearbyPlayerIds(
+            player.loc[0],
+            player.locT as GeohashLocationType,
+            player.locI,
+        );
+
+        // Publish action event
+        publishActionEvent(nearbyPlayerIds, {
+            action: "learn",
+            source: teacher,
+            target: player.player,
+        });
+
+        if (isEntityActualPlayer(player)) {
+            // Get skill learning dialogues
+            const learningDialogues = learningDialoguesForSkill(
+                skill,
+                player.skills[skill] ?? 1,
+            );
+            // Start the lesson
+            for (const msg of learningDialogues) {
+                await say(teacherEntity, msg, {
+                    target: player.player,
+                    overwrite: true,
+                });
+                await sleep(
+                    (actions.learn.ticks * MS_PER_TICK) /
+                        learningDialogues.length,
+                );
+            }
+        }
+
+        // Consume learning resources and increment player skill (recheck again)
+        if (canLearnSkillFrom(player, teacherEntity, skill)[0]) {
+            let deduct = skillLevelProgression(player.skills[skill] ?? 1);
+            for (const cur of skillLines[skill].currency) {
+                if (deduct > 0) {
+                    player[cur] = Math.max(player[cur] - deduct, 0);
+                    deduct -= player[cur];
+                }
+            }
+            if (player.skills[skill]) {
+                player.skills[skill] += 1;
+            } else {
+                player.skills[skill] = 1;
+            }
+
+            // Save player
+            player = (await saveEntity(player)) as PlayerEntity;
+            await savePlayerState(player.player);
+
+            // Publish to nearby players
+            publishAffectedEntitiesToPlayers([player], {
+                publishTo: nearbyPlayerIds,
+                op: "upsert",
+            });
+        }
+    } else if (isEntityActualPlayer(player)) {
+        await say(teacherEntity, cannotLearnMessage, {
+            target: player.player,
+            overwrite: true,
+        });
+    }
+
+    return player;
+}
+
 function canLearnSkillFrom(
     player: PlayerEntity,
     teacher: PlayerEntity,
     skill: SkillLines,
 ): [boolean, string] {
+    if (!teacher.player) {
+        return [false, "You might as well try to learn from a rock."];
+    }
+
     // Can only learn up to teacher's skill level - 1
     const playerSkillLevel = player.skills[skill] ?? 0;
-    const currency = skillLines[skill].currency;
-    const playerCurrency = currency.reduce((p, c) => p + player[c], 0);
+    const currencies = skillLines[skill].currency;
+    const playerCurrency = currencies.reduce((p, c) => p + player[c], 0);
     const requiredCurrency = skillLevelProgression(playerSkillLevel + 1);
 
+    // Teacher not at skill level
     if (
         !teacher.skills[skill] ||
         teacher.skills[skill] - 1 < playerSkillLevel
@@ -867,10 +960,12 @@ function canLearnSkillFrom(
             false,
             `${teacher.name} furrows his brow. 'This skill lies beyond even my grasp. Seek out one more learned than I.'`,
         ];
-    } else if (playerCurrency < requiredCurrency) {
+    }
+    // Player not enough learning resources
+    else if (playerCurrency < requiredCurrency) {
         return [
             false,
-            "Despite your best efforts, the skill eludes you, perhaps with more experience...",
+            "Despite your best efforts, the skill eludes you, perhaps with more experience.",
         ];
     }
 

@@ -71,6 +71,7 @@ test("Test NPC Dialogue", async () => {
     npc.loc = playerOne.loc;
     npc = (await saveEntity(npc as PlayerEntity)) as Player;
 
+    // Test greetings
     crossoverCmdSay(
         { message: "", target: npc.player },
         { Cookie: playerOneCookies },
@@ -88,6 +89,8 @@ test("Test NPC Dialogue", async () => {
         },
         event: "feed",
     });
+
+    // Test ignore
 });
 
 test("Test `generateNPC`", async () => {

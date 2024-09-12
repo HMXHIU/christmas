@@ -17,6 +17,7 @@ import type {
     PlayerDemographic,
     PlayerMetadata,
 } from "./world/player";
+import type { SkillLines } from "./world/skills";
 import {
     type Direction,
     type EquipmentSlot,
@@ -31,6 +32,7 @@ export {
     crossoverCmdDrop,
     crossoverCmdEnterItem,
     crossoverCmdEquip,
+    crossoverCmdLearn,
     crossoverCmdLook,
     crossoverCmdMove,
     crossoverCmdPerformAbility,
@@ -232,6 +234,14 @@ function crossoverCmdSay(
 ) {
     const { message, target } = input;
     return trpc({ headers }).crossover.cmd.say.query({ message, target });
+}
+
+function crossoverCmdLearn(
+    input: { skill: SkillLines; teacher: string },
+    headers: HTTPHeaders = {},
+) {
+    const { skill, teacher } = input;
+    return trpc({ headers }).crossover.cmd.learn.query({ skill, teacher });
 }
 
 async function crossoverCmdLook(

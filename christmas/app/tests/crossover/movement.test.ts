@@ -7,7 +7,7 @@ import {
     isEntityInMotion,
 } from "$lib/crossover/utils";
 import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
-import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { Direction } from "$lib/crossover/world/types";
 import { moveEntity } from "$lib/server/crossover/actions";
@@ -166,6 +166,7 @@ describe("Movement Tests", () => {
         let tavern = (await spawnItem({
             geohash: tavernGeohash,
             locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
             prop: compendium.tavern.prop,
         })) as ItemEntity;
         const tavernOrigin = geohashNeighbour(playerOneGeohash, "s");

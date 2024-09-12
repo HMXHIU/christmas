@@ -88,6 +88,7 @@ function substituteValues(
 }
 
 function substituteVariables(template: string, variables: Record<string, any>) {
+    // TODO: replace with lodash get
     function getValueFromPath(obj: any, path: string): any {
         return path
             .split(/\.|\[|\]/g)
@@ -95,7 +96,9 @@ function substituteVariables(template: string, variables: Record<string, any>) {
             .reduce((acc, key) => acc && acc[key], obj);
     }
 
+    // TODO: this should be a different function
     // Variable access eg. {{target.loc}} or {{points[0]}}
+    // This returns the variable directly (vs string)
     if (template.startsWith("{{") && template.endsWith("}}")) {
         const path = template.replace(/{{(.*?)}}/g, "$1").trim();
         return getValueFromPath(variables, path);
