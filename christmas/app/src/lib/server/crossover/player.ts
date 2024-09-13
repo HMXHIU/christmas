@@ -6,6 +6,7 @@ import type {
     PlayerDemographic,
 } from "$lib/crossover/world/player";
 import type { SkillLines } from "$lib/crossover/world/skills";
+import type { BarterSerialized } from "$lib/crossover/world/types";
 import { hashObject, signJWT, verifyJWT } from "..";
 import { equipmentQuerySet, fetchEntity } from "./redis";
 import type { ItemEntity, PlayerEntity } from "./redis/entities";
@@ -18,6 +19,7 @@ export {
     verifyP2PTransaction,
     type CTA,
     type P2PLearnTransaction,
+    type P2PTradeTransaction,
 };
 
 async function probeEquipment(
@@ -83,6 +85,14 @@ interface P2PLearnTransaction extends P2PActionTransaction {
     teacher: string;
     player: string;
     skill: SkillLines;
+}
+
+interface P2PTradeTransaction extends P2PActionTransaction {
+    action: "trade";
+    trader: string;
+    player: string;
+    offer: BarterSerialized;
+    receive: BarterSerialized;
 }
 
 type CTATypes = "writ";

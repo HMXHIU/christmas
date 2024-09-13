@@ -4,6 +4,7 @@ import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import {
+    BarterSchema,
     GeohashLocationSchema,
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
@@ -38,10 +39,13 @@ import {
     configureItem,
     createItem,
     createLearnCTA,
+    createTradeCTA,
+    deserializeBarter,
     dropItem,
     enterItem,
     equipItem,
     executeLearnCTA,
+    executeTradeCTA,
     learn,
     moveEntity,
     performInventory,
@@ -49,6 +53,7 @@ import {
     rest,
     say,
     takeItem,
+    trade,
     unequipItem,
     useItem,
 } from "./actions";
@@ -63,6 +68,7 @@ import {
     probeEquipment,
     verifyP2PTransaction,
     type P2PLearnTransaction,
+    type P2PTradeTransaction,
 } from "./player";
 import { loggedInPlayersQuerySet } from "./redis";
 import type {
@@ -102,6 +108,12 @@ const SaySchema = z.object({
 const LearnSchema = z.object({
     teacher: z.string(),
     skill: z.enum(SkillLinesEnum),
+});
+
+const TradeSchema = z.object({
+    trader: z.string(),
+    offer: BarterSchema,
+    receive: BarterSchema,
 });
 const AcceptSchema = z.object({
     token: z.string(), // jwt token
@@ -456,6 +468,13 @@ const crossoverRouter = {
                             p2pTransaction as P2PLearnTransaction,
                         );
                     }
+                    // Trade
+                    else if (p2pTransaction.action === "trade") {
+                        await executeTradeCTA(
+                            ctx.player,
+                            p2pTransaction as P2PTradeTransaction,
+                        );
+                    }
                 }
             }),
         // cmd.learn
@@ -482,6 +501,33 @@ const crossoverRouter = {
 
                 // Learn from NPC
                 await learn(ctx.player, teacher, skill);
+            }),
+        trade: playerAuthBusyProcedure
+            .input(TradeSchema)
+            .query(async ({ ctx, input }) => {
+                const { trader, offer, receive } = input;
+                const traderEntity = (await fetchEntity(
+                    trader,
+                )) as PlayerEntity;
+                const barterOffer = await deserializeBarter(offer);
+                const barterReceive = await deserializeBarter(receive);
+
+                // Send CTA writ to teacher for execution
+                if (isEntityActualPlayer(traderEntity)) {
+                    // Send writ to teacher for execution
+                    await publishCTAEvent(trader, {
+                        cta: await createTradeCTA(
+                            ctx.player,
+                            traderEntity,
+                            barterOffer,
+                            barterReceive,
+                        ),
+                    });
+                    return; // do not proceed to learn
+                }
+
+                // Trade with NPC
+                await trade(ctx.player, trader, barterOffer, barterReceive);
             }),
         // cmd.look
         look: playerAuthBusyProcedure

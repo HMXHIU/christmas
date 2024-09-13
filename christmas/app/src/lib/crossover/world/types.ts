@@ -1,11 +1,15 @@
+import { type ItemEntity } from "$lib/server/crossover/redis/entities";
 import { z } from "zod";
 
 export {
+    BarterSchema,
     Directions,
     EquipmentSlots,
     GeohashLocationSchema,
     geohashLocationTypes,
     type AssetMetadata,
+    type Barter,
+    type BarterSerialized,
     type Currency,
     type Direction,
     type EquipmentSlot,
@@ -19,6 +23,21 @@ export {
 };
 
 type Currency = "lum" | "umb";
+
+interface Barter {
+    items: ItemEntity[];
+    currency: Record<Currency, number>;
+}
+type BarterSerialized = z.infer<typeof BarterSchema>;
+const BarterSchema = z.object({
+    items: z.array(z.string()).optional(),
+    currency: z
+        .object({
+            lum: z.number().optional(),
+            umb: z.number().optional(),
+        })
+        .optional(),
+});
 
 type EquipmentSlot =
     // armor

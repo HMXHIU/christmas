@@ -21,6 +21,8 @@ import {
 } from "$lib/crossover/world/skills";
 import {
     geohashLocationTypes,
+    type Barter,
+    type BarterSerialized,
     type Currency,
     type Direction,
     type EquipmentSlot,
@@ -43,6 +45,7 @@ import {
     createP2PTransaction,
     type CTA,
     type P2PLearnTransaction,
+    type P2PTradeTransaction,
 } from "./player";
 import {
     fetchEntity,
@@ -77,10 +80,13 @@ export {
     configureItem,
     createItem,
     createLearnCTA,
+    createTradeCTA,
+    deserializeBarter,
     dropItem,
     enterItem,
     equipItem,
     executeLearnCTA,
+    executeTradeCTA,
     learn,
     LOOK_PAGE_SIZE,
     moveEntity,
@@ -1042,14 +1048,9 @@ function canLearnSkillFrom(
     return [true, ""];
 }
 
-interface Barter {
-    items: ItemEntity[];
-    currency: Record<Currency, number>;
-}
-
-function playerHasBarter(player: PlayerEntity, barter: Barter): boolean {
+function playerHasBarterItems(player: PlayerEntity, barter: Barter): boolean {
     // Check player as all barter items in inventory
-    for (const item of barter.items) {
+    for (const item of barter.items || []) {
         if (item.locT !== "inv" || item.loc[0] !== player.player) {
             return false;
         }
@@ -1075,13 +1076,13 @@ function canTradeWith(
     }
 
     // Check trader and player has required items/currencies
-    if (!playerHasBarter(player, offer)) {
+    if (!playerHasBarterItems(player, offer)) {
         return [
             false,
             "You do not have the items or currencies needed to barter.",
         ];
     }
-    if (!playerHasBarter(trader, receive)) {
+    if (!playerHasBarterItems(trader, receive)) {
         return [
             false,
             `${trader.name} does not have the items or currencies needed to barter.`,
@@ -1091,17 +1092,99 @@ function canTradeWith(
     return [true, ""];
 }
 
-function barterDialogue(barter: Barter, from: PlayerEntity, to: PlayerEntity) {
-    const itemsDescription = barter.items.join(", ");
+function barterDescription(barter: Barter): string {
+    const itemsDescription = barter.items.map((i) => i.name).join(", ");
     const currenciesDescription = Object.entries(barter.currency)
         .map((cur, amt) => `${amt}${cur}`)
         .join(", ");
 
-    const barterDesc = [itemsDescription, currenciesDescription]
+    return [itemsDescription, currenciesDescription]
         .filter((s) => Boolean(s))
         .join(" and ");
+}
 
+function barterDialogue(
+    barter: Barter,
+    from: PlayerEntity,
+    to: PlayerEntity,
+): string {
+    const barterDesc = barterDescription(barter);
     return `${from.name} hands you ${barterDesc}, 'Pleasure doing business with you, ${to.name}'`;
+}
+
+function serializeBarter(barter: Barter): BarterSerialized {
+    return {
+        items: barter.items.map((i) => i.item),
+        currency: barter.currency,
+    };
+}
+
+async function deserializeBarter(barter: BarterSerialized): Promise<Barter> {
+    return {
+        items: barter.items
+            ? ((await Promise.all(
+                  barter.items.map((i) => fetchEntity(i)),
+              )) as ItemEntity[])
+            : [],
+        currency: {
+            lum: barter?.currency?.lum ?? 0,
+            umb: barter?.currency?.umb ?? 0,
+        },
+    };
+}
+
+async function createTradeCTA(
+    player: PlayerEntity,
+    trader: PlayerEntity,
+    offer: Barter,
+    receive: Barter,
+): Promise<CTA> {
+    // Trader is a human player - request a P2PTradeTransaction and terminate early
+    if (isEntityActualPlayer(trader)) {
+        const expiresIn = 60;
+        const pin = generatePin(4);
+        const offerDesc = barterDescription(offer);
+        const receiveDesc = barterDescription(receive);
+        const tradeTx: P2PTradeTransaction = {
+            action: "trade",
+            message: `${player.name} requests to trade with you. The offer is ${offerDesc} for ${receiveDesc}. You have ${expiresIn} to *accept ${pin}*`,
+            trader: trader.player,
+            player: player.player,
+            offer: serializeBarter(offer),
+            receive: serializeBarter(receive),
+        };
+        return {
+            cta: "writ",
+            name: "Trade Writ",
+            description: `This writ allows you to trade ${offerDesc} for ${receiveDesc} from ${trader.name}.`,
+            token: await createP2PTransaction(tradeTx, 60),
+            pin,
+        };
+    }
+
+    throw new Error("Trader is not a player");
+}
+
+async function executeTradeCTA(
+    executor: PlayerEntity,
+    writ: P2PTradeTransaction,
+) {
+    const { player, trader, offer, receive } = writ;
+
+    // Check that the player executing the writ is the trader
+    if (executor.player !== trader) {
+        publishFeedEvent(executor.player, {
+            type: "error",
+            message: `You try to execute the writ, but it rejects you with a slight jolt.`,
+        });
+    }
+
+    await trade(
+        (await fetchEntity(player)) as PlayerEntity, // get the student from the writ
+        trader,
+        await deserializeBarter(offer),
+        await deserializeBarter(receive),
+    );
 }
 
 async function trade(
