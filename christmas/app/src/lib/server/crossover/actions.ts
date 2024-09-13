@@ -1071,7 +1071,7 @@ function canTradeWith(
     receive: Barter,
 ): [boolean, string] {
     // Check if trader is a player
-    if (!trader.player) {
+    if (!trader.player || !player.player) {
         return [false, "You might as well try to trade with a rock."];
     }
 
@@ -1079,7 +1079,7 @@ function canTradeWith(
     if (!playerHasBarterItems(player, offer)) {
         return [
             false,
-            "You do not have the items or currencies needed to barter.",
+            `${player.name} does not have the items or currencies needed to barter.`,
         ];
     }
     if (!playerHasBarterItems(trader, receive)) {
@@ -1095,12 +1095,13 @@ function canTradeWith(
 function barterDescription(barter: Barter): string {
     const itemsDescription = barter.items.map((i) => i.name).join(", ");
     const currenciesDescription = Object.entries(barter.currency)
-        .map((cur, amt) => `${amt}${cur}`)
+        .filter(([cur, amt]) => amt > 0)
+        .map(([cur, amt]) => `${amt} ${cur}`)
         .join(", ");
 
     return [itemsDescription, currenciesDescription]
         .filter((s) => Boolean(s))
-        .join(" and ");
+        .join(", ");
 }
 
 function barterDialogue(
@@ -1170,6 +1171,10 @@ async function executeTradeCTA(
     writ: P2PTradeTransaction,
 ) {
     const { player, trader, offer, receive } = writ;
+    const playerEntity = (await fetchEntity(player)) as PlayerEntity;
+    const traderEntity = (await fetchEntity(trader)) as PlayerEntity;
+    const barterOffer = await deserializeBarter(offer);
+    const barterReceive = await deserializeBarter(receive);
 
     // Check that the player executing the writ is the trader
     if (executor.player !== trader) {
@@ -1179,11 +1184,28 @@ async function executeTradeCTA(
         });
     }
 
+    // Need to check before executing so we can send any dialogues to the executor only
+    const [canTrade, cannotTradeMessage] = canTradeWith(
+        playerEntity,
+        traderEntity,
+        barterOffer,
+        barterReceive,
+    );
+    if (!canTrade) {
+        if (isEntityActualPlayer(executor)) {
+            say(playerEntity, cannotTradeMessage, {
+                target: executor.player,
+                overwrite: true,
+            });
+        }
+        return; // stop the execution
+    }
+
     await trade(
-        (await fetchEntity(player)) as PlayerEntity, // get the student from the writ
+        playerEntity, // get the player making the offer from the writ
         trader,
-        await deserializeBarter(offer),
-        await deserializeBarter(receive),
+        barterOffer,
+        barterReceive,
     );
 }
 
@@ -1229,7 +1251,7 @@ async function trade(
     // Transfer offer from player to trader
     for (const item of offer.items) {
         item.locT = "inv";
-        item.loc = traderEntity.loc;
+        item.loc[0] = traderEntity.player;
         await saveEntity(item);
     }
     for (const [cur, amt] of Object.entries(offer.currency)) {
@@ -1242,7 +1264,7 @@ async function trade(
     // Transfer receive from trader to player
     for (const item of receive.items) {
         item.locT = "inv";
-        item.loc = player.loc;
+        item.loc[0] = player.player;
         await saveEntity(item);
     }
     for (const [cur, amt] of Object.entries(receive.currency)) {

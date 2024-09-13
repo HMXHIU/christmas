@@ -1,4 +1,9 @@
-import { crossoverCmdAccept, crossoverCmdLearn } from "$lib/crossover/client";
+import {
+    crossoverCmdAccept,
+    crossoverCmdLearn,
+    crossoverCmdTake,
+    crossoverCmdTrade,
+} from "$lib/crossover/client";
 import { actions } from "$lib/crossover/world/actions";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
@@ -16,13 +21,9 @@ import type {
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
-import { beforeAll, describe, expect, test } from "vitest";
+import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import type { CTAEvent } from "../../src/routes/api/crossover/stream/+server";
-import {
-    createGandalfSarumanSauron,
-    generateRandomGeohash,
-    waitForEventData,
-} from "./utils";
+import { createGandalfSarumanSauron, waitForEventData } from "./utils";
 
 let region: string;
 let geohash: string;
@@ -53,15 +54,133 @@ beforeAll(async () => {
 
     // Spawn items
     woodenclub = (await spawnItem({
-        geohash: generateRandomGeohash(8, "h9"),
+        geohash,
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 });
 
+beforeEach(async () => {
+    playerOne.lum = 0;
+    playerOne = (await saveEntity(playerOne as PlayerEntity)) as PlayerEntity;
+});
+
 describe("CTA Tests", () => {
-    test("`trade` with human player", async () => {});
+    test("`trade` with human player", async () => {
+        // `playerTwo` take `woodenClub`
+        await crossoverCmdTake(
+            { item: woodenclub.item },
+            { Cookie: playerTwoCookies },
+        );
+        await sleep(MS_PER_TICK * actions.take.ticks);
+        woodenclub = (await fetchEntity(woodenclub.item)) as ItemEntity;
+        expect(woodenclub.loc[0]).toBe(playerTwo.player);
+
+        // `playerOne` trade 100 lumina for `playerTwo`s `woodenClub`
+        crossoverCmdTrade(
+            {
+                trader: playerTwo.player,
+                offer: {
+                    currency: {
+                        lum: 100,
+                    },
+                },
+                receive: {
+                    items: [woodenclub.item],
+                },
+            },
+            { Cookie: playerOneCookies },
+        );
+
+        // Check CTA event (on trader which is `playerTwo`)
+        var cta = (await waitForEventData(playerTwoStream, "cta")) as CTAEvent;
+        expect(cta).toMatchObject({
+            cta: {
+                cta: "writ",
+                name: "Trade Writ",
+                description:
+                    "This writ allows you to trade 100 lum for Wooden Club from Saruman.",
+            },
+            event: "cta",
+        });
+        expect(cta.cta.token).toBeTruthy();
+        expect(cta.cta.pin).toBeTruthy();
+
+        // Trader `accept` the CTA
+        crossoverCmdAccept(
+            { token: cta.cta.token },
+            { Cookie: playerTwoCookies },
+        );
+
+        // Check `playerTwo` got message that `playerOne` does not have enough currencies
+        var feed = await waitForEventData(playerTwoStream, "feed");
+        expect(feed).toMatchObject({
+            type: "message",
+            message: "${message}",
+            variables: {
+                cmd: "say",
+                player: playerOne.player,
+                name: playerOne.name,
+                message: `${playerOne.name} does not have the items or currencies needed to barter.`,
+            },
+            event: "feed",
+        });
+
+        // Give `playerOne` enough currency to complete the trade
+        playerOne.lum = 1000;
+        playerOne = (await saveEntity(
+            playerOne as PlayerEntity,
+        )) as PlayerEntity;
+
+        // Trader `accept` the CTA
+        crossoverCmdAccept(
+            { token: cta.cta.token },
+            { Cookie: playerTwoCookies },
+        );
+
+        // Check `playerOne` and `playerTwo` got successful trade dialogues
+        var playerOneFeed = null;
+        var playerTwoFeed = null;
+        waitForEventData(playerOneStream, "feed").then(
+            (e) => (playerOneFeed = e),
+        );
+        waitForEventData(playerTwoStream, "feed").then(
+            (e) => (playerTwoFeed = e),
+        );
+        await sleep(MS_PER_TICK * actions.accept.ticks);
+        expect(playerOneFeed).toMatchObject({
+            type: "message",
+            message: "${message}",
+            variables: {
+                cmd: "say",
+                player: playerTwo.player,
+                name: `${playerTwo.name}`,
+                message: `${playerTwo.name} hands you Wooden Club, 'Pleasure doing business with you, ${playerOne.name}'`,
+            },
+            event: "feed",
+        });
+        expect(playerTwoFeed).toMatchObject({
+            type: "message",
+            message: "${message}",
+            variables: {
+                cmd: "say",
+                player: playerOne.player,
+                name: `${playerOne.name}`,
+                message: `${playerOne.name} hands you 100 lum, 'Pleasure doing business with you, ${playerTwo.name}'`,
+            },
+            event: "feed",
+        });
+        await sleep(MS_PER_TICK * actions.trade.ticks * 2);
+
+        // Check players have the traded items
+        woodenclub = (await fetchEntity(woodenclub.item)) as ItemEntity;
+        expect(woodenclub.loc[0]).toBe(playerOne.player);
+        const playerOneAfter = (await fetchEntity(
+            playerOne.player,
+        )) as PlayerEntity;
+        expect(playerOneAfter.lum).toBe(playerOne.lum - 100);
+    });
     test("`learn` from human player", async () => {
         // Increase `playerTwo` skills and `playerOne` resources
         playerTwo.skills["exploration"] = 10;
