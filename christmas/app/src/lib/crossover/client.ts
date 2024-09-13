@@ -19,6 +19,7 @@ import type {
 } from "./world/player";
 import type { SkillLines } from "./world/skills";
 import {
+    type BarterSerialized,
     type Direction,
     type EquipmentSlot,
     type GeohashLocationType,
@@ -40,6 +41,7 @@ export {
     crossoverCmdRest,
     crossoverCmdSay,
     crossoverCmdTake,
+    crossoverCmdTrade,
     crossoverCmdUnequip,
     crossoverCmdUseItem,
     crossoverGenerateAvatar,
@@ -243,6 +245,22 @@ function crossoverCmdLearn(
 ) {
     const { skill, teacher } = input;
     return trpc({ headers }).crossover.cmd.learn.query({ skill, teacher });
+}
+
+function crossoverCmdTrade(
+    input: {
+        offer: BarterSerialized;
+        receive: BarterSerialized;
+        trader: string;
+    },
+    headers: HTTPHeaders = {},
+) {
+    const { offer, receive, trader } = input;
+    return trpc({ headers }).crossover.cmd.trade.query({
+        offer,
+        receive,
+        trader,
+    });
 }
 
 function crossoverCmdAccept(

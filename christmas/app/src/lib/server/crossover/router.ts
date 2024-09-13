@@ -502,6 +502,7 @@ const crossoverRouter = {
                 // Learn from NPC
                 await learn(ctx.player, teacher, skill);
             }),
+        // cmd.trade
         trade: playerAuthBusyProcedure
             .input(TradeSchema)
             .query(async ({ ctx, input }) => {
