@@ -21,12 +21,18 @@ import {
 } from "$lib/crossover/world/skills";
 import {
     geohashLocationTypes,
+    type Currency,
     type Direction,
     type EquipmentSlot,
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
 import type { WorldPOIs } from "$lib/crossover/world/world";
-import { generatePin, sleep, substituteValues } from "$lib/utils";
+import {
+    generatePin,
+    sleep,
+    substituteValues,
+    substituteVariables,
+} from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import { setEntityBusy } from ".";
 import { performAbility } from "./abilities";
@@ -84,6 +90,7 @@ export {
     say,
     setEntityBusy,
     takeItem,
+    trade,
     unequipItem,
     useItem,
 };
@@ -981,7 +988,12 @@ async function learn(
         );
         // Start the lesson
         for (const msg of learningDialogues) {
-            await say(teacherEntity, msg, {
+            const message = substituteVariables(msg, {
+                player,
+                teacher: teacherEntity,
+                skill: skillLines[skill],
+            });
+            await say(teacherEntity, message, {
                 target: player.player,
                 overwrite: true,
             });
@@ -1028,6 +1040,161 @@ function canLearnSkillFrom(
     }
 
     return [true, ""];
+}
+
+interface Barter {
+    items: ItemEntity[];
+    currency: Record<Currency, number>;
+}
+
+function playerHasBarter(player: PlayerEntity, barter: Barter): boolean {
+    // Check player as all barter items in inventory
+    for (const item of barter.items) {
+        if (item.locT !== "inv" || item.loc[0] !== player.player) {
+            return false;
+        }
+    }
+    // Check player has all barter currencies
+    for (const [cur, amt] of Object.entries(barter.currency)) {
+        if (player[cur as Currency] < amt) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function canTradeWith(
+    player: PlayerEntity,
+    trader: PlayerEntity,
+    offer: Barter,
+    receive: Barter,
+): [boolean, string] {
+    // Check if trader is a player
+    if (!trader.player) {
+        return [false, "You might as well try to trade with a rock."];
+    }
+
+    // Check trader and player has required items/currencies
+    if (!playerHasBarter(player, offer)) {
+        return [
+            false,
+            "You do not have the items or currencies needed to barter.",
+        ];
+    }
+    if (!playerHasBarter(trader, receive)) {
+        return [
+            false,
+            `${trader.name} does not have the items or currencies needed to barter.`,
+        ];
+    }
+
+    return [true, ""];
+}
+
+function barterDialogue(barter: Barter, from: PlayerEntity, to: PlayerEntity) {
+    const itemsDescription = barter.items.join(", ");
+    const currenciesDescription = Object.entries(barter.currency)
+        .map((cur, amt) => `${amt}${cur}`)
+        .join(", ");
+
+    const barterDesc = [itemsDescription, currenciesDescription]
+        .filter((s) => Boolean(s))
+        .join(" and ");
+
+    return `${from.name} hands you ${barterDesc}, 'Pleasure doing business with you, ${to.name}'`;
+}
+
+async function trade(
+    player: PlayerEntity,
+    trader: string,
+    offer: Barter,
+    receive: Barter,
+) {
+    const playerIsHuman = isEntityActualPlayer(player);
+    const traderEntity = (await fetchEntity(trader)) as PlayerEntity;
+    const traderIsHuman = isEntityActualPlayer(traderEntity);
+
+    const [canTrade, cannotTradeMessage] = canTradeWith(
+        player,
+        traderEntity,
+        offer,
+        receive,
+    );
+
+    // Cannot trade - send `cannotLearnMessage` back to player
+    if (!canTrade && playerIsHuman) {
+        await say(traderEntity, cannotTradeMessage, {
+            target: player.player,
+            overwrite: true,
+        });
+    }
+
+    // Get nearby players
+    const nearbyPlayerIds = await getNearbyPlayerIds(
+        player.loc[0],
+        player.locT as GeohashLocationType,
+        player.locI,
+    );
+
+    // Publish action event
+    publishActionEvent(nearbyPlayerIds, {
+        action: "trade",
+        source: trader,
+        target: player.player,
+    });
+
+    // Transfer offer from player to trader
+    for (const item of offer.items) {
+        item.locT = "inv";
+        item.loc = traderEntity.loc;
+        await saveEntity(item);
+    }
+    for (const [cur, amt] of Object.entries(offer.currency)) {
+        player[cur as Currency] -= amt;
+        traderEntity[cur as Currency] += amt;
+        await saveEntity(player);
+        await saveEntity(traderEntity);
+    }
+
+    // Transfer receive from trader to player
+    for (const item of receive.items) {
+        item.locT = "inv";
+        item.loc = player.loc;
+        await saveEntity(item);
+    }
+    for (const [cur, amt] of Object.entries(receive.currency)) {
+        traderEntity[cur as Currency] -= amt;
+        player[cur as Currency] += amt;
+        await saveEntity(player);
+        await saveEntity(traderEntity);
+    }
+
+    // Save player's state to MINIO
+    await savePlayerState(player.player);
+    await savePlayerState(traderEntity.player);
+
+    // Publish to nearby players
+    publishAffectedEntitiesToPlayers(
+        [player, traderEntity, ...offer.items, ...receive.items],
+        {
+            publishTo: [player.player, trader],
+            op: "upsert",
+        },
+    );
+
+    // Send dialogues
+    if (playerIsHuman) {
+        say(traderEntity, barterDialogue(receive, traderEntity, player), {
+            target: player.player,
+            overwrite: true,
+        });
+    }
+    if (traderIsHuman) {
+        say(player, barterDialogue(offer, player, traderEntity), {
+            target: trader,
+            overwrite: true,
+        });
+    }
 }
 
 async function rest(player: PlayerEntity, now?: number) {

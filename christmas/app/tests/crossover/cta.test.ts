@@ -111,7 +111,7 @@ describe("CTA Tests", () => {
                 cmd: "say",
                 player: playerTwo.player,
                 name: playerTwo.name,
-                message: "${teacher.name} hands you a worn map and a compass.",
+                message: `${playerTwo.name} hands you a worn map and a compass.`,
             },
             event: "feed",
         });
