@@ -30,6 +30,8 @@
     import type { ActionEvent } from "../../../../routes/api/crossover/stream/+server";
     import {
         actionEvent,
+        ctaEvent,
+        ctaRecord,
         entitiesEvent,
         equipmentRecord,
         itemRecord,
@@ -424,6 +426,13 @@
                 await updateWorlds(p.loc[0], p.locT as GeohashLocationType);
                 await tryExecuteGameCommand([actions.look, { self: p }]);
                 await tryExecuteGameCommand([actions.inventory, { self: p }]);
+            }),
+            ctaEvent.subscribe((e) => {
+                if (!e) return;
+                ctaRecord.update((r) => {
+                    r[e.cta.pin] = e.cta;
+                    return r;
+                });
             }),
             actionEvent.subscribe(async (e) => {
                 if (!e) return;

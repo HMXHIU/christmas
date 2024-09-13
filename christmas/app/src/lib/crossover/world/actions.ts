@@ -36,6 +36,7 @@ type Actions =
     | "enter" // targets a item's world property
     | "learn"
     | "trade"
+    | "accept"
     | "rest";
 
 type ActionTargets = EntityType | "none";
@@ -213,6 +214,20 @@ const actions: Record<Actions, Action> = {
         },
         range: 1,
     },
+    accept: {
+        action: "accept",
+        description: "Accept a writ or a request.",
+        predicate: {
+            target: ["none"],
+            tokenPositions: { action: 0, target: 3 }, // accept [writ]
+        },
+        ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "night-sleep",
+        },
+        range: 0,
+    },
     learn: {
         action: "learn",
         description: "Learn a skill from a teacher.",
@@ -373,6 +388,7 @@ function resolveActionEntities({
         .map((a) => a[0]);
 }
 
+// TODO: TO Deprecate, get actions from player skills
 const playerActions = [
     actions.say,
     actions.look,
@@ -386,4 +402,7 @@ const playerActions = [
     actions.inventory,
     actions.rest,
     actions.enter,
+    actions.accept,
+    actions.learn,
+    actions.trade,
 ];

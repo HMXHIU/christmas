@@ -25,6 +25,7 @@ import { PlayerStateSchema, type PlayerState } from ".";
 import { serverAnchorClient } from "..";
 import type {
     ActionEvent,
+    CTAEvent,
     FeedEvent,
     UpdateEntitiesEvent,
 } from "../../../routes/api/crossover/stream/+server";
@@ -63,6 +64,7 @@ export {
     parseItemVariables,
     publishActionEvent,
     publishAffectedEntitiesToPlayers,
+    publishCTAEvent,
     publishFeedEvent,
     savePlayerState,
     setPlayerState,
@@ -73,6 +75,11 @@ async function publishFeedEvent(
     event: Omit<FeedEvent, "event">,
 ) {
     (event as FeedEvent).event = "feed";
+    await redisClient.publish(player, JSON.stringify(event));
+}
+
+async function publishCTAEvent(player: string, event: Omit<CTAEvent, "event">) {
+    (event as CTAEvent).event = "cta";
     await redisClient.publish(player, JSON.stringify(event));
 }
 

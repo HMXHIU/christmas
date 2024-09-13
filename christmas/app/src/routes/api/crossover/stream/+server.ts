@@ -2,6 +2,7 @@ import type { Abilities } from "$lib/crossover/world/abilities";
 import type { Actions } from "$lib/crossover/world/actions";
 import { requireLogin } from "$lib/server";
 import { connectedUsers } from "$lib/server/crossover";
+import type { CTA } from "$lib/server/crossover/player";
 import { redisSubscribeClient } from "$lib/server/crossover/redis";
 import type {
     Item,
@@ -10,7 +11,11 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import type { RequestHandler } from "@sveltejs/kit";
 
-export type StreamEvent = FeedEvent | UpdateEntitiesEvent | ActionEvent;
+export type StreamEvent =
+    | FeedEvent
+    | UpdateEntitiesEvent
+    | ActionEvent
+    | CTAEvent;
 
 export interface FeedEvent {
     event: "feed";
@@ -35,6 +40,11 @@ export interface ActionEvent {
     ability?: Abilities;
     utility?: string;
     prop?: string;
+}
+
+export interface CTAEvent {
+    event: "cta";
+    cta: CTA;
 }
 
 function sendStreamEvent(

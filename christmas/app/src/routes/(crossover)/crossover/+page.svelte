@@ -6,6 +6,7 @@
     import { onDestroy, onMount } from "svelte";
     import {
         actionEvent,
+        ctaEvent,
         entitiesEvent,
         feedEvent,
         loginEvent,
@@ -13,6 +14,7 @@
     } from "../../../store";
     import type {
         ActionEvent,
+        CTAEvent,
         FeedEvent,
         UpdateEntitiesEvent,
     } from "../../api/crossover/stream/+server";
@@ -32,16 +34,22 @@
         actionEvent.set((event as MessageEvent).data as ActionEvent);
     }
 
+    function processCTAEvent(event: Event) {
+        ctaEvent.set((event as MessageEvent).data as CTAEvent);
+    }
+
     async function startStream() {
         [eventStream, closeStream] = await stream();
 
         eventStream.removeEventListener("feed", processFeedEvent);
         eventStream.removeEventListener("entities", processEntitiesEvent);
         eventStream.removeEventListener("action", processActionEvent);
+        eventStream.removeEventListener("cta", processCTAEvent);
 
         eventStream.addEventListener("feed", processFeedEvent);
         eventStream.addEventListener("entities", processEntitiesEvent);
         eventStream.addEventListener("action", processActionEvent);
+        eventStream.addEventListener("cta", processCTAEvent);
     }
 
     function stopStream() {
@@ -49,6 +57,7 @@
             eventStream.removeEventListener("feed", processFeedEvent);
             eventStream.removeEventListener("entities", processEntitiesEvent);
             eventStream.removeEventListener("action", processActionEvent);
+            eventStream.removeEventListener("cta", processCTAEvent);
         }
         if (closeStream != null) {
             closeStream();

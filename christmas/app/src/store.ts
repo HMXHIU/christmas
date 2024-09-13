@@ -6,6 +6,7 @@ import type {
     CouponMetadataSchema,
     StoreMetadataSchema,
 } from "$lib/server/community/router";
+import type { CTA } from "$lib/server/crossover/player";
 import type {
     Item,
     Monster,
@@ -18,6 +19,7 @@ import { writable } from "svelte/store";
 import { z } from "zod";
 import type {
     ActionEvent,
+    CTAEvent,
     FeedEvent,
     UpdateEntitiesEvent,
 } from "./routes/api/crossover/stream/+server";
@@ -50,6 +52,7 @@ export let playerAbilities = writable<Ability[]>([]);
 export let playerInventoryItems = writable<Item[]>([]);
 export let playerEquippedItems = writable<Item[]>([]);
 
+export let ctaRecord = writable<Record<string, CTA>>([]);
 export let playerRecord = writable<Record<string, Player>>({});
 export let itemRecord = writable<Record<string, Item>>({});
 export let monsterRecord = writable<Record<string, Monster>>({});
@@ -66,5 +69,6 @@ export let worldOffset = writable<{ row: number; col: number }>({
 
 export let entitiesEvent = writable<UpdateEntitiesEvent>();
 export let actionEvent = writable<ActionEvent>();
+export let ctaEvent = writable<CTAEvent>();
 export let feedEvent = writable<FeedEvent>();
 export let loginEvent = writable<Player>();

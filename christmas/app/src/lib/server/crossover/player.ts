@@ -1,14 +1,24 @@
+import { JWT_SECRET_KEY } from "$env/static/private";
 import { geohashesNearby, minifiedEntity } from "$lib/crossover/utils";
+import type { Actions } from "$lib/crossover/world/actions";
 import type {
     PlayerAppearance,
     PlayerDemographic,
 } from "$lib/crossover/world/player";
-import { hashObject } from "..";
+import type { SkillLines } from "$lib/crossover/world/skills";
+import { hashObject, signJWT, verifyJWT } from "..";
 import { equipmentQuerySet, fetchEntity } from "./redis";
 import type { ItemEntity, PlayerEntity } from "./redis/entities";
 import { publishAffectedEntitiesToPlayers } from "./utils";
 
-export { generateAvatarHash, probeEquipment };
+export {
+    createP2PTransaction,
+    generateAvatarHash,
+    probeEquipment,
+    verifyP2PTransaction,
+    type CTA,
+    type P2PLearnTransaction,
+};
 
 async function probeEquipment(
     self: PlayerEntity,
@@ -57,4 +67,41 @@ function generateAvatarHash({
     const s = hashObject({ demographic, appearance }, "md5"); // md5 is shorter
     const t = hashObject({ textures }, "md5");
     return { selector: s, texture: t, hash: `${s}_${t}` };
+}
+
+// P2PTransaction aka CTA
+interface P2PTransaction {
+    message: string;
+}
+
+interface P2PActionTransaction extends P2PTransaction {
+    action: Actions;
+}
+
+interface P2PLearnTransaction extends P2PActionTransaction {
+    action: "learn";
+    teacher: string;
+    player: string;
+    skill: SkillLines;
+}
+
+type CTATypes = "writ";
+
+interface CTA {
+    cta: CTATypes;
+    name: string;
+    description: string;
+    pin: string; // also serves as the CTA id, and for targeting the CTA (eg. accept [pin])
+    token: string; // p2pTransaction jwt
+}
+
+async function createP2PTransaction(
+    p2pTx: P2PTransaction,
+    expiresIn: number,
+): Promise<string> {
+    return await signJWT(p2pTx, expiresIn, JWT_SECRET_KEY);
+}
+
+async function verifyP2PTransaction(token: string): Promise<P2PTransaction> {
+    return (await verifyJWT(token, JWT_SECRET_KEY)) as P2PTransaction;
 }

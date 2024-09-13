@@ -13,7 +13,7 @@ import type {
 import { sleep } from "$lib/utils";
 import type { HTTPHeaders } from "@trpc/client";
 import { get } from "svelte/store";
-import { itemRecord, player, worldRecord } from "../../store";
+import { ctaRecord, itemRecord, player, worldRecord } from "../../store";
 import {
     biomeAtGeohashCache,
     biomeParametersAtCityCache,
@@ -25,6 +25,7 @@ import {
     worldTraversableCellsCache,
 } from "./caches";
 import {
+    crossoverCmdAccept,
     crossoverCmdConfigureItem,
     crossoverCmdCreateItem,
     crossoverCmdDrop,
@@ -72,6 +73,8 @@ export {
     moveInRangeOfTarget,
     performAction,
 };
+
+const pinRegex = /\b\d+\b/;
 
 async function moveInRangeOfTarget({
     range,
@@ -220,7 +223,24 @@ async function performAction(
             headers,
         );
     }
+    // accept
+    else if (action.action === "accept" && variables != null) {
+        // Find pin in query
+        const match = variables.queryIrrelevant.match(pinRegex);
+        if (!match) {
+            throw new Error(`What are you trying to accept?`);
+        }
+        const pin = match[0];
 
+        // Find cta
+        const cta = get(ctaRecord)[pin];
+        if (!cta) {
+            throw new Error(`There is no ${pin} to accept.`);
+        }
+
+        // Execute the cta
+        return await crossoverCmdAccept({ token: cta.token }, headers);
+    }
     // learn
     else if (action.action === "learn" && variables != null) {
         const teacher = target ? getEntityId(target)[0] : undefined;
@@ -253,7 +273,6 @@ async function performAction(
             headers,
         );
     }
-
     // move
     else if (action.action === "move" && variables != null) {
         const direction = variables.queryIrrelevant as Direction;

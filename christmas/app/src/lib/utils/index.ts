@@ -20,6 +20,7 @@ export {
     connection,
     divmod,
     extractQueryParams,
+    generatePin,
     generateRandomSeed,
     generateURL,
     getCurrentTimestamp,
@@ -445,4 +446,13 @@ function sampleFrom<T>(items: T[], count: number, seed: number): T[] {
     }
 
     return shuffled.slice(0, count);
+}
+
+function generatePin(length: number) {
+    if (length <= 0) return "";
+
+    const min = 10 ** (length - 1);
+    const max = 10 ** length - 1;
+
+    return Math.floor(min + Math.random() * (max - min + 1)).toString();
 }

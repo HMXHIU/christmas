@@ -27,6 +27,7 @@ import {
 export {
     crossoverAuthPlayer,
     crossoverAvailableAvatars,
+    crossoverCmdAccept,
     crossoverCmdConfigureItem,
     crossoverCmdCreateItem,
     crossoverCmdDrop,
@@ -242,6 +243,14 @@ function crossoverCmdLearn(
 ) {
     const { skill, teacher } = input;
     return trpc({ headers }).crossover.cmd.learn.query({ skill, teacher });
+}
+
+function crossoverCmdAccept(
+    input: { token: string },
+    headers: HTTPHeaders = {},
+) {
+    const { token } = input;
+    return trpc({ headers }).crossover.cmd.accept.query({ token });
 }
 
 async function crossoverCmdLook(

@@ -37,9 +37,11 @@ import { performAbility } from "./abilities";
 import {
     configureItem,
     createItem,
+    createLearnCTA,
     dropItem,
     enterItem,
     equipItem,
+    executeLearnCTA,
     learn,
     moveEntity,
     performInventory,
@@ -56,7 +58,12 @@ import {
     spawnMonsters,
     spawnWorld,
 } from "./dungeonMaster";
-import { probeEquipment } from "./player";
+import { isEntityActualPlayer } from "./npc";
+import {
+    probeEquipment,
+    verifyP2PTransaction,
+    type P2PLearnTransaction,
+} from "./player";
 import { loggedInPlayersQuerySet } from "./redis";
 import type {
     Item,
@@ -71,6 +78,7 @@ import {
     entityIsBusy,
     getPlayerState,
     getUserMetadata,
+    publishCTAEvent,
     publishFeedEvent,
     savePlayerState,
 } from "./utils";
@@ -94,6 +102,9 @@ const SaySchema = z.object({
 const LearnSchema = z.object({
     teacher: z.string(),
     skill: z.enum(SkillLinesEnum),
+});
+const AcceptSchema = z.object({
+    token: z.string(), // jwt token
 });
 const LookSchema = z.object({
     target: z.string().optional(),
@@ -432,10 +443,43 @@ const crossoverRouter = {
                     now: ctx.now,
                 });
             }),
+        // cmd.accept
+        accept: playerAuthBusyProcedure
+            .input(AcceptSchema)
+            .query(async ({ ctx, input }) => {
+                const p2pTransaction = await verifyP2PTransaction(input.token);
+                if ("action" in p2pTransaction) {
+                    // Learn
+                    if (p2pTransaction.action === "learn") {
+                        await executeLearnCTA(
+                            ctx.player,
+                            p2pTransaction as P2PLearnTransaction,
+                        );
+                    }
+                }
+            }),
+        // cmd.learn
         learn: playerAuthBusyProcedure
             .input(LearnSchema)
             .query(async ({ ctx, input }) => {
                 const { skill, teacher } = input;
+                const teacherEntity = (await fetchEntity(
+                    teacher,
+                )) as PlayerEntity;
+
+                // Send CTA writ to teacher for execution
+                if (isEntityActualPlayer(teacherEntity)) {
+                    // Send writ to teacher for execution
+                    await publishCTAEvent(teacher, {
+                        cta: await createLearnCTA(
+                            ctx.player,
+                            teacherEntity,
+                            skill,
+                        ),
+                    });
+                }
+
+                // Learn from NPC
                 await learn(ctx.player, teacher, skill);
             }),
         // cmd.look
