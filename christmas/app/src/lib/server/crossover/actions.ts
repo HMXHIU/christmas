@@ -931,7 +931,7 @@ async function learn(
             target: player.player,
             overwrite: true,
         });
-        throw new Error(cannotLearnMessage);
+        return player;
     }
 
     // Get nearby players

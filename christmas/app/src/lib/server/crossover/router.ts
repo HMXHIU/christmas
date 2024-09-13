@@ -477,6 +477,7 @@ const crossoverRouter = {
                             skill,
                         ),
                     });
+                    return; // do not proceed to learn
                 }
 
                 // Learn from NPC
