@@ -49,28 +49,28 @@ function playerHasBarterItems(player: PlayerEntity, barter: Barter): boolean {
     return true;
 }
 
-function canTradeWith(
-    player: PlayerEntity,
-    trader: PlayerEntity,
+function canTrade(
+    buyer: PlayerEntity,
+    seller: PlayerEntity,
     offer: Barter,
     receive: Barter,
 ): [boolean, string] {
-    // Check if trader is a player
-    if (!trader.player || !player.player) {
+    // Check if entities are players
+    if (!seller.player || !buyer.player) {
         return [false, "You might as well try to trade with a rock."];
     }
 
-    // Check trader and player has required items/currencies
-    if (!playerHasBarterItems(player, offer)) {
+    // Check seller and player has required items/currencies
+    if (!playerHasBarterItems(buyer, offer)) {
         return [
             false,
-            `${player.name} does not have the items or currencies needed to barter.`,
+            `${buyer.name} does not have ${barterDescription(offer)}.`,
         ];
     }
-    if (!playerHasBarterItems(trader, receive)) {
+    if (!playerHasBarterItems(seller, receive)) {
         return [
             false,
-            `${trader.name} does not have the items or currencies needed to barter.`,
+            `${seller.name} does not have ${barterDescription(receive)}.`,
         ];
     }
 
@@ -152,36 +152,42 @@ async function createTradeWrit(
 }
 
 async function createTradeCTA(
+    initiator: PlayerEntity,
     buyer: PlayerEntity,
     seller: PlayerEntity,
     offer: Barter,
     receive: Barter,
 ): Promise<CTA> {
-    // Seller must be a human player
-    if (isEntityHuman(seller)) {
-        const expiresIn = 60; // for CTA, hardcode to 60 seconds
-        const pin = generatePin(4);
-        const offerDesc = barterDescription(offer);
-        const receiveDesc = barterDescription(receive);
-        const message = `${buyer.name} is offering to buy ${offerDesc} for ${receiveDesc}.`;
-        const tradeTx: P2PTradeTransaction = {
-            action: "trade",
-            message: message,
-            seller: seller.player,
-            buyer: buyer.player,
-            offer: serializeBarter(offer),
-            receive: serializeBarter(receive),
-        };
-        return {
-            cta: "writ",
-            name: "Trade Writ",
-            description: `${message} You have ${expiresIn}s to *accept ${pin}*.`,
-            token: await createP2PTransaction(tradeTx, expiresIn),
-            pin,
-        };
+    if (
+        initiator.player !== seller.player &&
+        initiator.player !== buyer.player
+    ) {
+        throw new Error("Executor must be one of the buyer or seller");
     }
+    const expiresIn = 60; // for CTA, hardcode to 60 seconds
+    const pin = generatePin(4);
+    const offerDesc = barterDescription(offer);
+    const receiveDesc = barterDescription(receive);
+    const message =
+        initiator.player === seller.player
+            ? `${seller.name} is offering to sell ${receiveDesc} for ${offerDesc}.`
+            : `${buyer.name} is offering to buy ${receiveDesc} for ${offerDesc}.`;
 
-    throw new Error("Seller is not a player");
+    const tradeTx: P2PTradeTransaction = {
+        action: "trade",
+        message: message,
+        seller: seller.player,
+        buyer: buyer.player,
+        offer: serializeBarter(offer),
+        receive: serializeBarter(receive),
+    };
+    return {
+        cta: "writ",
+        name: "Trade Writ",
+        description: `${message} You have ${expiresIn}s to *accept ${pin}*.`,
+        token: await createP2PTransaction(tradeTx, expiresIn),
+        pin,
+    };
 }
 
 async function executeTradeCTA(
@@ -207,16 +213,17 @@ async function executeTradeCTA(
             type: "error",
             message: `You try to execute the agreement, but it rejects you with a slight jolt.`,
         });
+        return; // stop the execution
     }
 
     // Need to check before executing so we can send any dialogues to the executor only
-    const [canTrade, cannotTradeMessage] = canTradeWith(
+    const [ok, cannotTradeMessage] = canTrade(
         buyerEntity,
         sellerEntity,
         barterOffer,
         barterReceive,
     );
-    if (!canTrade) {
+    if (!ok) {
         if (isEntityHuman(executor)) {
             say(buyerEntity, cannotTradeMessage, {
                 target: executor.player,
@@ -238,15 +245,10 @@ async function trade(
     const buyerIsHuman = isEntityHuman(buyer);
     const sellerIsHuman = isEntityHuman(seller);
 
-    const [canTrade, cannotTradeMessage] = canTradeWith(
-        buyer,
-        seller,
-        offer,
-        receive,
-    );
+    const [ok, cannotTradeMessage] = canTrade(buyer, seller, offer, receive);
 
     // Cannot trade - send `cannotLearnMessage` back to buyer
-    if (!canTrade && buyerIsHuman) {
+    if (!ok && buyerIsHuman) {
         await say(seller, cannotTradeMessage, {
             target: buyer.player,
             overwrite: true,

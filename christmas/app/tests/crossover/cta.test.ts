@@ -59,6 +59,15 @@ beforeAll(async () => {
         locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
+
+    // `playerTwo` take `woodenClub`
+    await crossoverCmdTake(
+        { item: woodenclub.item },
+        { Cookie: playerTwoCookies },
+    );
+    await sleep(MS_PER_TICK * actions.take.ticks);
+    woodenclub = (await fetchEntity(woodenclub.item)) as ItemEntity;
+    expect(woodenclub.loc[0]).toBe(playerTwo.player);
 });
 
 beforeEach(async () => {
@@ -67,20 +76,18 @@ beforeEach(async () => {
 });
 
 describe("CTA Tests", () => {
-    test("`trade` with human player", async () => {
-        // `playerTwo` take `woodenClub`
-        await crossoverCmdTake(
-            { item: woodenclub.item },
-            { Cookie: playerTwoCookies },
-        );
-        await sleep(MS_PER_TICK * actions.take.ticks);
-        woodenclub = (await fetchEntity(woodenclub.item)) as ItemEntity;
-        expect(woodenclub.loc[0]).toBe(playerTwo.player);
+    test("creating and executing trade writs", async () => {});
 
-        // `playerOne` trade 100 lumina for `playerTwo`s `woodenClub`
+    test("`trade` (buy/sell) with player (human)", async () => {
+        /**
+         * Buy CTA
+         */
+
+        // `playerOne` wants to buy `playerTwo`s `woodenClub` for 100 lumina
         crossoverCmdTrade(
             {
                 seller: playerTwo.player,
+                buyer: playerOne.player,
                 offer: {
                     currency: {
                         lum: 100,
@@ -93,7 +100,7 @@ describe("CTA Tests", () => {
             { Cookie: playerOneCookies },
         );
 
-        // Check CTA event (on trader which is `playerTwo`)
+        // Check CTA event (on seller which is `playerTwo`)
         var cta = (await waitForEventData(playerTwoStream, "cta")) as CTAEvent;
         expect(cta).toMatchObject({
             cta: {
@@ -104,7 +111,7 @@ describe("CTA Tests", () => {
         });
         expect(
             cta.cta.description.startsWith(
-                `${playerOne.name} is offering to buy 100 lum for Wooden Club. You have 60s to`,
+                `${playerOne.name} is offering to buy Wooden Club for 100 lum. You have 60s to`,
             ),
         ).toBeTruthy();
         expect(cta.cta.token).toBeTruthy();
@@ -125,7 +132,7 @@ describe("CTA Tests", () => {
                 cmd: "say",
                 player: playerOne.player,
                 name: playerOne.name,
-                message: `${playerOne.name} does not have the items or currencies needed to barter.`,
+                message: `${playerOne.name} does not have 100 lum.`,
             },
             event: "feed",
         });
@@ -183,7 +190,91 @@ describe("CTA Tests", () => {
             playerOne.player,
         )) as PlayerEntity;
         expect(playerOneAfter.lum).toBe(playerOne.lum - 100);
+        const playerTwoAfter = (await fetchEntity(
+            playerTwo.player,
+        )) as PlayerEntity;
+        expect(playerTwoAfter.lum).toBe(playerTwo.lum + 100);
+
+        /**
+         * Sell CTA
+         */
+
+        // `playerOne` wants to sell `playerTwo` a `woodenClub` for 100 lumina
+        crossoverCmdTrade(
+            {
+                seller: playerOne.player,
+                buyer: playerTwo.player,
+                receive: {
+                    items: [woodenclub.item],
+                },
+                offer: {
+                    currency: {
+                        lum: 100,
+                    },
+                },
+            },
+            { Cookie: playerOneCookies },
+        );
+
+        // Check CTA event (on buyer which is `playerTwo`)
+        var cta = (await waitForEventData(playerTwoStream, "cta")) as CTAEvent;
+        expect(cta).toMatchObject({
+            cta: {
+                cta: "writ",
+                name: "Trade Writ",
+            },
+            event: "cta",
+        });
+        expect(
+            cta.cta.description.startsWith(
+                `${playerOne.name} is offering to sell Wooden Club for 100 lum`,
+            ),
+        ).toBeTruthy();
+        expect(cta.cta.token).toBeTruthy();
+        expect(cta.cta.pin).toBeTruthy();
+
+        // Trader `accept` the CTA
+        crossoverCmdAccept(
+            { token: cta.cta.token },
+            { Cookie: playerTwoCookies },
+        );
+
+        // Check `playerOne` and `playerTwo` got successful trade dialogues
+        var playerOneFeed = null;
+        var playerTwoFeed = null;
+        waitForEventData(playerOneStream, "feed").then(
+            (e) => (playerOneFeed = e),
+        );
+        waitForEventData(playerTwoStream, "feed").then(
+            (e) => (playerTwoFeed = e),
+        );
+        await sleep(MS_PER_TICK * actions.accept.ticks);
+
+        expect(playerOneFeed).toMatchObject({
+            type: "message",
+            message: "${message}",
+            variables: {
+                cmd: "say",
+                player: playerTwo.player,
+                name: `${playerTwo.name}`,
+                message: `${playerTwo.name} hands you 100 lum, 'Pleasure doing business with you, ${playerOne.name}'`,
+            },
+            event: "feed",
+        });
+
+        expect(playerTwoFeed).toMatchObject({
+            type: "message",
+            message: "${message}",
+            variables: {
+                cmd: "say",
+                player: playerOne.player,
+                name: `${playerOne.name}`,
+                message: `${playerOne.name} hands you Wooden Club, 'Pleasure doing business with you, ${playerTwo.name}'`,
+            },
+            event: "feed",
+        });
     });
+
     test("`learn` from human player", async () => {
         // Increase `playerTwo` skills and `playerOne` resources
         playerTwo.skills["exploration"] = 10;

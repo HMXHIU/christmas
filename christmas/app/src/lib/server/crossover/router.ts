@@ -51,7 +51,6 @@ import {
     createTradeCTA,
     deserializeBarter,
     executeTradeCTA,
-    trade,
 } from "./actions/trade";
 import {
     initializeGame,
@@ -105,9 +104,9 @@ const LearnSchema = z.object({
     teacher: z.string(),
     skill: z.enum(SkillLinesEnum),
 });
-
 const TradeSchema = z.object({
     seller: z.string(),
+    buyer: z.string(),
     offer: BarterSchema,
     receive: BarterSchema,
 });
@@ -482,9 +481,8 @@ const crossoverRouter = {
                     teacher,
                 )) as PlayerEntity;
 
-                // Send CTA writ to teacher for execution
+                // Send CTA offer to teacher for execution
                 if (isEntityHuman(teacherEntity)) {
-                    // Send writ to teacher for execution
                     await publishCTAEvent(teacher, {
                         cta: await createLearnCTA(
                             ctx.player,
@@ -498,37 +496,58 @@ const crossoverRouter = {
                 // Learn from NPC
                 await learn(ctx.player, teacher, skill);
             }),
+        // cmd.writ
+        writ: playerAuthBusyProcedure
+            .input(TradeSchema)
+            .query(async ({ ctx, input }) => {}),
         // cmd.trade
         trade: playerAuthBusyProcedure
             .input(TradeSchema)
             .query(async ({ ctx, input }) => {
-                const { seller, offer, receive } = input;
+                const { buyer, seller, offer, receive } = input;
                 const sellerEntity = (await fetchEntity(
                     seller,
                 )) as PlayerEntity;
-                const barterOffer = await deserializeBarter(offer);
-                const barterReceive = await deserializeBarter(receive);
+                const buyerEntity = (await fetchEntity(buyer)) as PlayerEntity;
 
-                // Send CTA offer to seller for execution
-                if (isEntityHuman(sellerEntity)) {
-                    await publishCTAEvent(seller, {
+                // Player wants to sell to buyer (send CTA offer to buyer for execution)
+                if (
+                    ctx.player.player === seller &&
+                    isEntityHuman(buyerEntity)
+                ) {
+                    await publishCTAEvent(buyer, {
                         cta: await createTradeCTA(
-                            ctx.player, // player is buyer
+                            ctx.player,
+                            buyerEntity,
                             sellerEntity,
-                            barterOffer,
-                            barterReceive,
+                            await deserializeBarter(offer),
+                            await deserializeBarter(receive),
                         ),
                     });
-                    return; // do not proceed (seller must accept the CTA)
                 }
-
-                // Trade with NPC [TODO: DEPRECATE use WRITS cannot force NPC to accept trades]
-                await trade(
-                    ctx.player,
-                    sellerEntity,
-                    barterOffer,
-                    barterReceive,
-                );
+                // Player wants to buy from seller (send CTA offer to seller for execution)
+                else if (
+                    ctx.player.player === buyer &&
+                    isEntityHuman(sellerEntity)
+                ) {
+                    await publishCTAEvent(seller, {
+                        cta: await createTradeCTA(
+                            ctx.player,
+                            buyerEntity,
+                            sellerEntity,
+                            await deserializeBarter(offer),
+                            await deserializeBarter(receive),
+                        ),
+                    });
+                }
+                // Check that the executor must be one of the parties
+                else {
+                    publishFeedEvent(ctx.player.player, {
+                        type: "error",
+                        message: `You try to execute the agreement, but it rejects you with a slight jolt.`,
+                    });
+                    return;
+                }
             }),
         // cmd.look
         look: playerAuthBusyProcedure
