@@ -10,7 +10,7 @@ import {
     takeItem,
     useItem,
 } from "$lib/server/crossover/actions/item";
-import { spawnItem } from "$lib/server/crossover/dungeonMaster";
+import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import {
     fetchEntity,
     initializeClients,
@@ -84,7 +84,7 @@ beforeAll(async () => {
 
     // Test spawn wooden door at random location
     woodenDoorGeohash = generateRandomGeohash(8, "h9");
-    woodenDoor = (await spawnItem({
+    woodenDoor = (await spawnItemAtGeohash({
         geohash: woodenDoorGeohash,
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
@@ -111,7 +111,7 @@ beforeAll(async () => {
     });
 
     // Spawn portalOne at playerOne location
-    portalOne = (await spawnItem({
+    portalOne = (await spawnItemAtGeohash({
         geohash: playerOneGeohash,
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
@@ -123,7 +123,7 @@ beforeAll(async () => {
 
     // Spawn portalTwo at playerTwo location
     portalTwoGeohash = generateRandomGeohash(8, "h9");
-    portalTwo = (await spawnItem({
+    portalTwo = (await spawnItemAtGeohash({
         geohash: portalTwoGeohash, // somwhere else
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
@@ -158,7 +158,7 @@ beforeAll(async () => {
     });
 
     // Spawn playerOneWoodenClub with owner as playerOne
-    playerOneWoodenClub = await spawnItem({
+    playerOneWoodenClub = await spawnItemAtGeohash({
         geohash: playerOne.loc[0],
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
@@ -173,7 +173,7 @@ beforeAll(async () => {
     worldAsset = asset.asset;
     worldAssetUrl = asset.url;
 
-    tavern = (await spawnItem({
+    tavern = (await spawnItemAtGeohash({
         geohash: tavernGeohash,
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
@@ -245,7 +245,7 @@ describe("Test Items", () => {
     test("Test Spawn", async () => {
         // Test cannot spawn item on collider
         await expect(
-            spawnItem({
+            spawnItemAtGeohash({
                 geohash: woodenDoorGeohash,
                 locationType: "geohash",
                 locationInstance: LOCATION_INSTANCE,
@@ -447,7 +447,7 @@ describe("Test Items", () => {
         });
 
         // playerTwo configure playerOneOtherWoodenClub (negative config permissions)
-        let playerOneOtherWoodenClub = await spawnItem({
+        let playerOneOtherWoodenClub = await spawnItemAtGeohash({
             geohash: playerTwo.loc[0],
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,

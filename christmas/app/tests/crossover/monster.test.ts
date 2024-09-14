@@ -3,7 +3,10 @@ import { monsterLUReward } from "$lib/crossover/world/bestiary";
 import { entityStats } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
+import {
+    spawnItemAtGeohash,
+    spawnMonster,
+} from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import type {
     Item,
@@ -57,7 +60,7 @@ beforeAll(async () => {
     });
 
     // Spawn Items
-    woodendoor = await spawnItem({
+    woodendoor = await spawnItemAtGeohash({
         geohash: woodendoorGeohash,
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,

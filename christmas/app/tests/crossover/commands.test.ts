@@ -10,7 +10,10 @@ import { entityStats } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
+import {
+    spawnItemAtGeohash,
+    spawnMonster,
+} from "$lib/server/crossover/dungeonMaster";
 import { initializeClients, saveEntity } from "$lib/server/crossover/redis";
 import type {
     Item,
@@ -82,7 +85,7 @@ beforeAll(async () => {
     });
 
     // Spawn items and monsters
-    woodendoor = (await spawnItem({
+    woodendoor = (await spawnItemAtGeohash({
         geohash: geohashNeighbour(playerOneGeohash, "n"),
         prop: compendium.woodendoor.prop,
         locationType: "geohash",
@@ -93,28 +96,28 @@ beforeAll(async () => {
         },
     })) as ItemEntity;
 
-    woodenclub = (await spawnItem({
+    woodenclub = (await spawnItemAtGeohash({
         geohash: playerOneGeohash,
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
-    woodenclub2 = (await spawnItem({
+    woodenclub2 = (await spawnItemAtGeohash({
         geohash: playerOneGeohash,
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
-    woodenclub3 = (await spawnItem({
+    woodenclub3 = (await spawnItemAtGeohash({
         geohash: playerOneGeohash,
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
-    portal = (await spawnItem({
+    portal = (await spawnItemAtGeohash({
         geohash: playerOne.loc[0],
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
@@ -123,7 +126,7 @@ beforeAll(async () => {
 
     tavernGeohash = generateRandomGeohash(8, "h9");
     const { url } = await createWorldAsset();
-    tavern = (await spawnItem({
+    tavern = (await spawnItemAtGeohash({
         geohash: tavernGeohash,
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,

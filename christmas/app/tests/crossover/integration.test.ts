@@ -12,7 +12,7 @@ import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { configureItem } from "$lib/server/crossover/actions/item";
-import { spawnItem } from "$lib/server/crossover/dungeonMaster";
+import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import {
     fetchEntity,
     initializeClients,
@@ -316,7 +316,7 @@ describe("Integration Tests", () => {
 
     test("Test Complex Items", async () => {
         // Create portalOne at playerOne (public owner)
-        let portalOne = (await spawnItem({
+        let portalOne = (await spawnItemAtGeohash({
             geohash: playerOne.loc[0],
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,
@@ -324,7 +324,7 @@ describe("Integration Tests", () => {
         })) as Item;
 
         // Create portalTwo at playerTwo (public owner)
-        let portalTwo = (await spawnItem({
+        let portalTwo = (await spawnItemAtGeohash({
             geohash: playerTwo.loc[0],
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,

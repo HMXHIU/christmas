@@ -4,6 +4,7 @@ import {
     borderingGeohashes,
     calculateLocation,
     childrenGeohashes,
+    getEntityId,
     getPlotsAtGeohash,
 } from "$lib/crossover/utils";
 import { monsterLimitAtGeohash } from "$lib/crossover/world/bestiary";
@@ -49,7 +50,8 @@ import { isLocationTraversable, parseItemVariables } from "./utils";
 
 export {
     initializeGame,
-    spawnItem,
+    spawnItemAtGeohash,
+    spawnItemInInventory,
     spawnMonster,
     spawnMonsters,
     spawnWorld,
@@ -299,6 +301,53 @@ async function spawnWorld({
     return (await worldRepository.save(world, entity)) as WorldEntity;
 }
 
+async function spawnItemInInventory({
+    entity,
+    prop,
+    variables,
+    owner,
+    configOwner,
+}: {
+    entity: PlayerEntity | MonsterEntity;
+    prop: string;
+    variables?: Record<string, any>;
+    owner?: string;
+    configOwner?: string;
+}): Promise<ItemEntity> {
+    // Owner defaults to public
+    owner ??= "";
+    configOwner ??= "";
+
+    // Get item count
+    const count = await itemRepository.search().count();
+    const itemId = `item_${prop}${count}`;
+    const [entityId, entityType] = getEntityId(entity);
+
+    // Get prop
+    const { defaultName, defaultState, durability, charges, collider } =
+        compendium[prop];
+
+    const item: ItemEntity = {
+        item: itemId,
+        name: defaultName,
+        prop,
+        loc: [entityId],
+        locT: "inv",
+        locI: LOCATION_INSTANCE,
+        own: owner,
+        cfg: configOwner,
+        cld: collider,
+        dur: durability,
+        chg: charges,
+        state: defaultState,
+        vars: parseItemVariables(variables || {}, prop),
+        dbuf: [],
+        buf: [],
+    };
+
+    return (await itemRepository.save(itemId, item)) as ItemEntity;
+}
+
 /**
  * Spawns an item with the given geohash and prop.
  *
@@ -309,7 +358,7 @@ async function spawnWorld({
  * @param variables - The variables for the item.
  * @returns A promise that resolves to the spawned item entity.
  */
-async function spawnItem({
+async function spawnItemAtGeohash({
     geohash,
     locationType,
     locationInstance,
@@ -412,7 +461,7 @@ async function initializeGame() {
                 bps.props,
             )) {
                 try {
-                    await spawnItem({
+                    await spawnItemAtGeohash({
                         geohash: loc,
                         locationType,
                         prop,
@@ -432,13 +481,13 @@ async function initializeGame() {
             for (const entrance of entrances) {
                 try {
                     // Spawn entrance at geohash and d1 and link them together
-                    let exit = await spawnItem({
+                    let exit = await spawnItemAtGeohash({
                         geohash: entrance,
                         locationType: "d1",
                         prop: compendium.dungeonentrance.prop,
                         locationInstance,
                     });
-                    let enter = await spawnItem({
+                    let enter = await spawnItemAtGeohash({
                         geohash: entrance,
                         locationType: "geohash",
                         prop: compendium.dungeonentrance.prop,
@@ -528,7 +577,7 @@ async function spawnWorldPOIs(
                 await itemRepository.remove(...existing.map((i) => i.item));
 
                 // Spawn item
-                const item = await spawnItem({
+                const item = await spawnItemAtGeohash({
                     geohash: poi.geohash,
                     prop: poi.prop,
                     locationType: worldEntity.locT,

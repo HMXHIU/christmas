@@ -9,7 +9,7 @@ import {
 } from "$lib/crossover/client";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { spawnItem } from "$lib/server/crossover/dungeonMaster";
+import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import { fetchEntity, initializeClients } from "$lib/server/crossover/redis";
 import type {
     ItemEntity,
@@ -50,7 +50,7 @@ beforeAll(async () => {
     });
 
     // Spawn woodenclub
-    playerOneWoodenClub = await spawnItem({
+    playerOneWoodenClub = await spawnItemAtGeohash({
         geohash: playerOne.loc[0],
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
@@ -278,7 +278,7 @@ describe("Inventory Tests", () => {
     });
 
     test("Unable to equip unequippable item", async () => {
-        let potionofhealth = await spawnItem({
+        let potionofhealth = await spawnItemAtGeohash({
             geohash: playerOne.loc[0],
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,
@@ -318,7 +318,7 @@ describe("Inventory Tests", () => {
     });
 
     test("Unable to take item belonging to another player", async () => {
-        let unpickablePotion = await spawnItem({
+        let unpickablePotion = await spawnItemAtGeohash({
             geohash: playerOne.loc[0],
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,

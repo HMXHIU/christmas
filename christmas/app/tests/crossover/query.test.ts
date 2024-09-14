@@ -13,7 +13,10 @@ import { type Utility } from "$lib/crossover/world/compendium";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
+import {
+    spawnItemAtGeohash,
+    spawnMonster,
+} from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import type { Item, ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
@@ -60,7 +63,7 @@ test("Test Query", async () => {
         });
 
     // Wooden Door
-    let woodendoor = (await spawnItem({
+    let woodendoor = (await spawnItemAtGeohash({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
@@ -72,7 +75,7 @@ test("Test Query", async () => {
     })) as ItemEntity;
 
     // Wooden club
-    let woodenclub = (await spawnItem({
+    let woodenclub = (await spawnItemAtGeohash({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
@@ -80,7 +83,7 @@ test("Test Query", async () => {
     })) as ItemEntity;
 
     // Wooden club
-    let woodenclub2 = (await spawnItem({
+    let woodenclub2 = (await spawnItemAtGeohash({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
@@ -88,7 +91,7 @@ test("Test Query", async () => {
     })) as ItemEntity;
 
     // Wooden club
-    let woodenclub3 = (await spawnItem({
+    let woodenclub3 = (await spawnItemAtGeohash({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
@@ -96,7 +99,7 @@ test("Test Query", async () => {
     })) as ItemEntity;
 
     // Portal
-    let portal = (await spawnItem({
+    let portal = (await spawnItemAtGeohash({
         geohash: playerOne.loc[0], // spawn at playerOne
         prop: compendium.portal.prop,
         locationType: "geohash",

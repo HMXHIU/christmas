@@ -9,7 +9,10 @@ import type { Utility } from "$lib/crossover/world/compendium";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
+import {
+    spawnItemAtGeohash,
+    spawnMonster,
+} from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import type {
     Item,
@@ -65,7 +68,7 @@ describe("IR Tests", () => {
         });
 
         // Items
-        woodendoor = (await spawnItem({
+        woodendoor = (await spawnItemAtGeohash({
             geohash: generateRandomGeohash(8, "h9"),
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,
@@ -76,28 +79,28 @@ describe("IR Tests", () => {
             },
         })) as ItemEntity;
 
-        woodenclub = await spawnItem({
+        woodenclub = await spawnItemAtGeohash({
             geohash: generateRandomGeohash(8, "h9"),
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,
             prop: compendium.woodenclub.prop,
         });
 
-        woodenclub2 = await spawnItem({
+        woodenclub2 = await spawnItemAtGeohash({
             geohash: generateRandomGeohash(8, "h9"),
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,
             prop: compendium.woodenclub.prop,
         });
 
-        woodenclub3 = await spawnItem({
+        woodenclub3 = await spawnItemAtGeohash({
             geohash: generateRandomGeohash(8, "h9"),
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,
             prop: compendium.woodenclub.prop,
         });
 
-        portal = (await spawnItem({
+        portal = (await spawnItemAtGeohash({
             geohash: playerOneGeohash,
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,
@@ -106,7 +109,7 @@ describe("IR Tests", () => {
 
         tavernGeohash = generateRandomGeohash(8, "h9");
         const { url } = await createWorldAsset();
-        tavern = (await spawnItem({
+        tavern = (await spawnItemAtGeohash({
             geohash: tavernGeohash,
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,

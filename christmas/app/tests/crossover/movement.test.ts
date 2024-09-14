@@ -10,8 +10,8 @@ import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { Direction } from "$lib/crossover/world/types";
-import { moveEntity } from "$lib/server/crossover/actions";
-import { spawnItem } from "$lib/server/crossover/dungeonMaster";
+import { move } from "$lib/server/crossover/actions";
+import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import {
     fetchEntity,
     initializeClients,
@@ -163,7 +163,7 @@ describe("Movement Tests", () => {
 
         // Spawn tavern below playerOne
         const tavernGeohash = geohashNeighbour(playerOneGeohash, "s");
-        let tavern = (await spawnItem({
+        let tavern = (await spawnItemAtGeohash({
             geohash: tavernGeohash,
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,
@@ -238,13 +238,13 @@ describe("Movement Tests", () => {
         });
     });
 
-    test("Test `moveEntity`", async () => {
+    test("Test `move`", async () => {
         const playerOneGeohash = playerOne.loc[0];
         const path: Direction[] = ["s", "s", "s", "s"];
         const finalGeohash = geohashNeighbour(playerOneGeohash, "s", 4);
 
         await flushEventChannel(playerOneStream, "entities");
-        playerOne = (await moveEntity(
+        playerOne = (await move(
             playerOne as PlayerEntity,
             path,
         )) as PlayerEntity;

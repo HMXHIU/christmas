@@ -35,13 +35,7 @@ import {
     t,
 } from "../trpc";
 import { performAbility } from "./abilities";
-import {
-    moveEntity,
-    performInventory,
-    performLook,
-    rest,
-    say,
-} from "./actions";
+import { inventory, look, move, rest, say } from "./actions";
 import {
     configureItem,
     createItem,
@@ -65,7 +59,7 @@ import {
     spawnMonsters,
     spawnWorld,
 } from "./dungeonMaster";
-import { isEntityActualPlayer } from "./npc";
+import { isEntityHuman } from "./npc";
 import {
     probeEquipment,
     verifyP2PTransaction,
@@ -113,7 +107,7 @@ const LearnSchema = z.object({
 });
 
 const TradeSchema = z.object({
-    trader: z.string(),
+    seller: z.string(),
     offer: BarterSchema,
     receive: BarterSchema,
 });
@@ -257,7 +251,7 @@ const crossoverRouter = {
             .input(EntityPathSchema)
             .mutation(async ({ ctx, input }) => {
                 const { path, entity } = input;
-                await moveEntity(
+                await move(
                     (await fetchEntity(entity)) as PlayerEntity | MonsterEntity,
                     path,
                 );
@@ -409,7 +403,7 @@ const crossoverRouter = {
         }),
         // player.inventory
         inventory: playerAuthProcedure.query(async ({ ctx }) => {
-            await performInventory(ctx.player);
+            await inventory(ctx.player);
         }),
         // player.probeEquipment (TODO: not used, deprecate?)
         probeEquipment: playerAuthProcedure
@@ -489,7 +483,7 @@ const crossoverRouter = {
                 )) as PlayerEntity;
 
                 // Send CTA writ to teacher for execution
-                if (isEntityActualPlayer(teacherEntity)) {
+                if (isEntityHuman(teacherEntity)) {
                     // Send writ to teacher for execution
                     await publishCTAEvent(teacher, {
                         cta: await createLearnCTA(
@@ -508,42 +502,46 @@ const crossoverRouter = {
         trade: playerAuthBusyProcedure
             .input(TradeSchema)
             .query(async ({ ctx, input }) => {
-                const { trader, offer, receive } = input;
-                const traderEntity = (await fetchEntity(
-                    trader,
+                const { seller, offer, receive } = input;
+                const sellerEntity = (await fetchEntity(
+                    seller,
                 )) as PlayerEntity;
                 const barterOffer = await deserializeBarter(offer);
                 const barterReceive = await deserializeBarter(receive);
 
-                // Send CTA writ to teacher for execution
-                if (isEntityActualPlayer(traderEntity)) {
-                    // Send writ to teacher for execution
-                    await publishCTAEvent(trader, {
+                // Send CTA offer to seller for execution
+                if (isEntityHuman(sellerEntity)) {
+                    await publishCTAEvent(seller, {
                         cta: await createTradeCTA(
-                            ctx.player,
-                            traderEntity,
+                            ctx.player, // player is buyer
+                            sellerEntity,
                             barterOffer,
                             barterReceive,
                         ),
                     });
-                    return; // do not proceed to learn
+                    return; // do not proceed (seller must accept the CTA)
                 }
 
-                // Trade with NPC
-                await trade(ctx.player, trader, barterOffer, barterReceive);
+                // Trade with NPC [TODO: DEPRECATE use WRITS cannot force NPC to accept trades]
+                await trade(
+                    ctx.player,
+                    sellerEntity,
+                    barterOffer,
+                    barterReceive,
+                );
             }),
         // cmd.look
         look: playerAuthBusyProcedure
             .input(LookSchema)
             .query(async ({ ctx, input }) => {
-                await performLook(ctx.player, { inventory: true });
+                await look(ctx.player, { inventory: true });
             }),
         // cmd.move
         move: playerAuthBusyProcedure
             .input(PathSchema)
             .query(async ({ ctx, input }) => {
                 const { path } = input;
-                await moveEntity(ctx.player, path, ctx.now);
+                await move(ctx.player, path, ctx.now);
             }),
         // cmd.performAbility
         performAbility: playerAuthBusyProcedure

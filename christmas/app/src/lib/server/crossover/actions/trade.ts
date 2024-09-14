@@ -1,3 +1,4 @@
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     type Barter,
     type BarterSerialized,
@@ -7,7 +8,8 @@ import {
 import { generatePin } from "$lib/utils";
 import { say } from ".";
 import { setEntityBusy } from "..";
-import { isEntityActualPlayer } from "../npc";
+import { spawnItemInInventory } from "../dungeonMaster";
+import { isEntityHuman } from "../npc";
 import {
     createP2PTransaction,
     type CTA,
@@ -24,6 +26,7 @@ import {
 
 export {
     createTradeCTA,
+    createTradeWrit,
     deserializeBarter,
     executeTradeCTA,
     setEntityBusy,
@@ -116,66 +119,106 @@ async function deserializeBarter(barter: BarterSerialized): Promise<Barter> {
     };
 }
 
+async function createTradeWrit(
+    player: PlayerEntity, // the player creating the writ
+    order: "buy" | "sell",
+    offer: Barter, // offer & receive is always w.r.t to the player
+    receive: Barter,
+): Promise<ItemEntity> {
+    const buyer = order === "buy" ? player : null;
+    const seller = order === "sell" ? player : null;
+    const offerDesc = barterDescription(offer);
+    const receiveDesc = barterDescription(receive);
+    const expiresIn = 60;
+
+    const tradeTx: P2PTradeTransaction = {
+        action: "trade",
+        message: `${player.name} is offering to ${order} ${offerDesc} for ${receiveDesc}.`,
+        seller: seller?.player ?? "",
+        buyer: buyer?.player ?? "",
+        offer: serializeBarter(offer),
+        receive: serializeBarter(receive),
+    };
+
+    const writ = await spawnItemInInventory({
+        entity: player,
+        prop: compendium.tradewrit.prop,
+        variables: {
+            token: await createP2PTransaction(tradeTx, expiresIn), // TODO: show expiry dynamically, allow set expiry
+        },
+    });
+
+    return writ;
+}
+
 async function createTradeCTA(
-    player: PlayerEntity,
-    trader: PlayerEntity,
+    buyer: PlayerEntity,
+    seller: PlayerEntity,
     offer: Barter,
     receive: Barter,
 ): Promise<CTA> {
-    // Trader is a human player - request a P2PTradeTransaction and terminate early
-    if (isEntityActualPlayer(trader)) {
-        const expiresIn = 60;
+    // Seller must be a human player
+    if (isEntityHuman(seller)) {
+        const expiresIn = 60; // for CTA, hardcode to 60 seconds
         const pin = generatePin(4);
         const offerDesc = barterDescription(offer);
         const receiveDesc = barterDescription(receive);
+        const message = `${buyer.name} is offering to buy ${offerDesc} for ${receiveDesc}.`;
         const tradeTx: P2PTradeTransaction = {
             action: "trade",
-            message: `${player.name} requests to trade with you. The offer is ${offerDesc} for ${receiveDesc}. You have ${expiresIn} to *accept ${pin}*`,
-            trader: trader.player,
-            player: player.player,
+            message: message,
+            seller: seller.player,
+            buyer: buyer.player,
             offer: serializeBarter(offer),
             receive: serializeBarter(receive),
         };
         return {
             cta: "writ",
             name: "Trade Writ",
-            description: `This writ allows you to trade ${offerDesc} for ${receiveDesc} from ${trader.name}.`,
-            token: await createP2PTransaction(tradeTx, 60),
+            description: `${message} You have ${expiresIn}s to *accept ${pin}*.`,
+            token: await createP2PTransaction(tradeTx, expiresIn),
             pin,
         };
     }
 
-    throw new Error("Trader is not a player");
+    throw new Error("Seller is not a player");
 }
 
 async function executeTradeCTA(
     executor: PlayerEntity,
-    writ: P2PTradeTransaction,
+    p2pTradeTx: P2PTradeTransaction,
 ) {
-    const { player, trader, offer, receive } = writ;
-    const playerEntity = (await fetchEntity(player)) as PlayerEntity;
-    const traderEntity = (await fetchEntity(trader)) as PlayerEntity;
+    const { buyer, seller, offer, receive } = p2pTradeTx;
+
+    // The executor can take the roles of the seller or buyer from the writ, if not specified
+    const buyerEntity = buyer
+        ? ((await fetchEntity(buyer)) as PlayerEntity)
+        : executor;
+    const sellerEntity = seller
+        ? ((await fetchEntity(seller)) as PlayerEntity)
+        : executor;
+
     const barterOffer = await deserializeBarter(offer);
     const barterReceive = await deserializeBarter(receive);
 
-    // Check that the player executing the writ is the trader
-    if (executor.player !== trader) {
+    // Check that the executor must be one of the parties
+    if (executor.player !== seller && executor.player !== buyer) {
         publishFeedEvent(executor.player, {
             type: "error",
-            message: `You try to execute the writ, but it rejects you with a slight jolt.`,
+            message: `You try to execute the agreement, but it rejects you with a slight jolt.`,
         });
     }
 
     // Need to check before executing so we can send any dialogues to the executor only
     const [canTrade, cannotTradeMessage] = canTradeWith(
-        playerEntity,
-        traderEntity,
+        buyerEntity,
+        sellerEntity,
         barterOffer,
         barterReceive,
     );
     if (!canTrade) {
-        if (isEntityActualPlayer(executor)) {
-            say(playerEntity, cannotTradeMessage, {
+        if (isEntityHuman(executor)) {
+            say(buyerEntity, cannotTradeMessage, {
                 target: executor.player,
                 overwrite: true,
             });
@@ -183,102 +226,96 @@ async function executeTradeCTA(
         return; // stop the execution
     }
 
-    await trade(
-        playerEntity, // get the player making the offer from the writ
-        trader,
-        barterOffer,
-        barterReceive,
-    );
+    await trade(buyerEntity, sellerEntity, barterOffer, barterReceive);
 }
 
 async function trade(
-    player: PlayerEntity,
-    trader: string,
+    buyer: PlayerEntity,
+    seller: PlayerEntity,
     offer: Barter,
     receive: Barter,
 ) {
-    const playerIsHuman = isEntityActualPlayer(player);
-    const traderEntity = (await fetchEntity(trader)) as PlayerEntity;
-    const traderIsHuman = isEntityActualPlayer(traderEntity);
+    const buyerIsHuman = isEntityHuman(buyer);
+    const sellerIsHuman = isEntityHuman(seller);
 
     const [canTrade, cannotTradeMessage] = canTradeWith(
-        player,
-        traderEntity,
+        buyer,
+        seller,
         offer,
         receive,
     );
 
-    // Cannot trade - send `cannotLearnMessage` back to player
-    if (!canTrade && playerIsHuman) {
-        await say(traderEntity, cannotTradeMessage, {
-            target: player.player,
+    // Cannot trade - send `cannotLearnMessage` back to buyer
+    if (!canTrade && buyerIsHuman) {
+        await say(seller, cannotTradeMessage, {
+            target: buyer.player,
             overwrite: true,
         });
     }
 
-    // Get nearby players
+    // Get nearby players (near the buyer)
     const nearbyPlayerIds = await getNearbyPlayerIds(
-        player.loc[0],
-        player.locT as GeohashLocationType,
-        player.locI,
+        buyer.loc[0],
+        buyer.locT as GeohashLocationType,
+        buyer.locI,
     );
 
     // Publish action event
     publishActionEvent(nearbyPlayerIds, {
         action: "trade",
-        source: trader,
-        target: player.player,
+        source: seller.player,
+        target: buyer.player,
     });
 
-    // Transfer offer from player to trader
+    // Transfer offer from buyer to seller
     for (const item of offer.items) {
         item.locT = "inv";
-        item.loc[0] = traderEntity.player;
+        item.loc[0] = seller.player;
         await saveEntity(item);
     }
     for (const [cur, amt] of Object.entries(offer.currency)) {
-        player[cur as Currency] -= amt;
-        traderEntity[cur as Currency] += amt;
-        await saveEntity(player);
-        await saveEntity(traderEntity);
+        buyer[cur as Currency] -= amt;
+        seller[cur as Currency] += amt;
+        await saveEntity(buyer);
+        await saveEntity(seller);
     }
 
-    // Transfer receive from trader to player
+    // Transfer receive from seller to buyer
     for (const item of receive.items) {
         item.locT = "inv";
-        item.loc[0] = player.player;
+        item.loc[0] = buyer.player;
         await saveEntity(item);
     }
     for (const [cur, amt] of Object.entries(receive.currency)) {
-        traderEntity[cur as Currency] -= amt;
-        player[cur as Currency] += amt;
-        await saveEntity(player);
-        await saveEntity(traderEntity);
+        seller[cur as Currency] -= amt;
+        buyer[cur as Currency] += amt;
+        await saveEntity(buyer);
+        await saveEntity(seller);
     }
 
     // Save player's state to MINIO
-    await savePlayerState(player.player);
-    await savePlayerState(traderEntity.player);
+    await savePlayerState(buyer.player);
+    await savePlayerState(seller.player);
 
     // Publish to nearby players
     publishAffectedEntitiesToPlayers(
-        [player, traderEntity, ...offer.items, ...receive.items],
+        [buyer, seller, ...offer.items, ...receive.items],
         {
-            publishTo: [player.player, trader],
+            publishTo: [buyer.player, seller.player],
             op: "upsert",
         },
     );
 
     // Send dialogues
-    if (playerIsHuman) {
-        say(traderEntity, barterDialogue(receive, traderEntity, player), {
-            target: player.player,
+    if (buyerIsHuman) {
+        say(seller, barterDialogue(receive, seller, buyer), {
+            target: buyer.player,
             overwrite: true,
         });
     }
-    if (traderIsHuman) {
-        say(player, barterDialogue(offer, player, traderEntity), {
-            target: trader,
+    if (sellerIsHuman) {
+        say(buyer, barterDialogue(offer, buyer, seller), {
+            target: seller.player,
             overwrite: true,
         });
     }

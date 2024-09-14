@@ -8,7 +8,10 @@ import {
     learningDialoguesForSkill,
     skillLevelProgression,
 } from "$lib/crossover/world/skills";
-import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
+import {
+    spawnItemAtGeohash,
+    spawnMonster,
+} from "$lib/server/crossover/dungeonMaster";
 import { generateNPC } from "$lib/server/crossover/npc";
 import {
     fetchEntity,
@@ -75,7 +78,7 @@ beforeAll(async () => {
     } = await createGandalfSarumanSauron());
 
     // Spawn items
-    woodendoor = (await spawnItem({
+    woodendoor = (await spawnItemAtGeohash({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
@@ -86,28 +89,28 @@ beforeAll(async () => {
         },
     })) as ItemEntity;
 
-    woodenclub = (await spawnItem({
+    woodenclub = (await spawnItemAtGeohash({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
-    woodenclub2 = (await spawnItem({
+    woodenclub2 = (await spawnItemAtGeohash({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
-    woodenclub3 = (await spawnItem({
+    woodenclub3 = (await spawnItemAtGeohash({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
     })) as ItemEntity;
 
-    portal = (await spawnItem({
+    portal = (await spawnItemAtGeohash({
         geohash: playerOne.loc[0],
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,

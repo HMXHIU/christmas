@@ -8,7 +8,10 @@ import { entityStats } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
+import {
+    spawnItemAtGeohash,
+    spawnMonster,
+} from "$lib/server/crossover/dungeonMaster";
 import {
     fetchEntity,
     initializeClients,
@@ -91,7 +94,7 @@ beforeAll(async () => {
     });
 
     // Spawn weapon
-    woodenClub = await spawnItem({
+    woodenClub = await spawnItemAtGeohash({
         geohash: playerOne.loc[0],
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,

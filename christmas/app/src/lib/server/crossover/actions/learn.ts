@@ -9,7 +9,7 @@ import {
 import { type GeohashLocationType } from "$lib/crossover/world/types";
 import { generatePin, sleep, substituteVariables } from "$lib/utils";
 import { say } from ".";
-import { isEntityActualPlayer } from "../npc";
+import { isEntityHuman } from "../npc";
 import {
     createP2PTransaction,
     type CTA,
@@ -53,7 +53,7 @@ async function createLearnCTA(
     skill: SkillLines,
 ): Promise<CTA> {
     // Teacher is a human player - request a P2PLearnTransaction and terminate early
-    if (isEntityActualPlayer(teacher)) {
+    if (isEntityHuman(teacher)) {
         const expiresIn = 60;
         const pin = generatePin(4);
         const learnTx: P2PLearnTransaction = {
@@ -80,7 +80,7 @@ async function learn(
     teacher: string,
     skill: SkillLines,
 ): Promise<PlayerEntity> {
-    const playerIsHuman = isEntityActualPlayer(player);
+    const playerIsHuman = isEntityHuman(player);
     const teacherEntity = (await fetchEntity(teacher)) as PlayerEntity;
     const [canLearn, cannotLearnMessage] = canLearnSkillFrom(
         player,

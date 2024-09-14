@@ -8,7 +8,7 @@ import { actions } from "$lib/crossover/world/actions";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { skillLevelProgression } from "$lib/crossover/world/skills";
-import { spawnItem } from "$lib/server/crossover/dungeonMaster";
+import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import {
     fetchEntity,
     initializeClients,
@@ -53,7 +53,7 @@ beforeAll(async () => {
     } = await createGandalfSarumanSauron());
 
     // Spawn items
-    woodenclub = (await spawnItem({
+    woodenclub = (await spawnItemAtGeohash({
         geohash,
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
@@ -80,7 +80,7 @@ describe("CTA Tests", () => {
         // `playerOne` trade 100 lumina for `playerTwo`s `woodenClub`
         crossoverCmdTrade(
             {
-                trader: playerTwo.player,
+                seller: playerTwo.player,
                 offer: {
                     currency: {
                         lum: 100,
@@ -99,11 +99,14 @@ describe("CTA Tests", () => {
             cta: {
                 cta: "writ",
                 name: "Trade Writ",
-                description:
-                    "This writ allows you to trade 100 lum for Wooden Club from Saruman.",
             },
             event: "cta",
         });
+        expect(
+            cta.cta.description.startsWith(
+                `${playerOne.name} is offering to buy 100 lum for Wooden Club. You have 60s to`,
+            ),
+        ).toBeTruthy();
         expect(cta.cta.token).toBeTruthy();
         expect(cta.cta.pin).toBeTruthy();
 

@@ -35,10 +35,11 @@ import {
 } from "../utils";
 
 export {
+    browse,
+    inventory,
+    look,
     LOOK_PAGE_SIZE,
-    moveEntity,
-    performInventory,
-    performLook,
+    move,
     rest,
     say,
     setEntityBusy,
@@ -114,7 +115,7 @@ async function say(
     }
 }
 
-async function moveEntity(
+async function move(
     entity: PlayerEntity | MonsterEntity,
     path: Direction[],
     now?: number,
@@ -207,7 +208,7 @@ async function moveEntity(
     return entity;
 }
 
-async function performLook(
+async function look(
     player: PlayerEntity,
     options?: { inventory?: boolean },
 ): Promise<GameEntity[]> {
@@ -242,7 +243,7 @@ async function performLook(
     return entities;
 }
 
-async function performInventory(player: PlayerEntity) {
+async function inventory(player: PlayerEntity) {
     const inventoryItems = (await inventoryQuerySet(
         player.player,
     ).return.all()) as ItemEntity[];
@@ -250,6 +251,10 @@ async function performInventory(player: PlayerEntity) {
     publishAffectedEntitiesToPlayers(inventoryItems, {
         publishTo: [player.player],
     });
+}
+
+async function browse(player: PlayerEntity, trader: PlayerEntity) {
+    // TODO: Find all trade writs in trader's inventory with trader as the trader and player empty (public)
 }
 
 async function rest(player: PlayerEntity, now?: number) {

@@ -89,8 +89,8 @@ interface P2PLearnTransaction extends P2PActionTransaction {
 
 interface P2PTradeTransaction extends P2PActionTransaction {
     action: "trade";
-    trader: string;
-    player: string;
+    seller: string; // empty string means anyone can fulfill the sell order
+    buyer: string; // empty string means anyone can fulfill the buy order
     offer: BarterSerialized;
     receive: BarterSerialized;
 }

@@ -1,7 +1,7 @@
 import { crossoverCmdSay } from "$lib/crossover/client";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { spawnItem } from "$lib/server/crossover/dungeonMaster";
+import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import { generateNPC } from "$lib/server/crossover/npc";
 import { initializeClients, saveEntity } from "$lib/server/crossover/redis";
 import type {
@@ -42,7 +42,7 @@ beforeAll(async () => {
         await createGandalfSarumanSauron());
 
     // Spawn Items
-    woodendoor = await spawnItem({
+    woodendoor = await spawnItemAtGeohash({
         geohash: woodendoorGeohash,
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,

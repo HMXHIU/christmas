@@ -2,6 +2,50 @@ import type { Prop } from "../../compendium";
 import { abilities } from "../abilities";
 
 export let consumables: Record<string, Prop> = {
+    tradewrit: {
+        prop: "tradewrit",
+        defaultName: "Trade writ",
+        asset: {
+            path: "props/writ", // TODO: Add asset
+        },
+        durability: 1,
+        charges: 1,
+        weight: 1,
+        collider: false,
+        defaultState: "default",
+        states: {
+            default: {
+                destructible: true,
+                description:
+                    "A formal document issued by the merchant guild outlining a specific trade agreement. You may *inspect* the writ to view the details or *execute* it to finalize the trade.",
+                variant: "default",
+            },
+        },
+        utilities: {
+            inspect: {
+                utility: "look",
+                description:
+                    "Inspect the writ for the goods and parties involved and the terms of the deal.",
+                cost: {
+                    charges: 0,
+                    durability: 0,
+                },
+                state: {
+                    start: "default",
+                    end: "default",
+                },
+                action: "look",
+            },
+        },
+        variables: {
+            // This is the JWT token containing the writ information
+            token: {
+                variable: "token",
+                type: "string",
+                value: "",
+            },
+        },
+    },
     potionofhealth: {
         prop: "potionofhealth",
         defaultName: "Potion of Health",

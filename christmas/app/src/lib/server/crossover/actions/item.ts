@@ -16,7 +16,11 @@ import { substituteValues } from "$lib/utils";
 import { setEntityBusy } from "..";
 import { performAbility } from "../abilities";
 import { worldAssetMetadataCache, worldPOIsCache } from "../caches";
-import { spawnItem, spawnWorld, spawnWorldPOIs } from "../dungeonMaster";
+import {
+    spawnItemAtGeohash,
+    spawnWorld,
+    spawnWorldPOIs,
+} from "../dungeonMaster";
 import {
     fetchEntity,
     getNearbyPlayerIds,
@@ -428,7 +432,7 @@ async function createItem(
 
     try {
         // Create item
-        const item = await spawnItem({
+        const item = await spawnItemAtGeohash({
             geohash,
             locationType: player.locT as GeohashLocationType,
             locationInstance: player.locI,

@@ -71,7 +71,7 @@ import { getUserMetadata, savePlayerState } from "./utils";
 export {
     generateNPC,
     generateNPCMetadata,
-    isEntityActualPlayer,
+    isEntityHuman,
     isEntityNPC,
     npcRespondToAction,
     type NPC,
@@ -116,7 +116,7 @@ async function npcRespondToAction({
 }) {
     if (target.npc) {
         const npc = target.npc.split("_")[0] as NPCs;
-        const entityIsHuman = isEntityActualPlayer(entity);
+        const entityIsHuman = isEntityHuman(entity);
         const tags = [`npc=${npc}`];
 
         // Respond to `say`
@@ -204,10 +204,10 @@ async function npcRespondToAbility({
 }) {
     if (target.npc) {
         const npc = target.npc.split("_")[0] as NPCs;
-        const entityIsHuman = isEntityActualPlayer(entity);
+        const entityIsHuman = isEntityHuman(entity);
 
         // Dialogues spoken directly to an actual player
-        if (isEntityActualPlayer(entity)) {
+        if (isEntityHuman(entity)) {
         }
         // Dialogues spoken to all
         else {
@@ -222,7 +222,7 @@ function isEntityNPC(entity: GameEntity): boolean {
     return false;
 }
 
-function isEntityActualPlayer(entity: GameEntity): boolean {
+function isEntityHuman(entity: GameEntity): boolean {
     if ("player" in entity && !entity.npc) {
         return true;
     }

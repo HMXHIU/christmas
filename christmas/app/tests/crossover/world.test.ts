@@ -14,7 +14,7 @@ import {
     traversableSpeedInWorld,
 } from "$lib/crossover/world/world";
 import {
-    spawnItem,
+    spawnItemAtGeohash,
     spawnWorld,
     spawnWorldPOIs,
 } from "$lib/server/crossover/dungeonMaster";
@@ -85,7 +85,7 @@ beforeAll(async () => {
     await sleep(1000);
 
     woodenDoorGeohash = generateRandomGeohash(8, "h9");
-    woodenDoor = (await spawnItem({
+    woodenDoor = (await spawnItemAtGeohash({
         geohash: woodenDoorGeohash,
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,

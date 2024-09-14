@@ -9,7 +9,7 @@ import {
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import { spawnItem } from "$lib/server/crossover/dungeonMaster";
+import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import type {
     ItemEntity,
@@ -45,7 +45,7 @@ beforeAll(async () => {
 
     // Spawn items
     woodenDoorGeohash = generateRandomGeohash(8, "h9");
-    woodenDoor = (await spawnItem({
+    woodenDoor = (await spawnItemAtGeohash({
         geohash: woodenDoorGeohash,
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,

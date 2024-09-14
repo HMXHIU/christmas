@@ -251,15 +251,15 @@ function crossoverCmdTrade(
     input: {
         offer: BarterSerialized;
         receive: BarterSerialized;
-        trader: string;
+        seller: string;
     },
     headers: HTTPHeaders = {},
 ) {
-    const { offer, receive, trader } = input;
+    const { offer, receive, seller } = input;
     return trpc({ headers }).crossover.cmd.trade.query({
         offer,
         receive,
-        trader,
+        seller,
     });
 }
 
