@@ -6,12 +6,12 @@ import {
 } from "$lib/crossover/client";
 import { minifiedEntity } from "$lib/crossover/utils";
 import { itemAttibutes } from "$lib/crossover/world/compendium";
-import { playerStats } from "$lib/crossover/world/player";
-import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { entityStats } from "$lib/crossover/world/entity";
+import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import { configureItem } from "$lib/server/crossover/actions";
+import { configureItem } from "$lib/server/crossover/actions/item";
 import { spawnItem } from "$lib/server/crossover/dungeonMaster";
 import {
     fetchEntity,
@@ -79,23 +79,17 @@ beforeAll(async () => {
         playerThreeWallet,
     } = await createGandalfSarumanSauron());
 
+    // Test location geohash
+    expect(playerOne.loc[0].length).toBe(worldSeed.spatial.unit.precision);
+    expect(playerOne.loc[0].startsWith(geohash)).toBe(true);
+
     // Test stats
-    expect(playerStats({ level: 1 })).toMatchObject({
+    expect(entityStats(playerOne)).toMatchObject({
         hp: 10,
         mp: 10,
         st: 10,
         ap: 4,
     });
-    expect(playerStats({ level: 2 })).toMatchObject({
-        hp: 20,
-        mp: 20,
-        st: 20,
-        ap: 4,
-    });
-
-    // Test location geohash
-    expect(playerOne.loc[0].length).toBe(worldSeed.spatial.unit.precision);
-    expect(playerOne.loc[0].startsWith(geohash)).toBe(true);
 });
 
 beforeEach(async () => {
@@ -240,8 +234,7 @@ describe("Integration Tests", () => {
 
         // Buff `playerOne` with enough resources to teleport
         playerOne = (await buffEntity(playerOne.player, {
-            level: 10,
-            ...playerStats({ level: 10 }),
+            ...entityStats(playerOne),
         })) as PlayerEntity;
 
         // TODO: minified entity for stat changes, playerTwo should receive playerOne location
@@ -326,6 +319,7 @@ describe("Integration Tests", () => {
         let portalOne = (await spawnItem({
             geohash: playerOne.loc[0],
             locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
             prop: compendium.portal.prop,
         })) as Item;
 
@@ -333,6 +327,7 @@ describe("Integration Tests", () => {
         let portalTwo = (await spawnItem({
             geohash: playerTwo.loc[0],
             locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
             prop: compendium.portal.prop,
         })) as Item;
 

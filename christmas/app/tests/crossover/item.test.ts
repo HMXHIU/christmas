@@ -9,7 +9,7 @@ import {
     equipItem,
     takeItem,
     useItem,
-} from "$lib/server/crossover/actions";
+} from "$lib/server/crossover/actions/item";
 import { spawnItem } from "$lib/server/crossover/dungeonMaster";
 import {
     fetchEntity,

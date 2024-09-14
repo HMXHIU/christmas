@@ -1,9 +1,8 @@
 import { stream } from "$lib/crossover/client";
 import { patchEffectWithVariables } from "$lib/crossover/world/abilities";
-import { playerAttributes, playerStats } from "$lib/crossover/world/player";
+import { entityActualAp, entityStats } from "$lib/crossover/world/entity";
 import { MS_PER_TICK, TICKS_PER_TURN } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
-import { entityActualAp } from "$lib/crossover/world/utils";
 import { consumeResources } from "$lib/server/crossover";
 import { initializeClients, saveEntity } from "$lib/server/crossover/redis";
 import type {
@@ -73,12 +72,12 @@ beforeEach(async () => {
     playerOne = {
         ...playerOne,
         loc: [playerOneGeohash],
-        ...playerStats({ level: playerOne.lvl }),
+        ...entityStats(playerOne),
     };
     playerTwo = {
         ...playerTwo,
         loc: [playerTwoGeohash],
-        ...playerStats({ level: playerTwo.lvl }),
+        ...entityStats(playerTwo),
     };
     playerOne = (await saveEntity(playerOne as PlayerEntity)) as Player;
     playerTwo = (await saveEntity(playerTwo as PlayerEntity)) as Player;
@@ -91,11 +90,7 @@ describe("Abilities Tests", () => {
         })) as PlayerEntity;
         expect(playerOne.ap).toBe(0);
         await sleep(MS_PER_TICK * (TICKS_PER_TURN + 1));
-
-        playerOne.ap = entityActualAp(playerOne, {
-            attributes: playerAttributes(playerOne),
-        });
-
+        playerOne.ap = entityActualAp(playerOne);
         expect(playerOne.ap).toBe(4);
     });
 

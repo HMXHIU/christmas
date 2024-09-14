@@ -1,6 +1,10 @@
 import { minifiedEntity } from "$lib/crossover/utils";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { createItem, equipItem, takeItem } from "$lib/server/crossover/actions";
+import {
+    createItem,
+    equipItem,
+    takeItem,
+} from "$lib/server/crossover/actions/item";
 import { probeEquipment } from "$lib/server/crossover/player";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { expect, test } from "vitest";

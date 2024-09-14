@@ -7,7 +7,7 @@ import {
     crossoverPlayerInventory,
     stream,
 } from "$lib/crossover/client";
-import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItem } from "$lib/server/crossover/dungeonMaster";
 import { fetchEntity, initializeClients } from "$lib/server/crossover/redis";
@@ -53,6 +53,7 @@ beforeAll(async () => {
     playerOneWoodenClub = await spawnItem({
         geohash: playerOne.loc[0],
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
         owner: playerOne.player,
         configOwner: playerOne.player,
@@ -280,6 +281,7 @@ describe("Inventory Tests", () => {
         let potionofhealth = await spawnItem({
             geohash: playerOne.loc[0],
             locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
             prop: compendium.potionofhealth.prop,
         });
         await sleep(MS_PER_TICK * 2);
@@ -319,6 +321,7 @@ describe("Inventory Tests", () => {
         let unpickablePotion = await spawnItem({
             geohash: playerOne.loc[0],
             locationType: "geohash",
+            locationInstance: LOCATION_INSTANCE,
             prop: compendium.potionofhealth.prop,
             owner: "anotherPlayer",
         });

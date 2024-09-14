@@ -4,8 +4,8 @@ import {
     stream,
 } from "$lib/crossover/client";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
-import { playerStats } from "$lib/crossover/world/player";
-import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { entityStats } from "$lib/crossover/world/entity";
+import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItem, spawnMonster } from "$lib/server/crossover/dungeonMaster";
@@ -86,14 +86,15 @@ beforeAll(async () => {
     goblin = await spawnMonster({
         geohash: playerOneGeohash,
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         beast: "goblin",
-        level: 1,
     });
 
     // Spawn weapon
     woodenClub = await spawnItem({
         geohash: playerOne.loc[0],
         locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
         prop: compendium.woodenclub.prop,
         owner: playerOne.player,
         configOwner: playerOne.player,
@@ -126,12 +127,12 @@ beforeEach(async () => {
     playerOne = {
         ...playerOne,
         loc: [playerOneGeohash],
-        ...playerStats({ level: playerOne.lvl }),
+        ...entityStats(playerOne),
     };
     playerTwo = {
         ...playerTwo,
         loc: [playerOneGeohash],
-        ...playerStats({ level: playerTwo.lvl }),
+        ...entityStats(playerTwo),
     };
     playerOne = (await saveEntity(playerOne as PlayerEntity)) as Player;
     playerTwo = (await saveEntity(playerTwo as PlayerEntity)) as Player;
@@ -216,15 +217,12 @@ describe("Combat Tests", () => {
         expect(res).toBe("success");
 
         // Check player gained LUs
-        const { lumina, umbra } = monsterLUReward({
-            level: goblin.lvl,
-            beast: goblin.beast,
-        });
+        const { lum, umb } = monsterLUReward(goblin);
 
         expect(player).toMatchObject({
             player: playerOne.player,
-            lum: playerBefore.lum + lumina,
-            umb: playerBefore.umb + umbra,
+            lum: playerBefore.lum + lum,
+            umb: playerBefore.umb + umb,
         });
     });
 

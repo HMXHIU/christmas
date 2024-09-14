@@ -1,5 +1,5 @@
 import { LRUMemoryCache, MemoryCache } from "$lib/caches";
-import { isGeohashTraversableClient } from "$lib/components/crossover/Game/utils";
+import { isGeohashTraversableClient } from "$lib/crossover/game";
 import {
     biomeAtGeohash,
     elevationAtGeohash,

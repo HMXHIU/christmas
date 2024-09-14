@@ -5,7 +5,7 @@ import {
     logout as logoutCrossover,
     signup,
 } from "$lib/crossover/client";
-import { archetypes, type PlayerMetadata } from "$lib/crossover/world/player";
+import { type PlayerMetadata } from "$lib/crossover/world/player";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { generateAvatarHash } from "$lib/server/crossover/player";
 import { ObjectStorage } from "$lib/server/objectStorage";
@@ -30,9 +30,8 @@ test("Test Auth", async () => {
         demographic: {
             gender: "male",
             race: "human",
-            archetype: "fighter",
+            archetype: "believer",
         },
-        attributes: archetypes[0].attributes,
         appearance: {
             hair: {
                 type: "afro",

@@ -36,27 +36,29 @@ import {
 } from "../trpc";
 import { performAbility } from "./abilities";
 import {
-    configureItem,
-    createItem,
-    createLearnCTA,
-    createTradeCTA,
-    deserializeBarter,
-    dropItem,
-    enterItem,
-    equipItem,
-    executeLearnCTA,
-    executeTradeCTA,
-    learn,
     moveEntity,
     performInventory,
     performLook,
     rest,
     say,
+} from "./actions";
+import {
+    configureItem,
+    createItem,
+    dropItem,
+    enterItem,
+    equipItem,
     takeItem,
-    trade,
     unequipItem,
     useItem,
-} from "./actions";
+} from "./actions/item";
+import { createLearnCTA, executeLearnCTA, learn } from "./actions/learn";
+import {
+    createTradeCTA,
+    deserializeBarter,
+    executeTradeCTA,
+    trade,
+} from "./actions/trade";
 import {
     initializeGame,
     spawnMonster,

@@ -109,7 +109,6 @@ test("Test Query", async () => {
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
         beast: "dragon",
-        level: 1,
     });
 
     // Goblin
@@ -118,7 +117,6 @@ test("Test Query", async () => {
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
         beast: "goblin",
-        level: 1,
     });
 
     let goblin2 = await spawnMonster({
@@ -126,7 +124,6 @@ test("Test Query", async () => {
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
         beast: "goblin",
-        level: 1,
     });
 
     let goblin3 = await spawnMonster({
@@ -134,7 +131,6 @@ test("Test Query", async () => {
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
         beast: "goblin",
-        level: 1,
     });
 
     // Actions & Abilities

@@ -1,6 +1,7 @@
 import { INTERNAL_SERVICE_KEY } from "$env/static/private";
 import { borderingGeohashes } from "$lib/crossover/utils";
 import { monsterLimitAtGeohash } from "$lib/crossover/world/bestiary";
+import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { spawnMonsters } from "$lib/server/crossover/dungeonMaster";
 import {
     initializeClients,
@@ -96,7 +97,11 @@ describe("DungeonMaster Tests", () => {
 
         const numMonstersInArea = await Promise.all(
             uninhabitedGeohashes.map((geohash) =>
-                monstersInGeohashQuerySet([geohash], "geohash").count(),
+                monstersInGeohashQuerySet(
+                    [geohash],
+                    "geohash",
+                    LOCATION_INSTANCE,
+                ).count(),
             ),
         ).then((monsterCounts) =>
             monsterCounts.reduce((acc, current) => acc + current, 0),
