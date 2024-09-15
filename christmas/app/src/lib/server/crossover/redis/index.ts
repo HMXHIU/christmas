@@ -56,6 +56,7 @@ export {
     worldRepository,
     worldsContainingGeohashQuerySet,
     worldsInGeohashQuerySet,
+    writsQuerySet,
 };
 
 // Repositories
@@ -389,6 +390,12 @@ function worldsInGeohashQuerySet(
  */
 function inventoryQuerySet(player: string): Search {
     return itemRepository.search().where("loc").contains(player);
+}
+
+function writsQuerySet(player: string): Search {
+    return inventoryQuerySet(player)
+        .and("prop")
+        .equal(compendium.tradewrit.prop);
 }
 
 /**

@@ -48,7 +48,9 @@ import {
 } from "./actions/item";
 import { createLearnCTA, executeLearnCTA, learn } from "./actions/learn";
 import {
+    browse,
     createTradeCTA,
+    createTradeWrit,
     deserializeBarter,
     executeTradeCTA,
 } from "./actions/trade";
@@ -499,7 +501,26 @@ const crossoverRouter = {
         // cmd.writ
         writ: playerAuthBusyProcedure
             .input(TradeSchema)
-            .query(async ({ ctx, input }) => {}),
+            .query(async ({ ctx, input }) => {
+                const { buyer, seller, offer, receive } = input;
+
+                // TODO: What about buy writs targetting props instead of exact item instances ?
+
+                // Creates a trade writ in the player's inventory
+                await createTradeWrit({
+                    creator: ctx.player,
+                    buyer,
+                    seller,
+                    offer: await deserializeBarter(offer),
+                    receive: await deserializeBarter(receive),
+                });
+            }),
+        // cmd.browse
+        browse: playerAuthBusyProcedure
+            .input(TargetPlayerSchema)
+            .query(async ({ ctx, input }) => {
+                await browse(ctx.player, input.player);
+            }),
         // cmd.trade
         trade: playerAuthBusyProcedure
             .input(TradeSchema)

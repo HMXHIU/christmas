@@ -36,6 +36,8 @@ type Actions =
     | "enter" // targets a item's world property
     | "learn"
     | "trade"
+    | "writ"
+    | "browse"
     | "accept"
     | "rest";
 
@@ -245,6 +247,34 @@ const actions: Record<Actions, Action> = {
     trade: {
         action: "trade",
         description: "Buy and sell goods.",
+        predicate: {
+            target: ["none"],
+            tokenPositions: { action: 0 },
+        },
+        ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "night-sleep",
+        },
+        range: 0,
+    },
+    writ: {
+        action: "writ",
+        description: "Create a trade writ for buying and selling goods.",
+        predicate: {
+            target: ["none"],
+            tokenPositions: { action: 0 },
+        },
+        ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "night-sleep",
+        },
+        range: 0,
+    },
+    browse: {
+        action: "browse",
+        description: "Browse the goods a merchant is selling or buying.",
         predicate: {
             target: ["none"],
             tokenPositions: { action: 0 },

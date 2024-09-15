@@ -29,6 +29,7 @@ export {
     crossoverAuthPlayer,
     crossoverAvailableAvatars,
     crossoverCmdAccept,
+    crossoverCmdBrowse,
     crossoverCmdConfigureItem,
     crossoverCmdCreateItem,
     crossoverCmdDrop,
@@ -44,6 +45,7 @@ export {
     crossoverCmdTrade,
     crossoverCmdUnequip,
     crossoverCmdUseItem,
+    crossoverCmdWrit,
     crossoverGenerateAvatar,
     crossoverPlayerInventory,
     crossoverPlayerMetadata,
@@ -247,6 +249,18 @@ function crossoverCmdLearn(
     return trpc({ headers }).crossover.cmd.learn.query({ skill, teacher });
 }
 
+function crossoverCmdBrowse(
+    input: {
+        player: string;
+    },
+    headers: HTTPHeaders = {},
+) {
+    const { player } = input;
+    return trpc({ headers }).crossover.cmd.browse.query({
+        player,
+    });
+}
+
 function crossoverCmdTrade(
     input: {
         offer: BarterSerialized;
@@ -258,6 +272,24 @@ function crossoverCmdTrade(
 ) {
     const { offer, receive, seller, buyer } = input;
     return trpc({ headers }).crossover.cmd.trade.query({
+        offer,
+        receive,
+        seller,
+        buyer,
+    });
+}
+
+function crossoverCmdWrit(
+    input: {
+        offer: BarterSerialized;
+        receive: BarterSerialized;
+        seller: string;
+        buyer: string;
+    },
+    headers: HTTPHeaders = {},
+) {
+    const { offer, receive, seller, buyer } = input;
+    return trpc({ headers }).crossover.cmd.writ.query({
         offer,
         receive,
         seller,

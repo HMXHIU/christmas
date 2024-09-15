@@ -34,16 +34,7 @@ import {
     publishFeedEvent,
 } from "../utils";
 
-export {
-    browse,
-    inventory,
-    look,
-    LOOK_PAGE_SIZE,
-    move,
-    rest,
-    say,
-    setEntityBusy,
-};
+export { inventory, look, LOOK_PAGE_SIZE, move, rest, say, setEntityBusy };
 
 const LOOK_PAGE_SIZE = 20;
 
@@ -251,10 +242,6 @@ async function inventory(player: PlayerEntity) {
     publishAffectedEntitiesToPlayers(inventoryItems, {
         publishTo: [player.player],
     });
-}
-
-async function browse(player: PlayerEntity, trader: PlayerEntity) {
-    // TODO: Find all trade writs in trader's inventory with trader as the trader and player empty (public)
 }
 
 async function rest(player: PlayerEntity, now?: number) {

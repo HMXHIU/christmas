@@ -1,8 +1,10 @@
 import {
     crossoverCmdAccept,
+    crossoverCmdBrowse,
     crossoverCmdLearn,
     crossoverCmdTake,
     crossoverCmdTrade,
+    crossoverCmdWrit,
 } from "$lib/crossover/client";
 import { actions } from "$lib/crossover/world/actions";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
@@ -22,7 +24,10 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
-import type { CTAEvent } from "../../src/routes/api/crossover/stream/+server";
+import type {
+    CTAEvent,
+    FeedEvent,
+} from "../../src/routes/api/crossover/stream/+server";
 import { createGandalfSarumanSauron, waitForEventData } from "./utils";
 
 let region: string;
@@ -73,17 +78,69 @@ beforeAll(async () => {
 beforeEach(async () => {
     playerOne.lum = 0;
     playerOne = (await saveEntity(playerOne as PlayerEntity)) as PlayerEntity;
+
+    // Put woodenclub in `playerTwo` inventory
+    woodenclub.loc[0] = playerTwo.player;
+    woodenclub.locI = playerTwo.locI;
+    woodenclub.locT = "inv";
 });
 
 describe("CTA Tests", () => {
-    test("creating and executing trade writs", async () => {});
+    test("Creating and executing trade writs", async () => {
+        /**
+         * Create a sell writ
+         */
 
-    test("`trade` (buy/sell) with player (human)", async () => {
+        // `playerTwo` create a sell writ to sell `woodenclub` for 100 lum
+        crossoverCmdWrit(
+            {
+                buyer: "",
+                seller: playerTwo.player,
+                offer: {
+                    currency: {
+                        lum: 100,
+                    },
+                },
+                receive: {
+                    items: [woodenclub.item],
+                },
+            },
+            { Cookie: playerTwoCookies },
+        );
+        var feed = (await waitForEventData(
+            playerTwoStream,
+            "feed",
+        )) as FeedEvent;
+
+        // Check received writ
+        expect(feed).toMatchObject({
+            type: "message",
+            message: "You received a trade writ in your inventory.",
+            event: "feed",
+        });
+
+        // Browse trade writs on `playerTwo`
+        crossoverCmdBrowse(
+            { player: playerTwo.player },
+            { Cookie: playerOneCookies },
+        );
+        var feed = (await waitForEventData(
+            playerOneStream,
+            "feed",
+        )) as FeedEvent;
+        expect(feed).toMatchObject({
+            type: "message",
+            message: `${playerTwo.name} is offering to sell:\n\nWooden Club for 100 lum`,
+            event: "feed",
+        });
+    });
+
+    test("Trade (buy/sell) with player (human)", async () => {
         /**
          * Buy CTA
          */
 
-        // `playerOne` wants to buy `playerTwo`s `woodenClub` for 100 lumina
+        // `playerOne` wants to buy `playerTwo`s `woodenClub` for 100 lum
         crossoverCmdTrade(
             {
                 seller: playerTwo.player,
@@ -199,7 +256,7 @@ describe("CTA Tests", () => {
          * Sell CTA
          */
 
-        // `playerOne` wants to sell `playerTwo` a `woodenClub` for 100 lumina
+        // `playerOne` wants to sell `playerTwo` a `woodenClub` for 100 lum
         crossoverCmdTrade(
             {
                 seller: playerOne.player,
@@ -275,7 +332,7 @@ describe("CTA Tests", () => {
         });
     });
 
-    test("`learn` from human player", async () => {
+    test("Learn skill from human player", async () => {
         // Increase `playerTwo` skills and `playerOne` resources
         playerTwo.skills["exploration"] = 10;
         playerTwo = (await saveEntity(

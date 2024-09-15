@@ -15,7 +15,12 @@ import {
     type CTA,
     type P2PTradeTransaction,
 } from "../player";
-import { fetchEntity, getNearbyPlayerIds, saveEntity } from "../redis";
+import {
+    fetchEntity,
+    getNearbyPlayerIds,
+    saveEntity,
+    writsQuerySet,
+} from "../redis";
 import { type ItemEntity, type PlayerEntity } from "../redis/entities";
 import {
     publishActionEvent,
@@ -25,6 +30,7 @@ import {
 } from "../utils";
 
 export {
+    browse,
     createTradeCTA,
     createTradeWrit,
     deserializeBarter,
@@ -119,33 +125,56 @@ async function deserializeBarter(barter: BarterSerialized): Promise<Barter> {
     };
 }
 
-async function createTradeWrit(
-    player: PlayerEntity, // the player creating the writ
-    order: "buy" | "sell",
-    offer: Barter, // offer & receive is always w.r.t to the player
-    receive: Barter,
-): Promise<ItemEntity> {
-    const buyer = order === "buy" ? player : null;
-    const seller = order === "sell" ? player : null;
-    const offerDesc = barterDescription(offer);
+async function createTradeWrit({
+    creator,
+    buyer,
+    seller,
+    offer,
+    receive,
+    expiresIn,
+}: {
+    creator: PlayerEntity; // the creator creating the writ
+    buyer: string; // "" to let anyone fulfill the order
+    seller: string; // "" to let anyone fulfill the order
+    offer: Barter;
+    receive: Barter;
+    expiresIn?: number;
+}): Promise<ItemEntity> {
+    if (creator.player !== seller && creator.player !== buyer) {
+        throw new Error("Executor must be one of the buyer or seller");
+    }
+
+    expiresIn = expiresIn ?? 60 * 60 * 24; // 1 day
+    const offerDesc = barterDescription(offer); // w.r.t to buyer
     const receiveDesc = barterDescription(receive);
-    const expiresIn = 60;
+    const message =
+        creator.player === seller
+            ? `${creator.name} is offering to sell ${receiveDesc} for ${offerDesc}.`
+            : `${creator.name} is offering to buy ${receiveDesc} for ${offerDesc}.`;
 
     const tradeTx: P2PTradeTransaction = {
         action: "trade",
-        message: `${player.name} is offering to ${order} ${offerDesc} for ${receiveDesc}.`,
-        seller: seller?.player ?? "",
-        buyer: buyer?.player ?? "",
+        message,
+        seller,
+        buyer,
         offer: serializeBarter(offer),
         receive: serializeBarter(receive),
     };
 
     const writ = await spawnItemInInventory({
-        entity: player,
+        entity: creator,
         prop: compendium.tradewrit.prop,
         variables: {
-            token: await createP2PTransaction(tradeTx, expiresIn), // TODO: show expiry dynamically, allow set expiry
+            order: creator.player === seller ? "sell" : "buy",
+            receive: receiveDesc,
+            offer: offerDesc,
+            token: await createP2PTransaction(tradeTx, expiresIn),
         },
+    });
+
+    publishFeedEvent(creator.player, {
+        type: "message",
+        message: "You received a trade writ in your inventory.",
     });
 
     return writ;
@@ -236,6 +265,40 @@ async function executeTradeCTA(
     await trade(buyerEntity, sellerEntity, barterOffer, barterReceive);
 }
 
+async function browse(
+    player: PlayerEntity,
+    merchant: string,
+): Promise<ItemEntity[]> {
+    const merchantEntity = (await fetchEntity(merchant)) as PlayerEntity;
+
+    const writs = (await writsQuerySet(
+        merchantEntity.player,
+    ).returnAll()) as ItemEntity[];
+    const buyOrders = writs
+        .filter(({ vars }) => vars.order === "buy")
+        .map(({ vars }) => `${vars.receive} for ${vars.offer}`)
+        .join("\n");
+    const sellOrders = writs
+        .filter(({ vars }) => vars.order === "sell")
+        .map(({ vars }) => `${vars.receive} for ${vars.offer}`)
+        .join("\n");
+
+    let message = "";
+    if (sellOrders) {
+        message += `${merchantEntity.name} is offering to sell:\n\n${sellOrders}\n\n`;
+    }
+    if (buyOrders) {
+        message += `And offering to buy:\n\n${buyOrders}\n\n`;
+    }
+
+    publishFeedEvent(player.player, {
+        type: "message",
+        message: message.trim(),
+    });
+
+    return writs;
+}
+
 async function trade(
     buyer: PlayerEntity,
     seller: PlayerEntity,
@@ -244,7 +307,6 @@ async function trade(
 ) {
     const buyerIsHuman = isEntityHuman(buyer);
     const sellerIsHuman = isEntityHuman(seller);
-
     const [ok, cannotTradeMessage] = canTrade(buyer, seller, offer, receive);
 
     // Cannot trade - send `cannotLearnMessage` back to buyer
