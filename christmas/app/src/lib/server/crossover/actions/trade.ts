@@ -327,9 +327,9 @@ async function trade(
 
     // Publish action event
     publishActionEvent(nearbyPlayerIds, {
-        action: "trade",
-        source: seller.player,
-        target: buyer.player,
+        action: "buy",
+        source: buyer.player,
+        target: seller.player,
     });
 
     // Transfer offer from buyer to seller

@@ -3,13 +3,14 @@ import type {
     Monster,
     Player,
 } from "$lib/server/crossover/redis/entities";
-import { filterSortEntitiesInRange, gameActionId, getEntityId } from "./utils";
+import { filterSortEntitiesInRange } from "./utils";
 import { resolveAbilityEntities, type Ability } from "./world/abilities";
 import { resolveActionEntities, type Action } from "./world/actions";
 import type { Utility } from "./world/compendium";
 import { compendium } from "./world/settings/compendium";
 import { skillLines } from "./world/settings/skills";
 import { type SkillLines } from "./world/skills";
+import type { BarterSerialized } from "./world/types";
 
 export {
     COMMAND_SEARCH_RANGE,
@@ -43,6 +44,8 @@ type GameActionEntities = {
     target?: Player | Monster | Item;
     item?: Item;
     skill?: SkillLines;
+    offer?: BarterSerialized;
+    receive?: BarterSerialized;
 };
 type GameActionType = "ability" | "utility" | "action";
 type GameAction = Ability | Utility | Action;
@@ -553,7 +556,7 @@ function searchPossibleCommands({
         })
         .map(({ action, entities }) => {
             const variables = commandVariables({
-                gameAction: action,
+                action,
                 gameEntities: entities,
                 queryTokens,
                 tokenPositions: allTokenPositions,
@@ -593,34 +596,38 @@ function searchPossibleCommands({
 }
 
 function commandVariables({
-    gameAction,
+    action,
     gameEntities,
     queryTokens,
     tokenPositions,
 }: {
-    gameAction: GameAction;
+    action: Action;
     gameEntities: GameActionEntities;
     queryTokens: string[];
     tokenPositions: TokenPositions;
 }): GameCommandVariables {
-    const { self, target, item, skill } = gameEntities;
+    // const { self, target, item, skill, offer, receive } = gameEntities;
 
-    const actionId = gameActionId(gameAction);
-    const selfId = getEntityId(self)[0];
-    const targetId = target != null ? getEntityId(target)[0] : null;
-    const itemId = item != null ? getEntityId(item)[0] : null;
+    // const selfId = getEntityId(self)[0];
+    // const targetId = target != null ? getEntityId(target)[0] : null;
+    // const itemId = item != null ? getEntityId(item)[0] : null;
 
-    const relevantPositions = [
-        ...Object.keys(tokenPositions[actionId] || {}),
-        ...Object.keys(tokenPositions[selfId] || {}),
-        ...(targetId ? Object.keys(tokenPositions[targetId] || {}) : []),
-        ...(itemId ? Object.keys(tokenPositions[itemId] || {}) : []),
-        ...(skill ? Object.keys(tokenPositions[skill] || {}) : []),
-    ];
+    // console.log(queryTokens, Object.values(action.predicate.tokenPositions));
+
+    // const relevantPositions = [
+    //     ...Object.keys(tokenPositions[action.action] || {}),
+    //     ...Object.keys(tokenPositions[selfId] || {}),
+    //     ...(targetId ? Object.keys(tokenPositions[targetId] || {}) : []),
+    //     ...(itemId ? Object.keys(tokenPositions[itemId] || {}) : []),
+    //     ...(skill ? Object.keys(tokenPositions[skill] || {}) : []),
+    //     ...Object.values(action.predicate.tokenPositions).map(String),
+    // ];
+
+    const relevantPositions = Object.values(action.predicate.tokenPositions);
 
     const queryIrrelevant = Array.from(queryTokens.entries())
         .filter(([pos, token]) => {
-            return !relevantPositions.includes(String(pos));
+            return !relevantPositions.includes(pos);
         })
         .map(([pos, token]) => token)
         .join(" ")

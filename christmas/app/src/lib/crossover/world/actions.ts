@@ -11,6 +11,7 @@ import type { SkillLines } from "./skills";
 import {
     EquipmentSlots,
     geohashLocationTypes,
+    type BarterSerialized,
     type EquipmentSlot,
 } from "./types";
 
@@ -46,7 +47,7 @@ type Actions =
 
 type ActionTargets = EntityType | "none";
 
-type SpecialTokens = "action" | "target" | "skill";
+type SpecialTokens = "action" | "target" | "skill" | "offer" | "receive";
 
 interface Action {
     action: Actions;
@@ -279,7 +280,7 @@ Examples:
 ${tradingNotes}`,
         predicate: {
             target: ["player"],
-            tokenPositions: { action: 0, target: 3 },
+            tokenPositions: { action: 0, offer: 1, target: 3, receive: 5 },
         },
         ticks: 1,
         icon: {
@@ -302,7 +303,7 @@ Examples:
 ${tradingNotes}`,
         predicate: {
             target: ["player"],
-            tokenPositions: { action: 0, target: 3 },
+            tokenPositions: { action: 0, offer: 1, target: 3, receive: 5 },
         },
         ticks: 1,
         icon: {
@@ -383,6 +384,37 @@ ${tradingNotes}`,
         range: 0,
     },
 };
+
+function parseBarter(barterString: string): BarterSerialized | undefined {
+    let umb = 0;
+    let lum = 0;
+    let items = [];
+    let ok = false;
+    for (const s of barterString.split(",")) {
+        if (s.endsWith("lum")) {
+            lum = parseInt(s); // will parse the numbers only
+            ok = true;
+        } else if (s.endsWith("umb")) {
+            umb = parseInt(s); // will parse the numbers only
+            ok = true;
+        } else if (s.startsWith("item")) {
+            items.push(s);
+            ok = true;
+        }
+    }
+    if (!ok) {
+        return undefined;
+    } else {
+        return {
+            items,
+            currency: {
+                lum,
+                umb,
+            },
+        };
+    }
+}
+
 function resolveActionEntities({
     queryTokens,
     tokenPositions,
@@ -408,6 +440,8 @@ function resolveActionEntities({
         action: actionTokenPosition,
         target: targetTokenPosition,
         skill: skillTokenPosition,
+        receive: receiveTokenPosition,
+        offer: offerTokenPosition,
     } = predicateTokenPositions;
 
     // Check action token position
@@ -422,6 +456,23 @@ function resolveActionEntities({
     }
 
     let gameActionEntitiesScores: [GameActionEntities, number][] = [];
+
+    let receive: BarterSerialized | undefined = undefined;
+    let offer: BarterSerialized | undefined = undefined;
+
+    // Check offer & receive token position
+    if (receiveTokenPosition != null) {
+        receive = parseBarter(queryTokens[receiveTokenPosition]);
+        if (!receive) {
+            return [];
+        }
+    }
+    if (offerTokenPosition != null) {
+        offer = parseBarter(queryTokens[offerTokenPosition]);
+        if (!offer) {
+            return [];
+        }
+    }
 
     // Check skill token position
     const skill = skills.find((s) => tokenPositions[s]);
@@ -493,6 +544,8 @@ function resolveActionEntities({
                         self,
                         target,
                         skill,
+                        offer,
+                        receive,
                     },
                     tokenPositions[entityId][targetTokenPosition].score,
                 ]);

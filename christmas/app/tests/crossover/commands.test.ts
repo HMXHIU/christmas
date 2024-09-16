@@ -217,7 +217,59 @@ describe("Command Tests", () => {
 
     test("Fulfill writ", async () => {});
 
-    test("Trade with player", async () => {});
+    test("Trade with player", async () => {
+        // Test `searchPossibleCommands`
+        const { commands, queryTokens, tokenPositions } =
+            searchPossibleCommands({
+                query: `sell ${woodenclub.item} to ${playerTwo.name} for 100lum,50umb`,
+                player: playerOne,
+                playerAbilities: [
+                    abilities.scratch,
+                    abilities.bandage,
+                    abilities.swing,
+                ],
+                playerItems: [woodenclub],
+                actions: allActions,
+                monsters: [goblin, dragon],
+                players: [playerOne, playerTwo],
+                items: [woodendoor, tavern],
+                skills: [...SkillLinesEnum],
+            });
+
+        expect(commands).toMatchObject([
+            [
+                {
+                    action: "sell",
+                },
+                {
+                    self: {
+                        player: playerOne.player,
+                    },
+                    target: {
+                        player: playerTwo.player,
+                    },
+                    offer: {
+                        items: [woodenclub.item],
+                        currency: {
+                            lum: 0,
+                            umb: 0,
+                        },
+                    },
+                    receive: {
+                        items: [],
+                        currency: {
+                            lum: 100,
+                            umb: 50,
+                        },
+                    },
+                },
+                {
+                    query: `sell ${woodenclub.item} to ${playerTwo.name} for 100lum,50umb`.toLowerCase(),
+                    queryIrrelevant: "to for",
+                },
+            ],
+        ]);
+    });
 
     test("Browse player writs", async () => {
         // Test `searchPossibleCommands`
@@ -433,7 +485,7 @@ describe("Command Tests", () => {
         let result = await waitForEventData(eventStreamOne, "entities");
         expect(result).toMatchObject({
             event: "entities",
-            players: [{ player: playerOne.player, st: 9, ap: 3 }],
+            players: [{ player: playerOne.player, st: 10, ap: 3 }],
             monsters: [],
             items: [],
         });
@@ -441,10 +493,8 @@ describe("Command Tests", () => {
         result = await waitForEventData(eventStreamOne, "entities");
         expect(result).toMatchObject({
             event: "entities",
-            players: [{ player: playerOne.player, st: 9, ap: 3 }],
-            monsters: [
-                { monster: goblin.monster, hp: 19, mp: 20, st: 20, ap: 11 },
-            ],
+            players: [{ player: playerOne.player, st: 10, ap: 3 }],
+            monsters: [{ monster: goblin.monster, hp: 9, mp: 10, st: 10 }],
             items: [],
         });
     });
@@ -498,8 +548,8 @@ describe("Command Tests", () => {
         let result = await waitForEventData(eventStreamOne, "entities");
         expect(result).toMatchObject({
             event: "entities",
-            players: [{ player: playerOne.player, hp: 10, mp: 10, st: 10 }],
-            monsters: [{ monster: goblin.monster, hp: 19 }],
+            players: [{ player: playerOne.player, hp: 11, mp: 12, st: 11 }],
+            monsters: [{ monster: goblin.monster, hp: 9 }],
             items: [],
         });
         result = await waitForEventData(eventStreamOne, "entities");

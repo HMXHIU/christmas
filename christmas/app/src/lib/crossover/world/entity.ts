@@ -66,7 +66,6 @@ function entityStats(entity: Player | Monster): EntityStats {
     const intModifier = Math.floor((int - 10) / 2);
     const fthModifier = Math.floor((fth - 10) / 2);
     const strModifier = Math.floor((str - 10) / 2);
-
     const level = entityLevel(entity);
 
     // Calculate HP based on CON and level
@@ -99,13 +98,11 @@ function mergeNumericAdd(s: any, d: any) {
 function entitySkills(
     entity: Player | Monster,
 ): Partial<Record<SkillLines, number>> {
-    let skills = entity.skills;
-
     // Add abilities from demographics
     if ("player" in entity) {
         // Add skill levels from demographics (additive)
-        skills = mergeWith(
-            skills,
+        return mergeWith(
+            { ...entity.skills }, // mergeWith will modify entity.skills
             skillsFromDemographics({
                 race: entity.race,
                 gender: entity.gen,
@@ -115,7 +112,7 @@ function entitySkills(
         );
     }
 
-    return skills;
+    return entity.skills;
 }
 
 function entityAttributes(entity: Player | Monster): Attributes {

@@ -38,28 +38,24 @@ import {
     crossoverCmdRest,
     crossoverCmdSay,
     crossoverCmdTake,
+    crossoverCmdTrade,
     crossoverCmdUnequip,
     crossoverCmdUseItem,
     crossoverPlayerInventory,
 } from "./client";
-import {
-    documentsScore,
-    tokenize,
-    type GameCommand,
-    type GameCommandVariables,
-} from "./ir";
+import { type GameCommand, type GameCommandVariables } from "./ir";
 import { aStarPathfinding } from "./pathfinding";
 import type { Ability } from "./world/abilities";
 import { actions, type Action } from "./world/actions";
 import type { Utility } from "./world/compendium";
 import { MS_PER_TICK, SERVER_LATENCY } from "./world/settings";
 import { compendium } from "./world/settings/compendium";
-import { skillLines } from "./world/settings/skills";
 import { worldSeed } from "./world/settings/world";
-import { SkillLinesEnum } from "./world/skills";
+import { type SkillLines } from "./world/skills";
 import {
     Directions,
     EquipmentSlots,
+    type BarterSerialized,
     type Direction,
     type EquipmentSlot,
     type GeohashLocationType,
@@ -140,7 +136,11 @@ async function executeGameCommand(
     command: GameCommand,
     headers: HTTPHeaders = {},
 ): Promise<void> {
-    const [gameAction, { self, target, item }, variables] = command;
+    const [
+        gameAction,
+        { self, target, item, skill, offer, receive },
+        variables,
+    ] = command;
 
     // Use Item
     if (item != null) {
@@ -185,6 +185,7 @@ async function executeGameCommand(
                 self,
                 action: gameAction as Action,
                 target,
+                skill,
                 variables,
             },
             headers,
@@ -197,11 +198,17 @@ async function performAction(
         self,
         action,
         target,
+        skill,
         variables,
+        offer,
+        receive,
     }: {
         action: Action;
         self: Player | Monster;
         target?: Player | Monster | Item;
+        skill?: SkillLines;
+        offer?: BarterSerialized;
+        receive?: BarterSerialized;
         variables?: GameCommandVariables;
     },
     headers: HTTPHeaders = {},
@@ -241,33 +248,45 @@ async function performAction(
         // Execute the cta
         return await crossoverCmdAccept({ token: cta.token }, headers);
     }
+
+    // buy & sell
+    else if (
+        action.action === "buy" ||
+        (action.action === "sell" && variables != null)
+    ) {
+        if (!offer || !receive) {
+            throw new Error(`What are you trying to ${action.action}?`);
+        }
+
+        return await crossoverCmdTrade(
+            {
+                buyer:
+                    action.action === "buy"
+                        ? getEntityId(self)[0]
+                        : getEntityId(target!)[0],
+                seller:
+                    action.action === "sell"
+                        ? getEntityId(self)[0]
+                        : getEntityId(target!)[0],
+                offer,
+                receive,
+            },
+            headers,
+        );
+    }
+
     // learn
     else if (action.action === "learn" && variables != null) {
         const teacher = target ? getEntityId(target)[0] : undefined;
         if (!teacher) {
             throw new Error(`Who are you trying to learn from?`);
         }
-
-        // Find skill in query
-        const matchedScores = SkillLinesEnum.map((s) => {
-            return {
-                skill: s,
-                matchedScore: documentsScore(
-                    tokenize(variables.queryIrrelevant),
-                    [s, skillLines[s].description],
-                ),
-            };
-        })
-            .filter(({ matchedScore }) => matchedScore.score > 0.6)
-            .sort((a, b) => b.matchedScore.score - a.matchedScore.score);
-
-        if (matchedScores.length < 1) {
+        if (!skill) {
             throw new Error(`What are you trying to learn?`);
         }
-
         return await crossoverCmdLearn(
             {
-                skill: matchedScores[0].skill,
+                skill,
                 teacher,
             },
             headers,
