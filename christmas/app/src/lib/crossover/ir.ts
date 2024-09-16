@@ -8,6 +8,8 @@ import { resolveAbilityEntities, type Ability } from "./world/abilities";
 import { resolveActionEntities, type Action } from "./world/actions";
 import type { Utility } from "./world/compendium";
 import { compendium } from "./world/settings/compendium";
+import { skillLines } from "./world/settings/skills";
+import { type SkillLines } from "./world/skills";
 
 export {
     COMMAND_SEARCH_RANGE,
@@ -40,6 +42,7 @@ type GameActionEntities = {
     self: Player | Monster;
     target?: Player | Monster | Item;
     item?: Item;
+    skill?: SkillLines;
 };
 type GameActionType = "ability" | "utility" | "action";
 type GameAction = Ability | Utility | Action;
@@ -143,15 +146,18 @@ function entitiesIR({
     monsters,
     players,
     items,
+    skills,
 }: {
     queryTokens: string[];
     monsters: Monster[];
     players: Player[];
     items: Item[];
+    skills: SkillLines[];
 }): {
     monsters: Monster[];
     players: Player[];
     items: Item[];
+    skills: SkillLines[];
     tokenPositions: TokenPositions;
 } {
     const tokenPositions: TokenPositions = {};
@@ -176,8 +182,9 @@ function entitiesIR({
             });
 
             if (highestScore > 0.6 && highestMatchedTokens != null) {
-                tokenPositions[entity.monster || entity.player || entity.item] =
-                    highestMatchedTokens;
+                tokenPositions[
+                    entity.monster || entity.player || entity.item || entity
+                ] = highestMatchedTokens;
                 return true;
             }
             return false;
@@ -199,6 +206,10 @@ function entitiesIR({
             item.name,
             item.item,
             item.item.slice("item_".length),
+        ]),
+        skills: filterEntities(skills, (skill) => [
+            skill,
+            skillLines[skill as SkillLines].name,
         ]),
         tokenPositions,
     };
@@ -422,6 +433,8 @@ function searchPossibleCommands({
     items,
     // Actions
     actions,
+    // Skills
+    skills,
 }: {
     query: string;
     player: Player;
@@ -431,6 +444,7 @@ function searchPossibleCommands({
     players: Player[];
     items: Item[];
     actions: Action[];
+    skills: SkillLines[];
 }): {
     commands: GameCommand[];
     queryTokens: string[];
@@ -460,12 +474,14 @@ function searchPossibleCommands({
         monsters: monstersRetrieved,
         players: playersRetrieved,
         items: itemsRetrieved,
+        skills: skillsRetrieved,
         tokenPositions: entityTokenPositions,
     } = entitiesIR({
         queryTokens,
         monsters,
         players: [...players, player],
         items: [...playerItems, ...items], // include player items in the search
+        skills,
     });
 
     // All possible utilities from playerItems
@@ -530,6 +546,7 @@ function searchPossibleCommands({
                 monsters: monstersRetrieved,
                 players: playersRetrieved,
                 items: itemsRetrieved,
+                skills: skillsRetrieved,
             }).map((entities) => {
                 return { action, entities };
             });
@@ -586,7 +603,7 @@ function commandVariables({
     queryTokens: string[];
     tokenPositions: TokenPositions;
 }): GameCommandVariables {
-    const { self, target, item } = gameEntities;
+    const { self, target, item, skill } = gameEntities;
 
     const actionId = gameActionId(gameAction);
     const selfId = getEntityId(self)[0];
@@ -598,6 +615,7 @@ function commandVariables({
         ...Object.keys(tokenPositions[selfId] || {}),
         ...(targetId ? Object.keys(tokenPositions[targetId] || {}) : []),
         ...(itemId ? Object.keys(tokenPositions[itemId] || {}) : []),
+        ...(skill ? Object.keys(tokenPositions[skill] || {}) : []),
     ];
 
     const queryIrrelevant = Array.from(queryTokens.entries())

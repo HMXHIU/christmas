@@ -9,6 +9,7 @@ import type { Utility } from "$lib/crossover/world/compendium";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
+import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import {
     spawnItemAtGeohash,
     spawnMonster,
@@ -161,6 +162,31 @@ describe("IR Tests", () => {
     });
 
     describe("entitiesIR Tests", () => {
+        it("should find skill", () => {
+            expect(
+                entitiesIR({
+                    queryTokens: tokenize("exploration"),
+                    monsters: [dragon, goblin],
+                    players: [playerOne, playerTwo],
+                    items: [woodendoor, woodenclub],
+                    skills: [...SkillLinesEnum],
+                }),
+            ).toMatchObject({
+                monsters: [],
+                players: [],
+                items: [],
+                skills: ["exploration"],
+                tokenPositions: {
+                    exploration: {
+                        "0": {
+                            token: "exploration",
+                            score: 1,
+                        },
+                    },
+                },
+            });
+        });
+
         it("should find a player by name", () => {
             expect(
                 entitiesIR({
@@ -168,6 +194,7 @@ describe("IR Tests", () => {
                     monsters: [dragon, goblin],
                     players: [playerOne, playerTwo],
                     items: [woodendoor, woodenclub],
+                    skills: [...SkillLinesEnum],
                 }),
             ).toMatchObject({
                 monsters: [],
@@ -195,6 +222,7 @@ describe("IR Tests", () => {
                     monsters: [dragon, goblin],
                     players: [playerOne, playerTwo],
                     items: [woodendoor, woodenclub],
+                    skills: [...SkillLinesEnum],
                 }),
             ).toMatchObject({
                 monsters: [],
@@ -222,6 +250,7 @@ describe("IR Tests", () => {
                     monsters: [dragon, goblin],
                     players: [playerOne, playerTwo],
                     items: [woodendoor, woodenclub],
+                    skills: [...SkillLinesEnum],
                 }),
             ).toMatchObject({
                 monsters: [],
@@ -253,6 +282,7 @@ describe("IR Tests", () => {
                     monsters: [dragon, goblin],
                     players: [playerOne, playerTwo],
                     items: [woodendoor, woodenclub],
+                    skills: [...SkillLinesEnum],
                 }),
             ).toMatchObject({
                 monsters: [
@@ -279,6 +309,7 @@ describe("IR Tests", () => {
                 monsters: [dragon, goblin],
                 players: [playerOne, playerTwo],
                 items: [woodendoor, woodenclub],
+                skills: [...SkillLinesEnum],
             });
             expect(res).toMatchObject({
                 monsters: [],
@@ -308,6 +339,7 @@ describe("IR Tests", () => {
                     monsters: [dragon, goblin],
                     players: [playerOne, playerTwo],
                     items: [woodendoor, woodenclub],
+                    skills: [...SkillLinesEnum],
                 }),
             ).toMatchObject({
                 monsters: [],
@@ -323,6 +355,7 @@ describe("IR Tests", () => {
                 monsters: [dragon, goblin],
                 players: [playerOne, playerTwo],
                 items: [woodendoor, woodenclub],
+                skills: [...SkillLinesEnum],
             });
             expect(res).toMatchObject({
                 monsters: [
@@ -363,6 +396,7 @@ describe("IR Tests", () => {
                 monsters: [dragon, goblin],
                 players: [playerOne],
                 items: [woodenclub, woodenclub2, woodenclub3],
+                skills: [...SkillLinesEnum],
             });
             expect(res).toMatchObject({
                 monsters: [],
@@ -420,6 +454,41 @@ describe("IR Tests", () => {
                 },
             );
             playerAbilities = Object.values(abilities);
+        });
+
+        it("`learn` skill from player", () => {
+            const ga = gameActionsIR({
+                queryTokens: tokenize("learn exploration from gandalf"),
+                abilities: playerAbilities,
+                itemUtilities,
+                actions: allActions,
+            });
+
+            expect(ga).toMatchObject({
+                abilities: [],
+                itemUtilities: [],
+                actions: [
+                    {
+                        action: "learn",
+                        predicate: {
+                            target: ["player"],
+                            tokenPositions: {
+                                action: 0,
+                                skill: 1,
+                                target: 3,
+                            },
+                        },
+                    },
+                ],
+                tokenPositions: {
+                    learn: {
+                        "0": {
+                            token: "learn",
+                            score: 1,
+                        },
+                    },
+                },
+            });
         });
 
         it("`enter` action on eligible item", () => {

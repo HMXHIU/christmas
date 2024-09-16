@@ -10,6 +10,7 @@ import { entityStats } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
+import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import {
     spawnItemAtGeohash,
     spawnMonster,
@@ -172,7 +173,7 @@ beforeEach(async () => {
 });
 
 describe("Command Tests", () => {
-    test("Learn from player", async () => {
+    test("Learn skill from player", async () => {
         // Test `searchPossibleCommands`
         const { commands, queryTokens, tokenPositions } =
             searchPossibleCommands({
@@ -188,13 +189,60 @@ describe("Command Tests", () => {
                 monsters: [goblin, dragon],
                 players: [playerOne, playerTwo],
                 items: [woodendoor, tavern],
+                skills: [...SkillLinesEnum],
             });
-
         expect(commands).toMatchObject([
             [
                 {
                     action: "learn",
-                    description: "Learn a skill from a teacher.",
+                },
+                {
+                    self: {
+                        player: playerOne.player,
+                    },
+                    target: {
+                        player: playerTwo.player,
+                    },
+                    skill: "exploration",
+                },
+                {
+                    query: "learn exploration from saruman",
+                    queryIrrelevant: "from",
+                },
+            ],
+        ]);
+    });
+
+    test("Create writ", async () => {});
+
+    test("Fulfill writ", async () => {});
+
+    test("Trade with player", async () => {});
+
+    test("Browse player writs", async () => {
+        // Test `searchPossibleCommands`
+        const { commands, queryTokens, tokenPositions } =
+            searchPossibleCommands({
+                query: `browse ${playerTwo.name}`,
+                player: playerOne,
+                playerAbilities: [
+                    abilities.scratch,
+                    abilities.bandage,
+                    abilities.swing,
+                ],
+                playerItems: [woodenclub],
+                actions: allActions,
+                monsters: [goblin, dragon],
+                players: [playerOne, playerTwo],
+                items: [woodendoor, tavern],
+                skills: [...SkillLinesEnum],
+            });
+        expect(commands).toMatchObject([
+            [
+                {
+                    action: "browse",
+                    description:
+                        "Browse the goods a merchant is selling or buying.",
                 },
                 {
                     self: {
@@ -205,8 +253,8 @@ describe("Command Tests", () => {
                     },
                 },
                 {
-                    query: "learn exploration from saruman",
-                    queryIrrelevant: "exploration from",
+                    query: "browse saruman",
+                    queryIrrelevant: "",
                 },
             ],
         ]);
@@ -232,6 +280,7 @@ describe("Command Tests", () => {
                 monsters: [goblin, dragon],
                 players: [playerOne],
                 items: [woodendoor, tavern],
+                skills: [...SkillLinesEnum],
             });
         expect(queryTokens).toMatchObject(["enter", "tavern"]);
         expect(tokenPositions).toMatchObject({
@@ -315,6 +364,7 @@ describe("Command Tests", () => {
             monsters: [goblin, dragon],
             players: [playerOne],
             items: [woodendoor],
+            skills: [...SkillLinesEnum],
         }).commands[0];
         setTimeout(
             () => executeGameCommand(openDoor, { Cookie: playerOneCookies }),
@@ -342,6 +392,7 @@ describe("Command Tests", () => {
             monsters: [goblin, dragon],
             players: [playerOne],
             items: [woodendoor],
+            skills: [...SkillLinesEnum],
         }).commands[0];
         setTimeout(
             () => executeGameCommand(closeDoor, { Cookie: playerOneCookies }),
@@ -370,6 +421,7 @@ describe("Command Tests", () => {
             monsters: [goblin, dragon],
             players: [playerOne],
             items: [woodendoor],
+            skills: [...SkillLinesEnum],
         }).commands[0];
 
         setTimeout(
@@ -424,6 +476,7 @@ describe("Command Tests", () => {
             monsters: [goblin, dragon],
             players: [playerOne],
             items: [woodendoor],
+            skills: [...SkillLinesEnum],
         }).commands[0];
         expect(swingGoblin).toMatchObject([
             {

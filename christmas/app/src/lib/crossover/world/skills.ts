@@ -34,8 +34,9 @@ const SkillLinesEnum = [
 
 interface SkillLine {
     skillLine: SkillLines;
-    currency: Currency[];
+    name: string;
     description: string;
+    currency: Currency[];
     abilitiesAtSkillLevel?: Record<number, Abilities[]>;
     actionsAtSkillLevel?: Record<number, Actions[]>;
     attributesAtSkillLevel?: Record<number, Partial<Attributes>>;

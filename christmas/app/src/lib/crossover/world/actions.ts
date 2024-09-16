@@ -7,6 +7,7 @@ import type {
 import type { GameActionEntities, TokenPositions } from "../ir";
 import { getEntityId } from "../utils";
 import { compendium } from "./settings/compendium";
+import type { SkillLines } from "./skills";
 import {
     EquipmentSlots,
     geohashLocationTypes,
@@ -35,7 +36,8 @@ type Actions =
     | "inventory"
     | "enter" // targets a item's world property
     | "learn"
-    | "trade"
+    | "buy"
+    | "sell"
     | "writ"
     | "browse"
     | "accept"
@@ -44,12 +46,14 @@ type Actions =
 
 type ActionTargets = EntityType | "none";
 
+type SpecialTokens = "action" | "target" | "skill";
+
 interface Action {
     action: Actions;
     description: string;
     predicate: {
         target: ActionTargets[];
-        tokenPositions: Record<string, number>;
+        tokenPositions: Partial<Record<SpecialTokens, number>>;
     };
     range: number;
     ticks: number;
@@ -60,6 +64,11 @@ interface IconAssetMetadata {
     path: string; // eg. bundle/alias
     icon: string;
 }
+
+const tradingNotes = `Notes:
+- Items must have a full charge and durability when traded, you are not alowed to buy and sell faulty goods!
+- For currencies use the amount followed by lum for lumina and umb for umbra WITHOUT space (eg. 100lum, 50umb)
+- For including multiple items and currencies join then using a ',' WITHOUT space (eg. woodenclub_2,50umb)`;
 
 const actions: Record<Actions, Action> = {
     look: {
@@ -219,10 +228,16 @@ const actions: Record<Actions, Action> = {
     },
     accept: {
         action: "accept",
-        description: "Accept a transaction request.",
+        description: `Accept a transaction request.
+
+Command:
+    accept [pin]
+    
+Examples:
+    **accept** 1234`,
         predicate: {
             target: ["none"],
-            tokenPositions: { action: 0, target: 3 }, // accept [pin]
+            tokenPositions: { action: 0, target: 3 }, //
         },
         ticks: 0, // accept should be 0 ticks as the actual action will have ticks
         icon: {
@@ -233,10 +248,15 @@ const actions: Record<Actions, Action> = {
     },
     learn: {
         action: "learn",
-        description: "Learn a skill from a teacher.",
+        description: `Learn a skill from a teacher.
+
+Command: learn [skill] from [teacher]
+
+Examples:
+    **learn** exploration **from** gandalf`,
         predicate: {
             target: ["player"],
-            tokenPositions: { action: 0, target: 3 }, // learn [skill] from [target]
+            tokenPositions: { action: 0, skill: 1, target: 3 },
         },
         ticks: 4,
         icon: {
@@ -245,12 +265,44 @@ const actions: Record<Actions, Action> = {
         },
         range: 0,
     },
-    trade: {
-        action: "trade",
-        description: "Buy and sell goods.",
+    buy: {
+        action: "buy",
+        description: `Request to buy goods from a player.
+
+Command:
+    buy [offer,] from [player] for [receive,]
+
+Examples:
+    **buy** woodenclub from gandalf **for** 100lum
+    **buy** woodenclub,potionofhealth from saruman **for** 50lum,50umb
+
+${tradingNotes}`,
         predicate: {
-            target: ["none"],
-            tokenPositions: { action: 0 },
+            target: ["player"],
+            tokenPositions: { action: 0, target: 3 },
+        },
+        ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "night-sleep",
+        },
+        range: 0,
+    },
+    sell: {
+        action: "sell",
+        description: `Request to sell goods to a player.
+
+Command:
+    sell [offer,] to [player] for [receive,]
+        
+Examples:
+    **sell** woodenclub_1 to gandalf **for** 100lum
+    **sell** woodenclub_2,potionofhealth_3 to saruman **for** 50lum,50umb
+
+${tradingNotes}`,
+        predicate: {
+            target: ["player"],
+            tokenPositions: { action: 0, target: 3 },
         },
         ticks: 1,
         icon: {
@@ -261,7 +313,22 @@ const actions: Record<Actions, Action> = {
     },
     writ: {
         action: "writ",
-        description: "Create a trade writ for buying and selling goods.",
+        description: `Create a trade writ for buying and selling goods.
+        
+Commands:
+    writ buy [offer,] for [receive,]
+    writ sell [offer,] for [receive,]
+        
+Examples:
+    Create a buy writ:
+    **writ buy** woodenclub **for** 100lum
+    **writ buy** woodenclub,potionofhealth **for** 50lum,50umb
+
+    Create a sell writ:
+    **writ sell** woodenclub_1 **for** 100lum
+    **writ sell** woodenclub_2,potionofhealth_3 **for** 50lum,50umb
+
+${tradingNotes}`,
         predicate: {
             target: ["none"],
             tokenPositions: { action: 0 },
@@ -291,8 +358,8 @@ const actions: Record<Actions, Action> = {
         action: "browse",
         description: "Browse the goods a merchant is selling or buying.",
         predicate: {
-            target: ["none"],
-            tokenPositions: { action: 0 },
+            target: ["player"],
+            tokenPositions: { action: 0, target: 1 },
         },
         ticks: 1,
         icon: {
@@ -324,6 +391,7 @@ function resolveActionEntities({
     monsters,
     players,
     items,
+    skills,
 }: {
     queryTokens: string[];
     tokenPositions: TokenPositions;
@@ -332,11 +400,15 @@ function resolveActionEntities({
     monsters: Monster[];
     players: Player[];
     items: Item[];
+    skills: SkillLines[];
 }): GameActionEntities[] {
     const { target: targetTypes, tokenPositions: predicateTokenPositions } =
         actions[action.action].predicate;
-    const { action: actionTokenPosition, target: targetTokenPosition } =
-        predicateTokenPositions;
+    const {
+        action: actionTokenPosition,
+        target: targetTokenPosition,
+        skill: skillTokenPosition,
+    } = predicateTokenPositions;
 
     // Check action token position
     if (
@@ -350,6 +422,12 @@ function resolveActionEntities({
     }
 
     let gameActionEntitiesScores: [GameActionEntities, number][] = [];
+
+    // Check skill token position
+    const skill = skills.find((s) => tokenPositions[s]);
+    if (skillTokenPosition != null && skill == null) {
+        return [];
+    }
 
     // Find target type in monsters, players, and items
     for (const targetType of targetTypes) {
@@ -407,24 +485,24 @@ function resolveActionEntities({
             const [entityId, entityType] = getEntityId(target);
             // Check target token position
             if (
-                targetTokenPosition != null &&
-                !(targetTokenPosition in tokenPositions[entityId])
+                targetTokenPosition &&
+                targetTokenPosition in tokenPositions[entityId]
             ) {
-                continue;
+                gameActionEntitiesScores.push([
+                    {
+                        self,
+                        target,
+                        skill,
+                    },
+                    tokenPositions[entityId][targetTokenPosition].score,
+                ]);
             }
-            gameActionEntitiesScores.push([
-                {
-                    self,
-                    target,
-                },
-                tokenPositions[entityId][targetTokenPosition].score,
-            ]);
         }
     }
 
     // If no target is allowed
     if (gameActionEntitiesScores.length === 0 && targetTypes.includes("none")) {
-        return [{ self }];
+        return [{ self, skill }];
     }
 
     // Sort by score
@@ -449,7 +527,8 @@ const playerActions = [
     actions.enter,
     actions.accept,
     actions.learn,
-    actions.trade,
+    actions.buy,
+    actions.sell,
     actions.fulfill,
     actions.writ,
 ];
