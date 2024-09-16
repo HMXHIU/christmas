@@ -17,7 +17,7 @@ export let consumables: Record<string, Prop> = {
             default: {
                 destructible: true,
                 description:
-                    "A formal document issued by the merchant guild. ${order}. You may *execute* the writ to finalize the trade.",
+                    "A formal document issued by the merchant guild. The merchant is offering to ${order} ${receive} for ${offer}. You may *fulfill* this writ.",
                 variant: "default",
             },
         },

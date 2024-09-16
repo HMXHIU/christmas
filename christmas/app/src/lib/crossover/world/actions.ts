@@ -39,6 +39,7 @@ type Actions =
     | "writ"
     | "browse"
     | "accept"
+    | "fulfill"
     | "rest";
 
 type ActionTargets = EntityType | "none";
@@ -218,12 +219,12 @@ const actions: Record<Actions, Action> = {
     },
     accept: {
         action: "accept",
-        description: "Accept a writ or a request.",
+        description: "Accept a transaction request.",
         predicate: {
             target: ["none"],
-            tokenPositions: { action: 0, target: 3 }, // accept [writ]
+            tokenPositions: { action: 0, target: 3 }, // accept [pin]
         },
-        ticks: 1,
+        ticks: 0, // accept should be 0 ticks as the actual action will have ticks
         icon: {
             path: "actions/actions",
             icon: "night-sleep",
@@ -266,6 +267,20 @@ const actions: Record<Actions, Action> = {
             tokenPositions: { action: 0 },
         },
         ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "night-sleep",
+        },
+        range: 0,
+    },
+    fulfill: {
+        action: "fulfill",
+        description: "Fulfill writ agreement.",
+        predicate: {
+            target: ["item"],
+            tokenPositions: { action: 0 },
+        },
+        ticks: 0, // fulfill should be 0 ticks as the actual action will have ticks
         icon: {
             path: "actions/actions",
             icon: "night-sleep",
@@ -435,4 +450,6 @@ const playerActions = [
     actions.accept,
     actions.learn,
     actions.trade,
+    actions.fulfill,
+    actions.writ,
 ];

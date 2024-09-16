@@ -1,6 +1,5 @@
 import { JWT_SECRET_KEY } from "$env/static/private";
 import { geohashesNearby, minifiedEntity } from "$lib/crossover/utils";
-import type { Actions } from "$lib/crossover/world/actions";
 import type {
     PlayerAppearance,
     PlayerDemographic,
@@ -71,34 +70,28 @@ function generateAvatarHash({
     return { selector: s, texture: t, hash: `${s}_${t}` };
 }
 
-// P2PTransaction aka CTA
 interface P2PTransaction {
-    message: string;
+    transaction: "trade" | "quest" | "learn";
 }
 
-interface P2PActionTransaction extends P2PTransaction {
-    action: Actions;
-}
-
-interface P2PLearnTransaction extends P2PActionTransaction {
-    action: "learn";
+// Learn Transaction
+interface P2PLearnTransaction extends P2PTransaction {
+    transaction: "learn";
     teacher: string;
     player: string;
     skill: SkillLines;
 }
 
-interface P2PTradeTransaction extends P2PActionTransaction {
-    action: "trade";
+// Trade Transaction
+interface P2PTradeTransaction extends P2PTransaction {
+    transaction: "trade";
     seller: string; // empty string means anyone can fulfill the sell order
     buyer: string; // empty string means anyone can fulfill the buy order
     offer: BarterSerialized;
     receive: BarterSerialized;
 }
 
-type CTATypes = "writ";
-
 interface CTA {
-    cta: CTATypes;
     name: string;
     description: string;
     pin: string; // also serves as the CTA id, and for targeting the CTA (eg. accept [pin])

@@ -15,8 +15,13 @@ import {
     type CTA,
     type P2PLearnTransaction,
 } from "../player";
-import { fetchEntity, getNearbyPlayerIds, saveEntity } from "../redis";
-import { type PlayerEntity } from "../redis/entities";
+import {
+    fetchEntity,
+    getNearbyPlayerIds,
+    itemRepository,
+    saveEntity,
+} from "../redis";
+import { type ItemEntity, type PlayerEntity } from "../redis/entities";
 import {
     publishActionEvent,
     publishAffectedEntitiesToPlayers,
@@ -28,15 +33,16 @@ export { createLearnCTA, executeLearnCTA, learn };
 
 async function executeLearnCTA(
     executor: PlayerEntity,
-    writ: P2PLearnTransaction,
+    p2pLearnTx: P2PLearnTransaction,
+    writ?: ItemEntity, // writ to destroy once fulfilled
 ) {
-    const { teacher, skill, player } = writ;
+    const { teacher, skill, player } = p2pLearnTx;
 
-    // Check that the player executing the writ is the teacher
+    // Check that the player executing the p2pLearnTx is the teacher
     if (executor.player !== teacher) {
         publishFeedEvent(executor.player, {
             type: "error",
-            message: `You try to execute the writ, but it rejects you with a slight jolt.`,
+            message: `You try to execute the agreement, but it rejects you with a slight jolt.`,
         });
     }
 
@@ -44,6 +50,7 @@ async function executeLearnCTA(
         (await fetchEntity(player)) as PlayerEntity, // get the student from the writ
         teacher,
         skill,
+        writ,
     );
 }
 
@@ -57,16 +64,14 @@ async function createLearnCTA(
         const expiresIn = 60;
         const pin = generatePin(4);
         const learnTx: P2PLearnTransaction = {
-            action: "learn",
-            message: `${player.name} requests to ${skill} from you. You have ${expiresIn} to *accept ${pin}*`,
+            transaction: "learn",
             teacher: teacher.player,
             player: player.player,
             skill,
         };
         return {
-            cta: "writ",
             name: "Writ of Learning",
-            description: `This writ allows you to learn ${skill} from ${teacher.name}.`,
+            description: `${player.name} requests to learn ${skill} from you. You have ${expiresIn} to *accept ${pin}*`,
             token: await createP2PTransaction(learnTx, 60),
             pin,
         };
@@ -79,6 +84,7 @@ async function learn(
     player: PlayerEntity,
     teacher: string,
     skill: SkillLines,
+    writ?: ItemEntity, // writ to destroy once fulfilled
 ): Promise<PlayerEntity> {
     const playerIsHuman = isEntityHuman(player);
     const teacherEntity = (await fetchEntity(teacher)) as PlayerEntity;
@@ -128,6 +134,11 @@ async function learn(
     // Save player
     player = (await saveEntity(player)) as PlayerEntity;
     await savePlayerState(player.player);
+
+    // Destroy writ if provided
+    if (writ) {
+        await itemRepository.remove(writ.item);
+    }
 
     // Publish to nearby players
     publishAffectedEntitiesToPlayers([player], {

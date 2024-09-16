@@ -1,6 +1,11 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
+import { actions } from "$lib/crossover/world/actions";
 import { PlayerMetadataSchema } from "$lib/crossover/world/player";
-import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
+import {
+    MS_PER_TICK,
+    TILE_HEIGHT,
+    TILE_WIDTH,
+} from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import {
@@ -16,6 +21,7 @@ import {
     saveEntity,
     worldsInGeohashQuerySet,
 } from "$lib/server/crossover/redis";
+import { sleep } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
 import { performance } from "perf_hooks";
@@ -35,7 +41,7 @@ import {
     t,
 } from "../trpc";
 import { performAbility } from "./abilities";
-import { inventory, look, move, rest, say } from "./actions";
+import { fulfill, inventory, look, move, rest, say } from "./actions";
 import {
     configureItem,
     createItem,
@@ -452,26 +458,33 @@ const crossoverRouter = {
                     now: ctx.now,
                 });
             }),
+        // cmd.fulfill
+        fulfill: playerAuthBusyProcedure
+            .input(TargetItemSchema)
+            .query(async ({ ctx, input }) => {
+                await fulfill(ctx.player, input.item);
+            }),
         // cmd.accept
         accept: playerAuthBusyProcedure
             .input(AcceptSchema)
             .query(async ({ ctx, input }) => {
                 const p2pTransaction = await verifyP2PTransaction(input.token);
-                if ("action" in p2pTransaction) {
-                    // Learn
-                    if (p2pTransaction.action === "learn") {
-                        await executeLearnCTA(
-                            ctx.player,
-                            p2pTransaction as P2PLearnTransaction,
-                        );
-                    }
-                    // Trade
-                    else if (p2pTransaction.action === "trade") {
-                        await executeTradeCTA(
-                            ctx.player,
-                            p2pTransaction as P2PTradeTransaction,
-                        );
-                    }
+
+                await sleep(MS_PER_TICK * actions.accept.ticks);
+
+                // Learn
+                if (p2pTransaction.transaction === "learn") {
+                    await executeLearnCTA(
+                        ctx.player,
+                        p2pTransaction as P2PLearnTransaction,
+                    );
+                }
+                // Trade
+                else if (p2pTransaction.transaction === "trade") {
+                    await executeTradeCTA(
+                        ctx.player,
+                        p2pTransaction as P2PTradeTransaction,
+                    );
                 }
             }),
         // cmd.learn

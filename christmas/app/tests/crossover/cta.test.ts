@@ -1,6 +1,7 @@
 import {
     crossoverCmdAccept,
     crossoverCmdBrowse,
+    crossoverCmdFulfill,
     crossoverCmdLearn,
     crossoverCmdTake,
     crossoverCmdTrade,
@@ -86,7 +87,7 @@ beforeEach(async () => {
 });
 
 describe("CTA Tests", () => {
-    test("Creating and executing trade writs", async () => {
+    test("Creating and fulfilling trade writs", async () => {
         /**
          * Create a sell writ
          */
@@ -130,12 +131,65 @@ describe("CTA Tests", () => {
         )) as FeedEvent;
         expect(feed).toMatchObject({
             type: "message",
-            message: `${playerTwo.name} is offering to sell:\n\nWooden Club for 100 lum`,
             event: "feed",
         });
+        expect(
+            feed.message.startsWith(
+                `${playerTwo.name} is offering to sell:\n\nWooden Club for 100 lum [item_tradewrit`,
+            ),
+        );
+
+        // `playerOne` fulfill trade writ on `playerTwo`
+        const match = feed.message.match(/\[(item_tradewrit\d+)\]/); // extract the writ from the browse message
+        expect(match).toBeTruthy();
+        const writId = match![1];
+
+        // Check conditions not met
+        crossoverCmdFulfill({ item: writId }, { Cookie: playerOneCookies });
+        var feed = (await waitForEventData(
+            playerOneStream,
+            "feed",
+        )) as FeedEvent;
+        expect(feed).toMatchObject({
+            type: "message",
+            message: "${message}",
+            variables: {
+                cmd: "say",
+                name: "Gandalf",
+                message: "Gandalf does not have 100 lum.",
+            },
+            event: "feed",
+        });
+
+        await sleep(MS_PER_TICK * actions.trade.ticks * 2);
+
+        // Give `playerOne` 100 lum
+        playerOne.lum += 100;
+        playerOne = (await saveEntity(
+            playerOne as PlayerEntity,
+        )) as PlayerEntity;
+        crossoverCmdFulfill({ item: writId }, { Cookie: playerOneCookies });
+        var feed = (await waitForEventData(
+            playerOneStream,
+            "feed",
+        )) as FeedEvent;
+        expect(feed).toMatchObject({
+            type: "message",
+            message: "${message}",
+            variables: {
+                cmd: "say",
+                name: "Saruman",
+                message:
+                    "Saruman hands you Wooden Club, 'Pleasure doing business with you, Gandalf'",
+            },
+            event: "feed",
+        });
+
+        // Check that the writ is destroyed
+        await expect(fetchEntity(writId)).resolves.toBeNull();
     });
 
-    test("Trade (buy/sell) with player (human)", async () => {
+    test("Trade with player", async () => {
         /**
          * Buy CTA
          */
@@ -161,7 +215,6 @@ describe("CTA Tests", () => {
         var cta = (await waitForEventData(playerTwoStream, "cta")) as CTAEvent;
         expect(cta).toMatchObject({
             cta: {
-                cta: "writ",
                 name: "Trade Writ",
             },
             event: "cta",
@@ -173,6 +226,8 @@ describe("CTA Tests", () => {
         ).toBeTruthy();
         expect(cta.cta.token).toBeTruthy();
         expect(cta.cta.pin).toBeTruthy();
+
+        await sleep(MS_PER_TICK * actions.trade.ticks * 2);
 
         // Trader `accept` the CTA
         crossoverCmdAccept(
@@ -193,6 +248,8 @@ describe("CTA Tests", () => {
             },
             event: "feed",
         });
+
+        await sleep(MS_PER_TICK * actions.trade.ticks * 2);
 
         // Give `playerOne` enough currency to complete the trade
         playerOne.lum = 1000;
@@ -215,7 +272,9 @@ describe("CTA Tests", () => {
         waitForEventData(playerTwoStream, "feed").then(
             (e) => (playerTwoFeed = e),
         );
-        await sleep(MS_PER_TICK * actions.accept.ticks);
+
+        await sleep(MS_PER_TICK * actions.trade.ticks * 2);
+
         expect(playerOneFeed).toMatchObject({
             type: "message",
             message: "${message}",
@@ -238,7 +297,6 @@ describe("CTA Tests", () => {
             },
             event: "feed",
         });
-        await sleep(MS_PER_TICK * actions.trade.ticks * 2);
 
         // Check players have the traded items
         woodenclub = (await fetchEntity(woodenclub.item)) as ItemEntity;
@@ -277,7 +335,6 @@ describe("CTA Tests", () => {
         var cta = (await waitForEventData(playerTwoStream, "cta")) as CTAEvent;
         expect(cta).toMatchObject({
             cta: {
-                cta: "writ",
                 name: "Trade Writ",
             },
             event: "cta",
@@ -289,6 +346,8 @@ describe("CTA Tests", () => {
         ).toBeTruthy();
         expect(cta.cta.token).toBeTruthy();
         expect(cta.cta.pin).toBeTruthy();
+
+        await sleep(MS_PER_TICK * actions.trade.ticks * 2);
 
         // Trader `accept` the CTA
         crossoverCmdAccept(
@@ -305,7 +364,7 @@ describe("CTA Tests", () => {
         waitForEventData(playerTwoStream, "feed").then(
             (e) => (playerTwoFeed = e),
         );
-        await sleep(MS_PER_TICK * actions.accept.ticks);
+        await sleep(MS_PER_TICK * actions.trade.ticks * 2);
 
         expect(playerOneFeed).toMatchObject({
             type: "message",
@@ -330,6 +389,8 @@ describe("CTA Tests", () => {
             },
             event: "feed",
         });
+
+        await sleep(MS_PER_TICK * actions.trade.ticks * 2);
     });
 
     test("Learn skill from human player", async () => {
@@ -356,15 +417,19 @@ describe("CTA Tests", () => {
         var cta = (await waitForEventData(playerTwoStream, "cta")) as CTAEvent;
         expect(cta).toMatchObject({
             cta: {
-                cta: "writ",
                 name: "Writ of Learning",
-                description:
-                    "This writ allows you to learn exploration from Saruman.",
             },
             event: "cta",
         });
+        expect(
+            cta.cta.description.startsWith(
+                "Gandalf requests to learn exploration from you.",
+            ),
+        );
         expect(cta.cta.token).toBeTruthy();
         expect(cta.cta.pin).toBeTruthy();
+
+        await sleep(MS_PER_TICK * actions.learn.ticks);
 
         // Teacher `accept` the CTA
         crossoverCmdAccept(

@@ -14,6 +14,11 @@ import { cloneDeep } from "lodash-es";
 import { setEntityBusy } from "..";
 import { npcRespondToAction } from "../npc";
 import {
+    verifyP2PTransaction,
+    type P2PLearnTransaction,
+    type P2PTradeTransaction,
+} from "../player";
+import {
     fetchEntity,
     getNearbyEntities,
     getNearbyPlayerIds,
@@ -33,8 +38,19 @@ import {
     publishAffectedEntitiesToPlayers,
     publishFeedEvent,
 } from "../utils";
+import { executeLearnCTA } from "./learn";
+import { executeTradeCTA } from "./trade";
 
-export { inventory, look, LOOK_PAGE_SIZE, move, rest, say, setEntityBusy };
+export {
+    fulfill,
+    inventory,
+    look,
+    LOOK_PAGE_SIZE,
+    move,
+    rest,
+    say,
+    setEntityBusy,
+};
 
 const LOOK_PAGE_SIZE = 20;
 
@@ -268,4 +284,24 @@ async function rest(player: PlayerEntity, now?: number) {
     publishAffectedEntitiesToPlayers([player], {
         publishTo: [player.player],
     });
+}
+
+async function fulfill(player: PlayerEntity, writ: string) {
+    const writEntity = (await fetchEntity(writ)) as ItemEntity;
+
+    if (!writEntity) {
+        publishFeedEvent(player.player, {
+            type: "error",
+            message: "The writ no longer exists or has already been fulfilled.",
+        });
+        return;
+    }
+
+    const { token } = writEntity.vars;
+    const p2pTx = await verifyP2PTransaction(token as string);
+    if (p2pTx.transaction === "trade") {
+        await executeTradeCTA(player, p2pTx as P2PTradeTransaction, writEntity);
+    } else if (p2pTx.transaction === "learn") {
+        await executeLearnCTA(player, p2pTx as P2PLearnTransaction, writEntity);
+    }
 }

@@ -35,6 +35,7 @@ export {
     crossoverCmdDrop,
     crossoverCmdEnterItem,
     crossoverCmdEquip,
+    crossoverCmdFulfill,
     crossoverCmdLearn,
     crossoverCmdLook,
     crossoverCmdMove,
@@ -258,6 +259,18 @@ function crossoverCmdBrowse(
     const { player } = input;
     return trpc({ headers }).crossover.cmd.browse.query({
         player,
+    });
+}
+
+function crossoverCmdFulfill(
+    input: {
+        item: string;
+    },
+    headers: HTTPHeaders = {},
+) {
+    const { item } = input;
+    return trpc({ headers }).crossover.cmd.fulfill.query({
+        item,
     });
 }
 

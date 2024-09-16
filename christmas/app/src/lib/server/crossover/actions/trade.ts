@@ -18,6 +18,7 @@ import {
 import {
     fetchEntity,
     getNearbyPlayerIds,
+    itemRepository,
     saveEntity,
     writsQuerySet,
 } from "../redis";
@@ -147,14 +148,8 @@ async function createTradeWrit({
     expiresIn = expiresIn ?? 60 * 60 * 24; // 1 day
     const offerDesc = barterDescription(offer); // w.r.t to buyer
     const receiveDesc = barterDescription(receive);
-    const message =
-        creator.player === seller
-            ? `${creator.name} is offering to sell ${receiveDesc} for ${offerDesc}.`
-            : `${creator.name} is offering to buy ${receiveDesc} for ${offerDesc}.`;
-
     const tradeTx: P2PTradeTransaction = {
-        action: "trade",
-        message,
+        transaction: "trade",
         seller,
         buyer,
         offer: serializeBarter(offer),
@@ -203,15 +198,13 @@ async function createTradeCTA(
             : `${buyer.name} is offering to buy ${receiveDesc} for ${offerDesc}.`;
 
     const tradeTx: P2PTradeTransaction = {
-        action: "trade",
-        message: message,
+        transaction: "trade",
         seller: seller.player,
         buyer: buyer.player,
         offer: serializeBarter(offer),
         receive: serializeBarter(receive),
     };
     return {
-        cta: "writ",
         name: "Trade Writ",
         description: `${message} You have ${expiresIn}s to *accept ${pin}*.`,
         token: await createP2PTransaction(tradeTx, expiresIn),
@@ -222,6 +215,7 @@ async function createTradeCTA(
 async function executeTradeCTA(
     executor: PlayerEntity,
     p2pTradeTx: P2PTradeTransaction,
+    writ?: ItemEntity, // writ to destroy once fulfilled
 ) {
     const { buyer, seller, offer, receive } = p2pTradeTx;
 
@@ -237,7 +231,10 @@ async function executeTradeCTA(
     const barterReceive = await deserializeBarter(receive);
 
     // Check that the executor must be one of the parties
-    if (executor.player !== seller && executor.player !== buyer) {
+    if (
+        executor.player !== buyerEntity.player &&
+        executor.player !== sellerEntity.player
+    ) {
         publishFeedEvent(executor.player, {
             type: "error",
             message: `You try to execute the agreement, but it rejects you with a slight jolt.`,
@@ -262,7 +259,7 @@ async function executeTradeCTA(
         return; // stop the execution
     }
 
-    await trade(buyerEntity, sellerEntity, barterOffer, barterReceive);
+    await trade(buyerEntity, sellerEntity, barterOffer, barterReceive, writ);
 }
 
 async function browse(
@@ -276,11 +273,11 @@ async function browse(
     ).returnAll()) as ItemEntity[];
     const buyOrders = writs
         .filter(({ vars }) => vars.order === "buy")
-        .map(({ vars }) => `${vars.receive} for ${vars.offer}`)
+        .map(({ vars, item }) => `${vars.receive} for ${vars.offer} [${item}]`)
         .join("\n");
     const sellOrders = writs
         .filter(({ vars }) => vars.order === "sell")
-        .map(({ vars }) => `${vars.receive} for ${vars.offer}`)
+        .map(({ vars, item }) => `${vars.receive} for ${vars.offer} [${item}]`)
         .join("\n");
 
     let message = "";
@@ -289,6 +286,9 @@ async function browse(
     }
     if (buyOrders) {
         message += `And offering to buy:\n\n${buyOrders}\n\n`;
+    }
+    if (sellOrders || buyOrders) {
+        message += "You may *fulfill writ* to execute a trade.";
     }
 
     publishFeedEvent(player.player, {
@@ -304,6 +304,7 @@ async function trade(
     seller: PlayerEntity,
     offer: Barter,
     receive: Barter,
+    writ?: ItemEntity, // writ to destroy once fulfilled
 ) {
     const buyerIsHuman = isEntityHuman(buyer);
     const sellerIsHuman = isEntityHuman(seller);
@@ -355,6 +356,11 @@ async function trade(
         buyer[cur as Currency] += amt;
         await saveEntity(buyer);
         await saveEntity(seller);
+    }
+
+    // Destroy writ if provided
+    if (writ) {
+        await itemRepository.remove(writ.item);
     }
 
     // Save player's state to MINIO
