@@ -16,7 +16,7 @@ import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { type GeohashLocationType } from "$lib/crossover/world/types";
 import { sleep } from "$lib/utils";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, uniq } from "lodash-es";
 import { consumeResources, performActionConsequences, setEntityBusy } from ".";
 import { fetchEntity, getNearbyPlayerIds, saveEntity } from "./redis";
 import {
@@ -132,7 +132,7 @@ async function performAbility({
     }
 
     // Get all players nearby self & target
-    const playerIdsNearby = [];
+    let playerIdsNearby = [];
     playerIdsNearby.push(
         ...(await getNearbyPlayerIds(
             self.loc[0],
@@ -149,6 +149,7 @@ async function performAbility({
             )),
         );
     }
+    playerIdsNearby = uniq(playerIdsNearby);
 
     // Publish action event to all players nearby
     publishActionEvent(playerIdsNearby, {

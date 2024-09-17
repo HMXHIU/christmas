@@ -397,6 +397,24 @@ export async function createTestItems({
         configOwner,
     });
 
+    const woodenClubTwo = await spawnItemAtGeohash({
+        geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.woodenclub.prop,
+        owner,
+        configOwner,
+    });
+
+    const woodenClubThree = await spawnItemAtGeohash({
+        geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.woodenclub.prop,
+        owner,
+        configOwner,
+    });
+
     const potionOfHealth = (await spawnItemAtGeohash({
         geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
@@ -469,6 +487,8 @@ export async function createTestItems({
     return {
         potionOfHealth,
         woodenClub,
+        woodenClubTwo,
+        woodenClubThree,
         woodenDoor,
         portalOne,
         portalTwo,
@@ -519,6 +539,13 @@ export async function resetPlayerResources(...players: PlayerEntity[]) {
         player.lum = 0;
         player.umb = 0;
         await saveEntity(player);
+    }
+}
+
+export async function resetMonsterResources(...monsters: MonsterEntity[]) {
+    for (const monster of monsters) {
+        resetEntityStats(monster);
+        await saveEntity(monster);
     }
 }
 

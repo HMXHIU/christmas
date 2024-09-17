@@ -1,76 +1,18 @@
 import { crossoverCmdSay } from "$lib/crossover/client";
-import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
-import { spawnMonster } from "$lib/server/crossover/dungeonMaster";
-import { generateNPC } from "$lib/server/crossover/npc";
+import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { initializeClients } from "$lib/server/crossover/redis";
-import type { Monster, Player } from "$lib/server/crossover/redis/entities";
-import { npcs } from "$lib/server/crossover/settings/npc";
 import { sleep } from "$lib/utils";
-import { beforeAll, describe, expect, test } from "vitest";
-import {
-    createGandalfSarumanSauron,
-    generateRandomGeohash,
-    waitForEventData,
-} from "../utils";
+import { describe, expect, test } from "vitest";
+import { createGandalfSarumanSauron, waitForEventData } from "../utils";
 
-let region: string;
-let geohash: string;
-
-let playerOne: Player;
-let playerOneCookies: string;
-let playerOneStream: EventTarget;
-let playerTwo: Player;
-let playerTwoCookies: string;
-let playerTwoStream: EventTarget;
-let playerThree: Player;
-let playerThreeCookies: string;
-let playerThreeStream: EventTarget;
-
-let dragon: Monster;
-let goblin: Monster;
-
-// NPC
-let npc: Player;
-
-beforeAll(async () => {
-    await initializeClients(); // create redis repositories
-
-    // Create players
-    ({
-        region,
-        geohash,
-        playerOne,
-        playerOneCookies,
-        playerOneStream,
-        playerTwo,
-        playerTwoCookies,
-        playerTwoStream,
-        playerThree,
-        playerThreeCookies,
-        playerThreeStream,
-    } = await createGandalfSarumanSauron());
-
-    // Spawn Monsters
-    dragon = await spawnMonster({
-        geohash: generateRandomGeohash(8, "h9"),
-        locationType: "geohash",
-        beast: "dragon",
-        locationInstance: LOCATION_INSTANCE,
-    });
-
-    goblin = await spawnMonster({
-        geohash: generateRandomGeohash(8, "h9"),
-        locationType: "geohash",
-        beast: "goblin",
-        locationInstance: LOCATION_INSTANCE,
-    });
-
-    // Spawn NPCs
-    npc = await generateNPC(npcs.blacksmith.npc, {
-        demographic: {},
-        appearance: {},
-    });
-});
+await initializeClients(); // create redis repositories
+let {
+    playerOne,
+    playerOneCookies,
+    playerTwo,
+    playerTwoStream,
+    playerThreeStream,
+} = await createGandalfSarumanSauron();
 
 describe("Say Tests", () => {
     test("Say to specific `target`", async () => {

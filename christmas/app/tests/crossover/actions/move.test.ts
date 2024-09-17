@@ -22,9 +22,8 @@ import type {
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
-import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { cloneDeep } from "lodash";
-import { beforeAll, beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 import {
     collectEventDataForDuration,
     createGandalfSarumanSauron,
@@ -33,48 +32,14 @@ import {
     waitForEventData,
 } from "../utils";
 
-let region: string;
-let geohash: string;
-let playerOne: PlayerEntity;
-let playerTwo: PlayerEntity;
-let playerThree: PlayerEntity;
-let playerOneCookies: string;
-let playerTwoCookies: string;
-let playerThreeCookies: string;
-let playerOneStream: EventTarget;
-let playerTwoStream: EventTarget;
-let playerThreeStream: EventTarget;
-let playerOneWallet: NodeWallet;
-let playerTwoWallet: NodeWallet;
-let playerThreeWallet: NodeWallet;
-
-beforeAll(async () => {
-    await initializeClients(); // create redis repositories
-
-    ({
-        region,
-        geohash,
-        playerOne,
-        playerTwo,
-        playerThree,
-        playerOneCookies,
-        playerTwoCookies,
-        playerThreeCookies,
-        playerOneStream,
-        playerTwoStream,
-        playerThreeStream,
-        playerOneWallet,
-        playerTwoWallet,
-        playerThreeWallet,
-    } = await createGandalfSarumanSauron());
-});
+await initializeClients(); // create redis repositories
+let { playerOne, playerOneCookies, playerOneStream } =
+    await createGandalfSarumanSauron();
 
 beforeEach(async () => {
-    geohash = generateRandomGeohash(8, "h9b");
-
-    // Reset playerOne location
-    playerOne.loc = [geohash];
-    playerOne = (await saveEntity(playerOne)) as PlayerEntity;
+    // Randomize playerOne location
+    playerOne.loc = [generateRandomGeohash(8, "h9b")];
+    playerOne = await saveEntity(playerOne);
 });
 
 describe("Movement Tests", () => {

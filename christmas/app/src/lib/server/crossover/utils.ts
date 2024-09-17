@@ -19,7 +19,7 @@ import {
 } from "$lib/server/crossover/caches";
 import { parseZodErrors } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
-import { uniqBy } from "lodash-es";
+import { uniq, uniqBy } from "lodash-es";
 import { z } from "zod";
 import { PlayerStateSchema, type PlayerState } from ".";
 import { serverAnchorClient } from "..";
@@ -125,7 +125,7 @@ async function publishAffectedEntitiesToPlayers(
     } as UpdateEntitiesEvent);
 
     if (options?.publishTo != null) {
-        for (const p of options.publishTo) {
+        for (const p of uniq(options.publishTo)) {
             await redisClient.publish(p, event);
         }
     } else {

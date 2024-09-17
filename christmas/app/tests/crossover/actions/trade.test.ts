@@ -16,9 +16,7 @@ import {
     saveEntity,
 } from "$lib/server/crossover/redis";
 import type {
-    Item,
     ItemEntity,
-    Player,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
@@ -27,43 +25,32 @@ import type {
     CTAEvent,
     FeedEvent,
 } from "../../../src/routes/api/crossover/stream/+server";
-import { createGandalfSarumanSauron, waitForEventData } from "../utils";
+import {
+    createGandalfSarumanSauron,
+    resetPlayerResources,
+    waitForEventData,
+} from "../utils";
 
-let region: string;
-let geohash: string;
+await initializeClients(); // create redis repositories
 
-let playerOne: Player;
-let playerOneCookies: string;
-let playerOneStream: EventTarget;
-let playerTwo: Player;
-let playerTwoCookies: string;
-let playerTwoStream: EventTarget;
+let {
+    geohash,
+    playerOne,
+    playerOneCookies,
+    playerOneStream,
+    playerTwo,
+    playerTwoCookies,
+    playerTwoStream,
+} = await createGandalfSarumanSauron();
 
-let woodenclub: Item;
+let woodenclub = (await spawnItemAtGeohash({
+    geohash,
+    locationType: "geohash",
+    locationInstance: LOCATION_INSTANCE,
+    prop: compendium.woodenclub.prop,
+})) as ItemEntity;
 
 beforeAll(async () => {
-    await initializeClients(); // create redis repositories
-
-    // Create players
-    ({
-        region,
-        geohash,
-        playerOne,
-        playerOneCookies,
-        playerOneStream,
-        playerTwo,
-        playerTwoCookies,
-        playerTwoStream,
-    } = await createGandalfSarumanSauron());
-
-    // Spawn items
-    woodenclub = (await spawnItemAtGeohash({
-        geohash,
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        prop: compendium.woodenclub.prop,
-    })) as ItemEntity;
-
     // `playerTwo` take `woodenClub`
     await crossoverCmdTake(
         { item: woodenclub.item },
@@ -75,16 +62,13 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-    playerOne.lum = 0;
-    playerOne = (await saveEntity(playerOne as PlayerEntity)) as PlayerEntity;
-    playerTwo.lum = 0;
-    playerTwo = (await saveEntity(playerTwo as PlayerEntity)) as PlayerEntity;
+    await resetPlayerResources(playerOne, playerTwo);
 
     // Put woodenclub in `playerTwo` inventory
     woodenclub.loc[0] = playerTwo.player;
     woodenclub.locI = playerTwo.locI;
     woodenclub.locT = "inv";
-    woodenclub = (await saveEntity(woodenclub as ItemEntity)) as ItemEntity;
+    woodenclub = await saveEntity(woodenclub);
 });
 
 describe("Trade Tests", () => {
@@ -163,9 +147,7 @@ describe("Trade Tests", () => {
 
         // Give `playerOne` 100 lum
         playerOne.lum += 100;
-        playerOne = (await saveEntity(
-            playerOne as PlayerEntity,
-        )) as PlayerEntity;
+        playerOne = await saveEntity(playerOne);
         crossoverCmdFulfill({ item: writId }, { Cookie: playerOneCookies });
         var feed = (await waitForEventData(
             playerOneStream,

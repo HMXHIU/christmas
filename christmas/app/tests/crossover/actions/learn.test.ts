@@ -9,11 +9,10 @@ import {
 } from "$lib/server/crossover/redis";
 import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
-import { beforeAll, beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 import type { CTAEvent } from "../../../src/routes/api/crossover/stream/+server";
 import {
     createGandalfSarumanSauron,
-    createGoblinSpiderDragon,
     createNPCs,
     resetPlayerResources,
     waitForEventData,
@@ -22,7 +21,6 @@ import {
 await initializeClients(); // create redis repositories
 
 let {
-    region,
     geohash,
     playerOne,
     playerOneCookies,
@@ -31,13 +29,10 @@ let {
     playerTwoCookies,
     playerTwoStream,
 } = await createGandalfSarumanSauron();
-let { dragon, goblin } = await createGoblinSpiderDragon();
 let { blackSmith } = await createNPCs({
     geohash,
     locationInstance: LOCATION_INSTANCE,
 });
-
-beforeAll(async () => {});
 
 beforeEach(async () => {
     resetPlayerResources(playerOne, playerTwo);

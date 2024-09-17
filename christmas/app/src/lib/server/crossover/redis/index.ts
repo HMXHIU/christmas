@@ -52,6 +52,7 @@ export {
     playersInGeohashQuerySet,
     redisClient,
     redisSubscribeClient,
+    saveEntities,
     saveEntity,
     worldRepository,
     worldsContainingGeohashQuerySet,
@@ -245,8 +246,15 @@ async function saveEntity<T extends PlayerEntity | MonsterEntity | ItemEntity>(
             entity,
         )) as T;
     }
-
     throw new Error("Invalid entity");
+}
+
+async function saveEntities(
+    ...entities: (PlayerEntity | MonsterEntity | ItemEntity)[]
+) {
+    for (const e of entities) {
+        await saveEntity(e);
+    }
 }
 
 async function hasCollidersInGeohash(
