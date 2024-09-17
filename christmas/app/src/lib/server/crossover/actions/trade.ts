@@ -268,7 +268,6 @@ async function executeTradeCTA(
         barterOffer,
         barterReceive,
     );
-    console.log(ok, cannotTradeMessage);
 
     if (!ok) {
         if (isEntityHuman(executor)) {
@@ -417,14 +416,12 @@ async function trade(
 
     // Send dialogues
     if (buyerIsHuman) {
-        console.log(barterDialogue(receive, seller, buyer));
         say(seller, barterDialogue(receive, seller, buyer), {
             target: buyer.player,
             overwrite: true,
         });
     }
     if (sellerIsHuman) {
-        console.log(barterDialogue(offer, buyer, seller));
         say(buyer, barterDialogue(offer, buyer, seller), {
             target: seller.player,
             overwrite: true,

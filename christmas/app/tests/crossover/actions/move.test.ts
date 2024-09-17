@@ -31,7 +31,7 @@ import {
     flushEventChannel,
     generateRandomGeohash,
     waitForEventData,
-} from "./utils";
+} from "../utils";
 
 let region: string;
 let geohash: string;

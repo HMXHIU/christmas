@@ -18,12 +18,12 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import { beforeAll, describe, expect, test } from "vitest";
-import { getRandomRegion } from "../utils";
+import { getRandomRegion } from "../../utils";
 import {
     createRandomPlayer,
     generateRandomGeohash,
     waitForEventData,
-} from "./utils";
+} from "../utils";
 
 const geohash = generateRandomGeohash(8, "h9");
 const region = String.fromCharCode(...getRandomRegion());

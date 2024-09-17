@@ -62,7 +62,6 @@ import {
 } from "./dungeonMaster";
 import { isEntityHuman } from "./npc";
 import {
-    probeEquipment,
     verifyP2PTransaction,
     type P2PLearnTransaction,
     type P2PTradeTransaction,
@@ -406,12 +405,6 @@ const crossoverRouter = {
         inventory: playerAuthProcedure.query(async ({ ctx }) => {
             await inventory(ctx.player);
         }),
-        // player.probeEquipment (TODO: not used, deprecate?)
-        probeEquipment: playerAuthProcedure
-            .input(TargetPlayerSchema)
-            .query(async ({ ctx, input }) => {
-                await probeEquipment(ctx.player, input.player);
-            }),
     }),
     // Commands
     cmd: t.router({

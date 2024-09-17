@@ -13,6 +13,7 @@ import { type Utility } from "$lib/crossover/world/compendium";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
+import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import {
     spawnItemAtGeohash,
     spawnMonster,
@@ -20,8 +21,8 @@ import {
 import { initializeClients } from "$lib/server/crossover/redis";
 import type { Item, ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
-import { getRandomRegion } from "../utils";
-import { createRandomPlayer, generateRandomGeohash } from "./utils";
+import { getRandomRegion } from "../../utils";
+import { createRandomPlayer, generateRandomGeohash } from "../utils";
 
 test("Test Query", async () => {
     await initializeClients(); // create redis repositories
@@ -168,6 +169,7 @@ test("Test Query", async () => {
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
         items: [woodendoor, woodenclub, portal],
+        skills: [...SkillLinesEnum],
     });
 
     // Retrieve actions and abilities relevant to query
@@ -232,6 +234,7 @@ test("Test Query", async () => {
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
         items: [woodendoor, woodenclub, portal],
+        skills: [...SkillLinesEnum],
     });
 
     // Retrieve actions and abilities relevant to query
@@ -296,6 +299,7 @@ test("Test Query", async () => {
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
         items: [woodendoor, woodenclub, portal],
+        skills: [...SkillLinesEnum],
     });
 
     // Retrieve actions and abilities relevant to query
@@ -360,6 +364,7 @@ test("Test Query", async () => {
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
         items: [woodendoor, woodenclub, portal],
+        skills: [...SkillLinesEnum],
     });
 
     // Retrieve actions and abilities relevant to query
@@ -410,6 +415,7 @@ test("Test Query", async () => {
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
         items: [woodendoor],
+        skills: [...SkillLinesEnum],
     }).commands;
     expect(gameCommands).toMatchObject([
         [
@@ -448,6 +454,7 @@ test("Test Query", async () => {
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
         items: [woodendoor],
+        skills: [...SkillLinesEnum],
     }).commands;
     expect(gameCommands).toMatchObject([
         [
@@ -491,6 +498,7 @@ test("Test Query", async () => {
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
         items: [woodendoor],
+        skills: [...SkillLinesEnum],
     }).commands;
     expect(gameCommands).toMatchObject([
         [
@@ -542,6 +550,7 @@ test("Test Query", async () => {
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
         items: [woodendoor],
+        skills: [...SkillLinesEnum],
     }).commands;
     expect(gameCommands).toMatchObject([
         [
@@ -581,6 +590,7 @@ test("Test Query", async () => {
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
         items: [woodenclub, woodenclub2, woodenclub3],
+        skills: [...SkillLinesEnum],
     }).commands;
     expect(gameCommands[0]).toMatchObject([
         {
@@ -611,6 +621,7 @@ test("Test Query", async () => {
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
         items: [woodenclub, woodenclub2, woodenclub3],
+        skills: [...SkillLinesEnum],
     }).commands;
     expect(gameCommands).toMatchObject([
         [
@@ -676,6 +687,7 @@ test("Test Query", async () => {
         monsters: [goblin, goblin2, goblin3],
         players: [],
         items: [],
+        skills: [...SkillLinesEnum],
     }).commands;
     expect(gameCommands).toMatchObject([
         [

@@ -2,7 +2,6 @@ import {
     crossoverCmdAccept,
     crossoverCmdBrowse,
     crossoverCmdFulfill,
-    crossoverCmdLearn,
     crossoverCmdTake,
     crossoverCmdTrade,
     crossoverCmdWrit,
@@ -10,7 +9,6 @@ import {
 import { actions } from "$lib/crossover/world/actions";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { skillLevelProgression } from "$lib/crossover/world/skills";
 import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import {
     fetchEntity,
@@ -28,8 +26,8 @@ import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import type {
     CTAEvent,
     FeedEvent,
-} from "../../src/routes/api/crossover/stream/+server";
-import { createGandalfSarumanSauron, waitForEventData } from "./utils";
+} from "../../../src/routes/api/crossover/stream/+server";
+import { createGandalfSarumanSauron, waitForEventData } from "../utils";
 
 let region: string;
 let geohash: string;
@@ -89,7 +87,7 @@ beforeEach(async () => {
     woodenclub = (await saveEntity(woodenclub as ItemEntity)) as ItemEntity;
 });
 
-describe("CTA Tests", () => {
+describe("Trade Tests", () => {
     test("Creating and fulfilling trade writs", async () => {
         // `playerTwo` create writ to sell `woodenclub` for 100 lum
         crossoverCmdWrit(
@@ -386,77 +384,5 @@ describe("CTA Tests", () => {
         });
 
         await sleep(MS_PER_TICK * actions.trade.ticks * 2);
-    });
-
-    test("Learn skill from human player", async () => {
-        // Increase `playerTwo` skills and `playerOne` resources
-        playerTwo.skills["exploration"] = 10;
-        playerTwo = (await saveEntity(
-            playerTwo as PlayerEntity,
-        )) as PlayerEntity;
-        playerOne.lum = 1000;
-        playerOne = (await saveEntity(
-            playerOne as PlayerEntity,
-        )) as PlayerEntity;
-
-        // `playerOne` learn `exploration` from playerTwo
-        crossoverCmdLearn(
-            {
-                skill: "exploration",
-                teacher: playerTwo.player,
-            },
-            { Cookie: playerOneCookies },
-        );
-
-        // Check CTA event (on teacher which is `playerTwo`)
-        var cta = (await waitForEventData(playerTwoStream, "cta")) as CTAEvent;
-        expect(cta).toMatchObject({
-            cta: {
-                name: "Writ of Learning",
-            },
-            event: "cta",
-        });
-        expect(
-            cta.cta.description.startsWith(
-                "Gandalf requests to learn exploration from you.",
-            ),
-        );
-        expect(cta.cta.token).toBeTruthy();
-        expect(cta.cta.pin).toBeTruthy();
-
-        await sleep(MS_PER_TICK * actions.learn.ticks);
-
-        // Teacher `accept` the CTA
-        crossoverCmdAccept(
-            { token: cta.cta.token },
-            { Cookie: playerTwoCookies },
-        );
-
-        // Check `playerOne` starts learning
-        var feed = await waitForEventData(playerOneStream, "feed");
-        expect(feed).toMatchObject({
-            type: "message",
-            message: "${message}",
-            variables: {
-                cmd: "say",
-                player: playerTwo.player,
-                name: playerTwo.name,
-                message: `${playerTwo.name} hands you a worn map and a compass.`,
-            },
-            event: "feed",
-        });
-        await sleep(MS_PER_TICK * actions.learn.ticks);
-
-        // Check `playerOne` has learnt skill
-        const curSkillLevel = playerOne.skills?.exploration ?? 0;
-        const playerOneAfter = (await fetchEntity(
-            playerOne.player,
-        )) as PlayerEntity;
-        expect(playerOneAfter).toMatchObject({
-            skills: {
-                exploration: curSkillLevel + 1,
-            },
-            lum: playerOne.lum - skillLevelProgression(curSkillLevel + 1),
-        });
     });
 });

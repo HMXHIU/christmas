@@ -28,6 +28,7 @@ export {
     entityStats,
     mergeNumericAdd,
     recoverAp,
+    resetEntityStats,
     type Attribute,
     type Attributes,
 };
@@ -56,6 +57,10 @@ function entityActualAp(
 function entityLevel(entity: Player | Monster): number {
     // Entity's level is its highest skill level
     return Math.max(1, ...Object.values(entity.skills));
+}
+
+function resetEntityStats(entity: Player | Monster): Player | Monster {
+    return Object.assign(entity, entityStats(entity));
 }
 
 function entityStats(entity: Player | Monster): EntityStats {

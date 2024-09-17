@@ -31,7 +31,7 @@ import {
     generateRandomGeohash,
     testPlayerUseItemOnPlayer,
     waitForEventData,
-} from "./utils";
+} from "../utils";
 
 let region: string;
 let geohash: string;

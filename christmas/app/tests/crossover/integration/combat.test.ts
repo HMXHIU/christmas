@@ -27,7 +27,7 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
-import { getRandomRegion } from "../utils";
+import { getRandomRegion } from "../../utils";
 import {
     buffEntity,
     createRandomPlayer,
@@ -37,7 +37,7 @@ import {
     testPlayerUseItemOnMonster,
     testPlayerUseItemOnPlayer,
     waitForEventData,
-} from "./utils";
+} from "../utils";
 
 const region = String.fromCharCode(...getRandomRegion());
 const playerOneGeohash = generateRandomGeohash(8, "h9");

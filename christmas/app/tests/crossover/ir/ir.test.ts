@@ -22,13 +22,13 @@ import type {
     Player,
 } from "$lib/server/crossover/redis/entities";
 import { beforeAll, describe, expect, it } from "vitest";
-import { getRandomRegion } from "../utils";
+import { getRandomRegion } from "../../utils";
 import {
     allActions,
     createRandomPlayer,
     createWorldAsset,
     generateRandomGeohash,
-} from "./utils";
+} from "../utils";
 
 const region = String.fromCharCode(...getRandomRegion());
 
