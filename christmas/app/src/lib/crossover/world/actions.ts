@@ -37,8 +37,7 @@ type Actions =
     | "inventory"
     | "enter" // targets a item's world property
     | "learn"
-    | "buy"
-    | "sell"
+    | "trade"
     | "writ"
     | "browse"
     | "accept"
@@ -266,44 +265,29 @@ Examples:
         },
         range: 0,
     },
-    buy: {
-        action: "buy",
-        description: `Request to buy goods from a player.
+    trade: {
+        action: "trade",
+        description: `Request to trade goods with a player.
 
 Command:
-    buy [offer,] from [player] for [receive,]
+    trade [offer,] for [receive,] with [player]
 
 Examples:
-    **buy** woodenclub from gandalf **for** 100lum
-    **buy** woodenclub,potionofhealth from saruman **for** 50lum,50umb
+    Buy items:
+    **trade** 100lum **for** woodenclub **with** gandalf
+    **trade** 50lum,50umb **for** woodenclub,potionofhealth **with** saruman
+
+    Sell items:
+    **trade** woodenclub_1 **for** 100lum **with** gandalf
+    **trade** woodenclub_2,potionofhealth_3 **for** 50lum,50umb **with** saruman
+
+    Trade items:
+    **trade** woodenclub_1 **for** potionofhealth **with** gandalf
 
 ${tradingNotes}`,
         predicate: {
             target: ["player"],
-            tokenPositions: { action: 0, offer: 1, target: 3, receive: 5 },
-        },
-        ticks: 1,
-        icon: {
-            path: "actions/actions",
-            icon: "night-sleep",
-        },
-        range: 0,
-    },
-    sell: {
-        action: "sell",
-        description: `Request to sell goods to a player.
-
-Command:
-    sell [offer,] to [player] for [receive,]
-        
-Examples:
-    **sell** woodenclub_1 to gandalf **for** 100lum
-    **sell** woodenclub_2,potionofhealth_3 to saruman **for** 50lum,50umb
-
-${tradingNotes}`,
-        predicate: {
-            target: ["player"],
-            tokenPositions: { action: 0, offer: 1, target: 3, receive: 5 },
+            tokenPositions: { action: 0, offer: 1, receive: 3, target: 5 },
         },
         ticks: 1,
         icon: {
@@ -317,17 +301,19 @@ ${tradingNotes}`,
         description: `Create a trade writ for buying and selling goods.
         
 Commands:
-    writ buy [offer,] for [receive,]
-    writ sell [offer,] for [receive,]
+    writ trade [offer,] for [receive,]
         
 Examples:
-    Create a buy writ:
-    **writ buy** woodenclub **for** 100lum
-    **writ buy** woodenclub,potionofhealth **for** 50lum,50umb
+    Buy items:
+    **writ trade** 100lum **for** woodenclub
+    **writ trade** 50lum,50umb **for** woodenclub,potionofhealth
 
-    Create a sell writ:
-    **writ sell** woodenclub_1 **for** 100lum
-    **writ sell** woodenclub_2,potionofhealth_3 **for** 50lum,50umb
+    Sell items:
+    **writ trade** woodenclub_1 **for** 100lum
+    **writ trade** woodenclub_2,potionofhealth_3 **for** 50lum,50umb
+
+    Trade items:
+    **writ trade** woodenclub_1 **for** potionofhealth
 
 ${tradingNotes}`,
         predicate: {
@@ -343,10 +329,17 @@ ${tradingNotes}`,
     },
     fulfill: {
         action: "fulfill",
-        description: "Fulfill writ agreement.",
+        description: `Fulfill a writ agreement.
+        
+Commands:
+    fulfill [writ]
+
+Examples:
+    fufill item_tradewrit_1
+`,
         predicate: {
             target: ["item"],
-            tokenPositions: { action: 0 },
+            tokenPositions: { action: 0, target: 1 },
         },
         ticks: 0, // fulfill should be 0 ticks as the actual action will have ticks
         icon: {
@@ -584,8 +577,7 @@ const playerActions = [
     actions.enter,
     actions.accept,
     actions.learn,
-    actions.buy,
-    actions.sell,
+    actions.trade,
     actions.fulfill,
     actions.writ,
 ];

@@ -31,6 +31,7 @@ import {
     crossoverCmdDrop,
     crossoverCmdEnterItem,
     crossoverCmdEquip,
+    crossoverCmdFulfill,
     crossoverCmdLearn,
     crossoverCmdLook,
     crossoverCmdMove,
@@ -188,6 +189,8 @@ async function executeGameCommand(
                 target,
                 skill,
                 variables,
+                offer,
+                receive,
             },
             headers,
         );
@@ -249,25 +252,16 @@ async function performAction(
         // Execute the cta
         return await crossoverCmdAccept({ token: cta.token }, headers);
     }
-    // buy & sell
-    else if (
-        action.action === "buy" ||
-        (action.action === "sell" && variables != null)
-    ) {
+    // trade
+    else if (action.action === "trade") {
         if (!offer || !receive) {
-            throw new Error(`What are you trying to ${action.action}?`);
+            throw new Error(`What are you trying to trade?`);
         }
 
         return await crossoverCmdTrade(
             {
-                buyer:
-                    action.action === "buy"
-                        ? getEntityId(self)[0]
-                        : getEntityId(target!)[0],
-                seller:
-                    action.action === "sell"
-                        ? getEntityId(self)[0]
-                        : getEntityId(target!)[0],
+                buyer: getEntityId(self)[0],
+                seller: getEntityId(target!)[0],
                 offer,
                 receive,
             },
@@ -276,27 +270,28 @@ async function performAction(
     }
     // writ
     else if (action.action === "writ" && variables != null) {
-        // Get order
-        let order: "buy" | "sell" | undefined = undefined;
-        if (variables.queryIrrelevant.includes("buy")) {
-            order = "buy";
-        } else if (variables.queryIrrelevant.includes("sell")) {
-            order = "sell";
-        }
-        if (!order) {
-            throw new Error(`You must specify a buy or sell order`);
-        }
-
         if (!offer || !receive) {
-            throw new Error(`What are you trying to ${order}?`);
+            throw new Error(`What are you trying to trade?`);
         }
 
         return await crossoverCmdWrit(
             {
-                buyer: order === "buy" ? getEntityId(self)[0] : "", // anyone can fulfill
-                seller: order === "sell" ? getEntityId(self)[0] : "", // anyone can fulfill
+                buyer: getEntityId(self)[0],
+                seller: "", // anyone can fulfill
                 offer,
                 receive,
+            },
+            headers,
+        );
+    }
+    // fulfill
+    else if (action.action === "fulfill") {
+        if (!target || (target as Item).prop !== compendium.tradewrit.prop) {
+            throw new Error(`What writ are you trying to fulfill?`);
+        }
+        return await crossoverCmdFulfill(
+            {
+                item: (target as Item).item,
             },
             headers,
         );

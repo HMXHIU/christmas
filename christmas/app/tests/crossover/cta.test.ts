@@ -79,31 +79,30 @@ beforeAll(async () => {
 beforeEach(async () => {
     playerOne.lum = 0;
     playerOne = (await saveEntity(playerOne as PlayerEntity)) as PlayerEntity;
+    playerTwo.lum = 0;
+    playerTwo = (await saveEntity(playerTwo as PlayerEntity)) as PlayerEntity;
 
     // Put woodenclub in `playerTwo` inventory
     woodenclub.loc[0] = playerTwo.player;
     woodenclub.locI = playerTwo.locI;
     woodenclub.locT = "inv";
+    woodenclub = (await saveEntity(woodenclub as ItemEntity)) as ItemEntity;
 });
 
 describe("CTA Tests", () => {
     test("Creating and fulfilling trade writs", async () => {
-        /**
-         * Create a sell writ
-         */
-
-        // `playerTwo` create a sell writ to sell `woodenclub` for 100 lum
+        // `playerTwo` create writ to sell `woodenclub` for 100 lum
         crossoverCmdWrit(
             {
-                buyer: "",
-                seller: playerTwo.player,
+                buyer: playerTwo.player,
+                seller: "",
                 offer: {
+                    items: [woodenclub.item],
+                },
+                receive: {
                     currency: {
                         lum: 100,
                     },
-                },
-                receive: {
-                    items: [woodenclub.item],
                 },
             },
             { Cookie: playerTwoCookies },
@@ -112,6 +111,8 @@ describe("CTA Tests", () => {
             playerTwoStream,
             "feed",
         )) as FeedEvent;
+
+        await sleep(MS_PER_TICK * actions.writ.ticks * 2);
 
         // Check received writ
         expect(feed).toMatchObject({
@@ -129,15 +130,18 @@ describe("CTA Tests", () => {
             playerOneStream,
             "feed",
         )) as FeedEvent;
+
+        await sleep(MS_PER_TICK * actions.browse.ticks * 2);
+
         expect(feed).toMatchObject({
             type: "message",
             event: "feed",
         });
         expect(
             feed.message.startsWith(
-                `${playerTwo.name} is offering to sell:\n\nWooden Club for 100 lum [item_tradewrit`,
+                `${playerTwo.name} is offering:\n\nWooden Club for 100 lum [item_tradewrit`,
             ),
-        );
+        ).toBeTruthy();
 
         // `playerOne` fulfill trade writ on `playerTwo`
         const match = feed.message.match(/\[(item_tradewrit\d+)\]/); // extract the writ from the browse message
@@ -146,18 +150,14 @@ describe("CTA Tests", () => {
 
         // Check conditions not met
         crossoverCmdFulfill({ item: writId }, { Cookie: playerOneCookies });
+
         var feed = (await waitForEventData(
             playerOneStream,
             "feed",
         )) as FeedEvent;
         expect(feed).toMatchObject({
-            type: "message",
-            message: "${message}",
-            variables: {
-                cmd: "say",
-                name: "Gandalf",
-                message: "Gandalf does not have 100 lum.",
-            },
+            type: "error",
+            message: "Gandalf does not have 100 lum.",
             event: "feed",
         });
 
@@ -173,6 +173,9 @@ describe("CTA Tests", () => {
             playerOneStream,
             "feed",
         )) as FeedEvent;
+
+        await sleep(MS_PER_TICK * actions.trade.ticks * 2);
+
         expect(feed).toMatchObject({
             type: "message",
             message: "${message}",
@@ -197,8 +200,8 @@ describe("CTA Tests", () => {
         // `playerOne` wants to buy `playerTwo`s `woodenClub` for 100 lum
         crossoverCmdTrade(
             {
-                seller: playerTwo.player,
                 buyer: playerOne.player,
+                seller: playerTwo.player,
                 offer: {
                     currency: {
                         lum: 100,
@@ -238,14 +241,8 @@ describe("CTA Tests", () => {
         // Check `playerTwo` got message that `playerOne` does not have enough currencies
         var feed = await waitForEventData(playerTwoStream, "feed");
         expect(feed).toMatchObject({
-            type: "message",
-            message: "${message}",
-            variables: {
-                cmd: "say",
-                player: playerOne.player,
-                name: playerOne.name,
-                message: `${playerOne.name} does not have 100 lum.`,
-            },
+            type: "error",
+            message: `${playerOne.name} does not have 100 lum.`,
             event: "feed",
         });
 
@@ -266,26 +263,13 @@ describe("CTA Tests", () => {
         // Check `playerOne` and `playerTwo` got successful trade dialogues
         var playerOneFeed = null;
         var playerTwoFeed = null;
-        waitForEventData(playerOneStream, "feed").then(
-            (e) => (playerOneFeed = e),
-        );
         waitForEventData(playerTwoStream, "feed").then(
             (e) => (playerTwoFeed = e),
         );
-
+        waitForEventData(playerOneStream, "feed").then(
+            (e) => (playerOneFeed = e),
+        );
         await sleep(MS_PER_TICK * actions.trade.ticks * 2);
-
-        expect(playerOneFeed).toMatchObject({
-            type: "message",
-            message: "${message}",
-            variables: {
-                cmd: "say",
-                player: playerTwo.player,
-                name: `${playerTwo.name}`,
-                message: `${playerTwo.name} hands you Wooden Club, 'Pleasure doing business with you, ${playerOne.name}'`,
-            },
-            event: "feed",
-        });
         expect(playerTwoFeed).toMatchObject({
             type: "message",
             message: "${message}",
@@ -297,6 +281,17 @@ describe("CTA Tests", () => {
             },
             event: "feed",
         });
+        expect(playerOneFeed).toMatchObject({
+            type: "message",
+            message: "${message}",
+            variables: {
+                cmd: "say",
+                player: playerTwo.player,
+                name: `${playerTwo.name}`,
+                message: `${playerTwo.name} hands you Wooden Club, 'Pleasure doing business with you, ${playerOne.name}'`,
+            },
+            event: "feed",
+        });
 
         // Check players have the traded items
         woodenclub = (await fetchEntity(woodenclub.item)) as ItemEntity;
@@ -304,11 +299,11 @@ describe("CTA Tests", () => {
         const playerOneAfter = (await fetchEntity(
             playerOne.player,
         )) as PlayerEntity;
-        expect(playerOneAfter.lum).toBe(playerOne.lum - 100);
+        expect(playerOne.lum - playerOneAfter.lum).toBe(100);
         const playerTwoAfter = (await fetchEntity(
             playerTwo.player,
         )) as PlayerEntity;
-        expect(playerTwoAfter.lum).toBe(playerTwo.lum + 100);
+        expect(playerTwoAfter.lum - playerTwo.lum).toBe(100);
 
         /**
          * Sell CTA
@@ -461,7 +456,7 @@ describe("CTA Tests", () => {
             skills: {
                 exploration: curSkillLevel + 1,
             },
-            lum: playerOne.lum - skillLevelProgression(curSkillLevel),
+            lum: playerOne.lum - skillLevelProgression(curSkillLevel + 1),
         });
     });
 });

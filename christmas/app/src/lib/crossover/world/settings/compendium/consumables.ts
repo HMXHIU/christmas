@@ -17,31 +17,25 @@ export let consumables: Record<string, Prop> = {
             default: {
                 destructible: true,
                 description:
-                    "A formal document issued by the merchant guild. The merchant is offering to ${order} ${receive} for ${offer}. You may *fulfill* this writ.",
+                    "A formal document issued by the merchant guild. The merchant is offering ${offer} for ${receive}. You may *fulfill* this writ.",
                 variant: "default",
             },
         },
         utilities: {},
         variables: {
-            // 'sell' or 'buy'
-            order: {
-                variable: "order",
-                type: "string",
-                value: "",
-            },
-            // Description of items buyer will receive
+            // Description of items merchant should receive
             receive: {
                 variable: "receive",
                 type: "string",
                 value: "",
             },
-            // Description of items buyer is offering
+            // Description of items merchant is offering
             offer: {
                 variable: "offer",
                 type: "string",
                 value: "",
             },
-            // This is the JWT token containing the writ information
+            // This is the JWT token containing the writ information (the buyer and seller are inside)
             token: {
                 variable: "token",
                 type: "string",

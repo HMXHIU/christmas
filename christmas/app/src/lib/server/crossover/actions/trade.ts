@@ -18,6 +18,7 @@ import {
 import {
     fetchEntity,
     getNearbyPlayerIds,
+    inventoryQuerySet,
     itemRepository,
     saveEntity,
     writsQuerySet,
@@ -40,10 +41,24 @@ export {
     trade,
 };
 
-function playerHasBarterItems(player: PlayerEntity, barter: Barter): boolean {
-    // Check player as all barter items in inventory
+async function playerHasBarterItems(
+    player: PlayerEntity,
+    barter: Barter,
+): Promise<boolean> {
+    // Check player has all barter items in inventory
     for (const item of barter.items || []) {
         if (item.locT !== "inv" || item.loc[0] !== player.player) {
+            return false;
+        }
+    }
+    // Check player inventory for barter props
+    for (const prop of barter.props || []) {
+        if (
+            (await inventoryQuerySet(player.player)
+                .and("prop")
+                .equal(prop)
+                .count()) < 1
+        ) {
             return false;
         }
     }
@@ -56,25 +71,25 @@ function playerHasBarterItems(player: PlayerEntity, barter: Barter): boolean {
     return true;
 }
 
-function canTrade(
+async function canTrade(
     buyer: PlayerEntity,
     seller: PlayerEntity,
     offer: Barter,
     receive: Barter,
-): [boolean, string] {
+): Promise<[boolean, string]> {
     // Check if entities are players
     if (!seller.player || !buyer.player) {
         return [false, "You might as well try to trade with a rock."];
     }
 
     // Check seller and player has required items/currencies
-    if (!playerHasBarterItems(buyer, offer)) {
+    if (!(await playerHasBarterItems(buyer, offer))) {
         return [
             false,
             `${buyer.name} does not have ${barterDescription(offer)}.`,
         ];
     }
-    if (!playerHasBarterItems(seller, receive)) {
+    if (!(await playerHasBarterItems(seller, receive))) {
         return [
             false,
             `${seller.name} does not have ${barterDescription(receive)}.`,
@@ -86,12 +101,15 @@ function canTrade(
 
 function barterDescription(barter: Barter): string {
     const itemsDescription = barter.items.map((i) => i.name).join(", ");
+    const propsDescription = barter.props
+        .map((p) => compendium[p].defaultName)
+        .join(", ");
     const currenciesDescription = Object.entries(barter.currency)
         .filter(([cur, amt]) => amt > 0)
         .map(([cur, amt]) => `${amt} ${cur}`)
         .join(", ");
 
-    return [itemsDescription, currenciesDescription]
+    return [itemsDescription, propsDescription, currenciesDescription]
         .filter((s) => Boolean(s))
         .join(", ");
 }
@@ -109,6 +127,7 @@ function serializeBarter(barter: Barter): BarterSerialized {
     return {
         items: barter.items.map((i) => i.item),
         currency: barter.currency,
+        props: barter.props,
     };
 }
 
@@ -123,6 +142,7 @@ async function deserializeBarter(barter: BarterSerialized): Promise<Barter> {
             lum: barter?.currency?.lum ?? 0,
             umb: barter?.currency?.umb ?? 0,
         },
+        props: barter.props ?? [],
     };
 }
 
@@ -135,18 +155,18 @@ async function createTradeWrit({
     expiresIn,
 }: {
     creator: PlayerEntity; // the creator creating the writ
-    buyer: string; // "" to let anyone fulfill the order
+    buyer: string; // must be creator
     seller: string; // "" to let anyone fulfill the order
-    offer: Barter;
-    receive: Barter;
+    offer: Barter; // always buyer offer
+    receive: Barter; // always buyer receive
     expiresIn?: number;
 }): Promise<ItemEntity> {
-    if (creator.player !== seller && creator.player !== buyer) {
-        throw new Error("Executor must be one of the buyer or seller");
+    if (creator.player !== buyer) {
+        throw new Error("Executor must be buyer");
     }
 
     expiresIn = expiresIn ?? 60 * 60 * 24; // 1 day
-    const offerDesc = barterDescription(offer); // w.r.t to buyer
+    const offerDesc = barterDescription(offer);
     const receiveDesc = barterDescription(receive);
     const tradeTx: P2PTradeTransaction = {
         transaction: "trade",
@@ -160,9 +180,8 @@ async function createTradeWrit({
         entity: creator,
         prop: compendium.tradewrit.prop,
         variables: {
-            order: creator.player === seller ? "sell" : "buy",
-            receive: receiveDesc,
             offer: offerDesc,
+            receive: receiveDesc,
             token: await createP2PTransaction(tradeTx, expiresIn),
         },
     });
@@ -243,17 +262,19 @@ async function executeTradeCTA(
     }
 
     // Need to check before executing so we can send any dialogues to the executor only
-    const [ok, cannotTradeMessage] = canTrade(
+    const [ok, cannotTradeMessage] = await canTrade(
         buyerEntity,
         sellerEntity,
         barterOffer,
         barterReceive,
     );
+    console.log(ok, cannotTradeMessage);
+
     if (!ok) {
         if (isEntityHuman(executor)) {
-            say(buyerEntity, cannotTradeMessage, {
-                target: executor.player,
-                overwrite: true,
+            publishFeedEvent(executor.player, {
+                type: "error",
+                message: cannotTradeMessage,
             });
         }
         return; // stop the execution
@@ -267,27 +288,22 @@ async function browse(
     merchant: string,
 ): Promise<ItemEntity[]> {
     const merchantEntity = (await fetchEntity(merchant)) as PlayerEntity;
-
     const writs = (await writsQuerySet(
         merchantEntity.player,
     ).returnAll()) as ItemEntity[];
-    const buyOrders = writs
-        .filter(({ vars }) => vars.order === "buy")
-        .map(({ vars, item }) => `${vars.receive} for ${vars.offer} [${item}]`)
-        .join("\n");
-    const sellOrders = writs
-        .filter(({ vars }) => vars.order === "sell")
-        .map(({ vars, item }) => `${vars.receive} for ${vars.offer} [${item}]`)
+
+    // The player is always the seller in the writ
+
+    const orders = writs
+        .map(({ vars, item }) => `${vars.offer} for ${vars.receive} [${item}]`)
         .join("\n");
 
     let message = "";
-    if (sellOrders) {
-        message += `${merchantEntity.name} is offering to sell:\n\n${sellOrders}\n\n`;
+    if (orders) {
+        message += `${merchantEntity.name} is offering:\n\n${orders}\n\n`;
     }
-    if (buyOrders) {
-        message += `And offering to buy:\n\n${buyOrders}\n\n`;
-    }
-    if (sellOrders || buyOrders) {
+
+    if (orders) {
         message += "You may *fulfill writ* to execute a trade.";
     }
 
@@ -308,7 +324,12 @@ async function trade(
 ) {
     const buyerIsHuman = isEntityHuman(buyer);
     const sellerIsHuman = isEntityHuman(seller);
-    const [ok, cannotTradeMessage] = canTrade(buyer, seller, offer, receive);
+    const [ok, cannotTradeMessage] = await canTrade(
+        buyer,
+        seller,
+        offer,
+        receive,
+    );
 
     // Cannot trade - send `cannotLearnMessage` back to buyer
     if (!ok && buyerIsHuman) {
@@ -327,7 +348,7 @@ async function trade(
 
     // Publish action event
     publishActionEvent(nearbyPlayerIds, {
-        action: "buy",
+        action: "trade",
         source: buyer.player,
         target: seller.player,
     });
@@ -344,6 +365,15 @@ async function trade(
         await saveEntity(buyer);
         await saveEntity(seller);
     }
+    for (const prop of offer.props) {
+        const item = (await inventoryQuerySet(buyer.player)
+            .and("prop")
+            .equal(prop)
+            .first()) as ItemEntity;
+        item.locT = "inv";
+        item.loc[0] = seller.player;
+        await saveEntity(item);
+    }
 
     // Transfer receive from seller to buyer
     for (const item of receive.items) {
@@ -356,6 +386,15 @@ async function trade(
         buyer[cur as Currency] += amt;
         await saveEntity(buyer);
         await saveEntity(seller);
+    }
+    for (const prop of receive.props) {
+        const item = (await inventoryQuerySet(seller.player)
+            .and("prop")
+            .equal(prop)
+            .first()) as ItemEntity;
+        item.locT = "inv";
+        item.loc[0] = buyer.player;
+        await saveEntity(item);
     }
 
     // Destroy writ if provided
@@ -378,12 +417,14 @@ async function trade(
 
     // Send dialogues
     if (buyerIsHuman) {
+        console.log(barterDialogue(receive, seller, buyer));
         say(seller, barterDialogue(receive, seller, buyer), {
             target: buyer.player,
             overwrite: true,
         });
     }
     if (sellerIsHuman) {
+        console.log(barterDialogue(offer, buyer, seller));
         say(buyer, barterDialogue(offer, buyer, seller), {
             target: seller.player,
             overwrite: true,

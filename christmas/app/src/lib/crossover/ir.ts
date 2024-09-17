@@ -472,6 +472,10 @@ function searchPossibleCommands({
         COMMAND_SEARCH_RANGE,
     ) as Item[];
 
+    // Writ items can be interacted with even in another player's inventory (get via `browse`)
+    const writs = items.filter((i) => i.prop === compendium.tradewrit.prop);
+    items.push(...writs);
+
     // Entities in environment relevant to the query
     var {
         monsters: monstersRetrieved,

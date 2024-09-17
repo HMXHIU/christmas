@@ -5,8 +5,8 @@ import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
-    learningDialoguesForSkill,
     skillLevelProgression,
+    SkillLinesEnum,
 } from "$lib/crossover/world/skills";
 import {
     spawnItemAtGeohash,
@@ -204,10 +204,7 @@ describe("Actions Tests", () => {
                 cmd: "say",
                 player: npc.player,
                 name: "Blacksmith",
-                message: learningDialoguesForSkill(
-                    "exploration",
-                    curSkillLevel + 1,
-                )[0],
+                message: "Blacksmith hands you a worn map and a compass.",
             },
             event: "feed",
         });
@@ -221,7 +218,7 @@ describe("Actions Tests", () => {
             skills: {
                 exploration: curSkillLevel + 1,
             },
-            lum: playerOne.lum - skillLevelProgression(curSkillLevel),
+            lum: playerOne.lum - skillLevelProgression(curSkillLevel + 1),
         });
     });
 
@@ -294,6 +291,7 @@ describe("Actions Tests", () => {
             monsters: [dragon],
             players: [playerTwo],
             items: [woodendoor, woodenclub, portal],
+            skills: [...SkillLinesEnum],
         }).commands;
 
         expect(commands).toMatchObject([
@@ -337,6 +335,7 @@ describe("Actions Tests", () => {
             monsters: [dragon, goblin],
             players: [playerTwo],
             items: [woodendoor, woodenclub, portal],
+            skills: [...SkillLinesEnum],
         }).commands;
 
         expect(commands).toMatchObject([
@@ -370,6 +369,7 @@ describe("Actions Tests", () => {
             monsters: [dragon],
             players: [playerTwo],
             items: [woodendoor, woodenclub, portal],
+            skills: [...SkillLinesEnum],
         }).commands;
 
         expect(commands.length).toBe(0);
@@ -386,6 +386,7 @@ describe("Actions Tests", () => {
             monsters: [dragon],
             players: [playerTwo],
             items: [woodendoor, woodenclub, portal],
+            skills: [...SkillLinesEnum],
         });
 
         const [, , variables] = commands[0];
@@ -408,6 +409,7 @@ describe("Actions Tests", () => {
             monsters: [],
             players: [],
             items: [woodenclub3, woodenclub],
+            skills: [...SkillLinesEnum],
         }).commands;
 
         expect(commands).toHaveLength(1);

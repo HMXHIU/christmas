@@ -1,11 +1,6 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
-import { actions } from "$lib/crossover/world/actions";
 import { PlayerMetadataSchema } from "$lib/crossover/world/player";
-import {
-    MS_PER_TICK,
-    TILE_HEIGHT,
-    TILE_WIDTH,
-} from "$lib/crossover/world/settings";
+import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import {
@@ -21,7 +16,6 @@ import {
     saveEntity,
     worldsInGeohashQuerySet,
 } from "$lib/server/crossover/redis";
-import { sleep } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
 import { performance } from "perf_hooks";
@@ -470,8 +464,6 @@ const crossoverRouter = {
             .query(async ({ ctx, input }) => {
                 const p2pTransaction = await verifyP2PTransaction(input.token);
 
-                await sleep(MS_PER_TICK * actions.accept.ticks);
-
                 // Learn
                 if (p2pTransaction.transaction === "learn") {
                     await executeLearnCTA(
@@ -481,6 +473,7 @@ const crossoverRouter = {
                 }
                 // Trade
                 else if (p2pTransaction.transaction === "trade") {
+                    console.log("ACCEPTING TRADe");
                     await executeTradeCTA(
                         ctx.player,
                         p2pTransaction as P2PTradeTransaction,

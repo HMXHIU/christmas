@@ -6,6 +6,7 @@ import {
 import { executeGameCommand } from "$lib/crossover/game";
 import { searchPossibleCommands, type GameCommand } from "$lib/crossover/ir";
 import { geohashNeighbour } from "$lib/crossover/utils";
+import { actions } from "$lib/crossover/world/actions";
 import { entityStats } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
@@ -13,9 +14,14 @@ import { compendium } from "$lib/crossover/world/settings/compendium";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import {
     spawnItemAtGeohash,
+    spawnItemInInventory,
     spawnMonster,
 } from "$lib/server/crossover/dungeonMaster";
-import { initializeClients, saveEntity } from "$lib/server/crossover/redis";
+import {
+    initializeClients,
+    inventoryQuerySet,
+    saveEntity,
+} from "$lib/server/crossover/redis";
 import type {
     Item,
     ItemEntity,
@@ -174,7 +180,7 @@ beforeEach(async () => {
 
 describe("Command Tests", () => {
     test("Learn skill from player", async () => {
-        // Test `searchPossibleCommands`
+        // Test command search
         const { commands, queryTokens, tokenPositions } =
             searchPossibleCommands({
                 query: `learn exploration from ${playerTwo.name}`,
@@ -214,9 +220,10 @@ describe("Command Tests", () => {
     });
 
     test("Create writ", async () => {
+        // Test command search
         const { commands, queryTokens, tokenPositions } =
             searchPossibleCommands({
-                query: `writ buy woodenclub,potionofhealth for 100lum,50umb`,
+                query: `writ trade 100lum,50umb for woodenclub,potionofhealth`,
                 player: playerOne,
                 playerAbilities: [
                     abilities.scratch,
@@ -239,7 +246,7 @@ describe("Command Tests", () => {
                     self: {
                         player: playerOne.player,
                     },
-                    receive: {
+                    offer: {
                         items: [],
                         props: [],
                         currency: {
@@ -247,7 +254,7 @@ describe("Command Tests", () => {
                             umb: 50,
                         },
                     },
-                    offer: {
+                    receive: {
                         items: [],
                         props: ["woodenclub", "potionofhealth"],
                         currency: {
@@ -257,19 +264,123 @@ describe("Command Tests", () => {
                     },
                 },
                 {
-                    query: `writ buy woodenclub,potionofhealth for 100lum,50umb`.toLowerCase(),
-                    queryIrrelevant: "buy for",
+                    query: `writ trade 100lum,50umb for woodenclub,potionofhealth`.toLowerCase(),
+                    queryIrrelevant: "trade for",
                 },
             ],
         ]);
     });
 
-    test("Fulfill writ", async () => {});
+    test("Fulfill writ", async () => {
+        /**
+         * Fufill a writ offering to buy a prop
+         */
+
+        // `playerOne` create a writ to buy potionofhealth for 100lum
+        const { commands: writCommands } = searchPossibleCommands({
+            query: `writ trade 100lum for ${compendium.potionofhealth.prop}`,
+            player: playerOne,
+            playerAbilities: [
+                abilities.scratch,
+                abilities.bandage,
+                abilities.swing,
+            ],
+            playerItems: [woodenclub],
+            actions: allActions,
+            monsters: [goblin, dragon],
+            players: [playerOne, playerTwo],
+            items: [woodendoor, tavern],
+            skills: [...SkillLinesEnum],
+        });
+        await executeGameCommand(writCommands[0], { Cookie: playerOneCookies });
+
+        // Get inventory
+        const invItems = (await inventoryQuerySet(
+            playerOne.player,
+        ).returnAll()) as ItemEntity[];
+
+        // Find writ
+        const writItem = invItems.find((i) => i.prop === "tradewrit");
+        expect(writItem).toBeTruthy();
+        expect(writItem).toMatchObject({
+            vars: {
+                receive: "Potion of Health",
+                offer: "100 lum",
+            },
+        });
+
+        // Give players the items to fulfill the writ
+        await spawnItemInInventory({
+            entity: playerTwo as PlayerEntity,
+            prop: compendium.potionofhealth.prop,
+        });
+        playerOne.lum = 100;
+        playerOne = (await saveEntity(
+            playerOne as PlayerEntity,
+        )) as PlayerEntity;
+
+        // `playerTwo` fulfill `playerOne`s writ
+        const {
+            commands: fulfillCommands,
+            queryTokens,
+            tokenPositions,
+        } = searchPossibleCommands({
+            query: `fufill ${writItem?.item}`,
+            player: playerTwo,
+            playerAbilities: [],
+            playerItems: [writItem!],
+            actions: allActions,
+            monsters: [],
+            players: [playerTwo, playerOne],
+            items: [writItem!],
+            skills: [...SkillLinesEnum],
+        });
+        expect(fulfillCommands).toMatchObject([
+            [
+                {
+                    action: "fulfill",
+                },
+                {
+                    self: {
+                        player: playerTwo.player,
+                    },
+                    target: {
+                        item: writItem!.item,
+                    },
+                },
+                {
+                    query: `fufill ${writItem?.item}`,
+                    queryIrrelevant: "",
+                },
+            ],
+        ]);
+        await executeGameCommand(fulfillCommands[0], {
+            Cookie: playerTwoCookies,
+        });
+
+        await sleep(MS_PER_TICK * actions.trade.ticks * 2);
+
+        // Check items
+        var playerOneInventory = (await inventoryQuerySet(
+            playerOne.player,
+        ).returnAll()) as ItemEntity[];
+        expect(playerOneInventory.length === 1).toBe(true); // writ should be destroyed
+        expect(playerOneInventory).toMatchObject([
+            {
+                name: "Potion of Health",
+                prop: "potionofhealth",
+                loc: [playerOne.player],
+                locT: "inv",
+                locI: "@",
+            },
+        ]);
+    });
 
     test("Trade with player", async () => {
+        // Test command search
         const { commands, queryTokens, tokenPositions } =
             searchPossibleCommands({
-                query: `sell ${woodenclub.item} to ${playerTwo.name} for 100lum,50umb`,
+                query: `trade ${woodenclub.item} for 100lum,50umb with ${playerTwo.name}`,
                 player: playerOne,
                 playerAbilities: [
                     abilities.scratch,
@@ -283,11 +394,10 @@ describe("Command Tests", () => {
                 items: [woodendoor, tavern],
                 skills: [...SkillLinesEnum],
             });
-
         expect(commands).toMatchObject([
             [
                 {
-                    action: "sell",
+                    action: "trade",
                 },
                 {
                     self: {
@@ -312,14 +422,15 @@ describe("Command Tests", () => {
                     },
                 },
                 {
-                    query: `sell ${woodenclub.item} to ${playerTwo.name} for 100lum,50umb`.toLowerCase(),
-                    queryIrrelevant: "to for",
+                    query: `trade ${woodenclub.item} for 100lum,50umb with ${playerTwo.name}`.toLowerCase(),
+                    queryIrrelevant: "for with",
                 },
             ],
         ]);
     });
 
     test("Browse player writs", async () => {
+        // Test command search
         const { commands, queryTokens, tokenPositions } =
             searchPossibleCommands({
                 query: `browse ${playerTwo.name}`,
@@ -364,7 +475,7 @@ describe("Command Tests", () => {
         playerOne.loc = [tavernGeohash];
         playerOne = (await saveEntity(playerOne as PlayerEntity)) as Player;
 
-        // Test `searchPossibleCommands`
+        // Test command search
         const { commands, queryTokens, tokenPositions } =
             searchPossibleCommands({
                 query: "enter tavern",
