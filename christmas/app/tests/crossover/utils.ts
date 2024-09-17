@@ -85,6 +85,7 @@ export const allActions = [
     actions.enter,
     actions.buy,
     actions.sell,
+    actions.writ,
     actions.learn,
     actions.accept,
     actions.browse,

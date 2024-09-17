@@ -332,7 +332,7 @@ Examples:
 ${tradingNotes}`,
         predicate: {
             target: ["none"],
-            tokenPositions: { action: 0 },
+            tokenPositions: { action: 0, offer: 2, receive: 4 },
         },
         ticks: 1,
         icon: {
@@ -389,6 +389,7 @@ function parseBarter(barterString: string): BarterSerialized | undefined {
     let umb = 0;
     let lum = 0;
     let items = [];
+    let props = [];
     let ok = false;
     for (const s of barterString.split(",")) {
         if (s.endsWith("lum")) {
@@ -400,6 +401,9 @@ function parseBarter(barterString: string): BarterSerialized | undefined {
         } else if (s.startsWith("item")) {
             items.push(s);
             ok = true;
+        } else if (compendium[s]) {
+            ok = true;
+            props.push(s);
         }
     }
     if (!ok) {
@@ -407,6 +411,7 @@ function parseBarter(barterString: string): BarterSerialized | undefined {
     } else {
         return {
             items,
+            props,
             currency: {
                 lum,
                 umb,
@@ -473,7 +478,6 @@ function resolveActionEntities({
             return [];
         }
     }
-
     // Check skill token position
     const skill = skills.find((s) => tokenPositions[s]);
     if (skillTokenPosition != null && skill == null) {
@@ -555,7 +559,7 @@ function resolveActionEntities({
 
     // If no target is allowed
     if (gameActionEntitiesScores.length === 0 && targetTypes.includes("none")) {
-        return [{ self, skill }];
+        return [{ self, skill, receive, offer }];
     }
 
     // Sort by score

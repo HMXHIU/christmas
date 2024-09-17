@@ -213,12 +213,60 @@ describe("Command Tests", () => {
         ]);
     });
 
-    test("Create writ", async () => {});
+    test("Create writ", async () => {
+        const { commands, queryTokens, tokenPositions } =
+            searchPossibleCommands({
+                query: `writ buy woodenclub,potionofhealth for 100lum,50umb`,
+                player: playerOne,
+                playerAbilities: [
+                    abilities.scratch,
+                    abilities.bandage,
+                    abilities.swing,
+                ],
+                playerItems: [woodenclub],
+                actions: allActions,
+                monsters: [goblin, dragon],
+                players: [playerOne, playerTwo],
+                items: [woodendoor, tavern],
+                skills: [...SkillLinesEnum],
+            });
+        expect(commands).toMatchObject([
+            [
+                {
+                    action: "writ",
+                },
+                {
+                    self: {
+                        player: playerOne.player,
+                    },
+                    receive: {
+                        items: [],
+                        props: [],
+                        currency: {
+                            lum: 100,
+                            umb: 50,
+                        },
+                    },
+                    offer: {
+                        items: [],
+                        props: ["woodenclub", "potionofhealth"],
+                        currency: {
+                            lum: 0,
+                            umb: 0,
+                        },
+                    },
+                },
+                {
+                    query: `writ buy woodenclub,potionofhealth for 100lum,50umb`.toLowerCase(),
+                    queryIrrelevant: "buy for",
+                },
+            ],
+        ]);
+    });
 
     test("Fulfill writ", async () => {});
 
     test("Trade with player", async () => {
-        // Test `searchPossibleCommands`
         const { commands, queryTokens, tokenPositions } =
             searchPossibleCommands({
                 query: `sell ${woodenclub.item} to ${playerTwo.name} for 100lum,50umb`,
@@ -272,7 +320,6 @@ describe("Command Tests", () => {
     });
 
     test("Browse player writs", async () => {
-        // Test `searchPossibleCommands`
         const { commands, queryTokens, tokenPositions } =
             searchPossibleCommands({
                 query: `browse ${playerTwo.name}`,

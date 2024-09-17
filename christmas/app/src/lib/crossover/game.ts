@@ -41,6 +41,7 @@ import {
     crossoverCmdTrade,
     crossoverCmdUnequip,
     crossoverCmdUseItem,
+    crossoverCmdWrit,
     crossoverPlayerInventory,
 } from "./client";
 import { type GameCommand, type GameCommandVariables } from "./ir";
@@ -248,7 +249,6 @@ async function performAction(
         // Execute the cta
         return await crossoverCmdAccept({ token: cta.token }, headers);
     }
-
     // buy & sell
     else if (
         action.action === "buy" ||
@@ -274,9 +274,35 @@ async function performAction(
             headers,
         );
     }
+    // writ
+    else if (action.action === "writ" && variables != null) {
+        // Get order
+        let order: "buy" | "sell" | undefined = undefined;
+        if (variables.queryIrrelevant.includes("buy")) {
+            order = "buy";
+        } else if (variables.queryIrrelevant.includes("sell")) {
+            order = "sell";
+        }
+        if (!order) {
+            throw new Error(`You must specify a buy or sell order`);
+        }
 
+        if (!offer || !receive) {
+            throw new Error(`What are you trying to ${order}?`);
+        }
+
+        return await crossoverCmdWrit(
+            {
+                buyer: order === "buy" ? getEntityId(self)[0] : "", // anyone can fulfill
+                seller: order === "sell" ? getEntityId(self)[0] : "", // anyone can fulfill
+                offer,
+                receive,
+            },
+            headers,
+        );
+    }
     // learn
-    else if (action.action === "learn" && variables != null) {
+    else if (action.action === "learn") {
         const teacher = target ? getEntityId(target)[0] : undefined;
         if (!teacher) {
             throw new Error(`Who are you trying to learn from?`);

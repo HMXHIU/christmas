@@ -25,12 +25,14 @@ export {
 type Currency = "lum" | "umb";
 
 interface Barter {
-    items: ItemEntity[];
+    items: ItemEntity[]; // when buying or selling specific item instances
+    props: string[]; // when buying items by props
     currency: Record<Currency, number>;
 }
 type BarterSerialized = z.infer<typeof BarterSchema>;
 const BarterSchema = z.object({
     items: z.array(z.string()).optional(),
+    props: z.array(z.string()).optional(),
     currency: z
         .object({
             lum: z.number().optional(),

@@ -607,13 +607,9 @@ function commandVariables({
     tokenPositions: TokenPositions;
 }): GameCommandVariables {
     // const { self, target, item, skill, offer, receive } = gameEntities;
-
     // const selfId = getEntityId(self)[0];
     // const targetId = target != null ? getEntityId(target)[0] : null;
     // const itemId = item != null ? getEntityId(item)[0] : null;
-
-    // console.log(queryTokens, Object.values(action.predicate.tokenPositions));
-
     // const relevantPositions = [
     //     ...Object.keys(tokenPositions[action.action] || {}),
     //     ...Object.keys(tokenPositions[selfId] || {}),
@@ -624,7 +620,6 @@ function commandVariables({
     // ];
 
     const relevantPositions = Object.values(action.predicate.tokenPositions);
-
     const queryIrrelevant = Array.from(queryTokens.entries())
         .filter(([pos, token]) => {
             return !relevantPositions.includes(pos);
