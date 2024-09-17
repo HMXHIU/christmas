@@ -352,7 +352,7 @@ export async function createNPCs({
     locationInstance,
 }: {
     geohash?: string;
-    locationInstance: string;
+    locationInstance?: string;
 }) {
     const blackSmith = await generateNPC(npcs.blacksmith.npc, {
         demographic: {},

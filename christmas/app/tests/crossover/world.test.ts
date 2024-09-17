@@ -27,7 +27,6 @@ import {
 } from "$lib/server/crossover/redis";
 import type {
     ItemEntity,
-    PlayerEntity,
     WorldEntity,
 } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
@@ -39,18 +38,24 @@ import {
     generateRandomGeohash,
 } from "./utils";
 
+// Create redis repositories
+await initializeClients();
+
+let { playerOneCookies } = await createGandalfSarumanSauron();
+
+let woodenDoor = (await spawnItemAtGeohash({
+    geohash: generateRandomGeohash(8, "h9"),
+    locationType: "geohash",
+    locationInstance: LOCATION_INSTANCE,
+    prop: compendium.woodendoor.prop,
+    variables: {
+        [compendium.woodendoor.variables!.doorsign.variable]:
+            "A custom door sign",
+    },
+})) as ItemEntity;
+
 let assetUrl: string;
 let asset: WorldAssetMetadata;
-
-let region: string;
-let geohash: string;
-let playerOne: PlayerEntity;
-let playerOneCookies: string;
-let playerOneStream: EventTarget;
-let woodenDoor: ItemEntity;
-let woodenDoorGeohash: string;
-let playerOneGeohash: string;
-
 let world: WorldEntity;
 let worldGeohash: string;
 let worldTwo: WorldEntity;
@@ -59,18 +64,6 @@ let worldThree: WorldEntity;
 let worldThreeGeohash: string;
 
 beforeAll(async () => {
-    // Create redis repositories
-    await initializeClients();
-
-    // Create players
-    ({
-        region,
-        geohash: playerOneGeohash,
-        playerOne,
-        playerOneCookies,
-        playerOneStream,
-    } = await createGandalfSarumanSauron());
-
     // Store the test world asset in storage and get the url
     const worldAsset = await createWorldAsset();
     asset = worldAsset.asset;
@@ -83,18 +76,6 @@ beforeAll(async () => {
     ).all();
     worldRepository.remove(existingWorlds.map((w) => (w as WorldEntity).world));
     await sleep(1000);
-
-    woodenDoorGeohash = generateRandomGeohash(8, "h9");
-    woodenDoor = (await spawnItemAtGeohash({
-        geohash: woodenDoorGeohash,
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        prop: compendium.woodendoor.prop,
-        variables: {
-            [compendium.woodendoor.variables!.doorsign.variable]:
-                "A custom door sign",
-        },
-    })) as ItemEntity;
 
     // Spawn worlds
     worldGeohash = "w21z8ucp"; // top left plot

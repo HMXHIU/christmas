@@ -11,51 +11,28 @@ import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
-import type {
-    ItemEntity,
-    PlayerEntity,
-} from "$lib/server/crossover/redis/entities";
+import type { ItemEntity } from "$lib/server/crossover/redis/entities";
 import { isGeohashTraversableServer } from "$lib/server/crossover/utils";
 import { omit } from "lodash-es";
 import { beforeAll, describe, expect, test } from "vitest";
 import { itemRecord } from "../../src/store";
-import { createGandalfSarumanSauron, generateRandomGeohash } from "./utils";
+import { generateRandomGeohash } from "./utils";
 
-let region: string;
-let geohash: string;
-let playerOne: PlayerEntity;
-let playerOneCookies: string;
-let playerOneStream: EventTarget;
-let woodenDoor: ItemEntity;
-let woodenDoorGeohash: string;
-let playerOneGeohash: string;
+// Create redis repositories
+await initializeClients();
+
+let woodenDoor = (await spawnItemAtGeohash({
+    geohash: generateRandomGeohash(8, "h9"),
+    locationType: "geohash",
+    locationInstance: LOCATION_INSTANCE,
+    prop: compendium.woodendoor.prop,
+    variables: {
+        [compendium.woodendoor.variables!.doorsign.variable]:
+            "A custom door sign",
+    },
+})) as ItemEntity;
 
 beforeAll(async () => {
-    // Create redis repositories
-    await initializeClients();
-
-    // Create players
-    ({
-        region,
-        geohash: playerOneGeohash,
-        playerOne,
-        playerOneCookies,
-        playerOneStream,
-    } = await createGandalfSarumanSauron());
-
-    // Spawn items
-    woodenDoorGeohash = generateRandomGeohash(8, "h9");
-    woodenDoor = (await spawnItemAtGeohash({
-        geohash: woodenDoorGeohash,
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        prop: compendium.woodendoor.prop,
-        variables: {
-            [compendium.woodendoor.variables!.doorsign.variable]:
-                "A custom door sign",
-        },
-    })) as ItemEntity;
-
     // Set itemRecord
     itemRecord.set({
         [woodenDoor.item]: woodenDoor,
@@ -91,14 +68,14 @@ describe("Biome Topology Tests", () => {
         // Wooden door collider not traversable
         await expect(
             isGeohashTraversableServer(
-                woodenDoorGeohash,
+                woodenDoor.loc[0],
                 "geohash",
                 LOCATION_INSTANCE,
             ),
         ).resolves.toBe(false);
         await expect(
             isGeohashTraversableClient(
-                woodenDoorGeohash,
+                woodenDoor.loc[0],
                 "geohash",
                 LOCATION_INSTANCE,
             ),

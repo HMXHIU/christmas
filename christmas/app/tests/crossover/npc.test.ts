@@ -1,79 +1,40 @@
 import { crossoverCmdSay } from "$lib/crossover/client";
-import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
-import { compendium } from "$lib/crossover/world/settings/compendium";
-import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
-import { generateNPC } from "$lib/server/crossover/npc";
 import { initializeClients, saveEntity } from "$lib/server/crossover/redis";
-import type {
-    Item,
-    Player,
-    PlayerEntity,
-} from "$lib/server/crossover/redis/entities";
 import { npcs } from "$lib/server/crossover/settings/npc";
 import { getUserMetadata } from "$lib/server/crossover/utils";
 import { beforeAll, expect, test } from "vitest";
 import {
     createGandalfSarumanSauron,
-    generateRandomGeohash,
+    createNPCs,
     waitForEventData,
 } from "./utils";
 
-// Player one
+await initializeClients(); // create redis repositories
 
-let region: string;
-let geohash: string;
-
-let playerOne: Player;
-let playerOneCookies: string;
-let playerOneStream: EventTarget;
-
-// NPC
-let npc: Player;
-
-// Items
-const woodendoorGeohash = generateRandomGeohash(8, "h9");
-let woodendoor: Item;
+let { playerOne, playerOneCookies, playerOneStream } =
+    await createGandalfSarumanSauron();
+let { innKeeper } = await createNPCs({});
 
 beforeAll(async () => {
-    await initializeClients(); // create redis repositories
-
-    // Create players
-    ({ region, geohash, playerOne, playerOneCookies, playerOneStream } =
-        await createGandalfSarumanSauron());
-
-    // Spawn Items
-    woodendoor = await spawnItemAtGeohash({
-        geohash: woodendoorGeohash,
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        prop: compendium.woodendoor.prop,
-    });
-
-    // Test full randomized generation
-    npc = await generateNPC(npcs.innkeep.npc, {
-        demographic: {},
-        appearance: {},
-    });
-
     // Test NPC Entity
-    expect(npc).toMatchObject({
+    expect(innKeeper).toMatchObject({
         name: "Inn Keeper",
         lgn: true,
         rgn: "@@@",
         locT: "geohash",
-        locI: npc.player, // should be in its own instance
+        locI: innKeeper.player, // should be in its own instance
     });
 });
 
 test("Test NPC Dialogue", async () => {
-    npc.locT = playerOne.locT;
-    npc.locI = playerOne.locI;
-    npc.loc = playerOne.loc;
-    npc = (await saveEntity(npc as PlayerEntity)) as Player;
+    innKeeper.locT = playerOne.locT;
+    innKeeper.locI = playerOne.locI;
+    innKeeper.loc = playerOne.loc;
+    innKeeper = await saveEntity(innKeeper);
 
     // Test greetings
     crossoverCmdSay(
-        { message: "", target: npc.player },
+        { message: "", target: innKeeper.player },
         { Cookie: playerOneCookies },
     );
     var feed = await waitForEventData(playerOneStream, "feed");
@@ -82,7 +43,7 @@ test("Test NPC Dialogue", async () => {
         message: "${message}",
         variables: {
             cmd: "say",
-            player: npc.player,
+            player: innKeeper.player,
             name: "Inn Keeper",
             message:
                 "Inn Keeper greets you, 'Well met Gandalf, you may *rest* here'.",
@@ -95,28 +56,28 @@ test("Test NPC Dialogue", async () => {
 
 test("Test `generateNPC`", async () => {
     // Test UserMetadata
-    const npcUserMetadata = await getUserMetadata(npc.player);
+    const npcUserMetadata = await getUserMetadata(innKeeper.player);
     expect(npcUserMetadata).toMatchObject({
-        publicKey: npc.player,
+        publicKey: innKeeper.player,
         crossover: {
-            player: npc.player,
-            name: npc.name,
+            player: innKeeper.player,
+            name: innKeeper.name,
             description: npcs.innkeep.descriptionTemplate,
-            avatar: npc.avatar,
+            avatar: innKeeper.avatar,
             demographic: {
-                gender: npc.gen,
-                race: npc.race,
-                archetype: npc.arch,
+                gender: innKeeper.gen,
+                race: innKeeper.race,
+                archetype: innKeeper.arch,
             },
         },
     });
 
     // Test npc field
-    expect(npc.npc?.startsWith("innkeep")).toBe(true);
+    expect(innKeeper.npc?.startsWith("innkeep")).toBe(true);
     expect(npcUserMetadata?.crossover?.npc?.startsWith("innkeep")).toBe(true);
 
     // Test avatar
-    const avatarMetadata = await (await fetch(npc.avatar)).json();
+    const avatarMetadata = await (await fetch(innKeeper.avatar)).json();
     expect(Object.keys(avatarMetadata)).includes("head");
 
     // Test secret key storage

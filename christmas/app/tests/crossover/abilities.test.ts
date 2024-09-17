@@ -1,86 +1,35 @@
-import { stream } from "$lib/crossover/client";
 import { patchEffectWithVariables } from "$lib/crossover/world/abilities";
-import { entityActualAp, entityStats } from "$lib/crossover/world/entity";
+import { entityActualAp } from "$lib/crossover/world/entity";
 import { MS_PER_TICK, TICKS_PER_TURN } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
+import { worldSeed } from "$lib/crossover/world/settings/world";
 import { consumeResources } from "$lib/server/crossover";
 import { initializeClients, saveEntity } from "$lib/server/crossover/redis";
-import type {
-    Player,
-    PlayerEntity,
-} from "$lib/server/crossover/redis/entities";
+import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
-import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
-import { beforeAll, beforeEach, describe, expect, test } from "vitest";
-import { getRandomRegion } from "../utils";
+import { beforeEach, describe, expect, test } from "vitest";
 import {
-    createRandomPlayer,
+    createGandalfSarumanSauron,
+    generateRandomGeohash,
+    resetPlayerResources,
     testPlayerPerformAbilityOnPlayer,
-    waitForEventData,
 } from "./utils";
 
-let region = String.fromCharCode(...getRandomRegion());
-const playerOneName = "Gandalf";
-const playerOneGeohash = "gbsuv777";
-const playerTwoName = "Saruman";
-const playerTwoGeohash = "gbsuv77g";
-let playerOne: Player, playerTwo: Player;
-let playerOneWallet: NodeWallet, playerTwoWallet: NodeWallet;
-let playerOneCookies: string, playerTwoCookies: string;
-let playerOneStream: EventTarget, playerTwoStream: EventTarget;
-let playerOneCloseStream: () => void, playerTwoCloseStream: () => void;
+await initializeClients(); // create redis repositories
 
-beforeAll(async () => {
-    await initializeClients(); // create redis repositories
-
-    // Create players
-    [playerOneWallet, playerOneCookies, playerOne] = await createRandomPlayer({
-        region,
-        geohash: playerOneGeohash,
-        name: playerOneName,
-    });
-
-    [playerTwoWallet, playerTwoCookies, playerTwo] = await createRandomPlayer({
-        region,
-        geohash: playerTwoGeohash,
-        name: playerTwoName,
-    });
-
-    // Create streams
-    [playerOneStream, playerOneCloseStream] = await stream({
-        Cookie: playerOneCookies,
-    });
-    await expect(
-        waitForEventData(playerOneStream, "feed"),
-    ).resolves.toMatchObject({
-        type: "system",
-        message: "started",
-    });
-    [playerTwoStream, playerTwoCloseStream] = await stream({
-        Cookie: playerTwoCookies,
-    });
-    await expect(
-        waitForEventData(playerTwoStream, "feed"),
-    ).resolves.toMatchObject({
-        type: "system",
-        message: "started",
-    });
-});
+let {
+    geohash,
+    playerOne,
+    playerOneCookies,
+    playerTwoStream,
+    playerOneStream,
+    playerTwo,
+} = await createGandalfSarumanSauron();
 
 beforeEach(async () => {
-    // Reset players' state if necessary
-    playerOne = {
-        ...playerOne,
-        loc: [playerOneGeohash],
-        ...entityStats(playerOne),
-    };
-    playerTwo = {
-        ...playerTwo,
-        loc: [playerTwoGeohash],
-        ...entityStats(playerTwo),
-    };
-    playerOne = (await saveEntity(playerOne as PlayerEntity)) as Player;
-    playerTwo = (await saveEntity(playerTwo as PlayerEntity)) as Player;
+    playerOne.loc = [geohash];
+    playerTwo.loc = [geohash];
+    resetPlayerResources(playerOne, playerTwo);
 });
 
 describe("Abilities Tests", () => {
@@ -95,6 +44,12 @@ describe("Abilities Tests", () => {
     });
 
     test("Ability out of range", async () => {
+        // Move playerTwo away
+        playerTwo.loc = [
+            generateRandomGeohash(worldSeed.spatial.unit.precision, "h9"),
+        ];
+        playerTwo = await saveEntity(playerTwo);
+
         var [result, { selfBefore, targetBefore }] =
             await testPlayerPerformAbilityOnPlayer({
                 self: playerOne as PlayerEntity,
@@ -112,7 +67,7 @@ describe("Abilities Tests", () => {
 
     test("Ability in range", async () => {
         playerTwo.loc = playerOne.loc;
-        playerTwo = (await saveEntity(playerTwo as PlayerEntity)) as Player;
+        playerTwo = await saveEntity(playerTwo);
 
         var [result, { self, target, selfBefore, targetBefore }] =
             await testPlayerPerformAbilityOnPlayer({
@@ -138,7 +93,7 @@ describe("Abilities Tests", () => {
     test("Not enough action points", async () => {
         playerOne.ap = 0;
         playerOne.apclk = Date.now();
-        playerOne = (await saveEntity(playerOne as PlayerEntity)) as Player;
+        playerOne = await saveEntity(playerOne);
 
         var [result, { self, target, selfBefore, targetBefore }] =
             await testPlayerPerformAbilityOnPlayer({
@@ -158,7 +113,7 @@ describe("Abilities Tests", () => {
     test("Teleport ability", async () => {
         playerOne.ap = 20;
         playerOne.mp = 20;
-        playerOne = (await saveEntity(playerOne as PlayerEntity)) as Player;
+        playerOne = await saveEntity(playerOne);
 
         var [result, { self, target, selfBefore, targetBefore }] =
             await testPlayerPerformAbilityOnPlayer({
@@ -196,11 +151,11 @@ describe("Abilities Tests", () => {
             },
         });
 
-        // Test hpswap
+        // Test hpSwap
         playerOne.hp = 10;
         playerTwo.hp = 20;
-        const swapEffect1 = abilities.hpswap.procedures[0][1];
-        const swapEffect2 = abilities.hpswap.procedures[1][1];
+        const swapEffect1 = abilities.hpSwap.procedures[0][1];
+        const swapEffect2 = abilities.hpSwap.procedures[1][1];
         expect(
             patchEffectWithVariables({
                 self: playerOne as PlayerEntity,

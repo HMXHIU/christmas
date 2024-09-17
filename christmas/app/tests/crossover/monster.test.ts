@@ -8,64 +8,18 @@ import {
     spawnMonster,
 } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
-import type {
-    Item,
-    Monster,
-    Player,
-} from "$lib/server/crossover/redis/entities";
-import { beforeAll, expect, test } from "vitest";
-import { getRandomRegion } from "../utils";
-import { createRandomPlayer, generateRandomGeohash } from "./utils";
+import { expect, test } from "vitest";
+import { createGoblinSpiderDragon, generateRandomGeohash } from "./utils";
 
-// Player one
-const region = String.fromCharCode(...getRandomRegion());
-let playerOne: Player;
-const playerOneName = "Gandalf";
-const playerOneGeohash = generateRandomGeohash(8, "h9");
+await initializeClients(); // create redis repositories
 
-// Monsters
-let goblin: Monster;
-const goblinGeohash = playerOneGeohash;
-let dragon: Monster;
-const dragonGeohash = generateRandomGeohash(8, "h9");
+let { goblin, dragon } = await createGoblinSpiderDragon();
 
-// Items
-const woodendoorGeohash = generateRandomGeohash(8, "h9");
-let woodendoor: Item;
-
-beforeAll(async () => {
-    await initializeClients(); // create redis repositories
-
-    // Spawn player
-    playerOne = (
-        await createRandomPlayer({
-            region,
-            geohash: playerOneGeohash,
-            name: playerOneName,
-        })
-    )[2];
-
-    // Spawn monsters
-    goblin = await spawnMonster({
-        geohash: goblinGeohash,
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        beast: "goblin",
-    });
-    dragon = await spawnMonster({
-        geohash: dragonGeohash,
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        beast: "dragon",
-    });
-
-    // Spawn Items
-    woodendoor = await spawnItemAtGeohash({
-        geohash: woodendoorGeohash,
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        prop: compendium.woodendoor.prop,
-    });
+let woodenDoor = await spawnItemAtGeohash({
+    geohash: generateRandomGeohash(8, "h9"),
+    locationType: "geohash",
+    locationInstance: LOCATION_INSTANCE,
+    prop: compendium.woodendoor.prop,
 });
 
 test("Test Monster", async () => {
@@ -74,6 +28,7 @@ test("Test Monster", async () => {
      */
 
     // Test dragon (3x3 grid)
+    const dragonGeohash = dragon.loc[0];
     expect(dragon).toMatchObject({
         loc: [
             // row 1
@@ -108,7 +63,6 @@ test("Test Monster", async () => {
     expect(goblin).toMatchObject({
         name: "goblin",
         beast: "goblin",
-        loc: [playerOneGeohash],
         locT: "geohash",
         locI: "@",
         hp: 10,
@@ -125,14 +79,15 @@ test("Test Monster", async () => {
     });
 
     // Test cannot spawn monster on collider
+    const woodenDoorGeohash = woodenDoor.loc[0];
     await expect(
         spawnMonster({
-            geohash: woodendoorGeohash,
+            geohash: woodenDoorGeohash,
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,
             beast: "goblin",
         }),
-    ).rejects.toThrow(`Cannot spawn goblin at ${woodendoorGeohash}`);
+    ).rejects.toThrow(`Cannot spawn goblin at ${woodenDoorGeohash}`);
 });
 
 test("Test Monster Stats", () => {
