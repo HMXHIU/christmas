@@ -5,7 +5,6 @@ import {
     crossoverCmdTake,
     crossoverCmdUnequip,
     crossoverPlayerInventory,
-    stream,
 } from "$lib/crossover/client";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
@@ -13,59 +12,34 @@ import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import { fetchEntity, initializeClients } from "$lib/server/crossover/redis";
 import type {
     ItemEntity,
-    Player,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import { beforeAll, describe, expect, test } from "vitest";
-import { getRandomRegion } from "../../utils";
-import {
-    createRandomPlayer,
-    generateRandomGeohash,
-    waitForEventData,
-} from "../utils";
+import { createGandalfSarumanSauron, waitForEventData } from "../utils";
 
-const geohash = generateRandomGeohash(8, "h9");
-const region = String.fromCharCode(...getRandomRegion());
-let playerOne: Player;
-let playerOneCookies: string;
-let playerOneStream: EventTarget;
-let playerOneWoodenClub: ItemEntity;
+await initializeClients(); // create redis repositories
 
-beforeAll(async () => {
-    await initializeClients(); // create redis repositories
+let { playerOne, playerOneCookies, playerOneStream } =
+    await createGandalfSarumanSauron();
 
-    // Spawn player
-    [, playerOneCookies, playerOne] = await createRandomPlayer({
-        region,
-        geohash,
-        name: "Gandalf",
-    });
-    [playerOneStream] = await stream({ Cookie: playerOneCookies });
-    await expect(
-        waitForEventData(playerOneStream, "feed"),
-    ).resolves.toMatchObject({
-        type: "system",
-        message: "started",
-    });
-
-    // Spawn woodenclub
-    playerOneWoodenClub = await spawnItemAtGeohash({
-        geohash: playerOne.loc[0],
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        prop: compendium.woodenclub.prop,
-        owner: playerOne.player,
-        configOwner: playerOne.player,
-    });
+let woodenClub: ItemEntity = await spawnItemAtGeohash({
+    geohash: playerOne.loc[0],
+    locationType: "geohash",
+    locationInstance: LOCATION_INSTANCE,
+    prop: compendium.woodenclub.prop,
+    owner: playerOne.player,
+    configOwner: playerOne.player,
 });
 
-describe("Inventory Tests", () => {
+beforeAll(async () => {});
+
+describe("Inventory & Equipment Tests", () => {
     test("Unable to equip item if not in inventory", async () => {
-        const error = `${playerOneWoodenClub.item} is not in inventory`;
+        const error = `${woodenClub.item} is not in inventory`;
         await expect(
             crossoverCmdEquip(
-                { item: playerOneWoodenClub.item, slot: "rh" },
+                { item: woodenClub.item, slot: "rh" },
                 { Cookie: playerOneCookies },
             ),
         ).rejects.toThrow(error);
@@ -94,16 +68,14 @@ describe("Inventory Tests", () => {
 
         // Take item
         await crossoverCmdTake(
-            { item: playerOneWoodenClub.item },
+            { item: woodenClub.item },
             { Cookie: playerOneCookies },
         );
         await waitForEventData(playerOneStream, "entities");
         await sleep(MS_PER_TICK * 2);
 
-        playerOneWoodenClub = (await fetchEntity(
-            playerOneWoodenClub.item,
-        )) as ItemEntity;
-        expect(playerOneWoodenClub).toMatchObject({
+        woodenClub = (await fetchEntity(woodenClub.item)) as ItemEntity;
+        expect(woodenClub).toMatchObject({
             loc: [playerOne.player],
             locT: "inv",
         });
@@ -116,23 +88,21 @@ describe("Inventory Tests", () => {
             event: "entities",
             players: [],
             monsters: [],
-            items: [{ item: playerOneWoodenClub.item }],
+            items: [{ item: woodenClub.item }],
             op: "upsert",
         });
     });
 
     test("Drop item", async () => {
         await crossoverCmdDrop(
-            { item: playerOneWoodenClub.item },
+            { item: woodenClub.item },
             { Cookie: playerOneCookies },
         );
         await waitForEventData(playerOneStream, "entities");
         await sleep(MS_PER_TICK * 2);
 
-        playerOneWoodenClub = (await fetchEntity(
-            playerOneWoodenClub.item,
-        )) as ItemEntity;
-        expect(playerOneWoodenClub).toMatchObject({
+        woodenClub = (await fetchEntity(woodenClub.item)) as ItemEntity;
+        expect(woodenClub).toMatchObject({
             loc: playerOne.loc,
             locT: "geohash",
             own: playerOne.player,
@@ -150,13 +120,13 @@ describe("Inventory Tests", () => {
         await sleep(MS_PER_TICK * 4);
 
         playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
-        expect(playerOne.loc[0]).not.equal(playerOneWoodenClub.loc[0]);
+        expect(playerOne.loc[0]).not.equal(woodenClub.loc[0]);
 
         // Try take item
-        var error = `${playerOneWoodenClub.item} is not in range`;
+        var error = `${woodenClub.item} is not in range`;
         await expect(
             crossoverCmdTake(
-                { item: playerOneWoodenClub.item },
+                { item: woodenClub.item },
                 { Cookie: playerOneCookies },
             ),
         ).rejects.toThrow(error);
@@ -176,20 +146,18 @@ describe("Inventory Tests", () => {
         await sleep(MS_PER_TICK * 4);
 
         playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
-        expect(playerOne.loc[0]).equal(playerOneWoodenClub.loc[0]);
+        expect(playerOne.loc[0]).equal(woodenClub.loc[0]);
 
         // Take item
         await crossoverCmdTake(
-            { item: playerOneWoodenClub.item },
+            { item: woodenClub.item },
             { Cookie: playerOneCookies },
         );
         await waitForEventData(playerOneStream, "entities");
         await sleep(MS_PER_TICK * 2);
 
-        playerOneWoodenClub = (await fetchEntity(
-            playerOneWoodenClub.item,
-        )) as ItemEntity;
-        expect(playerOneWoodenClub).toMatchObject({
+        woodenClub = (await fetchEntity(woodenClub.item)) as ItemEntity;
+        expect(woodenClub).toMatchObject({
             loc: [playerOne.player],
             locT: "inv",
         });
@@ -197,10 +165,10 @@ describe("Inventory Tests", () => {
 
     test("Equip and unequip item", async () => {
         // Try to equip item in the wrong slot
-        var error = `${playerOneWoodenClub.item} cannot be equipped in hd`;
+        var error = `${woodenClub.item} cannot be equipped in hd`;
         await expect(
             crossoverCmdEquip(
-                { item: playerOneWoodenClub.item, slot: "hd" },
+                { item: woodenClub.item, slot: "hd" },
                 { Cookie: playerOneCookies },
             ),
         ).rejects.toThrow(error);
@@ -214,16 +182,14 @@ describe("Inventory Tests", () => {
 
         // Equip item - rh
         await crossoverCmdEquip(
-            { item: playerOneWoodenClub.item, slot: "rh" },
+            { item: woodenClub.item, slot: "rh" },
             { Cookie: playerOneCookies },
         );
         await waitForEventData(playerOneStream, "entities");
         await sleep(MS_PER_TICK * 2);
 
-        playerOneWoodenClub = (await fetchEntity(
-            playerOneWoodenClub.item,
-        )) as ItemEntity;
-        expect(playerOneWoodenClub).toMatchObject({
+        woodenClub = (await fetchEntity(woodenClub.item)) as ItemEntity;
+        expect(woodenClub).toMatchObject({
             loc: [playerOne.player],
             locT: "rh",
         });
@@ -235,7 +201,7 @@ describe("Inventory Tests", () => {
         ).resolves.toMatchObject({
             items: [
                 {
-                    item: playerOneWoodenClub.item,
+                    item: woodenClub.item,
                     loc: [playerOne.player],
                     locT: "rh",
                 },
@@ -246,16 +212,14 @@ describe("Inventory Tests", () => {
 
         // Unequip item
         await crossoverCmdUnequip(
-            { item: playerOneWoodenClub.item },
+            { item: woodenClub.item },
             { Cookie: playerOneCookies },
         );
         await waitForEventData(playerOneStream, "entities");
         await sleep(MS_PER_TICK * 2);
-        playerOneWoodenClub = (await fetchEntity(
-            playerOneWoodenClub.item,
-        )) as ItemEntity;
-        expect(playerOneWoodenClub).toMatchObject({
-            item: playerOneWoodenClub.item,
+        woodenClub = (await fetchEntity(woodenClub.item)) as ItemEntity;
+        expect(woodenClub).toMatchObject({
+            item: woodenClub.item,
             loc: [playerOne.player],
             locT: "inv",
         });
@@ -267,7 +231,7 @@ describe("Inventory Tests", () => {
         ).resolves.toMatchObject({
             items: [
                 {
-                    item: playerOneWoodenClub.item,
+                    item: woodenClub.item,
                     loc: [playerOne.player],
                     locT: "inv",
                 },

@@ -2,105 +2,54 @@ import { crossoverCmdAccept, crossoverCmdLearn } from "$lib/crossover/client";
 import { actions } from "$lib/crossover/world/actions";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { skillLevelProgression } from "$lib/crossover/world/skills";
-import { spawnMonster } from "$lib/server/crossover/dungeonMaster";
-import { generateNPC } from "$lib/server/crossover/npc";
 import {
     fetchEntity,
     initializeClients,
     saveEntity,
 } from "$lib/server/crossover/redis";
-import type {
-    Monster,
-    Player,
-    PlayerEntity,
-} from "$lib/server/crossover/redis/entities";
-import { npcs } from "$lib/server/crossover/settings/npc";
+import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import type { CTAEvent } from "../../../src/routes/api/crossover/stream/+server";
 import {
     createGandalfSarumanSauron,
-    generateRandomGeohash,
+    createGoblinSpiderDragon,
+    createNPCs,
+    resetPlayerResources,
     waitForEventData,
 } from "../utils";
 
-let region: string;
-let geohash: string;
+await initializeClients(); // create redis repositories
 
-let playerOne: Player;
-let playerOneCookies: string;
-let playerOneStream: EventTarget;
-let playerTwo: Player;
-let playerTwoCookies: string;
-let playerTwoStream: EventTarget;
-let playerThree: Player;
-let playerThreeCookies: string;
-let playerThreeStream: EventTarget;
-
-let dragon: Monster;
-let goblin: Monster;
-
-// NPC
-let npc: Player;
-
-beforeAll(async () => {
-    await initializeClients(); // create redis repositories
-
-    // Create players
-    ({
-        region,
-        geohash,
-        playerOne,
-        playerOneCookies,
-        playerOneStream,
-        playerTwo,
-        playerTwoCookies,
-        playerTwoStream,
-        playerThree,
-        playerThreeCookies,
-        playerThreeStream,
-    } = await createGandalfSarumanSauron());
-
-    // Spawn Monsters
-    dragon = await spawnMonster({
-        geohash: generateRandomGeohash(8, "h9"),
-        locationType: "geohash",
-        beast: "dragon",
-        locationInstance: LOCATION_INSTANCE,
-    });
-
-    goblin = await spawnMonster({
-        geohash: generateRandomGeohash(8, "h9"),
-        locationType: "geohash",
-        beast: "goblin",
-        locationInstance: LOCATION_INSTANCE,
-    });
-
-    // Spawn NPCs
-    npc = await generateNPC(npcs.blacksmith.npc, {
-        demographic: {},
-        appearance: {},
-    });
+let {
+    region,
+    geohash,
+    playerOne,
+    playerOneCookies,
+    playerOneStream,
+    playerTwo,
+    playerTwoCookies,
+    playerTwoStream,
+} = await createGandalfSarumanSauron();
+let { dragon, goblin } = await createGoblinSpiderDragon();
+let { blackSmith } = await createNPCs({
+    geohash,
+    locationInstance: LOCATION_INSTANCE,
 });
 
+beforeAll(async () => {});
+
 beforeEach(async () => {
-    playerOne.lum = 0;
-    playerOne = (await saveEntity(playerOne as PlayerEntity)) as PlayerEntity;
-    playerTwo.lum = 0;
-    playerTwo = (await saveEntity(playerTwo as PlayerEntity)) as PlayerEntity;
+    resetPlayerResources(playerOne, playerTwo);
 });
 
 describe("Learn Tests", () => {
     test("Learn skill from human player", async () => {
         // Increase `playerTwo` skills and `playerOne` resources
         playerTwo.skills["exploration"] = 10;
-        playerTwo = (await saveEntity(
-            playerTwo as PlayerEntity,
-        )) as PlayerEntity;
+        playerTwo = await saveEntity(playerTwo);
         playerOne.lum = 1000;
-        playerOne = (await saveEntity(
-            playerOne as PlayerEntity,
-        )) as PlayerEntity;
+        playerOne = await saveEntity(playerOne);
 
         // `playerOne` learn `exploration` from playerTwo
         crossoverCmdLearn(
@@ -164,14 +113,14 @@ describe("Learn Tests", () => {
     });
 
     test("Learn from NPC", async () => {
-        npc.loc = playerOne.loc;
-        npc.locI = playerOne.locI;
-        npc.locT = playerOne.locT;
-        npc = (await saveEntity(npc as PlayerEntity)) as PlayerEntity;
+        blackSmith.loc = playerOne.loc;
+        blackSmith.locI = playerOne.locI;
+        blackSmith.locT = playerOne.locT;
+        blackSmith = await saveEntity(blackSmith);
 
         // Test teacher not enough skill
         crossoverCmdLearn(
-            { skill: "exploration", teacher: npc.player },
+            { skill: "exploration", teacher: blackSmith.player },
             { Cookie: playerOneCookies },
         );
         var feed = await waitForEventData(playerOneStream, "feed");
@@ -180,7 +129,7 @@ describe("Learn Tests", () => {
             message: "${message}",
             variables: {
                 cmd: "say",
-                player: npc.player,
+                player: blackSmith.player,
                 name: "Blacksmith",
                 message:
                     "Blacksmith furrows his brow. 'This skill lies beyond even my grasp. Seek out one more learned than I.'",
@@ -189,10 +138,10 @@ describe("Learn Tests", () => {
         });
 
         // Test player not enough learning resources
-        npc.skills["exploration"] = 10;
-        npc = (await saveEntity(npc as PlayerEntity)) as PlayerEntity;
+        blackSmith.skills["exploration"] = 10;
+        blackSmith = await saveEntity(blackSmith);
         crossoverCmdLearn(
-            { skill: "exploration", teacher: npc.player },
+            { skill: "exploration", teacher: blackSmith.player },
             { Cookie: playerOneCookies },
         );
         var feed = await waitForEventData(playerOneStream, "feed");
@@ -201,7 +150,7 @@ describe("Learn Tests", () => {
             message: "${message}",
             variables: {
                 cmd: "say",
-                player: npc.player,
+                player: blackSmith.player,
                 name: "Blacksmith",
                 message:
                     "Despite your best efforts, the skill eludes you, perhaps with more experience.",
@@ -211,12 +160,10 @@ describe("Learn Tests", () => {
 
         // Test able to learn
         playerOne.lum = 1000;
-        playerOne = (await saveEntity(
-            playerOne as PlayerEntity,
-        )) as PlayerEntity;
+        playerOne = await saveEntity(playerOne);
         const curSkillLevel = playerOne.skills?.exploration ?? 0;
         crossoverCmdLearn(
-            { skill: "exploration", teacher: npc.player },
+            { skill: "exploration", teacher: blackSmith.player },
             { Cookie: playerOneCookies },
         );
         var feed = await waitForEventData(playerOneStream, "feed");
@@ -225,7 +172,7 @@ describe("Learn Tests", () => {
             message: "${message}",
             variables: {
                 cmd: "say",
-                player: npc.player,
+                player: blackSmith.player,
                 name: "Blacksmith",
                 message: "Blacksmith hands you a worn map and a compass.",
             },

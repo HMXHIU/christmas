@@ -234,6 +234,8 @@ async function generateNPC(
     options: {
         name?: string;
         description?: string;
+        geohash?: string;
+        locationInstance?: string;
         demographic: Partial<PlayerDemographic>;
         appearance: Partial<PlayerAppearance>;
     },
@@ -242,11 +244,10 @@ async function generateNPC(
     const keypair = Keypair.generate();
     const playerId = keypair.publicKey.toString();
     const region = "@@@"; // special region reserved for NPCs
-    const locationInstance = playerId; // spawn initially in its own world
-    const geohash = autoCorrectGeohashPrecision(
-        "w2",
-        worldSeed.spatial.unit.precision,
-    );
+    const locationInstance = options.locationInstance ?? playerId; // spawn initially in its own world
+    const geohash =
+        options.geohash ??
+        autoCorrectGeohashPrecision("w2", worldSeed.spatial.unit.precision);
 
     // Get fee payer anchor client
     const anchorClient = new AnchorClient({

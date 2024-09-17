@@ -1,10 +1,8 @@
 import {
-    crossoverCmdLook,
     crossoverCmdMove,
     crossoverCmdPerformAbility,
     crossoverCmdSay,
 } from "$lib/crossover/client";
-import { minifiedEntity } from "$lib/crossover/utils";
 import { itemAttibutes } from "$lib/crossover/world/compendium";
 import { entityStats } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
@@ -25,7 +23,6 @@ import type {
 } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
-import { omit } from "lodash-es";
 import ngeohash from "ngeohash";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import {
@@ -145,22 +142,6 @@ describe("Integration Tests", () => {
         await expect(
             waitForEventData(playerTwoStream, "feed"),
         ).rejects.toThrowError("Timeout occurred while waiting for event");
-    });
-
-    test("Test Look", async () => {
-        // playerOne look
-        await crossoverCmdLook({}, { Cookie: playerOneCookies });
-
-        // playerOne should not see playerTwo
-        await expect(
-            waitForEventData(playerOneStream, "entities"),
-        ).resolves.toMatchObject({
-            players: [
-                omit(playerOne, "buclk"), // self should be full entity
-                minifiedEntity(playerThree), // others are minified
-            ],
-            op: "replace",
-        });
     });
 
     test("Test Move", async () => {

@@ -226,24 +226,24 @@ async function getNearbyPlayerIds(
     return players.map((p) => p.player);
 }
 
-async function saveEntity(
-    entity: PlayerEntity | MonsterEntity | ItemEntity,
-): Promise<PlayerEntity | MonsterEntity | ItemEntity> {
+async function saveEntity<T extends PlayerEntity | MonsterEntity | ItemEntity>(
+    entity: T,
+): Promise<T> {
     if (entity.player) {
         return (await playerRepository.save(
             (entity as PlayerEntity).player,
             entity,
-        )) as PlayerEntity;
+        )) as T;
     } else if (entity.monster) {
         return (await monsterRepository.save(
             (entity as MonsterEntity).monster,
             entity,
-        )) as MonsterEntity;
+        )) as T;
     } else if (entity.item) {
         return (await itemRepository.save(
             (entity as ItemEntity).item,
             entity,
-        )) as ItemEntity;
+        )) as T;
     }
 
     throw new Error("Invalid entity");

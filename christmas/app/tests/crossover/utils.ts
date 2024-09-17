@@ -21,8 +21,9 @@ import { actions } from "$lib/crossover/world/actions";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
 import { type ItemVariables } from "$lib/crossover/world/compendium";
 import { ArchetypesEnum } from "$lib/crossover/world/demographic";
+import { resetEntityStats } from "$lib/crossover/world/entity";
 import { type PlayerMetadata } from "$lib/crossover/world/player";
-import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { sanctuaries } from "$lib/crossover/world/settings/world";
@@ -34,7 +35,13 @@ import {
     performAbility,
     performEffectOnEntity,
 } from "$lib/server/crossover/abilities";
+import {
+    spawnItemAtGeohash,
+    spawnMonster,
+} from "$lib/server/crossover/dungeonMaster";
+import { generateNPC } from "$lib/server/crossover/npc";
 import { generateAvatarHash } from "$lib/server/crossover/player";
+import { saveEntity } from "$lib/server/crossover/redis";
 import type {
     Item,
     ItemEntity,
@@ -43,6 +50,7 @@ import type {
     Player,
     PlayerEntity,
 } from "$lib/server/crossover/redis/entities";
+import { npcs } from "$lib/server/crossover/settings/npc";
 import {
     canUseItem,
     entityIsBusy,
@@ -337,6 +345,181 @@ export async function createRandomPlayer({
     );
 
     return [wallet, cookies, player];
+}
+
+export async function createNPCs({
+    geohash,
+    locationInstance,
+}: {
+    geohash?: string;
+    locationInstance: string;
+}) {
+    const blackSmith = await generateNPC(npcs.blacksmith.npc, {
+        demographic: {},
+        appearance: {},
+        geohash,
+        locationInstance,
+    });
+    const innKeeper = await generateNPC(npcs.innkeep.npc, {
+        demographic: {},
+        appearance: {},
+        geohash,
+        locationInstance,
+    });
+    const grocer = await generateNPC(npcs.grocer.npc, {
+        demographic: {},
+        appearance: {},
+        geohash,
+        locationInstance,
+    });
+
+    return {
+        blackSmith,
+        innKeeper,
+        grocer,
+    };
+}
+
+export async function createTestItems({
+    owner,
+    configOwner,
+}: {
+    geohash?: string;
+    owner?: string;
+    configOwner?: string;
+}) {
+    const woodenClub = await spawnItemAtGeohash({
+        geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.woodenclub.prop,
+        owner,
+        configOwner,
+    });
+
+    const potionOfHealth = (await spawnItemAtGeohash({
+        geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.potionofhealth.prop,
+        owner,
+        configOwner,
+    })) as ItemEntity;
+
+    const woodenDoor = await spawnItemAtGeohash({
+        geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.woodendoor.prop,
+        owner,
+        configOwner,
+    });
+
+    const portalOne = (await spawnItemAtGeohash({
+        geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.portal.prop,
+        variables: {
+            [compendium.portal.variables!.description.variable]: "Portal One",
+        },
+        owner,
+        configOwner,
+    })) as ItemEntity;
+
+    const portalTwo = (await spawnItemAtGeohash({
+        geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.portal.prop,
+        variables: {
+            [compendium.portal.variables!.description.variable]: "Portal Two",
+        },
+        owner,
+        configOwner,
+    })) as ItemEntity;
+
+    const portalThree = (await spawnItemAtGeohash({
+        geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.portal.prop,
+        variables: {
+            [compendium.portal.variables!.description.variable]: "Portal Three",
+        },
+        owner,
+        configOwner,
+    })) as ItemEntity;
+
+    const asset = await createWorldAsset();
+    const worldAsset = asset.asset;
+    const worldAssetUrl = asset.url;
+    const tavern = (await spawnItemAtGeohash({
+        geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.tavern.prop,
+        variables: {
+            url: worldAssetUrl,
+        },
+        owner,
+        configOwner,
+    })) as ItemEntity;
+
+    return {
+        potionOfHealth,
+        woodenClub,
+        woodenDoor,
+        portalOne,
+        portalTwo,
+        portalThree,
+        tavern,
+        worldAsset,
+        worldAssetUrl,
+    };
+}
+
+export async function createGoblinSpiderDragon(geohash?: string) {
+    const region = String.fromCharCode(...getRandomRegion());
+    geohash = geohash ?? generateRandomGeohash(8, "h9");
+
+    const dragon = await spawnMonster({
+        geohash: geohash,
+        locationType: "geohash",
+        beast: "dragon",
+        locationInstance: LOCATION_INSTANCE,
+    });
+
+    const goblin = await spawnMonster({
+        geohash: geohash,
+        locationType: "geohash",
+        beast: "goblin",
+        locationInstance: LOCATION_INSTANCE,
+    });
+
+    const giantSpider = await spawnMonster({
+        geohash: geohash,
+        locationType: "geohash",
+        beast: "giantSpider",
+        locationInstance: LOCATION_INSTANCE,
+    });
+
+    return {
+        region,
+        geohash,
+        goblin,
+        giantSpider,
+        dragon,
+    };
+}
+
+export async function resetPlayerResources(...players: PlayerEntity[]) {
+    for (const player of players) {
+        resetEntityStats(player);
+        player.lum = 0;
+        player.umb = 0;
+        await saveEntity(player);
+    }
 }
 
 export async function createGandalfSarumanSauron() {
