@@ -97,6 +97,7 @@ export const allActions = [
     actions.writ,
     actions.fulfill,
     actions.learn,
+    actions.give,
     actions.accept,
     actions.browse,
 ];
@@ -519,6 +520,20 @@ export async function createGoblinSpiderDragon(geohash?: string) {
         locationInstance: LOCATION_INSTANCE,
     });
 
+    const goblinTwo = await spawnMonster({
+        geohash: geohash,
+        locationType: "geohash",
+        beast: "goblin",
+        locationInstance: LOCATION_INSTANCE,
+    });
+
+    const goblinThree = await spawnMonster({
+        geohash: geohash,
+        locationType: "geohash",
+        beast: "goblin",
+        locationInstance: LOCATION_INSTANCE,
+    });
+
     const giantSpider = await spawnMonster({
         geohash: geohash,
         locationType: "geohash",
@@ -530,6 +545,8 @@ export async function createGoblinSpiderDragon(geohash?: string) {
         region,
         geohash,
         goblin,
+        goblinTwo,
+        goblinThree,
         giantSpider,
         dragon,
     };

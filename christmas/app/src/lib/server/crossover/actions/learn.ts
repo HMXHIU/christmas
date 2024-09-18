@@ -59,7 +59,7 @@ async function createLearnCTA(
     teacher: PlayerEntity,
     skill: SkillLines,
 ): Promise<CTA> {
-    // Teacher is a human player - request a P2PLearnTransaction and terminate early
+    // Teacher is a human player
     if (isEntityHuman(teacher)) {
         const expiresIn = 60;
         const pin = generatePin(4);

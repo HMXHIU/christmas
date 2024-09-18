@@ -45,6 +45,7 @@ import {
 } from "../trpc";
 import { performAbility } from "./abilities";
 import { fulfill, inventory, look, move, rest, say } from "./actions";
+import { createGiveCTA, executeGiveCTA, give } from "./actions/give";
 import {
     configureItem,
     createItem,
@@ -72,6 +73,7 @@ import {
 import { isEntityHuman } from "./npc";
 import {
     verifyP2PTransaction,
+    type P2PGiveTransaction,
     type P2PLearnTransaction,
     type P2PTradeTransaction,
 } from "./player";
@@ -104,6 +106,10 @@ const SaySchema = z.object({
 const LearnSchema = z.object({
     teacher: z.string(),
     skill: z.enum(SkillLinesEnum),
+});
+const GiveSchema = z.object({
+    receiver: z.string(),
+    item: z.string(),
 });
 const TradeSchema = z.object({
     seller: z.string(),
@@ -456,7 +462,6 @@ const crossoverRouter = {
             .input(AcceptSchema)
             .query(async ({ ctx, input }) => {
                 const p2pTransaction = await verifyP2PTransaction(input.token);
-
                 // Learn
                 if (p2pTransaction.transaction === "learn") {
                     await executeLearnCTA(
@@ -466,12 +471,44 @@ const crossoverRouter = {
                 }
                 // Trade
                 else if (p2pTransaction.transaction === "trade") {
-                    console.log("ACCEPTING TRADe");
                     await executeTradeCTA(
                         ctx.player,
                         p2pTransaction as P2PTradeTransaction,
                     );
                 }
+                // Give
+                else if (p2pTransaction.transaction === "give") {
+                    await executeGiveCTA(
+                        ctx.player,
+                        p2pTransaction as P2PGiveTransaction,
+                    );
+                }
+            }),
+
+        // cmd.give
+        give: playerAuthBusyProcedure
+            .input(GiveSchema)
+            .query(async ({ ctx, input }) => {
+                const { item, receiver } = input;
+                const receiverEntity = (await fetchEntity(
+                    receiver,
+                )) as PlayerEntity;
+                const itemEntity = (await fetchEntity(item)) as ItemEntity;
+
+                // Send CTA offer to receiver for execution
+                if (isEntityHuman(receiverEntity)) {
+                    await publishCTAEvent(receiver, {
+                        cta: await createGiveCTA(
+                            ctx.player,
+                            receiverEntity,
+                            itemEntity,
+                        ),
+                    });
+                    return; // do not proceed to give
+                }
+
+                // Give to NPC (automatically accept)
+                await give(ctx.player, receiverEntity, itemEntity);
             }),
         // cmd.learn
         learn: playerAuthBusyProcedure

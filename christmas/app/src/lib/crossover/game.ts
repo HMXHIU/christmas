@@ -27,6 +27,7 @@ import {
     crossoverCmdEnterItem,
     crossoverCmdEquip,
     crossoverCmdFulfill,
+    crossoverCmdGive,
     crossoverCmdLearn,
     crossoverCmdLook,
     crossoverCmdMove,
@@ -40,7 +41,11 @@ import {
     crossoverCmdWrit,
     crossoverPlayerInventory,
 } from "./client";
-import { type GameCommand, type GameCommandVariables } from "./ir";
+import {
+    getGameActionId,
+    type GameCommand,
+    type GameCommandVariables,
+} from "./ir";
 import { aStarPathfinding } from "./pathfinding";
 import type { Ability } from "./world/abilities";
 import { actions, type Action } from "./world/actions";
@@ -69,66 +74,6 @@ export {
 
 const pinRegex = /\b\d+\b/;
 
-async function moveInRangeOfTarget({
-    range,
-    target,
-    retries,
-}: {
-    range: number;
-    target: Player | Monster | Item;
-    retries?: number;
-}) {
-    retries ??= 1;
-
-    let playerEntity = get(player);
-    if (playerEntity == null) {
-        throw new Error("Player is not defined");
-    }
-
-    if (playerEntity.locT !== target.locT) {
-        throw new Error("Player and target are not in the same location type");
-    }
-
-    if (entityInRange(playerEntity, target, range)[0]) {
-        return;
-    }
-
-    // Move in range of target
-    const targetGeohash = target.loc[0]; // TODO: consider entities with loc more than 1 cell
-    const sourceGeohash = playerEntity.loc[0];
-    const [targetCol, targetRow] = geohashToColRow(targetGeohash);
-    const [sourceCol, sourceRow] = geohashToColRow(sourceGeohash);
-    const path = await getDirectionsToPosition(
-        {
-            row: sourceRow,
-            col: sourceCol,
-        },
-        {
-            row: targetRow,
-            col: targetCol,
-        },
-        target.locT as GeohashLocationType,
-        target.locI,
-        { range },
-    );
-    await crossoverCmdMove({ path });
-
-    // Wait for player to move the path
-    await sleep(
-        SERVER_LATENCY + path.length * actions.move.ticks * MS_PER_TICK,
-    );
-
-    // Retry if is still not in range (target might have moved)
-    playerEntity = get(player);
-    if (
-        retries > 0 &&
-        playerEntity != null &&
-        !entityInRange(playerEntity, target, range)[0]
-    ) {
-        await moveInRangeOfTarget({ range, target, retries: retries - 1 });
-    }
-}
-
 async function executeGameCommand(
     command: GameCommand,
     headers: HTTPHeaders = {},
@@ -139,8 +84,10 @@ async function executeGameCommand(
         variables,
     ] = command;
 
-    // Use Item
-    if (item != null) {
+    const [actionId, actionType] = getGameActionId(gameAction);
+
+    // Use item utility
+    if (actionType === "utility" && item != null) {
         return await crossoverCmdUseItem(
             {
                 target:
@@ -155,7 +102,7 @@ async function executeGameCommand(
         );
     }
     // Perform ability
-    else if ("ability" in gameAction) {
+    else if (actionType === "ability") {
         const ability = gameAction as Ability;
 
         // Move in range of target
@@ -176,7 +123,7 @@ async function executeGameCommand(
         );
     }
     // Action (variables are required)
-    else if ("action" in gameAction) {
+    else if (actionType === "action") {
         return await performAction(
             {
                 self,
@@ -186,6 +133,7 @@ async function executeGameCommand(
                 variables,
                 offer,
                 receive,
+                item,
             },
             headers,
         );
@@ -201,11 +149,13 @@ async function performAction(
         variables,
         offer,
         receive,
+        item,
     }: {
         action: Action;
         self: Player | Monster;
         target?: Player | Monster | Item;
         skill?: SkillLines;
+        item?: Item;
         offer?: BarterSerialized;
         receive?: BarterSerialized;
         variables?: GameCommandVariables;
@@ -252,7 +202,6 @@ async function performAction(
         if (!offer || !receive) {
             throw new Error(`What are you trying to trade?`);
         }
-
         return await crossoverCmdTrade(
             {
                 buyer: getEntityId(self)[0],
@@ -287,6 +236,23 @@ async function performAction(
         return await crossoverCmdFulfill(
             {
                 item: (target as Item).item,
+            },
+            headers,
+        );
+    }
+    // give
+    else if (action.action === "give") {
+        const receiver = target ? getEntityId(target)[0] : undefined;
+        if (!receiver) {
+            throw new Error(`Whom are you to giving to?`);
+        }
+        if (!item) {
+            throw new Error(`What are you trying to give?`);
+        }
+        return await crossoverCmdGive(
+            {
+                item: item.item,
+                receiver,
             },
             headers,
         );
@@ -503,4 +469,64 @@ async function getDirectionsToPosition(
                 options?.precision,
             ),
     });
+}
+
+async function moveInRangeOfTarget({
+    range,
+    target,
+    retries,
+}: {
+    range: number;
+    target: Player | Monster | Item;
+    retries?: number;
+}) {
+    retries ??= 1;
+
+    let playerEntity = get(player);
+    if (playerEntity == null) {
+        throw new Error("Player is not defined");
+    }
+
+    if (playerEntity.locT !== target.locT) {
+        throw new Error("Player and target are not in the same location type");
+    }
+
+    if (entityInRange(playerEntity, target, range)[0]) {
+        return;
+    }
+
+    // Move in range of target
+    const targetGeohash = target.loc[0]; // TODO: consider entities with loc more than 1 cell
+    const sourceGeohash = playerEntity.loc[0];
+    const [targetCol, targetRow] = geohashToColRow(targetGeohash);
+    const [sourceCol, sourceRow] = geohashToColRow(sourceGeohash);
+    const path = await getDirectionsToPosition(
+        {
+            row: sourceRow,
+            col: sourceCol,
+        },
+        {
+            row: targetRow,
+            col: targetCol,
+        },
+        target.locT as GeohashLocationType,
+        target.locI,
+        { range },
+    );
+    await crossoverCmdMove({ path });
+
+    // Wait for player to move the path
+    await sleep(
+        SERVER_LATENCY + path.length * actions.move.ticks * MS_PER_TICK,
+    );
+
+    // Retry if is still not in range (target might have moved)
+    playerEntity = get(player);
+    if (
+        retries > 0 &&
+        playerEntity != null &&
+        !entityInRange(playerEntity, target, range)[0]
+    ) {
+        await moveInRangeOfTarget({ range, target, retries: retries - 1 });
+    }
 }

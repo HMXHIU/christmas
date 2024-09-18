@@ -4,144 +4,38 @@ import {
     searchPossibleCommands,
     tokenize,
 } from "$lib/crossover/ir";
-import type { Item, ItemEntity } from "$lib/crossover/types";
+import type { Item } from "$lib/crossover/types";
 import {
     resolveAbilityEntities,
     type Ability,
 } from "$lib/crossover/world/abilities";
 import { actions } from "$lib/crossover/world/actions";
 import { type Utility } from "$lib/crossover/world/compendium";
-import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
-import {
-    spawnItemAtGeohash,
-    spawnMonster,
-} from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { expect, test } from "vitest";
-import { getRandomRegion } from "../../utils";
-import { createRandomPlayer, generateRandomGeohash } from "../utils";
+import {
+    createGandalfSarumanSauron,
+    createGoblinSpiderDragon,
+    createTestItems,
+} from "../utils";
+
+await initializeClients(); // create redis repositories
+
+let { playerOne, playerTwo, playerThree } = await createGandalfSarumanSauron();
+let { woodenDoor, woodenClub, woodenClubThree, woodenClubTwo, portalOne } =
+    await createTestItems({});
+let { goblin, goblinTwo, goblinThree, dragon } =
+    await createGoblinSpiderDragon();
 
 test("Test Query", async () => {
-    await initializeClients(); // create redis repositories
-
-    const region = String.fromCharCode(...getRandomRegion());
-
-    /*
-     * Create Entities
-     */
-
-    // Player one
-    const playerOneName = "Gandalf";
-    const playerOneGeohash = generateRandomGeohash(8, "h9");
-    let [playerOneWallet, playerOneCookies, playerOne] =
-        await createRandomPlayer({
-            region,
-            geohash: playerOneGeohash,
-            name: playerOneName,
-        });
-
-    // Player two
-    const playerTwoName = "Saruman";
-    const playerTwoGeohash = generateRandomGeohash(8, "h9");
-    let [playerTwoWallet, playerTwoCookies, playerTwo] =
-        await createRandomPlayer({
-            region,
-            geohash: playerTwoGeohash,
-            name: playerTwoName,
-        });
-
-    // Player three
-    const playerThreeName = "Sauron";
-    const playerThreeGeohash = generateRandomGeohash(8, "h9");
-    let [playerThreeWallet, playerThreeCookies, playerThree] =
-        await createRandomPlayer({
-            region,
-            geohash: playerThreeGeohash,
-            name: playerThreeName,
-        });
-
-    // Wooden Door
-    let woodendoor = (await spawnItemAtGeohash({
-        geohash: generateRandomGeohash(8, "h9"),
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        prop: compendium.woodendoor.prop,
-        variables: {
-            [compendium.woodendoor.variables.doorsign.variable]:
-                "A custom door sign",
-        },
-    })) as ItemEntity;
-
-    // Wooden club
-    let woodenclub = (await spawnItemAtGeohash({
-        geohash: generateRandomGeohash(8, "h9"),
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        prop: compendium.woodenclub.prop,
-    })) as ItemEntity;
-
-    // Wooden club
-    let woodenclub2 = (await spawnItemAtGeohash({
-        geohash: generateRandomGeohash(8, "h9"),
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        prop: compendium.woodenclub.prop,
-    })) as ItemEntity;
-
-    // Wooden club
-    let woodenclub3 = (await spawnItemAtGeohash({
-        geohash: generateRandomGeohash(8, "h9"),
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        prop: compendium.woodenclub.prop,
-    })) as ItemEntity;
-
-    // Portal
-    let portal = (await spawnItemAtGeohash({
-        geohash: playerOne.loc[0], // spawn at playerOne
-        prop: compendium.portal.prop,
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-    })) as ItemEntity;
-
-    // Dragon
-    let dragon = await spawnMonster({
-        geohash: generateRandomGeohash(8, "h9"),
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        beast: "dragon",
-    });
-
-    // Goblin
-    let goblin = await spawnMonster({
-        geohash: generateRandomGeohash(8, "h9"),
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        beast: "goblin",
-    });
-
-    let goblin2 = await spawnMonster({
-        geohash: generateRandomGeohash(8, "h9"),
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        beast: "goblin",
-    });
-
-    let goblin3 = await spawnMonster({
-        geohash: generateRandomGeohash(8, "h9"),
-        locationType: "geohash",
-        locationInstance: LOCATION_INSTANCE,
-        beast: "goblin",
-    });
-
     // Actions & Abilities
     const itemUtilities: [Item, Utility][] = [
-        woodenclub,
-        woodendoor,
-        portal,
+        woodenClub,
+        woodenDoor,
+        portalOne,
     ].flatMap((item) => {
         return Object.values(compendium[item.prop].utilities).map(
             (utility): [Item, Utility] => {
@@ -168,7 +62,7 @@ test("Test Query", async () => {
         queryTokens,
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
-        items: [woodendoor, woodenclub, portal],
+        items: [woodenDoor, woodenClub, portalOne],
         skills: [...SkillLinesEnum],
     });
 
@@ -233,7 +127,7 @@ test("Test Query", async () => {
         queryTokens,
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
-        items: [woodendoor, woodenclub, portal],
+        items: [woodenDoor, woodenClub, portalOne],
         skills: [...SkillLinesEnum],
     });
 
@@ -298,7 +192,7 @@ test("Test Query", async () => {
         queryTokens,
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
-        items: [woodendoor, woodenclub, portal],
+        items: [woodenDoor, woodenClub, portalOne],
         skills: [...SkillLinesEnum],
     });
 
@@ -363,7 +257,7 @@ test("Test Query", async () => {
         queryTokens,
         monsters: [dragon, goblin],
         players: [playerOne, playerTwo, playerThree],
-        items: [woodendoor, woodenclub, portal],
+        items: [woodenDoor, woodenClub, portalOne],
         skills: [...SkillLinesEnum],
     });
 
@@ -409,12 +303,12 @@ test("Test Query", async () => {
         // Player
         player: playerOne,
         playerAbilities: [abilities.scratch, abilities.bandage],
-        playerItems: [woodenclub],
+        playerItems: [woodenClub],
         actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
-        items: [woodendoor],
+        items: [woodenDoor],
         skills: [...SkillLinesEnum],
     }).commands;
     expect(gameCommands).toMatchObject([
@@ -448,12 +342,12 @@ test("Test Query", async () => {
         // Player
         player: playerOne,
         playerAbilities: [abilities.scratch, abilities.bandage],
-        playerItems: [woodenclub],
+        playerItems: [woodenClub],
         actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
-        items: [woodendoor],
+        items: [woodenDoor],
         skills: [...SkillLinesEnum],
     }).commands;
     expect(gameCommands).toMatchObject([
@@ -474,7 +368,7 @@ test("Test Query", async () => {
                     beast: "goblin",
                 },
                 item: {
-                    item: woodenclub.item,
+                    item: woodenClub.item,
                     name: "Wooden Club",
                     prop: "woodenclub",
                 },
@@ -492,12 +386,12 @@ test("Test Query", async () => {
             abilities.bandage,
             abilities.swing,
         ], // has swing action
-        playerItems: [woodenclub], // has swing utility
+        playerItems: [woodenClub], // has swing utility
         actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
-        items: [woodendoor],
+        items: [woodenDoor],
         skills: [...SkillLinesEnum],
     }).commands;
     expect(gameCommands).toMatchObject([
@@ -527,16 +421,16 @@ test("Test Query", async () => {
                     monster: goblin.monster,
                 },
                 item: {
-                    item: woodenclub.item,
+                    item: woodenClub.item,
                 },
             },
         ],
     ]);
 
     // Test non ability utility
-    playerOne.loc = woodendoor.loc;
+    playerOne.loc = woodenDoor.loc;
     gameCommands = searchPossibleCommands({
-        query: "open woodendoor",
+        query: "open woodenDoor",
         // Player
         player: playerOne,
         playerAbilities: [
@@ -544,12 +438,12 @@ test("Test Query", async () => {
             abilities.bandage,
             abilities.swing,
         ], // has swing action
-        playerItems: [woodenclub], // has swing utility
+        playerItems: [woodenClub], // has swing utility
         actions: [],
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
-        items: [woodendoor],
+        items: [woodenDoor],
         skills: [...SkillLinesEnum],
     }).commands;
     expect(gameCommands).toMatchObject([
@@ -571,16 +465,16 @@ test("Test Query", async () => {
                     player: playerOne.player,
                 },
                 item: {
-                    item: woodendoor.item,
+                    item: woodenDoor.item,
                 },
             },
         ],
     ]);
 
     // Test in presence of multiple of the same props
-    woodenclub.loc = woodenclub2.loc = woodenclub3.loc = playerOne.loc;
+    woodenClub.loc = woodenClubTwo.loc = woodenClubThree.loc = playerOne.loc;
     gameCommands = searchPossibleCommands({
-        query: `take ${woodenclub3.item}`,
+        query: `take ${woodenClubThree.item}`,
         // Player
         player: playerOne,
         playerAbilities: [],
@@ -589,7 +483,7 @@ test("Test Query", async () => {
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
-        items: [woodenclub, woodenclub2, woodenclub3],
+        items: [woodenClub, woodenClubTwo, woodenClubThree],
         skills: [...SkillLinesEnum],
     }).commands;
     expect(gameCommands[0]).toMatchObject([
@@ -601,17 +495,17 @@ test("Test Query", async () => {
                 player: playerOne.player,
             },
             target: {
-                item: woodenclub3.item,
+                item: woodenClubThree.item,
             },
         },
         {
-            query: `take ${woodenclub3.item}`,
+            query: `take ${woodenClubThree.item}`,
         },
     ]);
 
     // Test should show multiple similar items (sorted by relevance)
     gameCommands = searchPossibleCommands({
-        query: `take woodenclub`,
+        query: `take woodenClub`,
         // Player
         player: playerOne,
         playerAbilities: [],
@@ -620,7 +514,7 @@ test("Test Query", async () => {
         // Environment
         monsters: [goblin, dragon],
         players: [playerOne], // Note: need to include self to bandage
-        items: [woodenclub, woodenclub2, woodenclub3],
+        items: [woodenClub, woodenClubTwo, woodenClubThree],
         skills: [...SkillLinesEnum],
     }).commands;
     expect(gameCommands).toMatchObject([
@@ -633,7 +527,7 @@ test("Test Query", async () => {
                     player: playerOne.player,
                 },
                 target: {
-                    item: woodenclub.item,
+                    item: woodenClub.item,
                 },
             },
             {
@@ -649,7 +543,7 @@ test("Test Query", async () => {
                     player: playerOne.player,
                 },
                 target: {
-                    item: woodenclub2.item,
+                    item: woodenClubTwo.item,
                 },
             },
             {
@@ -665,7 +559,7 @@ test("Test Query", async () => {
                     player: playerOne.player,
                 },
                 target: {
-                    item: woodenclub3.item,
+                    item: woodenClubThree.item,
                 },
             },
             {
@@ -675,7 +569,7 @@ test("Test Query", async () => {
     ]);
 
     // Test abilities should show multiple targets
-    goblin.loc = goblin2.loc = goblin3.loc = playerOne.loc;
+    goblin.loc = goblinTwo.loc = goblinThree.loc = playerOne.loc;
     gameCommands = searchPossibleCommands({
         query: `scratch goblin`,
         // Player
@@ -684,7 +578,7 @@ test("Test Query", async () => {
         playerItems: [],
         actions: [],
         // Environment
-        monsters: [goblin, goblin2, goblin3],
+        monsters: [goblin, goblinTwo, goblinThree],
         players: [],
         items: [],
         skills: [...SkillLinesEnum],
@@ -712,7 +606,7 @@ test("Test Query", async () => {
                     player: playerOne.player,
                 },
                 target: {
-                    monster: goblin2.monster,
+                    monster: goblinTwo.monster,
                 },
             },
         ],
@@ -725,7 +619,7 @@ test("Test Query", async () => {
                     player: playerOne.player,
                 },
                 target: {
-                    monster: goblin3.monster,
+                    monster: goblinThree.monster,
                 },
             },
         ],

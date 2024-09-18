@@ -36,6 +36,7 @@ export {
     crossoverCmdEnterItem,
     crossoverCmdEquip,
     crossoverCmdFulfill,
+    crossoverCmdGive,
     crossoverCmdLearn,
     crossoverCmdLook,
     crossoverCmdMove,
@@ -248,6 +249,14 @@ function crossoverCmdLearn(
 ) {
     const { skill, teacher } = input;
     return trpc({ headers }).crossover.cmd.learn.query({ skill, teacher });
+}
+
+function crossoverCmdGive(
+    input: { item: string; receiver: string },
+    headers: HTTPHeaders = {},
+) {
+    const { item, receiver } = input;
+    return trpc({ headers }).crossover.cmd.give.query({ item, receiver });
 }
 
 function crossoverCmdBrowse(

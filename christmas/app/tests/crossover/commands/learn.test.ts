@@ -18,7 +18,7 @@ let { woodenClub, tavern } = await createTestItems({});
 
 beforeEach(async () => {});
 
-describe("Command Tests", () => {
+describe("Learn Tests", () => {
     test("Learn skill from player", async () => {
         // Test command search
         const { commands, queryTokens, tokenPositions } =

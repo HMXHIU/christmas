@@ -12,6 +12,7 @@ export {
     generateAvatarHash,
     verifyP2PTransaction,
     type CTA,
+    type P2PGiveTransaction,
     type P2PLearnTransaction,
     type P2PTradeTransaction,
 };
@@ -32,7 +33,15 @@ function generateAvatarHash({
 }
 
 interface P2PTransaction {
-    transaction: "trade" | "quest" | "learn";
+    transaction: "trade" | "quest" | "learn" | "give";
+}
+
+// Give Transaction
+interface P2PGiveTransaction extends P2PTransaction {
+    transaction: "give";
+    receiver: string;
+    player: string;
+    item: string;
 }
 
 // Learn Transaction

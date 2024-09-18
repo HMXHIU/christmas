@@ -9,7 +9,6 @@ import {
 } from "$lib/crossover/world/types";
 import { generatePin } from "$lib/utils";
 import { say } from ".";
-import { setEntityBusy } from "..";
 import { spawnItemInInventory } from "../dungeonMaster";
 import { isEntityHuman } from "../npc";
 import {
@@ -39,7 +38,6 @@ export {
     createTradeWrit,
     deserializeBarter,
     executeTradeCTA,
-    setEntityBusy,
     trade,
 };
 

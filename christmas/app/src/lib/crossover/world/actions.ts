@@ -37,11 +37,18 @@ type Actions =
     | "browse"
     | "accept"
     | "fulfill"
+    | "give"
     | "rest";
 
 type ActionTargets = EntityType | "none";
 
-type SpecialTokens = "action" | "target" | "skill" | "offer" | "receive";
+type SpecialTokens =
+    | "action"
+    | "target"
+    | "skill"
+    | "offer"
+    | "receive"
+    | "item";
 
 interface Action {
     action: Actions;
@@ -357,6 +364,27 @@ Examples:
         },
         range: 0,
     },
+    give: {
+        action: "give",
+        description: `Give an item to a player.
+
+Commands:
+    give [item] to [player]
+
+Examples:
+    **give** item_potionofhealth_1 **to** gandalf
+`,
+        predicate: {
+            target: ["player"],
+            tokenPositions: { action: 0, item: 1, target: 3 },
+        },
+        ticks: 1,
+        icon: {
+            path: "actions/actions",
+            icon: "night-sleep",
+        },
+        range: 0,
+    },
     rest: {
         action: "rest",
         description: "Rest and recover.",
@@ -435,6 +463,7 @@ function resolveActionEntities({
         skill: skillTokenPosition,
         receive: receiveTokenPosition,
         offer: offerTokenPosition,
+        item: itemTokenPosition,
     } = predicateTokenPositions;
 
     // Check action token position
@@ -450,10 +479,9 @@ function resolveActionEntities({
 
     let gameActionEntitiesScores: [GameActionEntities, number][] = [];
 
+    // Check offer & receive token position
     let receive: BarterSerialized | undefined = undefined;
     let offer: BarterSerialized | undefined = undefined;
-
-    // Check offer & receive token position
     if (receiveTokenPosition != null) {
         receive = parseBarter(queryTokens[receiveTokenPosition]);
         if (!receive) {
@@ -466,10 +494,30 @@ function resolveActionEntities({
             return [];
         }
     }
+
     // Check skill token position
     const skill = skills.find((s) => tokenPositions[s]);
     if (skillTokenPosition != null && skill == null) {
         return [];
+    }
+
+    // Check item token position
+    let item: Item | undefined = undefined;
+    if (itemTokenPosition != null) {
+        for (const [entityId, matchedTokenPositions] of Object.entries(
+            tokenPositions,
+        )) {
+            if (
+                matchedTokenPositions[itemTokenPosition]?.token ===
+                queryTokens[itemTokenPosition]
+            ) {
+                item = items.find((i) => i.item === entityId);
+                break;
+            }
+        }
+        if (!item) {
+            return [];
+        }
     }
 
     // Find target type in monsters, players, and items
@@ -483,8 +531,11 @@ function resolveActionEntities({
             targetList = players;
         } else if (targetType === "item") {
             targetList = items;
-            // Can only equip an item in inventory
-            if (action.action === actions.equip.action) {
+            // Can only equip/give an item in inventory
+            if (
+                action.action === actions.equip.action ||
+                action.action === actions.give.action
+            ) {
                 targetList = targetList.filter(
                     (item) =>
                         item.locT === "inv" &&
@@ -538,6 +589,7 @@ function resolveActionEntities({
                         skill,
                         offer,
                         receive,
+                        item,
                     },
                     tokenPositions[entityId][targetTokenPosition].score,
                 ]);
@@ -547,7 +599,7 @@ function resolveActionEntities({
 
     // If no target is allowed
     if (gameActionEntitiesScores.length === 0 && targetTypes.includes("none")) {
-        return [{ self, skill, receive, offer }];
+        return [{ self, skill, receive, offer, item }];
     }
 
     // Sort by score
