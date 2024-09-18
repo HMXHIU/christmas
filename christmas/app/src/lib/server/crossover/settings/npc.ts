@@ -1,5 +1,5 @@
+import type { Dialogue, Dialogues } from "$lib/crossover/types";
 import type { NPC, NPCs } from "../npc";
-import type { Dialogue, Dialogues } from "../redis/schema";
 
 export { dialogues, npcs };
 

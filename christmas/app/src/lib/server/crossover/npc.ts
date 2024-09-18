@@ -4,6 +4,14 @@ import {
 } from "$env/static/public";
 import { AnchorClient } from "$lib/anchorClient";
 import { PROGRAM_ID } from "$lib/anchorClient/defs";
+import type {
+    DialogueEntity,
+    Dialogues,
+    GameEntity,
+    Monster,
+    Player,
+    PlayerEntity,
+} from "$lib/crossover/types";
 import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
 import type { Abilities } from "$lib/crossover/world/abilities";
 import type { Actions } from "$lib/crossover/world/actions";
@@ -56,14 +64,6 @@ import { getAvatars } from "../../../routes/api/crossover/avatar/[...path]/+serv
 import { ObjectStorage } from "../objectStorage";
 import { say } from "./actions";
 import { dialogueRepository, playerRepository } from "./redis";
-import type {
-    DialogueEntity,
-    Dialogues,
-    GameEntity,
-    Monster,
-    Player,
-    PlayerEntity,
-} from "./redis/schema";
 import { UserMetadataSchema } from "./router";
 import { npcs } from "./settings/npc";
 import { getUserMetadata, savePlayerState } from "./utils";

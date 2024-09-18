@@ -1,4 +1,10 @@
 import type { CacheInterface } from "$lib/caches";
+import type {
+    ItemEntity,
+    MonsterEntity,
+    PlayerEntity,
+    WorldEntity,
+} from "$lib/crossover/types";
 import {
     autoCorrectGeohashPrecision,
     borderingGeohashes,
@@ -22,8 +28,10 @@ import {
     topologicalAnalysis,
     worldSeed,
 } from "$lib/crossover/world/settings/world";
-import type { GeohashLocationType } from "$lib/crossover/world/types";
-import { geohashLocationTypes } from "$lib/crossover/world/types";
+import {
+    geohashLocationTypes,
+    type GeohashLocationType,
+} from "$lib/crossover/world/types";
 import { poisInWorld, type WorldPOIs } from "$lib/crossover/world/world";
 import { substituteValues } from "$lib/utils";
 import { groupBy } from "lodash-es";
@@ -40,12 +48,6 @@ import {
     worldRepository,
     worldsContainingGeohashQuerySet,
 } from "./redis";
-import type {
-    ItemEntity,
-    MonsterEntity,
-    PlayerEntity,
-    WorldEntity,
-} from "./redis/schema";
 import { isLocationTraversable, parseItemVariables } from "./utils";
 
 export {

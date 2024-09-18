@@ -1,4 +1,10 @@
 import {
+    type GameEntity,
+    type ItemEntity,
+    type MonsterEntity,
+    type PlayerEntity,
+} from "$lib/crossover/types";
+import {
     calculatePathDuration,
     geohashesNearby,
     getEntityId,
@@ -27,12 +33,6 @@ import {
     playersInGeohashQuerySet,
     saveEntity,
 } from "../redis";
-import {
-    type GameEntity,
-    type ItemEntity,
-    type MonsterEntity,
-    type PlayerEntity,
-} from "../redis/schema";
 import {
     isDirectionTraversable,
     publishAffectedEntitiesToPlayers,

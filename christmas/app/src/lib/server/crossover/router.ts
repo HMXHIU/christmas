@@ -1,4 +1,13 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
+import type {
+    Item,
+    ItemEntity,
+    MonsterEntity,
+    Player,
+    PlayerEntity,
+    World,
+    WorldEntity,
+} from "$lib/crossover/types";
 import { PlayerMetadataSchema } from "$lib/crossover/world/player";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/settings/world";
@@ -67,15 +76,6 @@ import {
     type P2PTradeTransaction,
 } from "./player";
 import { loggedInPlayersQuerySet } from "./redis";
-import type {
-    Item,
-    ItemEntity,
-    MonsterEntity,
-    Player,
-    PlayerEntity,
-    World,
-    WorldEntity,
-} from "./redis/schema";
 import {
     entityIsBusy,
     getPlayerState,

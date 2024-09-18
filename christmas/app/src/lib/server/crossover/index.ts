@@ -1,3 +1,9 @@
+import {
+    type ItemEntity,
+    type MonsterEntity,
+    type Player,
+    type PlayerEntity,
+} from "$lib/crossover/types";
 import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
 import { actions, type Actions } from "$lib/crossover/world/actions";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
@@ -8,12 +14,6 @@ import { sanctuaries, worldSeed } from "$lib/crossover/world/settings/world";
 import { GeohashLocationSchema } from "$lib/crossover/world/types";
 import { z } from "zod";
 import { fetchEntity, saveEntity } from "./redis";
-import {
-    type ItemEntity,
-    type MonsterEntity,
-    type Player,
-    type PlayerEntity,
-} from "./redis/schema";
 import {
     getPlayerState,
     getUserMetadata,

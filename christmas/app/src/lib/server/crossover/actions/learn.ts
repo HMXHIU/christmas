@@ -1,3 +1,4 @@
+import { type ItemEntity, type PlayerEntity } from "$lib/crossover/types";
 import { actions } from "$lib/crossover/world/actions";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { skillLines } from "$lib/crossover/world/settings/skills";
@@ -21,7 +22,6 @@ import {
     itemRepository,
     saveEntity,
 } from "../redis";
-import { type ItemEntity, type PlayerEntity } from "../redis/schema";
 import {
     publishActionEvent,
     publishAffectedEntitiesToPlayers,

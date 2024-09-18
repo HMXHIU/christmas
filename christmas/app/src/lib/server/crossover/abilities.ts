@@ -1,3 +1,11 @@
+import type {
+    Item,
+    ItemEntity,
+    Monster,
+    MonsterEntity,
+    Player,
+    PlayerEntity,
+} from "$lib/crossover/types";
 import {
     calculateLocation,
     entityDimensions,
@@ -14,19 +22,11 @@ import {
 import { entityActualAp } from "$lib/crossover/world/entity";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
-import { type GeohashLocationType } from "$lib/crossover/world/types";
+import type { GeohashLocationType } from "$lib/crossover/world/types";
 import { sleep } from "$lib/utils";
 import { cloneDeep, uniq } from "lodash-es";
 import { consumeResources, performActionConsequences, setEntityBusy } from ".";
 import { fetchEntity, getNearbyPlayerIds, saveEntity } from "./redis";
-import {
-    type Item,
-    type ItemEntity,
-    type Monster,
-    type MonsterEntity,
-    type Player,
-    type PlayerEntity,
-} from "./redis/schema";
 import {
     publishActionEvent,
     publishAffectedEntitiesToPlayers,

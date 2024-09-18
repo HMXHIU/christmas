@@ -1,3 +1,12 @@
+import type {
+    Item,
+    ItemEntity,
+    Monster,
+    MonsterEntity,
+    Player,
+    PlayerEntity,
+    WorldEntity,
+} from "$lib/crossover/types";
 import { geohashNeighbour } from "$lib/crossover/utils";
 import { type ItemVariables } from "$lib/crossover/world/compendium";
 import { compendium } from "$lib/crossover/world/settings/compendium";
@@ -38,15 +47,6 @@ import {
     redisClient,
     worldsContainingGeohashQuerySet,
 } from "./redis";
-import type {
-    Item,
-    ItemEntity,
-    Monster,
-    MonsterEntity,
-    Player,
-    PlayerEntity,
-    WorldEntity,
-} from "./redis/schema";
 import type { UserMetadataSchema } from "./router";
 
 export {

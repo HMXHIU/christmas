@@ -1,4 +1,9 @@
 import {
+    type ItemEntity,
+    type MonsterEntity,
+    type PlayerEntity,
+} from "$lib/crossover/types";
+import {
     entityInRange,
     getEntityId,
     minifiedEntity,
@@ -28,11 +33,6 @@ import {
     itemRepository,
     saveEntity,
 } from "../redis";
-import {
-    type ItemEntity,
-    type MonsterEntity,
-    type PlayerEntity,
-} from "../redis/schema";
 import {
     canConfigureItem,
     canUseItem,

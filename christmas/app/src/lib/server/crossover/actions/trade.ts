@@ -1,3 +1,4 @@
+import { type ItemEntity, type PlayerEntity } from "$lib/crossover/types";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     type Barter,
@@ -23,7 +24,6 @@ import {
     saveEntity,
     writsQuerySet,
 } from "../redis";
-import { type ItemEntity, type PlayerEntity } from "../redis/schema";
 import {
     publishActionEvent,
     publishAffectedEntitiesToPlayers,
