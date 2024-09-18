@@ -3,12 +3,13 @@ import { executeGameCommand } from "$lib/crossover/game";
 import { searchPossibleCommands } from "$lib/crossover/ir";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import { spawnItemInInventory } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { sleep } from "$lib/utils";
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeAll, describe, expect, test } from "vitest";
 import type { CTAEvent } from "../../../src/routes/api/crossover/stream/+server";
 import {
     allActions,
@@ -34,7 +35,10 @@ let woodenClub = await spawnItemInInventory({
     prop: compendium.woodenclub.prop,
 });
 
-beforeEach(async () => {});
+beforeAll(async () => {
+    // Wait for the entities to be created
+    await sleep(MS_PER_TICK * 2);
+});
 
 describe("Give Tests", () => {
     test("Give item to player", async () => {
@@ -94,6 +98,7 @@ describe("Give Tests", () => {
                 "Gandalf wants to give Wooden Club to you. You have 60 to *accept",
             ),
         ).toBeTruthy();
+        await sleep(MS_PER_TICK * actions.give.ticks * 2);
 
         // Accept the CTA
         crossoverCmdAccept(

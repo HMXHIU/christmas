@@ -13,7 +13,8 @@ import {
     getPositionsForPath,
     gridCellToGeohash,
 } from "$lib/crossover/utils";
-import { actions, type Actions } from "$lib/crossover/world/actions";
+import { type Actions } from "$lib/crossover/world/actions";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { gsap } from "gsap";
 import { Container, type DestroyOptions } from "pixi.js";
 import { calculatePosition, type Position } from "../utils";

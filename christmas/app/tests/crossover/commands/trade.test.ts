@@ -1,9 +1,9 @@
 import { executeGameCommand } from "$lib/crossover/game";
 import { searchPossibleCommands } from "$lib/crossover/ir";
 import type { ItemEntity, PlayerEntity } from "$lib/crossover/types";
-import { actions } from "$lib/crossover/world/actions";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import { spawnItemInInventory } from "$lib/server/crossover/dungeonMaster";

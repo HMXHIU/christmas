@@ -48,9 +48,10 @@ import {
 } from "./ir";
 import { aStarPathfinding } from "./pathfinding";
 import type { Ability } from "./world/abilities";
-import { actions, type Action } from "./world/actions";
+import { type Action } from "./world/actions";
 import type { Utility } from "./world/compendium";
 import { MS_PER_TICK, SERVER_LATENCY } from "./world/settings";
+import { actions } from "./world/settings/actions";
 import { compendium } from "./world/settings/compendium";
 import { worldSeed } from "./world/settings/world";
 import { type SkillLines } from "./world/skills";

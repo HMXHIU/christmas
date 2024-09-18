@@ -4,135 +4,37 @@ import {
     gameActionsIR,
     tokenize,
 } from "$lib/crossover/ir";
-import type { Item, ItemEntity, Monster, Player } from "$lib/crossover/types";
+import type { Item } from "$lib/crossover/types";
 import { type Ability } from "$lib/crossover/world/abilities";
 import type { Utility } from "$lib/crossover/world/compendium";
-import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
-import {
-    spawnItemAtGeohash,
-    spawnMonster,
-} from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
-import { beforeAll, describe, expect, it } from "vitest";
-import { getRandomRegion } from "../../utils";
+import { describe, expect, test } from "vitest";
 import {
     allActions,
-    createRandomPlayer,
-    createWorldAsset,
-    generateRandomGeohash,
+    createGandalfSarumanSauron,
+    createGoblinSpiderDragon,
+    createTestItems,
 } from "../utils";
 
-const region = String.fromCharCode(...getRandomRegion());
+await initializeClients();
 
-const playerOneName = "Gandalf";
-const playerTwoName = "Saruman";
-let playerOne: Player;
-let playerTwo: Player;
-let woodendoor: Item;
-let woodenclub: Item;
-let woodenclub2: Item;
-let woodenclub3: Item;
-let tavern: ItemEntity;
-let tavernGeohash: string;
-let portal: Item;
-let dragon: Monster;
-let goblin: Monster;
-let playerOneGeohash: string;
-let playerTwoGeohash: string;
+let { playerOne, playerTwo } = await createGandalfSarumanSauron();
+let {
+    woodenDoor,
+    woodenClub,
+    woodenClubThree,
+    woodenClubTwo,
+    portalOne,
+    tavern,
+} = await createTestItems({});
+let { goblin, dragon } = await createGoblinSpiderDragon();
 
 describe("IR Tests", () => {
-    beforeAll(async () => {
-        await initializeClients(); // create redis repositories
-
-        // Player - playerOne
-        playerOneGeohash = generateRandomGeohash(8, "h9");
-        [, , playerOne] = await createRandomPlayer({
-            region,
-            geohash: playerOneGeohash,
-            name: playerOneName,
-        });
-
-        // Player - playerTwo
-        playerTwoGeohash = generateRandomGeohash(8, "h9");
-        [, , playerTwo] = await createRandomPlayer({
-            region,
-            geohash: playerTwoGeohash,
-            name: playerTwoName,
-        });
-
-        // Items
-        woodendoor = (await spawnItemAtGeohash({
-            geohash: generateRandomGeohash(8, "h9"),
-            locationType: "geohash",
-            locationInstance: LOCATION_INSTANCE,
-            prop: compendium.woodendoor.prop,
-            variables: {
-                [compendium.woodendoor.variables!.doorsign.variable]:
-                    "A custom door sign",
-            },
-        })) as ItemEntity;
-
-        woodenclub = await spawnItemAtGeohash({
-            geohash: generateRandomGeohash(8, "h9"),
-            locationType: "geohash",
-            locationInstance: LOCATION_INSTANCE,
-            prop: compendium.woodenclub.prop,
-        });
-
-        woodenclub2 = await spawnItemAtGeohash({
-            geohash: generateRandomGeohash(8, "h9"),
-            locationType: "geohash",
-            locationInstance: LOCATION_INSTANCE,
-            prop: compendium.woodenclub.prop,
-        });
-
-        woodenclub3 = await spawnItemAtGeohash({
-            geohash: generateRandomGeohash(8, "h9"),
-            locationType: "geohash",
-            locationInstance: LOCATION_INSTANCE,
-            prop: compendium.woodenclub.prop,
-        });
-
-        portal = (await spawnItemAtGeohash({
-            geohash: playerOneGeohash,
-            locationType: "geohash",
-            locationInstance: LOCATION_INSTANCE,
-            prop: compendium.portal.prop,
-        })) as ItemEntity;
-
-        tavernGeohash = generateRandomGeohash(8, "h9");
-        const { url } = await createWorldAsset();
-        tavern = (await spawnItemAtGeohash({
-            geohash: tavernGeohash,
-            locationType: "geohash",
-            locationInstance: LOCATION_INSTANCE,
-            prop: compendium.tavern.prop,
-            variables: {
-                url,
-            },
-        })) as ItemEntity;
-
-        // Monsters
-        dragon = await spawnMonster({
-            geohash: generateRandomGeohash(8, "h9"),
-            locationType: "geohash",
-            locationInstance: LOCATION_INSTANCE,
-            beast: "dragon",
-        });
-
-        goblin = await spawnMonster({
-            geohash: generateRandomGeohash(8, "h9"),
-            locationType: "geohash",
-            locationInstance: LOCATION_INSTANCE,
-            beast: "goblin",
-        });
-    });
-
     describe("fuzzyMatch Tests", () => {
-        it("should match identical strings", () => {
+        test("should match identical strings", () => {
             expect(fuzzyMatch("Gandalf", "Gandalf", 1)).toMatchObject({
                 isMatch: true,
                 score: 0,
@@ -140,7 +42,7 @@ describe("IR Tests", () => {
             });
         });
 
-        it("should not match different strings with a high score threshold", () => {
+        test("should not match different strings with a high score threshold", () => {
             expect(fuzzyMatch("bandage", "gandalf", 1)).toMatchObject({
                 isMatch: false,
                 score: 3,
@@ -148,7 +50,7 @@ describe("IR Tests", () => {
             });
         });
 
-        it("should match different strings with a low score threshold", () => {
+        test("should match different strings with a low score threshold", () => {
             expect(fuzzyMatch("bandage", "gandalf", 3)).toMatchObject({
                 isMatch: true,
                 score: 3,
@@ -157,13 +59,13 @@ describe("IR Tests", () => {
     });
 
     describe("entitiesIR Tests", () => {
-        it("should find skill", () => {
+        test("should find skill", () => {
             expect(
                 entitiesIR({
                     queryTokens: tokenize("exploration"),
                     monsters: [dragon, goblin],
                     players: [playerOne, playerTwo],
-                    items: [woodendoor, woodenclub],
+                    items: [woodenDoor, woodenClub],
                     skills: [...SkillLinesEnum],
                 }),
             ).toMatchObject({
@@ -182,13 +84,13 @@ describe("IR Tests", () => {
             });
         });
 
-        it("should find a player by name", () => {
+        test("should find a player by name", () => {
             expect(
                 entitiesIR({
                     queryTokens: tokenize("Gandalf"),
                     monsters: [dragon, goblin],
                     players: [playerOne, playerTwo],
-                    items: [woodendoor, woodenclub],
+                    items: [woodenDoor, woodenClub],
                     skills: [...SkillLinesEnum],
                 }),
             ).toMatchObject({
@@ -210,13 +112,13 @@ describe("IR Tests", () => {
             });
         });
 
-        it("should find a player by player id", () => {
+        test("should find a player by player id", () => {
             expect(
                 entitiesIR({
                     queryTokens: tokenize(playerOne.player),
                     monsters: [dragon, goblin],
                     players: [playerOne, playerTwo],
-                    items: [woodendoor, woodenclub],
+                    items: [woodenDoor, woodenClub],
                     skills: [...SkillLinesEnum],
                 }),
             ).toMatchObject({
@@ -238,13 +140,13 @@ describe("IR Tests", () => {
             });
         });
 
-        it("should find an item by name", () => {
+        test("should find an item by name", () => {
             expect(
                 entitiesIR({
-                    queryTokens: tokenize(woodenclub.name),
+                    queryTokens: tokenize(woodenClub.name),
                     monsters: [dragon, goblin],
                     players: [playerOne, playerTwo],
-                    items: [woodendoor, woodenclub],
+                    items: [woodenDoor, woodenClub],
                     skills: [...SkillLinesEnum],
                 }),
             ).toMatchObject({
@@ -252,11 +154,11 @@ describe("IR Tests", () => {
                 players: [],
                 items: [
                     {
-                        name: woodenclub.name,
+                        name: woodenClub.name,
                     },
                 ],
                 tokenPositions: {
-                    [woodenclub.item]: {
+                    [woodenClub.item]: {
                         "0": {
                             token: "wooden",
                             score: 1,
@@ -270,13 +172,13 @@ describe("IR Tests", () => {
             });
         });
 
-        it("should find a monster by name", () => {
+        test("should find a monster by name", () => {
             expect(
                 entitiesIR({
                     queryTokens: tokenize(dragon.name),
                     monsters: [dragon, goblin],
                     players: [playerOne, playerTwo],
-                    items: [woodendoor, woodenclub],
+                    items: [woodenDoor, woodenClub],
                     skills: [...SkillLinesEnum],
                 }),
             ).toMatchObject({
@@ -298,12 +200,12 @@ describe("IR Tests", () => {
             });
         });
 
-        it("should partially match a player name", () => {
+        test("should partially match a player name", () => {
             const res = entitiesIR({
                 queryTokens: tokenize("Gandaf"), // subtracted one letter
                 monsters: [dragon, goblin],
                 players: [playerOne, playerTwo],
-                items: [woodendoor, woodenclub],
+                items: [woodenDoor, woodenClub],
                 skills: [...SkillLinesEnum],
             });
             expect(res).toMatchObject({
@@ -327,13 +229,13 @@ describe("IR Tests", () => {
             ).toBeGreaterThan(0.8);
         });
 
-        it("should fail to match a player name with too many errors", () => {
+        test("should fail to match a player name with too many errors", () => {
             expect(
                 entitiesIR({
                     queryTokens: tokenize("Gan"), // too much error
                     monsters: [dragon, goblin],
                     players: [playerOne, playerTwo],
-                    items: [woodendoor, woodenclub],
+                    items: [woodenDoor, woodenClub],
                     skills: [...SkillLinesEnum],
                 }),
             ).toMatchObject({
@@ -344,12 +246,12 @@ describe("IR Tests", () => {
             });
         });
 
-        it("should match multiple entities in a query", () => {
+        test("should match multiple entities in a query", () => {
             const res = entitiesIR({
                 queryTokens: tokenize("Gandaf attacks gobli"), // subtracted one letter
                 monsters: [dragon, goblin],
                 players: [playerOne, playerTwo],
-                items: [woodendoor, woodenclub],
+                items: [woodenDoor, woodenClub],
                 skills: [...SkillLinesEnum],
             });
             expect(res).toMatchObject({
@@ -385,12 +287,12 @@ describe("IR Tests", () => {
             ).toBeGreaterThan(0.8);
         });
 
-        it("should match multiple items with the same prop", () => {
+        test("should match multiple items with the same prop", () => {
             const res = entitiesIR({
-                queryTokens: tokenize(`take ${woodenclub.item}`),
+                queryTokens: tokenize(`take ${woodenClub.item}`),
                 monsters: [dragon, goblin],
                 players: [playerOne],
-                items: [woodenclub, woodenclub2, woodenclub3],
+                items: [woodenClub, woodenClubTwo, woodenClubThree],
                 skills: [...SkillLinesEnum],
             });
             expect(res).toMatchObject({
@@ -398,60 +300,94 @@ describe("IR Tests", () => {
                 players: [],
                 items: [
                     {
-                        item: woodenclub.item,
+                        item: woodenClub.item,
                     },
                     {
-                        item: woodenclub2.item,
+                        item: woodenClubTwo.item,
                     },
                     {
-                        item: woodenclub3.item,
+                        item: woodenClubThree.item,
                     },
                 ],
                 tokenPositions: {
-                    [woodenclub.item]: {
+                    [woodenClub.item]: {
                         "1": {
-                            token: woodenclub.item,
+                            token: woodenClub.item,
                         },
                     },
-                    [woodenclub2.item]: {
+                    [woodenClubTwo.item]: {
                         "1": {
-                            token: woodenclub.item,
+                            token: woodenClub.item,
                         },
                     },
-                    [woodenclub3.item]: {
+                    [woodenClubThree.item]: {
                         "1": {
-                            token: woodenclub.item,
+                            token: woodenClub.item,
                         },
                     },
                 },
             });
-            expect(res.tokenPositions[woodenclub.item]["1"].score).toBe(1);
+            expect(res.tokenPositions[woodenClub.item]["1"].score).toBe(1);
             expect(
-                res.tokenPositions[woodenclub2.item]["1"].score,
+                res.tokenPositions[woodenClubTwo.item]["1"].score,
             ).toBeGreaterThan(0.8);
             expect(
-                res.tokenPositions[woodenclub3.item]["1"].score,
+                res.tokenPositions[woodenClubThree.item]["1"].score,
             ).toBeGreaterThan(0.8);
         });
     });
 
     describe("gameActionsIR Tests", () => {
-        let itemUtilities: [Item, Utility][], playerAbilities: Ability[];
-
-        beforeAll(() => {
-            itemUtilities = [woodenclub, woodendoor, portal, tavern].flatMap(
-                (item) => {
-                    return Object.values(compendium[item.prop].utilities).map(
-                        (utility): [Item, Utility] => {
-                            return [item, utility];
-                        },
-                    );
+        let itemUtilities: [Item, Utility][] = [
+            woodenClub,
+            woodenDoor,
+            portalOne,
+            tavern,
+        ].flatMap((item) => {
+            return Object.values(compendium[item.prop].utilities).map(
+                (utility): [Item, Utility] => {
+                    return [item, utility];
                 },
             );
-            playerAbilities = Object.values(abilities);
+        });
+        let playerAbilities: Ability[] = Object.values(abilities);
+
+        test("`say` action synonyms", () => {
+            const ga = gameActionsIR({
+                queryTokens: tokenize("greet gandalf"),
+                abilities: playerAbilities,
+                itemUtilities,
+                actions: allActions,
+            });
+            expect(ga).toMatchObject({
+                abilities: [],
+                itemUtilities: [],
+                actions: [
+                    {
+                        action: "say",
+                        description: "Say something.",
+                        synonyms: ["greet"],
+                        predicate: {
+                            target: ["player", "monster", "none"],
+                            tokenPositions: {
+                                action: 0,
+                                target: 1,
+                            },
+                        },
+                    },
+                ],
+                tokenPositions: {
+                    say: {
+                        "0": {
+                            token: "greet",
+                            score: 1,
+                        },
+                    },
+                },
+            });
         });
 
-        it("`learn` skill from player", () => {
+        test("`learn` skill from player", () => {
             const ga = gameActionsIR({
                 queryTokens: tokenize("learn exploration from gandalf"),
                 abilities: playerAbilities,
@@ -486,7 +422,7 @@ describe("IR Tests", () => {
             });
         });
 
-        it("`enter` action on eligible item", () => {
+        test("`enter` action on eligible item", () => {
             const ga = gameActionsIR({
                 queryTokens: tokenize("enter tavern"),
                 abilities: playerAbilities,
@@ -521,7 +457,7 @@ describe("IR Tests", () => {
             });
         });
 
-        it("should match an item utility action", () => {
+        test("should match an item utility action", () => {
             expect(
                 gameActionsIR({
                     queryTokens: tokenize("open woodendoor"),
@@ -534,7 +470,7 @@ describe("IR Tests", () => {
                 itemUtilities: [
                     [
                         {
-                            item: woodendoor.item,
+                            item: woodenDoor.item,
                         },
                         {
                             utility: "open",
@@ -553,7 +489,7 @@ describe("IR Tests", () => {
             });
         });
 
-        it("should match an ability with a minor error", () => {
+        test("should match an ability with a minor error", () => {
             const gas = gameActionsIR({
                 queryTokens: tokenize("eyepok goblin"), // subtracted one letter
                 abilities: playerAbilities,
@@ -582,7 +518,7 @@ describe("IR Tests", () => {
             );
         });
 
-        it("should match both an ability and an item utility with the same token", () => {
+        test("should match both an ability and an item utility with the same token", () => {
             expect(
                 gameActionsIR({
                     queryTokens: tokenize("teleport to player"),
@@ -600,7 +536,7 @@ describe("IR Tests", () => {
                 itemUtilities: [
                     [
                         {
-                            item: portal.item,
+                            item: portalOne.item,
                         },
                         {
                             utility: "teleport",

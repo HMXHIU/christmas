@@ -7,7 +7,7 @@
     import { Textarea } from "$lib/components/ui/textarea";
     import { crossoverAvailableAvatars } from "$lib/crossover/client";
     import type { Abilities } from "$lib/crossover/world/abilities";
-    import { actions, type Actions } from "$lib/crossover/world/actions";
+    import { type Actions } from "$lib/crossover/world/actions";
     import {
         AgesSelection,
         BodyTypesSelection,
@@ -38,6 +38,7 @@
         type PlayerMetadata,
     } from "$lib/crossover/world/player";
     import { abilities } from "$lib/crossover/world/settings/abilities";
+    import { actions } from "$lib/crossover/world/settings/actions";
     import type { SkillLines } from "$lib/crossover/world/skills";
     import { cn } from "$lib/shadcn";
     import { parseZodErrors } from "$lib/utils";

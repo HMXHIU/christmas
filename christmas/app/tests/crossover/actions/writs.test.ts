@@ -3,8 +3,8 @@ import {
     crossoverCmdFulfill,
     crossoverCmdWrit,
 } from "$lib/crossover/client";
-import { actions } from "$lib/crossover/world/actions";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItemInInventory } from "$lib/server/crossover/dungeonMaster";
 import {

@@ -9,9 +9,9 @@ import {
     resolveAbilityEntities,
     type Ability,
 } from "$lib/crossover/world/abilities";
-import { actions } from "$lib/crossover/world/actions";
 import { type Utility } from "$lib/crossover/world/compendium";
 import { abilities } from "$lib/crossover/world/settings/abilities";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import { initializeClients } from "$lib/server/crossover/redis";

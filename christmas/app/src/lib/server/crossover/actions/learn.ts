@@ -1,6 +1,6 @@
 import { type ItemEntity, type PlayerEntity } from "$lib/crossover/types";
-import { actions } from "$lib/crossover/world/actions";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { skillLines } from "$lib/crossover/world/settings/skills";
 import {
     learningDialoguesForSkill,

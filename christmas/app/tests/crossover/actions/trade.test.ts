@@ -4,8 +4,8 @@ import {
     crossoverCmdTrade,
 } from "$lib/crossover/client";
 import type { ItemEntity, PlayerEntity } from "$lib/crossover/types";
-import { actions } from "$lib/crossover/world/actions";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import {

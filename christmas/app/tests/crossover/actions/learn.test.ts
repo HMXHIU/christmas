@@ -1,7 +1,7 @@
 import { crossoverCmdAccept, crossoverCmdLearn } from "$lib/crossover/client";
 import type { PlayerEntity } from "$lib/crossover/types";
-import { actions } from "$lib/crossover/world/actions";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { skillLevelProgression } from "$lib/crossover/world/skills";
 import {
     fetchEntity,

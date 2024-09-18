@@ -8,8 +8,8 @@ import {
     getEntityId,
     minifiedEntity,
 } from "$lib/crossover/utils";
-import { actions } from "$lib/crossover/world/actions";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     geohashLocationTypes,

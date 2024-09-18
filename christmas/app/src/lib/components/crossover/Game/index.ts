@@ -10,8 +10,8 @@ import { executeGameCommand } from "$lib/crossover/game";
 import type { GameCommand } from "$lib/crossover/ir";
 import type { Item, Monster, Player } from "$lib/crossover/types";
 import { getEntityId } from "$lib/crossover/utils";
-import { actions } from "$lib/crossover/world/actions";
 import { entityAttributes } from "$lib/crossover/world/entity";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     geohashLocationTypes,

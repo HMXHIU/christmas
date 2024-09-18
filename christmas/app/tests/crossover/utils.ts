@@ -25,7 +25,6 @@ import {
     hasResourcesForAbility,
     patchEffectWithVariables,
 } from "$lib/crossover/world/abilities";
-import { actions } from "$lib/crossover/world/actions";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
 import { type ItemVariables } from "$lib/crossover/world/compendium";
 import { ArchetypesEnum } from "$lib/crossover/world/demographic";
@@ -33,6 +32,7 @@ import { resetEntityStats } from "$lib/crossover/world/entity";
 import { type PlayerMetadata } from "$lib/crossover/world/player";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { sanctuaries } from "$lib/crossover/world/settings/world";
 import type {

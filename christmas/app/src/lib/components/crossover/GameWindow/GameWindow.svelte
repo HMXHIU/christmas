@@ -5,7 +5,8 @@
         searchPossibleCommands,
         type GameCommand,
     } from "$lib/crossover/ir";
-    import { playerActions } from "$lib/crossover/world/actions";
+    import { playerActions } from "$lib/crossover/world/settings/actions";
+    import { SkillLinesEnum } from "$lib/crossover/world/skills";
     import { cn } from "$lib/shadcn";
     import { substituteVariables } from "$lib/utils";
     import { gsap } from "gsap";
@@ -91,6 +92,7 @@
                 monsters: Object.values($monsterRecord),
                 players: Object.values($playerRecord),
                 items: Object.values($itemRecord),
+                skills: [...SkillLinesEnum],
                 player: $player!,
             }).commands;
         } else {

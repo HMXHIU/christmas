@@ -1,5 +1,6 @@
-import { actions, type Actions } from "$lib/crossover/world/actions";
+import { type Actions } from "$lib/crossover/world/actions";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { gsap } from "gsap";
 import { Assets, Container, Texture, type DestroyOptions } from "pixi.js";
 import { swapMeshTexture } from "../../shaders";

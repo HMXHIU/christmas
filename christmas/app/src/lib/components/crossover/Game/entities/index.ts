@@ -4,10 +4,10 @@ import {
     getEntityId,
     isEntityInMotion,
 } from "$lib/crossover/utils";
-import { actions } from "$lib/crossover/world/actions";
 import type { Attributes } from "$lib/crossover/world/entity";
 import { entityStats } from "$lib/crossover/world/entity";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {

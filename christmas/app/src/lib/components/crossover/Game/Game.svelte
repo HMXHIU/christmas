@@ -11,8 +11,9 @@
         getPlayerAbilities,
         type Ability,
     } from "$lib/crossover/world/abilities";
-    import { actions, type Action } from "$lib/crossover/world/actions";
+    import { type Action } from "$lib/crossover/world/actions";
     import { type Utility } from "$lib/crossover/world/compendium";
+    import { actions } from "$lib/crossover/world/settings/actions";
     import { compendium } from "$lib/crossover/world/settings/compendium";
     import type { GeohashLocationType } from "$lib/crossover/world/types";
     import { cn } from "$lib/shadcn";

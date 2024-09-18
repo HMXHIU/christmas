@@ -5,11 +5,12 @@ import {
     type PlayerEntity,
 } from "$lib/crossover/types";
 import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
-import { actions, type Actions } from "$lib/crossover/world/actions";
+import { type Actions } from "$lib/crossover/world/actions";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
 import { entityStats } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { sanctuaries, worldSeed } from "$lib/crossover/world/settings/world";
 import { GeohashLocationSchema } from "$lib/crossover/world/types";
 import { z } from "zod";

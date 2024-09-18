@@ -112,7 +112,7 @@ function gameActionsIR({
     });
 
     actions = actions.filter((action) => {
-        return [action.action].some((document) => {
+        return [action.action, ...(action.synonyms ?? [])].some((document) => {
             const { score, matchedTokens } = documentScore(
                 queryTokens,
                 document,

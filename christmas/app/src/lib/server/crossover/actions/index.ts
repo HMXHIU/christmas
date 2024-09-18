@@ -10,8 +10,8 @@ import {
     getEntityId,
     minifiedEntity,
 } from "$lib/crossover/utils";
-import { actions } from "$lib/crossover/world/actions";
 import { entityStats } from "$lib/crossover/world/entity";
+import { actions } from "$lib/crossover/world/settings/actions";
 import {
     type Direction,
     type GeohashLocationType,

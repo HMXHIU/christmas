@@ -4,12 +4,11 @@
     import * as Card from "$lib/components/ui/card/index.js";
     import * as Dialog from "$lib/components/ui/dialog";
     import { Label } from "$lib/components/ui/label/index.js";
+    import { type Action, type Actions } from "$lib/crossover/world/actions";
     import {
         actions,
         playerActions,
-        type Action,
-        type Actions,
-    } from "$lib/crossover/world/actions";
+    } from "$lib/crossover/world/settings/actions";
     import { cn } from "$lib/shadcn";
     import { Clock, Target } from "lucide-svelte";
 

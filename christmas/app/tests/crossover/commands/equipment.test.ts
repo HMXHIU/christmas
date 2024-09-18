@@ -1,6 +1,6 @@
 import { searchPossibleCommands } from "$lib/crossover/ir";
-import { actions } from "$lib/crossover/world/actions";
 import { abilities } from "$lib/crossover/world/settings/abilities";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { describe, expect, test } from "vitest";
