@@ -1,9 +1,4 @@
-import type {
-    EntityType,
-    Item,
-    Monster,
-    Player,
-} from "$lib/server/crossover/redis/entities";
+import type { EntityType, Item, Monster, Player } from "$lib/crossover/types";
 import { substituteVariables } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import { getEntityId } from "../utils";

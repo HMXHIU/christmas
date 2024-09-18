@@ -1,8 +1,4 @@
-import type {
-    Item,
-    Monster,
-    Player,
-} from "$lib/server/crossover/redis/entities";
+import type { Item, Monster, Player } from "$lib/crossover/types";
 import { filterSortEntitiesInRange } from "./utils";
 import { resolveAbilityEntities, type Ability } from "./world/abilities";
 import { resolveActionEntities, type Action } from "./world/actions";

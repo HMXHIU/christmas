@@ -1,8 +1,4 @@
-import type {
-    EntityStats,
-    Monster,
-    Player,
-} from "$lib/server/crossover/redis/entities";
+import type { EntityStats, Monster, Player } from "$lib/crossover/types";
 import { clone, isNumber, mergeWith, uniq } from "lodash-es";
 import type { Abilities } from "./abilities";
 import type { Actions } from "./actions";

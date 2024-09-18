@@ -21,7 +21,7 @@ import {
     itemRepository,
     saveEntity,
 } from "../redis";
-import { type ItemEntity, type PlayerEntity } from "../redis/entities";
+import { type ItemEntity, type PlayerEntity } from "../redis/schema";
 import {
     publishActionEvent,
     publishAffectedEntitiesToPlayers,

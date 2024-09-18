@@ -1,14 +1,9 @@
+import type { EntityType, Item, Monster, Player } from "$lib/crossover/types";
 import {
     geohashLocationTypes,
     type Direction,
     type GridCell,
 } from "$lib/crossover/world/types";
-import type {
-    EntityType,
-    Item,
-    Monster,
-    Player,
-} from "$lib/server/crossover/redis/entities";
 import { divmod } from "$lib/utils";
 import { flatten, pick } from "lodash-es";
 import ngeohash from "ngeohash";

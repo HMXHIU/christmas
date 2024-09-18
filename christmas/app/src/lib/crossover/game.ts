@@ -1,15 +1,10 @@
+import type { Item, Monster, Player, World } from "$lib/crossover/types";
 import {
     entityInRange,
     geohashToColRow,
     getEntityId,
     gridCellToGeohash,
 } from "$lib/crossover/utils";
-import type {
-    Item,
-    Monster,
-    Player,
-    World,
-} from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import type { HTTPHeaders } from "@trpc/client";
 import { get } from "svelte/store";

@@ -5,9 +5,9 @@
     import * as Dialog from "$lib/components/ui/dialog";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label/index.js";
+    import type { Item } from "$lib/crossover/types";
     import { itemAttibutes, itemName } from "$lib/crossover/world/compendium";
     import { compendium } from "$lib/crossover/world/settings/compendium";
-    import type { Item } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
     import { startCase } from "lodash";
     import { Heart, Zap } from "lucide-svelte";

@@ -1,5 +1,5 @@
 import type { NPC, NPCs } from "../npc";
-import type { Dialogue, Dialogues } from "../redis/entities";
+import type { Dialogue, Dialogues } from "../redis/schema";
 
 export { dialogues, npcs };
 

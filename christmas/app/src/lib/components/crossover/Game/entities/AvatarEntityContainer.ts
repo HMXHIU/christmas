@@ -1,8 +1,8 @@
+import type { Item } from "$lib/crossover/types";
 import { isItemEquipped } from "$lib/crossover/world/compendium";
 import { tints } from "$lib/crossover/world/materials";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { AssetMetadata } from "$lib/crossover/world/types";
-import type { Item } from "$lib/server/crossover/redis/entities";
 import type { Container, DestroyOptions } from "pixi.js";
 import { Avatar } from "../../avatar/Avatar";
 import type { Bone } from "../../avatar/Bone";

@@ -75,7 +75,7 @@ import type {
     PlayerEntity,
     World,
     WorldEntity,
-} from "./redis/entities";
+} from "./redis/schema";
 import {
     entityIsBusy,
     getPlayerState,

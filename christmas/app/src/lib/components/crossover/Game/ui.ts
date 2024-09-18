@@ -1,9 +1,5 @@
+import type { Item, Monster, Player } from "$lib/crossover/types";
 import { getEntityId } from "$lib/crossover/utils";
-import type {
-    Item,
-    Monster,
-    Player,
-} from "$lib/server/crossover/redis/entities";
 import { Container } from "pixi.js";
 import { entityContainers } from "./entities";
 

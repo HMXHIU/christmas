@@ -1,5 +1,5 @@
 import type { CacheInterface } from "$lib/caches";
-import type { World } from "$lib/server/crossover/redis/entities";
+import type { World } from "$lib/crossover/types";
 import { biomeAtGeohash, biomes } from "./biomes";
 import type { GeohashLocationType } from "./types";
 import { traversableSpeedInWorld } from "./world";

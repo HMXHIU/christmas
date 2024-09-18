@@ -3,6 +3,14 @@ import {
     crossoverCmdTake,
     stream,
 } from "$lib/crossover/client";
+import type {
+    Item,
+    ItemEntity,
+    Monster,
+    MonsterEntity,
+    Player,
+    PlayerEntity,
+} from "$lib/crossover/types";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
 import { entityStats } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
@@ -17,14 +25,6 @@ import {
     initializeClients,
     saveEntity,
 } from "$lib/server/crossover/redis";
-import type {
-    Item,
-    ItemEntity,
-    Monster,
-    MonsterEntity,
-    Player,
-    PlayerEntity,
-} from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import { getRandomRegion } from "../../utils";

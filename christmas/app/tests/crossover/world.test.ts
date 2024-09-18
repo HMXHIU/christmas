@@ -1,4 +1,5 @@
 import { crossoverWorldWorlds } from "$lib/crossover/client";
+import type { ItemEntity, WorldEntity } from "$lib/crossover/types";
 import { childrenGeohashes, geohashNeighbour } from "$lib/crossover/utils";
 import {
     LOCATION_INSTANCE,
@@ -25,10 +26,6 @@ import {
     worldRepository,
     worldsInGeohashQuerySet,
 } from "$lib/server/crossover/redis";
-import type {
-    ItemEntity,
-    WorldEntity,
-} from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import { beforeAll, describe, expect, test } from "vitest";
 import { worldRecord } from "../../src/store";

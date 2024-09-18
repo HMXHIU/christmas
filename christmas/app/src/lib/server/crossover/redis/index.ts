@@ -29,7 +29,7 @@ import {
     type MonsterEntity,
     type Player,
     type PlayerEntity,
-} from "./entities";
+} from "./schema";
 
 // Exports
 export {

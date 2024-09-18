@@ -5,7 +5,7 @@ import type {
     Item,
     Monster,
     Player,
-} from "$lib/server/crossover/redis/entities";
+} from "$lib/crossover/types";
 import { seededRandom, stringToRandomNumber } from "$lib/utils";
 import { groupBy } from "lodash-es";
 import {

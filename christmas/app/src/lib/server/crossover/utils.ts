@@ -46,7 +46,7 @@ import type {
     Player,
     PlayerEntity,
     WorldEntity,
-} from "./redis/entities";
+} from "./redis/schema";
 import type { UserMetadataSchema } from "./router";
 
 export {

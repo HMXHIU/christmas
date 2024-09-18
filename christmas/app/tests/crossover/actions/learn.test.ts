@@ -1,4 +1,5 @@
 import { crossoverCmdAccept, crossoverCmdLearn } from "$lib/crossover/client";
+import type { PlayerEntity } from "$lib/crossover/types";
 import { actions } from "$lib/crossover/world/actions";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { skillLevelProgression } from "$lib/crossover/world/skills";
@@ -7,7 +8,6 @@ import {
     initializeClients,
     saveEntity,
 } from "$lib/server/crossover/redis";
-import type { PlayerEntity } from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import { beforeEach, describe, expect, test } from "vitest";
 import type { CTAEvent } from "../../../src/routes/api/crossover/stream/+server";

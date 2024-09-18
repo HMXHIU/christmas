@@ -1,5 +1,6 @@
 import { LRUMemoryCache, MemoryCache } from "$lib/caches";
 import { isGeohashTraversableClient } from "$lib/crossover/game";
+import type { ItemEntity } from "$lib/crossover/types";
 import {
     biomeAtGeohash,
     elevationAtGeohash,
@@ -11,7 +12,6 @@ import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
-import type { ItemEntity } from "$lib/server/crossover/redis/entities";
 import { isGeohashTraversableServer } from "$lib/server/crossover/utils";
 import { omit } from "lodash-es";
 import { beforeAll, describe, expect, test } from "vitest";

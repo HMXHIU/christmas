@@ -7,6 +7,7 @@ import {
     topologyResponseCache,
     topologyResultCache,
 } from "$lib/crossover/caches";
+import type { Item } from "$lib/crossover/types";
 import {
     autoCorrectGeohashPrecision,
     generateEvenlySpacedPoints,
@@ -27,7 +28,6 @@ import {
     geohashLocationTypes,
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
-import type { Item } from "$lib/server/crossover/redis/entities";
 import { seededRandom, stringToRandomNumber } from "$lib/utils";
 import { KdTree } from "$lib/utils/kdtree";
 import type { Container, Texture } from "pixi.js";

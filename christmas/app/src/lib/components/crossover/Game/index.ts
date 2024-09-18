@@ -8,6 +8,7 @@ import { addMessageFeed } from "$lib/components/crossover/GameWindow";
 import { crossoverWorldWorlds } from "$lib/crossover/client";
 import { executeGameCommand } from "$lib/crossover/game";
 import type { GameCommand } from "$lib/crossover/ir";
+import type { Item, Monster, Player } from "$lib/crossover/types";
 import { getEntityId } from "$lib/crossover/utils";
 import { actions } from "$lib/crossover/world/actions";
 import { entityAttributes } from "$lib/crossover/world/entity";
@@ -16,11 +17,6 @@ import {
     geohashLocationTypes,
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
-import type {
-    Item,
-    Monster,
-    Player,
-} from "$lib/server/crossover/redis/entities";
 import { AsyncLock } from "$lib/utils";
 import type { HTTPHeaders } from "@trpc/client";
 import { groupBy } from "lodash-es";

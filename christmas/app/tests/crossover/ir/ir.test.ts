@@ -4,6 +4,7 @@ import {
     gameActionsIR,
     tokenize,
 } from "$lib/crossover/ir";
+import type { Item, ItemEntity, Monster, Player } from "$lib/crossover/types";
 import { type Ability } from "$lib/crossover/world/abilities";
 import type { Utility } from "$lib/crossover/world/compendium";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
@@ -15,12 +16,6 @@ import {
     spawnMonster,
 } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
-import type {
-    Item,
-    ItemEntity,
-    Monster,
-    Player,
-} from "$lib/server/crossover/redis/entities";
 import { beforeAll, describe, expect, it } from "vitest";
 import { getRandomRegion } from "../../utils";
 import {

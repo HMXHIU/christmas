@@ -12,6 +12,14 @@ import {
     signup,
     stream,
 } from "$lib/crossover/client";
+import type {
+    Item,
+    ItemEntity,
+    Monster,
+    MonsterEntity,
+    Player,
+    PlayerEntity,
+} from "$lib/crossover/types";
 import { entityInRange, minifiedEntity } from "$lib/crossover/utils";
 import {
     hasResourcesForAbility,
@@ -42,14 +50,6 @@ import {
 import { generateNPC } from "$lib/server/crossover/npc";
 import { generateAvatarHash } from "$lib/server/crossover/player";
 import { saveEntity } from "$lib/server/crossover/redis";
-import type {
-    Item,
-    ItemEntity,
-    Monster,
-    MonsterEntity,
-    Player,
-    PlayerEntity,
-} from "$lib/server/crossover/redis/entities";
 import { npcs } from "$lib/server/crossover/settings/npc";
 import {
     canUseItem,

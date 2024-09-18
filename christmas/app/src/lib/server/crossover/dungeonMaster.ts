@@ -45,7 +45,7 @@ import type {
     MonsterEntity,
     PlayerEntity,
     WorldEntity,
-} from "./redis/entities";
+} from "./redis/schema";
 import { isLocationTraversable, parseItemVariables } from "./utils";
 
 export {

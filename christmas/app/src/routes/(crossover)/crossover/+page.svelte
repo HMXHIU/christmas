@@ -2,7 +2,7 @@
     import GameWindow from "$lib/components/crossover/GameWindow";
     import Onboard from "$lib/components/crossover/Onboard.svelte";
     import { stream } from "$lib/crossover/client";
-    import type { Player } from "$lib/server/crossover/redis/entities";
+    import type { Player } from "$lib/crossover/types";
     import { onDestroy, onMount } from "svelte";
     import {
         actionEvent,

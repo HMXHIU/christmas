@@ -7,6 +7,7 @@
         topologyResultCache,
     } from "$lib/crossover/caches";
     import { crossoverWorldPOI } from "$lib/crossover/client";
+    import type { Item } from "$lib/crossover/types";
     import { geohashToColRow } from "$lib/crossover/utils";
     import { topologyAtGeohash } from "$lib/crossover/world/biomes";
     import {
@@ -22,7 +23,6 @@
         geohashLocationTypes,
         type GeohashLocationType,
     } from "$lib/crossover/world/types";
-    import type { Item } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
     import { groupBy, uniqBy } from "lodash-es";
     import {

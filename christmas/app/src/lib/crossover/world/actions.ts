@@ -1,9 +1,4 @@
-import type {
-    EntityType,
-    Item,
-    Monster,
-    Player,
-} from "$lib/server/crossover/redis/entities";
+import type { EntityType, Item, Monster, Player } from "$lib/crossover/types";
 import type { GameActionEntities, TokenPositions } from "../ir";
 import { getEntityId } from "../utils";
 import { compendium } from "./settings/compendium";

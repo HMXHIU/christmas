@@ -1,5 +1,6 @@
 import { executeGameCommand } from "$lib/crossover/game";
 import { searchPossibleCommands } from "$lib/crossover/ir";
+import type { ItemEntity, PlayerEntity } from "$lib/crossover/types";
 import { actions } from "$lib/crossover/world/actions";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
@@ -11,10 +12,6 @@ import {
     inventoryQuerySet,
     saveEntity,
 } from "$lib/server/crossover/redis";
-import type {
-    ItemEntity,
-    PlayerEntity,
-} from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import { beforeEach, describe, expect, test } from "vitest";
 import {

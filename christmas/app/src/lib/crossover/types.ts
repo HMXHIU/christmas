@@ -9,14 +9,9 @@ import type {
     GeohashLocationType,
     LocationType,
 } from "$lib/crossover/world/types";
-import { Schema, type Entity } from "redis-om";
+import { type Entity } from "redis-om";
 
 export {
-    DialogueSchema,
-    ItemEntitySchema,
-    MonsterEntitySchema,
-    PlayerEntitySchema,
-    WorldEntitySchema,
     type Dialogue,
     type DialogueEntity,
     type Dialogues,
@@ -68,7 +63,7 @@ interface EntityState extends EntityStats, PathParams, LocationParams {
 
 type SkillLevels = Partial<Record<SkillLines, number>>;
 
-/*
+/**
  * Player
  */
 
@@ -94,32 +89,10 @@ interface Player extends EntityState, CharacterParams, CurrencyParams {
 
 type PlayerEntity = Player & Entity;
 
-// Only need to include searchable fields for redis schema
-const PlayerEntitySchema = new Schema("Player", {
-    // Player
-    player: { type: "string" },
-    name: { type: "string" },
-    rgn: { type: "string" }, // region
-    lgn: { type: "boolean" }, // logged in
-
-    // Character
-    arch: { type: "string" }, // archetype
-    gen: { type: "string" }, // gender
-    race: { type: "string" }, // race
-
-    // Location
-    loc: { type: "string[]" },
-    locT: { type: "string" },
-    locI: { type: "string" },
-
-    // NPC
-    npc: { type: "string" }, // npc instance id
-});
-
-/*
+/**
  * Monster
  *
- * A monster is spawned from `beast` in the bestiary.
+ * Spawned from `beast` in the bestiary.
  */
 
 interface Monster extends EntityState {
@@ -131,23 +104,10 @@ interface Monster extends EntityState {
 
 type MonsterEntity = Monster & Entity;
 
-// Only need to include searchable fields for redis schema
-const MonsterEntitySchema = new Schema("Monster", {
-    // Monster
-    monster: { type: "string" },
-    name: { type: "string" },
-    beast: { type: "string" },
-
-    // Location
-    loc: { type: "string[]" },
-    locT: { type: "string" },
-    locI: { type: "string" },
-});
-
-/*
+/**
  * Item
  *
- * An item is created from a `prop` in the compendium.
+ * Created from a `prop` in the compendium.
  */
 
 interface Item extends LocationParams {
@@ -167,28 +127,11 @@ interface Item extends LocationParams {
 
 type ItemEntity = Item & Entity;
 
-// Only need to include searchable fields for redis schema
-const ItemEntitySchema = new Schema("Item", {
-    // Item
-    item: { type: "string" },
-    name: { type: "string" },
-    prop: { type: "string" },
-    own: { type: "string" }, // who owns or can use the item (player | monster | public (empty) | dm)
-    cfg: { type: "string" }, // who can configure the item (player | monster | public (empty) | dm)
-    cld: { type: "boolean" }, // collider
-
-    // Location
-    loc: { type: "string[]" },
-    locT: { type: "string" },
-    locI: { type: "string" },
-});
-
-/*
+/**
  * World
  *
- * World entity is created from a tiled map (JSON format).
+ * Created from a tiled map (JSON format)
  */
-
 interface World {
     world: string;
     url: string;
@@ -198,17 +141,9 @@ interface World {
 
 type WorldEntity = World & Entity;
 
-const WorldEntitySchema = new Schema("World", {
-    world: { type: "string" },
-    url: { type: "string" },
-    locT: { type: "string" },
-    loc: { type: "string[]" }, // geohashes of plots (whole grids less than unit precision)
-});
-
 /**
  * Dialogue
  */
-
 type Dialogues = "grt" | "ign" | "agro";
 
 interface Dialogue {
@@ -220,15 +155,5 @@ interface Dialogue {
     or?: string[]; // must match any these tags
     exc?: string[]; // must not contain these tags
 }
-
-const DialogueSchema = new Schema("Dialogue", {
-    msg: { type: "string" },
-    dia: { type: "string" },
-    tgt: { type: "string" },
-    // Tags
-    mst: { type: "string[]" },
-    or: { type: "string[]" },
-    exc: { type: "string[]" },
-});
 
 type DialogueEntity = Dialogue & Entity;

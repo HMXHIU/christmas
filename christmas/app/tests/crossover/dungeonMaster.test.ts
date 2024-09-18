@@ -1,4 +1,5 @@
 import { INTERNAL_SERVICE_KEY } from "$env/static/private";
+import type { Player, PlayerEntity } from "$lib/crossover/types";
 import { borderingGeohashes } from "$lib/crossover/utils";
 import { monsterLimitAtGeohash } from "$lib/crossover/world/bestiary";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
@@ -7,10 +8,6 @@ import {
     initializeClients,
     monstersInGeohashQuerySet,
 } from "$lib/server/crossover/redis";
-import type {
-    Player,
-    PlayerEntity,
-} from "$lib/server/crossover/redis/entities";
 import { beforeAll, describe, expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { buffEntity, createRandomPlayer } from "./utils";

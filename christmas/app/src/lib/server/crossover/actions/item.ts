@@ -32,7 +32,7 @@ import {
     type ItemEntity,
     type MonsterEntity,
     type PlayerEntity,
-} from "../redis/entities";
+} from "../redis/schema";
 import {
     canConfigureItem,
     canUseItem,

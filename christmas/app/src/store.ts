@@ -1,5 +1,6 @@
 import type { Account, Coupon, Store } from "$lib/anchorClient/types";
 import type { MessageFeed } from "$lib/components/crossover/GameWindow";
+import type { Item, Monster, Player, World } from "$lib/crossover/types";
 import type { Ability } from "$lib/crossover/world/abilities";
 import type { LandGrading } from "$lib/crossover/world/biomes";
 import type {
@@ -7,12 +8,6 @@ import type {
     StoreMetadataSchema,
 } from "$lib/server/community/router";
 import type { CTA } from "$lib/server/crossover/player";
-import type {
-    Item,
-    Monster,
-    Player,
-    World,
-} from "$lib/server/crossover/redis/entities";
 import type { UserMetadataSchema } from "$lib/server/crossover/router";
 import { UserDeviceClient } from "$lib/userDeviceClient";
 import { writable } from "svelte/store";
@@ -52,7 +47,7 @@ export let playerAbilities = writable<Ability[]>([]);
 export let playerInventoryItems = writable<Item[]>([]);
 export let playerEquippedItems = writable<Item[]>([]);
 
-export let ctaRecord = writable<Record<string, CTA>>([]);
+export let ctaRecord = writable<Record<string, CTA>>({});
 export let playerRecord = writable<Record<string, Player>>({});
 export let itemRecord = writable<Record<string, Item>>({});
 export let monsterRecord = writable<Record<string, Monster>>({});

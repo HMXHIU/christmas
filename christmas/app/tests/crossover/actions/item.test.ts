@@ -1,3 +1,4 @@
+import type { ItemEntity, PlayerEntity } from "$lib/crossover/types";
 import { geohashNeighbour } from "$lib/crossover/utils";
 import { itemAttibutes } from "$lib/crossover/world/compendium";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
@@ -15,10 +16,6 @@ import {
     initializeClients,
     saveEntity,
 } from "$lib/server/crossover/redis";
-import type {
-    ItemEntity,
-    PlayerEntity,
-} from "$lib/server/crossover/redis/entities";
 import { itemVariableValue } from "$lib/server/crossover/utils";
 import { sleep, substituteValues } from "$lib/utils";
 import { cloneDeep } from "lodash";

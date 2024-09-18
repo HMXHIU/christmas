@@ -1,4 +1,11 @@
 // EntityContainer.ts
+import type {
+    EntityType,
+    Item,
+    Monster,
+    PathParams,
+    Player,
+} from "$lib/crossover/types";
 import {
     directionDuration,
     geohashToGridCell,
@@ -7,13 +14,6 @@ import {
     gridCellToGeohash,
 } from "$lib/crossover/utils";
 import { actions, type Actions } from "$lib/crossover/world/actions";
-import type {
-    EntityType,
-    Item,
-    Monster,
-    PathParams,
-    Player,
-} from "$lib/server/crossover/redis/entities";
 import { gsap } from "gsap";
 import { Container, type DestroyOptions } from "pixi.js";
 import { calculatePosition, type Position } from "../utils";

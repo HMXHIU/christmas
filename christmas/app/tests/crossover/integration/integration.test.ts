@@ -3,6 +3,7 @@ import {
     crossoverCmdPerformAbility,
     crossoverCmdSay,
 } from "$lib/crossover/client";
+import type { Item, ItemEntity, PlayerEntity } from "$lib/crossover/types";
 import { itemAttibutes } from "$lib/crossover/world/compendium";
 import { entityStats } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
@@ -16,11 +17,6 @@ import {
     initializeClients,
     saveEntity,
 } from "$lib/server/crossover/redis";
-import type {
-    Item,
-    ItemEntity,
-    PlayerEntity,
-} from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import ngeohash from "ngeohash";

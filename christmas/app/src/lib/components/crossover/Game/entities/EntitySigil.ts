@@ -1,10 +1,6 @@
+import type { EntityStats, Monster, Player } from "$lib/crossover/types";
 import { recoverAp } from "$lib/crossover/world/entity";
 import { MS_PER_TICK, TICKS_PER_TURN } from "$lib/crossover/world/settings";
-import type {
-    EntityStats,
-    Monster,
-    Player,
-} from "$lib/server/crossover/redis/entities";
 import { Container, Graphics } from "pixi.js";
 import type { EntityContainer } from ".";
 

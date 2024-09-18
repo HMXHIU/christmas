@@ -2,9 +2,9 @@
     import { createUser } from "$lib/community";
     import Wallet from "$lib/components/common/Wallet.svelte";
     import { login, signup } from "$lib/crossover/client";
+    import type { Player } from "$lib/crossover/types";
     import type { PlayerMetadata } from "$lib/crossover/world/player";
     import { worldSeed } from "$lib/crossover/world/settings/world";
-    import type { Player } from "$lib/server/crossover/redis/entities";
     import { cn } from "$lib/shadcn";
     import { onMount } from "svelte";
     import { toast } from "svelte-sonner";

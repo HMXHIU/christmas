@@ -6,6 +6,7 @@ import {
     crossoverCmdTrade,
     crossoverCmdWrit,
 } from "$lib/crossover/client";
+import type { ItemEntity, PlayerEntity } from "$lib/crossover/types";
 import { actions } from "$lib/crossover/world/actions";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
@@ -15,10 +16,6 @@ import {
     initializeClients,
     saveEntity,
 } from "$lib/server/crossover/redis";
-import type {
-    ItemEntity,
-    PlayerEntity,
-} from "$lib/server/crossover/redis/entities";
 import { sleep } from "$lib/utils";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import type {

@@ -1,5 +1,5 @@
-import { type ItemEntity } from "$lib/server/crossover/redis/entities";
 import { z } from "zod";
+import type { ItemEntity } from "../types";
 
 export {
     BarterSchema,

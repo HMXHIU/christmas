@@ -26,7 +26,7 @@ import {
     type MonsterEntity,
     type Player,
     type PlayerEntity,
-} from "./redis/entities";
+} from "./redis/schema";
 import {
     publishActionEvent,
     publishAffectedEntitiesToPlayers,

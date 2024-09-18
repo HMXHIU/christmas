@@ -4,6 +4,7 @@ import {
     searchPossibleCommands,
     tokenize,
 } from "$lib/crossover/ir";
+import type { Item, ItemEntity } from "$lib/crossover/types";
 import {
     resolveAbilityEntities,
     type Ability,
@@ -19,7 +20,6 @@ import {
     spawnMonster,
 } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
-import type { Item, ItemEntity } from "$lib/server/crossover/redis/entities";
 import { expect, test } from "vitest";
 import { getRandomRegion } from "../../utils";
 import { createRandomPlayer, generateRandomGeohash } from "../utils";

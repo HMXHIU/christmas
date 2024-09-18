@@ -1,3 +1,4 @@
+import type { Item, Monster, PathParams, Player } from "$lib/crossover/types";
 import {
     geohashesNearby,
     getEntityId,
@@ -13,12 +14,6 @@ import {
     geohashLocationTypes,
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
-import type {
-    Item,
-    Monster,
-    PathParams,
-    Player,
-} from "$lib/server/crossover/redis/entities";
 import { AsyncLock } from "$lib/utils";
 import { Container } from "pixi.js";
 import { get } from "svelte/store";

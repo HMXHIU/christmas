@@ -63,7 +63,7 @@ import type {
     Monster,
     Player,
     PlayerEntity,
-} from "./redis/entities";
+} from "./redis/schema";
 import { UserMetadataSchema } from "./router";
 import { npcs } from "./settings/npc";
 import { getUserMetadata, savePlayerState } from "./utils";

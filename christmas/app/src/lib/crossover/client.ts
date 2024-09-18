@@ -1,7 +1,7 @@
 import { PUBLIC_HOST } from "$env/static/public";
 import type { TransactionResult } from "$lib/anchorClient/types";
 import { refresh } from "$lib/community";
-import type { Player } from "$lib/server/crossover/redis/entities";
+import type { Player } from "$lib/crossover/types";
 import { trpc } from "$lib/trpcClient";
 import { retry, signAndSendTransaction } from "$lib/utils";
 import { Transaction } from "@solana/web3.js";

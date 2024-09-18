@@ -1,5 +1,5 @@
 import { PUBLIC_HOST } from "$env/static/public";
-import type { Monster } from "$lib/server/crossover/redis/entities";
+import type { Monster } from "$lib/crossover/types";
 import { seededRandom, stringToRandomNumber } from "$lib/utils";
 import { entityLevel } from "./entity";
 import { bestiary } from "./settings/bestiary";
