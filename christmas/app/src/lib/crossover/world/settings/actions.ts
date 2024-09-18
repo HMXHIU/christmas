@@ -12,8 +12,19 @@ const actions: Record<Actions, Action> = {
         action: "look",
         description: "Look at the surroundings.",
         predicate: {
-            target: ["player", "monster", "item", "none"],
-            tokenPositions: { action: 0, target: 1 },
+            // target: ["player", "monster", "item", "none"],
+            // tokenPositions: { action: 0, target: 1 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                target: {
+                    position: 1,
+                    entityTypes: ["player", "monster", "item"],
+                    optional: true,
+                },
+            },
         },
         icon: {
             path: "actions/actions",
@@ -27,8 +38,19 @@ const actions: Record<Actions, Action> = {
         description: "Say something.",
         synonyms: ["greet"],
         predicate: {
-            target: ["player", "monster", "none"],
-            tokenPositions: { action: 0, target: 1 },
+            // target: ["player", "monster", "none"],
+            // tokenPositions: { action: 0, target: 1 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                target: {
+                    position: 1,
+                    entityTypes: ["player", "monster"],
+                    optional: true,
+                },
+            },
         },
         ticks: 1,
         icon: {
@@ -41,8 +63,14 @@ const actions: Record<Actions, Action> = {
         action: "move",
         description: "Move in a direction.",
         predicate: {
-            target: ["none"],
-            tokenPositions: { action: 0 },
+            // target: ["none"],
+            // tokenPositions: { action: 0 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+            },
         },
         ticks: 1,
         icon: {
@@ -55,8 +83,19 @@ const actions: Record<Actions, Action> = {
         action: "take",
         description: "Take an item.",
         predicate: {
-            target: ["item"],
-            tokenPositions: { action: 0, target: 1 },
+            // target: ["item"],
+            // tokenPositions: { action: 0, target: 1 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                target: {
+                    position: 1,
+                    entityTypes: ["item"],
+                    optional: false,
+                },
+            },
         },
         ticks: 1,
         icon: {
@@ -69,8 +108,19 @@ const actions: Record<Actions, Action> = {
         action: "drop",
         description: "Drop an item.",
         predicate: {
-            target: ["item"],
-            tokenPositions: { action: 0, target: 1 },
+            // target: ["item"],
+            // tokenPositions: { action: 0, target: 1 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                target: {
+                    position: 1,
+                    entityTypes: ["item"],
+                    optional: false,
+                },
+            },
         },
         ticks: 1,
         icon: {
@@ -83,8 +133,19 @@ const actions: Record<Actions, Action> = {
         action: "equip",
         description: "Equip an item.",
         predicate: {
-            target: ["item"],
-            tokenPositions: { action: 0, target: 1 },
+            // target: ["item"],
+            // tokenPositions: { action: 0, target: 1 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                target: {
+                    position: 1,
+                    entityTypes: ["item"],
+                    optional: false,
+                },
+            },
         },
         ticks: 1,
         icon: {
@@ -97,8 +158,19 @@ const actions: Record<Actions, Action> = {
         action: "unequip",
         description: "Unequip an item.",
         predicate: {
-            target: ["item"],
-            tokenPositions: { action: 0, target: 1 },
+            // target: ["item"],
+            // tokenPositions: { action: 0, target: 1 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                target: {
+                    position: 1,
+                    entityTypes: ["item"],
+                    optional: false,
+                },
+            },
         },
         ticks: 1,
         icon: {
@@ -111,8 +183,14 @@ const actions: Record<Actions, Action> = {
         action: "create",
         description: "Create an item.",
         predicate: {
-            target: ["none"],
-            tokenPositions: { action: 0 },
+            // target: ["none"],
+            // tokenPositions: { action: 0 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+            },
         },
         ticks: 1,
         icon: {
@@ -125,8 +203,19 @@ const actions: Record<Actions, Action> = {
         action: "configure",
         description: "Configure an item.",
         predicate: {
-            target: ["item"],
-            tokenPositions: { action: 0, target: 1 },
+            // target: ["item"],
+            // tokenPositions: { action: 0, target: 1 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                target: {
+                    position: 1,
+                    entityTypes: ["item"],
+                    optional: false,
+                },
+            },
         },
         ticks: 1,
         icon: {
@@ -139,8 +228,14 @@ const actions: Record<Actions, Action> = {
         action: "inventory",
         description: "View inventory.",
         predicate: {
-            target: ["none"],
-            tokenPositions: { action: 0 },
+            // target: ["none"],
+            // tokenPositions: { action: 0 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+            },
         },
         ticks: 0,
         icon: {
@@ -154,8 +249,19 @@ const actions: Record<Actions, Action> = {
         action: "enter",
         description: "Enter.",
         predicate: {
-            target: ["item"],
-            tokenPositions: { action: 0, target: 1 },
+            // target: ["item"],
+            // tokenPositions: { action: 0, target: 1 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                target: {
+                    position: 1,
+                    entityTypes: ["item"],
+                    optional: false,
+                },
+            },
         },
         ticks: 1,
         icon: {
@@ -174,8 +280,14 @@ Command:
 Examples:
     **accept** 1234`,
         predicate: {
-            target: ["none"],
-            tokenPositions: { action: 0, target: 3 }, //
+            // target: ["none"],
+            // tokenPositions: { action: 0 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+            },
         },
         ticks: 0, // accept should be 0 ticks as the actual action will have ticks
         icon: {
@@ -193,8 +305,23 @@ Command: learn [skill] from [teacher]
 Examples:
     **learn** exploration **from** gandalf`,
         predicate: {
-            target: ["player"],
-            tokenPositions: { action: 0, skill: 1, target: 3 },
+            // target: ["player"],
+            // tokenPositions: { action: 0, skill: 1, target: 3 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                skill: {
+                    position: 1,
+                    optional: false,
+                },
+                target: {
+                    position: 3,
+                    entityTypes: ["player"],
+                    optional: false,
+                },
+            },
         },
         ticks: 4,
         icon: {
@@ -224,8 +351,27 @@ Examples:
 
 ${tradingNotes}`,
         predicate: {
-            target: ["player"],
-            tokenPositions: { action: 0, offer: 1, receive: 3, target: 5 },
+            // target: ["player"],
+            // tokenPositions: { action: 0, offer: 1, receive: 3, target: 5 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                offer: {
+                    position: 1,
+                    optional: false,
+                },
+                receive: {
+                    position: 3,
+                    optional: false,
+                },
+                target: {
+                    position: 5,
+                    entityTypes: ["player"],
+                    optional: false,
+                },
+            },
         },
         ticks: 1,
         icon: {
@@ -255,8 +401,22 @@ Examples:
 
 ${tradingNotes}`,
         predicate: {
-            target: ["none"],
-            tokenPositions: { action: 0, offer: 2, receive: 4 },
+            // target: ["none"],
+            // tokenPositions: { action: 0, offer: 2, receive: 4 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                offer: {
+                    position: 2,
+                    optional: false,
+                },
+                receive: {
+                    position: 4,
+                    optional: false,
+                },
+            },
         },
         ticks: 1,
         icon: {
@@ -276,8 +436,19 @@ Examples:
     fufill item_tradewrit_1
 `,
         predicate: {
-            target: ["item"],
-            tokenPositions: { action: 0, target: 1 },
+            // target: ["item"],
+            // tokenPositions: { action: 0, target: 1 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                target: {
+                    position: 1,
+                    entityTypes: ["item"],
+                    optional: false,
+                },
+            },
         },
         ticks: 0, // fulfill should be 0 ticks as the actual action will have ticks
         icon: {
@@ -290,8 +461,19 @@ Examples:
         action: "browse",
         description: "Browse the goods a merchant is selling or buying.",
         predicate: {
-            target: ["player"],
-            tokenPositions: { action: 0, target: 1 },
+            // target: ["player"],
+            // tokenPositions: { action: 0, target: 1 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                target: {
+                    position: 1,
+                    entityTypes: ["player"],
+                    optional: false,
+                },
+            },
         },
         ticks: 1,
         icon: {
@@ -311,8 +493,24 @@ Examples:
     **give** item_potionofhealth_1 **to** gandalf
 `,
         predicate: {
-            target: ["player"],
-            tokenPositions: { action: 0, item: 1, target: 3 },
+            // target: ["player"],
+            // tokenPositions: { action: 0, item: 1, target: 3 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                item: {
+                    position: 1,
+                    entityTypes: ["item"],
+                    optional: false,
+                },
+                target: {
+                    position: 3,
+                    entityTypes: ["player"],
+                    optional: false,
+                },
+            },
         },
         ticks: 1,
         icon: {
@@ -325,8 +523,14 @@ Examples:
         action: "rest",
         description: "Rest and recover.",
         predicate: {
-            target: ["none"],
-            tokenPositions: { action: 0 },
+            // target: ["none"],
+            // tokenPositions: { action: 0 },
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+            },
         },
         ticks: 4,
         icon: {

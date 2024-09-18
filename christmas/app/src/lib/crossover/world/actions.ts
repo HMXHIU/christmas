@@ -39,23 +39,20 @@ type Actions =
     | "give"
     | "rest";
 
-type ActionTargets = EntityType | "none";
+type TokenType = "action" | "target" | "skill" | "offer" | "receive" | "item";
 
-type SpecialTokens =
-    | "action"
-    | "target"
-    | "skill"
-    | "offer"
-    | "receive"
-    | "item";
+type TokenContext = {
+    position: number;
+    optional: boolean;
+    entityTypes?: EntityType[];
+};
 
 interface Action {
     action: Actions;
     synonyms?: string[];
     description: string;
     predicate: {
-        target: ActionTargets[];
-        tokenPositions: Partial<Record<SpecialTokens, number>>;
+        tokens: Partial<Record<TokenType, TokenContext>>;
     };
     range: number;
     ticks: number;
@@ -102,6 +99,50 @@ function parseBarter(barterString: string): BarterSerialized | undefined {
     }
 }
 
+function filterTargetItemsByAction(
+    action: Actions,
+    self: Player | Monster,
+    items: Item[],
+) {
+    // Can only equip/give an item in inventory
+    if (action === actions.equip.action || action === actions.give.action) {
+        return items.filter(
+            (item) =>
+                item.locT === "inv" && item.loc[0] === getEntityId(self)[0],
+        );
+    }
+    // Can only unequip an item already equipped
+    else if (action === actions.unequip.action) {
+        return items.filter(
+            (item) =>
+                EquipmentSlots.includes(item.locT as EquipmentSlot) &&
+                item.loc[0] === getEntityId(self)[0],
+        );
+    }
+    // Can only take an item from environment
+    else if (action === actions.take.action) {
+        return items.filter((item) => geohashLocationTypes.has(item.locT));
+    }
+    // Can only drop an item from inventory/equipped
+    else if (action === actions.drop.action) {
+        return items.filter(
+            (item) =>
+                item.locT === "inv" ||
+                EquipmentSlots.includes(item.locT as EquipmentSlot),
+        );
+    }
+    // Can only enter an item with a world
+    else if (action === actions.enter.action) {
+        return items.filter((item) => compendium[item.prop].world != null);
+    }
+    // Can only fulfill a writ
+    else if (action === actions.fulfill.action) {
+        return items.filter((item) => item.prop === compendium.tradewrit.prop);
+    }
+
+    return items;
+}
+
 function resolveActionEntities({
     queryTokens,
     tokenPositions,
@@ -121,150 +162,93 @@ function resolveActionEntities({
     items: Item[];
     skills: SkillLines[];
 }): GameActionEntities[] {
-    const { target: targetTypes, tokenPositions: predicateTokenPositions } =
-        actions[action.action].predicate;
-    const {
-        action: actionTokenPosition,
-        target: targetTokenPosition,
-        skill: skillTokenPosition,
-        receive: receiveTokenPosition,
-        offer: offerTokenPosition,
-        item: itemTokenPosition,
-    } = predicateTokenPositions;
-
-    // Check action token position
-    if (
-        actionTokenPosition != null &&
-        !(
-            action.action in tokenPositions &&
-            actionTokenPosition in tokenPositions[action.action]
-        )
-    ) {
-        return [];
-    }
-
     let gameActionEntitiesScores: [GameActionEntities, number][] = [];
 
-    // Check offer & receive token position
-    let receive: BarterSerialized | undefined = undefined;
+    /**
+     * Extract all contexts for predicate
+     */
     let offer: BarterSerialized | undefined = undefined;
-    if (receiveTokenPosition != null) {
-        receive = parseBarter(queryTokens[receiveTokenPosition]);
-        if (!receive) {
-            return [];
-        }
-    }
-    if (offerTokenPosition != null) {
-        offer = parseBarter(queryTokens[offerTokenPosition]);
-        if (!offer) {
-            return [];
-        }
-    }
-
-    // Check skill token position
-    const skill = skills.find((s) => tokenPositions[s]);
-    if (skillTokenPosition != null && skill == null) {
-        return [];
-    }
-
-    // Check item token position
+    let receive: BarterSerialized | undefined = undefined;
+    let skill: SkillLines | undefined = undefined;
     let item: Item | undefined = undefined;
-    if (itemTokenPosition != null) {
-        for (const [entityId, matchedTokenPositions] of Object.entries(
-            tokenPositions,
-        )) {
-            if (
-                matchedTokenPositions[itemTokenPosition]?.token ===
-                queryTokens[itemTokenPosition]
-            ) {
-                item = items.find((i) => i.item === entityId);
-                break;
-            }
-        }
-        if (!item) {
-            return [];
-        }
-    }
 
-    // Find target type in monsters, players, and items
-    for (const targetType of targetTypes) {
-        let targetList: (Player | Monster | Item)[] = [];
+    for (const [context, { position, optional, entityTypes }] of Object.entries(
+        actions[action.action].predicate.tokens,
+    ) as [TokenType, TokenContext][]) {
+        const token = queryTokens[position];
 
-        // Filter target list based on target type
-        if (targetType === "monster") {
-            targetList = monsters;
-        } else if (targetType === "player") {
-            targetList = players;
-        } else if (targetType === "item") {
-            targetList = items;
-            // Can only equip/give an item in inventory
+        if (context === "action") {
             if (
-                action.action === actions.equip.action ||
-                action.action === actions.give.action
-            ) {
-                targetList = targetList.filter(
-                    (item) =>
-                        item.locT === "inv" &&
-                        item.loc[0] === getEntityId(self)[0],
-                );
+                !optional &&
+                !(
+                    action.action in tokenPositions &&
+                    position in tokenPositions[action.action]
+                )
+            )
+                return [];
+        } else if (context === "offer") {
+            offer = parseBarter(token); // extract from raw token
+            if (!optional && !offer) return [];
+        } else if (context === "receive") {
+            receive = parseBarter(token);
+            if (!optional && !receive) return [];
+        } else if (context === "skill") {
+            // TODO: fuzzy search does this work?? ADD TEST
+            skill = skills.find((s) => tokenPositions[s]);
+            // skill = skills.find((s) => s.toLowerCase() === token);
+            if (!optional && !skill) return [];
+        } else if (context === "item") {
+            for (const [entityId, matchedTokenPositions] of Object.entries(
+                tokenPositions,
+            )) {
+                if (
+                    matchedTokenPositions[position]?.token ===
+                    queryTokens[position]
+                ) {
+                    item = items.find((i) => i.item === entityId);
+                    break;
+                }
             }
-            // Can only unequip an item already equipped
-            else if (action.action === actions.unequip.action) {
-                targetList = targetList.filter(
-                    (item) =>
-                        EquipmentSlots.includes(item.locT as EquipmentSlot) &&
-                        item.loc[0] === getEntityId(self)[0],
-                );
-            }
-            // Can only take an item from environment
-            else if (action.action === actions.take.action) {
-                targetList = targetList.filter((item) =>
-                    geohashLocationTypes.has(item.locT),
-                );
-            }
-            // Can only drop an item from inventory/equipped
-            else if (action.action === actions.drop.action) {
-                targetList = targetList.filter(
-                    (item) =>
-                        item.locT === "inv" ||
-                        EquipmentSlots.includes(item.locT as EquipmentSlot),
-                );
-            }
-            // Can only enter an item with a world
-            else if (action.action === actions.enter.action) {
-                targetList = (targetList as Item[]).filter(
-                    (item) => compendium[item.prop].world != null,
-                );
-            }
-        } else {
-            continue;
-        }
+            if (!optional && !item) return [];
+        } else if (context === "target") {
+            if (entityTypes) {
+                for (const entityType of entityTypes) {
+                    const gameEntities =
+                        entityType === "monster"
+                            ? monsters
+                            : entityType === "player"
+                              ? players
+                              : filterTargetItemsByAction(
+                                    action.action,
+                                    self,
+                                    items,
+                                );
 
-        // Find target entities
-        for (const target of targetList) {
-            const [entityId, entityType] = getEntityId(target);
-            // Check target token position
-            if (
-                targetTokenPosition &&
-                targetTokenPosition in tokenPositions[entityId]
-            ) {
-                gameActionEntitiesScores.push([
-                    {
-                        self,
-                        target,
-                        skill,
-                        offer,
-                        receive,
-                        item,
-                    },
-                    tokenPositions[entityId][targetTokenPosition].score,
-                ]);
+                    // Find all possible targets in gameEntities
+                    for (const target of gameEntities ?? []) {
+                        const entityId = getEntityId(target)[0];
+                        if (position in tokenPositions[entityId]) {
+                            gameActionEntitiesScores.push([
+                                {
+                                    self,
+                                    target,
+                                    skill,
+                                    offer,
+                                    receive,
+                                    item,
+                                },
+                                tokenPositions[entityId][position].score,
+                            ]);
+                        }
+                    }
+                }
             }
+            if (!optional && gameActionEntitiesScores.length === 0) return [];
         }
     }
 
     // If no target is allowed
-    if (gameActionEntitiesScores.length === 0 && targetTypes.includes("none")) {
+    if (gameActionEntitiesScores.length === 0) {
         return [{ self, skill, receive, offer, item }];
     }
 

@@ -367,13 +367,6 @@ describe("IR Tests", () => {
                         action: "say",
                         description: "Say something.",
                         synonyms: ["greet"],
-                        predicate: {
-                            target: ["player", "monster", "none"],
-                            tokenPositions: {
-                                action: 0,
-                                target: 1,
-                            },
-                        },
                     },
                 ],
                 tokenPositions: {
@@ -401,14 +394,6 @@ describe("IR Tests", () => {
                 actions: [
                     {
                         action: "learn",
-                        predicate: {
-                            target: ["player"],
-                            tokenPositions: {
-                                action: 0,
-                                skill: 1,
-                                target: 3,
-                            },
-                        },
                     },
                 ],
                 tokenPositions: {
@@ -437,13 +422,6 @@ describe("IR Tests", () => {
                     {
                         action: "enter",
                         description: "Enter.",
-                        predicate: {
-                            target: ["item"],
-                            tokenPositions: {
-                                action: 0,
-                                target: 1,
-                            },
-                        },
                     },
                 ],
                 tokenPositions: {

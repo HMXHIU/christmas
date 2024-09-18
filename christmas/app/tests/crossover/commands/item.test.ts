@@ -114,13 +114,6 @@ describe("Item Tests", () => {
                 {
                     action: "enter",
                     description: "Enter.",
-                    predicate: {
-                        target: ["item"],
-                        tokenPositions: {
-                            action: 0,
-                            target: 1,
-                        },
-                    },
                 },
                 {
                     self: {

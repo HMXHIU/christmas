@@ -606,7 +606,10 @@ function commandVariables({
     queryTokens: string[];
     tokenPositions: TokenPositions;
 }): GameCommandVariables {
-    const relevantPositions = Object.values(action.predicate.tokenPositions);
+    // const relevantPositions = Object.values(action.predicate.tokenPositions);
+    const relevantPositions = Object.values(action.predicate.tokens).map(
+        (c) => c.position,
+    );
     const queryIrrelevant = Array.from(queryTokens.entries())
         .filter(([pos, token]) => {
             return !relevantPositions.includes(pos);

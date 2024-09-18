@@ -35,13 +35,6 @@ describe("Actions Tests", () => {
                 {
                     action: "look",
                     description: actions.look.description,
-                    predicate: {
-                        target: ["player", "monster", "item", "none"],
-                        tokenPositions: {
-                            action: 0,
-                            target: 1,
-                        },
-                    },
                 },
                 {
                     self: {
@@ -106,7 +99,6 @@ describe("Actions Tests", () => {
             items: [woodenDoor, woodenClub],
             skills: [...SkillLinesEnum],
         }).commands;
-
         expect(commands.length).toBe(0);
         expect(commands).toMatchObject([]);
     });

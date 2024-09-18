@@ -150,6 +150,7 @@ describe("Trade Tests", () => {
             items: [writItem!],
             skills: [...SkillLinesEnum],
         });
+
         expect(fulfillCommands).toMatchObject([
             [
                 {
