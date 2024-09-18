@@ -1,4 +1,5 @@
 import { type ItemEntity, type PlayerEntity } from "$lib/crossover/types";
+import { minifiedEntity } from "$lib/crossover/utils";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     type Barter,
@@ -33,6 +34,7 @@ import {
 
 export {
     browse,
+    BROWSE_PAGE_SIZE,
     createTradeCTA,
     createTradeWrit,
     deserializeBarter,
@@ -40,6 +42,8 @@ export {
     setEntityBusy,
     trade,
 };
+
+const BROWSE_PAGE_SIZE = 20;
 
 async function playerHasBarterItems(
     player: PlayerEntity,
@@ -282,18 +286,22 @@ async function executeTradeCTA(
     await trade(buyerEntity, sellerEntity, barterOffer, barterReceive, writ);
 }
 
+/**
+ * Browse writs on a merchant
+ *
+ * The player is always the seller in the write
+ * The creator of the writ is always the buyer
+ */
 async function browse(
     player: PlayerEntity,
     merchant: string,
 ): Promise<ItemEntity[]> {
     const merchantEntity = (await fetchEntity(merchant)) as PlayerEntity;
-    const writs = (await writsQuerySet(
-        merchantEntity.player,
-    ).returnAll()) as ItemEntity[];
+    const writItems = (await writsQuerySet(merchantEntity.player).returnAll({
+        pageSize: BROWSE_PAGE_SIZE,
+    })) as ItemEntity[];
 
-    // The player is always the seller in the writ
-
-    const orders = writs
+    const orders = writItems
         .map(({ vars, item }) => `${vars.offer} for ${vars.receive} [${item}]`)
         .join("\n");
 
@@ -306,12 +314,22 @@ async function browse(
         message += "You may *fulfill writ* to execute a trade.";
     }
 
+    // Send writs to browsing player
+    publishAffectedEntitiesToPlayers(
+        writItems.map((i) => minifiedEntity(i)),
+        {
+            publishTo: [player.player],
+            op: "upsert",
+        },
+    );
+
+    // Send feed message
     publishFeedEvent(player.player, {
         type: "message",
         message: message.trim(),
     });
 
-    return writs;
+    return writItems;
 }
 
 async function trade(

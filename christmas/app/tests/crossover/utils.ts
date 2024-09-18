@@ -64,6 +64,8 @@ import { cloneDeep } from "lodash-es";
 import { expect } from "vitest";
 import type {
     ActionEvent,
+    CTAEvent,
+    FeedEvent,
     StreamEvent,
     UpdateEntitiesEvent,
 } from "../../src/routes/api/crossover/stream/+server";
@@ -658,6 +660,43 @@ export function waitForEventData(
             { once: true },
         );
     });
+}
+
+export async function collectAllEvents(
+    eventTarget: EventTarget,
+    duration = MS_PER_TICK * 4,
+): Promise<{
+    feed: FeedEvent | undefined;
+    entities: UpdateEntitiesEvent | undefined;
+    cta: CTAEvent | undefined;
+    action: ActionEvent | undefined;
+}> {
+    var feed: FeedEvent | undefined = undefined;
+    var entities: UpdateEntitiesEvent | undefined = undefined;
+    var cta: CTAEvent | undefined = undefined;
+    var action: ActionEvent | undefined = undefined;
+
+    waitForEventData(eventTarget, "feed")
+        .then((e) => (feed = e as FeedEvent))
+        .catch(() => {});
+    waitForEventData(eventTarget, "entities")
+        .then((e) => (entities = e as UpdateEntitiesEvent))
+        .catch(() => {});
+    waitForEventData(eventTarget, "cta")
+        .then((e) => (cta = e as CTAEvent))
+        .catch(() => {});
+    waitForEventData(eventTarget, "action")
+        .then((e) => (action = e as ActionEvent))
+        .catch(() => {});
+
+    await sleep(duration);
+
+    return {
+        feed,
+        entities,
+        cta,
+        action,
+    };
 }
 
 export function collectEventDataForDuration(
