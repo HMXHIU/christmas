@@ -67,8 +67,13 @@ import type {
 import { ObjectStorage } from "../objectStorage";
 import { say } from "./actions";
 import { executeGiveCTA } from "./actions/give";
+import { executeLearnCTA } from "./actions/learn";
 import { isPublicKeyNPCCache } from "./caches";
-import { verifyP2PTransaction, type P2PGiveTransaction } from "./player";
+import {
+    verifyP2PTransaction,
+    type P2PGiveTransaction,
+    type P2PLearnTransaction,
+} from "./player";
 import { dialogueRepository, playerRepository } from "./redis";
 import { fetchEntity } from "./redis/utils";
 import { UserMetadataSchema } from "./router";
@@ -125,12 +130,23 @@ async function npcRespondToEvent(
         const { token, pin } = (event as CTAEvent).cta;
         const p2pTx = await verifyP2PTransaction(token);
         // Take any item given to it
-        if (p2pTx.transaction === "give") {
-            if ((p2pTx as P2PGiveTransaction).receiver === npc) {
-                await npcRespondToGive(npc, p2pTx as P2PGiveTransaction);
-            }
+        if (
+            p2pTx.transaction === "give" &&
+            (p2pTx as P2PGiveTransaction).receiver === npc
+        ) {
+            await npcRespondToGive(npc, p2pTx as P2PGiveTransaction);
+        } else if (
+            p2pTx.transaction === "learn" &&
+            (p2pTx as P2PLearnTransaction).teacher === npc
+        ) {
+            await npcRespondToLearn(npc, p2pTx as P2PLearnTransaction);
         }
     }
+}
+
+async function npcRespondToLearn(npc: string, p2pLearnTx: P2PLearnTransaction) {
+    const npcEntity = (await fetchEntity(npc)) as PlayerEntity;
+    await executeLearnCTA(npcEntity, p2pLearnTx);
 }
 
 async function npcRespondToGive(npc: string, p2pGiveTx: P2PGiveTransaction) {

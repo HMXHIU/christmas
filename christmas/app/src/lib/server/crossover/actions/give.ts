@@ -3,7 +3,6 @@ import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { generatePin } from "$lib/utils";
 import { say } from ".";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../events";
-import { isEntityHuman } from "../npc";
 import {
     createP2PTransaction,
     type CTA,
@@ -42,25 +41,20 @@ async function createGiveCTA(
     receiver: PlayerEntity,
     item: ItemEntity,
 ): Promise<CTA> {
-    // Receiver must be a human player
-    if (isEntityHuman(receiver)) {
-        const expiresIn = 60;
-        const pin = generatePin(4);
-        const giveTx: P2PGiveTransaction = {
-            transaction: "give",
-            receiver: receiver.player,
-            player: player.player,
-            item: item.item,
-        };
-        return {
-            name: "Gift",
-            description: `${player.name} wants to give ${item.name} to you. You have ${expiresIn} to *accept ${pin}*`,
-            token: await createP2PTransaction(giveTx, 60),
-            pin,
-        };
-    }
-
-    throw new Error("Receiver is not a player");
+    const expiresIn = 60;
+    const pin = generatePin(4);
+    const giveTx: P2PGiveTransaction = {
+        transaction: "give",
+        receiver: receiver.player,
+        player: player.player,
+        item: item.item,
+    };
+    return {
+        name: "Gift",
+        description: `${player.name} wants to give ${item.name} to you. You have ${expiresIn} to *accept ${pin}*`,
+        token: await createP2PTransaction(giveTx, 60),
+        pin,
+    };
 }
 
 async function give(

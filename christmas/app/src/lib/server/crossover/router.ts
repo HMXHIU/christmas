@@ -42,7 +42,7 @@ import {
 } from "../trpc";
 import { performAbility } from "./abilities";
 import { fulfill, inventory, look, move, rest, say } from "./actions";
-import { createGiveCTA, executeGiveCTA, give } from "./actions/give";
+import { createGiveCTA, executeGiveCTA } from "./actions/give";
 import {
     configureItem,
     createItem,
@@ -495,21 +495,13 @@ const crossoverRouter = {
                     receiver,
                 )) as PlayerEntity;
                 const itemEntity = (await fetchEntity(item)) as ItemEntity;
-
-                // Send CTA offer to receiver for execution
-                if (isEntityHuman(receiverEntity)) {
-                    await publishCTAEvent(receiver, {
-                        cta: await createGiveCTA(
-                            ctx.player,
-                            receiverEntity,
-                            itemEntity,
-                        ),
-                    });
-                    return; // do not proceed to give
-                }
-
-                // Give to NPC (automatically accept)
-                await give(ctx.player, receiverEntity, itemEntity);
+                await publishCTAEvent(receiver, {
+                    cta: await createGiveCTA(
+                        ctx.player,
+                        receiverEntity,
+                        itemEntity,
+                    ),
+                });
             }),
         // cmd.learn
         learn: playerAuthBusyProcedure

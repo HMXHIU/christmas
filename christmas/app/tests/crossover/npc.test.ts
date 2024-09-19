@@ -1,4 +1,8 @@
-import { crossoverCmdGive, crossoverCmdSay } from "$lib/crossover/client";
+import {
+    crossoverCmdGive,
+    crossoverCmdLearn,
+    crossoverCmdSay,
+} from "$lib/crossover/client";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItemInInventory } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
@@ -59,7 +63,7 @@ test("Test Greet NPC", async () => {
     // Test ignore
 });
 
-test("Test Give NPC", async () => {
+test("Test Give Item To NPC", async () => {
     // Give playerOne a potion
     const potion = await spawnItemInInventory({
         entity: playerOne,
@@ -97,6 +101,97 @@ test("Test Give NPC", async () => {
                 },
             ],
             op: "upsert",
+        },
+    });
+});
+
+test("Test Learn From NPC", async () => {
+    // Try to learn from NPC without enough skill levels
+    crossoverCmdLearn(
+        { skill: "exploration", teacher: innKeeper.player },
+        { Cookie: playerOneCookies },
+    );
+    var evs = await collectAllEvents(playerOneStream);
+    expect(evs).toMatchObject({
+        feed: {
+            type: "message",
+            message: "${message}",
+            variables: {
+                cmd: "say",
+                player: innKeeper.player,
+                name: "Inn Keeper",
+                message:
+                    "Inn Keeper furrows his brow. 'This skill lies beyond even my grasp. Seek out one more learned than I.'",
+            },
+            event: "feed",
+        },
+    });
+
+    // Give npc enough skill level, but player still does not have enough experience
+    innKeeper.skills.exploration = 10;
+    innKeeper = await saveEntity(innKeeper);
+    crossoverCmdLearn(
+        { skill: "exploration", teacher: innKeeper.player },
+        { Cookie: playerOneCookies },
+    );
+    evs = await collectAllEvents(playerOneStream);
+    expect(evs).toMatchObject({
+        feed: {
+            type: "message",
+            message: "${message}",
+            variables: {
+                cmd: "say",
+                player: innKeeper.player,
+                name: "Inn Keeper",
+                message:
+                    "Despite your best efforts, the skill eludes you, perhaps with more experience.",
+            },
+            event: "feed",
+        },
+    });
+
+    // Give player enough lumia
+    playerOne.lum = 1000;
+    playerOne = await saveEntity(playerOne);
+    const skillBefore = playerOne.skills.exploration ?? 0;
+    crossoverCmdLearn(
+        { skill: "exploration", teacher: innKeeper.player },
+        { Cookie: playerOneCookies },
+    );
+    evs = await collectAllEvents(playerOneStream);
+    expect(evs).toMatchObject({
+        feed: {
+            type: "message",
+            message: "${message}",
+            variables: {
+                cmd: "say",
+                player: innKeeper.player,
+                name: "Inn Keeper",
+                message: "Inn Keeper hands you a worn map and a compass.",
+            },
+            event: "feed",
+        },
+        entities: {
+            event: "entities",
+            players: [
+                {
+                    player: playerOne.player,
+                    skills: {
+                        exploration: skillBefore + 1,
+                    },
+                    pthclk: 0,
+                    pthdur: 0,
+                    pth: [],
+                    pthst: "",
+                },
+            ],
+            monsters: [],
+            items: [],
+            op: "upsert",
+        },
+        action: {
+            action: "learn",
+            event: "action",
         },
     });
 });

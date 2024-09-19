@@ -33,7 +33,14 @@ async function publishFeedEvent(
 
 async function publishCTAEvent(player: string, event: Omit<CTAEvent, "event">) {
     (event as CTAEvent).event = "cta";
-    await redisClient.publish(player, JSON.stringify(event));
+    // Send to NPC
+    if (await isPublicKeyNPC(player)) {
+        await npcRespondToEvent(event as CTAEvent, player);
+    }
+    // Send to human player
+    else {
+        await redisClient.publish(player, JSON.stringify(event));
+    }
 }
 
 async function publishActionEvent(

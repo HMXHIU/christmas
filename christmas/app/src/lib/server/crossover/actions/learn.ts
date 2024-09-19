@@ -56,25 +56,20 @@ async function createLearnCTA(
     teacher: PlayerEntity,
     skill: SkillLines,
 ): Promise<CTA> {
-    // Teacher is a human player
-    if (isEntityHuman(teacher)) {
-        const expiresIn = 60;
-        const pin = generatePin(4);
-        const learnTx: P2PLearnTransaction = {
-            transaction: "learn",
-            teacher: teacher.player,
-            player: player.player,
-            skill,
-        };
-        return {
-            name: "Writ of Learning",
-            description: `${player.name} requests to learn ${skill} from you. You have ${expiresIn} to *accept ${pin}*`,
-            token: await createP2PTransaction(learnTx, 60),
-            pin,
-        };
-    }
-
-    throw new Error("Teacher is not a player");
+    const expiresIn = 60;
+    const pin = generatePin(4);
+    const learnTx: P2PLearnTransaction = {
+        transaction: "learn",
+        teacher: teacher.player,
+        player: player.player,
+        skill,
+    };
+    return {
+        name: "Writ of Learning",
+        description: `${player.name} requests to learn ${skill} from you. You have ${expiresIn} to *accept ${pin}*`,
+        token: await createP2PTransaction(learnTx, 60),
+        pin,
+    };
 }
 
 async function learn(
