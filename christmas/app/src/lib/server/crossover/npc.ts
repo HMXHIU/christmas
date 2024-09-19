@@ -66,7 +66,9 @@ import type {
 } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import { say } from "./actions";
+import { executeGiveCTA } from "./actions/give";
 import { isPublicKeyNPCCache } from "./caches";
+import { verifyP2PTransaction, type P2PGiveTransaction } from "./player";
 import { dialogueRepository, playerRepository } from "./redis";
 import { fetchEntity } from "./redis/utils";
 import { UserMetadataSchema } from "./router";
@@ -118,6 +120,22 @@ async function npcRespondToEvent(
             }
         }
     }
+    // CTA events
+    if (event.event === "cta") {
+        const { token, pin } = (event as CTAEvent).cta;
+        const p2pTx = await verifyP2PTransaction(token);
+        // Take any item given to it
+        if (p2pTx.transaction === "give") {
+            if ((p2pTx as P2PGiveTransaction).receiver === npc) {
+                await npcRespondToGive(npc, p2pTx as P2PGiveTransaction);
+            }
+        }
+    }
+}
+
+async function npcRespondToGive(npc: string, p2pGiveTx: P2PGiveTransaction) {
+    const npcEntity = (await fetchEntity(npc)) as PlayerEntity;
+    await executeGiveCTA(npcEntity, p2pGiveTx);
 }
 
 async function npcRespondToGreet(npc: string, player: string) {

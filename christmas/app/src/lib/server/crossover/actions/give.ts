@@ -98,7 +98,7 @@ async function give(
     // Send messages
     say(
         receiver,
-        `${receiver.name} beams with gratitude as they nod to you, 'Ah, many thanks for the ${item.name}, ${receiver.name}!'`,
+        `${receiver.name} beams with gratitude as they nod to you, 'Ah, many thanks for the ${item.name}, ${player.name}!'`,
         { target: player.player, overwrite: true },
     );
     say(
