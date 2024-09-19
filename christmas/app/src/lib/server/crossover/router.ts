@@ -561,10 +561,7 @@ const crossoverRouter = {
                 const buyerEntity = (await fetchEntity(buyer)) as PlayerEntity;
 
                 // Player wants to sell to buyer (send CTA offer to buyer for execution)
-                if (
-                    ctx.player.player === seller &&
-                    isEntityHuman(buyerEntity)
-                ) {
+                if (ctx.player.player === seller) {
                     await publishCTAEvent(buyer, {
                         cta: await createTradeCTA(
                             ctx.player,
@@ -576,10 +573,7 @@ const crossoverRouter = {
                     });
                 }
                 // Player wants to buy from seller (send CTA offer to seller for execution)
-                else if (
-                    ctx.player.player === buyer &&
-                    isEntityHuman(sellerEntity)
-                ) {
+                else if (ctx.player.player === buyer) {
                     await publishCTAEvent(seller, {
                         cta: await createTradeCTA(
                             ctx.player,

@@ -2,8 +2,10 @@ import {
     crossoverCmdGive,
     crossoverCmdLearn,
     crossoverCmdSay,
+    crossoverCmdTrade,
 } from "$lib/crossover/client";
 import { compendium } from "$lib/crossover/world/settings/compendium";
+import type { BarterSerialized } from "$lib/crossover/world/types";
 import { spawnItemInInventory } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
@@ -101,6 +103,38 @@ test("Test Give Item To NPC", async () => {
                 },
             ],
             op: "upsert",
+        },
+    });
+});
+
+test("Test Trade With NPC", async () => {
+    const offer: BarterSerialized = {
+        currency: {
+            lum: 100,
+        },
+    };
+    const receive: BarterSerialized = {
+        props: [compendium.potionofhealth.prop],
+    };
+
+    // Try to trade with NPC
+    crossoverCmdTrade(
+        { offer, receive, seller: innKeeper.player, buyer: playerOne.player },
+        { Cookie: playerOneCookies },
+    );
+    var evs = await collectAllEvents(playerOneStream);
+    expect(evs).toMatchObject({
+        feed: {
+            type: "message",
+            message: "${name} says ${message}",
+            variables: {
+                cmd: "say",
+                player: innKeeper.player,
+                name: "Inn Keeper",
+                message:
+                    "I’m not certain I have exactly what you seek, but why not take a moment to *browse* through my wares? Perhaps something else will catch your eye.",
+            },
+            event: "feed",
         },
     });
 });

@@ -346,11 +346,14 @@ async function trade(
     );
 
     // Cannot trade - send `cannotLearnMessage` back to buyer
-    if (!ok && buyerIsHuman) {
-        await say(seller, cannotTradeMessage, {
-            target: buyer.player,
-            overwrite: true,
-        });
+    if (!ok) {
+        if (buyerIsHuman) {
+            await say(seller, cannotTradeMessage, {
+                target: buyer.player,
+                overwrite: true,
+            });
+        }
+        return; // do not proceed
     }
 
     // Get nearby players (near the buyer)

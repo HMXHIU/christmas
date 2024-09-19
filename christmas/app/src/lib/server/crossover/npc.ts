@@ -73,6 +73,7 @@ import {
     verifyP2PTransaction,
     type P2PGiveTransaction,
     type P2PLearnTransaction,
+    type P2PTradeTransaction,
 } from "./player";
 import { dialogueRepository, playerRepository } from "./redis";
 import { fetchEntity } from "./redis/utils";
@@ -129,19 +130,42 @@ async function npcRespondToEvent(
     if (event.event === "cta") {
         const { token, pin } = (event as CTAEvent).cta;
         const p2pTx = await verifyP2PTransaction(token);
-        // Take any item given to it
+        // Give - will take any item given to it
         if (
             p2pTx.transaction === "give" &&
             (p2pTx as P2PGiveTransaction).receiver === npc
         ) {
             await npcRespondToGive(npc, p2pTx as P2PGiveTransaction);
-        } else if (
+        }
+        // Teach - will always teach
+        else if (
             p2pTx.transaction === "learn" &&
             (p2pTx as P2PLearnTransaction).teacher === npc
         ) {
             await npcRespondToLearn(npc, p2pTx as P2PLearnTransaction);
         }
+        // Trade - redirect player to browse your wares
+        else if (
+            p2pTx.transaction === "trade" &&
+            (p2pTx as P2PTradeTransaction).seller === npc
+        ) {
+            await npcRespondToTrade(npc, p2pTx as P2PTradeTransaction);
+        }
     }
+}
+
+async function npcRespondToTrade(npc: string, p2pTradeTx: P2PTradeTransaction) {
+    const npcEntity = (await fetchEntity(npc)) as PlayerEntity;
+    // TODO: Check if any writs on npc meets the offer/receive and execute it
+
+    // Redirect player to *browse* wares
+    await say(
+        npcEntity,
+        "I’m not certain I have exactly what you seek, but why not take a moment to *browse* through my wares? Perhaps something else will catch your eye.",
+        {
+            target: p2pTradeTx.buyer,
+        },
+    );
 }
 
 async function npcRespondToLearn(npc: string, p2pLearnTx: P2PLearnTransaction) {
