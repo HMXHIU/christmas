@@ -14,13 +14,9 @@ import { actions } from "$lib/crossover/world/settings/actions";
 import { sanctuaries, worldSeed } from "$lib/crossover/world/settings/world";
 import { GeohashLocationSchema } from "$lib/crossover/world/types";
 import { z } from "zod";
-import { fetchEntity, saveEntity } from "./redis";
-import {
-    getPlayerState,
-    getUserMetadata,
-    publishAffectedEntitiesToPlayers,
-    publishFeedEvent,
-} from "./utils";
+import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "./events";
+import { fetchEntity, saveEntity } from "./redis/utils";
+import { getPlayerState, getUserMetadata } from "./utils";
 
 export {
     connectedUsers,

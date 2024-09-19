@@ -26,20 +26,15 @@ import {
     spawnWorld,
     spawnWorldPOIs,
 } from "../dungeonMaster";
-import {
-    fetchEntity,
-    getNearbyPlayerIds,
-    inventoryQuerySet,
-    itemRepository,
-    saveEntity,
-} from "../redis";
+import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../events";
+import { itemRepository } from "../redis";
+import { getNearbyPlayerIds, inventoryQuerySet } from "../redis/queries";
+import { fetchEntity, saveEntity } from "../redis/utils";
 import {
     canConfigureItem,
     canUseItem,
     itemVariableValue,
     parseItemVariables,
-    publishAffectedEntitiesToPlayers,
-    publishFeedEvent,
 } from "../utils";
 
 export {

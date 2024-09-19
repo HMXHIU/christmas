@@ -41,13 +41,11 @@ import {
     topologyResponseCache,
     topologyResultCache,
 } from "./caches";
+import { itemRepository, monsterRepository, worldRepository } from "./redis";
 import {
-    itemRepository,
-    monsterRepository,
     monstersInGeohashQuerySet,
-    worldRepository,
     worldsContainingGeohashQuerySet,
-} from "./redis";
+} from "./redis/queries";
 import { isLocationTraversable, parseItemVariables } from "./utils";
 
 export {

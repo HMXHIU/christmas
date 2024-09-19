@@ -7,10 +7,8 @@ import {
 } from "$lib/crossover/world/dungeons";
 import { dungeons } from "$lib/crossover/world/settings/dungeons";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import {
-    dungeonEntrancesQuerySet,
-    initializeClients,
-} from "$lib/server/crossover/redis";
+import { initializeClients } from "$lib/server/crossover/redis";
+import { dungeonEntrancesQuerySet } from "$lib/server/crossover/redis/queries";
 import { flatten } from "lodash-es";
 import { beforeAll, describe, expect, test } from "vitest";
 

@@ -49,7 +49,7 @@ import {
 } from "$lib/server/crossover/dungeonMaster";
 import { generateNPC } from "$lib/server/crossover/npc";
 import { generateAvatarHash } from "$lib/server/crossover/player";
-import { saveEntity } from "$lib/server/crossover/redis";
+import { saveEntity } from "$lib/server/crossover/redis/utils";
 import { npcs } from "$lib/server/crossover/settings/npc";
 import {
     canUseItem,

@@ -7,11 +7,9 @@ import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import { spawnItemInInventory } from "$lib/server/crossover/dungeonMaster";
-import {
-    initializeClients,
-    inventoryQuerySet,
-    saveEntity,
-} from "$lib/server/crossover/redis";
+import { initializeClients } from "$lib/server/crossover/redis";
+import { inventoryQuerySet } from "$lib/server/crossover/redis/queries";
+import { saveEntity } from "$lib/server/crossover/redis/utils";
 import { sleep } from "$lib/utils";
 import { beforeEach, describe, expect, test } from "vitest";
 import {

@@ -5,7 +5,8 @@ import { MS_PER_TICK, TICKS_PER_TURN } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { consumeResources } from "$lib/server/crossover";
-import { initializeClients, saveEntity } from "$lib/server/crossover/redis";
+import { initializeClients } from "$lib/server/crossover/redis";
+import { saveEntity } from "$lib/server/crossover/redis/utils";
 import { sleep } from "$lib/utils";
 import { beforeEach, describe, expect, test } from "vitest";
 import {

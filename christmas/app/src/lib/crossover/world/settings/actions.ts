@@ -12,8 +12,6 @@ const actions: Record<Actions, Action> = {
         action: "look",
         description: "Look at the surroundings.",
         predicate: {
-            // target: ["player", "monster", "item", "none"],
-            // tokenPositions: { action: 0, target: 1 },
             tokens: {
                 action: {
                     position: 0,
@@ -38,8 +36,6 @@ const actions: Record<Actions, Action> = {
         description: "Say something.",
         synonyms: ["greet"],
         predicate: {
-            // target: ["player", "monster", "none"],
-            // tokenPositions: { action: 0, target: 1 },
             tokens: {
                 action: {
                     position: 0,
@@ -63,8 +59,6 @@ const actions: Record<Actions, Action> = {
         action: "move",
         description: "Move in a direction.",
         predicate: {
-            // target: ["none"],
-            // tokenPositions: { action: 0 },
             tokens: {
                 action: {
                     position: 0,
@@ -83,8 +77,6 @@ const actions: Record<Actions, Action> = {
         action: "take",
         description: "Take an item.",
         predicate: {
-            // target: ["item"],
-            // tokenPositions: { action: 0, target: 1 },
             tokens: {
                 action: {
                     position: 0,
@@ -108,8 +100,6 @@ const actions: Record<Actions, Action> = {
         action: "drop",
         description: "Drop an item.",
         predicate: {
-            // target: ["item"],
-            // tokenPositions: { action: 0, target: 1 },
             tokens: {
                 action: {
                     position: 0,
@@ -133,8 +123,6 @@ const actions: Record<Actions, Action> = {
         action: "equip",
         description: "Equip an item.",
         predicate: {
-            // target: ["item"],
-            // tokenPositions: { action: 0, target: 1 },
             tokens: {
                 action: {
                     position: 0,
@@ -158,8 +146,6 @@ const actions: Record<Actions, Action> = {
         action: "unequip",
         description: "Unequip an item.",
         predicate: {
-            // target: ["item"],
-            // tokenPositions: { action: 0, target: 1 },
             tokens: {
                 action: {
                     position: 0,
@@ -183,8 +169,6 @@ const actions: Record<Actions, Action> = {
         action: "create",
         description: "Create an item.",
         predicate: {
-            // target: ["none"],
-            // tokenPositions: { action: 0 },
             tokens: {
                 action: {
                     position: 0,
@@ -203,8 +187,6 @@ const actions: Record<Actions, Action> = {
         action: "configure",
         description: "Configure an item.",
         predicate: {
-            // target: ["item"],
-            // tokenPositions: { action: 0, target: 1 },
             tokens: {
                 action: {
                     position: 0,
@@ -228,8 +210,6 @@ const actions: Record<Actions, Action> = {
         action: "inventory",
         description: "View inventory.",
         predicate: {
-            // target: ["none"],
-            // tokenPositions: { action: 0 },
             tokens: {
                 action: {
                     position: 0,
@@ -249,8 +229,6 @@ const actions: Record<Actions, Action> = {
         action: "enter",
         description: "Enter.",
         predicate: {
-            // target: ["item"],
-            // tokenPositions: { action: 0, target: 1 },
             tokens: {
                 action: {
                     position: 0,
@@ -280,8 +258,6 @@ Command:
 Examples:
     **accept** 1234`,
         predicate: {
-            // target: ["none"],
-            // tokenPositions: { action: 0 },
             tokens: {
                 action: {
                     position: 0,
@@ -305,8 +281,6 @@ Command: learn [skill] from [teacher]
 Examples:
     **learn** exploration **from** gandalf`,
         predicate: {
-            // target: ["player"],
-            // tokenPositions: { action: 0, skill: 1, target: 3 },
             tokens: {
                 action: {
                     position: 0,
@@ -351,8 +325,6 @@ Examples:
 
 ${tradingNotes}`,
         predicate: {
-            // target: ["player"],
-            // tokenPositions: { action: 0, offer: 1, receive: 3, target: 5 },
             tokens: {
                 action: {
                     position: 0,
@@ -401,8 +373,6 @@ Examples:
 
 ${tradingNotes}`,
         predicate: {
-            // target: ["none"],
-            // tokenPositions: { action: 0, offer: 2, receive: 4 },
             tokens: {
                 action: {
                     position: 0,
@@ -436,8 +406,6 @@ Examples:
     fufill item_tradewrit_1
 `,
         predicate: {
-            // target: ["item"],
-            // tokenPositions: { action: 0, target: 1 },
             tokens: {
                 action: {
                     position: 0,
@@ -461,8 +429,6 @@ Examples:
         action: "browse",
         description: "Browse the goods a merchant is selling or buying.",
         predicate: {
-            // target: ["player"],
-            // tokenPositions: { action: 0, target: 1 },
             tokens: {
                 action: {
                     position: 0,
@@ -493,8 +459,6 @@ Examples:
     **give** item_potionofhealth_1 **to** gandalf
 `,
         predicate: {
-            // target: ["player"],
-            // tokenPositions: { action: 0, item: 1, target: 3 },
             tokens: {
                 action: {
                     position: 0,
@@ -523,8 +487,6 @@ Examples:
         action: "rest",
         description: "Rest and recover.",
         predicate: {
-            // target: ["none"],
-            // tokenPositions: { action: 0 },
             tokens: {
                 action: {
                     position: 0,

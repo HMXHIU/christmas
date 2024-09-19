@@ -14,7 +14,6 @@ import type {
 } from "$lib/crossover/types";
 import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
 import type { Abilities } from "$lib/crossover/world/abilities";
-import type { Actions } from "$lib/crossover/world/actions";
 import {
     AgesEnum,
     BodyTypesEnum,
@@ -61,9 +60,15 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import { loadPlayerEntity } from ".";
 import { feePayerKeypair, hashObject } from "..";
 import { getAvatars } from "../../../routes/api/crossover/avatar/[...path]/+server";
+import type {
+    CTAEvent,
+    FeedEvent,
+} from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import { say } from "./actions";
+import { isPublicKeyNPCCache } from "./caches";
 import { dialogueRepository, playerRepository } from "./redis";
+import { fetchEntity } from "./redis/utils";
 import { UserMetadataSchema } from "./router";
 import { npcs } from "./settings/npc";
 import { getUserMetadata, savePlayerState } from "./utils";
@@ -73,7 +78,8 @@ export {
     generateNPCMetadata,
     isEntityHuman,
     isEntityNPC,
-    npcRespondToAction,
+    isPublicKeyNPC,
+    npcRespondToEvent,
     type NPC,
     type NPCs,
 };
@@ -91,57 +97,52 @@ interface NPC {
     asset: AssetMetadata;
 }
 
+// TODO: Additional variables about the world
 function dialogueVariables() {
     return {
         timeOfDay: "",
     };
 }
 
-/**
- * NPCs do not have websocket connections, this method should be hooked into the
- * player actions/abilities so that the npc can perform actions/abilities
- *
- * TODO:
- * Eventually when NPCs become autonomous agents, their logic can be run through websockets
- * and NPCs become programs in ICP with better intelligence
- */
-async function npcRespondToAction({
-    entity,
-    target,
-    action,
-}: {
-    entity: Player | Monster;
-    target: Player; // the NPC
-    action: Actions;
-}) {
-    if (target.npc) {
-        const npc = target.npc.split("_")[0] as NPCs;
-        const entityIsHuman = isEntityHuman(entity);
-        const tags = [`npc=${npc}`];
-
-        // Respond to `say`
-        if (action === "say") {
-            let response = await npcGreetResponse(tags);
-            if (response && entityIsHuman) {
-                // Respond to target/surrounding players
-                await say(
-                    target as PlayerEntity,
-                    substituteVariables(response.msg, {
-                        self: target,
-                        player: entity as Player,
-                    }),
-                    {
-                        target: response.tgt
-                            ? substituteVariables(response.tgt, {
-                                  self: target,
-                                  player: entity as Player,
-                              })
-                            : undefined,
-                        overwrite: true,
-                    },
-                );
+async function npcRespondToEvent(
+    event: CTAEvent | FeedEvent,
+    npc: string, // This must be an NPC publicKey
+) {
+    // Feed events
+    if (event.event === "feed" && event.type === "message" && event.variables) {
+        if (event.variables.cmd === "say") {
+            const { message, player } = event.variables;
+            // Greet is just a say with no message
+            if (message === "" && player) {
+                await npcRespondToGreet(npc, player as string);
             }
         }
+    }
+}
+
+async function npcRespondToGreet(npc: string, player: string) {
+    const playerEntity = (await fetchEntity(player)) as PlayerEntity;
+    const npcEntity = (await fetchEntity(npc)) as PlayerEntity;
+    const npcTemplate = npcEntity.npc?.split("_")[0] as NPCs;
+    const tags = [`npc=${npcTemplate}`];
+    let dialogue = await npcGreetResponse(tags);
+    if (dialogue) {
+        await say(
+            npcEntity,
+            substituteVariables(dialogue.msg, {
+                self: npcEntity,
+                player: playerEntity,
+            }),
+            {
+                target: dialogue.tgt
+                    ? substituteVariables(dialogue.tgt, {
+                          self: npcEntity,
+                          player: playerEntity,
+                      })
+                    : undefined,
+                overwrite: true,
+            },
+        );
     }
 }
 
@@ -160,6 +161,28 @@ async function npcGreetResponse(
     const dialogue = dialogues[0];
 
     return dialogue;
+}
+
+async function npcRespondToAbility({
+    entity,
+    target,
+    ability,
+}: {
+    entity: Player | Monster;
+    target: Player;
+    ability: Abilities;
+}) {
+    if (target.npc) {
+        const npc = target.npc.split("_")[0] as NPCs;
+        const entityIsHuman = isEntityHuman(entity);
+
+        // Dialogues spoken directly to an actual player
+        if (isEntityHuman(entity)) {
+        }
+        // Dialogues spoken to all
+        else {
+        }
+    }
 }
 
 async function searchDialogues(
@@ -191,28 +214,6 @@ async function searchDialogues(
     }
 
     return dialogues;
-}
-
-async function npcRespondToAbility({
-    entity,
-    target,
-    ability,
-}: {
-    entity: Player | Monster;
-    target: Player;
-    ability: Abilities;
-}) {
-    if (target.npc) {
-        const npc = target.npc.split("_")[0] as NPCs;
-        const entityIsHuman = isEntityHuman(entity);
-
-        // Dialogues spoken directly to an actual player
-        if (isEntityHuman(entity)) {
-        }
-        // Dialogues spoken to all
-        else {
-        }
-    }
 }
 
 function isEntityNPC(entity: GameEntity): boolean {
@@ -434,4 +435,14 @@ async function generateNPCMetadata({
         demographic: demographic as PlayerDemographic,
         appearance: appearance as PlayerAppearance,
     };
+}
+
+async function isPublicKeyNPC(publicKey: string): Promise<boolean> {
+    const cached = await isPublicKeyNPCCache.get(publicKey);
+    if (cached !== undefined) {
+        return cached;
+    }
+    const isNPC = Boolean((await fetchEntity(publicKey))?.npc);
+    await isPublicKeyNPCCache.set(publicKey, isNPC);
+    return isNPC;
 }

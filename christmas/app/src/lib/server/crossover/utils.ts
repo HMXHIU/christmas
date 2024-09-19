@@ -1,5 +1,4 @@
 import type {
-    Item,
     ItemEntity,
     Monster,
     MonsterEntity,
@@ -28,25 +27,15 @@ import {
 } from "$lib/server/crossover/caches";
 import { parseZodErrors } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
-import { uniq, uniqBy } from "lodash-es";
 import { z } from "zod";
 import { PlayerStateSchema, type PlayerState } from ".";
 import { serverAnchorClient } from "..";
-import type {
-    ActionEvent,
-    CTAEvent,
-    FeedEvent,
-    UpdateEntitiesEvent,
-} from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
+import { itemRepository, monsterRepository, playerRepository } from "./redis";
 import {
     hasCollidersInGeohash,
-    itemRepository,
-    monsterRepository,
-    playerRepository,
-    redisClient,
     worldsContainingGeohashQuerySet,
-} from "./redis";
+} from "./redis/queries";
 import type { UserMetadataSchema } from "./router";
 
 export {
@@ -62,79 +51,9 @@ export {
     isLocationTraversable,
     itemVariableValue,
     parseItemVariables,
-    publishActionEvent,
-    publishAffectedEntitiesToPlayers,
-    publishCTAEvent,
-    publishFeedEvent,
     savePlayerState,
     setPlayerState,
 };
-
-async function publishFeedEvent(
-    player: string,
-    event: Omit<FeedEvent, "event">,
-) {
-    (event as FeedEvent).event = "feed";
-    await redisClient.publish(player, JSON.stringify(event));
-}
-
-async function publishCTAEvent(player: string, event: Omit<CTAEvent, "event">) {
-    (event as CTAEvent).event = "cta";
-    await redisClient.publish(player, JSON.stringify(event));
-}
-
-async function publishActionEvent(
-    players: string[],
-    event: Omit<ActionEvent, "event">,
-) {
-    (event as ActionEvent).event = "action";
-    const message = JSON.stringify(event);
-    for (const p of players) {
-        await redisClient.publish(p, message);
-    }
-}
-
-async function publishAffectedEntitiesToPlayers(
-    entities: (Player | Monster | Item)[],
-    options?: {
-        publishTo?: string[];
-        op?: "replace" | "upsert";
-    },
-) {
-    const op = options?.op || "upsert";
-
-    const effectedPlayers = uniqBy(
-        entities.filter((entity) => (entity as Player).player),
-        "player",
-    );
-    const effectedMonsters = uniqBy(
-        entities.filter((entity) => (entity as Monster).monster),
-        "monster",
-    );
-    const effectedItems = uniqBy(
-        entities.filter((entity) => (entity as Item).item),
-        "item",
-    );
-
-    const event = JSON.stringify({
-        event: "entities",
-        players: effectedPlayers,
-        monsters: effectedMonsters,
-        items: effectedItems,
-        op,
-    } as UpdateEntitiesEvent);
-
-    if (options?.publishTo != null) {
-        for (const p of uniq(options.publishTo)) {
-            await redisClient.publish(p, event);
-        }
-    } else {
-        // Publish effects to all players
-        for (const p of effectedPlayers) {
-            await redisClient.publish((p as Player).player, event);
-        }
-    }
-}
 
 function entityIsBusy(entity: Player | Monster): [boolean, number] {
     const now = Date.now();

@@ -26,12 +26,13 @@ import type { GeohashLocationType } from "$lib/crossover/world/types";
 import { sleep } from "$lib/utils";
 import { cloneDeep, uniq } from "lodash-es";
 import { consumeResources, performActionConsequences, setEntityBusy } from ".";
-import { fetchEntity, getNearbyPlayerIds, saveEntity } from "./redis";
 import {
     publishActionEvent,
     publishAffectedEntitiesToPlayers,
     publishFeedEvent,
-} from "./utils";
+} from "./events";
+import { getNearbyPlayerIds } from "./redis/queries";
+import { fetchEntity, saveEntity } from "./redis/utils";
 
 export {
     consumeResources,

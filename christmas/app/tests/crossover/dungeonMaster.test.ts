@@ -4,10 +4,8 @@ import { borderingGeohashes } from "$lib/crossover/utils";
 import { monsterLimitAtGeohash } from "$lib/crossover/world/bestiary";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { spawnMonsters } from "$lib/server/crossover/dungeonMaster";
-import {
-    initializeClients,
-    monstersInGeohashQuerySet,
-} from "$lib/server/crossover/redis";
+import { initializeClients } from "$lib/server/crossover/redis";
+import { monstersInGeohashQuerySet } from "$lib/server/crossover/redis/queries";
 import { beforeAll, describe, expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { buffEntity, createRandomPlayer } from "./utils";

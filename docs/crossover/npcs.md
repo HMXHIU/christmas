@@ -11,11 +11,82 @@ NPCs are `PlayerEntities` controlled by the game (dungeon master). Eventually th
 - Give out quests to players
 - Be involved as quest entities
 
-## Dialogues with NPCs
+## Interacting with NPCs
 
-- Triggered when the player speaks to an NPC (`say` action)
+NPC interactions can be triggered in the following cases:
 
-#### Respond using LLMs
+**_Deterministic actions_**
+
+- Player `greet` NPC (eg. "greet blacksmith")
+- Player `trade` with NPC (eg. "trade 100lum for potionofhealth with blacksmith")
+- Player `give` item to NPC (eg. "give item_questitem_1 to innkeeper")
+
+In these cases, the NPCs can be programed to respond deterministically using a `npcRespondToAction` hook.
+
+Qn: Where should the hook be?
+
+M1: Intercept at the messaging events level (eg. `CTAEvent`, `FeedEvent`)
+
+- This treats each NPC as if an actual human player and easier to migrate in the future
+- Some of these actions result in `cta` events which require the NPC to accept
+
+**_Indeterministic actions_**
+
+- Player actions such as `say` (eg. "say blacksmith what is the season now?")
+
+#### Respond To Deterministic Using Dialogues
+
+See:
+
+- `server/crossover/npc.ts` (NPC Logic)
+- `server/crossover/settings/npc.ts` (Dialogues and NPCs)
+
+**_Features_**
+
+- General dialogues should not be tied to a specific NPC
+- Use variable substitutable templates so they can be reused across multiple similar NPCs
+- Dialogues should be stored in redis so they can be searched quickly on different fields such as `factions`, `alignment`, `race`, `archetype`, `npc`
+- Specific dialogues such as `grt` (greet), `ign` (ignore),
+- Support MUST, OR, EXCLUDE conditions
+- Different dialogue types such as `greetings`, `ignoring`, `agro`, `topics`
+
+  ```ts
+  type Dialogues = "grt" | "ign" | "agro";
+
+  interface Dialogue {
+    msg: string; // message template (variable substituted before indexing)
+    dia: Dialogues; // dialogue type
+    tgt: string; // target to send the message to (empty = all)
+    // Tags (variable substituted before indexing)
+    mst?: string[]; // must contain all of these tags
+    or?: string[]; // must match any these tags
+    exc?: string[]; // must not contain these tags
+  }
+
+  const greetings: Dialogue[] = [
+    // general
+    {
+      dia: "grt",
+      msg: "${self.name} greets you, 'Well met ${player.name}.'.",
+      tgt: "${player.player}",
+    },
+    // innkeep
+    {
+      dia: "grt",
+      mst: ["npc=innkeep"],
+      msg: "${self.name} greets you, 'Well met ${player.name}, you may *rest* here'.",
+      tgt: "${player.player}",
+    },
+  ];
+  ```
+
+#### Respond To Indeterministic Actions Using LLMs
+
+Might not always have enough processing power to use LLM. In such cases
+
+- The NPC might respond with `A light fades from his/her eyes as she/he ignores you.`
+- The NPC might respond with a predefined sorry message `The blacksmith is not interested in small talk and beckons you to *browse* his goods`
+- The NPC might switch back to its default `greet` dialogue
 
 Include the following in the prompt
 
@@ -38,111 +109,12 @@ Include world information related to the question in prompt
 - Requires an agent to call a tool to search for world information (library) to retrieve the relevant information
 - Need to vectorize the world library to make it searchable
 
-#### Respond using Dialogues
-
-Might not always have enough processing power to use LLM. In such cases respond with `A light fades from his/her eyes as she/he ignores you.`
-
-When not using LLMs the NPC switches back to its `default` behaviour for instance if he was a blacksmith, he should continue his blacksmith dialogues.
-
-- General dialogues should not be tied to an NPC but instead use templates so they can be reused across multiple similar NPCs
-- Dialogues should be stored in redis so they can be searched quickly on different fields such as `factions`, `alignment`, `race`, `archetype`
-- Specific dialogues such as `grt` (greet), `ign` (ignore),
-- Allow AND, OR conditions using redis search syntax (raw query string)
-- Allow variable substitution into the redis search query string
-
-  ```ts
-  const dialogues = {
-    innKeeper: {
-      grt: [
-        {
-          cond: "${player.race}"
-          msg: "${name} greets you, 'Well met kin, you may *rest* here ${timeOfDay}' ",
-        },
-      ],
-      ign: [
-        {
-          msg: "${name} ignores you, 'Get lost, we don't deal with your types around here!'.",
-        },
-      ],
-    },
-  };
-  ```
-
-Default NPCs dialogue behaviours Pseudocode
-
-TODO: Design an NPC default dialogue system
-
-- Greet: Introduce NPC, NPC should tell player what he can ask (merchant: buy/sell, teacher: learn, historian: ask about topics, in this case NPC should provide a list of things to ask about)
-
-```ts
-merchantDialogue = {
-  greet:
-    "Hello there, traveler! ${name} at your service! Would you be interested in some most delicious food? Feel free to *browse ${name}*",
-  topics: {
-    food: "You need food to *rest*. After every rest ....",
-  },
-};
-```
-
-```python
-class NPC:
-
-    def __init__(self, name):
-        self.name = name
-        self.dialogue = {
-            'greet': "Hello there, traveler!",
-            'quest': "I need help gathering herbs from the forest.",
-            'goodbye': "Farewell, and safe travels."
-        }
-        self.state = {
-            'quest_completed': False
-        }
-
-    def handle_dialogue(player_input, npc):
-        # Assume the player input is something like "ask NPC about quest"
-        keyword = extract_keyword(player_input)
-
-        if keyword in npc.dialogue:
-            return npc.dialogue[keyword]
-        else:
-            return "The NPC doesn't understand what you're asking."
-
-def complete_quest(player, npc):
-    npc.state['quest_completed'] = True
-    npc.dialogue['quest'] = "Thank you for gathering the herbs!"
-
-def get_npc_dialogue(npc, player):
-    if player.has_item('herb') and not npc.state['quest_completed']:
-        return "Thank you for bringing the herb! Here is your reward."
-    elif npc.state['quest_completed']:
-        return "You’ve already completed my quest. Thank you!"
-    else:
-        return npc.dialogue['quest']
-```
-
-```json
-{
-  "npc_name": "Old Herbalist",
-  "dialogue": {
-    "greet": "Hello, traveler.",
-    "quest": "I need help gathering herbs from the forest.",
-    "goodbye": "Farewell, and safe travels."
-  },
-  "state": {
-    "quest_completed": false
-  }
-}
-```
-
 ## Creating NPCs
 
-- Use `Keypair.generate()` with the dungeon master private key to generate the NPC
-- There can only be one public key for a private key - How do we manage multiple NPCs with one dungeon master private key?
-  1. Store generate new keys for each npc and store the private key in MINIO **[Use this method]**
-     - This way it is identical to an actual user, if in the future it needs to be autonomous
-     - It can sign its own transactions via an agent with the private key
-  2. Don't use the public key as player id, instead use `npc_${npc}_{instance}`
-     - We need to create a new system around npcs
+- Use `Keypair.generate()` to generate a unique keypair for the NPC
+- Store generate new keys for each npc and store the private key in MINIO
+  - This way it is identical to an actual user, if in the future it needs to be autonomous
+  - It can sign its own transactions via an agent with the private key
 - Use an `npc` field to differentiate players from npcs in `PlayerEntity` (redis) & `PlayerMetadata` (MINIO)
 
 #### NPC Templates and Procedural Generation
@@ -155,18 +127,24 @@ def get_npc_dialogue(npc, player):
 
 ```ts
 const npcs = {
-  innKeeper: {
-    npc: "innKeeper",
-    name: "",
-    description: "",
+  innkeep: {
+    npc: "innkeep",
+    nameTemplate: "Inn Keeper",
+    descriptionTemplate:
+      "The innkeeper tends to the inn with efficiency, offering food, drink, and a place to rest for travelers. Always attentive to guests, they know much about the town and its visitors",
+    asset: {
+      path: "",
+    },
   },
 };
 ```
 
 ## Tasks & TODOs
 
-- [ ] Create npc template
-- [ ] Create endpoint to spawn npc
+- [x] Create npc template
+- [x] Create endpoint to spawn npc
+- [ ] Create hook endpoint to respond to player actions at message level
+  - Hook into `publishFeedEvent` and `publishCTAEvent`
 - [ ] Implement `learn` action with NPCs
 - [ ] Come up with a general prompt that takes the information above and form a reply or perform an action
 - [ ] Implement `browse` action with NPCs (returns a list of items)

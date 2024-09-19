@@ -11,11 +11,8 @@ import {
     useItem,
 } from "$lib/server/crossover/actions/item";
 import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
-import {
-    fetchEntity,
-    initializeClients,
-    saveEntity,
-} from "$lib/server/crossover/redis";
+import { initializeClients } from "$lib/server/crossover/redis";
+import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
 import { itemVariableValue } from "$lib/server/crossover/utils";
 import { sleep, substituteValues } from "$lib/utils";
 import { cloneDeep } from "lodash";

@@ -13,11 +13,8 @@ import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { Direction } from "$lib/crossover/world/types";
 import { move } from "$lib/server/crossover/actions";
 import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
-import {
-    fetchEntity,
-    initializeClients,
-    saveEntity,
-} from "$lib/server/crossover/redis";
+import { initializeClients } from "$lib/server/crossover/redis";
+import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
 import { sleep } from "$lib/utils";
 import { cloneDeep } from "lodash";
 import { beforeEach, describe, expect, test } from "vitest";

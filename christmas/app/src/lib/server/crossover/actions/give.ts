@@ -2,14 +2,15 @@ import { type ItemEntity, type PlayerEntity } from "$lib/crossover/types";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { generatePin } from "$lib/utils";
 import { say } from ".";
+import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../events";
 import { isEntityHuman } from "../npc";
 import {
     createP2PTransaction,
     type CTA,
     type P2PGiveTransaction,
 } from "../player";
-import { fetchEntity, itemRepository } from "../redis";
-import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../utils";
+import { itemRepository } from "../redis";
+import { fetchEntity } from "../redis/utils";
 
 export { createGiveCTA, executeGiveCTA, give };
 

@@ -18,13 +18,10 @@ import {
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
 import {
-    dungeonEntrancesQuerySet,
-    fetchEntity,
     initializeClients,
     playerRepository,
-    saveEntity,
-    worldsInGeohashQuerySet,
 } from "$lib/server/crossover/redis";
+import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
 import { PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
 import { performance } from "perf_hooks";
@@ -70,6 +67,7 @@ import {
     spawnMonsters,
     spawnWorld,
 } from "./dungeonMaster";
+import { publishCTAEvent, publishFeedEvent } from "./events";
 import { isEntityHuman } from "./npc";
 import {
     verifyP2PTransaction,
@@ -77,13 +75,16 @@ import {
     type P2PLearnTransaction,
     type P2PTradeTransaction,
 } from "./player";
-import { loggedInPlayersQuerySet } from "./redis";
+
+import {
+    dungeonEntrancesQuerySet,
+    loggedInPlayersQuerySet,
+    worldsInGeohashQuerySet,
+} from "./redis/queries";
 import {
     entityIsBusy,
     getPlayerState,
     getUserMetadata,
-    publishCTAEvent,
-    publishFeedEvent,
     savePlayerState,
 } from "./utils";
 

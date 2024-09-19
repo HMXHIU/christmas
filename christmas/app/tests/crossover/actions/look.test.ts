@@ -1,6 +1,7 @@
 import { crossoverCmdLook } from "$lib/crossover/client";
 import { minifiedEntity } from "$lib/crossover/utils";
-import { initializeClients, saveEntity } from "$lib/server/crossover/redis";
+import { initializeClients } from "$lib/server/crossover/redis";
+import { saveEntity } from "$lib/server/crossover/redis/utils";
 import { omit } from "lodash-es";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import {

@@ -24,8 +24,8 @@ import {
     itemRepository,
     monsterRepository,
     worldRepository,
-    worldsInGeohashQuerySet,
 } from "$lib/server/crossover/redis";
+import { worldsInGeohashQuerySet } from "$lib/server/crossover/redis/queries";
 import { sleep } from "$lib/utils";
 import { beforeAll, describe, expect, test } from "vitest";
 import { worldRecord } from "../../src/store";

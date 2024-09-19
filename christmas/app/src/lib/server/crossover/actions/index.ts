@@ -18,26 +18,21 @@ import {
 } from "$lib/crossover/world/types";
 import { cloneDeep } from "lodash-es";
 import { setEntityBusy } from "..";
-import { npcRespondToAction } from "../npc";
+import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../events";
 import {
     verifyP2PTransaction,
     type P2PLearnTransaction,
     type P2PTradeTransaction,
 } from "../player";
+import { playerRepository } from "../redis";
 import {
-    fetchEntity,
     getNearbyEntities,
     getNearbyPlayerIds,
     inventoryQuerySet,
-    playerRepository,
     playersInGeohashQuerySet,
-    saveEntity,
-} from "../redis";
-import {
-    isDirectionTraversable,
-    publishAffectedEntitiesToPlayers,
-    publishFeedEvent,
-} from "../utils";
+} from "../redis/queries";
+import { fetchEntity, saveEntity } from "../redis/utils";
+import { isDirectionTraversable } from "../utils";
 import { executeLearnCTA } from "./learn";
 import { executeTradeCTA } from "./trade";
 
@@ -75,16 +70,8 @@ async function say(
     if (options?.target) {
         const targetEntity = await fetchEntity(options.target);
         if (targetEntity && "player" in targetEntity) {
-            // Say to npc
-            if (targetEntity.npc) {
-                npcRespondToAction({
-                    entity: player,
-                    target: targetEntity as PlayerEntity,
-                    action: "say",
-                });
-            }
             // Say to human player (in range)
-            else if (
+            if (
                 player.locI === targetEntity.locI &&
                 player.locT === targetEntity.locT &&
                 geohashesNearby(player.loc[0].slice(0, -1), true).find((g) =>

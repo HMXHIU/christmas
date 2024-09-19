@@ -10,24 +10,21 @@ import {
 import { type GeohashLocationType } from "$lib/crossover/world/types";
 import { generatePin, sleep, substituteVariables } from "$lib/utils";
 import { say } from ".";
+import {
+    publishActionEvent,
+    publishAffectedEntitiesToPlayers,
+    publishFeedEvent,
+} from "../events";
 import { isEntityHuman } from "../npc";
 import {
     createP2PTransaction,
     type CTA,
     type P2PLearnTransaction,
 } from "../player";
-import {
-    fetchEntity,
-    getNearbyPlayerIds,
-    itemRepository,
-    saveEntity,
-} from "../redis";
-import {
-    publishActionEvent,
-    publishAffectedEntitiesToPlayers,
-    publishFeedEvent,
-    savePlayerState,
-} from "../utils";
+import { itemRepository } from "../redis";
+import { getNearbyPlayerIds } from "../redis/queries";
+import { fetchEntity, saveEntity } from "../redis/utils";
+import { savePlayerState } from "../utils";
 
 export { createLearnCTA, executeLearnCTA, learn };
 

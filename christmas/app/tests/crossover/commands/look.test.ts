@@ -2,7 +2,8 @@ import { searchPossibleCommands } from "$lib/crossover/ir";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
-import { initializeClients, saveEntities } from "$lib/server/crossover/redis";
+import { initializeClients } from "$lib/server/crossover/redis";
+import { saveEntities } from "$lib/server/crossover/redis/utils";
 import { describe, expect, test } from "vitest";
 import {
     createGandalfSarumanSauron,

@@ -20,11 +20,8 @@ import {
     spawnItemAtGeohash,
     spawnMonster,
 } from "$lib/server/crossover/dungeonMaster";
-import {
-    fetchEntity,
-    initializeClients,
-    saveEntity,
-} from "$lib/server/crossover/redis";
+import { initializeClients } from "$lib/server/crossover/redis";
+import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
 import { sleep } from "$lib/utils";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import { getRandomRegion } from "../../utils";

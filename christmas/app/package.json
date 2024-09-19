@@ -40,6 +40,7 @@
     "axios": "^1.6.7",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.30.0",
     "eslint-plugin-svelte": "^2.35.1",
     "fetch-cookie": "^2.2.0",
     "happy-dom": "^13.3.8",

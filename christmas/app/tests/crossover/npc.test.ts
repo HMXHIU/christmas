@@ -1,5 +1,6 @@
 import { crossoverCmdSay } from "$lib/crossover/client";
-import { initializeClients, saveEntity } from "$lib/server/crossover/redis";
+import { initializeClients } from "$lib/server/crossover/redis";
+import { saveEntity } from "$lib/server/crossover/redis/utils";
 import { npcs } from "$lib/server/crossover/settings/npc";
 import { getUserMetadata } from "$lib/server/crossover/utils";
 import { beforeAll, expect, test } from "vitest";
