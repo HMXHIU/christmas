@@ -9,7 +9,10 @@ import {
 import { expandGeohashes, geohashesNearby } from "$lib/crossover/utils";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import type { GeohashLocationType } from "$lib/crossover/world/types";
+import type {
+    EquipmentSlot,
+    GeohashLocationType,
+} from "$lib/crossover/world/types";
 import { EquipmentSlots } from "$lib/crossover/world/types";
 import type { Search } from "redis-om";
 import {
@@ -264,11 +267,14 @@ function writsQuerySet(player: string): Search {
  * @param player - The name of the player.
  * @returns A Search object representing the query for player inventory items.
  */
-function equipmentQuerySet(player: string): Search {
+function equipmentQuerySet(
+    player: string,
+    equipmentSlots?: EquipmentSlot[],
+): Search {
     return itemRepository
         .search()
         .where("locT")
-        .containsOneOf(...EquipmentSlots)
+        .containsOneOf(...(equipmentSlots ?? EquipmentSlots))
         .where("loc")
         .contains(player);
 }

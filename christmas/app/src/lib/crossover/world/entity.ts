@@ -29,7 +29,7 @@ export {
     type Attributes,
 };
 
-type Attribute = "dex" | "str" | "con" | "fth" | "int";
+type Attribute = "dex" | "str" | "con" | "fth" | "int" | "cha";
 type Attributes = Record<Attribute, number>;
 
 function recoverAp(

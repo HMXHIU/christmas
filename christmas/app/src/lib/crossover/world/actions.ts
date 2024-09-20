@@ -20,6 +20,7 @@ export {
 
 type Actions =
     | "look"
+    | "attack"
     | "say"
     | "move"
     | "equip"

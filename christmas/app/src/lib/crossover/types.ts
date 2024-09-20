@@ -10,15 +10,19 @@ import type {
     LocationType,
 } from "$lib/crossover/world/types";
 import { type Entity } from "redis-om";
+import type { DamageType } from "./world/abilities";
+import type { Attribute } from "./world/entity";
 
 export {
     type Dialogue,
     type DialogueEntity,
     type Dialogues,
+    type DieRoll,
     type EntityState,
     type EntityStats,
     type EntityType,
     type GameEntity,
+    type GameRedisEntities,
     type Item,
     type ItemEntity,
     type Monster,
@@ -30,8 +34,16 @@ export {
     type WorldEntity,
 };
 
+interface DieRoll {
+    count: number;
+    sides: number;
+    modifiers?: Attribute[];
+    damageTypes?: DamageType[];
+}
+
 type EntityType = "player" | "monster" | "item";
 type GameEntity = Monster | Player | Item;
+type GameRedisEntities = MonsterEntity | PlayerEntity | ItemEntity;
 
 interface EntityStats {
     hp: number;

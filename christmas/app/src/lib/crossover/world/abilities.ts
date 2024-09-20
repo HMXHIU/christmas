@@ -1,4 +1,10 @@
-import type { EntityType, Item, Monster, Player } from "$lib/crossover/types";
+import type {
+    DieRoll,
+    EntityType,
+    Item,
+    Monster,
+    Player,
+} from "$lib/crossover/types";
 import { substituteVariables } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import type { GameActionEntities, TokenPositions } from "../ir";
@@ -33,6 +39,8 @@ type DamageType =
     | "radiant"
     | "healing";
 type Debuff =
+    | "weakness"
+    | "crippled"
     | "paralyzed"
     | "blinded"
     | "wet"
@@ -49,13 +57,10 @@ type Debuff =
     | "diseased";
 type Buff = "haste" | "regeneration" | "shield" | "invisibility" | "berserk";
 
-// TODO: Should not be defined here
 type Abilities =
-    | "jab"
     | "bandage"
     | "disintegrate"
-    | "scratch"
-    | "swing"
+    | "bruise"
     | "doubleSlash"
     | "eyePoke"
     | "bite"
@@ -96,10 +101,7 @@ type Procedure = ["action" | "check", ProcedureEffect];
 interface ProcedureEffect {
     target: "self" | "target";
     ticks: number;
-    damage?: {
-        amount: number;
-        damageType: DamageType;
-    };
+    dieRoll?: DieRoll; // damage rolls, damage type, modifiers for attack rolls & saving throws (use the max of)
     debuffs?: {
         debuff: Debuff;
         op: "push" | "pop" | "contains" | "doesNotContain";
@@ -134,19 +136,6 @@ function patchEffectWithVariables({
     target: Player | Monster | Item;
 }): ProcedureEffect {
     const effectClone = cloneDeep(effect); // don't modify the template
-
-    // Damage
-    if (typeof effectClone.damage?.amount === "string") {
-        const value = substituteVariables(effectClone.damage.amount, {
-            self,
-            target,
-        });
-        // Check that value is a string else throw error
-        if (typeof value !== "string") {
-            throw new Error("Variable is not a string");
-        }
-        effectClone.damage.amount = parseInt(value);
-    }
 
     // States
     if (effectClone.states) {
@@ -202,7 +191,7 @@ function patchEffectWithVariables({
 
 function hasResourcesForAbility(
     self: Player | Monster,
-    ability: string,
+    ability: Abilities,
 ): { hasResources: boolean; message: string } {
     const { ap, mp, st, hp } = abilities[ability];
 
@@ -256,7 +245,7 @@ function resolveAbilityEntities({
 }: {
     queryTokens: string[];
     tokenPositions: TokenPositions;
-    ability: string;
+    ability: Abilities;
     self: Player | Monster;
     monsters: Monster[];
     players: Player[];

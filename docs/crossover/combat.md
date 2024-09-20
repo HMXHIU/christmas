@@ -32,7 +32,15 @@ Effects of hitting different body parts
 - A hit on the legs reduces mobility
 - A hit on the arm causes weakness
 
+## Equipment
+
+Equipment can add Armour Class (AC) and Damage Reduction (DR)
+
+- AC and DR should be precalculated and stored in `PlayerEntity` during `equip` and `unequip`
+
 ## Actions
+
+For actions there is a default `attack` command. Hook the main combat resolver into the `attack` command.
 
 **_attack_**
 
@@ -53,6 +61,10 @@ Abilites can be spells, physical attacks, buffs, debuffs
 
 - [ ] Hook the combat system into the perform effects of the ability
 - [ ] Each effect needs to have its own die rolls (attack, damage, body part)
+
+## Buffs and Debuffs
+
+When an entity gets a buff or debuff, make an entry in redis with the expiry time (it should be in turns). Every turn a process should read the DB and expire any buffs or debuffs and publish the event to the entities.
 
 ## Opportunity Attacks
 

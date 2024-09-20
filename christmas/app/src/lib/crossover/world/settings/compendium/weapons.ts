@@ -11,12 +11,17 @@ export let weapons: Record<string, Prop> = {
                 default: "wooden-club",
             },
         },
-        durability: 100,
-        charges: 0,
+        durability: 100, // reduces with normal attacks
+        charges: 5, // reduces when using utilities
         weight: 3,
         collider: false,
         equipmentSlot: ["rh", "lh"],
         defaultState: "default",
+        dieRoll: {
+            count: 1,
+            sides: 6,
+            modifiers: ["str"],
+        },
         states: {
             default: {
                 destructible: true,
@@ -27,16 +32,16 @@ export let weapons: Record<string, Prop> = {
         utilities: {
             swing: {
                 utility: "swing",
-                description: "Swing the club at a target.",
+                description: "Swing the club with all your strength.",
                 cost: {
-                    charges: 0,
-                    durability: 1,
+                    charges: 1,
+                    durability: 0,
                 },
                 state: {
                     start: "default",
                     end: "default",
                 },
-                ability: abilities.swing.ability,
+                ability: abilities.bruise.ability,
                 requireEquipped: true,
             },
         },

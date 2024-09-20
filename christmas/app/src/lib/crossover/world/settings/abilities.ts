@@ -1,38 +1,12 @@
 import { TICKS_PER_TURN } from ".";
-import type { Ability } from "../abilities";
+import type { Abilities, Ability } from "../abilities";
 
 export { abilities };
 
 /**
  * `abilities` is a collection of all the `Ability` available in the game.
  */
-const abilities: Record<string, Ability> = {
-    jab: {
-        ability: "jab",
-        type: "offensive",
-        description: "Jab at your opponent.",
-        procedures: [
-            [
-                "action",
-                {
-                    target: "target",
-                    damage: { amount: 1, damageType: "blunt" },
-                    ticks: TICKS_PER_TURN / 2,
-                },
-            ],
-        ],
-        ap: 1,
-        st: 1,
-        hp: 0,
-        mp: 0,
-        range: 1,
-        aoe: 0,
-        predicate: {
-            self: ["player", "monster"],
-            target: ["player", "monster"],
-            targetSelfAllowed: false,
-        },
-    },
+const abilities: Record<Abilities, Ability> = {
     bandage: {
         ability: "bandage",
         type: "healing",
@@ -42,7 +16,12 @@ const abilities: Record<string, Ability> = {
                 "action",
                 {
                     target: "target",
-                    damage: { amount: -5, damageType: "healing" },
+                    dieRoll: {
+                        count: 1,
+                        sides: -6, // negative damage = healing
+                        damageTypes: ["healing"],
+                        modifiers: ["con"],
+                    },
                     ticks: TICKS_PER_TURN,
                 },
             ],
@@ -68,7 +47,12 @@ const abilities: Record<string, Ability> = {
                 "action",
                 {
                     target: "target",
-                    damage: { amount: 100, damageType: "necrotic" },
+                    dieRoll: {
+                        count: 5,
+                        sides: 20,
+                        damageTypes: ["necrotic"],
+                        modifiers: ["cha"],
+                    },
                     ticks: TICKS_PER_TURN / 2,
                 },
             ],
@@ -85,47 +69,26 @@ const abilities: Record<string, Ability> = {
             targetSelfAllowed: false,
         },
     },
-    scratch: {
-        ability: "scratch",
+    bruise: {
+        ability: "bruise",
         type: "offensive",
-        description: "Scratches the target.",
+        description: "A blunt strike.",
         procedures: [
             [
                 "action",
                 {
                     target: "target",
-                    damage: { amount: 1, damageType: "slashing" },
-                    ticks: TICKS_PER_TURN / 2,
+                    dieRoll: {
+                        count: 2,
+                        sides: 8,
+                        damageTypes: ["blunt"],
+                        modifiers: ["str"],
+                    },
+                    ticks: 1,
                 },
             ],
         ],
-        ap: 1,
-        st: 1,
-        hp: 0,
-        mp: 0,
-        range: 1,
-        aoe: 0,
-        predicate: {
-            self: ["player", "monster"],
-            target: ["player", "monster"],
-            targetSelfAllowed: false,
-        },
-    },
-    swing: {
-        ability: "swing",
-        type: "offensive",
-        description: "Swing at the player.",
-        procedures: [
-            [
-                "action",
-                {
-                    target: "target",
-                    damage: { amount: 1, damageType: "blunt" },
-                    ticks: TICKS_PER_TURN / 2,
-                },
-            ],
-        ],
-        ap: 1,
+        ap: 2,
         st: 1,
         hp: 0,
         mp: 0,
@@ -146,16 +109,26 @@ const abilities: Record<string, Ability> = {
                 "action",
                 {
                     target: "target",
-                    damage: { amount: 1, damageType: "slashing" },
-                    ticks: TICKS_PER_TURN / 3,
+                    dieRoll: {
+                        count: 1,
+                        sides: 8,
+                        damageTypes: ["slashing"],
+                        modifiers: ["str", "dex"],
+                    },
+                    ticks: 1,
                 },
             ],
             [
                 "action",
                 {
                     target: "target",
-                    damage: { amount: 1, damageType: "slashing" },
-                    ticks: TICKS_PER_TURN / 3,
+                    dieRoll: {
+                        count: 1,
+                        sides: 8,
+                        damageTypes: ["slashing"],
+                        modifiers: ["str", "dex"],
+                    },
+                    ticks: 1,
                 },
             ],
         ],
@@ -197,7 +170,12 @@ const abilities: Record<string, Ability> = {
                 "action",
                 {
                     target: "target",
-                    damage: { amount: 1, damageType: "piercing" },
+                    dieRoll: {
+                        count: 1,
+                        sides: 6,
+                        damageTypes: ["piercing"],
+                        modifiers: ["dex"],
+                    },
                     ticks: TICKS_PER_TURN / 2,
                 },
             ],
@@ -224,7 +202,12 @@ const abilities: Record<string, Ability> = {
                 "action",
                 {
                     target: "target",
-                    damage: { amount: 1, damageType: "piercing" },
+                    dieRoll: {
+                        count: 1,
+                        sides: 6,
+                        damageTypes: ["piercing"],
+                        modifiers: ["dex", "str"],
+                    },
                     ticks: TICKS_PER_TURN / 2,
                 },
             ],
@@ -250,7 +233,12 @@ const abilities: Record<string, Ability> = {
                 "action",
                 {
                     target: "target",
-                    damage: { amount: 3, damageType: "fire" },
+                    dieRoll: {
+                        count: 3,
+                        sides: 6,
+                        damageTypes: ["fire"],
+                        modifiers: ["int", "cha", "fth"],
+                    },
                     ticks: TICKS_PER_TURN / 2,
                 },
             ],

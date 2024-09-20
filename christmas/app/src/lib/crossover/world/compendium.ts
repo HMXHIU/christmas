@@ -1,4 +1,10 @@
-import type { EntityType, Item, Monster, Player } from "$lib/crossover/types";
+import type {
+    DieRoll,
+    EntityType,
+    Item,
+    Monster,
+    Player,
+} from "$lib/crossover/types";
 import { substituteVariables } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import { getEntityId } from "../utils";
@@ -45,6 +51,7 @@ interface Prop {
     variables: PropVariables; // configurable variables to alter prop behavior & descriptions
     weight: number; // -1 means it cannot be taken
     collider: boolean; // cannot have more than 1 collidable item in the same location, cannot walk through collidable items
+    dieRoll?: DieRoll; // weapon damage + modifier used for both attack rolls & saving throws (use the max of)
     equipmentSlot?: EquipmentSlot[]; // can be used to tell if item is an equipment
     equipmentAssets?: Record<string, EquipmentAsset>; // maps bone to EquipmentAsset
     // Spawn a world (lazily) related to this instance (eg. tavern, interior)
