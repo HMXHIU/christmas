@@ -880,13 +880,13 @@ export class AnchorClient {
         const programStatePda = this.getProgramStatePda()[0];
 
         if (name.length > STORE_NAME_SIZE - STRING_PREFIX_SIZE) {
-            throw Error(
+            throw new Error(
                 `Store name exceeds maximum length of ${STORE_NAME_SIZE}`,
             );
         }
 
         if (uri.length > URI_SIZE - STRING_PREFIX_SIZE) {
-            throw Error(`Uri exceeds maximum length of ${URI_SIZE}`);
+            throw new Error(`Uri exceeds maximum length of ${URI_SIZE}`);
         }
 
         let signer = wallet || this.wallet.publicKey;
@@ -926,13 +926,13 @@ export class AnchorClient {
         storeId?: BN;
     }): Promise<TransactionResult> {
         if (name.length > STORE_NAME_SIZE - STRING_PREFIX_SIZE) {
-            throw Error(
+            throw new Error(
                 `Store name exceeds maximum length of ${STORE_NAME_SIZE}`,
             );
         }
 
         if (uri.length > URI_SIZE - STRING_PREFIX_SIZE) {
-            throw Error(`Uri exceeds maximum length of ${URI_SIZE}`);
+            throw new Error(`Uri exceeds maximum length of ${URI_SIZE}`);
         }
 
         return await this.executeTransaction({

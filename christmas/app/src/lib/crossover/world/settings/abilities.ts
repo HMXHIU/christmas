@@ -19,9 +19,10 @@ const abilities: Record<Abilities, Ability> = {
                     dieRoll: {
                         count: 1,
                         sides: -6, // negative damage = healing
-                        damageTypes: ["healing"],
-                        modifiers: ["con"],
+                        damageType: "healing",
+                        modifiers: ["con"], // used for damage roll
                     },
+                    modifiers: ["con"], // used for attack roll
                     ticks: TICKS_PER_TURN,
                 },
             ],
@@ -50,9 +51,10 @@ const abilities: Record<Abilities, Ability> = {
                     dieRoll: {
                         count: 5,
                         sides: 20,
-                        damageTypes: ["necrotic"],
+                        damageType: "necrotic",
                         modifiers: ["cha"],
                     },
+                    modifiers: ["cha"],
                     ticks: TICKS_PER_TURN / 2,
                 },
             ],
@@ -81,9 +83,10 @@ const abilities: Record<Abilities, Ability> = {
                     dieRoll: {
                         count: 2,
                         sides: 8,
-                        damageTypes: ["blunt"],
+                        damageType: "blunt",
                         modifiers: ["str"],
                     },
+                    modifiers: ["str"],
                     ticks: 1,
                 },
             ],
@@ -112,9 +115,10 @@ const abilities: Record<Abilities, Ability> = {
                     dieRoll: {
                         count: 1,
                         sides: 8,
-                        damageTypes: ["slashing"],
+                        damageType: "slashing",
                         modifiers: ["str", "dex"],
                     },
+                    modifiers: ["str", "dex"],
                     ticks: 1,
                 },
             ],
@@ -125,9 +129,10 @@ const abilities: Record<Abilities, Ability> = {
                     dieRoll: {
                         count: 1,
                         sides: 8,
-                        damageTypes: ["slashing"],
+                        damageType: "slashing",
                         modifiers: ["str", "dex"],
                     },
+                    modifiers: ["str", "dex"],
                     ticks: 1,
                 },
             ],
@@ -154,7 +159,11 @@ const abilities: Record<Abilities, Ability> = {
                 "action",
                 {
                     target: "target",
-                    debuffs: { debuff: "blinded", op: "push" },
+                    debuffs: {
+                        debuff: "blinded",
+                        op: "push",
+                    },
+                    modifiers: ["dex"],
                     ticks: TICKS_PER_TURN / 2,
                 },
             ],
@@ -173,9 +182,10 @@ const abilities: Record<Abilities, Ability> = {
                     dieRoll: {
                         count: 1,
                         sides: 6,
-                        damageTypes: ["piercing"],
+                        damageType: "piercing",
                         modifiers: ["dex"],
                     },
+                    modifiers: ["dex"],
                     ticks: TICKS_PER_TURN / 2,
                 },
             ],
@@ -205,9 +215,10 @@ const abilities: Record<Abilities, Ability> = {
                     dieRoll: {
                         count: 1,
                         sides: 6,
-                        damageTypes: ["piercing"],
+                        damageType: "piercing",
                         modifiers: ["dex", "str"],
                     },
+                    modifiers: ["dex", "str"],
                     ticks: TICKS_PER_TURN / 2,
                 },
             ],
@@ -236,9 +247,10 @@ const abilities: Record<Abilities, Ability> = {
                     dieRoll: {
                         count: 3,
                         sides: 6,
-                        damageTypes: ["fire"],
+                        damageType: "fire",
                         modifiers: ["int", "cha", "fth"],
                     },
+                    modifiers: ["int", "cha", "fth"],
                     ticks: TICKS_PER_TURN / 2,
                 },
             ],
@@ -246,7 +258,10 @@ const abilities: Record<Abilities, Ability> = {
                 "check",
                 {
                     target: "target",
-                    debuffs: { debuff: "wet", op: "doesNotContain" },
+                    debuffs: {
+                        debuff: "wet",
+                        op: "doesNotContain",
+                    },
                     ticks: 0,
                 },
             ],
@@ -254,7 +269,11 @@ const abilities: Record<Abilities, Ability> = {
                 "action",
                 {
                     target: "target",
-                    debuffs: { debuff: "burning", op: "push" },
+                    debuffs: {
+                        debuff: "burning",
+                        op: "push",
+                    },
+                    modifiers: ["dex"],
                     ticks: 0,
                 },
             ],
@@ -281,6 +300,7 @@ const abilities: Record<Abilities, Ability> = {
                 {
                     target: "target",
                     debuffs: { debuff: "paralyzed", op: "push" },
+                    modifiers: ["int"],
                     ticks: TICKS_PER_TURN / 2,
                 },
             ],
@@ -307,6 +327,7 @@ const abilities: Record<Abilities, Ability> = {
                 {
                     target: "target",
                     debuffs: { debuff: "blinded", op: "push" },
+                    modifiers: ["con"],
                     ticks: TICKS_PER_TURN / 2,
                 },
             ],
@@ -359,7 +380,7 @@ const abilities: Record<Abilities, Ability> = {
         predicate: {
             self: ["player", "monster"],
             target: ["player", "monster", "item"],
-            targetSelfAllowed: true,
+            targetSelfAllowed: false,
         },
     },
     hpSwap: {
@@ -377,7 +398,8 @@ const abilities: Record<Abilities, Ability> = {
                             op: "change",
                         },
                     },
-                    ticks: TICKS_PER_TURN,
+                    modifiers: ["fth"],
+                    ticks: 0,
                 },
             ],
             [
@@ -390,6 +412,7 @@ const abilities: Record<Abilities, Ability> = {
                             op: "change",
                         },
                     },
+                    modifiers: ["fth"],
                     ticks: TICKS_PER_TURN,
                 },
             ],

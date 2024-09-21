@@ -14,7 +14,19 @@ export {
     publishAffectedEntitiesToPlayers,
     publishCTAEvent,
     publishFeedEvent,
+    publishFeedEventToPlayers,
 };
+
+async function publishFeedEventToPlayers(
+    players: string[], // will only publish to player entities
+    event: Omit<FeedEvent, "event">,
+) {
+    for (const p of players) {
+        if (!p.startsWith("item") && !p.startsWith("monster")) {
+            await publishFeedEvent(p, event);
+        }
+    }
+}
 
 async function publishFeedEvent(
     player: string,
@@ -84,12 +96,16 @@ async function publishAffectedEntitiesToPlayers(
         op,
     } as UpdateEntitiesEvent);
 
+    // Publish to players specified in `publishTo`
     if (options?.publishTo != null) {
         for (const p of uniq(options.publishTo)) {
-            await redisClient.publish(p, event);
+            if (!p.startsWith("item") && !p.startsWith("monster")) {
+                await redisClient.publish(p, event);
+            }
         }
-    } else {
-        // Publish effects to all players
+    }
+    // Publish effects to all players in entities
+    else {
         for (const p of effectedPlayers) {
             await redisClient.publish((p as Player).player, event);
         }

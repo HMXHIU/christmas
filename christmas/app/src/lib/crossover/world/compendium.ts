@@ -12,6 +12,7 @@ import type { Actions } from "./actions";
 import { compendium } from "./settings/compendium";
 import {
     EquipmentSlots,
+    WeaponSlots,
     type AssetMetadata,
     type EquipmentSlot,
     type GeohashLocationType,
@@ -19,6 +20,7 @@ import {
 
 export {
     isItemEquipped,
+    isWeaponEquipped,
     itemAttibutes,
     itemName,
     type EquipmentAsset,
@@ -148,6 +150,16 @@ function itemVariables(item: Item): ItemVariables {
 function isItemEquipped(item: Item, entity: Player | Monster | Item): boolean {
     return (
         EquipmentSlots.includes(item.locT as EquipmentSlot) &&
+        item.loc[0] === getEntityId(entity)[0]
+    );
+}
+
+function isWeaponEquipped(
+    item: Item,
+    entity: Player | Monster | Item,
+): boolean {
+    return (
+        WeaponSlots.includes(item.locT as EquipmentSlot) &&
         item.loc[0] === getEntityId(entity)[0]
     );
 }

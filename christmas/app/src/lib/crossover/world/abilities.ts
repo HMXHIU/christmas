@@ -8,6 +8,7 @@ import type {
 import { substituteVariables } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import type { GameActionEntities, TokenPositions } from "../ir";
+import type { Attribute } from "./entity";
 import { abilities } from "./settings/abilities";
 
 export {
@@ -28,6 +29,7 @@ export {
 
 type AbilityType = "offensive" | "defensive" | "healing" | "neutral"; // to allow AI to choose abilities based on the situation
 type DamageType =
+    | "normal"
     | "slashing"
     | "blunt"
     | "piercing"
@@ -101,7 +103,8 @@ type Procedure = ["action" | "check", ProcedureEffect];
 interface ProcedureEffect {
     target: "self" | "target";
     ticks: number;
-    dieRoll?: DieRoll; // damage rolls, damage type, modifiers for attack rolls & saving throws (use the max of)
+    dieRoll?: DieRoll; // damage rolls, damage type, modifier used for damage roll
+    modifiers?: Attribute[]; // modifier used for attack rolls & saving throws
     debuffs?: {
         debuff: Debuff;
         op: "push" | "pop" | "contains" | "doesNotContain";

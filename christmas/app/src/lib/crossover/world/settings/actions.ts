@@ -1,3 +1,4 @@
+import { TICKS_PER_TURN } from ".";
 import type { Action, Actions } from "../actions";
 
 export { actions, playerActions };
@@ -8,6 +9,34 @@ const tradingNotes = `Notes:
 - For including multiple items and currencies join then using a ',' WITHOUT space (eg. woodenclub_2,50umb)`;
 
 const actions: Record<Actions, Action> = {
+    attack: {
+        action: "attack",
+        description: `Attack target with weapon equipped.
+
+Command: attack [target]
+
+Examples:
+    **attack** saruman`,
+        predicate: {
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                target: {
+                    position: 1,
+                    entityTypes: ["player", "monster"],
+                    optional: false,
+                },
+            },
+        },
+        ticks: Math.floor(TICKS_PER_TURN / 2),
+        icon: {
+            path: "actions/actions",
+            icon: "night-sleep",
+        },
+        range: 1, // TODO: What about range attacks?
+    },
     look: {
         action: "look",
         description: "Look at the surroundings.",
@@ -507,6 +536,7 @@ Examples:
 const playerActions = [
     actions.say,
     actions.look,
+    actions.attack,
     actions.move,
     actions.take,
     actions.drop,

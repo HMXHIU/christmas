@@ -1,4 +1,5 @@
 import {
+    type GameRedisEntities,
     type Item,
     type ItemEntity,
     type Monster,
@@ -6,14 +7,19 @@ import {
     type Player,
     type PlayerEntity,
 } from "$lib/crossover/types";
-import { expandGeohashes, geohashesNearby } from "$lib/crossover/utils";
+import {
+    expandGeohashes,
+    geohashesNearby,
+    getEntityId,
+} from "$lib/crossover/utils";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import type {
     EquipmentSlot,
     GeohashLocationType,
 } from "$lib/crossover/world/types";
-import { EquipmentSlots } from "$lib/crossover/world/types";
+import { EquipmentSlots, WeaponSlots } from "$lib/crossover/world/types";
+import { uniq } from "lodash-es";
 import type { Search } from "redis-om";
 import {
     itemRepository,
@@ -27,8 +33,10 @@ import { LOOK_PAGE_SIZE } from "..";
 export {
     dungeonEntrancesQuerySet,
     equipmentQuerySet,
+    equippedWeapons,
     getNearbyEntities,
     getNearbyPlayerIds,
+    getPlayerIdsNearbyEntities,
     hasCollidersInGeohash,
     inventoryQuerySet,
     isGeohashInWorld,
@@ -111,6 +119,24 @@ async function getNearbyPlayerIds(
         },
     );
     return players.map((p) => p.player);
+}
+
+async function getPlayerIdsNearbyEntities(
+    ...entities: GameRedisEntities[]
+): Promise<string[]> {
+    return uniq(
+        (
+            await Promise.all(
+                uniq(entities).map((entity) =>
+                    getNearbyPlayerIds(
+                        entity.loc[0],
+                        entity.locT as GeohashLocationType,
+                        entity.locI,
+                    ),
+                ),
+            )
+        ).flat(),
+    );
 }
 
 async function hasCollidersInGeohash(
@@ -291,4 +317,15 @@ function dungeonEntrancesQuerySet(
         .equal(locationType)
         .and("loc")
         .containOneOf(`${territory}*`);
+}
+
+async function equippedWeapons(
+    entity: PlayerEntity | MonsterEntity,
+): Promise<ItemEntity[]> {
+    let weapons = (await equipmentQuerySet(
+        getEntityId(entity)[0],
+        WeaponSlots,
+    ).returnAll()) as ItemEntity[];
+    weapons = weapons.filter((i) => compendium[i.prop].dieRoll); // remove shields etc ..
+    return weapons;
 }

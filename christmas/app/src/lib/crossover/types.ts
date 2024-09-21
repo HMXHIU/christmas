@@ -14,6 +14,7 @@ import type { DamageType } from "./world/abilities";
 import type { Attribute } from "./world/entity";
 
 export {
+    type BodyPart,
     type Dialogue,
     type DialogueEntity,
     type Dialogues,
@@ -34,11 +35,13 @@ export {
     type WorldEntity,
 };
 
+type BodyPart = "head" | "torso" | "legs" | "arms";
+
 interface DieRoll {
     count: number;
     sides: number;
     modifiers?: Attribute[];
-    damageTypes?: DamageType[];
+    damageType?: DamageType;
 }
 
 type EntityType = "player" | "monster" | "item";

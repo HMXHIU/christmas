@@ -7,6 +7,7 @@ export {
     EquipmentSlots,
     GeohashLocationSchema,
     geohashLocationTypes,
+    WeaponSlots,
     type AssetMetadata,
     type Barter,
     type BarterSerialized,
@@ -73,6 +74,8 @@ const EquipmentSlots: EquipmentSlot[] = [
     "r1",
     "r2",
 ];
+
+const WeaponSlots: EquipmentSlot[] = ["rh", "lh"];
 
 type NoiseType = "simplex" | "random";
 

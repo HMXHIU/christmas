@@ -28,11 +28,13 @@ export interface UpdateEntitiesEvent {
     items?: Item[];
 }
 
+type SpecialActions = "miss";
+
 export interface ActionEvent {
     event: "action";
     source: string;
     target?: string;
-    action?: Actions;
+    action?: Actions | SpecialActions;
     ability?: Abilities;
     utility?: string;
     prop?: string;

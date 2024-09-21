@@ -1,20 +1,14 @@
-import {
-    type ItemEntity,
-    type MonsterEntity,
-    type Player,
-    type PlayerEntity,
-} from "$lib/crossover/types";
+import { type MonsterEntity, type PlayerEntity } from "$lib/crossover/types";
 import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
+import type { Abilities } from "$lib/crossover/world/abilities";
 import { type Actions } from "$lib/crossover/world/actions";
-import { monsterLUReward } from "$lib/crossover/world/bestiary";
 import { entityStats } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { actions } from "$lib/crossover/world/settings/actions";
-import { sanctuaries, worldSeed } from "$lib/crossover/world/settings/world";
+import { worldSeed } from "$lib/crossover/world/settings/world";
 import { GeohashLocationSchema } from "$lib/crossover/world/types";
 import { z } from "zod";
-import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "./events";
 import { fetchEntity, saveEntity } from "./redis/utils";
 import { getPlayerState, getUserMetadata } from "./utils";
 
@@ -23,7 +17,6 @@ export {
     consumeResources,
     loadPlayerEntity,
     LOOK_PAGE_SIZE,
-    performActionConsequences,
     PlayerStateSchema,
     setEntityBusy,
     type ConnectedUser,
@@ -139,128 +132,6 @@ async function loadPlayerEntity(
     return player;
 }
 
-/**
- * Handles the event when a player kills a monster.
- *
- * @param player - The player entity.
- * @param monster - The monster entity.
- */
-async function handlePlayerKillsMonster(
-    player: PlayerEntity,
-    monster: MonsterEntity,
-    playersNearby: string[],
-) {
-    // Note: changes player, monster in place
-    // Give player rewards
-    const { lum, umb } = monsterLUReward(monster);
-    player.lum += lum;
-    player.umb += umb;
-    // Save & publish player
-    player = (await saveEntity(player)) as PlayerEntity;
-    publishAffectedEntitiesToPlayers([player]); // publish full entity to self
-}
-
-/**
- * Handles the scenario where a monster kills a player.
- *
- * @param monster - The monster entity.
- * @param player - The player entity.
- */
-async function handleMonsterKillsPlayer(
-    monster: MonsterEntity,
-    player: PlayerEntity,
-    playersNearby: string[],
-) {
-    // Get player's sanctuary
-    const sanctuary = sanctuaries.find((s) => s.region === player.rgn);
-    if (!sanctuary) {
-        throw new Error(`${player.player} has no sanctuary`);
-    }
-
-    player = {
-        ...player,
-        // Recover all stats
-        ...entityStats(player),
-        // Respawn at player's region
-        loc: [sanctuary.geohash],
-        // Lose half exp
-        umb: Math.floor(player.lum / 2),
-        lum: Math.floor(player.umb / 2),
-    };
-
-    publishFeedEvent(player.player, {
-        type: "message",
-        message: "You died.",
-    });
-    // Save & publish player
-    player = (await saveEntity(player)) as PlayerEntity;
-    publishAffectedEntitiesToPlayers([player], { publishTo: playersNearby });
-}
-
-async function performActionConsequences({
-    selfBefore,
-    targetBefore,
-    selfAfter,
-    targetAfter,
-    playersNearby,
-}: {
-    selfBefore: PlayerEntity | MonsterEntity;
-    targetBefore: PlayerEntity | MonsterEntity | ItemEntity;
-    selfAfter: PlayerEntity | MonsterEntity;
-    targetAfter: PlayerEntity | MonsterEntity | ItemEntity;
-    playersNearby: string[];
-}): Promise<{
-    self: PlayerEntity | MonsterEntity;
-    target: PlayerEntity | MonsterEntity | ItemEntity;
-}> {
-    // Player initiated action
-    if (selfBefore.player && selfBefore.player == selfAfter.player) {
-        // Target is a player
-        if (targetBefore.player && targetBefore.player == targetAfter.player) {
-        }
-        // Target is a monster
-        else if (
-            targetBefore.monster &&
-            targetBefore.monster == targetAfter.monster
-        ) {
-            if (
-                (targetBefore as MonsterEntity).hp > 0 &&
-                (targetAfter as MonsterEntity).hp <= 0
-            ) {
-                await handlePlayerKillsMonster(
-                    selfAfter as PlayerEntity,
-                    targetAfter as MonsterEntity,
-                    playersNearby,
-                );
-            }
-        }
-    }
-    // Monster initiated action
-    else if (selfBefore.monster && selfBefore.monster == selfAfter.monster) {
-        // Target is a player
-        if (targetBefore.player && targetBefore.player == targetAfter.player) {
-            if (
-                (targetBefore as Player).hp > 0 &&
-                (targetAfter as Player).hp <= 0
-            ) {
-                await handleMonsterKillsPlayer(
-                    selfAfter as MonsterEntity,
-                    targetAfter as PlayerEntity,
-                    playersNearby,
-                );
-            }
-        }
-        // Target is a monster
-        else if (
-            targetBefore.monster &&
-            targetBefore.monster == targetAfter.monster
-        ) {
-        }
-    }
-
-    return { self: selfAfter, target: targetAfter };
-}
-
 async function setEntityBusy({
     entity,
     action,
@@ -270,7 +141,7 @@ async function setEntityBusy({
 }: {
     entity: PlayerEntity | MonsterEntity;
     action?: Actions;
-    ability?: string;
+    ability?: Abilities;
     now?: number;
     duration?: number;
 }): Promise<PlayerEntity | MonsterEntity> {

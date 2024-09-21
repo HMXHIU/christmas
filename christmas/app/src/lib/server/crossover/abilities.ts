@@ -1,14 +1,9 @@
 import type {
-    Item,
     ItemEntity,
-    Monster,
     MonsterEntity,
-    Player,
     PlayerEntity,
 } from "$lib/crossover/types";
 import {
-    calculateLocation,
-    entityDimensions,
     entityInRange,
     getEntityId,
     minifiedEntity,
@@ -22,24 +17,13 @@ import {
 import { entityActualAp } from "$lib/crossover/world/entity";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
-import type { GeohashLocationType } from "$lib/crossover/world/types";
 import { sleep } from "$lib/utils";
-import { cloneDeep, uniq } from "lodash-es";
-import { consumeResources, performActionConsequences, setEntityBusy } from ".";
-import {
-    publishActionEvent,
-    publishAffectedEntitiesToPlayers,
-    publishFeedEvent,
-} from "./events";
-import { getNearbyPlayerIds } from "./redis/queries";
+import { consumeResources, setEntityBusy } from ".";
+import { resolveCombat } from "./combat";
+import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "./events";
 import { fetchEntity, saveEntity } from "./redis/utils";
 
-export {
-    consumeResources,
-    performAbility,
-    performEffectOnEntity,
-    setEntityBusy,
-};
+export { consumeResources, performAbility, setEntityBusy };
 
 async function performAbility({
     self,
@@ -48,9 +32,9 @@ async function performAbility({
     ignoreCost,
     now,
 }: {
-    self: PlayerEntity | MonsterEntity; // self can only be a `player` or `monster`
+    self: PlayerEntity | MonsterEntity;
     target: string;
-    ability: string;
+    ability: Abilities;
     ignoreCost?: boolean;
     now?: number;
 }) {
@@ -58,14 +42,14 @@ async function performAbility({
 
     // Get target
     let targetEntity = await fetchEntity(target);
-    if (targetEntity == null) {
-        if (self.player) {
+    if (!targetEntity) {
+        if ("player" in self) {
             publishFeedEvent(selfEntityId, {
                 type: "error",
                 message: `Target ${target} not found`,
             });
         }
-        return;
+        return; // do not proceed
     }
 
     const { procedures, ap, mp, st, hp, range, predicate } = abilities[ability];
@@ -90,7 +74,7 @@ async function performAbility({
     if (
         !predicate.targetSelfAllowed &&
         selfEntityId === target &&
-        self.player
+        "player" in self
     ) {
         publishFeedEvent(selfEntityId, {
             type: "error",
@@ -100,10 +84,10 @@ async function performAbility({
     }
 
     // Check if target is in range
-    if (!entityInRange(self, targetEntity, range)[0] && self.player) {
+    if (!entityInRange(self, targetEntity, range)[0] && "player" in self) {
         publishFeedEvent(selfEntityId, {
             type: "error",
-            message: `Target is out of range`,
+            message: `${targetEntity.name} is out of range`,
         });
         return;
     }
@@ -114,10 +98,6 @@ async function performAbility({
         ability,
         now,
     });
-
-    // Save old self and target
-    const selfBefore = cloneDeep(self);
-    const targetBefore = cloneDeep(targetEntity);
 
     // Expend ability costs (also caps stats to player level)
     if (!ignoreCost) {
@@ -132,33 +112,6 @@ async function performAbility({
         ]);
     }
 
-    // Get all players nearby self & target
-    let playerIdsNearby = [];
-    playerIdsNearby.push(
-        ...(await getNearbyPlayerIds(
-            self.loc[0],
-            self.locT as GeohashLocationType,
-            self.locI,
-        )),
-    );
-    if (selfEntityId !== target) {
-        playerIdsNearby.push(
-            ...(await getNearbyPlayerIds(
-                targetEntity.loc[0],
-                targetEntity.locT as GeohashLocationType,
-                targetEntity.locI,
-            )),
-        );
-    }
-    playerIdsNearby = uniq(playerIdsNearby);
-
-    // Publish action event to all players nearby
-    publishActionEvent(playerIdsNearby, {
-        ability: ability as Abilities,
-        source: selfEntityId,
-        target,
-    });
-
     // Perform procedures
     for (const [type, effect] of procedures) {
         // Get affected entity (self or target)
@@ -167,129 +120,28 @@ async function performAbility({
         // Action
         if (type === "action") {
             // Patch effect with variables
-            const actualEffect = patchEffectWithVariables({
+            const procedureEffect = patchEffectWithVariables({
                 effect,
                 self,
                 target: targetEntity,
             });
 
-            // Perform effect action (will block for the duration (ticks) of the effect)
-            entity = (await performEffectOnEntity({
-                entity,
-                effect: actualEffect,
-            })) as PlayerEntity | MonsterEntity | ItemEntity;
-            await saveEntity(entity);
+            // Sleep for the duration of the effect
+            await sleep(MS_PER_TICK * procedureEffect.ticks);
 
-            // Update self or target
-            if (effect.target === "self") {
-                self = entity as PlayerEntity | MonsterEntity;
-            } else {
-                targetEntity = entity as
-                    | PlayerEntity
-                    | MonsterEntity
-                    | ItemEntity;
-            }
-
-            // Publish effect & effected entities to relevant players (include players nearby)
-            publishAffectedEntitiesToPlayers(
-                [self, targetEntity].map((e) =>
-                    minifiedEntity(e, {
-                        stats: true,
-                        timers: true,
-                        location: true,
-                    }),
-                ),
-                {
-                    publishTo: playerIdsNearby,
+            // Resolve comabt
+            await resolveCombat(self, entity, {
+                ability: {
+                    ability,
+                    procedureEffect,
                 },
-            );
+            });
         }
         // Check
         else if (type === "check") {
             if (!performEffectCheck({ entity, effect })) break;
         }
     }
-
-    // Perform action consequences
-    await performActionConsequences({
-        selfBefore,
-        selfAfter: self,
-        targetBefore,
-        targetAfter: targetEntity,
-        playersNearby: playerIdsNearby,
-    });
-}
-
-async function performEffectOnEntity({
-    entity,
-    effect,
-}: {
-    entity: Player | Monster | Item;
-    effect: ProcedureEffect;
-}): Promise<Player | Monster | Item> {
-    // Note: this will change entity in place
-
-    // Sleep for the duration of the effect
-    await sleep(effect.ticks * MS_PER_TICK);
-
-    // Damage
-    if (effect.damage) {
-        // Player or monster
-        if ((entity as Player).player || (entity as Monster).monster) {
-            (entity as Player | Monster).hp = Math.max(
-                0,
-                (entity as Player | Monster).hp - effect.damage.amount,
-            );
-        }
-        // Item
-        else if ((entity as Item).item) {
-            (entity as Item).dur = Math.max(
-                0,
-                (entity as Item).dur - effect.damage.amount,
-            );
-        }
-    }
-
-    // Debuff
-    if (effect.debuffs) {
-        const { debuff, op } = effect.debuffs;
-        if (op === "push") {
-            if (!entity.dbuf.includes(debuff)) {
-                entity.dbuf.push(debuff);
-            }
-        } else if (op === "pop") {
-            entity.dbuf = entity.dbuf.filter((d) => d !== debuff);
-        }
-    }
-
-    // State
-    if (effect.states) {
-        for (const [state, { op, value }] of Object.entries(effect.states)) {
-            if (entity.hasOwnProperty(state)) {
-                if (op === "change") {
-                    (entity as any)[state] = value;
-                } else if (op === "subtract" && state) {
-                    (entity as any)[state] -= value as number;
-                } else if (op === "add") {
-                    (entity as any)[state] += value as number;
-                }
-
-                // Patch location (if the location dimensions have changed beyond the asset's dimensions)
-                if (state === "loc") {
-                    const { width, height } = entityDimensions(entity);
-                    if (entity[state].length !== width * height) {
-                        entity[state] = calculateLocation(
-                            entity[state][0],
-                            width,
-                            height,
-                        );
-                    }
-                }
-            }
-        }
-    }
-
-    return entity;
 }
 
 function performEffectCheck({

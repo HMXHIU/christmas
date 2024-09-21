@@ -512,13 +512,11 @@ function minifiedEntity(
         timers?: boolean; // apclk, buclk
     },
 ): Player | Monster | Item {
-    const [entityId, entityType] = getEntityId(entity);
-
     // Common
     let fields: string[] = ["name"];
 
     // Player specific
-    if (entityType === "player") {
+    if ("player" in entity) {
         fields.push("player");
 
         // Demographics
@@ -527,7 +525,7 @@ function minifiedEntity(
         }
     }
     // Monster specific
-    else if (entityType === "monster") {
+    else if ("monster" in entity) {
         fields.push("monster", "beast");
     }
     // Item specific
@@ -541,7 +539,7 @@ function minifiedEntity(
     }
 
     // Monster & Player specific
-    if (entityType === "player" || entityType === "monster") {
+    if ("player" in entity || "monster" in entity) {
         // Path
         if (options?.location && isEntityInMotion(entity as Monster | Player)) {
             fields.push("pth", "pthst", "pthclk", "pthdur");

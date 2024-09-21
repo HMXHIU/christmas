@@ -21,6 +21,7 @@ export let weapons: Record<string, Prop> = {
             count: 1,
             sides: 6,
             modifiers: ["str"],
+            damageType: "blunt",
         },
         states: {
             default: {
