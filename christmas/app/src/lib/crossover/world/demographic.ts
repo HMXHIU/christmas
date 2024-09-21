@@ -35,7 +35,14 @@ function attributesFromDemographics({
     gender: Genders;
     archetype: Archetypes;
 }): Attributes {
-    const attributes: Attributes = { str: 0, dex: 0, con: 0, int: 0, fth: 0 };
+    const attributes: Attributes = {
+        str: 0,
+        dex: 0,
+        con: 0,
+        mnd: 0,
+        cha: 0,
+        fth: 0,
+    };
 
     // Add attributes from gender
     for (const [attr, mod] of Object.entries(genders[gender].attributes)) {
@@ -124,6 +131,7 @@ const genders: Record<Genders, Gender> = {
         description: "Male",
         attributes: {
             str: 1,
+            mnd: 1,
         },
     },
     female: {
@@ -131,7 +139,8 @@ const genders: Record<Genders, Gender> = {
         label: "Female",
         description: "Female",
         attributes: {
-            int: 1,
+            cha: 1,
+            dex: 1,
         },
     },
 };
@@ -160,7 +169,8 @@ const races: Record<Races, Race> = {
             str: 1,
             dex: 1,
             con: 1,
-            int: 1,
+            mnd: 1,
+            cha: 1,
             fth: 1,
         },
         skills: {
@@ -175,8 +185,8 @@ const races: Record<Races, Race> = {
             "Graceful and long-lived, with a deep connection to nature and magic.",
         attributes: {
             dex: 2,
-            int: 2,
-            fth: 1,
+            cha: 2,
+            fth: 2,
         },
         skills: {
             exploration: 1,
@@ -224,8 +234,8 @@ const archetypes: Record<Archetypes, Archetype> = {
             con: 2,
             str: 2,
             dex: 2,
-            int: -2,
-            fth: 4,
+            fth: 2,
+            mnd: -2,
         },
     },
     protagonist: {
@@ -278,7 +288,7 @@ const archetypes: Record<Archetypes, Archetype> = {
             "Charismatic and morally ambiguous, you operate outside the law. You have a strong personal code due to your troubled past.",
         attributes: {
             dex: 4,
-            int: 2,
+            mnd: 2,
         },
     },
     mage: {
@@ -287,7 +297,7 @@ const archetypes: Record<Archetypes, Archetype> = {
         description:
             "You are a master of arcane knowledge, wielding powerful spells to manipulate reality, control the battlefield, and unravel ancient mysteries.",
         attributes: {
-            int: 4,
+            cha: 4,
             fth: 2,
             dex: 2,
             str: -2,

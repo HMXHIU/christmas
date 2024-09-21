@@ -8,7 +8,10 @@
         gameActionId,
         getEntityId,
     } from "$lib/crossover/utils";
-    import { type AbilityType } from "$lib/crossover/world/abilities";
+    import {
+        type Ability,
+        type AbilityType,
+    } from "$lib/crossover/world/abilities";
     import { abilities } from "$lib/crossover/world/settings/abilities";
     import { cn } from "$lib/shadcn";
     import { groupBy } from "lodash";
@@ -71,7 +74,7 @@
     function abilityType(gc: GameCommand): AbilityType {
         const [action, entities] = gc;
         return "ability" in action
-            ? abilities[action.ability!].type
+            ? abilities[(action as Ability).ability].type
             : "neutral";
     }
 
@@ -83,9 +86,11 @@
     function commandInfo(gc: GameCommand): string {
         const [action, entities, variables] = gc;
         if ("utility" in action) {
-            return `dur: ${action.cost.durability} cha: ${action.cost.charges}`;
+            return `dur: ${action.cost.durability} chg: ${action.cost.charges}`;
         } else if ("ability" in action) {
-            return `ap: ${action.ap} st: ${action.st} mp: ${action.mp} hp: ${action.hp}`;
+            return Object.entries(action.cost)
+                .map(([res, amt]) => `${res}: ${amt}`)
+                .join(" ");
         } else if ("action" in action) {
             if (action.action === "say") {
                 return `${variables?.queryIrrelevant}`;

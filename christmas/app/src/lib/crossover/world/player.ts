@@ -53,7 +53,8 @@ const PlayerAttributesSchema = z.object({
     str: z.number(),
     dex: z.number(),
     con: z.number(),
-    int: z.number(),
+    mnd: z.number(),
+    cha: z.number(),
     fth: z.number(),
 });
 

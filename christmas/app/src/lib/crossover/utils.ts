@@ -507,9 +507,9 @@ function minifiedEntity(
     entity: Player | Monster | Item,
     options?: {
         location?: boolean;
-        stats?: boolean; // hp, mp, st, etc ...
+        stats?: boolean; // hp, cha, mnd, lum, umb etc ...
         demographics?: boolean; // archetype, gender, race
-        timers?: boolean; // apclk, buclk
+        timers?: boolean; // buclk
     },
 ): Player | Monster | Item {
     // Common
@@ -546,11 +546,11 @@ function minifiedEntity(
         }
         // Stats
         if (options?.stats) {
-            fields.push("hp", "mp", "st", "ap");
+            fields.push("hp", "cha", "mnd", "lum", "umb");
         }
         // Timers
         if (options?.timers) {
-            fields.push("apclk", "buclk"); // need to include ap
+            fields.push("buclk"); // need to include ap
         }
     }
 

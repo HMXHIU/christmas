@@ -14,6 +14,7 @@ import { worldSeed } from "$lib/crossover/world/settings/world";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import {
     BarterSchema,
+    EquipmentSlotsEnum,
     GeohashLocationSchema,
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
@@ -76,6 +77,7 @@ import {
     type P2PTradeTransaction,
 } from "./player";
 
+import { AbilitiesEnum } from "$lib/crossover/world/abilities";
 import {
     dungeonEntrancesQuerySet,
     loggedInPlayersQuerySet,
@@ -133,7 +135,7 @@ const EntityPathSchema = PathSchema.extend({
     entity: z.string(),
 });
 const PerformAbilitySchema = z.object({
-    ability: z.string(),
+    ability: z.enum(AbilitiesEnum),
     target: z.string(),
 });
 const EntityPerformAbilitySchema = PerformAbilitySchema.extend({
@@ -174,10 +176,10 @@ const SpawnMonsterSchema = z.object({
 const BuffEntitySchema = z.object({
     entity: z.string(),
     hp: z.number().optional(),
-    mp: z.number().optional(),
-    st: z.number().optional(),
-    level: z.number().optional(),
-    ap: z.number().optional(),
+    cha: z.number().optional(),
+    mnd: z.number().optional(),
+    lum: z.number().optional(),
+    umb: z.number().optional(),
     buffs: z.array(z.string()).optional(),
     debuffs: z.array(z.string()).optional(),
 });
@@ -190,19 +192,7 @@ const SpawnWorldSchema = z.object({
 // Schemas - player
 const EquipItemSchema = z.object({
     item: z.string(),
-    slot: z.enum([
-        "rh",
-        "lh",
-        "ft",
-        "hd",
-        "nk",
-        "ch",
-        "lg",
-        "r1",
-        "r2",
-        "sh",
-        "gl",
-    ]), // TODO: dont hardcode this?
+    slot: z.enum(EquipmentSlotsEnum),
 });
 
 const UserMetadataSchema = z.object({
@@ -337,7 +327,8 @@ const crossoverRouter = {
         buffEntity: dmServiceProcedure
             .input(BuffEntitySchema)
             .mutation(async ({ input }) => {
-                const { entity, hp, mp, st, ap, level, buffs, debuffs } = input;
+                const { entity, hp, cha, lum, umb, mnd, buffs, debuffs } =
+                    input;
 
                 // Get `player` or `monster` enity
                 let fetchedEntity = await tryFetchEntity(entity);
@@ -349,11 +340,11 @@ const crossoverRouter = {
                 }
 
                 // Buff entity
-                fetchedEntity.lvl = level ?? fetchedEntity.lvl;
                 fetchedEntity.hp = hp ?? fetchedEntity.hp;
-                fetchedEntity.mp = mp ?? fetchedEntity.mp;
-                fetchedEntity.st = st ?? fetchedEntity.st;
-                fetchedEntity.ap = ap ?? fetchedEntity.ap;
+                fetchedEntity.mnd = mnd ?? fetchedEntity.mnd;
+                fetchedEntity.cha = cha ?? fetchedEntity.cha;
+                fetchedEntity.lum = lum ?? fetchedEntity.lum;
+                fetchedEntity.umb = umb ?? fetchedEntity.umb;
                 fetchedEntity.buf = buffs ?? fetchedEntity.buf;
                 fetchedEntity.dbuf = debuffs ?? fetchedEntity.dbuf;
 

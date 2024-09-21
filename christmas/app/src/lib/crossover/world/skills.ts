@@ -1,8 +1,8 @@
+import type { Currency } from "../types";
 import type { Abilities } from "./abilities";
 import type { Actions } from "./actions";
 import { type Attribute, type Attributes } from "./entity";
 import { skillLines } from "./settings/skills";
-import type { Currency } from "./types";
 
 export {
     abilitiesFromSkills,
@@ -75,7 +75,14 @@ function skillLevelProgression(level: number): number {
 function attributesFromSkills(
     skills: Partial<Record<SkillLines, number>>,
 ): Attributes {
-    const attributes: Attributes = { str: 0, dex: 0, con: 0, int: 0, fth: 0 };
+    const attributes: Attributes = {
+        str: 0,
+        dex: 0,
+        con: 0,
+        mnd: 0,
+        fth: 0,
+        cha: 0,
+    };
 
     // Add attributes from skill lines
     for (const [skillLine, skillLevel] of Object.entries(skills)) {

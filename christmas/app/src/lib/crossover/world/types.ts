@@ -1,17 +1,17 @@
 import { z } from "zod";
-import type { ItemEntity } from "../types";
+import type { Currency, ItemEntity } from "../types";
 
 export {
     BarterSchema,
     Directions,
     EquipmentSlots,
+    EquipmentSlotsEnum,
     GeohashLocationSchema,
     geohashLocationTypes,
     WeaponSlots,
     type AssetMetadata,
     type Barter,
     type BarterSerialized,
-    type Currency,
     type Direction,
     type EquipmentSlot,
     type GeohashLocationType,
@@ -22,8 +22,6 @@ export {
     type TileLayer,
     type WorldAssetMetadata,
 };
-
-type Currency = "lum" | "umb";
 
 interface Barter {
     items: ItemEntity[]; // when buying or selling specific item instances
@@ -58,22 +56,21 @@ type EquipmentSlot =
     | "r1" // ring 1
     | "r2"; // ring 2
 
-const EquipmentSlots: EquipmentSlot[] = [
-    // armor
+const EquipmentSlotsEnum = [
     "ch",
     "lg",
     "ft",
     "sh",
     "gl",
-    // weapons
     "rh",
     "lh",
-    // non visible
     "hd",
     "nk",
     "r1",
     "r2",
-];
+] as const;
+
+const EquipmentSlots: EquipmentSlot[] = [...EquipmentSlotsEnum];
 
 const WeaponSlots: EquipmentSlot[] = ["rh", "lh"];
 

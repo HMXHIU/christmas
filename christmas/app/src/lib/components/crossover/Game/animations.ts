@@ -28,7 +28,7 @@ async function animateAbility(
     const { procedures, type } = abilities[ability];
     for (let procedure of procedures) {
         const [ptype, effect] = procedure;
-        const { ticks, damage, buffs, debuffs } = effect;
+        const { ticks, dieRoll, buffs, debuffs } = effect;
         await addVisualEffects(gsap.timeline(), stage, {
             source,
             target,
@@ -53,12 +53,14 @@ async function addVisualEffects(
     },
 ) {
     const [ptype, effect] = procedure;
-    const { ticks, damage, buffs, debuffs } = effect;
+    const { ticks, dieRoll, buffs, debuffs } = effect;
     if (ptype === "action" && source.isoPosition != null) {
         // Animate offensive damage abilities
-        if (damage != null && target != null) {
-            const { damageType, amount } = damage;
-            if (damageType === "slashing" && target.isoPosition != null) {
+        if (dieRoll != null && target != null) {
+            if (
+                dieRoll.damageType === "slashing" &&
+                target.isoPosition != null
+            ) {
                 tl.add(
                     await animateSlash(stage, tl, {
                         startX: source.isoPosition.isoX,
@@ -79,11 +81,11 @@ async function addVisualEffects(
 async function addSoundEffects(tl: Timeline, procedure: Procedure) {
     const soundEffects = await Assets.loadBundle("sound-effects");
     const [ptype, effect] = procedure;
-    const { ticks, damage, buffs, debuffs } = effect;
+    const { ticks, dieRoll, buffs, debuffs } = effect;
     if (ptype === "action") {
         // Offensive damage abilities
-        if (damage != null) {
-            const { damageType, amount } = damage;
+        if (dieRoll != null) {
+            const { damageType, sides } = dieRoll;
             // Slashing
             if (damageType === "slashing") {
                 // const duration = slashing.duration / 0.5;
@@ -92,7 +94,7 @@ async function addSoundEffects(tl: Timeline, procedure: Procedure) {
                 });
             }
             // Blood
-            if (amount > 0) {
+            if (sides > 10) {
                 tl.add(() => {
                     Sound.from(soundEffects.blood).play();
                 });

@@ -8,6 +8,7 @@ import type {
 import { substituteVariables } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import { getEntityId } from "../utils";
+import type { Abilities } from "./abilities";
 import type { Actions } from "./actions";
 import { compendium } from "./settings/compendium";
 import {
@@ -84,7 +85,7 @@ interface Utility {
         end: string;
     };
     // abilities[ability] `self` and `target` will be provided when `useItem` is called but can be overwritten via `variables`
-    ability?: string;
+    ability?: Abilities;
     action?: Actions;
     requireEquipped?: boolean; // defaults to false
 }

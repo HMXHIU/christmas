@@ -1,9 +1,13 @@
 import type {
+    Currency,
+    CurrencyParams,
     DieRoll,
+    EntityStats,
     EntityType,
     Item,
     Monster,
     Player,
+    Stat,
 } from "$lib/crossover/types";
 import { substituteVariables } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
@@ -12,6 +16,7 @@ import type { Attribute } from "./entity";
 import { abilities } from "./settings/abilities";
 
 export {
+    AbilitiesEnum,
     getPlayerAbilities,
     hasResourcesForAbility,
     patchEffectWithVariables,
@@ -72,15 +77,26 @@ type Abilities =
     | "teleport"
     | "hpSwap";
 
+const AbilitiesEnum = [
+    "bandage",
+    "disintegrate",
+    "bruise",
+    "doubleSlash",
+    "eyePoke",
+    "bite",
+    "breathFire",
+    "paralyze",
+    "blind",
+    "teleport",
+    "hpSwap",
+] as const;
+
 interface Ability {
     ability: Abilities;
     type: AbilityType;
     description: string;
     procedures: Procedure[];
-    ap: number; // AP cost of the ability
-    hp: number; // HP cost of the ability
-    mp: number; // MP cost of the ability
-    st: number; // ST cost of the ability
+    cost: Partial<EntityStats & CurrencyParams>;
     range: number; // range of the ability (number of unit precision geohashes)
     aoe: number; // area of effect (number of unit precision geohashes)
     predicate: {
@@ -90,14 +106,7 @@ interface Ability {
     };
 }
 
-type ProcedureStateEffects =
-    | "loc"
-    | "locT"
-    | "locI"
-    | "ap"
-    | "hp"
-    | "mp"
-    | "st";
+type ProcedureStateEffects = "loc" | "locT" | "locI" | Stat | Currency;
 
 type Procedure = ["action" | "check", ProcedureEffect];
 interface ProcedureEffect {
@@ -196,28 +205,13 @@ function hasResourcesForAbility(
     self: Player | Monster,
     ability: Abilities,
 ): { hasResources: boolean; message: string } {
-    const { ap, mp, st, hp } = abilities[ability];
-
-    if (self.ap < ap) {
-        return {
-            hasResources: false,
-            message: `Not enough action points to ${ability}.`,
-        };
-    } else if (self.hp < hp) {
-        return {
-            hasResources: false,
-            message: `Not enough health points to ${ability}.`,
-        };
-    } else if (self.mp < mp) {
-        return {
-            hasResources: false,
-            message: `Not enough mana points to ${ability}.`,
-        };
-    } else if (self.st < st) {
-        return {
-            hasResources: false,
-            message: `Not enough stamina points to ${ability}.`,
-        };
+    for (const [res, amt] of Object.entries(abilities[ability].cost)) {
+        if (self[res as Currency | Stat] < amt) {
+            return {
+                hasResources: false,
+                message: `You do not have enough ${res} to ${ability}.`,
+            };
+        }
     }
 
     return {

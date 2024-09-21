@@ -30,14 +30,13 @@ type PlayerState = z.infer<typeof PlayerStateSchema>;
 const PlayerStateSchema = z.object({
     avatar: z.string().optional(),
     lgn: z.boolean().optional(),
-    lum: z.number().optional(),
-    umb: z.number().optional(),
     loc: z.array(z.string()).optional(),
     locT: GeohashLocationSchema.optional(),
     hp: z.number().optional(),
-    mp: z.number().optional(),
-    st: z.number().optional(),
-    ap: z.number().optional(),
+    mnd: z.number().optional(),
+    cha: z.number().optional(),
+    lum: z.number().optional(),
+    umb: z.number().optional(),
     buf: z.array(z.string()).optional(),
     dbuf: z.array(z.string()).optional(),
 });
@@ -89,15 +88,13 @@ async function loadPlayerEntity(
         locT: "geohash",
         locI: options.locationInstance ?? LOCATION_INSTANCE,
         hp: 0,
-        mp: 0,
-        st: 0,
-        ap: 0,
-        apclk: 0,
+        mnd: 0,
+        cha: 0,
+        lum: 0,
+        umb: 0,
         buclk: 0,
         dbuf: [],
         buf: [],
-        lum: 0,
-        umb: 0,
         arch: demographic.archetype,
         gen: demographic.gender,
         race: demographic.race,
@@ -177,15 +174,17 @@ async function setEntityBusy<T extends PlayerEntity | MonsterEntity>({
 async function consumeResources(
     entity: PlayerEntity | MonsterEntity,
     {
-        ap,
-        mp,
-        st,
+        cha,
+        mnd,
+        umb,
+        lum,
         hp,
         now,
     }: {
-        ap?: number;
-        mp?: number;
-        st?: number;
+        cha?: number;
+        mnd?: number;
+        umb?: number;
+        lum?: number;
         hp?: number;
         now?: number;
     },
@@ -193,24 +192,22 @@ async function consumeResources(
     now = now ?? Date.now();
 
     // Get max stats (also fixes stats when it goes over max)
-    const { ap: maxAp, hp: maxHp, st: maxSt, mp: maxMp } = entityStats(entity);
+    const { hp: maxHp, mnd: maxSt, cha: maxCha } = entityStats(entity);
 
-    if (ap != null && ap !== 0) {
-        entity.ap = Math.max(Math.min(maxAp, entity.ap - ap), 0);
+    if (cha) {
+        entity.cha = Math.max(Math.min(maxCha, entity.cha - cha), 0);
     }
-    if (mp != null && mp !== 0) {
-        entity.mp = Math.max(Math.min(maxMp, entity.mp - mp), 0);
+    if (mnd) {
+        entity.mnd = Math.max(Math.min(maxSt, entity.mnd - mnd), 0);
     }
-    if (st != null && st !== 0) {
-        entity.st = Math.max(Math.min(maxSt, entity.st - st), 0);
-    }
-    if (hp != null && hp !== 0) {
+    if (hp) {
         entity.hp = Math.max(Math.min(maxHp, entity.hp - hp), 0);
     }
-
-    // Set AP clock (if consumed)
-    if (ap != null && ap > 0) {
-        entity.apclk = now;
+    if (lum) {
+        entity.lum = Math.max(entity.lum - lum, 0);
+    }
+    if (umb) {
+        entity.umb = Math.max(entity.umb - umb, 0);
     }
 
     return (await saveEntity(entity)) as PlayerEntity;

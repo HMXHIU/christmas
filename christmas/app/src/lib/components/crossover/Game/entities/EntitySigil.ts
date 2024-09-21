@@ -1,6 +1,4 @@
-import type { EntityStats, Monster, Player } from "$lib/crossover/types";
-import { recoverAp } from "$lib/crossover/world/entity";
-import { MS_PER_TICK, TICKS_PER_TURN } from "$lib/crossover/world/settings";
+import type { EntityStats } from "$lib/crossover/types";
 import { Container, Graphics } from "pixi.js";
 import type { EntityContainer } from ".";
 
@@ -15,30 +13,25 @@ class EntitySigil extends Container {
     private arcsContainer: Container;
 
     private maxStats: EntityStats = {
-        ap: 0,
         hp: 0,
-        st: 0,
-        mp: 0,
-        apclk: 0,
+        mnd: 0,
+        cha: 0,
     };
     private stats: EntityStats = {
-        ap: 0,
         hp: 0,
-        st: 0,
-        mp: 0,
-        apclk: 0,
+        mnd: 0,
+        cha: 0,
     };
 
     private hpBar: Graphics | null = null;
     private apBar: Graphics | null = null;
-    private stArc: Graphics | null = null;
-    private mpArc: Graphics | null = null;
+    private mndArc: Graphics | null = null;
+    private chaArc: Graphics | null = null;
 
-    private stArcEnd: number = ST_ARC_END;
-    private mpArcEnd: number = MP_ARC_END;
+    private mndArcEnd: number = ST_ARC_END;
+    private chaArcEnd: number = MP_ARC_END;
 
     private radius = 0;
-    private apInterval;
 
     constructor(
         entityContainer: EntityContainer,
@@ -79,31 +72,6 @@ class EntitySigil extends Container {
             this.addChild(spriteContainer);
             this.createBars();
             this.updateStats(this.stats);
-
-            // Set up interval every tick to recover ap
-            this.apInterval = setInterval(
-                this.recoverAp,
-                MS_PER_TICK * TICKS_PER_TURN,
-            );
-        }
-    }
-
-    recoverAp() {
-        if (this.apBar) {
-            this.apBar.scale.y =
-                recoverAp(
-                    (this.entityContainer.entity as Player | Monster).ap,
-                    this.maxStats.ap,
-                    (this.entityContainer.entity as Player | Monster).apclk,
-                    Date.now(),
-                ) / this.maxStats.ap;
-        }
-    }
-
-    destroy() {
-        if (this.apInterval) {
-            clearInterval(this.apInterval);
-            this.apInterval = undefined;
         }
     }
 
@@ -121,11 +89,11 @@ class EntitySigil extends Container {
         this.hpBar.pivot.y = bounds.height;
 
         // Draw mp, st arcs
-        this.mpArc = new Graphics()
-            .arc(0, 0, this.radius + 2, HALF_PI, this.mpArcEnd, true)
+        this.chaArc = new Graphics()
+            .arc(0, 0, this.radius + 2, HALF_PI, this.chaArcEnd, true)
             .stroke({ color: 0x5394fd, width: 6 });
-        this.stArc = new Graphics()
-            .arc(0, 0, this.radius + 2, HALF_PI, this.stArcEnd)
+        this.mndArc = new Graphics()
+            .arc(0, 0, this.radius + 2, HALF_PI, this.mndArcEnd)
             .stroke({ color: 0xf4fd53, width: 6 });
 
         // Draw ap bar
@@ -139,8 +107,8 @@ class EntitySigil extends Container {
         // Add to container
         this.arcsContainer.addChild(
             this.hpBar,
-            this.mpArc,
-            this.stArc,
+            this.chaArc,
+            this.mndArc,
             this.apBar,
         );
     }
@@ -150,22 +118,9 @@ class EntitySigil extends Container {
         if (this.hpBar) {
             this.hpBar.scale.y = stats.hp / this.maxStats.hp;
         }
-        if (this.apBar) {
-            if (stats.apclk) {
-                this.apBar.scale.y =
-                    recoverAp(
-                        stats.ap,
-                        this.maxStats.ap,
-                        stats.apclk,
-                        Date.now(),
-                    ) / this.maxStats.ap;
-            } else {
-                this.apBar.scale.y = this.stats.ap / this.maxStats.ap;
-            }
-        }
-        if (this.stArc) {
-            const percent = stats.st / this.maxStats.st;
-            this.stArc
+        if (this.mndArc) {
+            const percent = stats.mnd / this.maxStats.mnd;
+            this.mndArc
                 .clear()
                 .arc(
                     0,
@@ -176,9 +131,9 @@ class EntitySigil extends Container {
                 )
                 .stroke({ color: 0xf4fd53, width: 6 });
         }
-        if (this.mpArc) {
-            const percent = stats.mp / this.maxStats.mp;
-            this.mpArc
+        if (this.chaArc) {
+            const percent = stats.cha / this.maxStats.cha;
+            this.chaArc
                 .clear()
                 .arc(
                     0,

@@ -10,13 +10,14 @@
     } from "$lib/crossover/world/abilities";
     import { cn } from "$lib/shadcn";
     import {
+        Brain,
         Cog,
         Cross,
-        Dumbbell,
         Grid2X2,
         Heart,
+        Moon,
         Shield,
-        Sparkles,
+        Sun,
         Sword,
         Target,
         Zap,
@@ -118,27 +119,34 @@
                 </div>
                 <!-- Costs -->
                 <div class="flex flex-row gap-2">
-                    {#if selectedAbility?.ap && selectedAbility?.ap > 0}
-                        <Badge
-                            ><Zap class="h-4"></Zap>{selectedAbility?.ap}</Badge
+                    {#if selectedAbility?.cost.cha}
+                        <Badge class="bg-teal-400"
+                            ><Zap class="h-4"></Zap>{selectedAbility?.cost
+                                .cha}</Badge
                         >
                     {/if}
-                    {#if selectedAbility?.st && selectedAbility?.st > 0}
-                        <Badge class="bg-yellow-400"
-                            ><Dumbbell class="h-4"
-                            ></Dumbbell>{selectedAbility?.st}</Badge
-                        >
-                    {/if}
-                    {#if selectedAbility?.hp && selectedAbility?.hp > 0}
-                        <Badge class="bg-red-400"
-                            ><Heart class="h-4"
-                            ></Heart>{selectedAbility?.hp}</Badge
-                        >
-                    {/if}
-                    {#if selectedAbility?.mp && selectedAbility?.mp > 0}
+                    {#if selectedAbility?.cost.mnd}
                         <Badge class="bg-blue-400"
-                            ><Sparkles class="h-4"
-                            ></Sparkles>{selectedAbility?.mp}</Badge
+                            ><Brain class="h-4"></Brain>{selectedAbility?.cost
+                                .mnd}</Badge
+                        >
+                    {/if}
+                    {#if selectedAbility?.cost.lum}
+                        <Badge class="bg-yellow-400"
+                            ><Sun class="h-4"></Sun>{selectedAbility?.cost
+                                .lum}</Badge
+                        >
+                    {/if}
+                    {#if selectedAbility?.cost.umb}
+                        <Badge class="bg-purple-900"
+                            ><Moon class="h-4"></Moon>{selectedAbility?.cost
+                                .umb}</Badge
+                        >
+                    {/if}
+                    {#if selectedAbility?.cost.hp}
+                        <Badge class="bg-red-400"
+                            ><Heart class="h-4"></Heart>{selectedAbility?.cost
+                                .hp}</Badge
                         >
                     {/if}
                 </div>

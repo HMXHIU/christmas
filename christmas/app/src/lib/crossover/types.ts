@@ -15,6 +15,8 @@ import type { Attribute } from "./world/entity";
 
 export {
     type BodyPart,
+    type Currency,
+    type CurrencyParams,
     type Dialogue,
     type DialogueEntity,
     type Dialogues,
@@ -31,11 +33,14 @@ export {
     type PathParams,
     type Player,
     type PlayerEntity,
+    type Stat,
     type World,
     type WorldEntity,
 };
 
 type BodyPart = "head" | "torso" | "legs" | "arms";
+type Stat = "hp" | "mnd" | "cha";
+type Currency = "lum" | "umb";
 
 interface DieRoll {
     count: number;
@@ -48,13 +53,8 @@ type EntityType = "player" | "monster" | "item";
 type GameEntity = Monster | Player | Item;
 type GameRedisEntities = MonsterEntity | PlayerEntity | ItemEntity;
 
-interface EntityStats {
-    hp: number;
-    mp: number;
-    st: number;
-    ap: number;
-    apclk: number; // needed for calculating current ap
-}
+type EntityStats = Record<Stat, number>;
+type CurrencyParams = Record<Currency, number>;
 
 interface PathParams {
     pthclk: number; // time the pth movement was started
@@ -69,7 +69,11 @@ interface LocationParams {
     locI: string; // location instance ("" for actual world)
 }
 
-interface EntityState extends EntityStats, PathParams, LocationParams {
+interface EntityState
+    extends EntityStats,
+        PathParams,
+        LocationParams,
+        CurrencyParams {
     buclk: number; // busy clock (time the entity is busy till)
     dbuf: string[]; // debuffs
     buf: string[]; // buffs
@@ -88,12 +92,7 @@ interface CharacterParams {
     race: Races;
 }
 
-interface CurrencyParams {
-    lum: number;
-    umb: number;
-}
-
-interface Player extends EntityState, CharacterParams, CurrencyParams {
+interface Player extends EntityState, CharacterParams {
     player: string; // publicKey
     avatar: string; // url to animation & avatar
     name: string;

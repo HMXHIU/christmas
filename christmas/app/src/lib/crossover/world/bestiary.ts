@@ -1,11 +1,11 @@
 import { PUBLIC_HOST } from "$env/static/public";
-import type { MonsterEntity } from "$lib/crossover/types";
+import type { Currency, MonsterEntity } from "$lib/crossover/types";
 import { seededRandom, stringToRandomNumber } from "$lib/utils";
 import { entityLevel } from "./entity";
 import { bestiary } from "./settings/bestiary";
 import { worldSeed } from "./settings/world";
 import type { SkillLines } from "./skills";
-import type { AssetMetadata, Currency } from "./types";
+import type { AssetMetadata } from "./types";
 import { type WorldSeed } from "./world";
 
 export {

@@ -224,12 +224,8 @@
     }
 
     function onCreate() {
-        console.log("ON CREATE");
         const playerMetadata = validatePlayerMetadata();
-
         if (playerMetadata) {
-            console.log(JSON.stringify(playerMetadata, null, 2));
-
             onCreateCharacter(playerMetadata);
             errors = {};
         }
@@ -381,12 +377,16 @@
                             {attributes.con ?? 0}
                         </p>
                         <p class="text-xs">
-                            <span class="font-bold">Intelligence:</span>
-                            {attributes.int ?? 0}
+                            <span class="font-bold">Mind:</span>
+                            {attributes.mnd ?? 0}
                         </p>
                         <p class="text-xs">
                             <span class="font-bold">Faith:</span>
                             {attributes.fth ?? 0}
+                        </p>
+                        <p class="text-xs">
+                            <span class="font-bold">Chaos:</span>
+                            {attributes.cha ?? 0}
                         </p>
                     </div>
                 </div>

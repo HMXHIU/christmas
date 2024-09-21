@@ -1,10 +1,13 @@
-import { type ItemEntity, type PlayerEntity } from "$lib/crossover/types";
+import {
+    type Currency,
+    type ItemEntity,
+    type PlayerEntity,
+} from "$lib/crossover/types";
 import { minifiedEntity } from "$lib/crossover/utils";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     type Barter,
     type BarterSerialized,
-    type Currency,
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
 import { generatePin } from "$lib/utils";

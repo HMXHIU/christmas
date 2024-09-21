@@ -256,10 +256,10 @@ async function rest(player: PlayerEntity, now?: number) {
     })) as PlayerEntity;
 
     // Rest player
-    const { hp, mp, st } = entityStats(player);
+    const { hp, cha, mnd } = entityStats(player);
     player.hp = hp;
-    player.mp = mp;
-    player.st = st;
+    player.cha = cha;
+    player.mnd = mnd;
 
     // Save player
     player = (await playerRepository.save(

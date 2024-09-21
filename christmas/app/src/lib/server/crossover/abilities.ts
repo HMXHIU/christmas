@@ -14,14 +14,13 @@ import {
     type Abilities,
     type ProcedureEffect,
 } from "$lib/crossover/world/abilities";
-import { entityActualAp } from "$lib/crossover/world/entity";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { sleep } from "$lib/utils";
 import { consumeResources, setEntityBusy } from ".";
 import { resolveCombat } from "./combat";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "./events";
-import { fetchEntity, saveEntity } from "./redis/utils";
+import { fetchEntity } from "./redis/utils";
 
 export { consumeResources, performAbility, setEntityBusy };
 
@@ -52,11 +51,7 @@ async function performAbility({
         return; // do not proceed
     }
 
-    const { procedures, ap, mp, st, hp, range, predicate } = abilities[ability];
-
-    // Recover AP
-    self.ap = entityActualAp(self, { now });
-    self = (await saveEntity(self)) as PlayerEntity | MonsterEntity;
+    const { procedures, range, predicate, cost } = abilities[ability];
 
     // Check if self has enough resources to perform ability
     if (!ignoreCost) {
@@ -101,7 +96,7 @@ async function performAbility({
 
     // Expend ability costs (also caps stats to player level)
     if (!ignoreCost) {
-        self = await consumeResources(self, { ap, mp, st, hp, now });
+        self = await consumeResources(self, { ...cost, now });
     }
     targetEntity = targetEntity.player === self.player ? self : targetEntity; // target might be self, in which case update it after save
 

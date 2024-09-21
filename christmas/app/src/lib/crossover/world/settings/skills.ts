@@ -62,7 +62,7 @@ const skillLines: Record<SkillLines, SkillLine> = {
             7: ["configure", "create"],
         },
         abilitiesAtSkillLevel: {
-            1: ["jab"],
+            10: ["teleport"],
         },
         attributesAtSkillLevel: {
             2: { con: 1 },
@@ -134,7 +134,7 @@ const skillLines: Record<SkillLines, SkillLine> = {
         description: "Beast",
         currency: ["lum", "umb"],
         abilitiesAtSkillLevel: {
-            1: ["scratch"],
+            3: ["doubleSlash"],
         },
         attributesAtSkillLevel: {
             2: { str: 1, con: 1, dex: 1 },
@@ -173,11 +173,11 @@ const skillLines: Record<SkillLines, SkillLine> = {
             8: ["breathFire"],
         },
         attributesAtSkillLevel: {
-            2: { str: 2, con: 2, dex: 2, fth: 2, int: 2 },
-            4: { str: 2, con: 2, dex: 2, fth: 2, int: 2 },
-            6: { str: 2, con: 2, dex: 2, fth: 2, int: 2 },
-            8: { str: 2, con: 2, dex: 2, fth: 2, int: 2 },
-            10: { str: 2, con: 2, dex: 2, fth: 2, int: 2 },
+            2: { str: 2, con: 2, dex: 2, fth: 2, mnd: 2, cha: 2 },
+            4: { str: 2, con: 2, dex: 2, fth: 2, mnd: 2, cha: 2 },
+            6: { str: 2, con: 2, dex: 2, fth: 2, mnd: 2, cha: 2 },
+            8: { str: 2, con: 2, dex: 2, fth: 2, mnd: 2, cha: 2 },
+            10: { str: 2, con: 2, dex: 2, fth: 2, mnd: 2, cha: 2 },
         },
     },
 };

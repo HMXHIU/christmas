@@ -27,10 +27,9 @@ const abilities: Record<Abilities, Ability> = {
                 },
             ],
         ],
-        ap: 2,
-        st: 1,
-        hp: 0,
-        mp: 0,
+        cost: {
+            mnd: 1,
+        },
         range: 1,
         aoe: 0,
         predicate: {
@@ -59,10 +58,9 @@ const abilities: Record<Abilities, Ability> = {
                 },
             ],
         ],
-        ap: 1,
-        st: 0,
-        hp: 0,
-        mp: 1,
+        cost: {
+            cha: 3,
+        },
         range: 1,
         aoe: 0,
         predicate: {
@@ -91,10 +89,9 @@ const abilities: Record<Abilities, Ability> = {
                 },
             ],
         ],
-        ap: 2,
-        st: 1,
-        hp: 0,
-        mp: 0,
+        cost: {
+            mnd: 1,
+        },
         range: 1,
         aoe: 0,
         predicate: {
@@ -137,10 +134,9 @@ const abilities: Record<Abilities, Ability> = {
                 },
             ],
         ],
-        ap: 2,
-        st: 1,
-        hp: 0,
-        mp: 0,
+        cost: {
+            mnd: 1,
+        },
         range: 1,
         aoe: 0,
         predicate: {
@@ -190,10 +186,9 @@ const abilities: Record<Abilities, Ability> = {
                 },
             ],
         ],
-        ap: 2,
-        st: 2,
-        hp: 0,
-        mp: 0,
+        cost: {
+            mnd: 1,
+        },
         range: 1,
         aoe: 0,
         predicate: {
@@ -223,10 +218,9 @@ const abilities: Record<Abilities, Ability> = {
                 },
             ],
         ],
-        ap: 1,
-        st: 1,
-        hp: 0,
-        mp: 0,
+        cost: {
+            mnd: 1,
+        },
         range: 1,
         aoe: 0,
         predicate: {
@@ -248,9 +242,9 @@ const abilities: Record<Abilities, Ability> = {
                         count: 3,
                         sides: 6,
                         damageType: "fire",
-                        modifiers: ["int", "cha", "fth"],
+                        modifiers: ["mnd", "cha", "fth"],
                     },
-                    modifiers: ["int", "cha", "fth"],
+                    modifiers: ["mnd", "cha", "fth"],
                     ticks: TICKS_PER_TURN / 2,
                 },
             ],
@@ -278,10 +272,9 @@ const abilities: Record<Abilities, Ability> = {
                 },
             ],
         ],
-        ap: 2,
-        st: 1,
-        hp: 0,
-        mp: 2,
+        cost: {
+            cha: 2,
+        },
         range: 1,
         aoe: 1,
         predicate: {
@@ -300,15 +293,14 @@ const abilities: Record<Abilities, Ability> = {
                 {
                     target: "target",
                     debuffs: { debuff: "paralyzed", op: "push" },
-                    modifiers: ["int"],
+                    modifiers: ["mnd"],
                     ticks: TICKS_PER_TURN / 2,
                 },
             ],
         ],
-        ap: 2,
-        st: 1,
-        hp: 0,
-        mp: 2,
+        cost: {
+            mnd: 1,
+        },
         range: 1,
         aoe: 0,
         predicate: {
@@ -332,10 +324,9 @@ const abilities: Record<Abilities, Ability> = {
                 },
             ],
         ],
-        ap: 2,
-        st: 1,
-        hp: 0,
-        mp: 2,
+        cost: {
+            mnd: 1,
+        },
         range: 1,
         aoe: 0,
         predicate: {
@@ -371,10 +362,9 @@ const abilities: Record<Abilities, Ability> = {
                 },
             ],
         ],
-        ap: 4,
-        st: 0,
-        hp: 0,
-        mp: 20,
+        cost: {
+            mnd: 3,
+        },
         range: -1,
         aoe: 0,
         predicate: {
@@ -417,10 +407,9 @@ const abilities: Record<Abilities, Ability> = {
                 },
             ],
         ],
-        ap: 4,
-        st: 0,
-        hp: 0,
-        mp: 20,
+        cost: {
+            umb: 3,
+        },
         range: 2,
         aoe: 0,
         predicate: {

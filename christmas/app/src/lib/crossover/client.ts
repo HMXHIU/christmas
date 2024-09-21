@@ -11,6 +11,7 @@ import type {
     StreamEvent,
 } from "../../routes/api/crossover/stream/+server";
 import { player } from "../../store";
+import type { Abilities } from "./world/abilities";
 import { type ItemVariables } from "./world/compendium";
 import type {
     PlayerAppearance,
@@ -344,7 +345,7 @@ function crossoverCmdMove(
 }
 
 function crossoverCmdPerformAbility(
-    input: { target: string; ability: string },
+    input: { target: string; ability: Abilities },
     headers: HTTPHeaders = {},
 ) {
     const { target, ability } = input;
