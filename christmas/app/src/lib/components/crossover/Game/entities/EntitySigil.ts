@@ -5,8 +5,8 @@ import type { EntityContainer } from ".";
 export { EntitySigil };
 
 const HALF_PI = Math.PI / 2;
-const ST_ARC_END = HALF_PI * 3;
-const MP_ARC_END = -HALF_PI;
+const MND_ARC_END = HALF_PI * 3;
+const CHA_ARC_END = -HALF_PI;
 
 class EntitySigil extends Container {
     public entityContainer: EntityContainer;
@@ -24,12 +24,11 @@ class EntitySigil extends Container {
     };
 
     private hpBar: Graphics | null = null;
-    private apBar: Graphics | null = null;
     private mndArc: Graphics | null = null;
     private chaArc: Graphics | null = null;
 
-    private mndArcEnd: number = ST_ARC_END;
-    private chaArcEnd: number = MP_ARC_END;
+    private mndArcEnd: number = MND_ARC_END;
+    private chaArcEnd: number = CHA_ARC_END;
 
     private radius = 0;
 
@@ -91,26 +90,13 @@ class EntitySigil extends Container {
         // Draw mp, st arcs
         this.chaArc = new Graphics()
             .arc(0, 0, this.radius + 2, HALF_PI, this.chaArcEnd, true)
-            .stroke({ color: 0x5394fd, width: 6 });
+            .stroke({ color: 0x53fd75, width: 6 });
         this.mndArc = new Graphics()
             .arc(0, 0, this.radius + 2, HALF_PI, this.mndArcEnd)
-            .stroke({ color: 0xf4fd53, width: 6 });
-
-        // Draw ap bar
-        this.apBar = new Graphics()
-            .rect(0, -4, bounds.width, bounds.height)
-            .fill({ color: 0x111111, alpha: 0.25 });
-        this.apBar.x = -bounds.width / 2;
-        this.apBar.y = bounds.height / 2;
-        this.apBar.pivot.y = bounds.height;
+            .stroke({ color: 0x5394fd, width: 6 });
 
         // Add to container
-        this.arcsContainer.addChild(
-            this.hpBar,
-            this.chaArc,
-            this.mndArc,
-            this.apBar,
-        );
+        this.arcsContainer.addChild(this.hpBar, this.chaArc, this.mndArc);
     }
 
     updateStats(stats: EntityStats) {
@@ -127,7 +113,7 @@ class EntitySigil extends Container {
                     0,
                     this.radius + 2,
                     HALF_PI,
-                    HALF_PI + (ST_ARC_END - HALF_PI) * percent,
+                    HALF_PI + (MND_ARC_END - HALF_PI) * percent,
                 )
                 .stroke({ color: 0xf4fd53, width: 6 });
         }
@@ -140,7 +126,7 @@ class EntitySigil extends Container {
                     0,
                     this.radius + 2,
                     HALF_PI,
-                    HALF_PI + (MP_ARC_END - HALF_PI) * percent,
+                    HALF_PI + (CHA_ARC_END - HALF_PI) * percent,
                     true,
                 )
                 .stroke({ color: 0x5394fd, width: 6 });

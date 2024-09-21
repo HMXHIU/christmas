@@ -300,7 +300,7 @@ function equipmentQuerySet(
     return itemRepository
         .search()
         .where("locT")
-        .containsOneOf(...(equipmentSlots ?? EquipmentSlots))
+        .containOneOf(...(equipmentSlots ?? EquipmentSlots))
         .where("loc")
         .contains(player);
 }

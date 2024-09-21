@@ -12,7 +12,7 @@ import type {
 import { substituteVariables } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import type { GameActionEntities, TokenPositions } from "../ir";
-import type { Attribute } from "./entity";
+import { describeResource, type Attribute } from "./entity";
 import { abilities } from "./settings/abilities";
 
 export {
@@ -209,7 +209,7 @@ function hasResourcesForAbility(
         if (self[res as Currency | Stat] < amt) {
             return {
                 hasResources: false,
-                message: `You do not have enough ${res} to ${ability}.`,
+                message: `You do not have enough ${describeResource[res as Currency | Stat]} to ${ability}.`,
             };
         }
     }

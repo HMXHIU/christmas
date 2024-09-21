@@ -5,7 +5,6 @@ import type {
     Player,
     Stat,
 } from "$lib/crossover/types";
-import { calculateModifier } from "$lib/server/crossover/combat/utils";
 import { clone, isNumber, mergeWith, uniq } from "lodash-es";
 import type { Abilities } from "./abilities";
 import type { Actions } from "./actions";
@@ -22,6 +21,7 @@ import {
 } from "./skills";
 
 export {
+    calculateModifier,
     describeResource,
     entityAbilities,
     entityActions,
@@ -52,6 +52,16 @@ const describeResource: Record<Stat | Attribute | Currency, string> = {
 function entityLevel(entity: Player | Monster): number {
     // Entity's level is its highest skill level
     return Math.max(1, ...Object.values(entity.skills));
+}
+
+function calculateModifier(
+    modifiers: Attribute[],
+    attributes: Attributes,
+): number {
+    return Math.floor(
+        Math.max(...modifiers.map((m) => attributes[m] - BASE_ATTRIBUTES[m])) /
+            2,
+    );
 }
 
 function resetEntityStats(entity: Player | Monster): Player | Monster {

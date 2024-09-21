@@ -13,10 +13,10 @@ import type {
     ProcedureEffect,
 } from "$lib/crossover/world/abilities";
 import {
+    calculateModifier,
     entityAttributes,
     entityStats,
     type Attribute,
-    type Attributes,
 } from "$lib/crossover/world/entity";
 import {
     LOCATION_INSTANCE,
@@ -32,7 +32,6 @@ import { uniq } from "lodash-es";
 export {
     attackRollForProcedureEffect,
     attackRollForWeapon,
-    calculateModifier,
     d20,
     d4,
     determineBodyPartHit,
@@ -82,16 +81,6 @@ function determineEquipmentSlotHit(bodyPartHit: BodyPart): EquipmentSlot {
     const equipment = bodyPartToEquipment[bodyPartHit];
     const idx = Math.floor(Math.random() * equipment.length);
     return equipment[idx] ?? equipment[0];
-}
-
-function calculateModifier(
-    modifiers: Attribute[],
-    attributes: Attributes,
-): number {
-    return Math.floor(
-        Math.max(...modifiers.map((m) => attributes[m] - BASE_ATTRIBUTES[m])) /
-            2,
-    );
 }
 
 function rollDice(dieRoll: DieRoll): number {
