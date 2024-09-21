@@ -1,5 +1,5 @@
 import { PUBLIC_HOST } from "$env/static/public";
-import type { Monster } from "$lib/crossover/types";
+import type { MonsterEntity } from "$lib/crossover/types";
 import { seededRandom, stringToRandomNumber } from "$lib/utils";
 import { entityLevel } from "./entity";
 import { bestiary } from "./settings/bestiary";
@@ -68,7 +68,7 @@ function monsterLimitAtGeohash(geohash: string, seed?: WorldSeed): number {
     return Math.ceil(rv * maxMonsters);
 }
 
-function monsterLUReward(monster: Monster): Record<Currency, number> {
+function monsterLUReward(monster: MonsterEntity): Record<Currency, number> {
     const { alignment } = bestiary[monster.beast];
     const level = entityLevel(monster);
 

@@ -19,10 +19,7 @@ import type {
 } from "$lib/crossover/world/abilities";
 import type { Actions } from "$lib/crossover/world/actions";
 import { monsterLUReward } from "$lib/crossover/world/bestiary";
-import { entityStats } from "$lib/crossover/world/entity";
-import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { sanctuaries } from "$lib/crossover/world/settings/world";
 import { clone, uniq } from "lodash-es";
 import {
     publishActionEvent,
@@ -34,7 +31,7 @@ import {
     equipmentQuerySet,
     getPlayerIdsNearbyEntities,
 } from "../redis/queries";
-import { saveEntities, saveEntity } from "../redis/utils";
+import { saveEntities } from "../redis/utils";
 import { generateHitMessage, generateMissMessage } from "./dialogues";
 import {
     attackRollForProcedureEffect,
@@ -42,10 +39,17 @@ import {
     d4,
     determineBodyPartHit,
     determineEquipmentSlotHit,
+    entityDied,
     resolveDamageEffects,
+    respawnPlayer,
 } from "./utils";
 
 export { resolveAttack, resolveCombat, resolveProcedureEffect };
+
+const deadMessage = `"As your vision fades, a cold darkness envelops your senses.
+You feel weightless, adrift in a void between life and death.
+Time seems meaningless here, yet you sense that you are bound—unable to move, unable to act.
+But something tells you that this is not the end.`;
 
 async function resolveCombat(
     attacker: PlayerEntity | MonsterEntity,
@@ -175,13 +179,12 @@ async function resolveCombat(
     }
 
     // Perform combat consequences
-    await performCombatConsequences({
-        selfBefore: attackerBefore,
-        selfAfter: attacker,
-        targetBefore: defenderBefore,
-        targetAfter: defender,
-        playersNearby: nearbyPlayerIds,
-    });
+    ({ attacker, defender } = await resolveAfterCombat({
+        attackerBefore,
+        attacker,
+        defenderBefore,
+        defender,
+    }));
 
     return { success, attacker, defender, entities };
 }
@@ -373,128 +376,49 @@ async function resolveProcedureEffect(
     };
 }
 
-/**
- * Handles the event when a player kills a monster.
- *
- * @param player - The player entity.
- * @param monster - The monster entity.
- */
-async function handlePlayerKillsMonster(
-    player: PlayerEntity,
-    monster: MonsterEntity,
-    playersNearby: string[],
-) {
-    // Note: changes player, monster in place
-
-    // Give player rewards
-    const { lum, umb } = monsterLUReward(monster);
-    player.lum += lum;
-    player.umb += umb;
-
-    // Save & publish player
-    player = await saveEntity(player);
-    publishAffectedEntitiesToPlayers([player]);
-}
-
-/**
- * Handles the scenario where a monster kills a player.
- *
- * @param monster - The monster entity.
- * @param player - The player entity.
- */
-async function handleMonsterKillsPlayer(
-    monster: MonsterEntity,
-    player: PlayerEntity,
-    playersNearby: string[],
-) {
-    // Get player's sanctuary
-    const sanctuary = sanctuaries.find((s) => s.region === player.rgn);
-    if (!sanctuary) {
-        throw new Error(`${player.player} has no sanctuary`);
-    }
-
-    player = {
-        ...player,
-        // Recover all stats
-        ...entityStats(player),
-        // Respawn at player's region
-        loc: [sanctuary.geohash],
-        locI: LOCATION_INSTANCE,
-        locT: "geohash", // TODO: check sanctuary locT
-        // Lose half exp
-        umb: Math.floor(player.lum / 2),
-        lum: Math.floor(player.umb / 2),
-    };
-
-    publishFeedEvent(player.player, {
-        type: "message",
-        message: "You died.",
-    });
-    // Save & publish player
-    player = await saveEntity(player);
-    publishAffectedEntitiesToPlayers([player], { publishTo: playersNearby });
-}
-
-async function performCombatConsequences({
-    selfBefore,
-    targetBefore,
-    selfAfter,
-    targetAfter,
-    playersNearby,
+async function resolveAfterCombat({
+    attackerBefore,
+    defenderBefore,
+    attacker,
+    defender,
 }: {
-    selfBefore: PlayerEntity | MonsterEntity;
-    targetBefore: PlayerEntity | MonsterEntity | ItemEntity;
-    selfAfter: PlayerEntity | MonsterEntity;
-    targetAfter: PlayerEntity | MonsterEntity | ItemEntity;
-    playersNearby: string[];
+    attackerBefore: PlayerEntity | MonsterEntity;
+    defenderBefore: PlayerEntity | MonsterEntity | ItemEntity;
+    attacker: PlayerEntity | MonsterEntity;
+    defender: PlayerEntity | MonsterEntity | ItemEntity;
 }): Promise<{
-    self: PlayerEntity | MonsterEntity;
-    target: PlayerEntity | MonsterEntity | ItemEntity;
+    attacker: PlayerEntity | MonsterEntity;
+    defender: PlayerEntity | MonsterEntity | ItemEntity;
 }> {
-    // Player initiated action
-    if (selfBefore.player && selfBefore.player == selfAfter.player) {
-        // Target is a player
-        if (targetBefore.player && targetBefore.player == targetAfter.player) {
+    if (entityDied(attackerBefore, attacker)) {
+        if ("player" in attacker) {
+            attacker = respawnPlayer(attacker as PlayerEntity);
+            publishFeedEvent(attacker.player, {
+                type: "message",
+                message: deadMessage,
+            });
         }
-        // Target is a monster
-        else if (
-            targetBefore.monster &&
-            targetBefore.monster == targetAfter.monster
-        ) {
-            if (
-                (targetBefore as MonsterEntity).hp > 0 &&
-                (targetAfter as MonsterEntity).hp <= 0
-            ) {
-                await handlePlayerKillsMonster(
-                    selfAfter as PlayerEntity,
-                    targetAfter as MonsterEntity,
-                    playersNearby,
-                );
-            }
+        if ("monster" in attacker && "player" in defender) {
+            const { lum, umb } = monsterLUReward(attacker as MonsterEntity);
+            (defender as PlayerEntity).lum += lum;
+            (defender as PlayerEntity).umb += umb;
         }
     }
-    // Monster initiated action
-    else if (selfBefore.monster && selfBefore.monster == selfAfter.monster) {
-        // Target is a player
-        if (targetBefore.player && targetBefore.player == targetAfter.player) {
-            if (
-                (targetBefore as PlayerEntity).hp > 0 &&
-                (targetAfter as PlayerEntity).hp <= 0
-            ) {
-                await handleMonsterKillsPlayer(
-                    selfAfter as MonsterEntity,
-                    targetAfter as PlayerEntity,
-                    playersNearby,
-                );
-            }
+    if (entityDied(defenderBefore, defender)) {
+        if ("player" in defender) {
+            defender = respawnPlayer(defender as PlayerEntity);
+            // Publish dead message
+            publishFeedEvent(defender.player, {
+                type: "message",
+                message: deadMessage,
+            });
         }
-        // Target is a monster
-        else if (
-            targetBefore.monster &&
-            targetBefore.monster == targetAfter.monster
-        ) {
+        if ("monster" in defender && "player" in attacker) {
+            const { lum, umb } = monsterLUReward(defender as MonsterEntity);
+            (attacker as PlayerEntity).lum += lum;
+            (attacker as PlayerEntity).umb += umb;
         }
     }
 
-    return { self: selfAfter, target: targetAfter };
+    return { attacker, defender };
 }

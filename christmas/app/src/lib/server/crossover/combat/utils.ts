@@ -1,6 +1,7 @@
 import type {
     BodyPart,
     DieRoll,
+    GameRedisEntities,
     Item,
     ItemEntity,
     MonsterEntity,
@@ -13,11 +14,18 @@ import type {
 } from "$lib/crossover/world/abilities";
 import {
     entityAttributes,
+    entityStats,
     type Attribute,
     type Attributes,
 } from "$lib/crossover/world/entity";
+import {
+    LOCATION_INSTANCE,
+    MS_PER_TICK,
+    TICKS_PER_TURN,
+} from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { BASE_ATTRIBUTES } from "$lib/crossover/world/settings/entity";
+import { sanctuaries } from "$lib/crossover/world/settings/world";
 import type { EquipmentSlot } from "$lib/crossover/world/types";
 import { uniq } from "lodash-es";
 
@@ -29,7 +37,9 @@ export {
     d4,
     determineBodyPartHit,
     determineEquipmentSlotHit,
+    entityDied,
     resolveDamageEffects,
+    respawnPlayer,
     rollDice,
 };
 
@@ -231,4 +241,35 @@ function attackRollForProcedureEffect(
             attackerModifier: 0,
         };
     }
+}
+
+function entityDied(
+    before: GameRedisEntities,
+    after: GameRedisEntities,
+): boolean {
+    if ("item" in before) {
+        return (before as ItemEntity).dur > 0 && (after as ItemEntity).dur <= 0;
+    }
+    return (before as PlayerEntity).hp > 0 && (after as PlayerEntity).hp <= 0;
+}
+
+function respawnPlayer(player: PlayerEntity) {
+    // Respawn player at sanctuary
+    const sanctuary = sanctuaries.find((s) => s.region === player.rgn);
+    if (!sanctuary) {
+        throw new Error(`${player.player} has no sanctuary`);
+    }
+    player.loc = [sanctuary.geohash];
+    player.locI = LOCATION_INSTANCE;
+    player.locT = "geohash"; // TODO: check sanctuary locT
+
+    // Lose currencies
+    player.umb = Math.floor(player.lum / 2);
+    player.lum = Math.floor(player.umb / 2);
+    player = Object.assign(player, entityStats(player));
+
+    // Set player busy for (10 turns)
+    player.buclk = MS_PER_TICK * TICKS_PER_TURN * 10;
+
+    return player;
 }

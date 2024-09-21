@@ -132,32 +132,32 @@ async function loadPlayerEntity(
     return player;
 }
 
-async function setEntityBusy({
+async function setEntityBusy<T extends PlayerEntity | MonsterEntity>({
     entity,
     action,
     ability,
     now,
     duration,
 }: {
-    entity: PlayerEntity | MonsterEntity;
+    entity: T;
     action?: Actions;
     ability?: Abilities;
     now?: number;
     duration?: number;
-}): Promise<PlayerEntity | MonsterEntity> {
+}): Promise<T> {
     // Check if entity is busy
     now = now ?? Date.now();
 
     // Duration provided
     if (duration != null) {
         entity.buclk = now + duration;
-        return (await saveEntity(entity)) as PlayerEntity | MonsterEntity;
+        return await saveEntity(entity);
     }
     // Action
     else if (action != null && actions[action].ticks > 0) {
         const ms = actions[action].ticks * MS_PER_TICK;
         entity.buclk = now + ms;
-        return (await saveEntity(entity)) as PlayerEntity | MonsterEntity;
+        return await saveEntity(entity);
     }
     // Ability
     else if (ability != null) {
@@ -168,7 +168,7 @@ async function setEntityBusy({
         if (ticks > 0) {
             const ms = ticks * MS_PER_TICK;
             entity.buclk = now + ms;
-            return (await saveEntity(entity)) as PlayerEntity | MonsterEntity;
+            return await saveEntity(entity);
         }
     }
     return entity;
