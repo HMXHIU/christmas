@@ -743,6 +743,17 @@ export async function flushEventChannel(
     await collectEventDataForDuration(eventTarget, type, MS_PER_TICK * 2);
 }
 
+export async function flushStream(
+    eventTarget: EventTarget,
+    duration = MS_PER_TICK * 4,
+) {
+    collectEventDataForDuration(eventTarget, "feed").catch(() => {});
+    collectEventDataForDuration(eventTarget, "entities").catch(() => {});
+    collectEventDataForDuration(eventTarget, "cta").catch(() => {});
+    collectEventDataForDuration(eventTarget, "action").catch(() => {});
+    await sleep(duration);
+}
+
 export function generateRandomGeohash(
     precision: number,
     startsWith?: string,

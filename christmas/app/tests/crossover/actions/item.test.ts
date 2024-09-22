@@ -1,6 +1,7 @@
 import type { ItemEntity, PlayerEntity } from "$lib/crossover/types";
-import { geohashNeighbour } from "$lib/crossover/utils";
+import { geohashNeighbour, minifiedEntity } from "$lib/crossover/utils";
 import { itemAttibutes } from "$lib/crossover/world/compendium";
+import { awardKillCurrency } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
@@ -10,6 +11,7 @@ import {
     takeItem,
     useItem,
 } from "$lib/server/crossover/actions/item";
+import { respawnPlayer } from "$lib/server/crossover/combat/utils";
 import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
@@ -18,9 +20,10 @@ import { sleep, substituteValues } from "$lib/utils";
 import { cloneDeep } from "lodash";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import {
+    collectAllEventDataForDuration,
     createGandalfSarumanSauron,
     createTestItems,
-    testPlayerUseItemOnPlayer,
+    flushStream,
     waitForEventData,
 } from "../utils";
 
@@ -71,6 +74,20 @@ beforeAll(async () => {
         description: "Portal Two. It is tuned to teleport to .",
         variant: "default",
     });
+
+    // Configure portalOne to point to portalTwo
+    await configureItem(playerOne as PlayerEntity, portalOne.item, {
+        [compendium.portal.variables!.target.variable]: portalTwo.item,
+    });
+    await sleep(MS_PER_TICK * 4); // wait for item to be updated
+    portalOne = (await fetchEntity(portalOne.item)) as ItemEntity;
+
+    // Configure portalTwo to point to portalOne
+    await configureItem(playerTwo as PlayerEntity, portalTwo.item, {
+        [compendium.portal.variables!.target.variable]: portalOne.item,
+    });
+    await sleep(MS_PER_TICK * 4); // wait for item to be updated
+    portalTwo = (await fetchEntity(portalTwo.item)) as ItemEntity;
 });
 
 beforeEach(async () => {
@@ -157,10 +174,13 @@ describe("Test Items", () => {
 
     test("Test Configuration", async () => {
         // Configure woodenDoor
-        woodenDoor = await configureItem(playerThree, woodenDoor.item, {
+        await configureItem(playerThree, woodenDoor.item, {
             [compendium.woodendoor.variables!.doorsign.variable]:
                 "A custom door sign",
         });
+        await sleep(MS_PER_TICK * 2); // wait for item to be updated
+        woodenDoor = (await fetchEntity(woodenDoor.item)) as ItemEntity;
+
         expect(woodenDoor).toMatchObject({
             name: compendium.woodendoor.defaultName,
             prop: compendium.woodendoor.prop,
@@ -185,22 +205,6 @@ describe("Test Items", () => {
         });
 
         // Configure portalOne to point to portalTwo
-        portalOne = await configureItem(
-            playerOne as PlayerEntity,
-            portalOne.item,
-            {
-                [compendium.portal.variables!.target.variable]: portalTwo.item,
-            },
-        );
-
-        // Configure portalTwo to point to portalOne
-        portalTwo = await configureItem(
-            playerTwo as PlayerEntity,
-            portalTwo.item,
-            {
-                [compendium.portal.variables!.target.variable]: portalOne.item,
-            },
-        );
         expect(itemAttibutes(portalOne)).toMatchObject({
             destructible: false,
             description: `Portal One. It is tuned to teleport to ${portalTwo.item}.`,
@@ -248,7 +252,7 @@ describe("Test Items", () => {
             utility: compendium.portal.utilities.teleport.utility,
             self: playerOne as PlayerEntity,
         });
-        await sleep(MS_PER_TICK * 2); // wait for item to be updated
+        await sleep(MS_PER_TICK * 8); // wait for item to be updated
         portalOne = (await fetchEntity(portalOne.item)) as ItemEntity;
         playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
         expect(portalOne.chg).toBe(
@@ -264,16 +268,20 @@ describe("Test Items", () => {
 
     test("Test Take Item", async () => {
         playerOne.loc = [portalTwo.loc[0]];
-        playerOne = (await saveEntity(playerOne)) as PlayerEntity;
+        playerOne = await saveEntity(playerOne);
 
         // Test taking item which is untakeable
-        await expect(takeItem(playerOne, portalTwo.item)).rejects.toThrowError(
-            `${portalTwo.item} cannot be taken`,
-        );
+        takeItem(playerOne, portalTwo.item);
+        await expect(
+            waitForEventData(playerOneStream, "feed"),
+        ).resolves.toMatchObject({
+            type: "error",
+            message: `${portalTwo.item} cannot be taken`,
+        });
     });
 
     test("Test Take/Equip/Use", async () => {
-        let playerOneWoodenClub = await spawnItemAtGeohash({
+        let woodenClub = await spawnItemAtGeohash({
             geohash: playerOne.loc[0],
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,
@@ -282,40 +290,33 @@ describe("Test Items", () => {
             configOwner: playerOne.player,
         });
 
-        // playerOne take playerOneWoodenClub
-        playerOneWoodenClub = await takeItem(
-            playerOne,
-            playerOneWoodenClub.item,
-        );
+        // playerOne take woodenClub
+        await takeItem(playerOne, woodenClub.item);
+        await sleep(MS_PER_TICK * 4);
+        woodenClub = (await fetchEntity(woodenClub.item)) as ItemEntity;
 
-        // playerOne cannot use playerOneWoodenClub without equipping
-        var error = `${playerOneWoodenClub.item} is not equipped in the required slot`;
-        await expect(
-            useItem({
-                item: playerOneWoodenClub.item,
-                utility: compendium.woodenclub.utilities.swing.utility,
-                self: playerOne as PlayerEntity,
-                target: playerTwo.player,
-            }),
-        ).rejects.toThrowError(error);
+        // playerOne cannot use woodenClub without equipping
+        useItem({
+            item: woodenClub.item,
+            utility: compendium.woodenclub.utilities.swing.utility,
+            self: playerOne as PlayerEntity,
+            target: playerTwo.player,
+        });
         await expect(
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
             type: "error",
-            message: error,
+            message: `${woodenClub.item} is not equipped in the required slot`,
         });
 
-        // playerOne equip playerOneWoodenClub
-        playerOneWoodenClub = await equipItem(
-            playerOne,
-            playerOneWoodenClub.item,
-            "rh",
-        );
-        await sleep(MS_PER_TICK * 2);
+        // playerOne equip woodenClub
+        await equipItem(playerOne, woodenClub.item, "rh");
+        await sleep(MS_PER_TICK * 4);
+        woodenClub = (await fetchEntity(woodenClub.item)) as ItemEntity;
 
-        // playerOne swing playerOneWoodenClub at playerTwo (target out of range)
-        playerOneWoodenClub = await useItem({
-            item: playerOneWoodenClub.item,
+        // playerOne swing woodenClub at playerTwo (target out of range)
+        useItem({
+            item: woodenClub.item,
             utility: compendium.woodenclub.utilities.swing.utility,
             self: playerOne as PlayerEntity,
             target: playerTwo.player,
@@ -326,23 +327,154 @@ describe("Test Items", () => {
             type: "error",
             message: "Saruman is out of range",
         });
+        await flushStream(playerOneStream);
 
-        // playerOne swing playerOneWoodenClub at playerTwo (successful)
+        // playerOne swing woodenClub at playerTwo (successful)
         playerOne.loc = playerTwo.loc;
-        playerOne = (await saveEntity(playerOne)) as PlayerEntity;
-        await testPlayerUseItemOnPlayer({
-            self: playerOne,
-            target: playerTwo,
-            item: playerOneWoodenClub,
+        playerOne = await saveEntity(playerOne);
+        useItem({
+            item: woodenClub.item,
             utility: compendium.woodenclub.utilities.swing.utility,
-            selfCookies: playerOneCookies,
-            targetStream: playerTwoStream,
-            selfStream: playerOneStream,
+            self: playerOne,
+            target: playerTwo.player,
+        });
+        let playerOneEvs;
+        let playerTwoEvs;
+        collectAllEventDataForDuration(playerOneStream, 500).then(
+            (evs) => (playerOneEvs = evs),
+        );
+        collectAllEventDataForDuration(playerTwoStream, 500).then(
+            (evs) => (playerTwoEvs = evs),
+        );
+        await sleep(500);
+        expect(playerOneEvs).toMatchObject({
+            feed: [
+                {
+                    message: "Gandalf bashes Saruman, dealing 12 damage!",
+                },
+                {
+                    message: "You killed Saruman, his collapses at your feet.",
+                },
+            ],
+            entities: [
+                {
+                    event: "entities",
+                    players: [
+                        {
+                            player: playerTwo.player,
+                            hp: -1,
+                        },
+                    ],
+                    monsters: [],
+                    items: [],
+                    op: "upsert",
+                },
+                {
+                    event: "entities",
+                    players: [
+                        {
+                            player: playerOne.player,
+                            ...awardKillCurrency(playerOne, playerTwo, false),
+                        },
+                    ],
+                    monsters: [],
+                    items: [],
+                    op: "upsert",
+                },
+                {
+                    event: "entities",
+                    players: [],
+                    monsters: [],
+                    items: [
+                        {
+                            item: woodenClub.item,
+                            chg: 3,
+                            dur: 100,
+                        },
+                    ],
+                    op: "upsert",
+                },
+            ],
+            cta: [],
+            action: [
+                {
+                    ability: "bruise",
+                    source: playerOne.player,
+                    target: playerTwo.player,
+                    event: "action",
+                },
+            ],
+        });
+
+        expect(playerTwoEvs).toMatchObject({
+            feed: [
+                {
+                    type: "message",
+                    message: "Gandalf bashes Saruman, dealing 12 damage!",
+                    event: "feed",
+                },
+                {
+                    type: "message",
+                    message: `As your vision fades, a cold darkness envelops your senses.
+You feel weightless, adrift in a void between life and death.
+Time seems meaningless here, yet you sense that you are bound—unable to move, unable to act.
+But something tells you that this is not the end.`,
+                    event: "feed",
+                },
+            ],
+            entities: [
+                {
+                    event: "entities",
+                    players: [
+                        {
+                            player: playerTwo.player,
+                            hp: -1,
+                        },
+                    ],
+                    monsters: [],
+                    items: [],
+                    op: "upsert",
+                },
+                {
+                    event: "entities",
+                    players: [
+                        minifiedEntity(respawnPlayer(playerTwo), {
+                            stats: true,
+                            location: true,
+                            timers: true,
+                        }),
+                    ],
+                    monsters: [],
+                    items: [],
+                    op: "upsert",
+                },
+                // Redundant
+                {
+                    event: "entities",
+                    players: [],
+                    monsters: [],
+                    items: [
+                        {
+                            item: woodenClub.item,
+                        },
+                    ],
+                    op: "upsert",
+                },
+            ],
+            cta: [],
+            action: [
+                {
+                    ability: "bruise",
+                    source: playerOne.player,
+                    target: playerTwo.player,
+                    event: "action",
+                },
+            ],
         });
     });
 
     test("Test Item Permissions (Negative)", async () => {
-        let playerOneWoodenClub = await spawnItemAtGeohash({
+        let woodenClub = await spawnItemAtGeohash({
             geohash: playerTwo.loc[0], // spawn at playerTwo
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,
@@ -351,36 +483,35 @@ describe("Test Items", () => {
             configOwner: playerOne.player,
         });
 
-        // playerTwo use playerOneWoodenClub (negative permissions)
-        var error = `${playerTwo.player} does not own ${playerOneWoodenClub.item}`;
-        await expect(
-            useItem({
-                item: playerOneWoodenClub.item,
-                utility: compendium.woodenclub.utilities.swing.utility,
-                self: playerTwo as PlayerEntity,
-                target: playerOne.player,
-            }),
-        ).rejects.toThrowError(error);
+        // playerTwo use woodenClub (negative permissions)
+        useItem({
+            item: woodenClub.item,
+            utility: compendium.woodenclub.utilities.swing.utility,
+            self: playerTwo as PlayerEntity,
+            target: playerOne.player,
+        });
         await expect(
             waitForEventData(playerTwoStream, "feed"),
         ).resolves.toMatchObject({
             type: "error",
-            message: error,
+            message: `${playerTwo.player} does not own ${woodenClub.item}`,
         });
 
-        // playerTwo configure playerOneWoodenClub (negative config permissions)
+        // playerTwo configure woodenClub (negative config permissions)
+        configureItem(playerTwo as PlayerEntity, woodenClub.item, {
+            [compendium.woodenclub.variables.etching.variable]:
+                "playerTwo's etching",
+        });
         await expect(
-            configureItem(playerTwo as PlayerEntity, playerOneWoodenClub.item, {
-                [compendium.woodenclub.variables.etching.variable]:
-                    "playerTwo's etching",
-            }),
-        ).rejects.toThrowError(
-            `${playerTwo.player} does not own ${playerOneWoodenClub.item}`,
-        );
+            waitForEventData(playerTwoStream, "feed"),
+        ).resolves.toMatchObject({
+            type: "error",
+            message: `${playerTwo.player} does not own ${woodenClub.item}`,
+        });
     });
 
     test("Test Item Permissions", async () => {
-        let playerOneWoodenClub = await spawnItemAtGeohash({
+        let woodenClub = await spawnItemAtGeohash({
             geohash: playerOne.loc[0],
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,
@@ -389,16 +520,13 @@ describe("Test Items", () => {
             configOwner: playerOne.player,
         });
 
-        // playerOne configure playerOneWoodenClub
-        playerOneWoodenClub = await configureItem(
-            playerOne as PlayerEntity,
-            playerOneWoodenClub.item,
-            {
-                [compendium.woodenclub.variables.etching.variable]:
-                    "An etching",
-            },
-        );
-        expect(itemAttibutes(playerOneWoodenClub)).toMatchObject({
+        // playerOne configure woodenClub
+        await configureItem(playerOne as PlayerEntity, woodenClub.item, {
+            [compendium.woodenclub.variables.etching.variable]: "An etching",
+        });
+        await sleep(MS_PER_TICK * 4);
+        woodenClub = (await fetchEntity(woodenClub.item)) as ItemEntity;
+        expect(itemAttibutes(woodenClub)).toMatchObject({
             destructible: true,
             description: "A simple wooden club. An etching",
             variant: "default",
@@ -406,15 +534,13 @@ describe("Test Items", () => {
 
         // playerOne configure woodendoor (public permissions)
         playerOne.loc = [woodenDoor.loc[0]];
-        playerOne = (await saveEntity(playerOne)) as PlayerEntity;
-        woodenDoor = await configureItem(
-            playerOne as PlayerEntity,
-            woodenDoor.item,
-            {
-                [compendium.woodendoor.variables!.doorsign.variable]:
-                    "A public door sign",
-            },
-        );
+        playerOne = await saveEntity(playerOne);
+        await configureItem(playerOne as PlayerEntity, woodenDoor.item, {
+            [compendium.woodendoor.variables!.doorsign.variable]:
+                "A public door sign",
+        });
+        await sleep(MS_PER_TICK * 4);
+        woodenDoor = (await fetchEntity(woodenDoor.item)) as ItemEntity;
         expect(woodenDoor).toMatchObject({
             vars: { doorsign: "A public door sign" },
         });

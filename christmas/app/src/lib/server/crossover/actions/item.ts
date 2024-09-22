@@ -1,4 +1,5 @@
 import {
+    type GameRedisEntities,
     type ItemEntity,
     type MonsterEntity,
     type PlayerEntity,
@@ -69,7 +70,7 @@ async function useItem({
     self: PlayerEntity | MonsterEntity;
     target?: string; // target can be an `item`
     now?: number;
-}): Promise<ItemEntity> {
+}) {
     now = now ?? Date.now();
     let error: string | null = null;
     let targetEntity = target ? await fetchEntity(target) : undefined;
@@ -97,7 +98,7 @@ async function useItem({
                 message: error,
             });
         }
-        throw new Error(error);
+        return; // do not proceed
     }
 
     const prop = compendium[itemEntity.prop];
@@ -131,10 +132,10 @@ async function useItem({
     if (propAbility) {
         // Overwrite target if specified in item variables
         if (prop.variables.target) {
-            targetEntity = (await itemVariableValue(itemEntity, "target")) as
-                | PlayerEntity
-                | MonsterEntity
-                | ItemEntity;
+            targetEntity = (await itemVariableValue(
+                itemEntity,
+                "target",
+            )) as GameRedisEntities;
             target = getEntityId(targetEntity)[0];
         }
 
@@ -172,8 +173,6 @@ async function useItem({
             publishTo: nearbyPlayerIds,
         },
     );
-
-    return itemEntity;
 }
 
 async function equipItem(
@@ -181,7 +180,7 @@ async function equipItem(
     item: string,
     slot: EquipmentSlot,
     now?: number,
-): Promise<ItemEntity> {
+) {
     // Set busy
     player = (await setEntityBusy({
         entity: player,
@@ -208,7 +207,7 @@ async function equipItem(
             type: "error",
             message: error,
         });
-        throw new Error(error);
+        return; // do not proceed
     }
 
     // Unequip existing item in slot
@@ -244,8 +243,6 @@ async function equipItem(
             publishTo: nearbyPlayerIds,
         },
     );
-
-    return itemToEquip;
 }
 
 async function unequipItem(player: PlayerEntity, item: string, now?: number) {
@@ -297,11 +294,7 @@ async function unequipItem(player: PlayerEntity, item: string, now?: number) {
     );
 }
 
-async function takeItem(
-    player: PlayerEntity,
-    item: string,
-    now?: number,
-): Promise<ItemEntity> {
+async function takeItem(player: PlayerEntity, item: string, now?: number) {
     // Set busy
     player = (await setEntityBusy({
         entity: player,
@@ -334,7 +327,7 @@ async function takeItem(
             type: "error",
             message: error,
         });
-        throw new Error(error);
+        return; // do not proceed
     }
 
     // Take item
@@ -355,8 +348,6 @@ async function takeItem(
         [minifiedEntity(itemEntity, { location: true, stats: true })],
         { publishTo: nearbyPlayerIds },
     );
-
-    return itemEntity;
 }
 
 async function dropItem(player: PlayerEntity, item: string, now?: number) {
@@ -420,13 +411,13 @@ async function createItem(
     prop: string,
     variables?: Record<string, string | number | boolean>,
     now?: number,
-): Promise<ItemEntity> {
+) {
     // Set busy
-    player = (await setEntityBusy({
+    player = await setEntityBusy({
         entity: player,
         action: actions.create.action,
         now: now,
-    })) as PlayerEntity;
+    });
 
     try {
         // Create item
@@ -450,14 +441,11 @@ async function createItem(
             [minifiedEntity(item, { location: true, stats: true })],
             { publishTo: nearbyPlayerIds },
         );
-
-        return item;
     } catch (error: any) {
         await publishFeedEvent(player.player, {
             type: "error",
             message: error.message,
         });
-        throw new Error(error.message);
     }
 }
 
@@ -466,7 +454,7 @@ async function configureItem(
     item: string,
     variables: Record<string, string | number | boolean>,
     now?: number,
-): Promise<ItemEntity> {
+) {
     // Set busy
     player = (await setEntityBusy({
         entity: player,
@@ -481,7 +469,7 @@ async function configureItem(
             type: "error",
             message: `Item ${item} not found`,
         });
-        throw new Error(`Item ${item} not found`);
+        return; // do not proceed
     }
 
     // Check in range
@@ -490,7 +478,7 @@ async function configureItem(
             type: "error",
             message: `${item} is not in range`,
         });
-        throw new Error(`${item} is not in range`);
+        return; // do not proceed
     }
 
     // Check if can configure item
@@ -500,7 +488,7 @@ async function configureItem(
             type: "error",
             message,
         });
-        throw new Error(message);
+        return; // do not proceed
     }
 
     // Save item with updated variables
@@ -517,8 +505,6 @@ async function configureItem(
     await publishAffectedEntitiesToPlayers([minifiedEntity(itemEntity)], {
         publishTo: [player.player],
     });
-
-    return itemEntity;
 }
 
 async function enterItem(

@@ -50,7 +50,7 @@ import {
 
 export { resolveAttack, resolveCombat, resolveProcedureEffect };
 
-const deadMessage = `"As your vision fades, a cold darkness envelops your senses.
+const deadMessage = `As your vision fades, a cold darkness envelops your senses.
 You feel weightless, adrift in a void between life and death.
 Time seems meaningless here, yet you sense that you are bound—unable to move, unable to act.
 But something tells you that this is not the end.`;
@@ -282,11 +282,15 @@ async function resolveProcedureEffect(
     let damageType: DamageType = "normal";
 
     // Attack roll
-    success = attackRollForProcedureEffect(
-        attacker,
-        defender,
-        procedureEffect,
-    ).success;
+    if (attacker === defender) {
+        success = true; // target self always succeed
+    } else {
+        success = attackRollForProcedureEffect(
+            attacker,
+            defender,
+            procedureEffect,
+        ).success;
+    }
 
     if (success) {
         // Damaging ability

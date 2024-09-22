@@ -8,6 +8,7 @@ import {
 } from "$lib/crossover/client";
 import type { ItemEntity, PlayerEntity } from "$lib/crossover/types";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
@@ -18,11 +19,11 @@ import { createGandalfSarumanSauron, waitForEventData } from "../utils";
 
 await initializeClients(); // create redis repositories
 
-let { playerOne, playerOneCookies, playerOneStream } =
+let { geohash, playerOne, playerOneCookies, playerOneStream } =
     await createGandalfSarumanSauron();
 
 let woodenClub: ItemEntity = await spawnItemAtGeohash({
-    geohash: playerOne.loc[0],
+    geohash,
     locationType: "geohash",
     locationInstance: LOCATION_INSTANCE,
     prop: compendium.woodenclub.prop,
@@ -34,25 +35,22 @@ beforeAll(async () => {});
 
 describe("Inventory & Equipment Tests", () => {
     test("Unable to equip item if not in inventory", async () => {
-        const error = `${woodenClub.item} is not in inventory`;
-        await expect(
-            crossoverCmdEquip(
-                { item: woodenClub.item, slot: "rh" },
-                { Cookie: playerOneCookies },
-            ),
-        ).rejects.toThrow(error);
+        crossoverCmdEquip(
+            { item: woodenClub.item, slot: "rh" },
+            { Cookie: playerOneCookies },
+        );
         await expect(
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
-            message: error,
+            message: `${woodenClub.item} is not in inventory`,
             type: "error",
         });
-        await sleep(MS_PER_TICK * 2);
+        await sleep(MS_PER_TICK * actions.equip.ticks);
     });
 
     test("Take item and check inventory", async () => {
         // Check empty inventory
-        await crossoverPlayerInventory({ Cookie: playerOneCookies });
+        crossoverPlayerInventory({ Cookie: playerOneCookies });
         await expect(
             waitForEventData(playerOneStream, "entities"),
         ).resolves.toMatchObject({
@@ -65,7 +63,7 @@ describe("Inventory & Equipment Tests", () => {
         await sleep(MS_PER_TICK * 2);
 
         // Take item
-        await crossoverCmdTake(
+        crossoverCmdTake(
             { item: woodenClub.item },
             { Cookie: playerOneCookies },
         );
@@ -92,7 +90,7 @@ describe("Inventory & Equipment Tests", () => {
     });
 
     test("Drop item", async () => {
-        await crossoverCmdDrop(
+        crossoverCmdDrop(
             { item: woodenClub.item },
             { Cookie: playerOneCookies },
         );
@@ -110,10 +108,7 @@ describe("Inventory & Equipment Tests", () => {
 
     test("Cannot take item if not in geohash", async () => {
         // Move player to a different geohash
-        await crossoverCmdMove(
-            { path: ["s", "s"] },
-            { Cookie: playerOneCookies },
-        );
+        crossoverCmdMove({ path: ["s", "s"] }, { Cookie: playerOneCookies });
         await waitForEventData(playerOneStream, "entities");
         await sleep(MS_PER_TICK * 4);
 
@@ -122,32 +117,27 @@ describe("Inventory & Equipment Tests", () => {
 
         // Try take item
         var error = `${woodenClub.item} is not in range`;
-        await expect(
-            crossoverCmdTake(
-                { item: woodenClub.item },
-                { Cookie: playerOneCookies },
-            ),
-        ).rejects.toThrow(error);
-        await expect(
-            waitForEventData(playerOneStream, "feed"),
-        ).resolves.toMatchObject({
-            type: "error",
-            message: error,
-        });
+        crossoverCmdTake(
+            { item: woodenClub.item },
+            { Cookie: playerOneCookies },
+        ),
+            await expect(
+                waitForEventData(playerOneStream, "feed"),
+            ).resolves.toMatchObject({
+                type: "error",
+                message: error,
+            });
         await sleep(MS_PER_TICK * 2);
 
         // Move back to item
-        await crossoverCmdMove(
-            { path: ["n", "n"] },
-            { Cookie: playerOneCookies },
-        );
+        crossoverCmdMove({ path: ["n", "n"] }, { Cookie: playerOneCookies });
         await sleep(MS_PER_TICK * 4);
 
         playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
         expect(playerOne.loc[0]).equal(woodenClub.loc[0]);
 
         // Take item
-        await crossoverCmdTake(
+        crossoverCmdTake(
             { item: woodenClub.item },
             { Cookie: playerOneCookies },
         );
@@ -164,12 +154,10 @@ describe("Inventory & Equipment Tests", () => {
     test("Equip and unequip item", async () => {
         // Try to equip item in the wrong slot
         var error = `${woodenClub.item} cannot be equipped in hd`;
-        await expect(
-            crossoverCmdEquip(
-                { item: woodenClub.item, slot: "hd" },
-                { Cookie: playerOneCookies },
-            ),
-        ).rejects.toThrow(error);
+        crossoverCmdEquip(
+            { item: woodenClub.item, slot: "hd" },
+            { Cookie: playerOneCookies },
+        );
         await expect(
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
@@ -179,7 +167,7 @@ describe("Inventory & Equipment Tests", () => {
         await sleep(MS_PER_TICK * 2);
 
         // Equip item - rh
-        await crossoverCmdEquip(
+        crossoverCmdEquip(
             { item: woodenClub.item, slot: "rh" },
             { Cookie: playerOneCookies },
         );
@@ -209,7 +197,7 @@ describe("Inventory & Equipment Tests", () => {
         await sleep(MS_PER_TICK * 2);
 
         // Unequip item
-        await crossoverCmdUnequip(
+        crossoverCmdUnequip(
             { item: woodenClub.item },
             { Cookie: playerOneCookies },
         );
@@ -249,7 +237,7 @@ describe("Inventory & Equipment Tests", () => {
         await sleep(MS_PER_TICK * 2);
 
         // Take item
-        await crossoverCmdTake(
+        crossoverCmdTake(
             { item: potionofhealth.item },
             { Cookie: playerOneCookies },
         );
@@ -263,19 +251,16 @@ describe("Inventory & Equipment Tests", () => {
         });
 
         // Try to equip potion of health
-        var error = `${potionofhealth.item} is not equippable`;
-        await expect(
-            crossoverCmdEquip(
-                { item: potionofhealth.item, slot: "lh" },
-                { Cookie: playerOneCookies },
-            ),
-        ).rejects.toThrow(error);
-        await expect(
-            waitForEventData(playerOneStream, "feed"),
-        ).resolves.toMatchObject({
-            type: "error",
-            message: error,
-        });
+        crossoverCmdEquip(
+            { item: potionofhealth.item, slot: "lh" },
+            { Cookie: playerOneCookies },
+        ),
+            await expect(
+                waitForEventData(playerOneStream, "feed"),
+            ).resolves.toMatchObject({
+                type: "error",
+                message: `${potionofhealth.item} is not equippable`,
+            });
         await sleep(MS_PER_TICK * 2);
     });
 
@@ -290,18 +275,15 @@ describe("Inventory & Equipment Tests", () => {
         await sleep(MS_PER_TICK * 2);
 
         // Try take item
-        var error = `${unpickablePotion.item} is owned by someone else`;
-        await expect(
-            crossoverCmdTake(
-                { item: unpickablePotion.item },
-                { Cookie: playerOneCookies },
-            ),
-        ).rejects.toThrow(error);
+        crossoverCmdTake(
+            { item: unpickablePotion.item },
+            { Cookie: playerOneCookies },
+        );
         await expect(
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
             type: "error",
-            message: error,
+            message: `${unpickablePotion.item} is owned by someone else`,
         });
     });
 });

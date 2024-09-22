@@ -43,7 +43,7 @@ async function performAbility({
     let targetEntity = await fetchEntity(target);
     if (!targetEntity) {
         if ("player" in self) {
-            publishFeedEvent(selfEntityId, {
+            await publishFeedEvent(selfEntityId, {
                 type: "error",
                 message: `Target ${target} not found`,
             });
@@ -57,7 +57,7 @@ async function performAbility({
     if (!ignoreCost) {
         const { hasResources, message } = hasResourcesForAbility(self, ability);
         if (!hasResources && self.player) {
-            publishFeedEvent(selfEntityId, {
+            await publishFeedEvent(selfEntityId, {
                 type: "error",
                 message,
             });
@@ -71,7 +71,7 @@ async function performAbility({
         selfEntityId === target &&
         "player" in self
     ) {
-        publishFeedEvent(selfEntityId, {
+        await publishFeedEvent(selfEntityId, {
             type: "error",
             message: `You can't ${ability} yourself`,
         });
@@ -80,7 +80,7 @@ async function performAbility({
 
     // Check if target is in range
     if (!entityInRange(self, targetEntity, range)[0] && "player" in self) {
-        publishFeedEvent(selfEntityId, {
+        await publishFeedEvent(selfEntityId, {
             type: "error",
             message: `${targetEntity.name} is out of range`,
         });
@@ -102,7 +102,7 @@ async function performAbility({
 
     // Publish ability costs changes to player
     if (self.player && !ignoreCost) {
-        publishAffectedEntitiesToPlayers([
+        await publishAffectedEntitiesToPlayers([
             minifiedEntity(self, { stats: true, timers: true }),
         ]);
     }
@@ -124,7 +124,7 @@ async function performAbility({
             // Sleep for the duration of the effect
             await sleep(MS_PER_TICK * procedureEffect.ticks);
 
-            // Resolve comabt
+            // Resolve combat
             await resolveCombat(self, entity, {
                 ability: {
                     ability,
