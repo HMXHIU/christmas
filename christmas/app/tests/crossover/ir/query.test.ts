@@ -46,10 +46,10 @@ test("Test Query", async () => {
     const playerAbilities: Ability[] = Object.values(abilities);
 
     /*
-     * Test Abilities (player scratch goblin)
+     * Test Abilities (player bruise goblin)
      */
 
-    let query = "scratch goblin";
+    let query = "bruise goblin";
     let queryTokens = tokenize(query);
 
     // Retrieve entities relevant to query from the environment
@@ -96,7 +96,7 @@ test("Test Query", async () => {
     expect(abilityEntities).to.toMatchObject([
         [
             {
-                ability: "scratch",
+                ability: "bruise",
             },
             {
                 self: {
@@ -240,11 +240,11 @@ test("Test Query", async () => {
     ]);
 
     /**
-     * Test query flow (playerOne scratch self) - should not resolve
+     * Test query flow (playerOne bruise self) - should not resolve
      */
 
     // Tokenize query
-    query = "scratch gandalf";
+    query = "bruise gandalf";
     queryTokens = tokenize(query);
 
     // Retrieve entities relevant to query from the environment
@@ -289,7 +289,7 @@ test("Test Query", async () => {
         }).map((entities) => [ability, entities]);
     });
 
-    // Should not resolve - cant scratch self
+    // Should not resolve - cant bruise self
     expect(abilityEntities.length).toBe(0);
     expect(abilityEntities).toMatchObject([]);
 
@@ -302,7 +302,7 @@ test("Test Query", async () => {
         query: "bandage gandalf",
         // Player
         player: playerOne,
-        playerAbilities: [abilities.scratch, abilities.bandage],
+        playerAbilities: [abilities.bruise, abilities.bandage],
         playerItems: [woodenClub],
         actions: [],
         // Environment
@@ -341,7 +341,7 @@ test("Test Query", async () => {
         query: "swing at goblin",
         // Player
         player: playerOne,
-        playerAbilities: [abilities.scratch, abilities.bandage],
+        playerAbilities: [abilities.bruise, abilities.bandage],
         playerItems: [woodenClub],
         actions: [],
         // Environment
@@ -354,8 +354,8 @@ test("Test Query", async () => {
         [
             {
                 utility: "swing",
-                description: "Swing the club at a target.",
-                ability: "swing",
+                description: "Swing the club with all your strength.",
+                ability: "bruise",
                 requireEquipped: true,
             },
             {
@@ -378,15 +378,11 @@ test("Test Query", async () => {
 
     // Test both utility and ability
     gameCommands = searchPossibleCommands({
-        query: "swing at goblin",
+        query: "swing bruise at goblin",
         // Player
         player: playerOne,
-        playerAbilities: [
-            abilities.scratch,
-            abilities.bandage,
-            abilities.swing,
-        ], // has swing action
-        playerItems: [woodenClub], // has swing utility
+        playerAbilities: [abilities.bruise, abilities.bandage],
+        playerItems: [woodenClub],
         actions: [],
         // Environment
         monsters: [goblin, dragon],
@@ -397,7 +393,7 @@ test("Test Query", async () => {
     expect(gameCommands).toMatchObject([
         [
             {
-                ability: "swing",
+                ability: "bruise",
                 type: "offensive",
             },
             {
@@ -433,11 +429,7 @@ test("Test Query", async () => {
         query: "open woodenDoor",
         // Player
         player: playerOne,
-        playerAbilities: [
-            abilities.scratch,
-            abilities.bandage,
-            abilities.swing,
-        ], // has swing action
+        playerAbilities: [abilities.bruise, abilities.bandage], // has swing action
         playerItems: [woodenClub], // has swing utility
         actions: [],
         // Environment
@@ -571,10 +563,10 @@ test("Test Query", async () => {
     // Test abilities should show multiple targets
     goblin.loc = goblinTwo.loc = goblinThree.loc = playerOne.loc;
     gameCommands = searchPossibleCommands({
-        query: `scratch goblin`,
+        query: `bruise goblin`,
         // Player
         player: playerOne,
-        playerAbilities: [abilities.scratch],
+        playerAbilities: [abilities.bruise],
         playerItems: [],
         actions: [],
         // Environment
@@ -586,7 +578,7 @@ test("Test Query", async () => {
     expect(gameCommands).toMatchObject([
         [
             {
-                ability: "scratch",
+                ability: "bruise",
             },
             {
                 self: {
@@ -599,7 +591,7 @@ test("Test Query", async () => {
         ],
         [
             {
-                ability: "scratch",
+                ability: "bruise",
             },
             {
                 self: {
@@ -612,7 +604,7 @@ test("Test Query", async () => {
         ],
         [
             {
-                ability: "scratch",
+                ability: "bruise",
             },
             {
                 self: {
