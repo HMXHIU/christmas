@@ -13,9 +13,9 @@ import { npcs } from "$lib/server/crossover/settings/npc";
 import { getUserMetadata } from "$lib/server/crossover/utils";
 import { beforeAll, expect, test } from "vitest";
 import {
-    collectAllEvents,
     createGandalfSarumanSauron,
     createNPCs,
+    waitForAnyEventData,
     waitForEventData,
 } from "./utils";
 
@@ -77,7 +77,7 @@ test("Test Give Item To NPC", async () => {
         { item: potion.item, receiver: innKeeper.player },
         { Cookie: playerOneCookies },
     );
-    var evs = await collectAllEvents(playerOneStream);
+    var evs = await waitForAnyEventData(playerOneStream);
     expect(evs).toMatchObject({
         feed: {
             type: "message",
@@ -122,7 +122,7 @@ test("Test Trade With NPC", async () => {
         { offer, receive, seller: innKeeper.player, buyer: playerOne.player },
         { Cookie: playerOneCookies },
     );
-    var evs = await collectAllEvents(playerOneStream);
+    var evs = await waitForAnyEventData(playerOneStream);
     expect(evs).toMatchObject({
         feed: {
             type: "message",
@@ -145,7 +145,7 @@ test("Test Learn From NPC", async () => {
         { skill: "exploration", teacher: innKeeper.player },
         { Cookie: playerOneCookies },
     );
-    var evs = await collectAllEvents(playerOneStream);
+    var evs = await waitForAnyEventData(playerOneStream);
     expect(evs).toMatchObject({
         feed: {
             type: "message",
@@ -168,7 +168,7 @@ test("Test Learn From NPC", async () => {
         { skill: "exploration", teacher: innKeeper.player },
         { Cookie: playerOneCookies },
     );
-    evs = await collectAllEvents(playerOneStream);
+    evs = await waitForAnyEventData(playerOneStream);
     expect(evs).toMatchObject({
         feed: {
             type: "message",
@@ -192,7 +192,7 @@ test("Test Learn From NPC", async () => {
         { skill: "exploration", teacher: innKeeper.player },
         { Cookie: playerOneCookies },
     );
-    evs = await collectAllEvents(playerOneStream);
+    evs = await waitForAnyEventData(playerOneStream);
     expect(evs).toMatchObject({
         feed: {
             type: "message",

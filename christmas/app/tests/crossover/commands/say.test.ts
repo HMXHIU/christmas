@@ -23,7 +23,7 @@ describe("Say Tests", () => {
             query: "say saruman thou shall not pass",
             player: playerOne,
             actions: [actions.look, actions.say],
-            playerAbilities: [abilities.scratch],
+            playerAbilities: [abilities.bruise],
             playerItems: [woodenClub],
             monsters: [dragon],
             players: [playerTwo],

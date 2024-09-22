@@ -1,3 +1,4 @@
+import { ENVIRONMENT } from "$env/static/private";
 import type {
     ItemEntity,
     Monster,
@@ -51,6 +52,7 @@ export {
     isLocationTraversable,
     itemVariableValue,
     parseItemVariables,
+    random,
     savePlayerState,
     setPlayerState,
 };
@@ -400,4 +402,11 @@ async function itemVariableValue(
     }
 
     throw new Error(`Invalid variable type ${type} for item ${item.item}`);
+}
+
+function random() {
+    if (ENVIRONMENT === "development") {
+        return 0.5;
+    }
+    return Math.random();
 }

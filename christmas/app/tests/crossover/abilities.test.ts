@@ -1,18 +1,14 @@
 import type { PlayerEntity } from "$lib/crossover/types";
 import { patchEffectWithVariables } from "$lib/crossover/world/abilities";
-import { entityActualAp } from "$lib/crossover/world/entity";
-import { MS_PER_TICK, TICKS_PER_TURN } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import { consumeResources } from "$lib/server/crossover";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
-import { sleep } from "$lib/utils";
 import { beforeEach, describe, expect, test } from "vitest";
 import {
     createGandalfSarumanSauron,
     generateRandomGeohash,
-    resetPlayerResources,
+    resetEntityResources,
     testPlayerPerformAbilityOnPlayer,
 } from "./utils";
 
@@ -30,20 +26,10 @@ let {
 beforeEach(async () => {
     playerOne.loc = [geohash];
     playerTwo.loc = [geohash];
-    resetPlayerResources(playerOne, playerTwo);
+    resetEntityResources(playerOne, playerTwo);
 });
 
 describe("Abilities Tests", () => {
-    test("AP Recovery", async () => {
-        playerOne = (await consumeResources(playerOne as PlayerEntity, {
-            ap: 100,
-        })) as PlayerEntity;
-        expect(playerOne.ap).toBe(0);
-        await sleep(MS_PER_TICK * (TICKS_PER_TURN + 1));
-        playerOne.ap = entityActualAp(playerOne);
-        expect(playerOne.ap).toBe(4);
-    });
-
     test("Ability out of range", async () => {
         // Move playerTwo away
         playerTwo.loc = [
@@ -55,7 +41,7 @@ describe("Abilities Tests", () => {
             await testPlayerPerformAbilityOnPlayer({
                 self: playerOne as PlayerEntity,
                 target: playerTwo as PlayerEntity,
-                ability: abilities.scratch.ability,
+                ability: abilities.bruise.ability,
                 selfCookies: playerOneCookies,
                 selfStream: playerOneStream,
                 targetStream: playerTwoStream,
@@ -74,7 +60,7 @@ describe("Abilities Tests", () => {
             await testPlayerPerformAbilityOnPlayer({
                 self: playerOne as PlayerEntity,
                 target: playerTwo as PlayerEntity,
-                ability: abilities.scratch.ability,
+                ability: abilities.bruise.ability,
                 selfCookies: playerOneCookies,
                 selfStream: playerOneStream,
                 targetStream: playerTwoStream,
@@ -82,12 +68,10 @@ describe("Abilities Tests", () => {
 
         expect(result).toBe("success");
         expect(self).toMatchObject({
-            st: selfBefore.st - abilities.scratch.st,
-            mp: selfBefore.mp - abilities.scratch.mp,
-            hp: selfBefore.hp - abilities.scratch.hp,
+            mnd: selfBefore.mnd - (abilities.bruise.cost.mnd ?? 0),
         });
         expect(target).toMatchObject({
-            hp: targetBefore.hp - 1, // scratch does 1 damage
+            hp: targetBefore.hp - 1, // bruise does 1 damage
         });
     });
 
@@ -100,7 +84,7 @@ describe("Abilities Tests", () => {
             await testPlayerPerformAbilityOnPlayer({
                 self: playerOne as PlayerEntity,
                 target: playerTwo as PlayerEntity,
-                ability: abilities.scratch.ability,
+                ability: abilities.bruise.ability,
                 selfCookies: playerOneCookies,
                 selfStream: playerOneStream,
                 targetStream: playerTwoStream,

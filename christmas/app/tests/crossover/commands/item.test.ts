@@ -7,20 +7,17 @@ import { abilities } from "$lib/crossover/world/settings/abilities";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
-import {
-    initializeClients,
-    saveEntities,
-    saveEntity,
-} from "$lib/server/crossover/redis";
+import { initializeClients } from "$lib/server/crossover/redis";
+import { saveEntities, saveEntity } from "$lib/server/crossover/redis/utils";
 import { sleep } from "$lib/utils";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import {
     allActions,
+    collectAllEventDataForDuration,
     createGandalfSarumanSauron,
     createGoblinSpiderDragon,
     createTestItems,
-    resetMonsterResources,
-    resetPlayerResources,
+    resetEntityResources,
     waitForEventData,
 } from "../utils";
 
@@ -60,8 +57,8 @@ beforeEach(async () => {
     playerOne.locI = LOCATION_INSTANCE;
     playerOne.locT = "geohash";
 
-    await resetPlayerResources(playerOne);
-    await resetMonsterResources(goblin, dragon);
+    await resetEntityResources(playerOne);
+    await resetEntityResources(goblin, dragon);
 
     woodenClub.loc = [portalOne.loc[0]];
     woodenClub.locI = LOCATION_INSTANCE;
@@ -83,9 +80,9 @@ describe("Item Tests", () => {
                 query: "enter tavern",
                 player: playerOne,
                 playerAbilities: [
-                    abilities.scratch,
+                    abilities.bruise,
                     abilities.bandage,
-                    abilities.swing,
+                    abilities.doubleSlash,
                 ],
                 playerItems: [woodenClub],
                 actions: allActions,
@@ -161,9 +158,9 @@ describe("Item Tests", () => {
             query: "open woodenDoor",
             player: playerOne,
             playerAbilities: [
-                abilities.scratch,
+                abilities.bruise,
                 abilities.bandage,
-                abilities.swing,
+                abilities.doubleSlash,
             ],
             playerItems: [woodenClub],
             actions: [],
@@ -188,9 +185,9 @@ describe("Item Tests", () => {
             query: "close woodenDoor",
             player: playerOne,
             playerAbilities: [
-                abilities.scratch,
+                abilities.bruise,
                 abilities.bandage,
-                abilities.swing,
+                abilities.doubleSlash,
             ],
             playerItems: [woodenClub],
             actions: [],
@@ -231,7 +228,7 @@ describe("Item Tests", () => {
         const swingGoblin: GameCommand = searchPossibleCommands({
             query: "swing goblin",
             player: playerOne,
-            playerAbilities: [abilities.scratch, abilities.bandage],
+            playerAbilities: [abilities.bruise, abilities.bandage],
             playerItems: [woodenClub],
             actions: [],
             monsters: [goblin, dragon],
@@ -257,21 +254,89 @@ describe("Item Tests", () => {
         ]);
         executeGameCommand(swingGoblin, { Cookie: playerOneCookies });
 
-        let result = await waitForEventData(playerOneStream, "entities");
-        expect(result).toMatchObject({
-            event: "entities",
-            players: [{ player: playerOne.player, hp: 11, mp: 12, st: 11 }],
-            monsters: [{ monster: goblin.monster, hp: 9 }],
-            items: [],
-        });
-
-        result = await waitForEventData(playerOneStream, "entities");
-        expect(result).toMatchObject({
-            event: "entities",
-            players: [],
-            monsters: [],
-            items: [
-                { item: woodenClub.item, dur: 99, chg: 0, state: "default" },
+        const evs = await collectAllEventDataForDuration(playerOneStream, 1000);
+        expect(evs).toMatchObject({
+            feed: [
+                {
+                    type: "message",
+                    message: "Gandalf bashes goblin, dealing 12 damage!",
+                    event: "feed",
+                },
+                {
+                    type: "message",
+                    message: "You killed goblin, their collapses at your feet.",
+                    event: "feed",
+                },
+            ],
+            entities: [
+                {
+                    event: "entities",
+                    players: [],
+                    monsters: [
+                        {
+                            name: "goblin",
+                            monster: goblin.monster,
+                            hp: -2,
+                            cha: 1,
+                            mnd: 1,
+                            lum: 0,
+                            umb: 0,
+                            buclk: 0,
+                        },
+                    ],
+                    items: [],
+                    op: "upsert",
+                },
+                {
+                    event: "entities",
+                    players: [
+                        {
+                            player: playerOne.player,
+                            hp: 11,
+                            cha: 1,
+                            mnd: 1,
+                            lum: 10,
+                            umb: 0,
+                        },
+                    ],
+                    monsters: [],
+                    items: [],
+                    op: "upsert",
+                },
+                {
+                    event: "entities",
+                    players: [],
+                    monsters: [],
+                    items: [
+                        {
+                            item: woodenClub.item,
+                            prop: "woodenclub",
+                            state: "default",
+                            vars: {},
+                            chg:
+                                woodenClub.chg -
+                                compendium.woodenclub.utilities.swing.cost
+                                    .charges,
+                            dur:
+                                woodenClub.dur -
+                                compendium.woodenclub.utilities.swing.cost
+                                    .durability,
+                            loc: [playerOne.player],
+                            locT: "rh",
+                            locI: "@",
+                        },
+                    ],
+                    op: "upsert",
+                },
+            ],
+            cta: [],
+            action: [
+                {
+                    ability: "bruise",
+                    source: playerOne.player,
+                    target: goblin.monster,
+                    event: "action",
+                },
             ],
         });
     });

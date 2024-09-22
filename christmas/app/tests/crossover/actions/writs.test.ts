@@ -12,9 +12,9 @@ import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
 import { sleep } from "$lib/utils";
 import { beforeEach, describe, expect, test } from "vitest";
 import {
-    collectAllEvents,
     createGandalfSarumanSauron,
-    resetPlayerResources,
+    resetEntityResources,
+    waitForAnyEventData,
     waitForEventData,
 } from "../utils";
 
@@ -36,7 +36,7 @@ let woodenclub = await spawnItemInInventory({
 });
 
 beforeEach(async () => {
-    await resetPlayerResources(playerOne, playerTwo);
+    await resetEntityResources(playerOne, playerTwo);
 
     // Put woodenclub in `playerTwo` inventory
     woodenclub.loc[0] = playerTwo.player;
@@ -88,7 +88,7 @@ describe("Writ Tests", () => {
             { player: playerTwo.player },
             { Cookie: playerOneCookies },
         );
-        var evs = await collectAllEvents(playerOneStream);
+        var evs = await waitForAnyEventData(playerOneStream);
 
         // Check entitites
         expect(evs.entities).toMatchObject({

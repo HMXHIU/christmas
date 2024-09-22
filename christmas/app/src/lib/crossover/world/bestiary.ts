@@ -1,8 +1,5 @@
 import { PUBLIC_HOST } from "$env/static/public";
-import type { Currency, MonsterEntity } from "$lib/crossover/types";
 import { seededRandom, stringToRandomNumber } from "$lib/utils";
-import { entityLevel } from "./entity";
-import { bestiary } from "./settings/bestiary";
 import { worldSeed } from "./settings/world";
 import type { SkillLines } from "./skills";
 import type { AssetMetadata } from "./types";
@@ -11,7 +8,6 @@ import { type WorldSeed } from "./world";
 export {
     avatarMorphologies,
     monsterLimitAtGeohash,
-    monsterLUReward,
     type Alignment,
     type AvatarMorphology,
     type Beast,
@@ -66,22 +62,4 @@ function monsterLimitAtGeohash(geohash: string, seed?: WorldSeed): number {
     const rv = seededRandom(stringToRandomNumber(geohash));
 
     return Math.ceil(rv * maxMonsters);
-}
-
-function monsterLUReward(monster: MonsterEntity): Record<Currency, number> {
-    const { alignment } = bestiary[monster.beast];
-    const level = entityLevel(monster);
-
-    // TODO: Calculate reward using attributes, skills, etc...
-
-    if (alignment === "evil") {
-        return {
-            lum: Math.ceil(level),
-            umb: 0,
-        };
-    }
-    return {
-        lum: Math.ceil(level),
-        umb: 0,
-    };
 }

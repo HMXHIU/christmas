@@ -28,6 +28,7 @@ import { BASE_ATTRIBUTES } from "$lib/crossover/world/settings/entity";
 import { sanctuaries } from "$lib/crossover/world/settings/world";
 import type { EquipmentSlot } from "$lib/crossover/world/types";
 import { uniq } from "lodash-es";
+import { random } from "../utils";
 
 export {
     attackRollForProcedureEffect,
@@ -66,7 +67,7 @@ const bodyPartToEquipment: Record<BodyPart, EquipmentSlot[]> = {
 };
 
 function determineBodyPartHit(): BodyPart {
-    const roll = Math.random();
+    const roll = random();
     let cumulativeProbability = 0;
     for (const [part, probability] of Object.entries(bodyPartHitProbability)) {
         cumulativeProbability += probability;
@@ -79,7 +80,7 @@ function determineBodyPartHit(): BodyPart {
 
 function determineEquipmentSlotHit(bodyPartHit: BodyPart): EquipmentSlot {
     const equipment = bodyPartToEquipment[bodyPartHit];
-    const idx = Math.floor(Math.random() * equipment.length);
+    const idx = Math.floor(random() * equipment.length);
     return equipment[idx] ?? equipment[0];
 }
 
@@ -87,7 +88,7 @@ function rollDice(dieRoll: DieRoll): number {
     let total = 0;
     const absides = Math.abs(dieRoll.sides);
     for (let i = 0; i < dieRoll.count; i++) {
-        total += Math.floor(Math.random() * absides) + 1;
+        total += Math.floor(random() * absides) + 1;
     }
     return dieRoll.sides > 0 ? total : -total;
 }
@@ -209,10 +210,9 @@ function attackRollForProcedureEffect(
             modifiers,
             defenderAttributes,
         );
-
         return {
             success:
-                attackerRoll + attackerModifier >
+                attackerRoll + attackerModifier >=
                 defenderRoll + defenderModifier,
             attackerRoll,
             defenderRoll,
@@ -220,7 +220,7 @@ function attackRollForProcedureEffect(
             attackerModifier,
         };
     }
-    // Some procedures do not have a die roll (no modifiers), just use the d20 rolls in this case
+    // Some procedures do not have a (no modifiers), just use the attack roll
     else {
         return {
             success: attackerRoll > defenderRoll,

@@ -13,9 +13,9 @@ import { beforeAll, describe, expect, test } from "vitest";
 import type { CTAEvent } from "../../../src/routes/api/crossover/stream/+server";
 import {
     allActions,
-    collectAllEvents,
     createGandalfSarumanSauron,
     createGoblinSpiderDragon,
+    waitForAnyEventData,
     waitForEventData,
 } from "../utils";
 
@@ -47,11 +47,7 @@ describe("Give Tests", () => {
             searchPossibleCommands({
                 query: `give ${woodenClub.item} to ${playerTwo.name}`,
                 player: playerOne,
-                playerAbilities: [
-                    abilities.scratch,
-                    abilities.bandage,
-                    abilities.swing,
-                ],
+                playerAbilities: [abilities.bruise, abilities.bandage],
                 playerItems: [woodenClub],
                 actions: allActions,
                 monsters: [goblin, dragon],
@@ -108,8 +104,12 @@ describe("Give Tests", () => {
 
         let playerOneEvs: any;
         let playerTwoEvs: any;
-        collectAllEvents(playerOneStream).then((evs) => (playerOneEvs = evs));
-        collectAllEvents(playerTwoStream).then((evs) => (playerTwoEvs = evs));
+        waitForAnyEventData(playerOneStream).then(
+            (evs) => (playerOneEvs = evs),
+        );
+        waitForAnyEventData(playerTwoStream).then(
+            (evs) => (playerTwoEvs = evs),
+        );
         await sleep(MS_PER_TICK * 4);
 
         expect(playerOneEvs).toMatchObject({
@@ -121,7 +121,7 @@ describe("Give Tests", () => {
                     player: playerTwo.player,
                     name: "Saruman",
                     message:
-                        "Saruman beams with gratitude as they nod to you, 'Ah, many thanks for the Wooden Club, Saruman!'",
+                        "Saruman beams with gratitude as they nod to you, 'Ah, many thanks for the Wooden Club, Gandalf!'",
                 },
                 event: "feed",
             },

@@ -1,5 +1,5 @@
 import type { Item, Monster, Player } from "$lib/crossover/types";
-import { filterSortEntitiesInRange } from "./utils";
+import { filterSortEntitiesInRange, gameActionId, getEntityId } from "./utils";
 import { resolveAbilityEntities, type Ability } from "./world/abilities";
 import { resolveActionEntities, type Action } from "./world/actions";
 import type { Utility } from "./world/compendium";
@@ -588,8 +588,24 @@ function searchPossibleCommands({
         },
     );
 
+    // Sort commands by relevance
+    let commands = [...abilityCommands, ...utilityCommands, ...actionCommands]
+        .map(
+            (c) =>
+                [gameCommandScore(c, allTokenPositions, queryTokens), c] as [
+                    number,
+                    GameCommand,
+                ],
+        )
+        .sort((a, b) => b[0] - a[0]);
+
+    // If top 1 is perfect match remove the rest
+    if (commands.length > 0 && commands[0][0] === 1) {
+        commands = commands.filter((xs) => xs[0] === 1);
+    }
+
     return {
-        commands: [...abilityCommands, ...utilityCommands, ...actionCommands],
+        commands: commands.map(([s, c]) => c),
         queryTokens,
         tokenPositions: allTokenPositions,
     };
@@ -606,7 +622,6 @@ function commandVariables({
     queryTokens: string[];
     tokenPositions: TokenPositions;
 }): GameCommandVariables {
-    // const relevantPositions = Object.values(action.predicate.tokenPositions);
     const relevantPositions = Object.values(action.predicate.tokens).map(
         (c) => c.position,
     );
@@ -622,4 +637,31 @@ function commandVariables({
         query: queryTokens.join(" "),
         queryIrrelevant,
     };
+}
+
+function gameCommandScore(
+    command: GameCommand,
+    tokenPositions: TokenPositions,
+    queryTokens: string[],
+): number {
+    // Note: don't include self, offer, receive
+    const { target, item, skill } = command[1];
+    const tokens = [gameActionId(command[0])];
+    if (target) {
+        tokens.push(getEntityId(target)[0]);
+    }
+    if (item) {
+        tokens.push(getEntityId(item)[0]);
+    }
+    if (skill) {
+        tokens.push(skill);
+    }
+    const tokenScore = tokens.reduce((acc, t) => {
+        const matchedScore = tokenPositions[t];
+        if (matchedScore) {
+            return acc + Object.values(tokenPositions[t])[0].score;
+        }
+        return acc;
+    }, 0);
+    return tokenScore / queryTokens.length;
 }

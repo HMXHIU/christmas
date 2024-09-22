@@ -179,18 +179,15 @@ async function consumeResources(
         umb,
         lum,
         hp,
-        now,
     }: {
         cha?: number;
         mnd?: number;
         umb?: number;
         lum?: number;
         hp?: number;
-        now?: number;
     },
+    save: boolean = true,
 ): Promise<PlayerEntity | MonsterEntity> {
-    now = now ?? Date.now();
-
     // Get max stats (also fixes stats when it goes over max)
     const { hp: maxHp, mnd: maxSt, cha: maxCha } = entityStats(entity);
 
@@ -209,6 +206,8 @@ async function consumeResources(
     if (umb) {
         entity.umb = Math.max(entity.umb - umb, 0);
     }
-
-    return (await saveEntity(entity)) as PlayerEntity;
+    if (save) {
+        entity = await saveEntity(entity);
+    }
+    return entity;
 }

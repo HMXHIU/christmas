@@ -25,11 +25,7 @@ describe("Equipment & Inventory Tests", () => {
             query: `drop ${woodenClubThree.item}`,
             player: playerOne,
             actions: [actions.drop],
-            playerAbilities: [
-                abilities.scratch,
-                abilities.bandage,
-                abilities.swing,
-            ],
+            playerAbilities: [abilities.bruise, abilities.bandage],
             playerItems: [woodenClubTwo],
             monsters: [dragon, goblin],
             players: [],

@@ -22,7 +22,7 @@ import { resolveCombat } from "./combat";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "./events";
 import { fetchEntity } from "./redis/utils";
 
-export { consumeResources, performAbility, setEntityBusy };
+export { performAbility };
 
 async function performAbility({
     self,
@@ -96,7 +96,7 @@ async function performAbility({
 
     // Expend ability costs (also caps stats to player level)
     if (!ignoreCost) {
-        self = await consumeResources(self, { ...cost, now });
+        self = await consumeResources(self, cost);
     }
     targetEntity = targetEntity.player === self.player ? self : targetEntity; // target might be self, in which case update it after save
 

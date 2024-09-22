@@ -18,7 +18,7 @@ import type {
     ProcedureEffect,
 } from "$lib/crossover/world/abilities";
 import type { Actions } from "$lib/crossover/world/actions";
-import { monsterLUReward } from "$lib/crossover/world/bestiary";
+import { entityCurrencyReward } from "$lib/crossover/world/entity";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { clone, uniq } from "lodash-es";
 import {
@@ -32,7 +32,11 @@ import {
     getPlayerIdsNearbyEntities,
 } from "../redis/queries";
 import { saveEntities } from "../redis/utils";
-import { generateHitMessage, generateMissMessage } from "./dialogues";
+import {
+    entityPronoun,
+    generateHitMessage,
+    generateMissMessage,
+} from "./dialogues";
 import {
     attackRollForProcedureEffect,
     attackRollForWeapon,
@@ -103,7 +107,7 @@ async function resolveCombat(
         ));
 
         // Publish action feed
-        publishActionEvent(nearbyPlayerIds, {
+        await publishActionEvent(nearbyPlayerIds, {
             action: success ? "attack" : "miss",
             source: getEntityId(attacker)[0],
             target: getEntityId(defender)[0],
@@ -126,7 +130,7 @@ async function resolveCombat(
         ));
 
         // Publish action feed
-        publishActionEvent(nearbyPlayerIds, {
+        await publishActionEvent(nearbyPlayerIds, {
             ability: options?.ability.ability,
             source: getEntityId(attacker)[0],
             target: getEntityId(defender)[0],
@@ -139,7 +143,7 @@ async function resolveCombat(
     // Hit
     if (success) {
         // Publish entities
-        publishAffectedEntitiesToPlayers(
+        await publishAffectedEntitiesToPlayers(
             entities.map((e) =>
                 minifiedEntity(e, {
                     stats: true,
@@ -153,7 +157,7 @@ async function resolveCombat(
             },
         );
         // Publish hit feed
-        publishFeedEventToPlayers(nearbyPlayerIds, {
+        await publishFeedEventToPlayers(nearbyPlayerIds, {
             type: "message",
             message: generateHitMessage({
                 attacker,
@@ -168,7 +172,7 @@ async function resolveCombat(
     // Miss
     else {
         // Publish miss feed
-        publishFeedEventToPlayers(nearbyPlayerIds, {
+        await publishFeedEventToPlayers(nearbyPlayerIds, {
             type: "message",
             message: generateMissMessage(
                 attacker,
@@ -390,33 +394,106 @@ async function resolveAfterCombat({
     attacker: PlayerEntity | MonsterEntity;
     defender: PlayerEntity | MonsterEntity | ItemEntity;
 }> {
+    // Attacker died
     if (entityDied(attackerBefore, attacker)) {
-        if ("player" in attacker) {
-            attacker = respawnPlayer(attacker as PlayerEntity);
-            publishFeedEvent(attacker.player, {
-                type: "message",
-                message: deadMessage,
-            });
-        }
-        if ("monster" in attacker && "player" in defender) {
-            const { lum, umb } = monsterLUReward(attacker as MonsterEntity);
+        // Award currency to defender if it is not item
+        if ("player" in defender || "monster" in defender) {
+            const { lum, umb } = entityCurrencyReward(attacker);
             (defender as PlayerEntity).lum += lum;
             (defender as PlayerEntity).umb += umb;
+            // Publish entities
+            await publishAffectedEntitiesToPlayers(
+                [
+                    minifiedEntity(defender, {
+                        stats: true,
+                        location: true,
+                        timers: true,
+                    }),
+                ],
+                {
+                    op: "upsert",
+                },
+            );
         }
-    }
-    if (entityDied(defenderBefore, defender)) {
-        if ("player" in defender) {
-            defender = respawnPlayer(defender as PlayerEntity);
-            // Publish dead message
-            publishFeedEvent(defender.player, {
+        // Respawn defender, publish dead message
+        if ("player" in attacker) {
+            attacker = respawnPlayer(attacker as PlayerEntity);
+            await publishFeedEvent(attacker.player, {
                 type: "message",
                 message: deadMessage,
             });
+            // Publish entities
+            await publishAffectedEntitiesToPlayers(
+                [
+                    minifiedEntity(attacker, {
+                        stats: true,
+                        location: true,
+                        timers: true,
+                    }),
+                ],
+                {
+                    op: "upsert",
+                },
+            );
         }
-        if ("monster" in defender && "player" in attacker) {
-            const { lum, umb } = monsterLUReward(defender as MonsterEntity);
-            (attacker as PlayerEntity).lum += lum;
-            (attacker as PlayerEntity).umb += umb;
+        // Publish killed feed
+        if ("player" in defender) {
+            await publishFeedEvent((defender as PlayerEntity).player, {
+                type: "message",
+                message: `You killed ${attacker.name}, ${entityPronoun(attacker)} collapses at your feet.`,
+            });
+        }
+    }
+    // Defender died
+    if (entityDied(defenderBefore, defender)) {
+        // Award currency to attacker if defender is not item
+        if ("player" in defender || "monster" in defender) {
+            const { lum, umb } = entityCurrencyReward(
+                defender as PlayerEntity | MonsterEntity,
+            );
+            attacker.lum += lum;
+            attacker.umb += umb;
+            // Publish entities
+            await publishAffectedEntitiesToPlayers(
+                [
+                    minifiedEntity(attacker, {
+                        stats: true,
+                        location: true,
+                        timers: true,
+                    }),
+                ],
+                {
+                    op: "upsert",
+                },
+            );
+        }
+        // Respawn defender, publish dead message
+        if ("player" in defender) {
+            defender = respawnPlayer(defender as PlayerEntity);
+            await publishFeedEvent(defender.player, {
+                type: "message",
+                message: deadMessage,
+            });
+            // Publish entities
+            await publishAffectedEntitiesToPlayers(
+                [
+                    minifiedEntity(defender, {
+                        stats: true,
+                        location: true,
+                        timers: true,
+                    }),
+                ],
+                {
+                    op: "upsert",
+                },
+            );
+        }
+        // Publish killed feed
+        if ("player" in attacker) {
+            await publishFeedEvent((attacker as PlayerEntity).player, {
+                type: "message",
+                message: `You killed ${defender.name}, ${entityPronoun(defender)} collapses at your feet.`,
+            });
         }
     }
 

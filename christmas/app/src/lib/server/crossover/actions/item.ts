@@ -92,7 +92,7 @@ async function useItem({
 
     if (error) {
         if (self.player) {
-            publishFeedEvent((self as PlayerEntity).player, {
+            await publishFeedEvent((self as PlayerEntity).player, {
                 type: "error",
                 message: error,
             });
@@ -119,9 +119,12 @@ async function useItem({
 
         // Publish item state to nearby players
         if (self.player != null) {
-            publishAffectedEntitiesToPlayers([minifiedEntity(itemEntity)], {
-                publishTo: nearbyPlayerIds,
-            });
+            await publishAffectedEntitiesToPlayers(
+                [minifiedEntity(itemEntity)],
+                {
+                    publishTo: nearbyPlayerIds,
+                },
+            );
         }
     }
     // Perform ability (ignore cost when using items)
@@ -163,7 +166,7 @@ async function useItem({
     )) as ItemEntity;
 
     // Publish item state to nearby players
-    publishAffectedEntitiesToPlayers(
+    await publishAffectedEntitiesToPlayers(
         [minifiedEntity(itemEntity, { stats: true, location: true })],
         {
             publishTo: nearbyPlayerIds,
@@ -201,7 +204,7 @@ async function equipItem(
     }
 
     if (error != null) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message: error,
         });
@@ -233,7 +236,7 @@ async function equipItem(
         player.locT as GeohashLocationType,
         player.locI,
     );
-    publishAffectedEntitiesToPlayers(
+    await publishAffectedEntitiesToPlayers(
         [itemToEquip, ...exitingItemsInSlot].map((e) =>
             minifiedEntity(e, { location: true }),
         ),
@@ -249,7 +252,7 @@ async function unequipItem(player: PlayerEntity, item: string, now?: number) {
     let itemEntity = (await fetchEntity(item)) as ItemEntity;
 
     if (itemEntity == null) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message: `Item ${item} not found`,
         });
@@ -265,7 +268,7 @@ async function unequipItem(player: PlayerEntity, item: string, now?: number) {
 
     // Check item is on player
     if (itemEntity.loc[0] !== player.player) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message: `${item} is not equipped`,
         });
@@ -286,7 +289,7 @@ async function unequipItem(player: PlayerEntity, item: string, now?: number) {
         player.locT as GeohashLocationType,
         player.locI,
     );
-    publishAffectedEntitiesToPlayers(
+    await publishAffectedEntitiesToPlayers(
         [minifiedEntity(itemEntity, { location: true })],
         {
             publishTo: nearbyPlayerIds,
@@ -327,7 +330,7 @@ async function takeItem(
     }
 
     if (error) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message: error,
         });
@@ -348,7 +351,7 @@ async function takeItem(
         player.locT as GeohashLocationType,
         player.locI,
     );
-    publishAffectedEntitiesToPlayers(
+    await publishAffectedEntitiesToPlayers(
         [minifiedEntity(itemEntity, { location: true, stats: true })],
         { publishTo: nearbyPlayerIds },
     );
@@ -367,7 +370,7 @@ async function dropItem(player: PlayerEntity, item: string, now?: number) {
     // Get item
     let itemEntity = (await fetchEntity(item)) as ItemEntity;
     if (itemEntity == null) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message: `Item ${item} not found`,
         });
@@ -375,7 +378,7 @@ async function dropItem(player: PlayerEntity, item: string, now?: number) {
     }
 
     if (itemEntity.loc[0] !== player.player) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message: `${item} is not in inventory`,
         });
@@ -383,7 +386,7 @@ async function dropItem(player: PlayerEntity, item: string, now?: number) {
     }
 
     if (!geohashLocationTypes.has(player.locT)) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message: `You cannot drop ${item} here`,
         });
@@ -405,7 +408,7 @@ async function dropItem(player: PlayerEntity, item: string, now?: number) {
         player.locT as GeohashLocationType,
         player.locI,
     );
-    publishAffectedEntitiesToPlayers(
+    await publishAffectedEntitiesToPlayers(
         [minifiedEntity(itemEntity, { location: true, stats: true })],
         { publishTo: nearbyPlayerIds },
     );
@@ -443,14 +446,14 @@ async function createItem(
             player.locT as GeohashLocationType,
             player.locI,
         );
-        publishAffectedEntitiesToPlayers(
+        await publishAffectedEntitiesToPlayers(
             [minifiedEntity(item, { location: true, stats: true })],
             { publishTo: nearbyPlayerIds },
         );
 
         return item;
     } catch (error: any) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message: error.message,
         });
@@ -474,7 +477,7 @@ async function configureItem(
     // Get item
     let itemEntity = (await fetchEntity(item)) as ItemEntity;
     if (itemEntity == null) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message: `Item ${item} not found`,
         });
@@ -483,7 +486,7 @@ async function configureItem(
 
     // Check in range
     if (!entityInRange(player, itemEntity, actions.configure.range)[0]) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message: `${item} is not in range`,
         });
@@ -493,7 +496,7 @@ async function configureItem(
     // Check if can configure item
     const { canConfigure, message } = canConfigureItem(player, itemEntity);
     if (!canConfigure) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message,
         });
@@ -511,7 +514,7 @@ async function configureItem(
     )) as ItemEntity;
 
     // Publish update event
-    publishAffectedEntitiesToPlayers([minifiedEntity(itemEntity)], {
+    await publishAffectedEntitiesToPlayers([minifiedEntity(itemEntity)], {
         publishTo: [player.player],
     });
 
@@ -533,7 +536,7 @@ async function enterItem(
     // Get item
     let itemEntity = (await fetchEntity(item)) as ItemEntity;
     if (itemEntity == null) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message: `Item ${item} not found`,
         });
@@ -542,7 +545,7 @@ async function enterItem(
 
     // Check in range
     if (!entityInRange(player, itemEntity, actions.enter.range)[0]) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message: `${item} is not in range`,
         });
@@ -553,7 +556,7 @@ async function enterItem(
     const prop = compendium[itemEntity.prop];
     if (!prop.world) {
         const message = `${prop.defaultName} is not something you can enter`;
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message,
         });
@@ -607,7 +610,7 @@ async function enterItem(
     player = (await saveEntity(player)) as PlayerEntity;
 
     // Inform all players of self location change
-    publishAffectedEntitiesToPlayers(
+    await publishAffectedEntitiesToPlayers(
         [minifiedEntity(player, { location: true, stats: true })],
         { publishTo: nearbyPlayerIds },
     );

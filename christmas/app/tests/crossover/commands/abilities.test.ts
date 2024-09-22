@@ -1,16 +1,25 @@
 import { executeGameCommand } from "$lib/crossover/game";
 import { searchPossibleCommands, type GameCommand } from "$lib/crossover/ir";
+import { awardKillCurrency } from "$lib/crossover/world/entity";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
+import { consumeResources } from "$lib/server/crossover";
 import { initializeClients } from "$lib/server/crossover/redis";
-import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import {
+    afterAll,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    test,
+    vi,
+} from "vitest";
+import {
+    collectAllEventDataForDuration,
     createGandalfSarumanSauron,
     createGoblinSpiderDragon,
     createTestItems,
-    resetMonsterResources,
-    resetPlayerResources,
-    waitForEventData,
+    resetEntityResources,
 } from "../utils";
 
 await initializeClients(); // create redis repositories
@@ -20,24 +29,27 @@ let { geohash, playerOne, playerOneCookies, playerOneStream, playerTwo } =
 let { dragon, goblin } = await createGoblinSpiderDragon(geohash);
 let { woodenDoor, woodenClub } = await createTestItems({});
 
-beforeAll(async () => {});
+beforeAll(async () => {
+    vi.spyOn(Math, "random").mockImplementation(() => 0.5);
+});
+afterAll(() => {
+    vi.restoreAllMocks();
+});
 
 beforeEach(async () => {
     playerOne.loc = [geohash];
-    resetPlayerResources(playerOne, playerTwo);
-    resetMonsterResources(goblin, dragon);
+    playerOne.skills.exploration = 10;
+    playerOne.skills.dirtyfighting = 10;
+    await resetEntityResources(playerOne, playerTwo);
+    await resetEntityResources(goblin, dragon);
 });
 
 describe("Command Tests", () => {
     test("Use ability on monster", async () => {
         const scratchGoblin: GameCommand = searchPossibleCommands({
-            query: "scratch goblin",
+            query: "bruise goblin",
             player: playerOne,
-            playerAbilities: [
-                abilities.scratch,
-                abilities.bandage,
-                abilities.swing,
-            ],
+            playerAbilities: [abilities.bruise, abilities.bandage],
             playerItems: [woodenClub],
             actions: [],
             monsters: [goblin, dragon],
@@ -45,23 +57,77 @@ describe("Command Tests", () => {
             items: [woodenDoor],
             skills: [...SkillLinesEnum],
         }).commands[0];
-
         executeGameCommand(scratchGoblin, { Cookie: playerOneCookies });
 
-        let result = await waitForEventData(playerOneStream, "entities");
-        expect(result).toMatchObject({
-            event: "entities",
-            players: [{ player: playerOne.player, st: 10, ap: 3 }],
-            monsters: [],
-            items: [],
-        });
-
-        result = await waitForEventData(playerOneStream, "entities");
-        expect(result).toMatchObject({
-            event: "entities",
-            players: [{ player: playerOne.player, st: 10, ap: 3 }],
-            monsters: [{ monster: goblin.monster, hp: 9, mp: 10, st: 10 }],
-            items: [],
+        const evs = await collectAllEventDataForDuration(playerOneStream, 1000);
+        expect(evs).toMatchObject({
+            feed: [
+                {
+                    type: "message",
+                    message: "Gandalf bashes goblin, dealing 13 damage!",
+                    event: "feed",
+                },
+                {
+                    type: "message",
+                    message: "You killed goblin, their collapses at your feet.",
+                    event: "feed",
+                },
+            ],
+            entities: [
+                {
+                    event: "entities",
+                    players: [
+                        {
+                            player: playerOne.player,
+                            ...consumeResources(
+                                playerOne,
+                                abilities.bruise.cost,
+                                false,
+                            ),
+                        },
+                    ],
+                    monsters: [],
+                    items: [],
+                    op: "upsert",
+                },
+                {
+                    event: "entities",
+                    players: [],
+                    monsters: [
+                        {
+                            monster: goblin.monster,
+                            hp: -3,
+                            cha: 1,
+                            mnd: 1,
+                            lum: 0,
+                            umb: 0,
+                        },
+                    ],
+                    items: [],
+                    op: "upsert",
+                },
+                {
+                    event: "entities",
+                    players: [
+                        {
+                            player: playerOne.player,
+                            ...awardKillCurrency(playerOne, goblin, false),
+                        },
+                    ],
+                    monsters: [],
+                    items: [],
+                    op: "upsert",
+                },
+            ],
+            cta: [],
+            action: [
+                {
+                    ability: "bruise",
+                    source: playerOne.player,
+                    target: goblin.monster,
+                    event: "action",
+                },
+            ],
         });
     });
 });

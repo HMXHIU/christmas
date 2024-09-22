@@ -324,7 +324,7 @@ describe("Test Items", () => {
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
             type: "error",
-            message: "Target is out of range",
+            message: "Saruman is out of range",
         });
 
         // playerOne swing playerOneWoodenClub at playerTwo (successful)

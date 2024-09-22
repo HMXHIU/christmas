@@ -11,7 +11,7 @@ import type { CTAEvent } from "../../../src/routes/api/crossover/stream/+server"
 import {
     createGandalfSarumanSauron,
     createNPCs,
-    resetPlayerResources,
+    resetEntityResources,
     waitForEventData,
 } from "../utils";
 
@@ -32,7 +32,7 @@ let { blackSmith } = await createNPCs({
 });
 
 beforeEach(async () => {
-    resetPlayerResources(playerOne, playerTwo);
+    resetEntityResources(playerOne, playerTwo);
 });
 
 describe("Learn Tests", () => {

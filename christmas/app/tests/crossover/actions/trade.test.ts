@@ -15,7 +15,7 @@ import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import type { CTAEvent } from "../../../src/routes/api/crossover/stream/+server";
 import {
     createGandalfSarumanSauron,
-    resetPlayerResources,
+    resetEntityResources,
     waitForEventData,
 } from "../utils";
 
@@ -50,7 +50,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-    await resetPlayerResources(playerOne, playerTwo);
+    await resetEntityResources(playerOne, playerTwo);
 
     // Put woodenclub in `playerTwo` inventory
     woodenclub.loc[0] = playerTwo.player;

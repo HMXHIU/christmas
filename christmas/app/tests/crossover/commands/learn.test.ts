@@ -25,11 +25,7 @@ describe("Learn Tests", () => {
             searchPossibleCommands({
                 query: `learn exploration from ${playerTwo.name}`,
                 player: playerOne,
-                playerAbilities: [
-                    abilities.scratch,
-                    abilities.bandage,
-                    abilities.swing,
-                ],
+                playerAbilities: [abilities.bruise, abilities.bandage],
                 playerItems: [woodenClub],
                 actions: allActions,
                 monsters: [goblin, dragon],

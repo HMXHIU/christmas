@@ -17,7 +17,7 @@ import {
     createGandalfSarumanSauron,
     createGoblinSpiderDragon,
     createTestItems,
-    resetPlayerResources,
+    resetEntityResources,
 } from "../utils";
 
 await initializeClients(); // create redis repositories
@@ -28,7 +28,7 @@ let { dragon, goblin } = await createGoblinSpiderDragon(geohash);
 let { woodenDoor, woodenClub } = await createTestItems({});
 
 beforeEach(async () => {
-    resetPlayerResources(playerOne, playerTwo);
+    resetEntityResources(playerOne, playerTwo);
 });
 
 describe("Trade Tests", () => {
@@ -38,11 +38,7 @@ describe("Trade Tests", () => {
             searchPossibleCommands({
                 query: `writ trade 100lum,50umb for woodenClub,potionofhealth`,
                 player: playerOne,
-                playerAbilities: [
-                    abilities.scratch,
-                    abilities.bandage,
-                    abilities.swing,
-                ],
+                playerAbilities: [abilities.bruise, abilities.bandage],
                 playerItems: [woodenClub],
                 actions: allActions,
                 monsters: [goblin, dragon],
@@ -93,11 +89,7 @@ describe("Trade Tests", () => {
         const { commands: writCommands } = searchPossibleCommands({
             query: `writ trade 100lum for ${compendium.potionofhealth.prop}`,
             player: playerOne,
-            playerAbilities: [
-                abilities.scratch,
-                abilities.bandage,
-                abilities.swing,
-            ],
+            playerAbilities: [abilities.bruise, abilities.bandage],
             playerItems: [woodenClub],
             actions: allActions,
             monsters: [goblin, dragon],
@@ -196,11 +188,7 @@ describe("Trade Tests", () => {
             searchPossibleCommands({
                 query: `trade ${woodenClub.item} for 100lum,50umb with ${playerTwo.name}`,
                 player: playerOne,
-                playerAbilities: [
-                    abilities.scratch,
-                    abilities.bandage,
-                    abilities.swing,
-                ],
+                playerAbilities: [abilities.bruise, abilities.bandage],
                 playerItems: [woodenClub],
                 actions: allActions,
                 monsters: [goblin, dragon],
@@ -249,11 +237,7 @@ describe("Trade Tests", () => {
             searchPossibleCommands({
                 query: `browse ${playerTwo.name}`,
                 player: playerOne,
-                playerAbilities: [
-                    abilities.scratch,
-                    abilities.bandage,
-                    abilities.swing,
-                ],
+                playerAbilities: [abilities.bruise, abilities.bandage],
                 playerItems: [woodenClub],
                 actions: allActions,
                 monsters: [goblin, dragon],

@@ -297,12 +297,13 @@ function equipmentQuerySet(
     player: string,
     equipmentSlots?: EquipmentSlot[],
 ): Search {
-    return itemRepository
-        .search()
-        .where("locT")
-        .containOneOf(...(equipmentSlots ?? EquipmentSlots))
-        .where("loc")
-        .contains(player);
+    equipmentSlots = equipmentSlots ?? EquipmentSlots;
+    let qs = itemRepository.search().where("loc").contains(player);
+    qs = qs.and("locT").equal(equipmentSlots[0]);
+    for (let i = 1; i < equipmentSlots.length; i++) {
+        qs = qs.or("locT").equalTo(equipmentSlots[i]);
+    }
+    return qs;
 }
 
 function dungeonEntrancesQuerySet(

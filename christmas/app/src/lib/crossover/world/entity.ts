@@ -2,9 +2,12 @@ import type {
     Currency,
     EntityStats,
     Monster,
+    MonsterEntity,
     Player,
+    PlayerEntity,
     Stat,
 } from "$lib/crossover/types";
+import { saveEntity } from "$lib/server/crossover/redis/utils";
 import { clone, isNumber, mergeWith, uniq } from "lodash-es";
 import type { Abilities } from "./abilities";
 import type { Actions } from "./actions";
@@ -12,6 +15,7 @@ import {
     attributesFromDemographics,
     skillsFromDemographics,
 } from "./demographic";
+import { bestiary } from "./settings/bestiary";
 import { BASE_ATTRIBUTES } from "./settings/entity";
 import {
     abilitiesFromSkills,
@@ -21,11 +25,13 @@ import {
 } from "./skills";
 
 export {
+    awardKillCurrency,
     calculateModifier,
     describeResource,
     entityAbilities,
     entityActions,
     entityAttributes,
+    entityCurrencyReward,
     entityLevel,
     entityStats,
     mergeNumericAdd,
@@ -73,8 +79,8 @@ function entityStats(entity: Player | Monster): EntityStats {
     const level = entityLevel(entity);
     return {
         hp: level * (10 + calculateModifier(["con"], attributes)),
-        mnd: calculateModifier(["mnd"], attributes),
-        cha: calculateModifier(["cha"], attributes),
+        mnd: 1 + Math.floor(level / 4) + calculateModifier(["mnd"], attributes),
+        cha: 1 + Math.floor(level / 4) + calculateModifier(["cha"], attributes),
     };
 }
 
@@ -135,4 +141,37 @@ function entityAbilities(entity: Player | Monster): Abilities[] {
 
 function entityActions(entity: Player | Monster): Actions[] {
     return uniq(actionsFromSkills(entitySkills(entity)));
+}
+
+function entityCurrencyReward(
+    entity: Player | Monster,
+): Record<Currency, number> {
+    // TODO: player alignment (now assumed to be good)
+    const alignment =
+        "monster" in entity ? bestiary[entity.beast].alignment : "good";
+    const level = entityLevel(entity);
+    if (alignment === "evil") {
+        return {
+            lum: Math.ceil(level) * 10,
+            umb: 0,
+        };
+    }
+    return {
+        lum: Math.ceil(level) * 10,
+        umb: 0,
+    };
+}
+
+async function awardKillCurrency(
+    entity: PlayerEntity | MonsterEntity,
+    killed: PlayerEntity | MonsterEntity,
+    save: boolean = true,
+): Promise<PlayerEntity | MonsterEntity> {
+    const { lum, umb } = entityCurrencyReward(killed);
+    entity.lum += lum;
+    entity.umb += umb;
+    if (save) {
+        entity = await saveEntity(entity);
+    }
+    return entity;
 }
