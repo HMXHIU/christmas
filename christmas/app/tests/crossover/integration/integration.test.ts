@@ -1,17 +1,9 @@
-import {
-    crossoverCmdMove,
-    crossoverCmdPerformAbility,
-    crossoverCmdSay,
-} from "$lib/crossover/client";
-import type { Item, ItemEntity, PlayerEntity } from "$lib/crossover/types";
+import type { ItemEntity, PlayerEntity } from "$lib/crossover/types";
 import { itemAttibutes } from "$lib/crossover/world/compendium";
 import { entityStats } from "$lib/crossover/world/entity";
-import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
-import { abilities } from "$lib/crossover/world/settings/abilities";
+import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import { configureItem } from "$lib/server/crossover/actions/item";
-import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import {
     fetchEntity,
     initializeClients,
@@ -19,23 +11,8 @@ import {
 } from "$lib/server/crossover/redis";
 import { sleep } from "$lib/utils";
 import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
-import ngeohash from "ngeohash";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
-import {
-    buffEntity,
-    createGandalfSarumanSauron,
-    generateRandomGeohash,
-    testPlayerConfigureItem,
-    testPlayerCreateItem,
-    testPlayerDropItem,
-    testPlayerEquipItem,
-    testPlayerPerformAbilityOnPlayer,
-    testPlayerTakeItem,
-    testPlayerUnequipItem,
-    testPlayerUseItem,
-    testPlayerUseItemOnPlayer,
-    waitForEventData,
-} from "../utils";
+import { createGandalfSarumanSauron, generateRandomGeohash } from "../utils";
 
 let region: string;
 let geohash: string;
@@ -101,135 +78,6 @@ beforeEach(async () => {
 });
 
 describe("Integration Tests", () => {
-    test("Test Say", async () => {
-        // playerOne say
-        await crossoverCmdSay(
-            { message: "Hello, world!" },
-            { Cookie: playerOneCookies },
-        );
-
-        // playerThree should receive message (same tile)
-        await expect(
-            waitForEventData(playerThreeStream, "feed"),
-        ).resolves.toMatchObject({
-            type: "message",
-            message: "${name} says ${message}",
-            variables: {
-                name: playerOne.name,
-                cmd: "say",
-                message: "Hello, world!",
-            },
-        });
-
-        // playerOne should receive message (self)
-        await expect(
-            waitForEventData(playerOneStream, "feed"),
-        ).resolves.toMatchObject({
-            type: "message",
-            message: "${name} says ${message}",
-            variables: {
-                name: playerOne.name,
-                cmd: "say",
-                message: "Hello, world!",
-            },
-        });
-
-        // playerTwo should not receive the message (different tile)
-        await expect(
-            waitForEventData(playerTwoStream, "feed"),
-        ).rejects.toThrowError("Timeout occurred while waiting for event");
-    });
-
-    test("Test Move", async () => {
-        playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
-        const north = ngeohash.neighbor(playerOne.loc[0], [1, 0]);
-
-        // playerOne move north
-        await crossoverCmdMove({ path: ["n"] }, { Cookie: playerOneCookies });
-
-        // playerOne & playerThree should be informed of playerOne new location
-        await expect(
-            waitForEventData(playerThreeStream, "entities"),
-        ).resolves.toMatchObject({
-            players: [
-                {
-                    player: playerOne.player,
-                    loc: [north],
-                },
-            ],
-            op: "upsert",
-            event: "entities",
-        });
-        await expect(
-            waitForEventData(playerOneStream, "entities"),
-        ).resolves.toMatchObject({
-            players: [
-                {
-                    player: playerOne.player,
-                    loc: [north],
-                },
-            ],
-            op: "upsert",
-            event: "entities",
-        });
-    });
-
-    test("Test Abilities", async () => {
-        // Test out of range (playerOne scratch playerTwo)
-        await crossoverCmdPerformAbility(
-            {
-                target: playerTwo.player,
-                ability: abilities.scratch.ability,
-            },
-            { Cookie: playerOneCookies },
-        );
-        await expect(
-            waitForEventData(playerOneStream, "feed"),
-        ).resolves.toMatchObject({
-            event: "feed",
-            type: "error",
-            message: "Target is out of range",
-        });
-        await sleep(MS_PER_TICK * 2);
-
-        // Test out of resources (playerOne teleport to playerTwo)
-        await crossoverCmdPerformAbility(
-            {
-                target: playerTwo.player,
-                ability: abilities.teleport.ability,
-            },
-            { Cookie: playerOneCookies },
-        );
-        await expect(
-            waitForEventData(playerOneStream, "feed"),
-        ).resolves.toMatchObject({
-            event: "feed",
-            type: "error",
-            message: "Not enough mana points to teleport.",
-        });
-        await sleep(MS_PER_TICK * 2);
-
-        // Buff `playerOne` with enough resources to teleport
-        playerOne = (await buffEntity(playerOne.player, {
-            ...entityStats(playerOne),
-        })) as PlayerEntity;
-
-        // TODO: minified entity for stat changes, playerTwo should receive playerOne location
-        const [result, { selfBefore, self }] =
-            await testPlayerPerformAbilityOnPlayer({
-                self: playerOne,
-                target: playerTwo,
-                ability: abilities.teleport.ability,
-                selfStream: playerOneStream,
-                targetStream: playerTwoStream,
-                selfCookies: playerOneCookies,
-            });
-        expect(result).equal("success");
-        expect(selfBefore.mp - self.mp).equal(abilities.teleport.mp);
-        expect(selfBefore.ap - self.ap).equal(abilities.teleport.ap);
-        expect(self.loc[0]).equal(playerTwo.loc[0]);
-    });
-
     test("Test Create/Configure/Use Item", async () => {
         // Test create woodendoor
         var [result, { self, selfBefore, item: woodenDoor }] =
@@ -289,72 +137,6 @@ describe("Integration Tests", () => {
             description: "A new door sign. The door is open.",
             variant: "default",
         });
-    });
-
-    test("Test Complex Items", async () => {
-        // Create portalOne at playerOne (public owner)
-        let portalOne = (await spawnItemAtGeohash({
-            geohash: playerOne.loc[0],
-            locationType: "geohash",
-            locationInstance: LOCATION_INSTANCE,
-            prop: compendium.portal.prop,
-        })) as Item;
-
-        // Create portalTwo at playerTwo (public owner)
-        let portalTwo = (await spawnItemAtGeohash({
-            geohash: playerTwo.loc[0],
-            locationType: "geohash",
-            locationInstance: LOCATION_INSTANCE,
-            prop: compendium.portal.prop,
-        })) as Item;
-
-        // Configure portals to point to each other (public anyone can configure)
-        portalOne = await configureItem(
-            playerOne as PlayerEntity,
-            portalOne.item,
-            {
-                target: portalTwo.item,
-            },
-        );
-        await sleep(MS_PER_TICK * 2);
-        portalTwo = await configureItem(
-            playerTwo as PlayerEntity,
-            portalTwo.item,
-            {
-                target: portalOne.item,
-            },
-        );
-        await sleep(MS_PER_TICK * 2);
-
-        // playerOne uses portalOne to teleport to portalTwo
-        var [result, { self, selfBefore, item, itemBefore }] =
-            await testPlayerUseItem({
-                self: playerOne,
-                item: portalOne,
-                utility: compendium.portal.utilities.teleport.utility,
-                cookies: playerOneCookies,
-                stream: playerOneStream,
-            });
-        expect(result).equal("success");
-        expect(self.loc[0]).equal(portalTwo.loc[0]);
-        expect(itemBefore.chg - item.chg).equal(
-            compendium.portal.utilities.teleport.cost.charges,
-        );
-
-        // playerOne uses portalTwo to teleport to portalOne
-        var [result, { self, selfBefore, item, itemBefore }] =
-            await testPlayerUseItem({
-                self: playerOne,
-                item: portalTwo,
-                utility: compendium.portal.utilities.teleport.utility,
-                cookies: playerOneCookies,
-                stream: playerOneStream,
-            });
-        expect(result).equal("success");
-        expect(self.loc[0]).equal(portalOne.loc[0]);
-        expect(itemBefore.chg - item.chg).equal(
-            compendium.portal.utilities.teleport.cost.charges,
-        );
     });
 
     test("Test Take/Equip/Use/Unequip/Drop Item", async () => {

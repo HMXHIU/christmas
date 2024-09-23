@@ -124,8 +124,6 @@ async function performAbility({
             // Sleep for the duration of the effect
             await sleep(MS_PER_TICK * procedureEffect.ticks);
 
-            console.log(JSON.stringify(procedureEffect, null, 2));
-
             // Resolve combat
             await resolveCombat(self, entity, {
                 ability: {
