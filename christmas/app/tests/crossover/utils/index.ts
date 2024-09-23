@@ -68,6 +68,7 @@ export const allActions = [
     actions.give,
     actions.accept,
     actions.browse,
+    actions.attack,
 ];
 
 const testWorldAsset: WorldAssetMetadata = {

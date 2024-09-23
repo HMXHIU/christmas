@@ -21,6 +21,7 @@ import {
 } from "./caches";
 import {
     crossoverCmdAccept,
+    crossoverCmdAttack,
     crossoverCmdConfigureItem,
     crossoverCmdCreateItem,
     crossoverCmdDrop,
@@ -177,6 +178,16 @@ async function performAction(
                 message: variables.queryIrrelevant,
                 target: target ? getEntityId(target)[0] : undefined,
             },
+            headers,
+        );
+    }
+    // attack
+    else if (action.action === "attack") {
+        if (!target) {
+            throw new Error(`What are you trying to attack?`);
+        }
+        return await crossoverCmdAttack(
+            { target: getEntityId(target)[0] },
             headers,
         );
     }
