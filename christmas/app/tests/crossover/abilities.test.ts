@@ -2,12 +2,12 @@ import { crossoverCmdPerformAbility } from "$lib/crossover/client";
 import type { PlayerEntity } from "$lib/crossover/types";
 import { minifiedEntity } from "$lib/crossover/utils";
 import { patchEffectWithVariables } from "$lib/crossover/world/abilities";
-import { awardKillCurrency } from "$lib/crossover/world/entity";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { consumeResources } from "$lib/server/crossover";
 import { respawnPlayer } from "$lib/server/crossover/combat/utils";
+import { awardKillCurrency } from "$lib/server/crossover/entity";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
 import { sleep } from "$lib/utils";
@@ -116,7 +116,7 @@ describe("Abilities Tests", () => {
                 },
                 {
                     type: "message",
-                    message: "You killed Saruman, his collapses at your feet.",
+                    message: "You killed Saruman, he collapses at your feet.",
                     event: "feed",
                 },
             ],

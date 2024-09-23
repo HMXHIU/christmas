@@ -18,9 +18,9 @@ import type {
     ProcedureEffect,
 } from "$lib/crossover/world/abilities";
 import type { Actions } from "$lib/crossover/world/actions";
-import { entityCurrencyReward } from "$lib/crossover/world/entity";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { clone, uniq } from "lodash-es";
+import { awardKillCurrency } from "../entity";
 import {
     publishActionEvent,
     publishAffectedEntitiesToPlayers,
@@ -403,9 +403,12 @@ async function resolveAfterCombat({
     if (entityDied(attackerBefore, attacker)) {
         // Award currency to defender if it is not item
         if ("player" in defender || "monster" in defender) {
-            const { lum, umb } = entityCurrencyReward(attacker);
-            (defender as PlayerEntity).lum += lum;
-            (defender as PlayerEntity).umb += umb;
+            defender = await awardKillCurrency(
+                defender as PlayerEntity,
+                attacker,
+                false,
+            );
+
             // Publish entities
             await publishAffectedEntitiesToPlayers(
                 [
@@ -445,7 +448,7 @@ async function resolveAfterCombat({
         if ("player" in defender) {
             await publishFeedEvent((defender as PlayerEntity).player, {
                 type: "message",
-                message: `You killed ${attacker.name}, ${entityPronoun(attacker)} collapses at your feet.`,
+                message: `You killed ${attacker.name}, ${entityPronoun(attacker, "object")} collapses at your feet.`,
             });
         }
     }
@@ -453,11 +456,12 @@ async function resolveAfterCombat({
     if (entityDied(defenderBefore, defender)) {
         // Award currency to attacker if defender is not item
         if ("player" in defender || "monster" in defender) {
-            const { lum, umb } = entityCurrencyReward(
-                defender as PlayerEntity | MonsterEntity,
+            attacker = await awardKillCurrency(
+                attacker as PlayerEntity,
+                defender as PlayerEntity,
+                false,
             );
-            attacker.lum += lum;
-            attacker.umb += umb;
+
             // Publish entities
             await publishAffectedEntitiesToPlayers(
                 [
@@ -497,7 +501,7 @@ async function resolveAfterCombat({
         if ("player" in attacker) {
             await publishFeedEvent((attacker as PlayerEntity).player, {
                 type: "message",
-                message: `You killed ${defender.name}, ${entityPronoun(defender)} collapses at your feet.`,
+                message: `You killed ${defender.name}, ${entityPronoun(defender, "object")} collapses at your feet.`,
             });
         }
     }

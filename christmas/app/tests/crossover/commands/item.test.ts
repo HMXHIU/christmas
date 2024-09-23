@@ -264,7 +264,7 @@ describe("Item Tests", () => {
                 },
                 {
                     type: "message",
-                    message: "You killed goblin, their collapses at your feet.",
+                    message: "You killed goblin, it collapses at your feet.",
                     event: "feed",
                 },
             ],

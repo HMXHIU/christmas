@@ -7,10 +7,6 @@ import { itemRepository, monsterRepository, playerRepository } from ".";
 
 export { fetchEntity, saveEntities, saveEntity };
 
-/*
- * Utilities
- */
-
 async function fetchEntity(
     entity: string,
 ): Promise<PlayerEntity | MonsterEntity | ItemEntity | null> {

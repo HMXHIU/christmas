@@ -2,12 +2,9 @@ import type {
     Currency,
     EntityStats,
     Monster,
-    MonsterEntity,
     Player,
-    PlayerEntity,
     Stat,
 } from "$lib/crossover/types";
-import { saveEntity } from "$lib/server/crossover/redis/utils";
 import { clone, isNumber, mergeWith, uniq } from "lodash-es";
 import type { Abilities } from "./abilities";
 import type { Actions } from "./actions";
@@ -25,7 +22,6 @@ import {
 } from "./skills";
 
 export {
-    awardKillCurrency,
     calculateModifier,
     describeResource,
     entityAbilities,
@@ -161,18 +157,4 @@ function entityCurrencyReward(
         lum: Math.ceil(level) * 10,
         umb: 0,
     };
-}
-
-async function awardKillCurrency(
-    entity: PlayerEntity | MonsterEntity,
-    killed: PlayerEntity | MonsterEntity,
-    save: boolean = true,
-): Promise<PlayerEntity | MonsterEntity> {
-    const { lum, umb } = entityCurrencyReward(killed);
-    entity.lum += lum;
-    entity.umb += umb;
-    if (save) {
-        entity = await saveEntity(entity);
-    }
-    return entity;
 }

@@ -30,27 +30,39 @@ const damageTypeToHitVerb: Record<DamageType, string> = {
 };
 
 const genderPronouns: Record<
-    "possessive" | "reflexive",
-    Record<Genders, string>
+    "possessive" | "reflexive" | "object" | "subject",
+    Record<Genders | "it", string>
 > = {
     possessive: {
         male: "his",
         female: "her",
+        it: "its",
     },
     reflexive: {
         male: "himself",
         female: "herself",
+        it: "itself",
+    },
+    object: {
+        male: "he",
+        female: "she",
+        it: "it",
+    },
+    subject: {
+        male: "him",
+        female: "her",
+        it: "it",
     },
 };
 
 function entityPronoun(
     entity: PlayerEntity | MonsterEntity | ItemEntity,
-    type: "possessive" | "reflexive" = "possessive",
+    type: "possessive" | "reflexive" | "object" | "subject" = "possessive",
 ): string {
     if ("player" in entity) {
         return genderPronouns[type][(entity as PlayerEntity).gen];
     } else {
-        return type === "possessive" ? "its" : "itself";
+        return genderPronouns[type].it;
     }
 }
 

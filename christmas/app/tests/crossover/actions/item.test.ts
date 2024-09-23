@@ -1,7 +1,6 @@
 import type { ItemEntity, PlayerEntity } from "$lib/crossover/types";
 import { geohashNeighbour, minifiedEntity } from "$lib/crossover/utils";
 import { itemAttibutes } from "$lib/crossover/world/compendium";
-import { awardKillCurrency } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
@@ -13,6 +12,7 @@ import {
 } from "$lib/server/crossover/actions/item";
 import { respawnPlayer } from "$lib/server/crossover/combat/utils";
 import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
+import { awardKillCurrency } from "$lib/server/crossover/entity";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
 import { itemVariableValue } from "$lib/server/crossover/utils";
@@ -353,7 +353,7 @@ describe("Test Items", () => {
                     message: "Gandalf bashes Saruman, dealing 12 damage!",
                 },
                 {
-                    message: "You killed Saruman, his collapses at your feet.",
+                    message: "You killed Saruman, he collapses at your feet.",
                 },
             ],
             entities: [

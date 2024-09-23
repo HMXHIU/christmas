@@ -1,9 +1,10 @@
 import { executeGameCommand } from "$lib/crossover/game";
 import { searchPossibleCommands, type GameCommand } from "$lib/crossover/ir";
-import { awardKillCurrency } from "$lib/crossover/world/entity";
+import { minifiedEntity } from "$lib/crossover/utils";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import { consumeResources } from "$lib/server/crossover";
+import { awardKillCurrency } from "$lib/server/crossover/entity";
 import { initializeClients } from "$lib/server/crossover/redis";
 import {
     afterAll,
@@ -69,7 +70,7 @@ describe("Command Tests", () => {
                 },
                 {
                     type: "message",
-                    message: "You killed goblin, their collapses at your feet.",
+                    message: "You killed goblin, it collapses at your feet.",
                     event: "feed",
                 },
             ],
@@ -77,10 +78,13 @@ describe("Command Tests", () => {
                 {
                     event: "entities",
                     players: [
-                        await consumeResources(
-                            playerOne,
-                            abilities.bruise.cost,
-                            false,
+                        minifiedEntity(
+                            await consumeResources(
+                                playerOne,
+                                abilities.bruise.cost,
+                                false,
+                            ),
+                            { stats: true },
                         ),
                     ],
                     monsters: [],
@@ -106,10 +110,10 @@ describe("Command Tests", () => {
                 {
                     event: "entities",
                     players: [
-                        {
-                            player: playerOne.player,
-                            ...awardKillCurrency(playerOne, goblin, false),
-                        },
+                        minifiedEntity(
+                            await awardKillCurrency(playerOne, goblin, false),
+                            { stats: true },
+                        ),
                     ],
                     monsters: [],
                     items: [],
