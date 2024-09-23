@@ -78,6 +78,7 @@ import {
 } from "./player";
 
 import { AbilitiesEnum } from "$lib/crossover/world/abilities";
+import { attack } from "./actions/attack";
 import {
     dungeonEntrancesQuerySet,
     loggedInPlayersQuerySet,
@@ -151,6 +152,9 @@ const TargetItemSchema = z.object({
 });
 const TargetPlayerSchema = z.object({
     player: z.string(),
+});
+const TargetEntitySchema = z.object({
+    target: z.string(),
 });
 const ConfigureItemSchema = z.object({
     item: z.string(),
@@ -596,6 +600,13 @@ const crossoverRouter = {
             .query(async ({ ctx, input }) => {
                 const { path } = input;
                 await move(ctx.player, path, ctx.now);
+            }),
+        // cmd.attack
+        attack: playerAuthBusyProcedure
+            .input(TargetEntitySchema)
+            .query(async ({ ctx, input }) => {
+                const { target } = input;
+                await attack(ctx.player, target, { now: ctx.now });
             }),
         // cmd.performAbility
         performAbility: playerAuthBusyProcedure

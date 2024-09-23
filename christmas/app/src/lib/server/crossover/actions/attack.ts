@@ -33,7 +33,7 @@ async function attack(
     // Check target is in range
     if (
         !entityInRange(player, targetEntity, actions.attack.range)[0] &&
-        "player" in self
+        "player" in player
     ) {
         publishFeedEvent(player.player, {
             type: "error",

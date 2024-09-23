@@ -175,7 +175,7 @@ function attackRollForWeapon(
 
     return {
         success:
-            attackerRoll + attackerModifier > defenderRoll + defenderModifier,
+            attackerRoll + attackerModifier >= defenderRoll + defenderModifier,
         attackerRoll,
         defenderRoll,
         defenderModifier,

@@ -29,6 +29,7 @@ const SkillLinesEnum = [
     "firstaid",
     "dirtyfighting",
     "beast",
+    "monster",
     "arachnid",
     "draconic",
 ] as const;

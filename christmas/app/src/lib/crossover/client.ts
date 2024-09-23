@@ -30,6 +30,7 @@ export {
     crossoverAuthPlayer,
     crossoverAvailableAvatars,
     crossoverCmdAccept,
+    crossoverCmdAttack,
     crossoverCmdBrowse,
     crossoverCmdConfigureItem,
     crossoverCmdCreateItem,
@@ -352,6 +353,16 @@ function crossoverCmdPerformAbility(
     return trpc({ headers }).crossover.cmd.performAbility.query({
         target,
         ability,
+    });
+}
+
+function crossoverCmdAttack(
+    input: { target: string },
+    headers: HTTPHeaders = {},
+) {
+    const { target } = input;
+    return trpc({ headers }).crossover.cmd.attack.query({
+        target,
     });
 }
 
