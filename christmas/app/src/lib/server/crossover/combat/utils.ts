@@ -253,8 +253,8 @@ function respawnPlayer(player: PlayerEntity) {
     player.locT = "geohash"; // TODO: check sanctuary locT
 
     // Lose currencies
-    player.umb = Math.floor(player.lum / 2);
-    player.lum = Math.floor(player.umb / 2);
+    player.lum = Math.floor(player.lum / 2);
+    player.umb = Math.floor(player.umb / 2);
     player = Object.assign(player, entityStats(player));
 
     // Set player busy for (10 turns)

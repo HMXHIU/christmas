@@ -1,5 +1,13 @@
+import { entityStats } from "$lib/crossover/world/entity";
+import {
+    LOCATION_INSTANCE,
+    MS_PER_TICK,
+    TICKS_PER_TURN,
+} from "$lib/crossover/world/settings";
+import { entityDied, respawnPlayer } from "$lib/server/crossover/combat/utils";
 import { initializeClients } from "$lib/server/crossover/redis";
-import { beforeEach, describe } from "vitest";
+import { clone } from "lodash-es";
+import { beforeEach, expect, test } from "vitest";
 import {
     createGandalfSarumanSauron,
     createGoblinSpiderDragon,
@@ -22,7 +30,27 @@ let { goblin } = await createGoblinSpiderDragon(geohash);
 beforeEach(async () => {
     playerOne.loc = [geohash];
     playerTwo.loc = [geohash];
-    resetEntityResources(playerOne, playerTwo);
+    await resetEntityResources(playerOne, playerTwo);
 });
 
-describe("Abilities Tests", () => {});
+test("Test `entityDied`", () => {
+    const playerOneAfter = clone(playerOne);
+    playerOneAfter.hp = 0;
+    expect(entityDied(playerOne, playerOneAfter)).toBe(true);
+});
+
+test("Test `respawnPlayer`", () => {
+    playerOne.hp = 0;
+    playerOne.cha = 0;
+    playerOne.mnd = 0;
+    playerOne.lum = 10;
+    playerOne.umb = 10;
+    expect(respawnPlayer(playerOne)).toMatchObject({
+        ...entityStats(playerOne),
+        lum: Math.floor(10 / 2),
+        umb: Math.floor(10 / 2),
+        buclk: MS_PER_TICK * TICKS_PER_TURN * 10,
+        locT: "geohash",
+        locI: LOCATION_INSTANCE,
+    });
+});
