@@ -33,6 +33,7 @@ export {
     entityAttributes,
     entityCurrencyReward,
     entityLevel,
+    entitySkills,
     entityStats,
     mergeNumericAdd,
     resetEntityStats,

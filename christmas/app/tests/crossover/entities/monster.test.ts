@@ -1,6 +1,13 @@
 import { geohashNeighbour } from "$lib/crossover/utils";
-import { monsterLUReward } from "$lib/crossover/world/bestiary";
-import { entityStats } from "$lib/crossover/world/entity";
+import {
+    entityAbilities,
+    entityActions,
+    entityAttributes,
+    entityCurrencyReward,
+    entityLevel,
+    entitySkills,
+    entityStats,
+} from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
@@ -9,7 +16,7 @@ import {
 } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { expect, test } from "vitest";
-import { createGoblinSpiderDragon, generateRandomGeohash } from "./utils";
+import { createGoblinSpiderDragon, generateRandomGeohash } from "../utils";
 
 await initializeClients(); // create redis repositories
 
@@ -61,21 +68,20 @@ test("Test Monster", async () => {
 
     // Spawn goblin (1x1 grid)
     expect(goblin).toMatchObject({
+        monster: goblin.monster,
         name: "goblin",
         beast: "goblin",
         locT: "geohash",
         locI: "@",
-        hp: 10,
-        mp: 10,
-        st: 10,
-        ap: 4,
-        skills: {
-            beast: 1,
-            dirtyfighting: 1,
-            firstaid: 1,
-        },
+        ...entityStats(goblin),
+        skills: entitySkills(goblin), // monsters do not have skills from demographics
+        buclk: 0,
         buf: [],
         dbuf: [],
+        pthclk: 0,
+        pthdur: 0,
+        pth: [],
+        pthst: "",
     });
 
     // Test cannot spawn monster on collider
@@ -90,33 +96,60 @@ test("Test Monster", async () => {
     ).rejects.toThrow(`Cannot spawn goblin at ${woodenDoorGeohash}`);
 });
 
-test("Test Monster Stats", () => {
+test("Test Monster Abilities, Actions, Attributes, Level, Skills, Stats", () => {
     /*
      * Test monster `entityStats`
      */
 
-    expect(entityStats(goblin)).toMatchObject({
-        hp: 10,
-        mp: 10,
-        st: 10,
-        ap: 4,
+    // Check abilities
+    const abilities = entityAbilities(goblin);
+    expect(abilities).toMatchObject(["eyePoke", "bandage"]);
+
+    // Check actions
+    const actions = entityActions(goblin);
+    expect(actions).toMatchObject(["attack", "move", "look", "say"]);
+
+    // Check attributes
+    const attributes = entityAttributes(goblin);
+    expect(attributes).toMatchObject({
+        str: 11,
+        dex: 11,
+        con: 11,
+        mnd: 10,
+        fth: 10,
+        cha: 10,
     });
-    expect(entityStats(dragon)).toMatchObject({
-        hp: 112,
-        mp: 112,
-        st: 112,
-        ap: 4,
+
+    // Check level
+    const level = entityLevel(goblin);
+    expect(level).toEqual(1);
+
+    // Check skills
+    const skills = entitySkills(goblin);
+    expect(skills).toMatchObject({
+        dirtyfighting: 1,
+        firstaid: 1,
+        monster: 1,
+        beast: 1,
+    });
+
+    // Check stats
+    const stats = entityStats(goblin);
+    expect(stats).toMatchObject({
+        hp: 10,
+        mnd: 1,
+        cha: 1,
     });
 
     /*
-     * Test `monsterLUReward`
+     * Test `entityCurrencyReward`
      */
-    expect(monsterLUReward(goblin)).toMatchObject({
-        lum: 1,
+    expect(entityCurrencyReward(goblin)).toMatchObject({
+        lum: 10,
         umb: 0,
     });
-    expect(monsterLUReward(dragon)).toMatchObject({
-        lum: 8,
+    expect(entityCurrencyReward(dragon)).toMatchObject({
+        lum: 80,
         umb: 0,
     });
 });

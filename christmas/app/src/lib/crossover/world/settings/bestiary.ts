@@ -10,10 +10,11 @@ const bestiary: Record<string, Beast> = {
     goblin: {
         beast: "goblin",
         description:
-            "A small, green creature that loves to steal shiny things.",
+            "A small, resourceful green creature that loves to steal shiny things.",
         skillLines: {
             beast: 1,
             dirtyfighting: 1,
+            monster: 1,
             firstaid: 1,
         },
         alignment: "evil",
@@ -26,6 +27,7 @@ const bestiary: Record<string, Beast> = {
         description: "A huge spider that can paralyze its prey.",
         skillLines: {
             arachnid: 3,
+            monster: 1,
         },
         alignment: "neutral",
         asset: {
@@ -37,6 +39,7 @@ const bestiary: Record<string, Beast> = {
         description: "A huge, fire-breathing lizard.",
         skillLines: {
             draconic: 8,
+            monster: 1,
         },
         alignment: "evil",
         asset: {

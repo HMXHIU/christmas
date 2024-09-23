@@ -28,12 +28,12 @@ import {
 import { worldsInGeohashQuerySet } from "$lib/server/crossover/redis/queries";
 import { sleep } from "$lib/utils";
 import { beforeAll, describe, expect, test } from "vitest";
-import { worldRecord } from "../../src/store";
+import { worldRecord } from "../../../src/store";
 import {
     createGandalfSarumanSauron,
     createWorldAsset,
     generateRandomGeohash,
-} from "./utils";
+} from "../utils";
 
 // Create redis repositories
 await initializeClients();

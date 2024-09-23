@@ -18,12 +18,12 @@ import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { WorldAssetMetadata } from "$lib/crossover/world/types";
+import { generateAvatarHash } from "$lib/server/crossover/avatar";
 import {
     spawnItemAtGeohash,
     spawnMonster,
 } from "$lib/server/crossover/dungeonMaster";
 import { generateNPC } from "$lib/server/crossover/npc";
-import { generateAvatarHash } from "$lib/server/crossover/player";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
 import { npcs } from "$lib/server/crossover/settings/npc";
 import { BUCKETS, ObjectStorage } from "$lib/server/objectStorage";
@@ -293,13 +293,13 @@ export async function createRandomPlayer({
         },
     };
 
-    const avatarHash = generateAvatarHash({
+    const { selector, texture, hash } = generateAvatarHash({
         demographic: playerMetadata.demographic,
         appearance: playerMetadata.appearance,
         textures: {},
     });
 
-    const avatarFilename = `${avatarHash}-${generateRandomSeed()}.png`;
+    const avatarFilename = `${hash}-${generateRandomSeed()}.png`;
     playerMetadata.avatar = `https://example.com/avatar/${avatarFilename}`;
 
     await ObjectStorage.putObject({

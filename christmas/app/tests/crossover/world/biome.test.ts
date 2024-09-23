@@ -15,8 +15,8 @@ import { initializeClients } from "$lib/server/crossover/redis";
 import { isGeohashTraversableServer } from "$lib/server/crossover/utils";
 import { omit } from "lodash-es";
 import { beforeAll, describe, expect, test } from "vitest";
-import { itemRecord } from "../../src/store";
-import { generateRandomGeohash } from "./utils";
+import { itemRecord } from "../../../src/store";
+import { generateRandomGeohash } from "../utils";
 
 // Create redis repositories
 await initializeClients();

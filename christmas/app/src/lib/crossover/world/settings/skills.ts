@@ -56,7 +56,7 @@ const skillLines: Record<SkillLines, SkillLine> = {
         description: "Exploration",
         currency: ["lum", "umb"],
         actionsAtSkillLevel: {
-            1: ["look", "say", "move", "inventory"],
+            1: ["look", "say", "move", "inventory", "attack"],
             3: ["take", "equip", "unequip", "drop"],
             5: ["enter", "rest"],
             7: ["configure", "create"],
@@ -127,7 +127,23 @@ const skillLines: Record<SkillLines, SkillLine> = {
             10: [],
         },
     },
-    // Monster skills
+    // Monster skills (all monsters should have the `monster` skill min at level 1)
+    monster: {
+        skillLine: "monster",
+        name: "Monster",
+        description: "Monster",
+        currency: ["lum", "umb"],
+        actionsAtSkillLevel: {
+            1: ["attack", "move", "look", "say"],
+        },
+        attributesAtSkillLevel: {
+            2: { str: 1, con: 1, dex: 1, fth: 1, cha: 1, mnd: 1 },
+            4: { str: 1, con: 1, dex: 1, fth: 1, cha: 1, mnd: 1 },
+            6: { str: 1, con: 1, dex: 1, fth: 1, cha: 1, mnd: 1 },
+            8: { str: 1, con: 1, dex: 1, fth: 1, cha: 1, mnd: 1 },
+            10: { str: 1, con: 1, dex: 1, fth: 1, cha: 1, mnd: 1 },
+        },
+    },
     beast: {
         skillLine: "beast",
         name: "Beast",
@@ -137,11 +153,11 @@ const skillLines: Record<SkillLines, SkillLine> = {
             3: ["doubleSlash"],
         },
         attributesAtSkillLevel: {
-            2: { str: 1, con: 1, dex: 1 },
-            4: { str: 1, con: 1, dex: 1 },
-            6: { str: 1, con: 1, dex: 1 },
-            8: { str: 1, con: 1, dex: 1 },
-            10: { str: 1, con: 1, dex: 1 },
+            1: { str: 1, con: 1, dex: 1 },
+            3: { str: 1, con: 1, dex: 1 },
+            5: { str: 1, con: 1, dex: 1 },
+            7: { str: 1, con: 1, dex: 1 },
+            9: { str: 1, con: 1, dex: 1 },
         },
     },
     arachnid: {
@@ -154,11 +170,11 @@ const skillLines: Record<SkillLines, SkillLine> = {
             3: ["paralyze"],
         },
         attributesAtSkillLevel: {
-            2: { str: 1, con: 1, dex: 1 },
-            4: { str: 1, con: 1, dex: 1 },
-            6: { str: 1, con: 1, dex: 1 },
-            8: { str: 1, con: 1, dex: 1 },
-            10: { str: 1, con: 1, dex: 1 },
+            1: { cha: 1, mnd: 1, dex: 1 },
+            3: { cha: 1, mnd: 1, dex: 1 },
+            5: { cha: 1, mnd: 1, dex: 1 },
+            7: { cha: 1, mnd: 1, dex: 1 },
+            9: { cha: 1, mnd: 1, dex: 1 },
         },
     },
     draconic: {
@@ -173,11 +189,11 @@ const skillLines: Record<SkillLines, SkillLine> = {
             8: ["breathFire"],
         },
         attributesAtSkillLevel: {
-            2: { str: 2, con: 2, dex: 2, fth: 2, mnd: 2, cha: 2 },
-            4: { str: 2, con: 2, dex: 2, fth: 2, mnd: 2, cha: 2 },
-            6: { str: 2, con: 2, dex: 2, fth: 2, mnd: 2, cha: 2 },
-            8: { str: 2, con: 2, dex: 2, fth: 2, mnd: 2, cha: 2 },
-            10: { str: 2, con: 2, dex: 2, fth: 2, mnd: 2, cha: 2 },
+            1: { str: 3, con: 3, dex: 3, fth: 3, mnd: 3, cha: 3 },
+            3: { str: 3, con: 3, dex: 3, fth: 3, mnd: 3, cha: 3 },
+            5: { str: 3, con: 3, dex: 3, fth: 3, mnd: 3, cha: 3 },
+            7: { str: 3, con: 3, dex: 3, fth: 3, mnd: 3, cha: 3 },
+            9: { str: 3, con: 3, dex: 3, fth: 3, mnd: 3, cha: 3 },
         },
     },
 };

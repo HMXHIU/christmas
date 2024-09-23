@@ -21,6 +21,7 @@ type SkillLines =
     | "dirtyfighting"
     | "beast"
     | "arachnid"
+    | "monster"
     | "draconic";
 
 const SkillLinesEnum = [

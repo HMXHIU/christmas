@@ -4,6 +4,7 @@ import {
     crossoverCmdSay,
     crossoverCmdTrade,
 } from "$lib/crossover/client";
+import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { BarterSerialized } from "$lib/crossover/world/types";
 import { spawnItemInInventory } from "$lib/server/crossover/dungeonMaster";
@@ -11,13 +12,14 @@ import { initializeClients } from "$lib/server/crossover/redis";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
 import { npcs } from "$lib/server/crossover/settings/npc";
 import { getUserMetadata } from "$lib/server/crossover/utils";
+import { sleep } from "$lib/utils";
 import { beforeAll, expect, test } from "vitest";
 import {
     createGandalfSarumanSauron,
     createNPCs,
     waitForAnyEventData,
     waitForEventData,
-} from "./utils";
+} from "../utils";
 
 await initializeClients(); // create redis repositories
 
@@ -61,6 +63,7 @@ test("Test Greet NPC", async () => {
         },
         event: "feed",
     });
+    await sleep(MS_PER_TICK * 4);
 
     // Test ignore
 });
@@ -105,6 +108,7 @@ test("Test Give Item To NPC", async () => {
             op: "upsert",
         },
     });
+    await sleep(MS_PER_TICK * 4);
 });
 
 test("Test Trade With NPC", async () => {
@@ -137,6 +141,7 @@ test("Test Trade With NPC", async () => {
             event: "feed",
         },
     });
+    await sleep(MS_PER_TICK * 4);
 });
 
 test("Test Learn From NPC", async () => {
@@ -228,6 +233,7 @@ test("Test Learn From NPC", async () => {
             event: "action",
         },
     });
+    await sleep(MS_PER_TICK * 4);
 });
 
 test("Test `generateNPC`", async () => {
