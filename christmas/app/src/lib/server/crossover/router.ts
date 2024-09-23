@@ -161,8 +161,6 @@ const ConfigureItemSchema = z.object({
     variables: z.record(z.union([z.string(), z.number(), z.boolean()])),
 });
 const CreateItemSchema = z.object({
-    geohash: z.string(), // TODO: if not provided, item is created in player inventory
-    locationType: GeohashLocationSchema,
     prop: z.string(),
     variables: z
         .record(z.union([z.string(), z.number(), z.boolean()]))
@@ -637,8 +635,8 @@ const crossoverRouter = {
         createItem: playerAuthBusyProcedure
             .input(CreateItemSchema)
             .query(async ({ ctx, input }) => {
-                const { geohash, prop, variables } = input;
-                await createItem(ctx.player, geohash, prop, variables, ctx.now);
+                const { prop, variables } = input;
+                await createItem(ctx.player, prop, variables, ctx.now);
             }),
         // cmd.configureItem
         configureItem: playerAuthBusyProcedure

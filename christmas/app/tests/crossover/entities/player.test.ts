@@ -73,14 +73,9 @@ test("Test Player Abilities, Actions, Attributes, Level, Skills, Stats", async (
 
 test("Test Player Equipment", async () => {
     // TODO:
-    let steelPlate = await createItem(
-        playerTwo,
-        geohash,
-        compendium.steelplate.prop,
-    );
+    let steelPlate = await createItem(playerTwo, compendium.steelplate.prop);
     const steelPauldron = await createItem(
         playerTwo,
-        geohash,
         compendium.steelpauldron.prop,
     );
 });

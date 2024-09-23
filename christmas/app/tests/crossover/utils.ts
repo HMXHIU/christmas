@@ -36,8 +36,8 @@ import type {
     FeedEvent,
     StreamEvent,
     UpdateEntitiesEvent,
-} from "../../../src/routes/api/crossover/stream/+server";
-import { createRandomUser, getRandomRegion } from "../../utils";
+} from "../../src/routes/api/crossover/stream/+server";
+import { createRandomUser, getRandomRegion } from "../utils";
 
 export type PerformAbilityTestResults =
     | "outOfRange"

@@ -23,7 +23,7 @@ import { setEntityBusy } from "..";
 import { performAbility } from "../abilities";
 import { worldAssetMetadataCache, worldPOIsCache } from "../caches";
 import {
-    spawnItemAtGeohash,
+    spawnItemInInventory,
     spawnWorld,
     spawnWorldPOIs,
 } from "../dungeonMaster";
@@ -407,7 +407,6 @@ async function dropItem(player: PlayerEntity, item: string, now?: number) {
 
 async function createItem(
     player: PlayerEntity,
-    geohash: string,
     prop: string,
     variables?: Record<string, string | number | boolean>,
     now?: number,
@@ -420,26 +419,17 @@ async function createItem(
     });
 
     try {
-        // Create item
-        const item = await spawnItemAtGeohash({
-            geohash,
-            locationType: player.locT as GeohashLocationType,
-            locationInstance: player.locI,
+        // Create item in player inventory
+        const item = await spawnItemInInventory({
+            entity: player,
             prop,
             variables,
             owner: player.player, // owner is player
             configOwner: player.player,
         });
-
-        // Inform all players nearby of item creation
-        const nearbyPlayerIds = await getNearbyPlayerIds(
-            player.loc[0],
-            player.locT as GeohashLocationType,
-            player.locI,
-        );
         await publishAffectedEntitiesToPlayers(
             [minifiedEntity(item, { location: true, stats: true })],
-            { publishTo: nearbyPlayerIds },
+            { publishTo: [player.player] },
         );
     } catch (error: any) {
         await publishFeedEvent(player.player, {

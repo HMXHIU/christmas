@@ -337,16 +337,8 @@ async function performAction(
     // create
     else if (action.action === "create" && variables != null) {
         const prop = variables.queryIrrelevant as string;
-        const geohash = self.loc[0];
         if (Object.keys(compendium).includes(prop)) {
-            return await crossoverCmdCreateItem(
-                {
-                    geohash,
-                    locationType: self.locT as GeohashLocationType,
-                    prop: prop,
-                },
-                headers,
-            );
+            return await crossoverCmdCreateItem({ prop: prop }, headers);
         }
         throw new Error(`Invalid prop ${prop}`);
     }

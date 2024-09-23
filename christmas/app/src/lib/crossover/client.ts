@@ -406,18 +406,14 @@ function crossoverCmdUnequip(
 
 function crossoverCmdCreateItem(
     input: {
-        geohash: string;
-        locationType: GeohashLocationType;
         prop: string;
         variables?: ItemVariables;
     },
     headers: HTTPHeaders = {},
 ) {
-    const { geohash, prop, variables, locationType } = input;
+    const { prop, variables } = input;
     return trpc({ headers }).crossover.cmd.createItem.query({
         prop,
-        geohash,
-        locationType,
         variables,
     });
 }
