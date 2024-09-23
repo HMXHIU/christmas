@@ -1,36 +1,16 @@
 import { JWT_SECRET_KEY } from "$env/static/private";
-import type {
-    PlayerAppearance,
-    PlayerDemographic,
-} from "$lib/crossover/world/player";
 import type { SkillLines } from "$lib/crossover/world/skills";
 import type { BarterSerialized } from "$lib/crossover/world/types";
-import { hashObject, signJWT, verifyJWT } from "..";
+import { signJWT, verifyJWT } from "..";
 
 export {
     createP2PTransaction,
-    generateAvatarHash,
     verifyP2PTransaction,
     type CTA,
     type P2PGiveTransaction,
     type P2PLearnTransaction,
     type P2PTradeTransaction,
 };
-
-function generateAvatarHash({
-    demographic,
-    appearance,
-    textures,
-}: {
-    demographic: PlayerDemographic;
-    appearance: PlayerAppearance;
-    textures: Record<string, string>;
-}): { selector: string; texture: string; hash: string } {
-    // Searching by using the prefix as the selector will give multiple texture combinations
-    const s = hashObject({ demographic, appearance }, "md5"); // md5 is shorter
-    const t = hashObject({ textures }, "md5");
-    return { selector: s, texture: t, hash: `${s}_${t}` };
-}
 
 interface P2PTransaction {
     transaction: "trade" | "quest" | "learn" | "give";

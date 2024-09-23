@@ -701,7 +701,7 @@ export function collectEventDataForDuration(
 
 export async function collectAllEventDataForDuration(
     eventTarget: EventTarget,
-    duration = MS_PER_TICK * 4,
+    duration = MS_PER_TICK * 4 * 2,
 ): Promise<{
     feed: FeedEvent[] | undefined;
     entities: UpdateEntitiesEvent[] | undefined;

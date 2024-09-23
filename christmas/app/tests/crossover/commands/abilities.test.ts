@@ -77,14 +77,11 @@ describe("Command Tests", () => {
                 {
                     event: "entities",
                     players: [
-                        {
-                            player: playerOne.player,
-                            ...consumeResources(
-                                playerOne,
-                                abilities.bruise.cost,
-                                false,
-                            ),
-                        },
+                        await consumeResources(
+                            playerOne,
+                            abilities.bruise.cost,
+                            false,
+                        ),
                     ],
                     monsters: [],
                     items: [],

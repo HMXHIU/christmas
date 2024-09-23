@@ -4,7 +4,7 @@ import {
     type MonsterEntity,
     type PlayerEntity,
 } from "$lib/crossover/types";
-import type { DamageType } from "$lib/crossover/world/abilities";
+import type { Abilities, DamageType } from "$lib/crossover/world/abilities";
 import type { Genders } from "$lib/crossover/world/demographic";
 
 export { entityPronoun, generateHitMessage, generateMissMessage };
@@ -15,7 +15,7 @@ export { entityPronoun, generateHitMessage, generateMissMessage };
  *
  */
 
-const damgeTypeToHitVerb: Record<DamageType, string> = {
+const damageTypeToHitVerb: Record<DamageType, string> = {
     blunt: "bashes",
     piercing: "pierces",
     slashing: "slashes",
@@ -29,20 +29,28 @@ const damgeTypeToHitVerb: Record<DamageType, string> = {
     necrotic: "drains",
 };
 
-const genderToPronoun: Record<Genders, string> = {
-    male: "his",
-    female: "her",
+const genderPronouns: Record<
+    "possessive" | "reflexive",
+    Record<Genders, string>
+> = {
+    possessive: {
+        male: "his",
+        female: "her",
+    },
+    reflexive: {
+        male: "himself",
+        female: "herself",
+    },
 };
 
 function entityPronoun(
     entity: PlayerEntity | MonsterEntity | ItemEntity,
+    type: "possessive" | "reflexive" = "possessive",
 ): string {
     if ("player" in entity) {
-        return genderToPronoun[(entity as PlayerEntity).gen];
-    } else if ("monster" in entity) {
-        return "their";
+        return genderPronouns[type][(entity as PlayerEntity).gen];
     } else {
-        return "its";
+        return type === "possessive" ? "its" : "itself";
     }
 }
 
@@ -70,6 +78,21 @@ function describeDamage(damage: number): string {
         return "it tickles";
     }
 }
+function hitVerb({
+    damageType,
+    ability,
+}: {
+    damageType?: DamageType;
+    ability?: Abilities;
+}): string {
+    if (damageType) {
+        return damageTypeToHitVerb[damageType];
+    }
+    if (ability) {
+        return ability;
+    }
+    return "strikes";
+}
 
 function generateHitMessage({
     attacker,
@@ -78,19 +101,34 @@ function generateHitMessage({
     bodyPartHit,
     damage,
     damageType,
+    ability,
 }: {
     attacker: PlayerEntity | MonsterEntity;
     target: PlayerEntity | MonsterEntity | ItemEntity;
     bodyPartHit: BodyPart;
-    damage: number;
-    damageType: DamageType;
+    damageType?: DamageType;
+    damage?: number;
     weapon?: ItemEntity;
+    ability?: Abilities;
 }): string {
-    const hitVerb = damgeTypeToHitVerb[damageType] ?? "strikes";
-    if (weapon) {
-        return `${attacker.name} ${hitVerb} ${entityHitNoun(target, bodyPartHit)} with ${entityPronoun(attacker)} ${weapon.name}, ${describeDamage(damage)}!`;
+    let message = "";
+
+    if (attacker === target) {
+        if (weapon) {
+            message = `${attacker.name} ${hitVerb({ damageType, ability })} ${entityPronoun(attacker, "reflexive")} with ${entityPronoun(attacker)} ${weapon.name}`;
+        }
+        message = `${attacker.name} ${hitVerb({ damageType, ability })} ${entityPronoun(attacker, "reflexive")}`;
+    } else {
+        if (weapon) {
+            message = `${attacker.name} ${hitVerb({ damageType, ability })} ${entityHitNoun(target, bodyPartHit)} with ${entityPronoun(attacker)} ${weapon.name}`;
+        }
+        message = `${attacker.name} ${hitVerb({ damageType, ability })} ${entityHitNoun(target, bodyPartHit)}`;
     }
-    return `${attacker.name} ${hitVerb} ${entityHitNoun(target, bodyPartHit)}, ${describeDamage(damage)}!`;
+
+    if (damage != null) {
+        message += `, ${describeDamage(damage)}!`;
+    }
+    return message;
 }
 
 function generateMissMessage(

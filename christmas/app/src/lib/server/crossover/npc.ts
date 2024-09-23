@@ -59,7 +59,6 @@ import {
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { loadPlayerEntity } from ".";
 import { feePayerKeypair, hashObject } from "..";
-import { getAvatars } from "../../../routes/api/crossover/avatar/[...path]/+server";
 import type {
     CTAEvent,
     FeedEvent,
@@ -68,6 +67,7 @@ import { ObjectStorage } from "../objectStorage";
 import { say } from "./actions";
 import { executeGiveCTA } from "./actions/give";
 import { executeLearnCTA } from "./actions/learn";
+import { getAvatars } from "./avatar";
 import { isPublicKeyNPCCache } from "./caches";
 import {
     verifyP2PTransaction,

@@ -81,7 +81,7 @@ async function resolveCombat(
     let entities: GameRedisEntities[] = [];
     let bodyPartHit: BodyPart | undefined = undefined;
     let damage: number | undefined = undefined;
-    let damageType: DamageType = "normal";
+    let damageType: DamageType | undefined = undefined;
 
     // Inform all players nearby
     const nearbyPlayerIds = await getPlayerIdsNearbyEntities(
@@ -163,8 +163,9 @@ async function resolveCombat(
                 attacker,
                 target: defender,
                 weapon: options.attack?.weapon,
+                ability: options.ability?.ability,
                 bodyPartHit: bodyPartHit ?? "torso",
-                damage: damage ?? 0,
+                damage,
                 damageType,
             }),
         });
@@ -270,7 +271,7 @@ async function resolveProcedureEffect(
     success: boolean;
     bodyPartHit?: BodyPart;
     damage?: number;
-    damageType: DamageType;
+    damageType?: DamageType;
     entities: GameRedisEntities[];
     attacker: PlayerEntity | MonsterEntity;
     defender: PlayerEntity | MonsterEntity | ItemEntity;
@@ -279,7 +280,7 @@ async function resolveProcedureEffect(
     let success = false;
     let damage: number | undefined = undefined;
     let bodyPartHit: BodyPart | undefined = undefined;
-    let damageType: DamageType = "normal";
+    let damageType: DamageType | undefined = undefined;
 
     // Attack roll
     if (attacker === defender) {
