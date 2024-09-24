@@ -3,6 +3,7 @@ import { architecture } from "./architecture";
 import { consumables } from "./consumables";
 import { equipment } from "./equipment";
 import { landmarks } from "./landmarks";
+import { quests } from "./quests";
 import { weapons } from "./weapons";
 
 export { compendium };
@@ -16,4 +17,5 @@ let compendium: Record<string, Prop> = {
     ...consumables,
     ...landmarks,
     ...architecture,
+    ...quests,
 };

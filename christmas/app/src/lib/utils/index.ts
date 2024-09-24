@@ -40,6 +40,7 @@ export {
     stringToUint8Array,
     substituteValues,
     substituteVariables,
+    substituteVariablesRecursively,
     timeStampToDate,
 };
 
@@ -88,6 +89,9 @@ function substituteValues(
     return result;
 }
 
+/**
+ * {{variable access}} only works when the string begins with {{ and ends with }}
+ */
 function substituteVariables(template: string, variables: Record<string, any>) {
     // TODO: replace with lodash get
     function getValueFromPath(obj: any, path: string): any {
@@ -97,9 +101,7 @@ function substituteVariables(template: string, variables: Record<string, any>) {
             .reduce((acc, key) => acc && acc[key], obj);
     }
 
-    // TODO: this should be a different function
-    // Variable access eg. {{target.loc}} or {{points[0]}}
-    // This returns the variable directly (vs string)
+    // Variable access eg. {{target.loc}} or {{points[0]}}, returns the variable directly (vs string)
     if (template.startsWith("{{") && template.endsWith("}}")) {
         const path = template.replace(/{{(.*?)}}/g, "$1").trim();
         return getValueFromPath(variables, path);
@@ -111,6 +113,34 @@ function substituteVariables(template: string, variables: Record<string, any>) {
         const value = getValueFromPath(variables, path);
         return value !== undefined ? String(value) : match;
     });
+}
+
+function substituteVariablesRecursively(
+    obj: any,
+    variables: Record<string, any>,
+): any {
+    // Handle primitives and null
+    if (obj === null || typeof obj !== "object") {
+        return obj;
+    }
+
+    if (Array.isArray(obj)) {
+        return obj.map((item) =>
+            substituteVariablesRecursively(item, variables),
+        );
+    }
+
+    // Handle objects
+    const result: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+        if (typeof value === "string") {
+            result[key] = substituteVariables(value, variables);
+        } else {
+            result[key] = substituteVariablesRecursively(value, variables);
+        }
+    }
+
+    return result;
 }
 
 function cleanString(s: string) {
@@ -378,16 +408,15 @@ async function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/*
- *Generate a random seed for use in stable diffusion
- */
-function generateRandomSeed(): number {
+function generateRandomSeed(rand?: number): number {
+    rand = rand ?? Math.random();
     // Define the range for the seed, e.g., 0 to 2^32 - 1
     const maxSeed = Math.pow(2, 32) - 1;
     // Generate a random integer within the range
-    const randomSeed = Math.floor(Math.random() * maxSeed);
+    const randomSeed = Math.floor(rand * maxSeed);
     return randomSeed;
 }
+
 class AsyncLock {
     private locked: boolean = false;
     private waitingQueue: (() => void)[] = [];

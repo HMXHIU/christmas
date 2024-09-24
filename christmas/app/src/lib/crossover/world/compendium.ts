@@ -27,6 +27,7 @@ export {
     type EquipmentAsset,
     type ItemVariables,
     type Prop,
+    type PropVariables,
     type PropWorld,
     type Utility,
 };

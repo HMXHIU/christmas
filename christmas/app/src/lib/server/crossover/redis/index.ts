@@ -14,6 +14,7 @@ import {
     ItemEntitySchema,
     MonsterEntitySchema,
     PlayerEntitySchema,
+    QuestSchema,
     WorldEntitySchema,
 } from "./schema";
 
@@ -24,6 +25,7 @@ export {
     itemRepository,
     monsterRepository,
     playerRepository,
+    questRepository,
     redisClient,
     redisSubscribeClient,
     worldRepository,
@@ -35,6 +37,7 @@ let monsterRepository: Repository;
 let itemRepository: Repository;
 let worldRepository: Repository;
 let dialogueRepository: Repository;
+let questRepository: Repository;
 
 // Create clients
 const redisClient = createClient({
@@ -74,6 +77,7 @@ function registerSchemas() {
     itemRepository = new Repository(ItemEntitySchema, redisClient);
     worldRepository = new Repository(WorldEntitySchema, redisClient);
     dialogueRepository = new Repository(DialogueSchema, redisClient);
+    questRepository = new Repository(QuestSchema, redisClient);
 }
 
 async function createIndexes() {
@@ -83,6 +87,7 @@ async function createIndexes() {
     await itemRepository.createIndex();
     await worldRepository.createIndex();
     await dialogueRepository.createIndex();
+    await questRepository.createIndex();
 }
 
 async function indexDialogues() {

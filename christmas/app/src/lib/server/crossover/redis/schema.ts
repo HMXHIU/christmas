@@ -5,6 +5,7 @@ export {
     ItemEntitySchema,
     MonsterEntitySchema,
     PlayerEntitySchema,
+    QuestSchema,
     WorldEntitySchema,
 };
 
@@ -74,4 +75,9 @@ const DialogueSchema = new Schema("Dialogue", {
     mst: { type: "string[]" },
     or: { type: "string[]" },
     exc: { type: "string[]" },
+});
+
+const QuestSchema = new Schema("Quest", {
+    qst: { type: "string" },
+    tmp: { type: "string" },
 });

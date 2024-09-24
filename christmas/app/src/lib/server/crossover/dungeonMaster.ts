@@ -54,6 +54,7 @@ export {
     spawnItemInInventory,
     spawnMonster,
     spawnMonsters,
+    spawnQuestItem,
     spawnWorld,
     spawnWorldPOIs,
 };
@@ -299,6 +300,52 @@ async function spawnWorld({
     };
 
     return (await worldRepository.save(world, entity)) as WorldEntity;
+}
+
+async function spawnQuestItem({
+    quest,
+    prop,
+    variables,
+    owner,
+    configOwner,
+}: {
+    quest: string;
+    prop: string;
+    variables?: Record<string, any>;
+    owner?: string;
+    configOwner?: string;
+}): Promise<ItemEntity> {
+    // Owner defaults to public
+    owner ??= "";
+    configOwner ??= "";
+
+    // Get item count
+    const count = await itemRepository.search().count();
+    const itemId = `item_${prop}${count}`;
+
+    // Get prop
+    const { defaultName, defaultState, durability, charges, collider } =
+        compendium[prop];
+
+    const item: ItemEntity = {
+        item: itemId,
+        name: defaultName,
+        prop,
+        loc: [quest],
+        locT: "quest",
+        locI: LOCATION_INSTANCE,
+        own: owner,
+        cfg: configOwner,
+        cld: collider,
+        dur: durability,
+        chg: charges,
+        state: defaultState,
+        vars: parseItemVariables(variables || {}, prop),
+        dbuf: [],
+        buf: [],
+    };
+
+    return (await itemRepository.save(itemId, item)) as ItemEntity;
 }
 
 async function spawnItemInInventory({

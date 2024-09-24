@@ -145,7 +145,8 @@ type LocationType =
     | GeohashLocationType // environment
     | EquipmentSlot // equiped
     | "inv" // inventory
-    | "item"; // inside an item
+    | "item" // inside an item
+    | "quest"; // quest item waiting to be dropped
 
 const geohashLocationTypes = new Set([
     "geohash",
