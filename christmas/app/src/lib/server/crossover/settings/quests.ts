@@ -12,11 +12,8 @@ const killAndDeliverQuest: QuestTemplate = {
             type: "item",
             prop: compendium.questitem.prop,
             variables: {
-                description: {
-                    variable: "description",
-                    type: "string",
-                    value: "${beast} head, ${npc} might be interested in this",
-                },
+                description:
+                    "${beast} head, ${npc} might be interested in this",
             },
         },
         beast: {
@@ -37,6 +34,7 @@ const killAndDeliverQuest: QuestTemplate = {
                 type: "drop",
                 item: "${trophy}",
             },
+            fulfilled: false,
         },
         {
             description: "deliver ${trophy} to ${npc}",
@@ -49,6 +47,7 @@ const killAndDeliverQuest: QuestTemplate = {
                 type: "dialogue",
                 dialogue: "Thank you ${player}!",
             },
+            fulfilled: false,
         },
     ],
 };

@@ -1,4 +1,3 @@
-import type { PropVariables } from "$lib/crossover/world/compendium";
 import type { Entity } from "redis-om";
 
 export type {
@@ -30,7 +29,7 @@ interface QuestTemplateEntity {
 interface QuestTemplateItem extends QuestTemplateEntity {
     type: "item";
     prop: string;
-    variables?: PropVariables;
+    variables?: Record<string, any>;
 }
 
 interface QuestTemplateMonster extends QuestTemplateEntity {
@@ -58,6 +57,7 @@ interface Quest {
     objectives: Objective[];
     entities: Record<string, string>;
     reward: Reward;
+    fulfilled: boolean;
 }
 
 type QuestEntity = Quest & Entity;
@@ -76,6 +76,7 @@ interface Objective {
     description: string;
     trigger: KillTrigger | GiveTrigger | DialogueTrigger;
     effect: DropEffect | DialogueEffect;
+    fulfilled: boolean;
     reward?: Reward;
 }
 

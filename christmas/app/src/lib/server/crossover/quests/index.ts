@@ -1,3 +1,5 @@
+import type { ItemEntity } from "$lib/crossover/types";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     generateRandomSeed,
     sampleFrom,
@@ -10,7 +12,7 @@ import { npcs } from "../settings/npc";
 import { random } from "../utils";
 import type { QuestEntity, QuestTemplate } from "./types";
 
-export { createQuest };
+export { createQuest, createQuestWrit };
 
 async function createQuest(template: QuestTemplate): Promise<QuestEntity> {
     const entities: Record<string, string> = {};
@@ -33,7 +35,7 @@ async function createQuest(template: QuestTemplate): Promise<QuestEntity> {
             entities[templateString] = sampleFrom(
                 beasts,
                 1,
-                generateRandomSeed(random()), // use randon() for reproducibility in test environment
+                generateRandomSeed(random()), // use random() for reproducibility in test environment
             )[0];
         }
         // Determine NPC
@@ -46,8 +48,9 @@ async function createQuest(template: QuestTemplate): Promise<QuestEntity> {
         }
         // Determine Item
         else if (templateEntity.type === "item") {
+            // Quest items are spawned at loc=[quest] locT="quest"
             const questItem = await spawnQuestItem({
-                quest: `${template.template}-${questId}`,
+                quest: questId,
                 prop: templateEntity.prop,
                 variables: templateEntity.variables,
             });
@@ -65,7 +68,19 @@ async function createQuest(template: QuestTemplate): Promise<QuestEntity> {
         ),
         entities,
         reward,
+        fulfilled: false,
     };
 
     return (await questRepository.save(questId, quest)) as QuestEntity;
+}
+
+async function createQuestWrit(quest: QuestEntity): Promise<ItemEntity> {
+    // The initial loc=[quest] locT="quest"
+    return (await spawnQuestItem({
+        quest: quest.quest,
+        prop: compendium.questwrit.prop,
+        variables: {
+            desription: quest.description,
+        },
+    })) as ItemEntity;
 }
