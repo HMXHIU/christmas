@@ -306,7 +306,7 @@ async function generateNPC(
     const locationInstance = options.locationInstance ?? playerId; // spawn initially in its own world
     const geohash =
         options.geohash ??
-        autoCorrectGeohashPrecision("w2", worldSeed.spatial.unit.precision);
+        autoCorrectGeohashPrecision("w2", worldSeed.spatial.unit.precision); // TODO: use player id
 
     // Get fee payer anchor client
     const anchorClient = new AnchorClient({

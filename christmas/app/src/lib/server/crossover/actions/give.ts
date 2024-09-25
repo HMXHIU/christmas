@@ -8,8 +8,9 @@ import {
     type CTA,
     type P2PGiveTransaction,
 } from "../player";
+import { resolvePlayerQuests } from "../quests";
 import { itemRepository } from "../redis";
-import { fetchEntity } from "../redis/utils";
+import { fetchEntity, saveEntity } from "../redis/utils";
 
 export { createGiveCTA, executeGiveCTA, give };
 
@@ -22,7 +23,7 @@ async function executeGiveCTA(
 
     // Check that the player executing the p2pGiveTx is the receiver
     if (executor.player !== receiver) {
-        publishFeedEvent(executor.player, {
+        await publishFeedEvent(executor.player, {
             type: "error",
             message: `You try to execute the agreement, but it rejects you with a slight jolt.`,
         });
@@ -66,7 +67,7 @@ async function give(
     // Check if player can give receiver
     const [ok, cannotGiveMessage] = canGive(player, receiver, item);
     if (!ok) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message: cannotGiveMessage,
         });
@@ -77,6 +78,7 @@ async function give(
     item.loc = [receiver.player];
     item.locT = "inv";
     item.locI = LOCATION_INSTANCE;
+    item = await saveEntity(item);
 
     // Destroy writ if provided
     if (writ) {
@@ -84,7 +86,7 @@ async function give(
     }
 
     // Send entities
-    publishAffectedEntitiesToPlayers([item], {
+    await publishAffectedEntitiesToPlayers([item], {
         publishTo: [player.player, receiver.player],
         op: "upsert",
     });
@@ -100,6 +102,22 @@ async function give(
         `${player.name} hands you a ${item.name} with a smile, 'Here you go, ${receiver.name}. Hope it serves you well.'`,
         { target: receiver.player, overwrite: true },
     );
+
+    // Resolve any give quest triggers
+    if (receiver.npc) {
+        const give = [item.item, item.prop];
+        const to = [receiver.player, receiver.npc.split("_")[0]];
+        await resolvePlayerQuests(player, [...give, ...to], (trigger) => {
+            if (
+                trigger.type === "give" &&
+                give.includes(trigger.give) &&
+                to.includes(trigger.to)
+            ) {
+                return true;
+            }
+            return false;
+        });
+    }
 }
 
 function canGive(

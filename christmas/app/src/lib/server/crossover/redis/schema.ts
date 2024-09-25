@@ -78,6 +78,8 @@ const DialogueSchema = new Schema("Dialogue", {
 });
 
 const QuestSchema = new Schema("Quest", {
-    qst: { type: "string" },
-    tmp: { type: "string" },
+    quest: { type: "string" },
+    template: { type: "string" },
+    entityIds: { type: "string[]" },
+    fulfilled: { type: "boolean" },
 });

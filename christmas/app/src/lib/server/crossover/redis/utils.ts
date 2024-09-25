@@ -3,9 +3,15 @@ import {
     type MonsterEntity,
     type PlayerEntity,
 } from "$lib/crossover/types";
-import { itemRepository, monsterRepository, playerRepository } from ".";
+import {
+    itemRepository,
+    monsterRepository,
+    playerRepository,
+    questRepository,
+} from ".";
+import type { QuestEntity } from "../quests/types";
 
-export { fetchEntity, saveEntities, saveEntity };
+export { fetchEntity, fetchQuest, saveEntities, saveEntity };
 
 async function fetchEntity(
     entity: string,
@@ -25,9 +31,15 @@ async function fetchEntity(
     return null;
 }
 
-async function saveEntity<T extends PlayerEntity | MonsterEntity | ItemEntity>(
-    entity: T,
-): Promise<T> {
+async function fetchQuest(entity: string): Promise<QuestEntity | null> {
+    const quest = (await questRepository.fetch(entity)) as QuestEntity;
+    if (quest.quest) return quest;
+    return null;
+}
+
+async function saveEntity<
+    T extends PlayerEntity | MonsterEntity | ItemEntity | QuestEntity,
+>(entity: T): Promise<T> {
     if (entity.player) {
         return (await playerRepository.save(
             (entity as PlayerEntity).player,
@@ -43,12 +55,17 @@ async function saveEntity<T extends PlayerEntity | MonsterEntity | ItemEntity>(
             (entity as ItemEntity).item,
             entity,
         )) as T;
+    } else if (entity.quest) {
+        return (await questRepository.save(
+            (entity as QuestEntity).quest,
+            entity,
+        )) as T;
     }
     throw new Error("Invalid entity");
 }
 
 async function saveEntities(
-    ...entities: (PlayerEntity | MonsterEntity | ItemEntity)[]
+    ...entities: (PlayerEntity | MonsterEntity | ItemEntity | QuestEntity)[]
 ) {
     for (const e of entities) {
         await saveEntity(e);

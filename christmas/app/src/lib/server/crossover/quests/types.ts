@@ -53,11 +53,13 @@ interface QuestTemplate {
 interface Quest {
     template: string;
     quest: string;
+    entityIds: string[];
+    fulfilled: boolean;
+    // Unsearchable
     description: string;
     objectives: Objective[];
     entities: Record<string, string>;
-    reward: Reward;
-    fulfilled: boolean;
+    reward?: Reward;
 }
 
 type QuestEntity = Quest & Entity;
@@ -74,8 +76,8 @@ interface QuestWrit {
 
 interface Objective {
     description: string;
-    trigger: KillTrigger | GiveTrigger | DialogueTrigger;
-    effect: DropEffect | DialogueEffect;
+    trigger: Trigger;
+    effect: Effect;
     fulfilled: boolean;
     reward?: Reward;
 }
@@ -84,24 +86,25 @@ interface Objective {
  * Trigger
  */
 
+type Trigger = KillTrigger | GiveTrigger | DialogueTrigger;
 type Triggers = "kill" | "give" | "dialogue";
 
-interface Trigger {
+interface BaseTrigger {
     type: Triggers;
 }
 
-interface KillTrigger extends Trigger {
+interface KillTrigger extends BaseTrigger {
     type: "kill";
     entity: string;
 }
 
-interface GiveTrigger extends Trigger {
+interface GiveTrigger extends BaseTrigger {
     type: "give";
     give: string;
     to: string;
 }
 
-interface DialogueTrigger extends Trigger {
+interface DialogueTrigger extends BaseTrigger {
     type: "dialogue";
     with: string;
     dialogue: string;
@@ -112,17 +115,18 @@ interface DialogueTrigger extends Trigger {
  */
 
 type Effects = "drop" | "dialogue";
+type Effect = DropEffect | DialogueEffect;
 
-interface Effect {
+interface BaseEffect {
     type: Effects;
 }
 
-interface DropEffect extends Effect {
+interface DropEffect extends BaseEffect {
     type: "drop";
     item: string;
 }
 
-interface DialogueEffect extends Effect {
+interface DialogueEffect extends BaseEffect {
     type: "dialogue";
     dialogue: string;
 }

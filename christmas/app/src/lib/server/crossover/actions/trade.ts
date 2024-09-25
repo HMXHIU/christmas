@@ -28,7 +28,7 @@ import { itemRepository } from "../redis";
 import {
     getNearbyPlayerIds,
     inventoryQuerySet,
-    writsQuerySet,
+    tradeWritsQuerySet,
 } from "../redis/queries";
 import { fetchEntity, saveEntity } from "../redis/utils";
 import { savePlayerState } from "../utils";
@@ -297,7 +297,9 @@ async function browse(
     merchant: string,
 ): Promise<ItemEntity[]> {
     const merchantEntity = (await fetchEntity(merchant)) as PlayerEntity;
-    const writItems = (await writsQuerySet(merchantEntity.player).returnAll({
+    const writItems = (await tradeWritsQuerySet(
+        merchantEntity.player,
+    ).returnAll({
         pageSize: BROWSE_PAGE_SIZE,
     })) as ItemEntity[];
 

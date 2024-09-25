@@ -27,6 +27,7 @@ import {
     publishFeedEvent,
     publishFeedEventToPlayers,
 } from "../events";
+import { resolvePlayerQuests } from "../quests";
 import {
     equipmentQuerySet,
     getPlayerIdsNearbyEntities,
@@ -183,8 +184,8 @@ async function resolveCombat(
         });
     }
 
-    // Perform combat consequences
-    ({ attacker, defender } = await resolveAfterCombat({
+    // Resolve combat consequences
+    ({ attacker, defender } = await resolveCombatConsequences({
         attackerBefore,
         attacker,
         defenderBefore,
@@ -385,7 +386,7 @@ async function resolveProcedureEffect(
     };
 }
 
-async function resolveAfterCombat({
+async function resolveCombatConsequences({
     attackerBefore,
     defenderBefore,
     attacker,
@@ -399,112 +400,113 @@ async function resolveAfterCombat({
     attacker: PlayerEntity | MonsterEntity;
     defender: PlayerEntity | MonsterEntity | ItemEntity;
 }> {
-    // Attacker died
+    // Defender killed attacker
     if (entityDied(attackerBefore, attacker)) {
-        // Award currency to defender if it is not item
-        if ("player" in defender || "monster" in defender) {
-            defender = await awardKillCurrency(
-                defender as PlayerEntity,
-                attacker,
-                false,
-            );
-
-            // Publish entities
-            await publishAffectedEntitiesToPlayers(
-                [
-                    minifiedEntity(defender, {
-                        stats: true,
-                        location: true,
-                        timers: true,
-                    }),
-                ],
-                {
-                    op: "upsert",
-                },
-            );
-        }
-        // Respawn defender, publish dead message
-        if ("player" in attacker) {
-            attacker = respawnPlayer(attacker as PlayerEntity);
-            await publishFeedEvent(attacker.player, {
-                type: "message",
-                message: deadMessage,
-            });
-            // Publish entities
-            await publishAffectedEntitiesToPlayers(
-                [
-                    minifiedEntity(attacker, {
-                        stats: true,
-                        location: true,
-                        timers: true,
-                    }),
-                ],
-                {
-                    op: "upsert",
-                },
-            );
-        }
-        // Publish killed feed
-        if ("player" in defender) {
-            await publishFeedEvent((defender as PlayerEntity).player, {
-                type: "message",
-                message: `You killed ${attacker.name}, ${entityPronoun(attacker, "object")} collapses at your feet.`,
-            });
+        ({ attacker, defender } = await handleEntityDeath(
+            attacker,
+            defender as PlayerEntity | MonsterEntity,
+            true,
+        ));
+        if (defender.player) {
+            await handleQuestTrigger(attacker, defender as PlayerEntity);
         }
     }
-    // Defender died
-    if (entityDied(defenderBefore, defender)) {
-        // Award currency to attacker if defender is not item
-        if ("player" in defender || "monster" in defender) {
-            attacker = await awardKillCurrency(
-                attacker as PlayerEntity,
-                defender as PlayerEntity,
-                false,
-            );
 
-            // Publish entities
-            await publishAffectedEntitiesToPlayers(
-                [
-                    minifiedEntity(attacker, {
-                        stats: true,
-                        location: true,
-                        timers: true,
-                    }),
-                ],
-                {
-                    op: "upsert",
-                },
-            );
-        }
-        // Respawn defender, publish dead message
-        if ("player" in defender) {
-            defender = respawnPlayer(defender as PlayerEntity);
-            await publishFeedEvent(defender.player, {
-                type: "message",
-                message: deadMessage,
-            });
-            // Publish entities
-            await publishAffectedEntitiesToPlayers(
-                [
-                    minifiedEntity(defender, {
-                        stats: true,
-                        location: true,
-                        timers: true,
-                    }),
-                ],
-                {
-                    op: "upsert",
-                },
-            );
-        }
-        // Publish killed feed
-        if ("player" in attacker) {
-            await publishFeedEvent((attacker as PlayerEntity).player, {
-                type: "message",
-                message: `You killed ${defender.name}, ${entityPronoun(defender, "object")} collapses at your feet.`,
-            });
+    // Attacker killed defender
+    if (entityDied(defenderBefore, defender)) {
+        ({ attacker, defender } = await handleEntityDeath(
+            defender as PlayerEntity | MonsterEntity,
+            attacker,
+            false,
+        ));
+        if (attacker.player) {
+            await handleQuestTrigger(defender, attacker as PlayerEntity);
         }
     }
 
     return { attacker, defender };
+}
+
+async function handleQuestTrigger(
+    deadEntity: PlayerEntity | MonsterEntity,
+    killerEntity: PlayerEntity,
+) {
+    // Get quest entities
+    const questEntities =
+        "monster" in deadEntity
+            ? [
+                  (deadEntity as MonsterEntity).monster,
+                  (deadEntity as MonsterEntity).beast,
+              ]
+            : [(deadEntity as PlayerEntity).player];
+
+    // Resolve any kill quest triggers
+    await resolvePlayerQuests(
+        killerEntity as PlayerEntity,
+        questEntities,
+        (trigger) => {
+            if (
+                trigger.type === "kill" &&
+                questEntities.includes(trigger.entity)
+            ) {
+                return true;
+            }
+            return false;
+        },
+    );
+}
+
+async function handleEntityDeath(
+    deadEntity: PlayerEntity | MonsterEntity,
+    killerEntity: PlayerEntity | MonsterEntity,
+    isAttacker: boolean, // dead entity is attacker
+) {
+    // Award currency to killer
+    if (killerEntity.player || killerEntity.monster) {
+        killerEntity = await awardKillCurrency(
+            killerEntity as PlayerEntity,
+            deadEntity,
+        );
+        await publishAffectedEntitiesToPlayers(
+            [
+                minifiedEntity(killerEntity, {
+                    stats: true,
+                    location: true,
+                    timers: true,
+                }),
+            ],
+            { op: "upsert" },
+        );
+    }
+
+    // Respawn dead player
+    if (deadEntity.player) {
+        deadEntity = respawnPlayer(deadEntity as PlayerEntity);
+        await publishFeedEvent(deadEntity.player, {
+            type: "message",
+            message: deadMessage,
+        });
+        await publishAffectedEntitiesToPlayers(
+            [
+                minifiedEntity(deadEntity, {
+                    stats: true,
+                    location: true,
+                    timers: true,
+                }),
+            ],
+            { op: "upsert" },
+        );
+    }
+
+    // Publish 'You killed' message to killer player
+    if (killerEntity.player) {
+        await publishFeedEvent((killerEntity as PlayerEntity).player, {
+            type: "message",
+            message: `You killed ${deadEntity.name}, ${entityPronoun(deadEntity, "object")} collapses at your feet.`,
+        });
+    }
+
+    return isAttacker
+        ? { attacker: deadEntity, defender: killerEntity }
+        : { attacker: killerEntity, defender: deadEntity };
 }

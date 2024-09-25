@@ -25,9 +25,11 @@ import {
     itemRepository,
     monsterRepository,
     playerRepository,
+    questRepository,
     worldRepository,
 } from ".";
 import { LOOK_PAGE_SIZE } from "..";
+import type { QuestEntity } from "../quests/types";
 
 // Exports
 export {
@@ -43,10 +45,13 @@ export {
     itemsInGeohashQuerySet,
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
+    playerQuestsInvolvingEntities,
     playersInGeohashQuerySet,
+    questWritsQuerySet,
+    relevantQuestsQuerySet,
+    tradeWritsQuerySet,
     worldsContainingGeohashQuerySet,
     worldsInGeohashQuerySet,
-    writsQuerySet,
 };
 
 /**
@@ -282,10 +287,64 @@ function inventoryQuerySet(player: string): Search {
     return itemRepository.search().where("loc").contains(player);
 }
 
-function writsQuerySet(player: string): Search {
+function tradeWritsQuerySet(player: string): Search {
     return inventoryQuerySet(player)
         .and("prop")
         .equal(compendium.tradewrit.prop);
+}
+
+function questWritsQuerySet(player: string): Search {
+    return inventoryQuerySet(player)
+        .and("prop")
+        .equal(compendium.questwrit.prop);
+}
+
+function relevantQuestsQuerySet(quests: string[], entities: string[]): Search {
+    if (quests.length < 1) {
+        throw new Error("Must have at least 1 quest to search");
+    }
+
+    let qs = questRepository
+        .search()
+        .where("fulfilled")
+        .equal(false)
+        .and("quest")
+        .equal(quests[0]);
+    for (let i = 1; i < quests.length; i++) {
+        qs = qs.or("quest").equalTo(quests[i]);
+    }
+    return qs.and("entityIds").containOneOf(...entities);
+}
+
+async function playerQuestsInvolvingEntities(
+    player: string,
+    entities: string[],
+): Promise<[QuestEntity, ItemEntity][]> {
+    // Get quest writs
+    const writs = (await questWritsQuerySet(
+        player,
+    ).returnAll()) as ItemEntity[];
+    if (writs.length < 1) {
+        return [];
+    }
+
+    const questIds = writs
+        .map((qw) => qw.vars.quest as string)
+        .filter((q) => q);
+    if (questIds.length < 1) {
+        return [];
+    }
+
+    // Get quests from writs
+    const quests = (await relevantQuestsQuerySet(
+        questIds,
+        entities,
+    ).returnAll()) as QuestEntity[];
+
+    return quests.map((q) => [
+        q,
+        writs.find((qw) => qw.vars.quest === q.quest)!,
+    ]);
 }
 
 /**
