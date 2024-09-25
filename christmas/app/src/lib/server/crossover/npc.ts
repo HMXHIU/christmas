@@ -8,6 +8,7 @@ import type {
     DialogueEntity,
     Dialogues,
     GameEntity,
+    ItemEntity,
     Monster,
     Player,
     PlayerEntity,
@@ -65,7 +66,7 @@ import type {
 } from "../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../objectStorage";
 import { say } from "./actions";
-import { executeGiveCTA } from "./actions/give";
+import { executeGiveCTA, give } from "./actions/give";
 import { executeLearnCTA } from "./actions/learn";
 import { getAvatars } from "./avatar";
 import { isPublicKeyNPCCache } from "./caches";
@@ -76,7 +77,8 @@ import {
     type P2PTradeTransaction,
 } from "./player";
 import { dialogueRepository, playerRepository } from "./redis";
-import { fetchEntity } from "./redis/utils";
+import { questWritsQuerySet } from "./redis/queries";
+import { fetchEntity, fetchQuest } from "./redis/utils";
 import { UserMetadataSchema } from "./router";
 import { npcs } from "./settings/npc";
 import { getUserMetadata, savePlayerState } from "./utils";
@@ -119,10 +121,15 @@ async function npcRespondToEvent(
     // Feed events
     if (event.event === "feed" && event.type === "message" && event.variables) {
         if (event.variables.cmd === "say") {
-            const { message, player } = event.variables;
-            // Greet is just a say with no message
-            if (message === "" && player) {
-                await npcRespondToGreet(npc, player as string);
+            let { message, player } = event.variables;
+            message = (message as string).trim();
+            if (player) {
+                // Greet is just a say with no message
+                if (message === "") {
+                    await npcRespondToGreet(npc, player as string);
+                } else {
+                    await npcRespondToMessage(npc, player as string, message);
+                }
             }
         }
     }
@@ -178,12 +185,91 @@ async function npcRespondToGive(npc: string, p2pGiveTx: P2PGiveTransaction) {
     await executeGiveCTA(npcEntity, p2pGiveTx);
 }
 
+async function npcRespondToMessage(
+    npc: string,
+    player: string,
+    message: string,
+) {
+    const npcEntity = (await fetchEntity(npc)) as PlayerEntity;
+
+    const tokens = message.split(" ");
+
+    // Asked about quest (*ask [npc] about [quest]*)
+    if (tokens[0] === "about" && tokens[1].startsWith("quest_")) {
+        const quest = await fetchQuest(tokens[1]);
+        if (quest) {
+            // Check if NPC has the quest writ
+            const writs = (await questWritsQuerySet(
+                npc,
+            ).returnAll()) as ItemEntity[];
+            if (writs.some((w) => w.vars.quest === quest.quest)) {
+                await say(
+                    npcEntity,
+                    `${quest.description}\n\nYou can *tell ${npcEntity.name} accept ${quest.quest}* to accept this quest`,
+                    {
+                        target: player,
+                    },
+                );
+            }
+        }
+    } else if (tokens[0] === "accept" && tokens[1].startsWith("quest_")) {
+        const quest = await fetchQuest(tokens[1]);
+        if (quest) {
+            // Check if NPC has the quest writ
+            const writs = (await questWritsQuerySet(
+                npc,
+            ).returnAll()) as ItemEntity[];
+            const writEntity = writs.find((w) => w.vars.quest === quest.quest);
+            if (writEntity) {
+                const playerEntity = (await fetchEntity(
+                    player,
+                )) as PlayerEntity;
+                // Give writ to player
+                await give(npcEntity, playerEntity, writEntity);
+                await say(
+                    npcEntity,
+                    `Here is the quest writ, good luck ${playerEntity.name}.`,
+                    {
+                        target: player,
+                    },
+                );
+            }
+        }
+    }
+    // TODO: LLM response
+    else {
+        await say(npcEntity, `${npcEntity.name} ignores you.`, {
+            target: player,
+            overwrite: true,
+        });
+    }
+}
+
 async function npcRespondToGreet(npc: string, player: string) {
     const playerEntity = (await fetchEntity(player)) as PlayerEntity;
     const npcEntity = (await fetchEntity(npc)) as PlayerEntity;
     const npcTemplate = npcEntity.npc?.split("_")[0] as NPCs;
     const tags = [`npc=${npcTemplate}`];
     let dialogue = await npcGreetResponse(tags);
+
+    // Check if NPC has any quests
+    let questMessage = "";
+    const questWrits = (await questWritsQuerySet(
+        npc,
+    ).returnAll()) as ItemEntity[];
+    if (questWrits.length > 0) {
+        questMessage += `Quests:\n`;
+        for (const qr of questWrits) {
+            if (qr.vars.quest) {
+                const quest = await fetchQuest(qr.vars.quest as string);
+                if (quest) {
+                    questMessage += `\n${quest?.description} *${quest.quest}*`;
+                }
+            }
+        }
+        questMessage += `\n\nYou can *ask ${npcEntity.name} about [quest]*`;
+    }
+
     if (dialogue) {
         await say(
             npcEntity,
@@ -192,15 +278,17 @@ async function npcRespondToGreet(npc: string, player: string) {
                 player: playerEntity,
             }),
             {
-                target: dialogue.tgt
-                    ? substituteVariables(dialogue.tgt, {
-                          self: npcEntity,
-                          player: playerEntity,
-                      })
-                    : undefined,
+                target: playerEntity.player,
                 overwrite: true,
             },
         );
+    }
+
+    if (questMessage) {
+        await say(npcEntity, questMessage, {
+            target: playerEntity.player,
+            overwrite: true,
+        });
     }
 }
 

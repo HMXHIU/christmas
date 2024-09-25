@@ -63,7 +63,7 @@ Examples:
     say: {
         action: "say",
         description: "Say something.",
-        synonyms: ["greet"],
+        synonyms: ["greet", "ask", "tell"],
         predicate: {
             tokens: {
                 action: {

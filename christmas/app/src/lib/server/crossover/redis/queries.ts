@@ -303,7 +303,6 @@ function relevantQuestsQuerySet(quests: string[], entities: string[]): Search {
     if (quests.length < 1) {
         throw new Error("Must have at least 1 quest to search");
     }
-
     let qs = questRepository
         .search()
         .where("fulfilled")

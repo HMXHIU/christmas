@@ -1,6 +1,7 @@
 import {
     crossoverCmdGive,
     crossoverCmdPerformAbility,
+    crossoverCmdSay,
 } from "$lib/crossover/client";
 import type { ItemEntity, PlayerEntity } from "$lib/crossover/types";
 import { minifiedEntity } from "$lib/crossover/utils";
@@ -36,6 +37,136 @@ beforeEach(async () => {
     playerOne.cha = 10;
     playerOne.skills.exploration = 10;
     playerOne = await saveEntity(playerOne);
+});
+
+test("Test Quest in NPC Greet Dialogue", async () => {
+    const quest = await createQuest(killAndDeliverQuest);
+    const { beast, npc, trophy } = quest.entities;
+    let questWrit = await createQuestWrit(quest);
+
+    const npcEntity = await generateNPC(npc as NPCs, {
+        demographic: {},
+        appearance: {},
+        geohash: playerOne.loc[0],
+        locationInstance: LOCATION_INSTANCE,
+    });
+
+    // Put `questWrit` in NPCs inventory
+    questWrit.loc = [npcEntity.player];
+    questWrit.locT = "inv";
+    questWrit.locI = LOCATION_INSTANCE;
+    questWrit = await saveEntity(questWrit);
+
+    // Check quest appears in when greeting the NPC
+    crossoverCmdSay(
+        { target: npcEntity.player, message: "" },
+        { Cookie: playerOneCookies },
+    );
+    var evs = await collectAllEventDataForDuration(playerOneStream);
+    expect(evs).toMatchObject({
+        feed: [
+            {
+                type: "message",
+                message: "${message}",
+                variables: {
+                    cmd: "say",
+                    player: npcEntity.player,
+                    name: "Grocer",
+                    message: `Quests:\n\nYou have been tasked to kill ${beast} and deliver it to ${npc} *${quest.quest}*\n\nYou can *ask Grocer about [quest]*`,
+                },
+                event: "feed",
+            },
+        ],
+        entities: [],
+        cta: [],
+        action: [],
+    });
+
+    // Ask about quest
+    crossoverCmdSay(
+        { target: npcEntity.player, message: `about ${quest.quest}` },
+        { Cookie: playerOneCookies },
+    );
+    var evs = await collectAllEventDataForDuration(playerOneStream);
+    expect(evs).toMatchObject({
+        feed: [
+            {
+                type: "message",
+                message: "${name} says ${message}",
+                variables: {
+                    cmd: "say",
+                    player: npcEntity.player,
+                    name: "Grocer",
+                    message: `You have been tasked to kill goblin and deliver it to grocer\n\nYou can *tell Grocer accept ${quest.quest}* to accept this quest`,
+                },
+                event: "feed",
+            },
+        ],
+        entities: [],
+        cta: [],
+        action: [],
+    });
+
+    // Accept quest
+    crossoverCmdSay(
+        { target: npcEntity.player, message: `accept ${quest.quest}` },
+        { Cookie: playerOneCookies },
+    );
+    var evs = await collectAllEventDataForDuration(playerOneStream);
+    expect(evs).toMatchObject({
+        feed: [
+            {
+                type: "message",
+                message: "${message}",
+                variables: {
+                    cmd: "say",
+                    player: npcEntity.player,
+                    name: "Grocer",
+                    message:
+                        "Grocer hands you a Quest writ with a smile, 'Here you go, Gandalf. Hope it serves you well.'",
+                },
+                event: "feed",
+            },
+            {
+                type: "message",
+                message: "${name} says ${message}",
+                variables: {
+                    cmd: "say",
+                    player: npcEntity.player,
+                    name: "Grocer",
+                    message: "Here is the quest writ, good luck Gandalf.",
+                },
+                event: "feed",
+            },
+        ],
+        entities: [
+            {
+                event: "entities",
+                players: [],
+                monsters: [],
+                items: [
+                    {
+                        item: questWrit.item,
+                        prop: "questwrit",
+                        loc: [playerOne.player],
+                        locT: "inv",
+                        locI: "@",
+                        state: "default",
+                        vars: {
+                            quest: quest.quest,
+                        },
+                    },
+                ],
+                op: "upsert",
+            },
+        ],
+        cta: [],
+        action: [],
+    });
+
+    // Check quest writ has been transfered from NPC to player
+    questWrit = (await fetchEntity(questWrit.item)) as ItemEntity;
+    expect(questWrit.loc[0]).toBe(playerOne.player);
 });
 
 test("Test `createQuest` & `createQuestWrit`", async () => {
