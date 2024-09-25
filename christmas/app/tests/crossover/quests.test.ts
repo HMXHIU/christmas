@@ -25,18 +25,32 @@ import { beforeEach, expect, test } from "vitest";
 import {
     collectAllEventDataForDuration,
     createGandalfSarumanSauron,
+    generateRandomGeohash,
 } from "./utils";
 
 await initializeClients(); // create redis repositories
 
-let { playerOne, playerTwo, playerThree, playerOneCookies, playerOneStream } =
-    await createGandalfSarumanSauron();
+let {
+    playerOne,
+    playerTwo,
+    playerThree,
+    playerOneCookies,
+    playerTwoCookies,
+    playerTwoStream,
+    playerOneStream,
+} = await createGandalfSarumanSauron();
 
 beforeEach(async () => {
     playerOne.mnd = 10;
     playerOne.cha = 10;
     playerOne.skills.exploration = 10;
     playerOne = await saveEntity(playerOne);
+
+    playerTwo.loc = [generateRandomGeohash(8, "h9")];
+    playerTwo.mnd = 10;
+    playerTwo.cha = 10;
+    playerTwo.skills.exploration = 10;
+    playerTwo = await saveEntity(playerTwo);
 });
 
 test("Test Quest in NPC Greet Dialogue", async () => {
@@ -47,7 +61,7 @@ test("Test Quest in NPC Greet Dialogue", async () => {
     const npcEntity = await generateNPC(npc as NPCs, {
         demographic: {},
         appearance: {},
-        geohash: playerOne.loc[0],
+        geohash: playerTwo.loc[0],
         locationInstance: LOCATION_INSTANCE,
     });
 
@@ -60,9 +74,9 @@ test("Test Quest in NPC Greet Dialogue", async () => {
     // Check quest appears in when greeting the NPC
     crossoverCmdSay(
         { target: npcEntity.player, message: "" },
-        { Cookie: playerOneCookies },
+        { Cookie: playerTwoCookies },
     );
-    var evs = await collectAllEventDataForDuration(playerOneStream);
+    var evs = await collectAllEventDataForDuration(playerTwoStream);
     expect(evs).toMatchObject({
         feed: [
             {
@@ -85,9 +99,9 @@ test("Test Quest in NPC Greet Dialogue", async () => {
     // Ask about quest
     crossoverCmdSay(
         { target: npcEntity.player, message: `about ${quest.quest}` },
-        { Cookie: playerOneCookies },
+        { Cookie: playerTwoCookies },
     );
-    var evs = await collectAllEventDataForDuration(playerOneStream);
+    var evs = await collectAllEventDataForDuration(playerTwoStream);
     expect(evs).toMatchObject({
         feed: [
             {
@@ -110,9 +124,9 @@ test("Test Quest in NPC Greet Dialogue", async () => {
     // Accept quest
     crossoverCmdSay(
         { target: npcEntity.player, message: `accept ${quest.quest}` },
-        { Cookie: playerOneCookies },
+        { Cookie: playerTwoCookies },
     );
-    var evs = await collectAllEventDataForDuration(playerOneStream);
+    var evs = await collectAllEventDataForDuration(playerTwoStream);
     expect(evs).toMatchObject({
         feed: [
             {
@@ -123,7 +137,7 @@ test("Test Quest in NPC Greet Dialogue", async () => {
                     player: npcEntity.player,
                     name: "Grocer",
                     message:
-                        "Grocer hands you a Quest writ with a smile, 'Here you go, Gandalf. Hope it serves you well.'",
+                        "Grocer hands you a Quest writ with a smile, 'Here you go, Saruman. Hope it serves you well.'",
                 },
                 event: "feed",
             },
@@ -134,7 +148,7 @@ test("Test Quest in NPC Greet Dialogue", async () => {
                     cmd: "say",
                     player: npcEntity.player,
                     name: "Grocer",
-                    message: "Here is the quest writ, good luck Gandalf.",
+                    message: "Here is the quest writ, good luck Saruman.",
                 },
                 event: "feed",
             },
@@ -148,7 +162,7 @@ test("Test Quest in NPC Greet Dialogue", async () => {
                     {
                         item: questWrit.item,
                         prop: "questwrit",
-                        loc: [playerOne.player],
+                        loc: [playerTwo.player],
                         locT: "inv",
                         locI: "@",
                         state: "default",
@@ -166,7 +180,7 @@ test("Test Quest in NPC Greet Dialogue", async () => {
 
     // Check quest writ has been transfered from NPC to player
     questWrit = (await fetchEntity(questWrit.item)) as ItemEntity;
-    expect(questWrit.loc[0]).toBe(playerOne.player);
+    expect(questWrit.loc[0]).toBe(playerTwo.player);
 });
 
 test("Test `createQuest` & `createQuestWrit`", async () => {
@@ -332,9 +346,6 @@ test("Test `createQuest` & `createQuestWrit`", async () => {
                 players: [
                     playerOneAfterObjectiveOne,
                     {
-                        player: playerTwo.player,
-                    },
-                    {
                         player: playerThree.player,
                     },
                 ],
@@ -434,9 +445,6 @@ test("Test `createQuest` & `createQuestWrit`", async () => {
             {
                 players: [
                     playerOneAfterQuest, // playerOne should have gotten all the rewards
-                    {
-                        player: playerTwo.player,
-                    },
                     {
                         player: playerThree.player,
                     },
