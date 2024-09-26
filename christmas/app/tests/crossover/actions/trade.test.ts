@@ -84,14 +84,8 @@ describe("Trade Tests", () => {
 
         // Check CTA event (on seller which is `playerTwo`)
         var cta = (await waitForEventData(playerTwoStream, "cta")) as CTAEvent;
-        expect(cta).toMatchObject({
-            cta: {
-                name: "Trade Writ",
-            },
-            event: "cta",
-        });
         expect(
-            cta.cta.description.startsWith(
+            cta.cta.message.startsWith(
                 `${playerOne.name} is offering to buy Wooden Club for 100 lum. You have 60s to`,
             ),
         ).toBeTruthy();
@@ -194,14 +188,8 @@ describe("Trade Tests", () => {
 
         // Check CTA event (on buyer which is `playerTwo`)
         var cta = (await waitForEventData(playerTwoStream, "cta")) as CTAEvent;
-        expect(cta).toMatchObject({
-            cta: {
-                name: "Trade Writ",
-            },
-            event: "cta",
-        });
         expect(
-            cta.cta.description.startsWith(
+            cta.cta.message.startsWith(
                 `${playerOne.name} is offering to sell Wooden Club for 100 lum`,
             ),
         ).toBeTruthy();

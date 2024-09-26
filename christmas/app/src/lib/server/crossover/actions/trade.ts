@@ -190,7 +190,7 @@ async function createTradeWrit({
         },
     });
 
-    publishFeedEvent(creator.player, {
+    await publishFeedEvent(creator.player, {
         type: "message",
         message: "You received a trade writ in your inventory.",
     });
@@ -228,8 +228,7 @@ async function createTradeCTA(
         receive: serializeBarter(receive),
     };
     return {
-        name: "Trade Writ",
-        description: `${message} You have ${expiresIn}s to *accept ${pin}*.`,
+        message: `${message} You have ${expiresIn}s to *accept ${pin}*.`,
         token: await createP2PTransaction(tradeTx, expiresIn),
         pin,
     };
@@ -258,7 +257,7 @@ async function executeTradeCTA(
         executor.player !== buyerEntity.player &&
         executor.player !== sellerEntity.player
     ) {
-        publishFeedEvent(executor.player, {
+        await publishFeedEvent(executor.player, {
             type: "error",
             message: `You try to execute the agreement, but it rejects you with a slight jolt.`,
         });
@@ -275,7 +274,7 @@ async function executeTradeCTA(
 
     if (!ok) {
         if (isEntityHuman(executor)) {
-            publishFeedEvent(executor.player, {
+            await publishFeedEvent(executor.player, {
                 type: "error",
                 message: cannotTradeMessage,
             });
@@ -317,7 +316,7 @@ async function browse(
     }
 
     // Send writs to browsing player
-    publishAffectedEntitiesToPlayers(
+    await publishAffectedEntitiesToPlayers(
         writItems.map((i) => minifiedEntity(i)),
         {
             publishTo: [player.player],
@@ -326,7 +325,7 @@ async function browse(
     );
 
     // Send feed message
-    publishFeedEvent(player.player, {
+    await publishFeedEvent(player.player, {
         type: "message",
         message: message.trim(),
     });
@@ -369,7 +368,7 @@ async function trade(
     );
 
     // Publish action event
-    publishActionEvent(nearbyPlayerIds, {
+    await publishActionEvent(nearbyPlayerIds, {
         action: "trade",
         source: buyer.player,
         target: seller.player,
@@ -429,7 +428,7 @@ async function trade(
     await savePlayerState(seller.player);
 
     // Publish to nearby players
-    publishAffectedEntitiesToPlayers(
+    await publishAffectedEntitiesToPlayers(
         [buyer, seller, ...offer.items, ...receive.items],
         {
             publishTo: [buyer.player, seller.player],

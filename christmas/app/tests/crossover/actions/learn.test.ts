@@ -55,14 +55,8 @@ describe("Learn Tests", () => {
 
         // Check CTA event (on teacher which is `playerTwo`)
         var cta = (await waitForEventData(playerTwoStream, "cta")) as CTAEvent;
-        expect(cta).toMatchObject({
-            cta: {
-                name: "Writ of Learning",
-            },
-            event: "cta",
-        });
         expect(
-            cta.cta.description.startsWith(
+            cta.cta.message.startsWith(
                 "Gandalf requests to learn exploration from you.",
             ),
         );

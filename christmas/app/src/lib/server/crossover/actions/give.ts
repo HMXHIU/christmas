@@ -29,6 +29,8 @@ async function executeGiveCTA(
         });
     }
 
+    console.log(JSON.stringify({ receiver, item, player }, null, 2));
+
     await give(
         (await fetchEntity(player)) as PlayerEntity,
         (await fetchEntity(receiver)) as PlayerEntity,
@@ -50,9 +52,19 @@ async function createGiveCTA(
         player: player.player,
         item: item.item,
     };
+
+    // Check if player can give receiver
+    const [ok, cannotGiveMessage] = canGive(player, receiver, item);
+    if (!ok) {
+        await publishFeedEvent(player.player, {
+            type: "error",
+            message: cannotGiveMessage,
+        });
+        throw new Error(cannotGiveMessage);
+    }
+
     return {
-        name: "Gift",
-        description: `${player.name} wants to give ${item.name} to you. You have ${expiresIn} to *accept ${pin}*`,
+        message: `${player.name} wants to give ${item.name} to you. You have ${expiresIn} to *accept ${pin}*`,
         token: await createP2PTransaction(giveTx, 60),
         pin,
     };
@@ -93,14 +105,14 @@ async function give(
 
     // Send messages
     if (!player.npc) {
-        say(
+        await say(
             receiver,
             `${receiver.name} beams with gratitude as they nod to you, 'Ah, many thanks for the ${item.name}, ${player.name}!'`,
             { target: player.player, overwrite: true },
         );
     }
     if (!receiver.npc) {
-        say(
+        await say(
             player,
             `${player.name} hands you a '${item.name}' with a smile, 'Here you go, ${receiver.name}.'`,
             { target: receiver.player, overwrite: true },

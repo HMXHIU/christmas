@@ -41,6 +41,7 @@ import {
 } from "$lib/crossover/world/player";
 import type { LocationType } from "$lib/crossover/world/types";
 import {
+    generatePin,
     sampleFrom,
     stringToRandomNumber,
     stringToUint8Array,
@@ -159,7 +160,7 @@ async function generateNPC(
         bucket: "npc",
         prefix: npc,
     });
-    const npcInstanceId = `${npc}_${numInstances}`;
+    const npcInstanceId = `${npc}_${numInstances}${generatePin(4)}`; // prevent race condition by generating additional pin
 
     // Generate and validate NPC player metadata
     const playerMetadata = await PlayerMetadataSchema.parse(

@@ -42,8 +42,7 @@ interface P2PTradeTransaction extends P2PTransaction {
 }
 
 interface CTA {
-    name: string;
-    description: string;
+    message: string;
     pin: string; // also serves as the CTA id, and for targeting the CTA (eg. accept [pin])
     token: string; // p2pTransaction jwt
 }

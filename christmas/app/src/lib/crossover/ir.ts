@@ -622,9 +622,26 @@ function commandVariables({
     queryTokens: string[];
     tokenPositions: TokenPositions;
 }): GameCommandVariables {
-    const relevantPositions = Object.values(action.predicate.tokens).map(
-        (c) => c.position,
-    );
+    // All required tokens are relevant
+    let relevantPositions = Object.values(action.predicate.tokens)
+        .filter((t) => !t.optional)
+        .map((c) => c.position);
+
+    // Optional tokens if it appears
+    for (const [t, { position, optional }] of Object.entries(
+        action.predicate.tokens,
+    )) {
+        for (const [_, matchedTokenPosition] of Object.entries(
+            tokenPositions,
+        )) {
+            for (const matchedPosition of Object.keys(matchedTokenPosition)) {
+                if (parseInt(matchedPosition) === position) {
+                    relevantPositions.push(position);
+                }
+            }
+        }
+    }
+
     const queryIrrelevant = Array.from(queryTokens.entries())
         .filter(([pos, token]) => {
             return !relevantPositions.includes(pos);

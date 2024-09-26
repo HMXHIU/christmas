@@ -15,7 +15,7 @@ import {
     publishAffectedEntitiesToPlayers,
     publishFeedEvent,
 } from "../events";
-import { isEntityHuman } from "../npc";
+import { isEntityHuman } from "../npc/utils";
 import {
     createP2PTransaction,
     type CTA,
@@ -37,7 +37,7 @@ async function executeLearnCTA(
 
     // Check that the player executing the p2pLearnTx is the teacher
     if (executor.player !== teacher) {
-        publishFeedEvent(executor.player, {
+        await publishFeedEvent(executor.player, {
             type: "error",
             message: `You try to execute the agreement, but it rejects you with a slight jolt.`,
         });
@@ -65,8 +65,7 @@ async function createLearnCTA(
         skill,
     };
     return {
-        name: "Writ of Learning",
-        description: `${player.name} requests to learn ${skill} from you. You have ${expiresIn} to *accept ${pin}*`,
+        message: `${player.name} requests to learn ${skill} from you. You have ${expiresIn} to *accept ${pin}*`,
         token: await createP2PTransaction(learnTx, 60),
         pin,
     };
@@ -103,7 +102,7 @@ async function learn(
     );
 
     // Publish action event
-    publishActionEvent(nearbyPlayerIds, {
+    await publishActionEvent(nearbyPlayerIds, {
         action: "learn",
         source: teacher,
         target: player.player,
@@ -133,7 +132,7 @@ async function learn(
     }
 
     // Publish to nearby players
-    publishAffectedEntitiesToPlayers([player], {
+    await publishAffectedEntitiesToPlayers([player], {
         publishTo: nearbyPlayerIds,
         op: "upsert",
     });

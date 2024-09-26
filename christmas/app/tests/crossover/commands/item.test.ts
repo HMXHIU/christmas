@@ -203,7 +203,7 @@ describe("Item Tests", () => {
             event: "entities",
             players: [],
             monsters: [],
-            items: [{ item: woodenDoor.item, state: "closed" }],
+            items: [{ item: woodenDoor.item, state: "default" }],
         });
     });
 

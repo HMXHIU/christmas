@@ -13,6 +13,7 @@
     import { onDestroy, onMount } from "svelte";
     import { addMessageFeed } from ".";
     import {
+        ctaEvent,
         feedEvent,
         inGame,
         itemRecord,
@@ -156,6 +157,14 @@
                         messageFeedType: type,
                     });
                 }
+            }),
+            ctaEvent.subscribe(async (e) => {
+                if (!e) return;
+                addMessageFeed({
+                    message: e.cta.message,
+                    name: "",
+                    messageFeedType: "message",
+                });
             }),
         ];
 

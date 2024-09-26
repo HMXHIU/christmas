@@ -17,12 +17,12 @@ let { dragon, goblin } = await createGoblinSpiderDragon(geohash);
 let { woodenClubTwo, woodenClubThree, woodenClub } = await createTestItems({});
 
 describe("Equipment & Inventory Tests", () => {
-    test("Drop action only for inventory items", () => {
+    test("Drop action only for inventory items", async () => {
         woodenClubTwo.locT = "inv";
         woodenClubTwo.loc = [playerOne.player];
 
         const commands = searchPossibleCommands({
-            query: `drop ${woodenClubThree.item}`,
+            query: `drop ${woodenClubTwo.item}`,
             player: playerOne,
             actions: [actions.drop],
             playerAbilities: [abilities.bruise, abilities.bandage],
@@ -48,7 +48,7 @@ describe("Equipment & Inventory Tests", () => {
                     },
                 },
                 {
-                    query: `drop ${woodenClubThree.item}`,
+                    query: `drop ${woodenClubTwo.item}`,
                     queryIrrelevant: "",
                 },
             ],

@@ -33,7 +33,11 @@ import {
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
 import { poisInWorld, type WorldPOIs } from "$lib/crossover/world/world";
-import { substituteValues, substituteVariablesRecursively } from "$lib/utils";
+import {
+    generatePin,
+    substituteValues,
+    substituteVariablesRecursively,
+} from "$lib/utils";
 import { groupBy } from "lodash-es";
 import {
     blueprintsAtTerritoryCache,
@@ -146,10 +150,6 @@ async function spawnMonster({
         throw new Error("Can only spawn monster on GeohashLocationType");
     }
 
-    // Get monster count
-    const count = await monsterRepository.search().count();
-    const monsterId = `monster_${beast}${count}`; // must start with monster
-
     // Calculate location
     const asset = bestiary[beast].asset;
     const width = asset.width ?? 1;
@@ -168,6 +168,10 @@ async function spawnMonster({
     ) {
         throw new Error(`Cannot spawn ${beast} at ${geohash}`);
     }
+
+    // Get monster count
+    const count = await monsterRepository.search().count();
+    const monsterId = `monster_${beast}${count}${generatePin(4)}`; // prevent race condition by generating additional pin
 
     // Get monster stats
     let monster: MonsterEntity = {
@@ -320,10 +324,6 @@ async function spawnQuestItem({
     owner ??= "";
     configOwner ??= "";
 
-    // Get item count
-    const count = await itemRepository.search().count();
-    const itemId = `item_${prop}${count}`;
-
     // Get prop
     const { durability, charges, collider, states } = compendium[prop];
 
@@ -332,6 +332,12 @@ async function spawnQuestItem({
         states.default,
         variables ?? {},
     );
+
+    // Get item id
+    // In between getting the count and saving, the count could have changed.
+    // Instead of locking, we use a random pin in addition to the count to prevent race condition
+    const count = await itemRepository.search().count();
+    const itemId = `item_${prop}${count}${generatePin(4)}`;
 
     const item: ItemEntity = {
         item: itemId,
@@ -371,11 +377,6 @@ async function spawnItemInInventory({
     owner ??= "";
     configOwner ??= "";
 
-    // Get item count
-    const count = await itemRepository.search().count();
-    const itemId = `item_${prop}${count}`;
-    const [entityId, entityType] = getEntityId(entity);
-
     // Get prop
     const { states, durability, charges, collider } = compendium[prop];
     // Substitute variables for default state attributes
@@ -384,7 +385,12 @@ async function spawnItemInInventory({
         variables ?? {},
     );
 
-    const item: ItemEntity = {
+    // Get item count
+    const count = await itemRepository.search().count();
+    const itemId = `item_${prop}${count}${generatePin(4)}`;
+    const [entityId, entityType] = getEntityId(entity);
+
+    return (await itemRepository.save(itemId, {
         item: itemId,
         name: attributes.name,
         prop,
@@ -400,9 +406,7 @@ async function spawnItemInInventory({
         vars: parseItemVariables(variables || {}, prop),
         dbuf: [],
         buf: [],
-    };
-
-    return (await itemRepository.save(itemId, item)) as ItemEntity;
+    })) as ItemEntity;
 }
 
 /**
@@ -440,10 +444,6 @@ async function spawnItemAtGeohash({
         throw new Error("Can only spawn item on GeohashLocationType");
     }
 
-    // Get item count
-    const count = await itemRepository.search().count();
-    const item = `item_${prop}${count}`;
-
     // Get prop
     const { states, durability, charges, collider } = compendium[prop];
 
@@ -473,8 +473,12 @@ async function spawnItemAtGeohash({
         throw new Error(`Cannot spawn ${prop} at ${location}`);
     }
 
+    // Get item count
+    const count = await itemRepository.search().count();
+    const itemId = `item_${prop}${count}${generatePin(4)}`;
+
     const entity: ItemEntity = {
-        item,
+        item: itemId,
         name: attributes.name,
         prop,
         loc: location,
@@ -491,7 +495,7 @@ async function spawnItemAtGeohash({
         buf: [],
     };
 
-    return (await itemRepository.save(item, entity)) as ItemEntity;
+    return (await itemRepository.save(itemId, entity)) as ItemEntity;
 }
 
 /**

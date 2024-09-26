@@ -221,7 +221,7 @@ const playerAuthBusyProcedure = playerAuthProcedure.use(
     async ({ ctx, next }) => {
         const [isBusy, now] = entityIsBusy(ctx.player);
         if (isBusy) {
-            publishFeedEvent(ctx.player.player, {
+            await publishFeedEvent(ctx.player.player, {
                 type: "error",
                 message: "You are busy at the moment.",
             });
@@ -566,7 +566,7 @@ const crossoverRouter = {
                 }
                 // Check that the executor must be one of the parties
                 else {
-                    publishFeedEvent(ctx.player.player, {
+                    await publishFeedEvent(ctx.player.player, {
                         type: "error",
                         message: `You try to execute the agreement, but it rejects you with a slight jolt.`,
                     });
