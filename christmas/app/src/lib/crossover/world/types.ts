@@ -176,4 +176,5 @@ const GeohashLocationSchema = z.enum([
     "d8",
     "d9",
     "in", // inside
+    "limbo", // default NPC location when first created
 ]);

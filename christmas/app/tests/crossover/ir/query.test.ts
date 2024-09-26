@@ -448,7 +448,7 @@ test("Test Query", async () => {
                     durability: 0,
                 },
                 state: {
-                    start: "closed",
+                    start: "default",
                     end: "open",
                 },
             },
