@@ -5,8 +5,7 @@ import type {
     Monster,
     Player,
 } from "$lib/crossover/types";
-import { substituteVariables } from "$lib/utils";
-import { cloneDeep } from "lodash-es";
+import { substituteVariablesRecursively } from "$lib/utils";
 import { getEntityId } from "../utils";
 import type { Abilities } from "./abilities";
 import type { Actions } from "./actions";
@@ -23,10 +22,10 @@ export {
     isItemEquipped,
     isWeaponEquipped,
     itemAttibutes,
-    itemName,
     type EquipmentAsset,
     type ItemVariables,
     type Prop,
+    type PropAttributes,
     type PropVariables,
     type PropWorld,
     type Utility,
@@ -45,12 +44,10 @@ interface PropWorld {
  */
 interface Prop {
     prop: string;
-    defaultName: string;
-    defaultState: string;
     asset: AssetMetadata;
     durability: number;
     charges: number;
-    states: Record<string, PropAttributes>; // map item.state to prop attributes
+    states: PropStates; // map item.state to prop attributes
     utilities: Record<string, Utility>;
     variables: PropVariables; // configurable variables to alter prop behavior & descriptions
     weight: number; // -1 means it cannot be taken
@@ -62,16 +59,21 @@ interface Prop {
     world?: PropWorld;
 }
 
+type PropStates = {
+    default: PropAttributes; // must minimally implement the default state
+} & Record<string, PropAttributes>;
+
+interface PropAttributes {
+    name: string; // the default state name is used as the item.name during creation
+    description: string;
+    destructible: boolean;
+    variant: string;
+}
+
 interface EquipmentAsset {
     asset?: AssetMetadata;
     tint?: Float32Array; // tints the texture (eg. under armour)
     replace?: boolean; // replace the texture (defaults to overlay)
-}
-
-interface PropAttributes {
-    description: string;
-    destructible: boolean;
-    variant: string;
 }
 
 interface Utility {
@@ -108,43 +110,18 @@ type ItemVariables = Record<string, string | number | boolean>;
  * @returns The attributes of the item after variable substitution.
  */
 function itemAttibutes(item: Item): PropAttributes {
-    const state = cloneDeep(compendium[item.prop].states[item.state]);
-    // Replace variables in description
-    state.description = substituteVariables(
-        state.description,
+    return substituteVariablesRecursively(
+        compendium[item.prop].states[item.state],
         itemVariables(item),
-    ) as string;
-    return state;
+    );
 }
 
-/**
- * Helper to get the name of an item.
- * @param item - The item to get the name for.
- * @returns The name of the item.
- */
-function itemName(item: Item): string {
-    return item?.name || compendium[item.prop]?.defaultName;
-}
-
-/**
- * Helper to get the variables of an item.
- *
- * @param item - The item to get the variables for.
- * @returns The variables of the item.
- */
 function itemVariables(item: Item): ItemVariables {
     const vars: ItemVariables = {};
     for (const { variable, value } of Object.values(
         compendium[item.prop].variables,
     )) {
-        // If not exists, use the default from prop
-        if (item.vars[variable] == null) {
-            vars[variable] = value;
-        }
-        // Use var from item
-        else {
-            vars[variable] = item.vars[variable];
-        }
+        vars[variable] = item.vars[variable] ?? value;
     }
     return vars;
 }

@@ -531,7 +531,7 @@ async function enterItem(
     // Check if can item can be entered
     const prop = compendium[itemEntity.prop];
     if (!prop.world) {
-        const message = `${prop.defaultName} is not something you can enter`;
+        const message = `${itemEntity.name} is not something you can enter`;
         await publishFeedEvent(player.player, {
             type: "error",
             message,

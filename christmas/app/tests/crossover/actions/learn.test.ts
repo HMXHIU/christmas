@@ -29,6 +29,7 @@ let {
 let { blackSmith } = await createNPCs({
     geohash,
     locationInstance: LOCATION_INSTANCE,
+    locationType: "geohash",
 });
 
 beforeEach(async () => {

@@ -6,7 +6,8 @@ import type {
     FeedEvent,
     UpdateEntitiesEvent,
 } from "../../../routes/api/crossover/stream/+server";
-import { isPublicKeyNPC, npcRespondToEvent } from "./npc";
+import { npcRespondToEvent } from "./npc";
+import { isPublicKeyNPC } from "./npc/utils";
 import { redisClient } from "./redis";
 
 export {

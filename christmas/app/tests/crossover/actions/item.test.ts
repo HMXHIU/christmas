@@ -182,12 +182,12 @@ describe("Test Items", () => {
         woodenDoor = (await fetchEntity(woodenDoor.item)) as ItemEntity;
 
         expect(woodenDoor).toMatchObject({
-            name: compendium.woodendoor.defaultName,
+            name: compendium.woodendoor.states.default.name,
             prop: compendium.woodendoor.prop,
             locT: "geohash",
             dur: compendium.woodendoor.durability,
             chg: compendium.woodendoor.charges,
-            state: compendium.woodendoor.defaultState,
+            state: "default",
             dbuf: [],
             buf: [],
         });
@@ -241,7 +241,7 @@ describe("Test Items", () => {
         await sleep(MS_PER_TICK * 2); // wait for item to be updated
         woodenDoor = (await fetchEntity(woodenDoor.item)) as ItemEntity;
         expect(woodenDoor).toMatchObject({
-            state: "closed",
+            state: "default",
         });
 
         // playerOne use portalOne to teleport to portalTwo

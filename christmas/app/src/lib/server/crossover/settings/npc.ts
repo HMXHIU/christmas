@@ -1,14 +1,14 @@
 import type { Dialogue, Dialogues } from "$lib/crossover/types";
-import type { NPC, NPCs } from "../npc";
+import type { NPC, NPCs } from "../npc/types";
 
 export { dialogues, npcs };
 
 const npcs: Record<NPCs, NPC> = {
-    innkeep: {
-        npc: "innkeep",
+    innkeeper: {
+        npc: "innkeeper",
         nameTemplate: "Inn Keeper",
         descriptionTemplate:
-            "The innkeeper tends to the inn with efficiency, offering food, drink, and a place to rest for travelers. Always attentive to guests, they know much about the town and its visitors",
+            "The innkeeperer tends to the inn with efficiency, offering food, drink, and a place to rest for travelers. Always attentive to guests, they know much about the town and its visitors",
         asset: {
             path: "",
         },
@@ -49,10 +49,10 @@ const greetings: Dialogue[] = [
         msg: "${self.name} greets you, 'Well met ${player.name}.'.",
         tgt: "${player.player}",
     },
-    // innkeep
+    // innkeeper
     {
         dia: "grt",
-        mst: ["npc=innkeep"],
+        mst: ["npc=innkeeper"],
         msg: "${self.name} greets you, 'Well met ${player.name}, you may *rest* here'.",
         tgt: "${player.player}",
     },
@@ -65,10 +65,10 @@ const ignores: Dialogue[] = [
         msg: "${self.name} ignores you",
         tgt: "${player.player}",
     },
-    // innkeep
+    // innkeeper
     {
         dia: "ign",
-        mst: ["npc=innkeep"],
+        mst: ["npc=innkeeper"],
         msg: "${self.name} ignores you, 'Get lost, we don't deal with your types around here!'.",
         tgt: "${player.player}",
     },
@@ -81,10 +81,10 @@ const agros: Dialogue[] = [
         msg: "${self.name} looks at you menacingly, 'You've picked the wrong fight, my friend!'.",
         tgt: "",
     },
-    // innkeep
+    // innkeeper
     {
         dia: "agro",
-        or: ["npc=innkeep"],
+        or: ["npc=innkeeper"],
         msg: "${self.name} yelps, 'Are you out of your mind ${player.name}? You can't just start a brawl in my inn!'.",
         tgt: "",
     },

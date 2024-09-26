@@ -54,7 +54,7 @@ import {
     unequipItem,
     useItem,
 } from "./actions/item";
-import { createLearnCTA, executeLearnCTA, learn } from "./actions/learn";
+import { createLearnCTA, executeLearnCTA } from "./actions/learn";
 import {
     browse,
     createTradeCTA,
@@ -69,7 +69,6 @@ import {
     spawnWorld,
 } from "./dungeonMaster";
 import { publishCTAEvent, publishFeedEvent } from "./events";
-import { isEntityHuman } from "./npc";
 import {
     verifyP2PTransaction,
     type P2PGiveTransaction,
@@ -504,21 +503,9 @@ const crossoverRouter = {
                 const teacherEntity = (await fetchEntity(
                     teacher,
                 )) as PlayerEntity;
-
-                // Send CTA offer to teacher for execution
-                if (isEntityHuman(teacherEntity)) {
-                    await publishCTAEvent(teacher, {
-                        cta: await createLearnCTA(
-                            ctx.player,
-                            teacherEntity,
-                            skill,
-                        ),
-                    });
-                    return; // do not proceed to learn
-                }
-
-                // Learn from NPC
-                await learn(ctx.player, teacher, skill);
+                await publishCTAEvent(teacher, {
+                    cta: await createLearnCTA(ctx.player, teacherEntity, skill),
+                });
             }),
         // cmd.writ
         writ: playerAuthBusyProcedure

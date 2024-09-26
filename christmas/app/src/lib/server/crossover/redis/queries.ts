@@ -29,6 +29,7 @@ import {
     worldRepository,
 } from ".";
 import { LOOK_PAGE_SIZE } from "..";
+import type { NPCs } from "../npc/types";
 import type { QuestEntity } from "../quests/types";
 
 // Exports
@@ -45,6 +46,7 @@ export {
     itemsInGeohashQuerySet,
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
+    npcsNotInLimboQuerySet,
     playerQuestsInvolvingEntities,
     playersInGeohashQuerySet,
     questWritsQuerySet,
@@ -198,6 +200,15 @@ function playersInGeohashQuerySet(
         .equal(locationInstance)
         .and("loc")
         .containOneOf(...geohashes.map((x) => `${x}*`));
+}
+
+function npcsNotInLimboQuerySet(npc: NPCs): Search {
+    return playerRepository
+        .search()
+        .where("npc")
+        .equal(`${npc}*`)
+        .and("locT")
+        .not.equal("limbo");
 }
 
 /**

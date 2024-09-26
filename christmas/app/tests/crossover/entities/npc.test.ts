@@ -33,7 +33,7 @@ beforeAll(async () => {
         name: "Inn Keeper",
         lgn: true,
         rgn: "@@@",
-        locT: "geohash",
+        locT: "limbo",
         locI: innKeeper.player, // should be in its own instance
     });
 
@@ -244,7 +244,7 @@ test("Test `generateNPC`", async () => {
         crossover: {
             player: innKeeper.player,
             name: innKeeper.name,
-            description: npcs.innkeep.descriptionTemplate,
+            description: npcs.innkeeper.descriptionTemplate,
             avatar: innKeeper.avatar,
             demographic: {
                 gender: innKeeper.gen,
@@ -255,8 +255,8 @@ test("Test `generateNPC`", async () => {
     });
 
     // Test npc field
-    expect(innKeeper.npc?.startsWith("innkeep")).toBe(true);
-    expect(npcUserMetadata?.crossover?.npc?.startsWith("innkeep")).toBe(true);
+    expect(innKeeper.npc?.startsWith("innkeeper")).toBe(true);
+    expect(npcUserMetadata?.crossover?.npc?.startsWith("innkeeper")).toBe(true);
 
     // Test avatar
     const avatarMetadata = await (await fetch(innKeeper.avatar)).json();

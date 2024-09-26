@@ -5,6 +5,7 @@ import type {
 } from "$lib/crossover/types";
 import { getEntityId } from "$lib/crossover/utils";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
+import { bestiary } from "$lib/crossover/world/settings/bestiary";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     generateRandomSeed,
@@ -15,6 +16,7 @@ import {
 import { look } from "../actions";
 import { spawnItemInInventory, spawnQuestItem } from "../dungeonMaster";
 import { publishFeedEvent } from "../events";
+import type { NPCs } from "../npc/types";
 import { itemRepository, questRepository } from "../redis";
 import { playerQuestsInvolvingEntities } from "../redis/queries";
 import { fetchEntity, saveEntity } from "../redis/utils";
@@ -23,6 +25,7 @@ import { random } from "../utils";
 import type {
     DropEffect,
     Objective,
+    Quest,
     QuestEntity,
     QuestTemplate,
     Reward,
@@ -38,65 +41,112 @@ export {
     resolveQuestReward,
 };
 
-async function createQuest(template: QuestTemplate): Promise<QuestEntity> {
-    const entities: Record<string, string> = {};
+async function createQuest(
+    template: QuestTemplate,
+    options?: { beasts?: string[]; npcs?: NPCs[]; reward?: Reward },
+): Promise<QuestEntity> {
+    // const entityIds: Record<string, string> = {};
+    // const entityNames: Record<string, string> = {};
+
+    const entities: Record<string, { id?: string; name: string }> = {};
+
     const questId = `quest_${template.template}-${await questRepository.search().count()}`;
 
-    // TODO: generate the following using PG or LLM
-    const beasts = ["goblin", "giantSpider"];
-    const reward = {
-        lum: 10,
-        umb: 10,
-    };
-    const npcKeys = Object.keys(npcs);
+    // Randomly determine beasts, NPCs selection
+    const reward = options?.reward ?? {};
+    const beasts = options?.beasts ?? Object.keys(bestiary);
+    const npcTypes = options?.npcs ?? Object.keys(npcs);
 
-    // Determine entities
+    // Determine entities (that do no need to be spawned)
     for (const [templateString, templateEntity] of Object.entries(
         template.entities,
     )) {
-        // Determine Beast
+        // Beast
         if (templateEntity.type === "beast") {
-            entities[templateString] = sampleFrom(
+            const beast = sampleFrom(
                 beasts,
-                1,
-                generateRandomSeed(random()), // use random() for reproducibility in test environment
-            )[0];
-        }
-        // Determine NPC
-        else if (templateEntity.type === "npc") {
-            entities[templateString] = sampleFrom(
-                npcKeys,
                 1,
                 generateRandomSeed(random()),
             )[0];
+            entities[templateString] = {
+                id: beast,
+                name: beast,
+            };
         }
-        // Determine Item
-        else if (templateEntity.type === "item") {
+        // NPC
+        else if (templateEntity.type === "npc") {
+            const npc = sampleFrom(
+                npcTypes,
+                1,
+                generateRandomSeed(random()),
+            )[0];
+            entities[templateString] = {
+                id: npc,
+                name: npcs[npc as NPCs].nameTemplate,
+            };
+        }
+    }
+
+    // Determine entities (that have secondary dependencies)
+    for (const [templateString, templateEntity] of Object.entries(
+        template.entities,
+    )) {
+        // Trophy
+        if (templateEntity.type === "trophy") {
+            const { beast, npc } = substituteVariablesRecursively(
+                templateEntity,
+                entities,
+            );
+            const trophy = sampleFrom(
+                bestiary[beast].trophies[npc as NPCs] ?? ["head"],
+                1,
+                generateRandomSeed(random()),
+            )[0];
+            entities[templateString] = {
+                name: trophy, // trophy has no id
+            };
+        }
+    }
+
+    // Determine entities (to be spawned)
+    for (const [templateString, templateEntity] of Object.entries(
+        template.entities,
+    )) {
+        // Item
+        if (templateEntity.type === "item") {
             // Quest items are spawned at loc=[quest] locT="quest"
             const questItem = await spawnQuestItem({
                 quest: questId,
                 prop: templateEntity.prop,
-                variables: templateEntity.variables,
+                variables: substituteVariablesRecursively(
+                    templateEntity.variables,
+                    entities,
+                ),
             });
-            entities[templateString] = questItem.item;
+            entities[templateString] = {
+                id: questItem.item,
+                name: questItem.name,
+            };
         }
     }
 
-    const quest: QuestEntity = {
+    const quest: Quest = {
         quest: questId,
         template: template.template,
-        entityIds: Object.values(entities),
-        fulfilled: false,
+        name: substituteVariables(template.name, entities),
         description: substituteVariables(template.description, entities),
         objectives: substituteVariablesRecursively(
             template.objectives,
             entities,
         ),
-        entities,
+        entityIds: Object.values(entities)
+            .map((e) => e.id)
+            .filter((e) => e != undefined),
         reward,
+        fulfilled: false,
     };
 
-    return (await questRepository.save(questId, quest)) as QuestEntity;
+    return await saveEntity(quest as QuestEntity);
 }
 
 async function createQuestWrit(quest: QuestEntity): Promise<ItemEntity> {
@@ -105,6 +155,7 @@ async function createQuestWrit(quest: QuestEntity): Promise<ItemEntity> {
         quest: quest.quest,
         prop: compendium.questwrit.prop,
         variables: {
+            name: quest.name,
             desription: quest.description,
             quest: quest.quest,
         },
@@ -146,10 +197,9 @@ async function resolvePlayerQuests(
                     // Publish dialogue
                     await publishFeedEvent(player.player, {
                         type: "message",
-                        message: effect.dialogue,
-                        variables: {
+                        message: substituteVariables(effect.dialogue, {
                             player: player.name,
-                        },
+                        }),
                     });
                 }
 
@@ -187,7 +237,7 @@ async function resolveQuestObjective(
     quest.fulfilled = Object.values(quest.objectives).every((o) => o.fulfilled);
     let questMessage = `You completed '${objective.description}'.`;
     if (quest.fulfilled) {
-        questMessage += `The quest '${quest.description}' is completed.`;
+        questMessage += `\nThe quest '${quest.name}' is completed.`;
         // Delete quest & writs (do not delete quest items - they can be used for crafting)
         await questRepository.remove(quest.quest);
         await itemRepository.remove(writ.item);

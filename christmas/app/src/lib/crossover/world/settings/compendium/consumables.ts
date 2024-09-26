@@ -4,7 +4,6 @@ import { abilities } from "../abilities";
 export let consumables: Record<string, Prop> = {
     tradewrit: {
         prop: "tradewrit",
-        defaultName: "Trade writ",
         asset: {
             path: "props/writ", // TODO: Add asset
         },
@@ -12,9 +11,9 @@ export let consumables: Record<string, Prop> = {
         charges: 1,
         weight: 1,
         collider: false,
-        defaultState: "default",
         states: {
             default: {
+                name: "Trade writ",
                 destructible: true,
                 description:
                     "A formal document issued by the merchant guild. The merchant is offering ${offer} for ${receive}. You may *fulfill* this writ.",
@@ -45,7 +44,6 @@ export let consumables: Record<string, Prop> = {
     },
     potionofhealth: {
         prop: "potionofhealth",
-        defaultName: "Potion of Health",
         // TODO: Add potion asset
         asset: {
             path: "props/potions",
@@ -57,9 +55,9 @@ export let consumables: Record<string, Prop> = {
         charges: 5,
         weight: 1,
         collider: false,
-        defaultState: "default",
         states: {
             default: {
+                name: "Potion of Health",
                 destructible: true,
                 description:
                     "A bottle of clear crystal glass. You see a faint glowing red liquid inside.",
@@ -85,7 +83,6 @@ export let consumables: Record<string, Prop> = {
     },
     dungeonkey: {
         prop: "dungeonkey",
-        defaultName: "Dungeon",
         asset: {
             path: "props/gothic",
             variants: {
@@ -96,9 +93,9 @@ export let consumables: Record<string, Prop> = {
         charges: 1,
         weight: 0.1,
         collider: false,
-        defaultState: "default",
         states: {
             default: {
+                name: "Dungeon Key",
                 destructible: false,
                 description: "A key to a dungeon.",
                 variant: "default",

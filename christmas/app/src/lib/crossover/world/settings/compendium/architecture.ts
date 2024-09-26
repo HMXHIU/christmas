@@ -4,29 +4,29 @@ import { abilities } from "../abilities";
 export let architecture: Record<string, Prop> = {
     woodendoor: {
         prop: "woodendoor",
-        defaultName: "Wooden Door",
         asset: {
             path: "props/gothic",
             variants: {
-                default: "wood-door-2",
+                open: "wood-door-2",
                 closed: "wood-door-1",
             },
         },
-        defaultState: "closed", // default state is closed
         durability: 100,
         charges: 0,
         weight: -1,
         collider: true,
         states: {
-            open: {
-                destructible: false,
-                description: "${doorsign}. The door is open.",
-                variant: "default",
-            },
-            closed: {
+            default: {
+                name: "Wooden Door",
                 destructible: false,
                 description: "${doorsign}. The door is closed.",
                 variant: "closed",
+            },
+            open: {
+                name: "Wooden Door",
+                destructible: false,
+                description: "${doorsign}. The door is open.",
+                variant: "open",
             },
         },
         utilities: {
@@ -38,7 +38,7 @@ export let architecture: Record<string, Prop> = {
                     durability: 0,
                 },
                 state: {
-                    start: "closed",
+                    start: "default",
                     end: "open",
                 },
             },
@@ -51,7 +51,7 @@ export let architecture: Record<string, Prop> = {
                 },
                 state: {
                     start: "open",
-                    end: "closed",
+                    end: "default",
                 },
             },
         },
@@ -65,7 +65,6 @@ export let architecture: Record<string, Prop> = {
     },
     tavern: {
         prop: "tavern",
-        defaultName: "Tavern",
         // TODO: Add tavern asset
         asset: {
             path: "props/gothic",
@@ -75,13 +74,13 @@ export let architecture: Record<string, Prop> = {
             width: 2,
             height: 2,
         },
-        defaultState: "default",
         durability: 100,
         charges: 0,
         weight: -1, // cannot be taken
         collider: true,
         states: {
             default: {
+                name: "Tavern",
                 destructible: false,
                 description: "A humble tavern. ${description}",
                 variant: "default",
@@ -110,7 +109,6 @@ export let architecture: Record<string, Prop> = {
     },
     debris: {
         prop: "debris",
-        defaultName: "Debris",
         asset: {
             path: "props/gothic",
             variants: {
@@ -119,13 +117,13 @@ export let architecture: Record<string, Prop> = {
             width: 2,
             height: 2,
         },
-        defaultState: "default",
         durability: 100,
         charges: 0,
         weight: -1, // cannot be taken
         collider: true,
         states: {
             default: {
+                name: "Debris",
                 destructible: false,
                 description: "Impassable debris",
                 variant: "default",
@@ -136,7 +134,6 @@ export let architecture: Record<string, Prop> = {
     },
     portal: {
         prop: "portal",
-        defaultName: "Portal",
         asset: {
             path: "props/gothic",
             variants: {
@@ -149,9 +146,9 @@ export let architecture: Record<string, Prop> = {
         charges: 100,
         weight: -1,
         collider: false,
-        defaultState: "default",
         states: {
             default: {
+                name: "Portal",
                 destructible: false,
                 description:
                     "${description}. It is tuned to teleport to ${target}.",

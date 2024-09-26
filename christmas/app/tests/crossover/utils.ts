@@ -17,7 +17,10 @@ import { type PlayerMetadata } from "$lib/crossover/world/player";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import type { WorldAssetMetadata } from "$lib/crossover/world/types";
+import type {
+    LocationType,
+    WorldAssetMetadata,
+} from "$lib/crossover/world/types";
 import { generateAvatarHash } from "$lib/server/crossover/avatar";
 import {
     spawnItemAtGeohash,
@@ -322,27 +325,32 @@ export async function createRandomPlayer({
 export async function createNPCs({
     geohash,
     locationInstance,
+    locationType,
 }: {
     geohash?: string;
     locationInstance?: string;
+    locationType?: LocationType;
 }) {
     const blackSmith = await generateNPC(npcs.blacksmith.npc, {
         demographic: {},
         appearance: {},
         geohash,
         locationInstance,
+        locationType,
     });
-    const innKeeper = await generateNPC(npcs.innkeep.npc, {
+    const innKeeper = await generateNPC(npcs.innkeeper.npc, {
         demographic: {},
         appearance: {},
         geohash,
         locationInstance,
+        locationType,
     });
     const grocer = await generateNPC(npcs.grocer.npc, {
         demographic: {},
         appearance: {},
         geohash,
         locationInstance,
+        locationType,
     });
 
     return {

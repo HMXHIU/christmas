@@ -7,7 +7,10 @@ import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import { GeohashLocationSchema } from "$lib/crossover/world/types";
+import {
+    GeohashLocationSchema,
+    type LocationType,
+} from "$lib/crossover/world/types";
 import { z } from "zod";
 import { fetchEntity, saveEntity } from "./redis/utils";
 import { getPlayerState, getUserMetadata } from "./utils";
@@ -63,6 +66,7 @@ async function loadPlayerEntity(
         region: string;
         loggedIn: boolean;
         locationInstance?: string;
+        locationType?: LocationType;
     },
 ): Promise<PlayerEntity> {
     // Get user metadata
@@ -75,6 +79,9 @@ async function loadPlayerEntity(
     }
     const { avatar, name, demographic, npc } = userMetadata.crossover;
 
+    const locationType = options.locationType ?? "geohash";
+    const locationInstance = options.locationInstance ?? LOCATION_INSTANCE;
+
     // Merge default, player state, player entity
     let playerEntity = (await fetchEntity(publicKey)) || {};
     let playerState = (await getPlayerState(publicKey)) || {};
@@ -85,8 +92,8 @@ async function loadPlayerEntity(
         lgn: options.loggedIn,
         rgn: options.region,
         loc: [options.geohash],
-        locT: "geohash",
-        locI: options.locationInstance ?? LOCATION_INSTANCE,
+        locT: locationType,
+        locI: locationInstance,
         hp: 0,
         mnd: 0,
         cha: 0,
@@ -115,14 +122,17 @@ async function loadPlayerEntity(
     };
 
     // Auto correct player's geohash precision (try fix if corrupted, unstuck player)
-    if (player.loc[0].length !== worldSeed.spatial.unit.precision) {
+    if (
+        locationType === "geohash" &&
+        player.loc[0].length !== worldSeed.spatial.unit.precision
+    ) {
         player.loc = [
             autoCorrectGeohashPrecision(
                 player.loc[0],
                 worldSeed.spatial.unit.precision,
             ),
         ];
-        player.locT = "geohash";
+        player.locT = locationType;
         console.log("Auto corrected player's location", player.loc);
     }
 

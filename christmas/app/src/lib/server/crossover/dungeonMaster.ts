@@ -13,8 +13,8 @@ import {
     getEntityId,
     getPlotsAtGeohash,
 } from "$lib/crossover/utils";
-import { monsterLimitAtGeohash } from "$lib/crossover/world/bestiary";
 import { blueprintsAtTerritory } from "$lib/crossover/world/blueprint";
+import { type PropAttributes } from "$lib/crossover/world/compendium";
 import { getAllDungeons } from "$lib/crossover/world/dungeons";
 import { entityStats } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
@@ -33,7 +33,7 @@ import {
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
 import { poisInWorld, type WorldPOIs } from "$lib/crossover/world/world";
-import { substituteValues } from "$lib/utils";
+import { substituteValues, substituteVariablesRecursively } from "$lib/utils";
 import { groupBy } from "lodash-es";
 import {
     blueprintsAtTerritoryCache,
@@ -59,7 +59,8 @@ export {
     spawnWorldPOIs,
 };
 
-/**
+/** TODO: DEPRECATE THIS (SPAWN USING SPAWN POINTS OR PG)
+ *
  * Spawns monsters in the game world based on the given players' locations.
  * @param players - An array of PlayerEntity objects representing the players' locations.
  * @returns A Promise that resolves when all the monsters have been spawned.
@@ -78,7 +79,7 @@ async function spawnMonsters(players: PlayerEntity[]) {
 
         for (const geohash of uninhabitedGeohashes) {
             // Get monster limit for each uninhabited geohash
-            const monsterLimit = await monsterLimitAtGeohash(geohash);
+            const monsterLimit = 1000;
 
             // Get number of monsters in geohash
             const numMonsters = await monstersInGeohashQuerySet(
@@ -324,12 +325,17 @@ async function spawnQuestItem({
     const itemId = `item_${prop}${count}`;
 
     // Get prop
-    const { defaultName, defaultState, durability, charges, collider } =
-        compendium[prop];
+    const { durability, charges, collider, states } = compendium[prop];
+
+    // Substitute variables for default state attributes
+    const attributes: PropAttributes = substituteVariablesRecursively(
+        states.default,
+        variables ?? {},
+    );
 
     const item: ItemEntity = {
         item: itemId,
-        name: defaultName,
+        name: attributes.name,
         prop,
         loc: [quest],
         locT: "quest",
@@ -339,7 +345,7 @@ async function spawnQuestItem({
         cld: collider,
         dur: durability,
         chg: charges,
-        state: defaultState,
+        state: "default",
         vars: parseItemVariables(variables || {}, prop),
         dbuf: [],
         buf: [],
@@ -371,12 +377,16 @@ async function spawnItemInInventory({
     const [entityId, entityType] = getEntityId(entity);
 
     // Get prop
-    const { defaultName, defaultState, durability, charges, collider } =
-        compendium[prop];
+    const { states, durability, charges, collider } = compendium[prop];
+    // Substitute variables for default state attributes
+    const attributes: PropAttributes = substituteVariablesRecursively(
+        states.default,
+        variables ?? {},
+    );
 
     const item: ItemEntity = {
         item: itemId,
-        name: defaultName,
+        name: attributes.name,
         prop,
         loc: [entityId],
         locT: "inv",
@@ -386,7 +396,7 @@ async function spawnItemInInventory({
         cld: collider,
         dur: durability,
         chg: charges,
-        state: defaultState,
+        state: "default",
         vars: parseItemVariables(variables || {}, prop),
         dbuf: [],
         buf: [],
@@ -435,8 +445,13 @@ async function spawnItemAtGeohash({
     const item = `item_${prop}${count}`;
 
     // Get prop
-    const { defaultName, defaultState, durability, charges, collider } =
-        compendium[prop];
+    const { states, durability, charges, collider } = compendium[prop];
+
+    // Substitute variables for default state attributes
+    const attributes: PropAttributes = substituteVariablesRecursively(
+        states.default,
+        variables ?? {},
+    );
 
     const asset = compendium[prop].asset;
     const width = asset.width ?? 1;
@@ -460,7 +475,7 @@ async function spawnItemAtGeohash({
 
     const entity: ItemEntity = {
         item,
-        name: defaultName,
+        name: attributes.name,
         prop,
         loc: location,
         locT: locationType,
@@ -470,7 +485,7 @@ async function spawnItemAtGeohash({
         cld: collider,
         dur: durability,
         chg: charges,
-        state: defaultState,
+        state: "default",
         vars: parseItemVariables(variables || {}, prop),
         dbuf: [],
         buf: [],

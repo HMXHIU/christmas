@@ -18,7 +18,7 @@ import {
     publishAffectedEntitiesToPlayers,
     publishFeedEvent,
 } from "../events";
-import { isEntityHuman } from "../npc";
+import { isEntityHuman } from "../npc/utils";
 import {
     createP2PTransaction,
     type CTA,
@@ -106,7 +106,7 @@ async function canTrade(
 function barterDescription(barter: Barter): string {
     const itemsDescription = barter.items.map((i) => i.name).join(", ");
     const propsDescription = barter.props
-        .map((p) => compendium[p].defaultName)
+        .map((p) => compendium[p].states.default.name)
         .join(", ");
     const currenciesDescription = Object.entries(barter.currency)
         .filter(([cur, amt]) => amt > 0)

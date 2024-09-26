@@ -21,6 +21,11 @@ const bestiary: Record<string, Beast> = {
         asset: {
             path: "bestiary/goblin",
         },
+        trophies: {
+            alchemist: ["blood"],
+            blacksmith: ["teeth"],
+            grocer: ["intestines"],
+        },
     },
     giantSpider: {
         beast: "giantSpider",
@@ -32,6 +37,11 @@ const bestiary: Record<string, Beast> = {
         alignment: "neutral",
         asset: {
             path: "bestiary/goblin",
+        },
+        trophies: {
+            alchemist: ["venom"],
+            blacksmith: ["chitin"],
+            grocer: ["legs"],
         },
     },
     dragon: {
@@ -53,6 +63,11 @@ const bestiary: Record<string, Beast> = {
             width: 3,
             height: 3,
             precision: worldSeed.spatial.unit.precision,
+        },
+        trophies: {
+            alchemist: ["blood"],
+            blacksmith: ["scales"],
+            grocer: ["heart"],
         },
     },
 };

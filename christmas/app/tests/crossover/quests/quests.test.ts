@@ -11,8 +11,10 @@ import type { GeohashLocationType } from "$lib/crossover/world/types";
 import { consumeResources } from "$lib/server/crossover";
 import { spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import { awardKillCurrency } from "$lib/server/crossover/entity";
-import { generateNPC, type NPCs } from "$lib/server/crossover/npc";
+import { generateNPC } from "$lib/server/crossover/npc";
+import type { NPCs } from "$lib/server/crossover/npc/types";
 import { createQuest, createQuestWrit } from "$lib/server/crossover/quests";
+import type { Reward } from "$lib/server/crossover/quests/types";
 import { initializeClients } from "$lib/server/crossover/redis";
 import {
     fetchEntity,
@@ -26,7 +28,7 @@ import {
     collectAllEventDataForDuration,
     createGandalfSarumanSauron,
     generateRandomGeohash,
-} from "./utils";
+} from "../utils";
 
 await initializeClients(); // create redis repositories
 
@@ -39,6 +41,12 @@ let {
     playerTwoStream,
     playerOneStream,
 } = await createGandalfSarumanSauron();
+
+const reward: Reward = {
+    lum: 10,
+    umb: 10,
+};
+const beasts = ["goblin", "giantSpider"];
 
 beforeEach(async () => {
     playerOne.mnd = 10;
@@ -54,18 +62,21 @@ beforeEach(async () => {
 });
 
 test("Test Quest in NPC Greet Dialogue", async () => {
-    const quest = await createQuest(killAndDeliverQuest);
-    const { beast, npc, trophy } = quest.entities;
-    let questWrit = await createQuestWrit(quest);
+    // Create quest
+    const quest = await createQuest(killAndDeliverQuest, { beasts, reward });
 
-    const npcEntity = await generateNPC(npc as NPCs, {
+    // Create npc involved in quest
+    expect(quest.entityIds.includes("grocer")).toBe(true);
+    const npcEntity = await generateNPC("grocer", {
         demographic: {},
         appearance: {},
         geohash: playerTwo.loc[0],
         locationInstance: LOCATION_INSTANCE,
+        locationType: playerTwo.locT,
     });
 
-    // Put `questWrit` in NPCs inventory
+    // Create and place `questWrit` in npc's inventory
+    let questWrit = await createQuestWrit(quest);
     questWrit.loc = [npcEntity.player];
     questWrit.locT = "inv";
     questWrit.locI = LOCATION_INSTANCE;
@@ -86,7 +97,11 @@ test("Test Quest in NPC Greet Dialogue", async () => {
                     cmd: "say",
                     player: npcEntity.player,
                     name: "Grocer",
-                    message: `Quests:\n\nYou have been tasked to kill ${beast} and deliver it to ${npc} *${quest.quest}*\n\nYou can *ask Grocer about [quest]*`,
+                    message: `Quests:
+
+Acquire goblin's intestines for Grocer *${quest.quest}*
+
+You can *ask Grocer about [quest]*`,
                 },
                 event: "feed",
             },
@@ -111,7 +126,9 @@ test("Test Quest in NPC Greet Dialogue", async () => {
                     cmd: "say",
                     player: npcEntity.player,
                     name: "Grocer",
-                    message: `You have been tasked to kill goblin and deliver it to grocer\n\nYou can *tell Grocer accept ${quest.quest}* to accept this quest`,
+                    message: `Grocer is seeking to obtain a goblin's intestines from the goblins nearby.
+
+You can *tell Grocer accept ${quest.quest}* to accept this quest`,
                 },
                 event: "feed",
             },
@@ -137,18 +154,7 @@ test("Test Quest in NPC Greet Dialogue", async () => {
                     player: npcEntity.player,
                     name: "Grocer",
                     message:
-                        "Grocer hands you a Quest writ with a smile, 'Here you go, Saruman. Hope it serves you well.'",
-                },
-                event: "feed",
-            },
-            {
-                type: "message",
-                message: "${name} says ${message}",
-                variables: {
-                    cmd: "say",
-                    player: npcEntity.player,
-                    name: "Grocer",
-                    message: "Here is the quest writ, good luck Saruman.",
+                        "Grocer hands you a 'Acquire goblin's intestines for Grocer' with a smile, 'Here you go, Saruman.'",
                 },
                 event: "feed",
             },
@@ -183,47 +189,48 @@ test("Test Quest in NPC Greet Dialogue", async () => {
     expect(questWrit.loc[0]).toBe(playerTwo.player);
 });
 
-test("Test `createQuest` & `createQuestWrit`", async () => {
-    const quest = await createQuest(killAndDeliverQuest);
-    const { beast, npc, trophy } = quest.entities;
+test("Test Kill And Deliver", async () => {
+    const quest = await createQuest(killAndDeliverQuest, { beasts, reward });
 
-    // Check Quest
+    // Check quest entities
+    expect(quest.entityIds.length).toBe(3);
+    const [beast, npc, trophy] = quest.entityIds;
+    expect(trophy.startsWith("item_")).toBe(true);
+
+    // Check quest
     expect(quest).toMatchObject({
         quest: quest.quest,
-        template: quest.template,
-        entityIds: [`${trophy}`, `${beast}`, `${npc}`],
-        description: `You have been tasked to kill ${beast} and deliver it to ${npc}`,
+        template: "killAndDeliver",
+        name: "Acquire goblin's intestines for Grocer",
+        description:
+            "Grocer is seeking to obtain a goblin's intestines from the goblins nearby.",
         objectives: [
             {
-                description: `kill ${beast}`,
+                description: "Hunt down goblin and obtain its intestines.",
                 trigger: {
-                    type: `kill`,
-                    entity: `${beast}`,
+                    type: "kill",
+                    entity: "goblin",
                 },
                 effect: {
-                    type: `drop`,
-                    item: `${trophy}`,
+                    type: "drop",
+                    item: trophy,
                 },
+                fulfilled: false,
             },
             {
-                description: `deliver ${trophy} to ${npc}`,
+                description: "Deliver the goblin's intestines to Grocer.",
                 trigger: {
-                    type: `give`,
-                    give: `${trophy}`,
-                    to: `${npc}`,
+                    type: "give",
+                    give: trophy,
+                    to: "grocer",
                 },
                 effect: {
-                    type: `dialogue`,
+                    type: "dialogue",
                     dialogue: "Thank you ${player}!",
                 },
+                fulfilled: false,
             },
         ],
-        entities: {
-            trophy: `${trophy}`,
-            beast: `${beast}`,
-            npc: `${npc}`,
-        },
-        reward: quest.reward,
         fulfilled: false,
     });
 
@@ -231,13 +238,14 @@ test("Test `createQuest` & `createQuestWrit`", async () => {
     const trophyEntity = (await fetchEntity(trophy)) as ItemEntity;
     expect(trophyEntity).toMatchObject({
         item: trophy,
-        name: "Quest item",
+        name: "goblin's intestines",
         prop: "questitem",
         loc: [quest.quest],
         locT: "quest",
         locI: "@",
         vars: {
-            description: "${beast} head, ${npc} might be interested in this",
+            description:
+                "A goblin's intestines, Grocer might be interested in this.",
         },
     });
 
@@ -245,7 +253,7 @@ test("Test `createQuest` & `createQuestWrit`", async () => {
     let questWrit = await createQuestWrit(quest);
     expect(questWrit).toMatchObject({
         item: questWrit.item,
-        name: "Quest writ",
+        name: "Acquire goblin's intestines for Grocer",
         prop: "questwrit",
         loc: [quest.quest],
         locT: "quest",
@@ -308,10 +316,11 @@ test("Test `createQuest` & `createQuestWrit`", async () => {
                 message: "You killed goblin, it collapses at your feet.",
             },
             {
-                message: "You received Quest item.",
+                message: "You received goblin's intestines.",
             },
             {
-                message: "You completed 'kill goblin'.",
+                message:
+                    "You completed 'Hunt down goblin and obtain its intestines.'.",
             },
         ],
         entities: [
@@ -373,7 +382,7 @@ test("Test `createQuest` & `createQuestWrit`", async () => {
                         locI: "@",
                         vars: {
                             description:
-                                "${beast} head, ${npc} might be interested in this",
+                                "A goblin's intestines, Grocer might be interested in this.",
                         },
                     },
                 ],
@@ -397,6 +406,7 @@ test("Test `createQuest` & `createQuestWrit`", async () => {
         appearance: {},
         geohash: playerOne.loc[0],
         locationInstance: LOCATION_INSTANCE,
+        locationType: playerOne.locT,
     });
 
     // Complete Objective 2 - `playerOne` give `trophy` to `npc`
@@ -414,17 +424,15 @@ test("Test `createQuest` & `createQuestWrit`", async () => {
                     player: npcEntity.player,
                     name: "Grocer",
                     message:
-                        "Grocer beams with gratitude as they nod to you, 'Ah, many thanks for the Quest item, Gandalf!'",
+                        "Grocer beams with gratitude as they nod to you, 'Ah, many thanks for the goblin's intestines, Gandalf!'",
                 },
             },
             {
-                message: "Thank you ${player}!",
-                variables: {
-                    player: "Gandalf",
-                },
+                message: "Thank you Gandalf!",
             },
             {
-                message: `You completed 'deliver ${trophyEntity.item} to ${npc}'.The quest 'You have been tasked to kill ${beast} and deliver it to ${npc}' is completed.`,
+                message: `You completed 'Deliver the goblin's intestines to Grocer.'.
+The quest 'Acquire goblin's intestines for Grocer' is completed.`,
             },
         ],
         entities: [

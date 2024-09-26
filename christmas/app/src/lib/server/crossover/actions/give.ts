@@ -102,7 +102,7 @@ async function give(
     if (!receiver.npc) {
         say(
             player,
-            `${player.name} hands you a ${item.name} with a smile, 'Here you go, ${receiver.name}. Hope it serves you well.'`,
+            `${player.name} hands you a '${item.name}' with a smile, 'Here you go, ${receiver.name}.'`,
             { target: receiver.player, overwrite: true },
         );
     }

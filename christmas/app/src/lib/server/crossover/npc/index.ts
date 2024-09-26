@@ -4,17 +4,7 @@ import {
 } from "$env/static/public";
 import { AnchorClient } from "$lib/anchorClient";
 import { PROGRAM_ID } from "$lib/anchorClient/defs";
-import type {
-    DialogueEntity,
-    Dialogues,
-    GameEntity,
-    ItemEntity,
-    Monster,
-    Player,
-    PlayerEntity,
-} from "$lib/crossover/types";
-import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
-import type { Abilities } from "$lib/crossover/world/abilities";
+import type { PlayerEntity } from "$lib/crossover/types";
 import {
     AgesEnum,
     BodyTypesEnum,
@@ -49,70 +39,43 @@ import {
     type PlayerDemographic,
     type PlayerMetadata,
 } from "$lib/crossover/world/player";
-import { worldSeed } from "$lib/crossover/world/settings/world";
-import type { AssetMetadata } from "$lib/crossover/world/types";
+import type { LocationType } from "$lib/crossover/world/types";
 import {
     sampleFrom,
     stringToRandomNumber,
     stringToUint8Array,
-    substituteVariables,
 } from "$lib/utils";
 import { Keypair, PublicKey } from "@solana/web3.js";
-import { loadPlayerEntity } from ".";
-import { feePayerKeypair, hashObject } from "..";
+import { loadPlayerEntity } from "..";
+import { feePayerKeypair, hashObject } from "../..";
 import type {
     CTAEvent,
     FeedEvent,
-} from "../../../routes/api/crossover/stream/+server";
-import { ObjectStorage } from "../objectStorage";
-import { say } from "./actions";
-import { executeGiveCTA, give } from "./actions/give";
-import { executeLearnCTA } from "./actions/learn";
-import { getAvatars } from "./avatar";
-import { isPublicKeyNPCCache } from "./caches";
+} from "../../../../routes/api/crossover/stream/+server";
+import { ObjectStorage } from "../../objectStorage";
+import { getAvatars } from "../avatar";
+import { isPublicKeyNPCCache } from "../caches";
 import {
     verifyP2PTransaction,
     type P2PGiveTransaction,
     type P2PLearnTransaction,
     type P2PTradeTransaction,
-} from "./player";
-import { dialogueRepository, playerRepository } from "./redis";
-import { questWritsQuerySet } from "./redis/queries";
-import { fetchEntity, fetchQuest } from "./redis/utils";
-import { UserMetadataSchema } from "./router";
-import { npcs } from "./settings/npc";
-import { getUserMetadata, savePlayerState } from "./utils";
+} from "../player";
+import { playerRepository } from "../redis";
+import { fetchEntity } from "../redis/utils";
+import { UserMetadataSchema } from "../router";
+import { npcs } from "../settings/npc";
+import { getUserMetadata, savePlayerState } from "../utils";
+import {
+    npcRespondToGive,
+    npcRespondToGreet,
+    npcRespondToLearn,
+    npcRespondToMessage,
+    npcRespondToTrade,
+} from "./actions";
+import type { NPC, NPCs } from "./types";
 
-export {
-    generateNPC,
-    generateNPCMetadata,
-    isEntityHuman,
-    isEntityNPC,
-    isPublicKeyNPC,
-    npcRespondToEvent,
-    type NPC,
-    type NPCs,
-};
-
-/**
- * `NPC` is a template used to create an NPC `player` instance
- */
-
-type NPCs = "innkeep" | "grocer" | "blacksmith" | "alchemist";
-
-interface NPC {
-    npc: NPCs;
-    nameTemplate: string;
-    descriptionTemplate: string;
-    asset: AssetMetadata;
-}
-
-// TODO: Additional variables about the world
-function dialogueVariables() {
-    return {
-        timeOfDay: "",
-    };
-}
+export { generateNPC, generateNPCMetadata, npcRespondToEvent };
 
 async function npcRespondToEvent(
     event: CTAEvent | FeedEvent,
@@ -161,221 +124,6 @@ async function npcRespondToEvent(
     }
 }
 
-async function npcRespondToTrade(npc: string, p2pTradeTx: P2PTradeTransaction) {
-    const npcEntity = (await fetchEntity(npc)) as PlayerEntity;
-    // TODO: Check if any writs on npc meets the offer/receive and execute it
-
-    // Redirect player to *browse* wares
-    await say(
-        npcEntity,
-        "I’m not certain I have exactly what you seek, but why not take a moment to *browse* through my wares? Perhaps something else will catch your eye.",
-        {
-            target: p2pTradeTx.buyer,
-        },
-    );
-}
-
-async function npcRespondToLearn(npc: string, p2pLearnTx: P2PLearnTransaction) {
-    const npcEntity = (await fetchEntity(npc)) as PlayerEntity;
-    await executeLearnCTA(npcEntity, p2pLearnTx);
-}
-
-async function npcRespondToGive(npc: string, p2pGiveTx: P2PGiveTransaction) {
-    const npcEntity = (await fetchEntity(npc)) as PlayerEntity;
-    await executeGiveCTA(npcEntity, p2pGiveTx);
-}
-
-async function npcRespondToMessage(
-    npc: string,
-    player: string,
-    message: string,
-) {
-    const npcEntity = (await fetchEntity(npc)) as PlayerEntity;
-
-    const tokens = message.split(" ");
-
-    // Asked about quest (*ask [npc] about [quest]*)
-    if (tokens[0] === "about" && tokens[1].startsWith("quest_")) {
-        const quest = await fetchQuest(tokens[1]);
-        if (quest) {
-            // Check if NPC has the quest writ
-            const writs = (await questWritsQuerySet(
-                npc,
-            ).returnAll()) as ItemEntity[];
-            if (writs.some((w) => w.vars.quest === quest.quest)) {
-                await say(
-                    npcEntity,
-                    `${quest.description}\n\nYou can *tell ${npcEntity.name} accept ${quest.quest}* to accept this quest`,
-                    {
-                        target: player,
-                    },
-                );
-            }
-        }
-    } else if (tokens[0] === "accept" && tokens[1].startsWith("quest_")) {
-        const quest = await fetchQuest(tokens[1]);
-        if (quest) {
-            // Check if NPC has the quest writ
-            const writs = (await questWritsQuerySet(
-                npc,
-            ).returnAll()) as ItemEntity[];
-            const writEntity = writs.find((w) => w.vars.quest === quest.quest);
-            if (writEntity) {
-                const playerEntity = (await fetchEntity(
-                    player,
-                )) as PlayerEntity;
-                // Give writ to player
-                await give(npcEntity, playerEntity, writEntity);
-                await say(
-                    npcEntity,
-                    `Here is the quest writ, good luck ${playerEntity.name}.`,
-                    {
-                        target: player,
-                    },
-                );
-            }
-        }
-    }
-    // TODO: LLM response
-    else {
-        await say(npcEntity, `${npcEntity.name} ignores you.`, {
-            target: player,
-            overwrite: true,
-        });
-    }
-}
-
-async function npcRespondToGreet(npc: string, player: string) {
-    const playerEntity = (await fetchEntity(player)) as PlayerEntity;
-    const npcEntity = (await fetchEntity(npc)) as PlayerEntity;
-    const npcTemplate = npcEntity.npc?.split("_")[0] as NPCs;
-    const tags = [`npc=${npcTemplate}`];
-    let dialogue = await npcGreetResponse(tags);
-
-    // Check if NPC has any quests
-    let questMessage = "";
-    const questWrits = (await questWritsQuerySet(
-        npc,
-    ).returnAll()) as ItemEntity[];
-    if (questWrits.length > 0) {
-        questMessage += `Quests:\n`;
-        for (const qr of questWrits) {
-            if (qr.vars.quest) {
-                const quest = await fetchQuest(qr.vars.quest as string);
-                if (quest) {
-                    questMessage += `\n${quest?.description} *${quest.quest}*`;
-                }
-            }
-        }
-        questMessage += `\n\nYou can *ask ${npcEntity.name} about [quest]*`;
-    }
-
-    if (dialogue) {
-        await say(
-            npcEntity,
-            substituteVariables(dialogue.msg, {
-                self: npcEntity,
-                player: playerEntity,
-            }),
-            {
-                target: playerEntity.player,
-                overwrite: true,
-            },
-        );
-    }
-
-    if (questMessage) {
-        await say(npcEntity, questMessage, {
-            target: playerEntity.player,
-            overwrite: true,
-        });
-    }
-}
-
-async function npcGreetResponse(
-    tags: string[],
-): Promise<DialogueEntity | undefined> {
-    // Search for greeting dialogue
-    let dialogues = await searchDialogues("grt", tags);
-
-    // Search for ignore dialogue
-    if (dialogues.length < 1) {
-        dialogues = await searchDialogues("ign", tags);
-    }
-
-    // Get best dialogue
-    const dialogue = dialogues[0];
-
-    return dialogue;
-}
-
-async function npcRespondToAbility({
-    entity,
-    target,
-    ability,
-}: {
-    entity: Player | Monster;
-    target: Player;
-    ability: Abilities;
-}) {
-    if (target.npc) {
-        const npc = target.npc.split("_")[0] as NPCs;
-        const entityIsHuman = isEntityHuman(entity);
-
-        // Dialogues spoken directly to an actual player
-        if (isEntityHuman(entity)) {
-        }
-        // Dialogues spoken to all
-        else {
-        }
-    }
-}
-
-async function searchDialogues(
-    dialogue: Dialogues,
-    tags: string[],
-): Promise<DialogueEntity[]> {
-    // Note: OR and MUST are mutually exclusive (choose either OR or MUST when defining the dialogue)
-    let query = dialogueRepository
-        .search()
-        .where("dia")
-        .equal(dialogue)
-        .and("exc")
-        .does.not.containsOneOf(...tags);
-
-    // Check or condition
-    let dialogues = (await query
-        .and("or")
-        .containsOneOf(...tags)
-        .returnAll()) as DialogueEntity[];
-
-    // Check must condition - 2 Step process (first get all relevant entries, then manually filter)
-    if (dialogues.length < 1) {
-        dialogues = (await tags
-            .reduce((acc, c) => acc.or("mst").contains(c), query)
-            .returnAll()) as DialogueEntity[];
-        dialogues = dialogues.filter(
-            (d) => d.mst && d.mst.every((t) => tags.includes(t)),
-        );
-    }
-
-    return dialogues;
-}
-
-function isEntityNPC(entity: GameEntity): boolean {
-    if ("player" in entity && entity.npc) {
-        return true;
-    }
-    return false;
-}
-
-function isEntityHuman(entity: GameEntity): boolean {
-    if ("player" in entity && !entity.npc) {
-        return true;
-    }
-    return false;
-}
-
 async function generateNPC(
     npc: NPCs,
     options: {
@@ -383,6 +131,7 @@ async function generateNPC(
         description?: string;
         geohash?: string;
         locationInstance?: string;
+        locationType?: LocationType;
         demographic: Partial<PlayerDemographic>;
         appearance: Partial<PlayerAppearance>;
     },
@@ -391,10 +140,11 @@ async function generateNPC(
     const keypair = Keypair.generate();
     const playerId = keypair.publicKey.toString();
     const region = "@@@"; // special region reserved for NPCs
-    const locationInstance = options.locationInstance ?? playerId; // spawn initially in its own world
-    const geohash =
-        options.geohash ??
-        autoCorrectGeohashPrecision("w2", worldSeed.spatial.unit.precision); // TODO: use player id
+
+    // Default location for NPCs is in its own world in limbo
+    const locationInstance = options.locationInstance ?? playerId;
+    const locationType = options.locationType ?? "limbo";
+    const geohash = options.geohash ?? playerId;
 
     // Get fee payer anchor client
     const anchorClient = new AnchorClient({
@@ -491,7 +241,8 @@ async function generateNPC(
         geohash,
         region,
         loggedIn: true,
-        locationInstance: locationInstance,
+        locationInstance,
+        locationType,
     });
 
     // Save player state & entity

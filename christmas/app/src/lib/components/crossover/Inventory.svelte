@@ -6,7 +6,7 @@
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label/index.js";
     import type { Item } from "$lib/crossover/types";
-    import { itemAttibutes, itemName } from "$lib/crossover/world/compendium";
+    import { itemAttibutes } from "$lib/crossover/world/compendium";
     import { compendium } from "$lib/crossover/world/settings/compendium";
     import { cn } from "$lib/shadcn";
     import { startCase } from "lodash";
@@ -40,7 +40,7 @@
                                 variant="link"
                                 class="h-6"
                                 on:click={() => openDialog(item)}
-                                >{itemName(item)}</Button
+                                >{item.name}</Button
                             >
                         {/each}
                     {:else}
@@ -58,7 +58,7 @@
                                 variant="link"
                                 class="h-6"
                                 on:click={() => openDialog(item)}
-                                >{itemName(item)}</Button
+                                >{item.name}</Button
                             >
                         {/each}
                     {:else}
@@ -75,7 +75,7 @@
                 <!-- Item Name & Description -->
                 <Dialog.Header>
                     <Dialog.Title
-                        >{itemName(selectedItem)}
+                        >{selectedItem.name}
                         <span>
                             <Badge class="bg-blue-400 px-1.5 py-0"
                                 ><Zap class="h-3"

@@ -146,6 +146,7 @@ type LocationType =
     | EquipmentSlot // equiped
     | "inv" // inventory
     | "item" // inside an item
+    | "limbo" // npcs created first start in limbo before being placed
     | "quest"; // quest item waiting to be dropped
 
 const geohashLocationTypes = new Set([

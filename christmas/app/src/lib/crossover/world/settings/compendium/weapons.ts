@@ -4,7 +4,6 @@ import { abilities } from "../abilities";
 export let weapons: Record<string, Prop> = {
     woodenclub: {
         prop: "woodenclub",
-        defaultName: "Wooden Club",
         asset: {
             path: "bestiary/goblin",
             variants: {
@@ -16,7 +15,6 @@ export let weapons: Record<string, Prop> = {
         weight: 3,
         collider: false,
         equipmentSlot: ["rh", "lh"],
-        defaultState: "default",
         dieRoll: {
             count: 1,
             sides: 6,
@@ -25,6 +23,7 @@ export let weapons: Record<string, Prop> = {
         },
         states: {
             default: {
+                name: "Wooden Club",
                 destructible: true,
                 description: "A simple wooden club. ${etching}", // ${} for string substitution
                 variant: "default",

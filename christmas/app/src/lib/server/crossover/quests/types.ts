@@ -11,7 +11,6 @@ export type {
     Quest,
     QuestEntity,
     QuestTemplate,
-    QuestWrit,
     Reward,
     Trigger,
 };
@@ -23,7 +22,7 @@ export type {
  */
 
 interface QuestTemplateEntity {
-    type: "monster" | "beast" | "item" | "player" | "npc";
+    type: "monster" | "beast" | "item" | "player" | "npc" | "trophy";
 }
 
 interface QuestTemplateItem extends QuestTemplateEntity {
@@ -40,13 +39,23 @@ interface QuestTemplatePlayer extends QuestTemplateEntity {
     type: "npc" | "player";
 }
 
+interface QuestTemplateTrophy extends QuestTemplateEntity {
+    type: "trophy";
+    beast: string;
+    npc: string;
+}
+
 interface QuestTemplate {
     template: string;
+    name: string;
     description: string;
     objectives: Objective[];
     entities: Record<
         string,
-        QuestTemplateItem | QuestTemplateMonster | QuestTemplatePlayer
+        | QuestTemplateItem
+        | QuestTemplateMonster
+        | QuestTemplatePlayer
+        | QuestTemplateTrophy
     >;
 }
 
@@ -56,19 +65,13 @@ interface Quest {
     entityIds: string[];
     fulfilled: boolean;
     // Unsearchable
+    name: string;
     description: string;
     objectives: Objective[];
-    entities: Record<string, string>;
     reward?: Reward;
 }
 
 type QuestEntity = Quest & Entity;
-
-interface QuestWrit {
-    quest: string;
-    description: string; // from the `Quest`
-    objectives: Omit<Objective, "trigger" | "effect">; // player should not get sensitive information about the quest
-}
 
 /**
  * Objective

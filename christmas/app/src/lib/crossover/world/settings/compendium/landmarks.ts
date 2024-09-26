@@ -4,7 +4,6 @@ import { abilities } from "../abilities";
 export let landmarks: Record<string, Prop> = {
     dungeonentrance: {
         prop: "dungeonentrance",
-        defaultName: "Dungeon",
         asset: {
             path: "props/gothic",
             variants: {
@@ -17,9 +16,9 @@ export let landmarks: Record<string, Prop> = {
         charges: 100,
         weight: -1,
         collider: true, // untraversable, cannot spawn 2 in same location
-        defaultState: "default",
         states: {
             default: {
+                name: "Dungeon Entrance",
                 destructible: false,
                 description: "An opening in the ground.",
                 variant: "default",

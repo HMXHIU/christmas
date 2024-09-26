@@ -7,7 +7,6 @@ export let equipment: Record<string, Prop> = {
      */
     steelplate: {
         prop: "steelplate",
-        defaultName: "Steel plate armor",
         asset: {
             path: "http://localhost:5173/avatar/images/female_steel_plate/torso.png",
         },
@@ -24,9 +23,9 @@ export let equipment: Record<string, Prop> = {
         weight: 20,
         collider: false,
         equipmentSlot: ["ch"],
-        defaultState: "default",
         states: {
             default: {
+                name: "Steel plate armor",
                 variant: "default",
                 destructible: true,
                 description: "A simple steel plate of armor.",
@@ -37,7 +36,6 @@ export let equipment: Record<string, Prop> = {
     },
     steelleg: {
         prop: "steelleg",
-        defaultName: "Steel leg armor",
         asset: {
             path: "http://localhost:5173/avatar/images/female_steel_plate/front_upper_leg.png",
         },
@@ -66,9 +64,9 @@ export let equipment: Record<string, Prop> = {
         weight: 20,
         collider: false,
         equipmentSlot: ["lg"],
-        defaultState: "default",
         states: {
             default: {
+                name: "Steel leg armor",
                 destructible: true,
                 description: "A simple steel armor worn on the legs",
                 variant: "default",
@@ -79,7 +77,6 @@ export let equipment: Record<string, Prop> = {
     },
     steelboot: {
         prop: "steelboot",
-        defaultName: "Steel boots",
         asset: {
             path: "http://localhost:5173/avatar/images/female_steel_plate/front_lower_leg.png",
         },
@@ -104,9 +101,9 @@ export let equipment: Record<string, Prop> = {
         weight: 20,
         collider: false,
         equipmentSlot: ["ft"],
-        defaultState: "default",
         states: {
             default: {
+                name: "Steel boots",
                 destructible: true,
                 description: "A simple set of steel boots",
                 variant: "default",
@@ -117,7 +114,6 @@ export let equipment: Record<string, Prop> = {
     },
     steelpauldron: {
         prop: "steelpauldron",
-        defaultName: "Steel Pauldrons",
         asset: {
             path: "http://localhost:5173/avatar/images/female_steel_plate/front_upper_arm.png",
         },
@@ -146,9 +142,9 @@ export let equipment: Record<string, Prop> = {
         weight: 20,
         collider: false,
         equipmentSlot: ["sh"],
-        defaultState: "default",
         states: {
             default: {
+                name: "Steel Pauldrons",
                 destructible: true,
                 description: "A simple set of steel pauldrons",
                 variant: "default",
@@ -159,7 +155,6 @@ export let equipment: Record<string, Prop> = {
     },
     steelgauntlet: {
         prop: "steelgauntlet",
-        defaultName: "Steel Gauntlets",
         asset: {
             path: "http://localhost:5173/avatar/images/female_steel_plate/front_lower_arm.png",
         },
@@ -182,9 +177,9 @@ export let equipment: Record<string, Prop> = {
         weight: 20,
         collider: false,
         equipmentSlot: ["gl"],
-        defaultState: "default",
         states: {
             default: {
+                name: "Steel Gauntlets",
                 destructible: true,
                 description: "A simple set of steel gauntlets",
                 variant: "default",

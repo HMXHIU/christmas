@@ -3,7 +3,6 @@ import type { Prop } from "../../compendium";
 export let quests: Record<string, Prop> = {
     questwrit: {
         prop: "questwrit",
-        defaultName: "Quest writ",
         asset: {
             path: "props/writ", // TODO: Add asset
         },
@@ -11,17 +10,22 @@ export let quests: Record<string, Prop> = {
         charges: 1,
         weight: 1,
         collider: false,
-        defaultState: "default",
         states: {
             default: {
+                name: "${name}",
                 destructible: false,
                 description:
-                    "A formal agreement detailing a quest and its rewards. ${description}.",
+                    "A formal agreement for the quest '${name}'.\n\n${description}.",
                 variant: "default",
             },
         },
         utilities: {},
         variables: {
+            name: {
+                variable: "name",
+                type: "string",
+                value: "Quest Writ", // default
+            },
             description: {
                 variable: "description",
                 type: "string",
@@ -36,7 +40,6 @@ export let quests: Record<string, Prop> = {
     },
     questitem: {
         prop: "questitem",
-        defaultName: "Quest item",
         asset: {
             path: "props/quest", // TODO: Add asset
         },
@@ -44,9 +47,9 @@ export let quests: Record<string, Prop> = {
         charges: 1,
         weight: 1,
         collider: false,
-        defaultState: "default",
         states: {
             default: {
+                name: "${name}",
                 destructible: false,
                 description: "${description}",
                 variant: "default",
@@ -54,8 +57,18 @@ export let quests: Record<string, Prop> = {
         },
         utilities: {},
         variables: {
+            name: {
+                variable: "name",
+                type: "string",
+                value: "",
+            },
             description: {
                 variable: "description",
+                type: "string",
+                value: "",
+            },
+            quest: {
+                variable: "quest",
                 type: "string",
                 value: "",
             },
