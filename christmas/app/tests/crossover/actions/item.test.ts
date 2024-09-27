@@ -24,6 +24,7 @@ import {
     createGandalfSarumanSauron,
     createTestItems,
     flushStream,
+    generateRandomGeohash,
     waitForEventData,
 } from "../utils";
 
@@ -38,6 +39,7 @@ let {
     playerOneCookies,
     playerOneStream,
     playerTwoStream,
+    playerThreeStream,
 } = await createGandalfSarumanSauron();
 
 let { woodenDoor, portalOne, portalTwo, tavern, worldAsset, worldAssetUrl } =
@@ -222,7 +224,24 @@ describe("Test Items", () => {
     });
 
     test("Test Use Item", async () => {
+        // Test can't open door when not in range
+        woodenDoor.loc = [generateRandomGeohash(8, "h9")];
+        woodenDoor = await saveEntity(woodenDoor);
+        useItem({
+            item: woodenDoor.item,
+            utility: compendium[woodenDoor.prop].utilities.open.utility,
+            self: playerThree as PlayerEntity,
+        });
+        var feed = await waitForEventData(playerThreeStream, "feed");
+        expect(feed).toMatchObject({
+            type: "error",
+            message: "Wooden Door is out of range",
+            event: "feed",
+        });
+
         // Open door
+        woodenDoor.loc = playerThree.loc;
+        woodenDoor = await saveEntity(woodenDoor);
         await useItem({
             item: woodenDoor.item,
             utility: compendium[woodenDoor.prop].utilities.open.utility,
