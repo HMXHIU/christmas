@@ -87,34 +87,34 @@
 {#if locationDescriptor}
     <div class={cn("w-full flex flex-col gap-2", $$restProps.class)}>
         <!-- Location Name -->
-        <p class="text-sm text-primary-background">
+        <p class="text-xs text-primary-background">
             {locationDescriptor.name || locationDescriptor.location}
         </p>
         <!-- Location -->
-        <p class="text-sm text-muted-foreground">
+        <p class="text-xs text-muted-foreground">
             {locationDescriptor.descriptions.location}
         </p>
         <!-- Time/Season/Weather -->
-        <p class="text-sm text-muted-foreground">
+        <p class="text-xs text-muted-foreground">
             {locationDescriptor.descriptions.time}
             {locationDescriptor.descriptions.weather}
         </p>
         <div class="flex flex-col">
             <!-- Monsters -->
             {#if monsterDescriptor}
-                <p class="text-sm text-rose-400">
+                <p class="text-xs text-rose-400">
                     {monsterDescriptor}
                 </p>
             {/if}
             <!-- items -->
             {#if itemDescriptor}
-                <p class="text-sm text-sky-400">
+                <p class="text-xs text-sky-400">
                     {itemDescriptor}
                 </p>
             {/if}
             <!-- Players -->
             {#if playerDescriptor}
-                <p class="text-sm text-lime-400">
+                <p class="text-xs text-lime-400">
                     {playerDescriptor}
                 </p>
             {/if}

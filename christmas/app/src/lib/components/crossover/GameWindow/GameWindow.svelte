@@ -1,6 +1,4 @@
 <script lang="ts">
-    import * as Resizable from "$lib/components/ui/resizable";
-    import { ScrollArea } from "$lib/components/ui/scroll-area";
     import {
         searchPossibleCommands,
         type GameCommand,
@@ -190,46 +188,27 @@
     )}
 >
     <!-- Top panel -->
-    <div class="shrink-0 flex flex-row" style="height: calc(80% - 52px)">
+    <div class="flex h-[calc(80%-52px)]">
         <!-- Game (account for chat input) -->
-        <div class="grow" bind:this={gameContainer}>
+        <div class="flex-grow overflow-hidden" bind:this={gameContainer}>
             <Game previewCommand={command}></Game>
         </div>
         <!-- Right panel -->
         <div
-            class="flex flex-col justify-between w-64 p-2 space-y-2 bg-lime-600"
+            class="flex flex-col justify-between w-64 flex-shrink-0 p-2 space-y-2 bg-lime-600"
         >
             <!-- Player List -->
             <div class="h-64 bg-orange-400"></div>
             <!-- Tools -->
-            <div class="h-full grow">
+            <div class="flex-grow">
                 <Tool tool="abilities"></Tool>
             </div>
         </div>
     </div>
 
-    <!-- Environment Overlay -->
-    <div
-        id="environment-overlay"
-        class="p-2 bg-background bg-opacity-75"
-        style="--game-top: {gameTop}px;"
-    >
-        <MudDescriptor></MudDescriptor>
-    </div>
-
-    <!-- Narrator Overlay -->
-    <div
-        id="narrator-overlay"
-        class="p-2 bg-background bg-opacity-50"
-        style="--game-bottom: {gameBottom}px;"
-    >
-        <!-- Chat Window -->
-        <ChatWindow></ChatWindow>
-    </div>
-
     <!-- Toolbar -->
     <div class="h-64 flex flex-row">
-        <div class="flex flex-col shrink">
+        <div class="flex flex-col w-full">
             <!-- Autocomplete Game Commands -->
             <div class="relative">
                 <AutocompleteGC
@@ -242,48 +221,15 @@
             <!-- Chat Input -->
             <ChatInput class="mb-1 mt-0 py-0" {onEnterKeyPress} {onPartial}
             ></ChatInput>
-            <div>
-                {#if innerWidth > LARGE_SCREEN}
-                    <Resizable.PaneGroup direction="horizontal">
-                        <!-- Inventory/Utilities -->
-                        <Resizable.Pane class="px-2">
-                            <Tool tool="inventory"></Tool>
-                        </Resizable.Pane>
-                        <Resizable.Handle />
-                        <!-- Abilities/ -->
-                        <Resizable.Pane class="px-2">
-                            <Tool tool="abilities"></Tool>
-                        </Resizable.Pane>
-                        <Resizable.Handle />
-                        <!-- Actions -->
-                        <Resizable.Pane class="px-2">
-                            <Tool tool="actions"></Tool>
-                        </Resizable.Pane>
-                    </Resizable.PaneGroup>
-                {:else if innerWidth > MEDIUM_SCREEN}
-                    <Resizable.PaneGroup direction="horizontal">
-                        <!-- Inventory/Utilities -->
-                        <Resizable.Pane class="px-2">
-                            <Tool tool="inventory"></Tool>
-                        </Resizable.Pane>
-                        <Resizable.Handle />
-                        <!-- Abilities/ -->
-                        <Resizable.Pane class="px-2">
-                            <Tool tool="abilities"></Tool>
-                        </Resizable.Pane>
-                        <Resizable.Handle />
-                    </Resizable.PaneGroup>
-                {:else}
-                    <!-- Inventory -->
-                    <ScrollArea orientation="vertical">
-                        <Tool tool="inventory"></Tool>
-                    </ScrollArea>
-                {/if}
-            </div>
+            <!-- Chat Window -->
+            <ChatWindow></ChatWindow>
+        </div>
+        <!-- Environment  -->
+        <div class="w-96 shrink-0 p-2">
+            <MudDescriptor></MudDescriptor>
         </div>
         <!-- Map/Look -->
         <div class="w-64 aspect-square shrink-0">
-            <!-- Map -->
             <Map></Map>
         </div>
     </div>
