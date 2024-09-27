@@ -5,6 +5,7 @@
     import * as Dialog from "$lib/components/ui/dialog";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label/index.js";
+    import { crossoverCmdConfigureItem } from "$lib/crossover/client";
     import type { Item } from "$lib/crossover/types";
     import { itemAttibutes } from "$lib/crossover/world/compendium";
     import { compendium } from "$lib/crossover/world/settings/compendium";
@@ -16,13 +17,21 @@
     let isDialogOpen = false;
     let selectedItem: Item | null = null;
 
+    let itemVars: Record<string, string | number | boolean> = {};
+
     function openDialog(item: Item) {
         selectedItem = item;
+        itemVars = { ...item.vars };
         isDialogOpen = true;
     }
 
-    function onConfigure(item: Item | null) {
-        console.log(item);
+    async function onConfigure(
+        item: Item | null,
+        variables: Record<string, string | number | boolean>,
+    ) {
+        if (item) {
+            await crossoverCmdConfigureItem({ item: item.item, variables });
+        }
     }
 </script>
 
@@ -33,12 +42,12 @@
                 <!-- Equipped Items -->
                 <div>
                     <Label>Equipped</Label>
-                    <div class="flex flex-col text-gray-400 space-y-2 py-2">
+                    <div class="flex flex-col space-y-2 py-2">
                         {#if $playerEquippedItems.length > 0}
                             {#each $playerEquippedItems as item (item.item)}
                                 <Button
                                     variant="link"
-                                    class="h-full text-xs text-gray-400 whitespace-normal break-words text-left justify-start p-0"
+                                    class="h-full text-xs text-muted-foreground whitespace-normal break-words text-left justify-start p-0"
                                     on:click={() => openDialog(item)}
                                     >[{item.locT}] {item.name}</Button
                                 >
@@ -51,12 +60,12 @@
                 <!-- Inventory Items -->
                 <div>
                     <Label>Inventory</Label>
-                    <div class="flex flex-col text-gray-400 space-y-2 py-2">
+                    <div class="flex flex-col space-y-2 py-2">
                         {#if $playerInventoryItems.length > 0}
                             {#each $playerInventoryItems as item (item.item)}
                                 <Button
                                     variant="link"
-                                    class="h-full text-xs text-gray-400 whitespace-normal break-words text-left justify-start p-0"
+                                    class="h-full text-xs text-muted-foreground whitespace-normal break-words text-left justify-start p-0"
                                     on:click={() => openDialog(item)}
                                     >{item.name}</Button
                                 >
@@ -123,7 +132,7 @@
                 <!-- Variables -->
                 {#if Object.keys(compendium[selectedItem.prop].variables).length > 0}
                     <hr />
-                    <div class="flex flex-row justify-between">
+                    <div class="flex flex-col justify-between">
                         {#each Object.values(compendium[selectedItem.prop].variables) as { variable, type, value } (variable)}
                             <Label class="text-sm my-auto p-2"
                                 >{startCase(variable)}</Label
@@ -135,7 +144,7 @@
                                     : type === "number"
                                       ? "number"
                                       : "checkbox"}
-                                {value}
+                                bind:value={itemVars[variable]}
                                 maxlength={100}
                                 autofocus={false}
                                 class="text-xs text-muted-foreground"
@@ -145,7 +154,7 @@
                     <Dialog.Footer class="flex flex-row justify-end gap-4">
                         <Button
                             class="h-8"
-                            on:click={() => onConfigure(selectedItem)}
+                            on:click={() => onConfigure(selectedItem, itemVars)}
                             >Configure</Button
                         >
                     </Dialog.Footer>

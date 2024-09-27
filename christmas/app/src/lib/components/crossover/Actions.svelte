@@ -30,7 +30,7 @@
                     {#each playerActions as action (action.action)}
                         <Button
                             variant="link"
-                            class="h-full whitespace-normal break-words text-left justify-start p-0 text-gray-400"
+                            class="h-full whitespace-normal break-words text-left justify-start p-0 text-muted-foreground text-xs"
                             on:click={() => openDialog(action.action)}
                             >{action.action}</Button
                         >

@@ -44,7 +44,7 @@
                     {#each $playerAbilities as ability (ability.ability)}
                         <Button
                             variant="link"
-                            class="h-full whitespace-normal break-words text-left justify-start p-0
+                            class="h-full whitespace-normal break-words text-left justify-start p-0 text-xs
                             {ability?.type === 'healing'
                                 ? 'text-green-400'
                                 : ''}

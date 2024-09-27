@@ -44,11 +44,7 @@ async function createQuest(
     template: QuestTemplate,
     options?: { beasts?: string[]; npcs?: NPCs[]; reward?: Reward },
 ): Promise<QuestEntity> {
-    // const entityIds: Record<string, string> = {};
-    // const entityNames: Record<string, string> = {};
-
     const entities: Record<string, { id?: string; name: string }> = {};
-
     const questId = `quest_${template.template}-${await questRepository.search().count()}`;
 
     // Randomly determine beasts, NPCs selection
@@ -117,10 +113,13 @@ async function createQuest(
             const questItem = await spawnQuestItem({
                 quest: questId,
                 prop: templateEntity.prop,
-                variables: substituteVariablesRecursively(
-                    templateEntity.variables,
-                    entities,
-                ),
+                variables: {
+                    quest: questId, // always add quest variable to any quest items generated
+                    ...substituteVariablesRecursively(
+                        templateEntity.variables,
+                        entities,
+                    ),
+                },
             });
             entities[templateString] = {
                 id: questItem.item,
@@ -155,7 +154,7 @@ async function createQuestWrit(quest: QuestEntity): Promise<ItemEntity> {
         prop: compendium.questwrit.prop,
         variables: {
             name: quest.name,
-            desription: quest.description,
+            description: quest.description,
             quest: quest.quest,
         },
     })) as ItemEntity;

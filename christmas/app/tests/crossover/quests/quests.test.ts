@@ -244,6 +244,8 @@ test("Test Kill And Deliver", async () => {
         locT: "quest",
         locI: "@",
         vars: {
+            quest: quest.quest,
+            name: "goblin's intestines",
             description:
                 "A goblin's intestines, Grocer might be interested in this.",
         },
@@ -258,6 +260,12 @@ test("Test Kill And Deliver", async () => {
         loc: [quest.quest],
         locT: "quest",
         locI: "@",
+        vars: {
+            quest: quest.quest,
+            name: "Acquire goblin's intestines for Grocer",
+            description:
+                "Grocer is seeking to obtain a goblin's intestines from the goblins nearby.",
+        },
     });
 
     // Put `questWrit` in `playerOne` inventory
