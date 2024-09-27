@@ -30,8 +30,9 @@ async function aStarPathfinding({
     colEnd,
     getTraversalCost,
     range,
-    maxIterations,
-    earlyExitThreshold,
+    maxIterations = 1000,
+    earlyExitThreshold = 10,
+    maxDistance = 20,
 }: {
     rowStart: number;
     rowEnd: number;
@@ -41,10 +42,8 @@ async function aStarPathfinding({
     maxIterations?: number;
     earlyExitThreshold?: number;
     range?: number;
+    maxDistance?: number;
 }): Promise<Direction[]> {
-    maxIterations = maxIterations ?? 1000;
-    earlyExitThreshold = earlyExitThreshold ?? 10; // Default early exit threshold
-
     const heuristic = (
         row: number,
         col: number,
@@ -60,7 +59,10 @@ async function aStarPathfinding({
             const [dr, dc] = directionVectors[key as Direction];
             const newRow = node.row + dr;
             const newCol = node.col + dc;
-            if ((await getTraversalCost(newRow, newCol)) === 0) {
+            if (
+                (await getTraversalCost(newRow, newCol)) === 0 &&
+                node.g + 1 <= maxDistance
+            ) {
                 result.push({
                     row: newRow,
                     col: newCol,
@@ -161,7 +163,10 @@ async function aStarPathfinding({
         }
 
         // Early termination condition (can't find a better path after earlyExitThreshold tries)
-        if (stableIterations >= earlyExitThreshold) {
+        if (
+            stableIterations >= earlyExitThreshold ||
+            currentNode.g >= maxDistance
+        ) {
             return bestNode ? reconstructPath(bestNode) : [];
         }
 
