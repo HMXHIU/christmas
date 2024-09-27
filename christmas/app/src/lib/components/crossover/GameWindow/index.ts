@@ -6,6 +6,7 @@ export default Root;
 export { addMessageFeed, type MessageFeed, type MessageFeedType };
 
 type MessageFeedType = "error" | "message" | "system";
+const MAX_MESSAGES = 30;
 
 interface MessageFeed {
     id: number;
@@ -34,7 +35,7 @@ function addMessageFeed({
                 name,
                 messageFeedType,
             },
-            ...ms,
+            ...ms.slice(0, MAX_MESSAGES),
         ];
     });
 }
