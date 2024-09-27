@@ -3,7 +3,6 @@
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Card from "$lib/components/ui/card/index.js";
     import * as Dialog from "$lib/components/ui/dialog";
-    import { Label } from "$lib/components/ui/label/index.js";
     import {
         type Abilities,
         type Ability,
@@ -39,9 +38,8 @@
 
 <div class={cn("w-full", $$restProps.class)}>
     <Card.Root class="border-none">
-        <Card.Content>
-            <Label for="current">Abilities</Label>
-            <div class="grid grid-cols-3 text-xs">
+        <Card.Content class="p-0 m-0">
+            <div class="grid grid-cols-2 text-xs p-2">
                 {#if $playerAbilities.length > 0}
                     {#each $playerAbilities as ability (ability.ability)}
                         <Button

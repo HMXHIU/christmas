@@ -3,7 +3,6 @@
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Card from "$lib/components/ui/card/index.js";
     import * as Dialog from "$lib/components/ui/dialog";
-    import { Label } from "$lib/components/ui/label/index.js";
     import { type Action, type Actions } from "$lib/crossover/world/actions";
     import {
         actions,
@@ -25,23 +24,20 @@
 
 <div class={cn("w-full", $$restProps.class)}>
     <Card.Root class="border-none">
-        <Card.Content class="space-y-2">
-            <div class="space-y-1">
-                <Label for="current">Actions</Label>
-                <div class="grid grid-cols-3 text-xs">
-                    {#if playerActions.length > 0}
-                        {#each playerActions as action (action.action)}
-                            <Button
-                                variant="link"
-                                class="h-6 text-gray-400"
-                                on:click={() => openDialog(action.action)}
-                                >{action.action}</Button
-                            >
-                        {/each}
-                    {:else}
-                        <p>No actions</p>
-                    {/if}
-                </div>
+        <Card.Content class="p-0 m-0">
+            <div class="grid grid-cols-2 text-xs p-2">
+                {#if playerActions.length > 0}
+                    {#each playerActions as action (action.action)}
+                        <Button
+                            variant="link"
+                            class="h-6 text-gray-400"
+                            on:click={() => openDialog(action.action)}
+                            >{action.action}</Button
+                        >
+                    {/each}
+                {:else}
+                    <p>No actions</p>
+                {/if}
             </div>
         </Card.Content>
     </Card.Root>

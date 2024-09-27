@@ -279,24 +279,12 @@
 </script>
 
 <div class="h-full w-full" bind:clientHeight bind:clientWidth>
+    <!-- TODO: Add copy button to copy geohash -->
+    <!-- <p class="pt-2 text-muted-foreground text-xs text-center">
+        {playerMapPosition?.geohash ?? ""}
+    </p> -->
     <div
-        id="map-container"
-        class={cn(
-            "rounded-full overflow-hidden aspect-square",
-            $$restProps.class,
-        )}
+        class={cn("overflow-hidden aspect-square", $$restProps.class)}
         bind:this={containerElement}
     ></div>
-    <!-- TODO: Add copy button to copy geohash -->
-    <p class="pt-2 text-muted-foreground text-xs text-center">
-        {playerMapPosition?.geohash ?? ""}
-    </p>
 </div>
-
-<style>
-    #map-container {
-        border-radius: 50%;
-        border: 2px solid #000000; /* Adjust color and width as needed */
-        box-shadow: 0 0 0 2px #6c6c6c; /* Optional: adds a white outline outside the black border */
-    }
-</style>

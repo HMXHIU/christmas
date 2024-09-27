@@ -189,13 +189,23 @@
         $$restProps.class,
     )}
 >
-    <!-- Game (account for chat input) -->
-    <div
-        style="height: calc(80% - 52px)"
-        class="shrink-0"
-        bind:this={gameContainer}
-    >
-        <Game previewCommand={command}></Game>
+    <!-- Top panel -->
+    <div class="shrink-0 flex flex-row" style="height: calc(80% - 52px)">
+        <!-- Game (account for chat input) -->
+        <div class="grow" bind:this={gameContainer}>
+            <Game previewCommand={command}></Game>
+        </div>
+        <!-- Right panel -->
+        <div
+            class="flex flex-col justify-between w-64 p-2 space-y-2 bg-lime-600"
+        >
+            <!-- Player List -->
+            <div class="h-64 bg-orange-400"></div>
+            <!-- Tools -->
+            <div class="h-full grow">
+                <Tool tool="abilities"></Tool>
+            </div>
+        </div>
     </div>
 
     <!-- Environment Overlay -->
@@ -217,67 +227,65 @@
         <ChatWindow></ChatWindow>
     </div>
 
-    <!-- Map Overlay -->
-    <button
-        id="map-overlay"
-        class="p-3"
-        style="--game-top: {gameTop}px; --map-size: {MAP_SIZE}px;"
-        on:click={toggleMapSize}
-    >
-        <Map></Map>
-    </button>
-
-    <!-- Autocomplete Game Commands -->
-    <div class="relative">
-        <AutocompleteGC
-            class="pb-2 px-2 bottom-0 absolute"
-            {commands}
-            {onGameCommand}
-            bind:command
-        ></AutocompleteGC>
-    </div>
-
-    <!-- Chat Input -->
-    <ChatInput class="mb-1 mt-0 py-0" {onEnterKeyPress} {onPartial}></ChatInput>
-
     <!-- Toolbar -->
-    <div class="h-1/5 shrink">
-        {#if innerWidth > LARGE_SCREEN}
-            <Resizable.PaneGroup direction="horizontal">
-                <!-- Inventory/Utilities -->
-                <Resizable.Pane class="px-2">
-                    <Tool tool="inventory"></Tool>
-                </Resizable.Pane>
-                <Resizable.Handle />
-                <!-- Abilities/ -->
-                <Resizable.Pane class="px-2">
-                    <Tool tool="abilities"></Tool>
-                </Resizable.Pane>
-                <Resizable.Handle />
-                <!-- Actions -->
-                <Resizable.Pane class="px-2">
-                    <Tool tool="actions"></Tool>
-                </Resizable.Pane>
-            </Resizable.PaneGroup>
-        {:else if innerWidth > MEDIUM_SCREEN}
-            <Resizable.PaneGroup direction="horizontal">
-                <!-- Inventory/Utilities -->
-                <Resizable.Pane class="px-2">
-                    <Tool tool="inventory"></Tool>
-                </Resizable.Pane>
-                <Resizable.Handle />
-                <!-- Abilities/ -->
-                <Resizable.Pane class="px-2">
-                    <Tool tool="abilities"></Tool>
-                </Resizable.Pane>
-                <Resizable.Handle />
-            </Resizable.PaneGroup>
-        {:else}
-            <!-- Inventory -->
-            <ScrollArea orientation="vertical">
-                <Tool tool="inventory"></Tool>
-            </ScrollArea>
-        {/if}
+    <div class="h-64 flex flex-row">
+        <div class="flex flex-col shrink">
+            <!-- Autocomplete Game Commands -->
+            <div class="relative">
+                <AutocompleteGC
+                    class="pb-2 px-2 bottom-0 absolute"
+                    {commands}
+                    {onGameCommand}
+                    bind:command
+                ></AutocompleteGC>
+            </div>
+            <!-- Chat Input -->
+            <ChatInput class="mb-1 mt-0 py-0" {onEnterKeyPress} {onPartial}
+            ></ChatInput>
+            <div>
+                {#if innerWidth > LARGE_SCREEN}
+                    <Resizable.PaneGroup direction="horizontal">
+                        <!-- Inventory/Utilities -->
+                        <Resizable.Pane class="px-2">
+                            <Tool tool="inventory"></Tool>
+                        </Resizable.Pane>
+                        <Resizable.Handle />
+                        <!-- Abilities/ -->
+                        <Resizable.Pane class="px-2">
+                            <Tool tool="abilities"></Tool>
+                        </Resizable.Pane>
+                        <Resizable.Handle />
+                        <!-- Actions -->
+                        <Resizable.Pane class="px-2">
+                            <Tool tool="actions"></Tool>
+                        </Resizable.Pane>
+                    </Resizable.PaneGroup>
+                {:else if innerWidth > MEDIUM_SCREEN}
+                    <Resizable.PaneGroup direction="horizontal">
+                        <!-- Inventory/Utilities -->
+                        <Resizable.Pane class="px-2">
+                            <Tool tool="inventory"></Tool>
+                        </Resizable.Pane>
+                        <Resizable.Handle />
+                        <!-- Abilities/ -->
+                        <Resizable.Pane class="px-2">
+                            <Tool tool="abilities"></Tool>
+                        </Resizable.Pane>
+                        <Resizable.Handle />
+                    </Resizable.PaneGroup>
+                {:else}
+                    <!-- Inventory -->
+                    <ScrollArea orientation="vertical">
+                        <Tool tool="inventory"></Tool>
+                    </ScrollArea>
+                {/if}
+            </div>
+        </div>
+        <!-- Map/Look -->
+        <div class="w-64 aspect-square shrink-0">
+            <!-- Map -->
+            <Map></Map>
+        </div>
     </div>
 </div>
 
@@ -306,13 +314,5 @@
         border-top-left-radius: 10px;
         border-top-right-radius: 10px;
         height: 100px;
-    }
-    #map-overlay {
-        position: absolute;
-        top: var(--game-top); /* computed on mount */
-        right: 0;
-        cursor: pointer;
-        width: var(--map-size);
-        height: var(--map-size);
     }
 </style>

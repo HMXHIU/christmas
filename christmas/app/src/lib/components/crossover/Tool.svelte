@@ -9,8 +9,8 @@
     export let tool: "inventory" | "abilities" | "actions" = "inventory";
 </script>
 
-<Tabs.Root value={tool} orientation="vertical" class="w-full flex flex-row">
-    <Tabs.List class="flex flex-col h-full w-9 p-0">
+<Tabs.Root value={tool}>
+    <Tabs.List>
         <Tabs.Trigger value="inventory" class="h-9"
             ><Box class="h-4 w-4" /></Tabs.Trigger
         >
@@ -21,21 +21,20 @@
             ><Hammer class="h-4 w-4" /></Tabs.Trigger
         >
     </Tabs.List>
-    <div class="flex-grow">
-        <Tabs.Content value="inventory" class="m-0">
-            <ScrollArea orientation="vertical" class="h-full">
-                <Inventory></Inventory>
-            </ScrollArea>
-        </Tabs.Content>
-        <Tabs.Content value="abilities" class="m-0"
-            ><ScrollArea orientation="vertical" class="h-full">
-                <Abilities></Abilities>
-            </ScrollArea></Tabs.Content
-        >
-        <Tabs.Content value="actions" class="m-0"
-            ><ScrollArea orientation="vertical" class="h-full">
-                <Actions></Actions>
-            </ScrollArea></Tabs.Content
-        >
-    </div>
+
+    <Tabs.Content value="inventory">
+        <ScrollArea class="h-full">
+            <Inventory></Inventory>
+        </ScrollArea>
+    </Tabs.Content>
+    <Tabs.Content value="abilities"
+        ><ScrollArea class="h-full">
+            <Abilities></Abilities>
+        </ScrollArea></Tabs.Content
+    >
+    <Tabs.Content value="actions"
+        ><ScrollArea class="h-full">
+            <Actions></Actions>
+        </ScrollArea></Tabs.Content
+    >
 </Tabs.Root>

@@ -28,42 +28,43 @@
 
 <div class={cn("w-full", $$restProps.class)}>
     <Card.Root class="border-none">
-        <Card.Content class="grid grid-cols-2 gap-2">
-            <!-- Equipped Items -->
-            <div class="space-y-1">
-                <Label for="current">Equipped</Label>
-                <div class="text-xs">
-                    {#if $playerEquippedItems.length > 0}
-                        {#each $playerEquippedItems as item (item.item)}
-                            [{item.locT}]
-                            <Button
-                                variant="link"
-                                class="h-6"
-                                on:click={() => openDialog(item)}
-                                >{item.name}</Button
-                            >
-                        {/each}
-                    {:else}
-                        <p>Nothing equipped</p>
-                    {/if}
+        <Card.Content class="p-0 m-0 ">
+            <div class="flex flex-col p-2 space-y-4">
+                <!-- Equipped Items -->
+                <div class="space-y-1">
+                    <Label>Equipped</Label>
+                    <div class="text-xs text-gray-400">
+                        {#if $playerEquippedItems.length > 0}
+                            {#each $playerEquippedItems as item (item.item)}
+                                <Button
+                                    variant="link"
+                                    class="h-6 text-gray-400"
+                                    on:click={() => openDialog(item)}
+                                    >[{item.locT}] {item.name}</Button
+                                >
+                            {/each}
+                        {:else}
+                            <p>Nothing equipped</p>
+                        {/if}
+                    </div>
                 </div>
-            </div>
-            <!-- Inventory Items -->
-            <div class="space-y-1">
-                <Label for="new">Inventory</Label>
-                <div class="text-xs">
-                    {#if $playerInventoryItems.length > 0}
-                        {#each $playerInventoryItems as item (item.item)}
-                            <Button
-                                variant="link"
-                                class="h-6"
-                                on:click={() => openDialog(item)}
-                                >{item.name}</Button
-                            >
-                        {/each}
-                    {:else}
-                        <p>Nothing in your bag</p>
-                    {/if}
+                <!-- Inventory Items -->
+                <div class="space-y-1">
+                    <Label>Inventory</Label>
+                    <div class="text-xs text-gray-400">
+                        {#if $playerInventoryItems.length > 0}
+                            {#each $playerInventoryItems as item (item.item)}
+                                <Button
+                                    variant="link"
+                                    class="h-6 text-gray-400"
+                                    on:click={() => openDialog(item)}
+                                    >{item.name}</Button
+                                >
+                            {/each}
+                        {:else}
+                            <p>Nothing in your bag</p>
+                        {/if}
+                    </div>
                 </div>
             </div>
         </Card.Content>
