@@ -188,36 +188,37 @@
     )}
 >
     <!-- Top panel -->
-    <div class="flex h-[calc(80%-52px)]">
-        <!-- Game (account for chat input) -->
+    <div class="flex h-[calc(80%)]">
+        <!-- Game Window -->
         <div class="flex-grow overflow-hidden" bind:this={gameContainer}>
             <Game previewCommand={command}></Game>
         </div>
         <!-- Right panel -->
-        <div
-            class="flex flex-col justify-between w-64 flex-shrink-0 p-2 space-y-2 bg-lime-600"
-        >
+        <div class="flex flex-col w-60 shrink-0 p-2 space-y-2">
             <!-- Player List -->
-            <div class="h-64 bg-orange-400"></div>
-            <!-- Tools -->
-            <div class="flex-grow">
-                <Tool tool="abilities"></Tool>
-            </div>
+            <div class="h-60 bg-orange-400 shrink-0"></div>
+            <!-- Quest Log -->
+            <Tool tool="quests"></Tool>
+            <!-- Inventory -->
+            <Tool tool="inventory"></Tool>
+            <!-- Abilities -->
+            <Tool tool="abilities"></Tool>
         </div>
     </div>
 
-    <!-- Toolbar -->
-    <div class="h-64 flex flex-row">
+    <!-- Autocomplete Game Commands -->
+    <div class="relative">
+        <AutocompleteGC
+            class="pb-2 px-2 bottom-0 absolute"
+            {commands}
+            {onGameCommand}
+            bind:command
+        ></AutocompleteGC>
+    </div>
+
+    <!-- Bottom Panel -->
+    <div class="h-60 flex flex-row grow">
         <div class="flex flex-col w-full">
-            <!-- Autocomplete Game Commands -->
-            <div class="relative">
-                <AutocompleteGC
-                    class="pb-2 px-2 bottom-0 absolute"
-                    {commands}
-                    {onGameCommand}
-                    bind:command
-                ></AutocompleteGC>
-            </div>
             <!-- Chat Input -->
             <ChatInput class="mb-1 mt-0 py-0" {onEnterKeyPress} {onPartial}
             ></ChatInput>
@@ -229,36 +230,8 @@
             <MudDescriptor></MudDescriptor>
         </div>
         <!-- Map/Look -->
-        <div class="w-64 aspect-square shrink-0">
+        <div class="w-60 aspect-square shrink-0">
             <Map></Map>
         </div>
     </div>
 </div>
-
-<style>
-    #environment-overlay {
-        position: absolute;
-        top: var(--game-top); /* computed on mount */
-        width: 50%;
-        max-width: 600px;
-        left: 0;
-        right: 0;
-        margin-left: auto;
-        margin-right: auto;
-        border-bottom-left-radius: 10px;
-        border-bottom-right-radius: 10px;
-    }
-    #narrator-overlay {
-        position: absolute;
-        bottom: var(--game-bottom); /* computed on mount */
-        width: 70%;
-        max-width: 1000px;
-        left: 0;
-        right: 0;
-        margin-left: auto;
-        margin-right: auto;
-        border-top-left-radius: 10px;
-        border-top-right-radius: 10px;
-        height: 100px;
-    }
-</style>

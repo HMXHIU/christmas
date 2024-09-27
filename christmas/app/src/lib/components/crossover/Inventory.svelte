@@ -29,16 +29,16 @@
 <div class={cn("w-full", $$restProps.class)}>
     <Card.Root class="border-none">
         <Card.Content class="p-0 m-0 ">
-            <div class="flex flex-col p-2 space-y-4">
+            <div class="grid grid-cols-1 gap-2">
                 <!-- Equipped Items -->
-                <div class="space-y-1">
+                <div>
                     <Label>Equipped</Label>
-                    <div class="text-xs text-gray-400">
+                    <div class="flex flex-col text-gray-400 space-y-2 py-2">
                         {#if $playerEquippedItems.length > 0}
                             {#each $playerEquippedItems as item (item.item)}
                                 <Button
                                     variant="link"
-                                    class="h-6 text-gray-400"
+                                    class="h-full text-xs text-gray-400 whitespace-normal break-words text-left justify-start p-0"
                                     on:click={() => openDialog(item)}
                                     >[{item.locT}] {item.name}</Button
                                 >
@@ -49,14 +49,14 @@
                     </div>
                 </div>
                 <!-- Inventory Items -->
-                <div class="space-y-1">
+                <div>
                     <Label>Inventory</Label>
-                    <div class="text-xs text-gray-400">
+                    <div class="flex flex-col text-gray-400 space-y-2 py-2">
                         {#if $playerInventoryItems.length > 0}
                             {#each $playerInventoryItems as item (item.item)}
                                 <Button
                                     variant="link"
-                                    class="h-6 text-gray-400"
+                                    class="h-full text-xs text-gray-400 whitespace-normal break-words text-left justify-start p-0"
                                     on:click={() => openDialog(item)}
                                     >{item.name}</Button
                                 >

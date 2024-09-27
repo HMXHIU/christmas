@@ -39,12 +39,12 @@
 <div class={cn("w-full", $$restProps.class)}>
     <Card.Root class="border-none">
         <Card.Content class="p-0 m-0">
-            <div class="grid grid-cols-2 text-xs p-2">
+            <div class="grid grid-cols-2 gap-2">
                 {#if $playerAbilities.length > 0}
                     {#each $playerAbilities as ability (ability.ability)}
                         <Button
                             variant="link"
-                            class="h-6
+                            class="h-full whitespace-normal break-words text-left justify-start p-0
                             {ability?.type === 'healing'
                                 ? 'text-green-400'
                                 : ''}
@@ -116,7 +116,7 @@
                     {/if}
                 </div>
                 <!-- Costs -->
-                <div class="flex flex-row gap-2">
+                <div class="flex flex-row space-2">
                     {#if selectedAbility?.cost.cha}
                         <Badge class="bg-teal-400"
                             ><Zap class="h-4"></Zap>{selectedAbility?.cost
