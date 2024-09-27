@@ -1,10 +1,4 @@
 import {
-    type GameRedisEntities,
-    type ItemEntity,
-    type MonsterEntity,
-    type PlayerEntity,
-} from "$lib/crossover/types";
-import {
     entityInRange,
     getEntityId,
     minifiedEntity,
@@ -18,6 +12,12 @@ import {
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
 import type { WorldPOIs } from "$lib/crossover/world/world";
+import {
+    type GameRedisEntities,
+    type ItemEntity,
+    type MonsterEntity,
+    type PlayerEntity,
+} from "$lib/server/crossover/types";
 import { substituteValues } from "$lib/utils";
 import { setEntityBusy } from "..";
 import { performAbility } from "../abilities";

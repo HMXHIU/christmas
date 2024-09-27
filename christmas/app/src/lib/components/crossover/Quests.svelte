@@ -2,33 +2,45 @@
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Card from "$lib/components/ui/card/index.js";
     import * as Dialog from "$lib/components/ui/dialog";
+    import { crossoverPlayerQuest } from "$lib/crossover/client";
+    import type { Quest } from "$lib/crossover/types";
+    import { compendium } from "$lib/crossover/world/settings/compendium";
     import { cn } from "$lib/shadcn";
     import { onMount } from "svelte";
     import { playerInventoryItems } from "../../../store";
 
-    import { compendium } from "$lib/crossover/world/settings/compendium";
-
-    interface QuestVars {
+    interface QuestWrit {
+        writ: string;
         quest: string;
         name: string;
         description: string;
     }
 
     let isDialogOpen = false;
-    let selectedQuest: QuestVars | null = null;
+    let selectedWrit: QuestWrit | null = null;
+    let selectedQuest: Quest | null = null;
+    let quests: QuestWrit[] = [];
 
-    let quests: QuestVars[] = [];
-
-    function openDialog(quest: QuestVars) {
-        selectedQuest = quest;
+    async function openDialog(quest: QuestWrit) {
+        selectedWrit = quest;
+        selectedQuest = await crossoverPlayerQuest(quest.writ);
         isDialogOpen = true;
     }
 
     onMount(() => {
         playerInventoryItems.subscribe((r) => {
-            quests = Object.values(r)
-                .filter((i) => i.prop === compendium.questwrit.prop)
-                .map((i) => i.vars as any);
+            quests = Object.entries(r)
+                .filter(
+                    ([writ, { prop }]) => prop === compendium.questwrit.prop,
+                )
+                .map(([writ, { vars }]) => {
+                    return {
+                        quest: vars.quest as string,
+                        name: vars.name as string,
+                        description: vars.description as string,
+                        writ: vars.writ as string,
+                    };
+                });
         });
     });
 </script>
@@ -61,8 +73,12 @@
                     >{selectedQuest?.description}</Dialog.Description
                 >
             </Dialog.Header>
-            <div class="flex flex-col gap-2">
-                <div class="flex flex-row gap-2"></div>
+            <div class="flex flex-col space-2">
+                {#if selectedQuest?.objectives}
+                    {#each selectedQuest?.objectives as objective}
+                        <p>{objective.description}</p>
+                    {/each}
+                {/if}
             </div>
         </Dialog.Content>
     </Dialog.Root>

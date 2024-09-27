@@ -6,11 +6,11 @@ import {
     crossoverCmdUnequip,
     crossoverPlayerInventory,
 } from "$lib/crossover/client";
-import type { ItemEntity } from "$lib/crossover/types";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { fetchEntity, saveEntities } from "$lib/server/crossover/redis/utils";
+import type { ItemEntity } from "$lib/server/crossover/types";
 import { sleep } from "$lib/utils";
 import { beforeEach, describe, expect, test } from "vitest";
 import {

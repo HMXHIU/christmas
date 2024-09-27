@@ -1,12 +1,4 @@
-import type {
-    BodyPart,
-    DieRoll,
-    GameRedisEntities,
-    Item,
-    ItemEntity,
-    MonsterEntity,
-    PlayerEntity,
-} from "$lib/crossover/types";
+import type { BodyPart, DieRoll, Item } from "$lib/crossover/types";
 import type {
     DamageType,
     Debuff,
@@ -27,6 +19,12 @@ import { compendium } from "$lib/crossover/world/settings/compendium";
 import { BASE_ATTRIBUTES } from "$lib/crossover/world/settings/entity";
 import { sanctuaries } from "$lib/crossover/world/settings/world";
 import type { EquipmentSlot } from "$lib/crossover/world/types";
+import type {
+    GameRedisEntities,
+    ItemEntity,
+    MonsterEntity,
+    PlayerEntity,
+} from "$lib/server/crossover/types";
 import { uniq } from "lodash-es";
 import { random } from "../utils";
 

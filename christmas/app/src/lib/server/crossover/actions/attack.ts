@@ -1,10 +1,10 @@
-import {
-    type GameRedisEntities,
-    type PlayerEntity,
-} from "$lib/crossover/types";
 import { entityInRange } from "$lib/crossover/utils";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
+import {
+    type GameRedisEntities,
+    type PlayerEntity,
+} from "$lib/server/crossover/types";
 import { sleep } from "$lib/utils";
 import { setEntityBusy } from "..";
 import { resolveCombat } from "../combat";

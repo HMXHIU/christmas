@@ -4,7 +4,6 @@ import {
 } from "$env/static/public";
 import { AnchorClient } from "$lib/anchorClient";
 import { PROGRAM_ID } from "$lib/anchorClient/defs";
-import type { PlayerEntity } from "$lib/crossover/types";
 import {
     AgesEnum,
     BodyTypesEnum,
@@ -40,6 +39,7 @@ import {
     type PlayerMetadata,
 } from "$lib/crossover/world/player";
 import type { LocationType } from "$lib/crossover/world/types";
+import type { PlayerEntity } from "$lib/server/crossover/types";
 import {
     generatePin,
     sampleFrom,

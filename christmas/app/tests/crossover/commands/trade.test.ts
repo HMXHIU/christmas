@@ -1,6 +1,5 @@
 import { executeGameCommand } from "$lib/crossover/game";
 import { searchPossibleCommands } from "$lib/crossover/ir";
-import type { ItemEntity, PlayerEntity } from "$lib/crossover/types";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { actions } from "$lib/crossover/world/settings/actions";
@@ -10,6 +9,7 @@ import { spawnItemInInventory } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { inventoryQuerySet } from "$lib/server/crossover/redis/queries";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
+import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
 import { sleep } from "$lib/utils";
 import { beforeEach, describe, expect, test } from "vitest";
 import {

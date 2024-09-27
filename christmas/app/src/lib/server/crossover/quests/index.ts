@@ -1,12 +1,19 @@
 import type {
-    ItemEntity,
-    MonsterEntity,
-    PlayerEntity,
+    DropEffect,
+    Objective,
+    Quest,
+    Reward,
+    Trigger,
 } from "$lib/crossover/types";
 import { getEntityId } from "$lib/crossover/utils";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
 import { compendium } from "$lib/crossover/world/settings/compendium";
+import type {
+    ItemEntity,
+    MonsterEntity,
+    PlayerEntity,
+} from "$lib/server/crossover/types";
 import {
     generateRandomSeed,
     sampleFrom,
@@ -22,15 +29,7 @@ import { playerQuestsInvolvingEntities } from "../redis/queries";
 import { fetchEntity, saveEntity } from "../redis/utils";
 import { npcs } from "../settings/npc";
 import { random } from "../utils";
-import type {
-    DropEffect,
-    Objective,
-    Quest,
-    QuestEntity,
-    QuestTemplate,
-    Reward,
-    Trigger,
-} from "./types";
+import type { QuestEntity, QuestTemplate } from "./types";
 
 export {
     createQuest,

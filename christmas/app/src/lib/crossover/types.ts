@@ -9,33 +9,38 @@ import type {
     GeohashLocationType,
     LocationType,
 } from "$lib/crossover/world/types";
-import { type Entity } from "redis-om";
 import type { DamageType } from "./world/abilities";
 import type { Attribute } from "./world/entity";
 
-export {
-    type BodyPart,
-    type Currency,
-    type CurrencyParams,
-    type Dialogue,
-    type DialogueEntity,
-    type Dialogues,
-    type DieRoll,
-    type EntityState,
-    type EntityStats,
-    type EntityType,
-    type GameEntity,
-    type GameRedisEntities,
-    type Item,
-    type ItemEntity,
-    type Monster,
-    type MonsterEntity,
-    type PathParams,
-    type Player,
-    type PlayerEntity,
-    type Stat,
-    type World,
-    type WorldEntity,
+export type {
+    BodyPart,
+    Currency,
+    CurrencyParams,
+    Dialogue,
+    DialogueEffect,
+    Dialogues,
+    DialogueTrigger,
+    DieRoll,
+    DropEffect,
+    Effect,
+    Effects,
+    EntityState,
+    EntityStats,
+    EntityType,
+    GameEntity,
+    GiveTrigger,
+    Item,
+    KillTrigger,
+    Monster,
+    Objective,
+    PathParams,
+    Player,
+    Quest,
+    Reward,
+    Stat,
+    Trigger,
+    Triggers,
+    World,
 };
 
 type BodyPart = "head" | "torso" | "legs" | "arms";
@@ -51,7 +56,6 @@ interface DieRoll {
 
 type EntityType = "player" | "monster" | "item";
 type GameEntity = Monster | Player | Item;
-type GameRedisEntities = MonsterEntity | PlayerEntity | ItemEntity;
 
 type EntityStats = Record<Stat, number>;
 type CurrencyParams = Record<Currency, number>;
@@ -101,8 +105,6 @@ interface Player extends EntityState, CharacterParams {
     npc?: string; // npc instance id (if player is an NPC)
 }
 
-type PlayerEntity = Player & Entity;
-
 /**
  * Monster
  *
@@ -115,8 +117,6 @@ interface Monster extends EntityState {
     name: string;
     beast: string;
 }
-
-type MonsterEntity = Monster & Entity;
 
 /**
  * Item
@@ -139,8 +139,6 @@ interface Item extends LocationParams {
     buf: string[];
 }
 
-type ItemEntity = Item & Entity;
-
 /**
  * World
  *
@@ -152,8 +150,6 @@ interface World {
     loc: string[];
     locT: GeohashLocationType;
 }
-
-type WorldEntity = World & Entity;
 
 /**
  * Dialogue
@@ -170,4 +166,90 @@ interface Dialogue {
     exc?: string[]; // must not contain these tags
 }
 
-type DialogueEntity = Dialogue & Entity;
+/**
+ * Quests
+ */
+
+interface Quest {
+    template: string;
+    quest: string;
+    entityIds: string[];
+    fulfilled: boolean;
+    // Unsearchable
+    name: string;
+    description: string;
+    objectives: Objective[];
+    reward?: Reward;
+}
+
+/**
+ * Objective
+ */
+
+interface Objective {
+    description: string;
+    trigger: Trigger;
+    effect: Effect;
+    fulfilled: boolean;
+    reward?: Reward;
+}
+
+/**
+ * Reward
+ */
+
+interface Reward {
+    lum?: number;
+    umb?: number;
+    items?: string[];
+    props?: string[];
+}
+
+/**
+ * Trigger
+ */
+
+type Trigger = KillTrigger | GiveTrigger | DialogueTrigger;
+type Triggers = "kill" | "give" | "dialogue";
+
+interface BaseTrigger {
+    type: Triggers;
+}
+
+interface KillTrigger extends BaseTrigger {
+    type: "kill";
+    entity: string;
+}
+
+interface GiveTrigger extends BaseTrigger {
+    type: "give";
+    give: string;
+    to: string;
+}
+
+interface DialogueTrigger extends BaseTrigger {
+    type: "dialogue";
+    with: string;
+    dialogue: string;
+}
+
+/**
+ * Effect
+ */
+
+type Effects = "drop" | "dialogue";
+type Effect = DropEffect | DialogueEffect;
+
+interface BaseEffect {
+    type: Effects;
+}
+
+interface DropEffect extends BaseEffect {
+    type: "drop";
+    item: string;
+}
+
+interface DialogueEffect extends BaseEffect {
+    type: "dialogue";
+    dialogue: string;
+}

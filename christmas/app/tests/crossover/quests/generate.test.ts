@@ -1,10 +1,10 @@
 import { crossoverCmdSay } from "$lib/crossover/client";
-import type { ItemEntity } from "$lib/crossover/types";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { generateNPC } from "$lib/server/crossover/npc";
 import { generateInnKeeperQuests } from "$lib/server/crossover/quests/generator";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { questWritsQuerySet } from "$lib/server/crossover/redis/queries";
+import type { ItemEntity } from "$lib/server/crossover/types";
 import { beforeEach, expect, test } from "vitest";
 import {
     collectAllEventDataForDuration,

@@ -1,4 +1,3 @@
-import { type ItemEntity, type PlayerEntity } from "$lib/crossover/types";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { skillLines } from "$lib/crossover/world/settings/skills";
@@ -8,6 +7,10 @@ import {
     type SkillLines,
 } from "$lib/crossover/world/skills";
 import { type GeohashLocationType } from "$lib/crossover/world/types";
+import {
+    type ItemEntity,
+    type PlayerEntity,
+} from "$lib/server/crossover/types";
 import { generatePin, sleep, substituteVariables } from "$lib/utils";
 import { say } from ".";
 import {

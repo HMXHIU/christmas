@@ -1,10 +1,10 @@
 import { crossoverCmdAccept, crossoverCmdLearn } from "$lib/crossover/client";
-import type { PlayerEntity } from "$lib/crossover/types";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { skillLevelProgression } from "$lib/crossover/world/skills";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
+import type { PlayerEntity } from "$lib/server/crossover/types";
 import { sleep } from "$lib/utils";
 import { beforeEach, describe, expect, test } from "vitest";
 import type { CTAEvent } from "../../../src/routes/api/crossover/stream/+server";

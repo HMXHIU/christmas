@@ -1,11 +1,10 @@
+import type { Monster, Player } from "$lib/crossover/types";
+import type { Abilities } from "$lib/crossover/world/abilities";
 import type {
     DialogueEntity,
     ItemEntity,
-    Monster,
-    Player,
     PlayerEntity,
-} from "$lib/crossover/types";
-import type { Abilities } from "$lib/crossover/world/abilities";
+} from "$lib/server/crossover/types";
 import { substituteVariables } from "$lib/utils";
 import { say } from "../actions";
 import { executeGiveCTA, give } from "../actions/give";

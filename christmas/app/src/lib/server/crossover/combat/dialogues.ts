@@ -1,11 +1,11 @@
+import { type BodyPart } from "$lib/crossover/types";
+import type { Abilities, DamageType } from "$lib/crossover/world/abilities";
+import type { Genders } from "$lib/crossover/world/demographic";
 import {
-    type BodyPart,
     type ItemEntity,
     type MonsterEntity,
     type PlayerEntity,
-} from "$lib/crossover/types";
-import type { Abilities, DamageType } from "$lib/crossover/world/abilities";
-import type { Genders } from "$lib/crossover/world/demographic";
+} from "$lib/server/crossover/types";
 
 export { entityPronoun, generateHitMessage, generateMissMessage };
 

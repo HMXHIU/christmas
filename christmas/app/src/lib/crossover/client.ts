@@ -53,6 +53,7 @@ export {
     crossoverGenerateAvatar,
     crossoverPlayerInventory,
     crossoverPlayerMetadata,
+    crossoverPlayerQuest,
     crossoverWorldPOI,
     crossoverWorldWorlds,
     login,
@@ -453,6 +454,10 @@ function crossoverPlayerInventory(headers: HTTPHeaders = {}) {
 
 function crossoverPlayerMetadata(headers: HTTPHeaders = {}) {
     return trpc({ headers }).crossover.player.metadata.query();
+}
+
+function crossoverPlayerQuest(writ: string, headers: HTTPHeaders = {}) {
+    return trpc({ headers }).crossover.player.quest.query({ item: writ });
 }
 
 /*

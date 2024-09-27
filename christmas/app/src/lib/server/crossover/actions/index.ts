@@ -1,9 +1,4 @@
-import {
-    type GameEntity,
-    type ItemEntity,
-    type MonsterEntity,
-    type PlayerEntity,
-} from "$lib/crossover/types";
+import { type GameEntity } from "$lib/crossover/types";
 import {
     calculatePathDuration,
     geohashesNearby,
@@ -16,6 +11,11 @@ import {
     type Direction,
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
+import {
+    type ItemEntity,
+    type MonsterEntity,
+    type PlayerEntity,
+} from "$lib/server/crossover/types";
 import { cloneDeep } from "lodash-es";
 import { setEntityBusy } from "..";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../events";

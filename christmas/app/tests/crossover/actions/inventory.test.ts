@@ -6,13 +6,13 @@ import {
     crossoverCmdUnequip,
     crossoverPlayerInventory,
 } from "$lib/crossover/client";
-import type { ItemEntity, PlayerEntity } from "$lib/crossover/types";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { fetchEntity } from "$lib/server/crossover/redis/utils";
+import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
 import { sleep } from "$lib/utils";
 import { beforeAll, describe, expect, test } from "vitest";
 import { createGandalfSarumanSauron, waitForEventData } from "../utils";

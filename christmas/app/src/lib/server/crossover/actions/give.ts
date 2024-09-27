@@ -1,5 +1,8 @@
-import { type ItemEntity, type PlayerEntity } from "$lib/crossover/types";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
+import {
+    type ItemEntity,
+    type PlayerEntity,
+} from "$lib/server/crossover/types";
 import { generatePin } from "$lib/utils";
 import { say } from ".";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../events";

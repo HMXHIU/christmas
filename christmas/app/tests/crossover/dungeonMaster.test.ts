@@ -1,11 +1,11 @@
 import { INTERNAL_SERVICE_KEY } from "$env/static/private";
-import type { Player, PlayerEntity } from "$lib/crossover/types";
+import type { Player } from "$lib/crossover/types";
 import { borderingGeohashes } from "$lib/crossover/utils";
-import { monsterLimitAtGeohash } from "$lib/crossover/world/bestiary";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { spawnMonsters } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { monstersInGeohashQuerySet } from "$lib/server/crossover/redis/queries";
+import type { PlayerEntity } from "$lib/server/crossover/types";
 import { beforeAll, describe, expect, test } from "vitest";
 import { getRandomRegion } from "../utils";
 import { buffEntity, createRandomPlayer } from "./utils";
@@ -45,12 +45,6 @@ beforeAll(async () => {
         "w21z3tt",
         "w21z3tk",
     ]);
-
-    // Calculate max monsters in area
-    maxMonstersInArea = uninhabitedGeohashes.reduce(
-        (acc, currentGeohash) => monsterLimitAtGeohash(currentGeohash) + acc,
-        0,
-    );
 });
 
 describe("DungeonMaster Tests", () => {

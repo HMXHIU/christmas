@@ -1,12 +1,4 @@
-import {
-    type GameRedisEntities,
-    type Item,
-    type ItemEntity,
-    type Monster,
-    type MonsterEntity,
-    type Player,
-    type PlayerEntity,
-} from "$lib/crossover/types";
+import { type Item, type Monster, type Player } from "$lib/crossover/types";
 import {
     expandGeohashes,
     geohashesNearby,
@@ -19,6 +11,12 @@ import type {
     GeohashLocationType,
 } from "$lib/crossover/world/types";
 import { EquipmentSlots, WeaponSlots } from "$lib/crossover/world/types";
+import {
+    type GameRedisEntities,
+    type ItemEntity,
+    type MonsterEntity,
+    type PlayerEntity,
+} from "$lib/server/crossover/types";
 import { uniq } from "lodash-es";
 import type { Search } from "redis-om";
 import {

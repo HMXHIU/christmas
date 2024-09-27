@@ -1,5 +1,5 @@
-import type { ItemEntity, PlayerEntity } from "$lib/crossover/types";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
+import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
 import { generateRandomSeed, sampleFrom } from "$lib/utils";
 import { createQuest, createQuestWrit } from ".";
 import type { NPCs } from "../npc/types";

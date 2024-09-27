@@ -1,13 +1,5 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
-import type {
-    Item,
-    ItemEntity,
-    MonsterEntity,
-    Player,
-    PlayerEntity,
-    World,
-    WorldEntity,
-} from "$lib/crossover/types";
+import type { Item, Player, World } from "$lib/crossover/types";
 import { PlayerMetadataSchema } from "$lib/crossover/world/player";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/settings/world";
@@ -22,7 +14,17 @@ import {
     initializeClients,
     playerRepository,
 } from "$lib/server/crossover/redis";
-import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
+import {
+    fetchEntity,
+    fetchQuest,
+    saveEntity,
+} from "$lib/server/crossover/redis/utils";
+import type {
+    ItemEntity,
+    MonsterEntity,
+    PlayerEntity,
+    WorldEntity,
+} from "$lib/server/crossover/types";
 import { PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
 import { performance } from "perf_hooks";
@@ -76,6 +78,7 @@ import {
     type P2PTradeTransaction,
 } from "./player";
 
+import type { Quest } from "$lib/crossover/types";
 import { AbilitiesEnum } from "$lib/crossover/world/abilities";
 import { attack } from "./actions/attack";
 import {
@@ -404,6 +407,29 @@ const crossoverRouter = {
         inventory: playerAuthProcedure.query(async ({ ctx }) => {
             await inventory(ctx.player);
         }),
+        // player.quest
+        quest: playerAuthProcedure
+            .input(TargetItemSchema)
+            .query(async ({ ctx, input }) => {
+                const { item } = input;
+
+                // Check player has item
+                const questWrit = (await fetchEntity(item)) as ItemEntity;
+                if (questWrit.loc[0] !== ctx.player.player) {
+                    throw new Error(
+                        `${questWrit.item} does not belong to ${ctx.player.player}`,
+                    );
+                }
+                // Check quest
+                const quest = await fetchQuest(questWrit.vars.quest as string);
+                if (!quest) {
+                    throw new Error(
+                        `Quest in ${questWrit.item} does not exist`,
+                    );
+                }
+
+                return quest as Quest;
+            }),
     }),
     // Commands
     cmd: t.router({

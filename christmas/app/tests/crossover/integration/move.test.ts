@@ -1,8 +1,8 @@
 import { crossoverCmdMove } from "$lib/crossover/client";
-import type { PlayerEntity } from "$lib/crossover/types";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { fetchEntity, saveEntities } from "$lib/server/crossover/redis/utils";
+import type { PlayerEntity } from "$lib/server/crossover/types";
 import ngeohash from "ngeohash";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import {

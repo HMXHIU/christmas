@@ -1,4 +1,3 @@
-import { type MonsterEntity, type PlayerEntity } from "$lib/crossover/types";
 import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
 import type { Abilities } from "$lib/crossover/world/abilities";
 import { type Actions } from "$lib/crossover/world/actions";
@@ -11,6 +10,10 @@ import {
     GeohashLocationSchema,
     type LocationType,
 } from "$lib/crossover/world/types";
+import {
+    type MonsterEntity,
+    type PlayerEntity,
+} from "$lib/server/crossover/types";
 import { z } from "zod";
 import { fetchEntity, saveEntity } from "./redis/utils";
 import { getPlayerState, getUserMetadata } from "./utils";

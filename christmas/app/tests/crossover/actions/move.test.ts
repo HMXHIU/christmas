@@ -1,6 +1,5 @@
 import { crossoverCmdMove } from "$lib/crossover/client";
 import { aStarPathfinding } from "$lib/crossover/pathfinding";
-import type { ItemEntity, PlayerEntity } from "$lib/crossover/types";
 import {
     geohashNeighbour,
     getGeohashesForPath,
@@ -15,6 +14,7 @@ import { move } from "$lib/server/crossover/actions";
 import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
+import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
 import { sleep } from "$lib/utils";
 import { cloneDeep } from "lodash";
 import { beforeEach, describe, expect, test } from "vitest";

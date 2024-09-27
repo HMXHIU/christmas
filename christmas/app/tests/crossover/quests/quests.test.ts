@@ -3,7 +3,7 @@ import {
     crossoverCmdPerformAbility,
     crossoverCmdSay,
 } from "$lib/crossover/client";
-import type { ItemEntity, PlayerEntity } from "$lib/crossover/types";
+import type { Reward } from "$lib/crossover/types";
 import { minifiedEntity } from "$lib/crossover/utils";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
@@ -14,7 +14,6 @@ import { awardKillCurrency } from "$lib/server/crossover/entity";
 import { generateNPC } from "$lib/server/crossover/npc";
 import type { NPCs } from "$lib/server/crossover/npc/types";
 import { createQuest, createQuestWrit } from "$lib/server/crossover/quests";
-import type { Reward } from "$lib/server/crossover/quests/types";
 import { initializeClients } from "$lib/server/crossover/redis";
 import {
     fetchEntity,
@@ -22,6 +21,7 @@ import {
     saveEntity,
 } from "$lib/server/crossover/redis/utils";
 import { killAndDeliverQuest } from "$lib/server/crossover/settings/quests";
+import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
 import { clone } from "lodash-es";
 import { beforeEach, expect, test } from "vitest";
 import {

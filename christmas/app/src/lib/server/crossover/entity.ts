@@ -1,5 +1,5 @@
-import type { MonsterEntity, PlayerEntity } from "$lib/crossover/types";
 import { entityCurrencyReward } from "$lib/crossover/world/entity";
+import type { MonsterEntity, PlayerEntity } from "$lib/server/crossover/types";
 import { saveEntity } from "./redis/utils";
 
 export { awardKillCurrency };

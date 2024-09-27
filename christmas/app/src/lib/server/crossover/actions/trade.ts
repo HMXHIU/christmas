@@ -1,8 +1,4 @@
-import {
-    type Currency,
-    type ItemEntity,
-    type PlayerEntity,
-} from "$lib/crossover/types";
+import { type Currency } from "$lib/crossover/types";
 import { minifiedEntity } from "$lib/crossover/utils";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
@@ -10,6 +6,10 @@ import {
     type BarterSerialized,
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
+import {
+    type ItemEntity,
+    type PlayerEntity,
+} from "$lib/server/crossover/types";
 import { generatePin } from "$lib/utils";
 import { say } from ".";
 import { spawnItemInInventory } from "../dungeonMaster";

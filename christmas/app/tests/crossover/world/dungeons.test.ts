@@ -1,4 +1,3 @@
-import type { ItemEntity } from "$lib/crossover/types";
 import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
 import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
 import {
@@ -9,6 +8,7 @@ import { dungeons } from "$lib/crossover/world/settings/dungeons";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { dungeonEntrancesQuerySet } from "$lib/server/crossover/redis/queries";
+import type { ItemEntity } from "$lib/server/crossover/types";
 import { flatten } from "lodash-es";
 import { beforeAll, describe, expect, test } from "vitest";
 

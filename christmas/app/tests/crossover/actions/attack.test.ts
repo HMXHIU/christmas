@@ -3,10 +3,10 @@ import {
     crossoverCmdEquip,
     crossoverCmdTake,
 } from "$lib/crossover/client";
-import type { ItemEntity } from "$lib/crossover/types";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
+import type { ItemEntity } from "$lib/server/crossover/types";
 import { sleep } from "$lib/utils";
 import {
     afterAll,

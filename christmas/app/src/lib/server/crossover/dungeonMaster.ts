@@ -1,10 +1,4 @@
 import type { CacheInterface } from "$lib/caches";
-import type {
-    ItemEntity,
-    MonsterEntity,
-    PlayerEntity,
-    WorldEntity,
-} from "$lib/crossover/types";
 import {
     autoCorrectGeohashPrecision,
     borderingGeohashes,
@@ -33,6 +27,12 @@ import {
     type GeohashLocationType,
 } from "$lib/crossover/world/types";
 import { poisInWorld, type WorldPOIs } from "$lib/crossover/world/world";
+import type {
+    ItemEntity,
+    MonsterEntity,
+    PlayerEntity,
+    WorldEntity,
+} from "$lib/server/crossover/types";
 import {
     generatePin,
     substituteValues,

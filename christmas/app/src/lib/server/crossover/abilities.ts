@@ -1,8 +1,3 @@
-import type {
-    ItemEntity,
-    MonsterEntity,
-    PlayerEntity,
-} from "$lib/crossover/types";
 import {
     entityInRange,
     getEntityId,
@@ -16,6 +11,11 @@ import {
 } from "$lib/crossover/world/abilities";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
+import type {
+    ItemEntity,
+    MonsterEntity,
+    PlayerEntity,
+} from "$lib/server/crossover/types";
 import { sleep } from "$lib/utils";
 import { consumeResources, setEntityBusy } from ".";
 import { resolveCombat } from "./combat";

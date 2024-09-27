@@ -1,11 +1,4 @@
-import type {
-    BodyPart,
-    DieRoll,
-    GameRedisEntities,
-    ItemEntity,
-    MonsterEntity,
-    PlayerEntity,
-} from "$lib/crossover/types";
+import type { BodyPart, DieRoll } from "$lib/crossover/types";
 import {
     calculateLocation,
     entityDimensions,
@@ -19,6 +12,12 @@ import type {
 } from "$lib/crossover/world/abilities";
 import type { Actions } from "$lib/crossover/world/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
+import type {
+    GameRedisEntities,
+    ItemEntity,
+    MonsterEntity,
+    PlayerEntity,
+} from "$lib/server/crossover/types";
 import { clone, uniq } from "lodash-es";
 import { awardKillCurrency } from "../entity";
 import {

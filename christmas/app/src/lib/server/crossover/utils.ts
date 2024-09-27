@@ -1,12 +1,5 @@
 import { ENVIRONMENT } from "$env/static/private";
-import type {
-    ItemEntity,
-    Monster,
-    MonsterEntity,
-    Player,
-    PlayerEntity,
-    WorldEntity,
-} from "$lib/crossover/types";
+import type { Monster, Player } from "$lib/crossover/types";
 import { geohashNeighbour } from "$lib/crossover/utils";
 import { type ItemVariables } from "$lib/crossover/world/compendium";
 import { compendium } from "$lib/crossover/world/settings/compendium";
@@ -26,6 +19,12 @@ import {
     worldAssetMetadataCache,
     worldTraversableCellsCache,
 } from "$lib/server/crossover/caches";
+import type {
+    ItemEntity,
+    MonsterEntity,
+    PlayerEntity,
+    WorldEntity,
+} from "$lib/server/crossover/types";
 import { parseZodErrors } from "$lib/utils";
 import { PublicKey } from "@solana/web3.js";
 import { z } from "zod";

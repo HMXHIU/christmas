@@ -3,13 +3,7 @@ import {
     INTERNAL_SERVICE_KEY,
 } from "$env/static/private";
 import { login as loginCrossover, signup, stream } from "$lib/crossover/client";
-import type {
-    ItemEntity,
-    Monster,
-    MonsterEntity,
-    Player,
-    PlayerEntity,
-} from "$lib/crossover/types";
+import type { Monster, Player } from "$lib/crossover/types";
 import type { Abilities } from "$lib/crossover/world/abilities";
 import { ArchetypesEnum } from "$lib/crossover/world/demographic";
 import { resetEntityStats } from "$lib/crossover/world/entity";
@@ -29,6 +23,11 @@ import {
 import { generateNPC } from "$lib/server/crossover/npc";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
 import { npcs } from "$lib/server/crossover/settings/npc";
+import type {
+    ItemEntity,
+    MonsterEntity,
+    PlayerEntity,
+} from "$lib/server/crossover/types";
 import { BUCKETS, ObjectStorage } from "$lib/server/objectStorage";
 import { generateRandomSeed, sleep } from "$lib/utils";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";

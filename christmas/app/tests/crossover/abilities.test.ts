@@ -1,5 +1,4 @@
 import { crossoverCmdPerformAbility } from "$lib/crossover/client";
-import type { PlayerEntity } from "$lib/crossover/types";
 import { minifiedEntity } from "$lib/crossover/utils";
 import { patchEffectWithVariables } from "$lib/crossover/world/abilities";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
@@ -10,6 +9,7 @@ import { respawnPlayer } from "$lib/server/crossover/combat/utils";
 import { awardKillCurrency } from "$lib/server/crossover/entity";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
+import type { PlayerEntity } from "$lib/server/crossover/types";
 import { sleep } from "$lib/utils";
 import { beforeEach, describe, expect, test } from "vitest";
 import {

@@ -2,7 +2,7 @@ import {
     type ItemEntity,
     type MonsterEntity,
     type PlayerEntity,
-} from "$lib/crossover/types";
+} from "$lib/server/crossover/types";
 import {
     itemRepository,
     monsterRepository,
@@ -31,8 +31,8 @@ async function fetchEntity(
     return null;
 }
 
-async function fetchQuest(entity: string): Promise<QuestEntity | null> {
-    const quest = (await questRepository.fetch(entity)) as QuestEntity;
+async function fetchQuest(questId: string): Promise<QuestEntity | null> {
+    const quest = (await questRepository.fetch(questId)) as QuestEntity;
     if (quest.quest) return quest;
     return null;
 }

@@ -4,8 +4,8 @@ import {
     REDIS_PORT,
     REDIS_USERNAME,
 } from "$env/static/private";
-import { type DialogueEntity } from "$lib/crossover/types";
 import { hashObject } from "$lib/server";
+import { type DialogueEntity } from "$lib/server/crossover/types";
 import { createClient } from "redis";
 import { Repository } from "redis-om";
 import { dialogues } from "../settings/npc";
