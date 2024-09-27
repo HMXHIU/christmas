@@ -42,7 +42,7 @@ async function performAbility({
     // Get target
     let targetEntity = await fetchEntity(target);
     if (!targetEntity) {
-        if ("player" in self) {
+        if (self.player) {
             await publishFeedEvent(selfEntityId, {
                 type: "error",
                 message: `Target ${target} not found`,
@@ -69,7 +69,7 @@ async function performAbility({
     if (
         !predicate.targetSelfAllowed &&
         selfEntityId === target &&
-        "player" in self
+        self.player
     ) {
         await publishFeedEvent(selfEntityId, {
             type: "error",
@@ -79,7 +79,7 @@ async function performAbility({
     }
 
     // Check if target is in range
-    if (!entityInRange(self, targetEntity, range)[0] && "player" in self) {
+    if (!entityInRange(self, targetEntity, range)[0] && self.player) {
         await publishFeedEvent(selfEntityId, {
             type: "error",
             message: `${targetEntity.name} is out of range`,

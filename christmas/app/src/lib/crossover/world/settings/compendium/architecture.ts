@@ -37,6 +37,7 @@ export let architecture: Record<string, Prop> = {
                     charges: 0,
                     durability: 0,
                 },
+                range: 1,
                 state: {
                     start: "default",
                     end: "open",
@@ -49,6 +50,7 @@ export let architecture: Record<string, Prop> = {
                     charges: 0,
                     durability: 0,
                 },
+                range: 1,
                 state: {
                     start: "open",
                     end: "default",

@@ -1,6 +1,6 @@
 import { ENVIRONMENT } from "$env/static/private";
 import type { Monster, Player } from "$lib/crossover/types";
-import { geohashNeighbour } from "$lib/crossover/utils";
+import { entityInRange, geohashNeighbour } from "$lib/crossover/utils";
 import { type ItemVariables } from "$lib/crossover/world/compendium";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import type {
@@ -305,6 +305,17 @@ function canUseItem(
             message: `Invalid utility ${utility} for item ${item.item}`,
         };
     }
+    const propUtility = prop.utilities[utility];
+
+    // Check item in range
+    if (propUtility.range != null) {
+        if (!entityInRange(self, item, propUtility.range)[0]) {
+            return {
+                canUse: false,
+                message: `${item.name} is out of range`,
+            };
+        }
+    }
 
     // Check if have permissions to use item
     if (!hasItemOwnerPermissions(item, self)) {
@@ -328,7 +339,7 @@ function canUseItem(
     }
 
     // Check has enough charges or durability
-    const propUtility = prop.utilities[utility];
+
     if (item.chg < propUtility.cost.charges) {
         return {
             canUse: false,

@@ -87,6 +87,7 @@ interface Utility {
         start: string;
         end: string;
     };
+    range?: number; // if not an ability or action (eg. open door), then it will check the range provided
     // abilities[ability] `self` and `target` will be provided when `useItem` is called but can be overwritten via `variables`
     ability?: Abilities;
     action?: Actions;
