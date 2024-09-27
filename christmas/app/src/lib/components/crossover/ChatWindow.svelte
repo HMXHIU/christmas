@@ -1,46 +1,9 @@
 <script lang="ts">
     import { cn } from "$lib/shadcn";
     import { getCurrentTimestamp } from "$lib/utils";
-    import { onMount } from "svelte";
     import { messageFeed } from "../../../store";
-    import type { MessageFeed } from "./GameWindow";
-
-    const ERROR_TIMESPAN = 5000;
 
     let chatWindow: HTMLElement;
-    let systemMessage: MessageFeed | undefined;
-
-    $: onNewMessages($messageFeed);
-
-    function scrollChatBottom(behavior?: ScrollBehavior): void {
-        chatWindow?.scrollTo({ top: chatWindow.scrollHeight, behavior });
-    }
-
-    function onNewMessages(messages: MessageFeed[]): void {
-        const now = new Date().getTime();
-        // Get the last valid error or system message
-        systemMessage = messages
-            .reverse()
-            .filter((m) => {
-                return m.timestamp.getTime() > now - ERROR_TIMESPAN;
-            })
-            .find(
-                (message) =>
-                    message.messageFeedType === "error" ||
-                    message.messageFeedType === "system",
-            );
-        setTimeout(() => {
-            systemMessage = undefined;
-        }, ERROR_TIMESPAN);
-        // Scroll to the bottom of the chat window
-        setTimeout(() => {
-            scrollChatBottom("smooth");
-        }, 0);
-    }
-
-    onMount(() => {
-        scrollChatBottom();
-    });
 </script>
 
 <div
@@ -51,30 +14,32 @@
         class="px-4 py-0 overflow-y-auto space-y-2 scroll-container"
     >
         {#each $messageFeed as message}
-            {#if message.messageFeedType === "message"}
-                <div class="flex flex-row text-left">
-                    <div class="flex flex-col w-16 shrink-0">
-                        <small class="opacity-50 text-xs"
-                            >{getCurrentTimestamp(message.timestamp)}</small
-                        >
-                        <p class="italic text-sm">{message.name}</p>
-                    </div>
-                    <!-- Normal Messages -->
+            <div class="flex flex-row text-left">
+                <div class="flex flex-col w-16 shrink-0">
+                    <small class="opacity-50 text-xs"
+                        >{getCurrentTimestamp(message.timestamp)}</small
+                    >
+                    <p class="opacity-50 text-xs">{message.name}</p>
+                </div>
+                <!-- Normal Messages -->
+                {#if message.messageFeedType === "message"}
                     <p class="text-sm font-extralight px-2 text-left">
                         {message.message}
                     </p>
-                </div>
-            {/if}
+                {:else if message.messageFeedType === "error"}
+                    <p
+                        class="text-sm font-extralight px-2 text-left text-destructive"
+                    >
+                        {message.message}
+                    </p>
+                {:else if message.messageFeedType === "system"}
+                    <p class="text-sm font-extralight px-2 text-left">
+                        {message.message}
+                    </p>
+                {/if}
+            </div>
         {/each}
     </section>
-
-    <div class="m-0 px-4 h-4 shrink-0">
-        {#if systemMessage}
-            <p class="text-sm text-left text-destructive">
-                {systemMessage.message}
-            </p>
-        {/if}
-    </div>
 </div>
 
 <!-- Styles -->

@@ -26,7 +26,7 @@ function addMessageFeed({
 }) {
     messageFeed.update((ms) => {
         return [
-            ...ms,
+            // Latest message at the top
             {
                 id: ms.length,
                 timestamp: new Date(),
@@ -34,6 +34,7 @@ function addMessageFeed({
                 name,
                 messageFeedType,
             },
+            ...ms,
         ];
     });
 }

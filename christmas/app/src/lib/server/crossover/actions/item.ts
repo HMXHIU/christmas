@@ -86,7 +86,7 @@ async function useItem({
     // Check if can use item
     else {
         const { canUse, message } = canUseItem(self, itemEntity, utility);
-        if (!canUse && self.player) {
+        if (!canUse) {
             error = message;
         }
     }
