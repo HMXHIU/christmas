@@ -31,6 +31,7 @@ async function aStarPathfinding({
     getTraversalCost,
     range,
     maxIterations,
+    earlyExitThreshold,
 }: {
     rowStart: number;
     rowEnd: number;
@@ -38,9 +39,11 @@ async function aStarPathfinding({
     colEnd: number;
     getTraversalCost: (row: number, col: number) => Promise<number>; // 0 is walkable, 1 is not
     maxIterations?: number;
+    earlyExitThreshold?: number;
     range?: number;
 }): Promise<Direction[]> {
     maxIterations = maxIterations ?? 1000;
+    earlyExitThreshold = earlyExitThreshold ?? 10; // Default early exit threshold
 
     const heuristic = (
         row: number,
@@ -112,6 +115,13 @@ async function aStarPathfinding({
     };
 
     let iterations = 0;
+    let stableIterations = 0;
+    let bestNode: Node | null = null;
+    let bestDistance = Infinity;
+
+    // Check if the end destination is traversable
+    const isEndTraversable = (await getTraversalCost(rowEnd, colEnd)) === 0;
+
     while (openList.length > 0 && iterations < maxIterations) {
         iterations++;
 
@@ -119,7 +129,26 @@ async function aStarPathfinding({
         const currentNode = openList.shift()!;
         const currentKey = `${currentNode.row},${currentNode.col}`;
 
-        if (currentNode.row === rowEnd && currentNode.col === colEnd) {
+        // Update best node if this is closer to the goal
+        const currentDistance = heuristic(
+            currentNode.row,
+            currentNode.col,
+            rowEnd,
+            colEnd,
+        );
+        if (currentDistance < bestDistance) {
+            bestNode = currentNode;
+            bestDistance = currentDistance;
+            stableIterations = 0;
+        } else {
+            stableIterations++;
+        }
+
+        if (
+            isEndTraversable &&
+            currentNode.row === rowEnd &&
+            currentNode.col === colEnd
+        ) {
             return reconstructPath(currentNode);
         }
 
@@ -129,6 +158,11 @@ async function aStarPathfinding({
             isWithinRange(currentNode.row, currentNode.col, range)
         ) {
             return reconstructPath(currentNode);
+        }
+
+        // Early termination condition (can't find a better path after earlyExitThreshold tries)
+        if (stableIterations >= earlyExitThreshold) {
+            return bestNode ? reconstructPath(bestNode) : [];
         }
 
         closedList.add(currentKey);
@@ -153,5 +187,6 @@ async function aStarPathfinding({
         }
     }
 
-    return []; // No path found
+    // If we couldn't reach the exact destination, return the path to the best node
+    return bestNode ? reconstructPath(bestNode) : [];
 }
