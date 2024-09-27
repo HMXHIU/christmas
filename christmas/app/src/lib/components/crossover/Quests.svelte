@@ -28,17 +28,15 @@
     }
 
     onMount(() => {
-        playerInventoryItems.subscribe((r) => {
-            quests = Object.entries(r)
-                .filter(
-                    ([writ, { prop }]) => prop === compendium.questwrit.prop,
-                )
-                .map(([writ, { vars }]) => {
+        playerInventoryItems.subscribe((items) => {
+            quests = items
+                .filter(({ prop }) => prop === compendium.questwrit.prop)
+                .map(({ vars, item }) => {
                     return {
                         quest: vars.quest as string,
                         name: vars.name as string,
                         description: vars.description as string,
-                        writ: vars.writ as string,
+                        writ: item,
                     };
                 });
         });
