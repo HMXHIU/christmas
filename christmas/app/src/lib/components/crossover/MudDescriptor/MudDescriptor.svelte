@@ -6,7 +6,7 @@
     } from "$lib/crossover/caches";
     import {
         MudDescriptionGenerator,
-        type Descriptor,
+        type LocationDescription,
     } from "$lib/crossover/mud";
     import { biomes } from "$lib/crossover/world/biomes";
     import {
@@ -34,7 +34,7 @@
         topologyBufferCache,
         topologyResponseCache,
     });
-    let locationDescriptor: Descriptor | null = null;
+    let locationDescriptor: LocationDescription | null = null;
     let playerDescriptor = "";
     let monsterDescriptor = "";
     let itemDescriptor = "";

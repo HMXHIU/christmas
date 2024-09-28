@@ -21,18 +21,20 @@
                     >
                     <p class="opacity-50 text-xs">{message.name}</p>
                 </div>
-                <!-- Normal Messages -->
                 {#if message.messageFeedType === "message"}
+                    <!-- Normal Messages -->
                     <p class="text-sm font-extralight px-2 text-left">
                         {message.message}
                     </p>
                 {:else if message.messageFeedType === "error"}
+                    <!-- Error Messages -->
                     <p
                         class="text-sm font-extralight px-2 text-left text-destructive"
                     >
                         {message.message}
                     </p>
                 {:else if message.messageFeedType === "system"}
+                    <!-- System Messages -->
                     <p class="text-sm font-extralight px-2 text-left">
                         {message.message}
                     </p>
