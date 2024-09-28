@@ -1,5 +1,6 @@
 import { groupBy, partition } from "lodash-es";
-import type { EntityType, GameEntity, Item, Monster, Player } from "../types";
+import type { EntityType, GameEntity, Item, Monster } from "../types";
+import { isEntityAlive } from "../utils";
 import { bestiary } from "../world/settings/bestiary";
 import { compendium } from "../world/settings/compendium";
 import type { EntityDescriptionState, EntityDescriptors } from "./settings";
@@ -11,14 +12,8 @@ function descibeEntities(
     entityType: EntityType,
     entityDescriptors: Record<EntityType, EntityDescriptors>,
 ): string {
-    console.log(JSON.stringify(entities, null, 2));
     // Seperate entities which are dead or destroyed
-    const [aliveEntities, deadEntities] = partition(entities, (e) => {
-        if (entityType === "item") return (e as Item).dur > 0;
-        if (entityType === "monster" || entityType === "player")
-            return (e as Monster | Player).hp > 0;
-        return true;
-    });
+    const [aliveEntities, deadEntities] = partition(entities, isEntityAlive);
 
     function describeEntityGroup(
         entities: GameEntity[],
@@ -70,14 +65,14 @@ function getAdditionalInfo(
     // Monster
     if (entityType === "monster") {
         const monster = bestiary[(sample as Monster).beast];
-        if (monster.alignment === "evil" && (sample as Monster).hp > 0) {
+        if (monster.alignment === "evil" && isEntityAlive(sample)) {
             return " looking threateningly at you";
         }
     }
     // Item
     else if (entityType === "item") {
         const prop = (sample as Item).prop;
-        if (compendium[prop].weight < 0 && (sample as Item).dur > 0) {
+        if (compendium[prop].weight < 0 && isEntityAlive(sample)) {
             return " firmly fixed in place";
         }
     }

@@ -1,4 +1,10 @@
-import type { EntityType, Item, Monster, Player } from "$lib/crossover/types";
+import type {
+    EntityType,
+    GameEntity,
+    Item,
+    Monster,
+    Player,
+} from "$lib/crossover/types";
 import {
     geohashLocationTypes,
     type Direction,
@@ -43,6 +49,7 @@ export {
     gridCellToGeohash,
     gridSizeAtPrecision,
     inRange,
+    isEntityAlive,
     isEntityInMotion,
     minifiedEntity,
     oddGeohashCharacters,
@@ -724,6 +731,14 @@ function getGeohashesForPath(geohash: string, path: Direction[]): string[] {
         geohashes.push(currentGeohash);
     }
     return geohashes;
+}
+
+function isEntityAlive(entity: GameEntity): boolean {
+    if ("player" in entity || "monster" in entity) {
+        return entity.hp > 0;
+    } else {
+        return entity.dur > 0;
+    }
 }
 
 function entityInRange(

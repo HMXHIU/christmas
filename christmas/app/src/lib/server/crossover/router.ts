@@ -224,6 +224,7 @@ const playerAuthBusyProcedure = playerAuthProcedure.use(
     async ({ ctx, next }) => {
         const [isBusy, now] = entityIsBusy(ctx.player);
         if (isBusy) {
+            // Publish error feed
             await publishFeedEvent(ctx.player.player, {
                 type: "error",
                 message: "You are busy at the moment.",

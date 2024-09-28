@@ -1,4 +1,5 @@
-import { entityInRange } from "$lib/crossover/utils";
+import type { GameEntity, Monster, Player } from "$lib/crossover/types";
+import { entityInRange, isEntityAlive } from "$lib/crossover/utils";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
 import {
@@ -13,6 +14,27 @@ import { equippedWeapons } from "../redis/queries";
 import { fetchEntity } from "../redis/utils";
 
 export { attack };
+
+function canAttackTarget(
+    attacker: Player | Monster,
+    target: GameEntity,
+): [boolean, string] {
+    // Out of range
+    if (!entityInRange(attacker, target, actions.attack.range)[0]) {
+        return [false, `${target.name} is out of range`];
+    }
+
+    // Entity is already destroyed/dead
+    if (!isEntityAlive(target)) {
+        if ("player" in target || "monster" in target) {
+            return [false, `${target.name} is already dead`];
+        } else {
+            return [false, `${target.name} is already destroyed`];
+        }
+    }
+
+    return [true, ""];
+}
 
 async function attack(
     player: PlayerEntity,
@@ -30,14 +52,12 @@ async function attack(
 
     const targetEntity = (await fetchEntity(target)) as GameRedisEntities;
 
-    // Check target is in range
-    if (
-        !entityInRange(player, targetEntity, actions.attack.range)[0] &&
-        "player" in player
-    ) {
+    // Check if can attack
+    const [ok, error] = canAttackTarget(player, targetEntity);
+    if (!ok) {
         publishFeedEvent(player.player, {
             type: "error",
-            message: `${targetEntity.name} is out of range`,
+            message: error,
         });
         return;
     }

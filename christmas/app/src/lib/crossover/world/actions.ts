@@ -1,6 +1,6 @@
 import type { EntityType, Item, Monster, Player } from "$lib/crossover/types";
 import type { GameActionEntities, TokenPositions } from "../ir";
-import { getEntityId } from "../utils";
+import { getEntityId, isEntityAlive } from "../utils";
 import { actions } from "./settings/actions";
 import { compendium } from "./settings/compendium";
 import type { SkillLines } from "./skills";
@@ -100,6 +100,19 @@ function parseBarter(barterString: string): BarterSerialized | undefined {
     }
 }
 
+function filterTargetCreaturesByAction(
+    action: Actions,
+    self: Player | Monster,
+    creatures: (Player | Monster)[],
+) {
+    // Can only attack non destroyed objects
+    if (action === actions.attack.action) {
+        return creatures.filter(isEntityAlive);
+    }
+
+    return creatures;
+}
+
 function filterTargetItemsByAction(
     action: Actions,
     self: Player | Monster,
@@ -140,6 +153,10 @@ function filterTargetItemsByAction(
     else if (action === actions.fulfill.action) {
         return items.filter((item) => item.prop === compendium.tradewrit.prop);
     }
+    // Can only attack non destroyed objects
+    else if (action === actions.attack.action) {
+        return items.filter(isEntityAlive);
+    }
 
     return items;
 }
@@ -177,7 +194,7 @@ function resolveActionEntities({
         actions[action.action].predicate.tokens,
     ) as [TokenType, TokenContext][]) {
         const token = queryTokens[position];
-
+        // Missing required action token
         if (context === "action") {
             if (
                 !optional &&
@@ -187,16 +204,19 @@ function resolveActionEntities({
                 )
             )
                 return [];
-        } else if (context === "offer") {
+        }
+        // Missing valid barter items
+        else if (context === "offer") {
             offer = parseBarter(token); // extract from raw token
             if (!optional && !offer) return [];
         } else if (context === "receive") {
             receive = parseBarter(token);
             if (!optional && !receive) return [];
-        } else if (context === "skill") {
-            // TODO: fuzzy search does this work?? ADD TEST
+        }
+        // Missing valid skill
+        else if (context === "skill") {
+            // TODO: Add test to check if fuzzy search works
             skill = skills.find((s) => tokenPositions[s]);
-            // skill = skills.find((s) => s.toLowerCase() === token);
             if (!optional && !skill) return [];
         } else if (context === "item") {
             for (const [entityId, matchedTokenPositions] of Object.entries(
@@ -216,9 +236,17 @@ function resolveActionEntities({
                 for (const entityType of entityTypes) {
                     const gameEntities =
                         entityType === "monster"
-                            ? monsters
+                            ? filterTargetCreaturesByAction(
+                                  action.action,
+                                  self,
+                                  monsters,
+                              )
                             : entityType === "player"
-                              ? players
+                              ? filterTargetCreaturesByAction(
+                                    action.action,
+                                    self,
+                                    players,
+                                )
                               : filterTargetItemsByAction(
                                     action.action,
                                     self,

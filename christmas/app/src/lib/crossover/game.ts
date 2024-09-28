@@ -112,6 +112,7 @@ async function executeGameCommand(
             range: ability.range,
             target: target as Player | Monster | Item,
         });
+
         // Perform ability
         return await crossoverCmdPerformAbility(
             {
