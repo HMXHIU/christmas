@@ -221,11 +221,17 @@ async function look(
 
     const entities = [
         player,
-        ...monsters.map((e) => minifiedEntity(e, { location: true })),
-        ...players.map((e) =>
-            minifiedEntity(e, { location: true, demographics: true }),
+        ...monsters.map((e) =>
+            minifiedEntity(e, { location: true, stats: true }),
         ),
-        ...items.map((e) => minifiedEntity(e, { location: true })),
+        ...players.map((e) =>
+            minifiedEntity(e, {
+                location: true,
+                demographics: true,
+                stats: true,
+            }),
+        ),
+        ...items.map((e) => minifiedEntity(e, { location: true, stats: true })),
         ...inventoryItems,
     ];
 

@@ -363,7 +363,6 @@ export async function createTestItems({
     owner,
     configOwner,
 }: {
-    geohash?: string;
     owner?: string;
     configOwner?: string;
 }) {
