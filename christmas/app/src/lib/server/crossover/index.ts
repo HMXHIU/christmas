@@ -8,6 +8,7 @@ import { actions } from "$lib/crossover/world/settings/actions";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     GeohashLocationSchema,
+    geohashLocationTypes,
     type LocationType,
 } from "$lib/crossover/world/types";
 import {
@@ -126,7 +127,7 @@ async function loadPlayerEntity(
 
     // Auto correct player's geohash precision (try fix if corrupted, unstuck player)
     if (
-        locationType === "geohash" &&
+        geohashLocationTypes.has(player.locT) &&
         player.loc[0].length !== worldSeed.spatial.unit.precision
     ) {
         player.loc = [

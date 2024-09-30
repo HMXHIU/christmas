@@ -20,6 +20,10 @@ const bestiary: Record<string, Beast> = {
         alignment: "evil",
         asset: {
             path: "bestiary/goblin",
+            variants: {
+                default: "stand/0",
+                dead: "stand/0",
+            },
         },
         trophies: {
             alchemist: ["blood"],

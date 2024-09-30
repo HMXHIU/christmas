@@ -90,6 +90,7 @@ class SimpleEntityContainer extends EntityContainer {
         const texture = await loadAssetTexture(this.asset, {
             variant,
         });
+
         if (!texture) {
             console.error(`Missing texture for ${this.entityId}:${variant}`);
             return;

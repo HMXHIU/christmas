@@ -1,5 +1,6 @@
+import type { ItemEntity } from "$lib/server/crossover/types";
 import { z } from "zod";
-import type { Currency, ItemEntity } from "../types";
+import type { Currency } from "../types";
 
 export {
     BarterSchema,
@@ -176,5 +177,4 @@ const GeohashLocationSchema = z.enum([
     "d8",
     "d9",
     "in", // inside
-    "limbo", // default NPC location when first created
 ]);

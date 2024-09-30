@@ -197,6 +197,15 @@ async function loadAssetTexture(
 ): Promise<Texture | null> {
     seed ??= 0;
 
+    // Asset path is a url to a texture
+    if (asset.path.startsWith("http")) {
+        return await Assets.load(asset.path);
+    }
+
+    // Asset path is a pixijs bundle (spritesheet or image)
+    const [bundleName, alias] = asset.path.split("/").slice(-2);
+    const bundle = await Assets.loadBundle(bundleName);
+
     // Determine variant
     if (variant == null) {
         if (asset.probability != null) {
@@ -215,15 +224,6 @@ async function loadAssetTexture(
         }
     }
     variant ??= "default";
-
-    // Asset is a url to a texture
-    if (asset.path.startsWith("http")) {
-        return await Assets.load(asset.path);
-    }
-
-    // Asset uses a pixijs bundle (spritesheet or image)
-    const [bundleName, alias] = asset.path.split("/").slice(-2);
-    const bundle = await Assets.loadBundle(bundleName);
 
     const frame =
         bundle[alias]?.textures?.[asset.variants?.[variant] || "default"] ||
