@@ -1,4 +1,4 @@
-import { createUser, fetchUser } from "$lib/community";
+import { createMember, fetchUser } from "$lib/community";
 import {
     crossoverAvailableAvatars,
     crossoverPlayerMetadata,
@@ -17,7 +17,7 @@ import { getCookiesFromResponse, getRandomRegion, login } from "../utils";
 const user = Keypair.generate();
 const userWallet = new NodeWallet(user);
 const name: string = "Gandalf";
-const region = getRandomRegion();
+const region = String.fromCharCode(...getRandomRegion());
 const geohash = "gbsuv7";
 let playerMetadata: PlayerMetadata = {
     player: user.publicKey.toBase58(),
@@ -50,7 +50,7 @@ let playerCookies: string;
 beforeAll(async () => {
     await initializeClients();
 
-    // Test Can Login (Community) - Does not need User Account at this point
+    // Test Can Login (SIWS) - Does not need User Account at this point
     let response = await login(user);
     const loginResult = (await response.json()).result.data;
     playerCookies = getCookiesFromResponse(response);
@@ -65,31 +65,26 @@ beforeAll(async () => {
     // Login Crossover (Can't login without user account)
     await expect(
         loginCrossover({ geohash, region }, { Cookie: playerCookies }),
-    ).rejects.toThrow(
-        `User account ${user.publicKey.toBase58()} does not exist`,
-    );
+    ).rejects.toThrow(`User ${user.publicKey.toBase58()} does not exist`);
 
-    // Signup Crossover (Can't signup without user account)
-    playerMetadata.avatar = "http://example.com"; // temp make this to pass the avatar url check
+    // Signup Crossover (Can't signup without avatar)
+    playerMetadata.avatar = "http://example.com";
     await expect(
         signup(playerMetadata, {
             headers: { Cookie: playerCookies },
             wallet: userWallet,
         }),
-    ).rejects.toThrow(
-        `User account ${user.publicKey.toBase58()} does not exist`,
-    );
+    ).rejects.toThrow(`Avatar for ${user.publicKey.toBase58()} does not exist`);
     playerMetadata.avatar = ""; // revert to make it invalid for tests below
 
     // Create User Account
-    let tx = await createUser(
+    let member = await createMember(
         { region },
         {
             headers: { Cookie: playerCookies },
-            wallet: userWallet,
         },
     );
-    expect(tx.result.err).toBe(null);
+    expect(member).toMatchObject({ region });
 });
 
 test("Test `crossoverAvailableAvatars`", async () => {
@@ -124,15 +119,15 @@ test("Test Crossover AuthZ", async () => {
     playerMetadata.avatar = avatars[0];
 
     // Signup Crossover
-    const { result, signature } = await signup(playerMetadata, {
+    playerMetadata = await signup(playerMetadata, {
         headers: { Cookie: playerCookies },
         wallet: userWallet,
     });
-    expect(result.err).toBeNull();
+    expect(playerMetadata).toMatchObject(playerMetadata);
 
     // Check User Account (Community)
     const userAcount = await fetchUser({ Cookie: playerCookies });
-    expect(userAcount).toMatchObject({
+    expect(userAcount.community).toMatchObject({
         region: region,
     });
 
@@ -146,11 +141,10 @@ test("Test Crossover AuthZ", async () => {
     });
 
     // Login Crossover
-    var { status, player } = await loginCrossover(
+    var player = await loginCrossover(
         { region, geohash },
         { Cookie: playerCookies },
     );
-    expect(status).toBe("success");
 
     // Check player initial state
     expect(player).toMatchObject({
@@ -158,7 +152,7 @@ test("Test Crossover AuthZ", async () => {
         name: "Gandalf",
         avatar: playerMetadata.avatar,
         lgn: true,
-        rgn: String.fromCharCode(...region),
+        rgn: region,
         locT: "geohash",
         locI: "@",
         hp: 11,

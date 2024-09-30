@@ -94,7 +94,7 @@ async function getOrCreatePlayer(
                 name: avatarFileName,
             }))
         ) {
-            throw new Error(`Avatar does not exist`);
+            throw new Error(`Avatar for ${publicKey} does not exist`);
         }
 
         // Update player Metadata

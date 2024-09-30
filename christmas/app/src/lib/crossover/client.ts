@@ -149,18 +149,13 @@ async function login(
         geohash,
         retryWithRefresh,
     }: {
-        region: string | number[];
-        geohash: string | number[];
+        region: string;
+        geohash: string;
         retryWithRefresh?: boolean;
     },
     headers: HTTPHeaders = {},
 ): Promise<Player> {
     retryWithRefresh ??= false;
-    region =
-        typeof region === "string" ? region : String.fromCharCode(...region);
-    geohash =
-        typeof geohash === "string" ? geohash : String.fromCharCode(...geohash);
-
     let response;
     if (!retryWithRefresh) {
         response = await trpc({
