@@ -40,6 +40,6 @@
 </script>
 
 <!-- Page Content (account for footer) -->
-<div class="pb-12 pt-4">
+<div class="py-12">
     <slot></slot>
 </div>

@@ -447,7 +447,6 @@ async function refresh(headers: HTTPHeaders = {}) {
     if (status !== "success" || loginToken == null) {
         throw new Error("Failed to refresh token");
     }
-    console.log("Refreshed token");
 
     // Set token in store (fallback if cookies not allowed)
     token.set(loginToken);

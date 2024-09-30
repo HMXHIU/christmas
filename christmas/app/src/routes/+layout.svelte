@@ -110,9 +110,8 @@
         {/if}
     </header>
 
-    <!-- Slot (account for header)-->
     <main class="py-0">
-        <!-- Slot -->
+        <!-- Slot (account for header inside the slot as needed)-->
         <slot></slot>
     </main>
 

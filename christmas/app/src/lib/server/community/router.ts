@@ -383,7 +383,6 @@ const communityRouter = {
             .input(z.object({ store: z.string() }))
             .query(async ({ ctx, input }) => {
                 const { store: storePda } = input;
-
                 return cleanStore(
                     await serverAnchorClient.getStoreByPda(
                         new PublicKey(storePda),
