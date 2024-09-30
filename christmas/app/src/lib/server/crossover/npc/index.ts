@@ -46,6 +46,7 @@ import {
     stringToRandomNumber,
     stringToUint8Array,
 } from "$lib/utils";
+import { UserMetadataSchema } from "$lib/utils/user";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { loadPlayerEntity } from "..";
 import { feePayerKeypair, hashObject } from "../..";
@@ -54,6 +55,7 @@ import type {
     FeedEvent,
 } from "../../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../../objectStorage";
+import { getUser, savePlayerState } from "../../user";
 import { getAvatars } from "../avatar";
 import { isPublicKeyNPCCache } from "../caches";
 import {
@@ -64,9 +66,7 @@ import {
 } from "../player";
 import { playerRepository } from "../redis";
 import { fetchEntity } from "../redis/utils";
-import { UserMetadataSchema } from "../router";
 import { npcs } from "../settings/npc";
-import { getUserMetadata, savePlayerState } from "../utils";
 import {
     npcRespondToGive,
     npcRespondToGreet,
@@ -195,7 +195,7 @@ async function generateNPC(
     });
 
     // Get user metadata
-    let userMetadata = await getUserMetadata(playerId);
+    let userMetadata = await getUser(playerId);
 
     // Check if player metadata (userMetadata.crossover) already exists (should not be since we generate a new key pair)
     if (userMetadata?.crossover != null) {

@@ -13,6 +13,7 @@ import {
 } from "$lib/server/crossover/types";
 import { generatePin, sleep, substituteVariables } from "$lib/utils";
 import { say } from ".";
+import { savePlayerState } from "../../user";
 import {
     publishActionEvent,
     publishAffectedEntitiesToPlayers,
@@ -27,7 +28,6 @@ import {
 import { itemRepository } from "../redis";
 import { getNearbyPlayerIds } from "../redis/queries";
 import { fetchEntity, saveEntity } from "../redis/utils";
-import { savePlayerState } from "../utils";
 
 export { createLearnCTA, executeLearnCTA, learn };
 

@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { createUser } from "$lib/community";
     import Wallet from "$lib/components/common/Wallet.svelte";
     import { login, signup } from "$lib/crossover/client";
     import type { Player } from "$lib/crossover/types";
@@ -12,13 +11,13 @@
     import Button from "../ui/button/button.svelte";
     import CharacterCreator from "./CharacterCreator.svelte";
 
-    let requireSignup = false;
+    let requireCreateCharacter = false;
     export let onLogin: (player: Player) => void;
 
     const askLocation =
         "Location not found. Please enable location services and try again.";
 
-    async function onEnterKeyPress() {
+    async function onEnterWorld() {
         const region = $userDeviceClient?.location?.country?.code;
         const geohash = $userDeviceClient?.location?.geohash;
 
@@ -37,55 +36,31 @@
 
         try {
             // Try login to crossover
-            const { status, player } = await login({
+            const player = await login({
                 region,
                 geohash,
                 retryWithRefresh: true,
             });
             onLogin(player);
-        } catch (error) {
-            // If login failed, player has not signed up
-            requireSignup = true;
+        } catch (error: any) {
+            // Player not created
+            requireCreateCharacter = true;
         }
     }
 
     async function onCreateCharacter(playerMetadata: PlayerMetadata) {
-        // Try signup crossover player
         try {
             await signup(playerMetadata);
-            requireSignup = false;
-        } catch (error) {
-            // Require location services
-            const region = $userDeviceClient?.location?.country?.code;
-            const geohash = $userDeviceClient?.location?.geohash;
-            if (!region || !geohash) {
-                toast.error(askLocation, {
-                    action: {
-                        label: "Enable location services",
-                        onClick: () => {
-                            $userDeviceClient?.initialize();
-                        },
+            requireCreateCharacter = false;
+        } catch (error: any) {
+            toast.error(error.message, {
+                action: {
+                    label: "Enable location services",
+                    onClick: () => {
+                        $userDeviceClient?.initialize();
                     },
-                });
-                throw new Error(askLocation);
-            }
-
-            // Try create community user
-            toast.info("Requesting permssion to create Community User.");
-            await createUser({ region: String.fromCharCode(...region) });
-
-            // Try signup crossover player
-            toast.info("Requesting permssion to creating Crossover Player.");
-            await signup(playerMetadata);
-            requireSignup = false;
-
-            // Login to crossover
-            const { status, player } = await login({
-                region,
-                geohash,
-                retryWithRefresh: true,
+                },
             });
-            onLogin(player);
         }
     }
 
@@ -100,12 +75,12 @@
         <!-- Connect wallet -->
         <h1>Login required</h1>
         <Wallet />
-    {:else if !requireSignup}
+    {:else if !requireCreateCharacter}
         <!-- Sign up player -->
         <h1>
             {`Initiate current world seed [${worldSeed.name}]`}
         </h1>
-        <Button on:click={onEnterKeyPress}>Enter</Button>
+        <Button on:click={onEnterWorld}>Enter</Button>
     {:else}
         <h1>
             {`Create your character`}

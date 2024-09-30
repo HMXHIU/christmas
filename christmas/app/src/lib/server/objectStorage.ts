@@ -27,11 +27,11 @@ const client = new Client({
 });
 
 const BUCKETS = {
-    user: "user",
+    user: "user", // stores crossover/community metadata (name, demographics, appearance, region, publicKey)
+    player: "player", // stores the player entity (hp, lgn, loc, etc ...)
     coupon: "coupon",
     store: "store",
     image: "image",
-    player: "player",
     npc: "npc",
     avatar: "avatar",
     tiled: "tiled",

@@ -1,10 +1,8 @@
 import { PUBLIC_HOST } from "$env/static/public";
-import type { TransactionResult } from "$lib/anchorClient/types";
 import { refresh } from "$lib/community";
 import type { Player } from "$lib/crossover/types";
 import { trpc } from "$lib/trpcClient";
-import { retry, signAndSendTransaction } from "$lib/utils";
-import { Transaction } from "@solana/web3.js";
+import { retry } from "$lib/utils";
 import type { HTTPHeaders } from "@trpc/client";
 import type {
     FeedEvent,
@@ -157,7 +155,7 @@ async function login(
         retryWithRefresh?: boolean;
     },
     headers: HTTPHeaders = {},
-): Promise<{ status: string; player: Player }> {
+): Promise<Player> {
     retryWithRefresh ??= false;
     region =
         typeof region === "string" ? region : String.fromCharCode(...region);
@@ -190,7 +188,7 @@ async function login(
     }
 
     // Update `$player`
-    player.set(response.player); // TODO: Side effects here is hard to understand
+    player.set(response);
 
     return response;
 }
@@ -217,21 +215,13 @@ async function crossoverAuthPlayer(headers: HTTPHeaders = {}): Promise<Player> {
 async function signup(
     playerMetadata: PlayerMetadata,
     options?: { headers?: HTTPHeaders; wallet?: any },
-): Promise<TransactionResult> {
+): Promise<PlayerMetadata> {
     return await trpc({
         headers: {
             "Content-Type": "application/json",
             ...(options?.headers || {}),
         },
-    })
-        .crossover.auth.signup.mutate(playerMetadata)
-        .then(({ transaction }) => {
-            return signAndSendTransaction({
-                tx: Transaction.from(Buffer.from(transaction, "base64")),
-                wallet: options?.wallet,
-                commitment: "confirmed",
-            });
-        });
+    }).crossover.auth.signup.mutate(playerMetadata);
 }
 
 /*

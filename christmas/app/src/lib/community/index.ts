@@ -51,6 +51,7 @@ export {
     fetchUser,
     login,
     logout,
+    MemberMetadataSchema,
     mintCoupon,
     redeemCoupon,
     refresh,
@@ -96,6 +97,10 @@ interface CreateStoreParams {
     address: string;
     image: string;
 }
+
+const MemberMetadataSchema = z.object({
+    region: z.string(),
+});
 
 /*
  * Coupon

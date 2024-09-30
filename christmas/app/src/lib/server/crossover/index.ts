@@ -16,8 +16,8 @@ import {
     type PlayerEntity,
 } from "$lib/server/crossover/types";
 import { z } from "zod";
+import { getPlayerState, getUser } from "../user";
 import { fetchEntity, saveEntity } from "./redis/utils";
-import { getPlayerState, getUserMetadata } from "./utils";
 
 export {
     connectedUsers,
@@ -74,15 +74,15 @@ async function loadPlayerEntity(
     },
 ): Promise<PlayerEntity> {
     // Get user metadata
-    const userMetadata = await getUserMetadata(publicKey);
+    const userMetadata = await getUser(publicKey);
     if (userMetadata == null) {
         throw new Error(`Player ${publicKey} not found`);
     }
     if (userMetadata.crossover == null) {
         throw new Error(`Player ${publicKey} missing crossover metadata`);
     }
-    const { avatar, name, demographic, npc } = userMetadata.crossover;
 
+    const { avatar, name, demographic, npc } = userMetadata.crossover;
     const locationType = options.locationType ?? "geohash";
     const locationInstance = options.locationInstance ?? LOCATION_INSTANCE;
 
@@ -137,7 +137,6 @@ async function loadPlayerEntity(
             ),
         ];
         player.locT = locationType;
-        console.log("Auto corrected player's location", player.loc);
     }
 
     return player;

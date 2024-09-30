@@ -25,25 +25,16 @@ import type {
     PlayerEntity,
     WorldEntity,
 } from "$lib/server/crossover/types";
-import { parseZodErrors } from "$lib/utils";
-import { PublicKey } from "@solana/web3.js";
-import { z } from "zod";
-import { PlayerStateSchema, type PlayerState } from ".";
-import { serverAnchorClient } from "..";
-import { ObjectStorage } from "../objectStorage";
 import { itemRepository, monsterRepository, playerRepository } from "./redis";
 import {
     hasCollidersInGeohash,
     worldsContainingGeohashQuerySet,
 } from "./redis/queries";
-import type { UserMetadataSchema } from "./router";
 
 export {
     canConfigureItem,
     canUseItem,
     entityIsBusy,
-    getPlayerState,
-    getUserMetadata,
     hasItemConfigOwnerPermissions,
     hasItemOwnerPermissions,
     isDirectionTraversable,
@@ -52,8 +43,6 @@ export {
     itemVariableValue,
     parseItemVariables,
     random,
-    savePlayerState,
-    setPlayerState,
 };
 
 function entityIsBusy(entity: Player | Monster): [boolean, number] {
@@ -149,95 +138,6 @@ async function isDirectionTraversable(
         }
     }
     return [true, location];
-}
-
-/**
- * Retrieves the user metadata for a given public key
- *
- * TODO: this should be cached as it calls the blockchain
- *
- * @param publicKey The public key of the user.
- * @returns A promise that resolves to the user metadata or null if not found.
- * @throws Error if the user account does not exist or is missing metadata URI.
- */
-async function getUserMetadata(
-    publicKey: string,
-): Promise<z.infer<typeof UserMetadataSchema> | null> {
-    const user = await serverAnchorClient.getUser(new PublicKey(publicKey));
-
-    if (user == null) {
-        throw new Error(`User account ${publicKey} does not exist`);
-    }
-
-    if (!user?.uri) {
-        throw new Error(`User account ${publicKey} missing metadata uri`);
-    }
-
-    // Load metadata
-    let response = await fetch(user.uri);
-    const userMetadata: z.infer<typeof UserMetadataSchema> =
-        await response.json();
-
-    return userMetadata || null;
-}
-
-/**
- * Retrieves the player state for a given public key.
- *
- * @param publicKey The public key of the player.
- * @returns A promise that resolves to the player state or null if not found.
- */
-async function getPlayerState(publicKey: string): Promise<PlayerState | null> {
-    try {
-        return await ObjectStorage.getJSONObject({
-            owner: publicKey,
-            bucket: "player",
-            name: publicKey,
-        });
-    } catch (error: any) {
-        return null;
-    }
-}
-
-/**
- * Sets the player state for a given public key.
- *
- * @param publicKey The public key of the player.
- * @param state The player state to set.
- * @returns A promise that resolves to a string indicating the success of the operation.
- * @throws Error if there is an error parsing the player state.
- */
-async function setPlayerState(
-    publicKey: string,
-    state: PlayerState,
-): Promise<string> {
-    try {
-        return await ObjectStorage.putJSONObject({
-            owner: publicKey,
-            bucket: "player",
-            name: publicKey,
-            data: PlayerStateSchema.parse(state),
-        });
-    } catch (error: any) {
-        if (error instanceof z.ZodError) {
-            throw new Error(JSON.stringify(parseZodErrors(error)));
-        } else {
-            throw error;
-        }
-    }
-}
-
-/**
- * Saves the player state (into s3) for a given public key.
- *
- * @param publicKey The public key of the player.
- * @returns A promise that resolves to a string indicating the success of the operation.
- */
-async function savePlayerState(publicKey: string): Promise<string> {
-    return await setPlayerState(
-        publicKey,
-        (await playerRepository.fetch(publicKey)) as PlayerState,
-    );
 }
 
 function hasItemOwnerPermissions(

@@ -25,17 +25,10 @@ import type {
     PlayerEntity,
     WorldEntity,
 } from "$lib/server/crossover/types";
-import { PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
 import { performance } from "perf_hooks";
 import { z } from "zod";
 import { loadPlayerEntity } from ".";
-import {
-    FEE_PAYER_PUBKEY,
-    createSerializedTransaction,
-    hashObject,
-    serverAnchorClient,
-} from "..";
 import { ObjectStorage } from "../objectStorage";
 import {
     authProcedure,
@@ -80,20 +73,21 @@ import {
 
 import type { Quest } from "$lib/crossover/types";
 import { AbilitiesEnum } from "$lib/crossover/world/abilities";
+import {
+    getOrCreatePlayer,
+    getPlayerState,
+    getUser,
+    savePlayerState,
+} from "../user";
 import { attack } from "./actions/attack";
 import {
     dungeonEntrancesQuerySet,
     loggedInPlayersQuerySet,
     worldsInGeohashQuerySet,
 } from "./redis/queries";
-import {
-    entityIsBusy,
-    getPlayerState,
-    getUserMetadata,
-    savePlayerState,
-} from "./utils";
+import { entityIsBusy } from "./utils";
 
-export { SaySchema, UserMetadataSchema, crossoverRouter };
+export { crossoverRouter, SaySchema };
 
 // Initialize redis clients, repositiories, indexes
 initializeClients();
@@ -197,11 +191,6 @@ const SpawnWorldSchema = z.object({
 const EquipItemSchema = z.object({
     item: z.string(),
     slot: z.enum(EquipmentSlotsEnum),
-});
-
-const UserMetadataSchema = z.object({
-    publicKey: z.string(),
-    crossover: PlayerMetadataSchema.optional(),
 });
 
 const playerAuthProcedure = authProcedure.use(async ({ ctx, next }) => {
@@ -402,7 +391,7 @@ const crossoverRouter = {
     player: t.router({
         // player.metadata
         metadata: authProcedure.query(async ({ ctx }) => {
-            return await getUserMetadata(ctx.user.publicKey);
+            return await getUser(ctx.user.publicKey);
         }),
         // player.inventory
         inventory: playerAuthProcedure.query(async ({ ctx }) => {
@@ -677,72 +666,10 @@ const crossoverRouter = {
         signup: authProcedure
             .input(PlayerMetadataSchema)
             .mutation(async ({ ctx, input }) => {
-                // Get user account
-                const user = await serverAnchorClient.getUser(
-                    new PublicKey(ctx.user.publicKey),
+                const playerMetadata = await getOrCreatePlayer(
+                    ctx.user.publicKey,
+                    input,
                 );
-                if (user == null) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
-                        message: `User account ${ctx.user.publicKey} does not exist`,
-                    });
-                }
-
-                // Get user metadata
-                let userMetadata = await getUserMetadata(ctx.user.publicKey);
-
-                // Check if player metadata (userMetadata.crossover) already exists
-                if (userMetadata?.crossover != null) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
-                        message: `Player ${ctx.user.publicKey} already exists (storage)`,
-                    });
-                }
-
-                // Parse & validate player metadata
-                const playerMetadata = await PlayerMetadataSchema.parse(input);
-
-                // Check that avatar exists
-                const { demographic, appearance, avatar } = playerMetadata;
-                const avatarFileName = avatar.split("/").slice(-1)[0];
-                if (
-                    !(await ObjectStorage.objectExists({
-                        owner: null,
-                        bucket: "avatar",
-                        name: avatarFileName,
-                    }))
-                ) {
-                    throw new TRPCError({
-                        code: "BAD_REQUEST",
-                        message: `Avatar does not exist`,
-                    });
-                }
-
-                // Update user metadata with player metadata
-                userMetadata = await UserMetadataSchema.parse({
-                    ...userMetadata,
-                    crossover: playerMetadata,
-                });
-
-                // Store new user metadata and get url
-                const userMetadataUrl = await ObjectStorage.putJSONObject({
-                    bucket: "user",
-                    owner: null,
-                    data: userMetadata,
-                    name: hashObject(["user", ctx.user.publicKey]),
-                });
-
-                // Update account with metadata uri
-                const updateUserIx = await serverAnchorClient.updateUserIx({
-                    region: user.region,
-                    uri: userMetadataUrl,
-                    payer: FEE_PAYER_PUBKEY,
-                    wallet: new PublicKey(ctx.user.publicKey),
-                });
-
-                // Create serialized transaction for user to sign
-                const base64Transaction =
-                    await createSerializedTransaction(updateUserIx);
 
                 // Set player cookie (to know if user has signed up for crossover)
                 ctx.cookies.set("player", ctx.user.publicKey, {
@@ -753,9 +680,7 @@ const crossoverRouter = {
                     maxAge: parseInt(PUBLIC_REFRESH_JWT_EXPIRES_IN), // in seconds
                 });
 
-                return {
-                    transaction: base64Transaction,
-                };
+                return playerMetadata;
             }),
 
         // auth.login
@@ -764,7 +689,7 @@ const crossoverRouter = {
             .query(async ({ ctx, input }) => {
                 const { geohash, region } = input;
 
-                // Get or load player entity
+                // Load player entity
                 let player = await loadPlayerEntity(ctx.user.publicKey, {
                     geohash,
                     region,
@@ -787,7 +712,7 @@ const crossoverRouter = {
                     maxAge: parseInt(PUBLIC_REFRESH_JWT_EXPIRES_IN), // in seconds
                 });
 
-                return { status: "success", player: player as Player };
+                return player as Player;
             }),
 
         // auth.logout

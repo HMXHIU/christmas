@@ -12,6 +12,7 @@ import {
 } from "$lib/server/crossover/types";
 import { generatePin } from "$lib/utils";
 import { say } from ".";
+import { savePlayerState } from "../../user";
 import { spawnItemInInventory } from "../dungeonMaster";
 import {
     publishActionEvent,
@@ -31,7 +32,6 @@ import {
     tradeWritsQuerySet,
 } from "../redis/queries";
 import { fetchEntity, saveEntity } from "../redis/utils";
-import { savePlayerState } from "../utils";
 
 export {
     browse,

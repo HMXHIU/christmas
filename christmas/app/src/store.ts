@@ -8,8 +8,8 @@ import type {
     StoreMetadataSchema,
 } from "$lib/server/community/router";
 import type { CTA } from "$lib/server/crossover/player";
-import type { UserMetadataSchema } from "$lib/server/crossover/router";
 import { UserDeviceClient } from "$lib/userDeviceClient";
+import type { UserMetadataSchema } from "$lib/utils/user";
 import { writable } from "svelte/store";
 import { z } from "zod";
 import type {
