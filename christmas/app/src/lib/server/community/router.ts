@@ -3,6 +3,7 @@ import {
     PUBLIC_JWT_EXPIRES_IN,
     PUBLIC_REFRESH_JWT_EXPIRES_IN,
 } from "$env/static/public";
+import { MemberMetadataSchema } from "$lib/community";
 import {
     cleanCouponBalance,
     cleanCouponSupplyBalance,
@@ -24,15 +25,14 @@ import {
     verifyJWT,
     verifySIWS,
 } from "..";
-import { UserMetadataSchema } from "../crossover/router";
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, publicProcedure, t } from "../trpc";
+import { getOrCreateMember, getUser } from "../user";
 
 export {
     CouponMetadataSchema,
     CreateCouponSchema,
     CreateStoreSchema,
-    CreateUserSchema,
     LoginSchema,
     StoreMetadataSchema,
     communityRouter,
@@ -42,9 +42,6 @@ export {
 const LoginSchema = z.object({
     solanaSignInInput: z.any(),
     solanaSignInOutput: z.any(),
-});
-const CreateUserSchema = z.object({
-    region: z.array(z.number()),
 });
 const CreateStoreSchema = z.object({
     name: z.string(),
@@ -394,56 +391,25 @@ const communityRouter = {
                 );
             }),
     }),
-
-    // User
     user: t.router({
         // user.create
         create: authProcedure
-            .input(CreateUserSchema)
+            .input(MemberMetadataSchema)
             .mutation(async ({ ctx, input }) => {
-                const user = ctx.user;
-                const { region } = input;
-
                 // Check valid region
                 try {
-                    COUNTRY_DETAILS[String.fromCharCode(...region)];
+                    COUNTRY_DETAILS[input.region];
                 } catch (err) {
                     throw new TRPCError({
                         code: "BAD_REQUEST",
-                        message: `Invalid region: ${region}`,
+                        message: `Invalid input.region: ${input.region}`,
                     });
                 }
-
-                // Validate & upload user metadata
-                const userMetadataUrl = await ObjectStorage.putJSONObject(
-                    {
-                        owner: null,
-                        bucket: "user",
-                        name: hashObject(["user", user.publicKey]),
-                        data: UserMetadataSchema.parse({
-                            publicKey: user.publicKey,
-                        }),
-                    },
-                    { "Content-Type": "application/json" },
-                );
-
-                const ix = await serverAnchorClient.createUserIx({
-                    wallet: new PublicKey(user.publicKey),
-                    payer: FEE_PAYER_PUBKEY,
-                    region: region,
-                    uri: userMetadataUrl,
-                });
-
-                const base64Transaction = await createSerializedTransaction(ix);
-                return {
-                    transaction: base64Transaction,
-                };
+                return await getOrCreateMember(ctx.user.publicKey, input);
             }),
         // user.user
         user: authProcedure.query(async ({ ctx }) => {
-            return await serverAnchorClient.getUser(
-                new PublicKey(ctx.user.publicKey),
-            );
+            return await getUser(ctx.user.publicKey);
         }),
     }),
 

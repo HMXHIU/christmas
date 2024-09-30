@@ -4,7 +4,7 @@ import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     type Barter,
     type BarterSerialized,
-    type GeohashLocationType,
+    type GeohashLocation,
 } from "$lib/crossover/world/types";
 import {
     type ItemEntity,
@@ -363,7 +363,7 @@ async function trade(
     // Get nearby players (near the buyer)
     const nearbyPlayerIds = await getNearbyPlayerIds(
         buyer.loc[0],
-        buyer.locT as GeohashLocationType,
+        buyer.locT as GeohashLocation,
         buyer.locI,
     );
 

@@ -8,7 +8,7 @@ import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     geohashLocationTypes,
-    type GeohashLocationType,
+    type GeohashLocation,
 } from "$lib/crossover/world/types";
 import { seededRandom, stringToRandomNumber } from "$lib/utils";
 import { Assets, Container, Graphics } from "pixi.js";
@@ -58,7 +58,7 @@ async function drawWorlds(
                 world: world,
                 position: await calculatePosition(
                     origin,
-                    world.locT as GeohashLocationType,
+                    world.locT as GeohashLocation,
                     LOCATION_INSTANCE, // worlds are the same in all instances
                 ),
                 town,
@@ -202,13 +202,13 @@ async function debugWorld(stage: Container) {
             if (
                 !(await isGeohashTraversableClient(
                     loc,
-                    item.locT as GeohashLocationType,
+                    item.locT as GeohashLocation,
                     item.locI,
                 ))
             ) {
                 const itemPosition = await calculatePosition(
                     loc,
-                    item.locT as GeohashLocationType,
+                    item.locT as GeohashLocation,
                     locationInstance,
                 );
                 colliders.push(
@@ -238,7 +238,7 @@ async function debugWorld(stage: Container) {
             );
             const originPosition = await calculatePosition(
                 origin,
-                world.locT as GeohashLocationType,
+                world.locT as GeohashLocation,
                 locationInstance,
             );
             colliders.push(
@@ -259,13 +259,13 @@ async function debugWorld(stage: Container) {
                     if (
                         !(await isGeohashTraversableClient(
                             loc,
-                            world.locT as GeohashLocationType,
+                            world.locT as GeohashLocation,
                             "", // World instances are the same across all instances
                         ))
                     ) {
                         const pos = await calculatePosition(
                             loc,
-                            world.locT as GeohashLocationType,
+                            world.locT as GeohashLocation,
                             locationInstance,
                         );
                         colliders.push(

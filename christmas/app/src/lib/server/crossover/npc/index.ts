@@ -1,9 +1,4 @@
-import {
-    PUBLIC_FEE_PAYER_PUBKEY,
-    PUBLIC_RPC_ENDPOINT,
-} from "$env/static/public";
-import { AnchorClient } from "$lib/anchorClient";
-import { PROGRAM_ID } from "$lib/anchorClient/defs";
+import { PUBLIC_FEE_PAYER_PUBKEY } from "$env/static/public";
 import {
     AgesEnum,
     BodyTypesEnum,
@@ -40,22 +35,15 @@ import {
 } from "$lib/crossover/world/player";
 import type { LocationType } from "$lib/crossover/world/types";
 import type { PlayerEntity } from "$lib/server/crossover/types";
-import {
-    generatePin,
-    sampleFrom,
-    stringToRandomNumber,
-    stringToUint8Array,
-} from "$lib/utils";
-import { UserMetadataSchema } from "$lib/utils/user";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { generatePin, sampleFrom, stringToRandomNumber } from "$lib/utils";
+import { Keypair } from "@solana/web3.js";
 import { loadPlayerEntity } from "..";
-import { feePayerKeypair, hashObject } from "../..";
 import type {
     CTAEvent,
     FeedEvent,
 } from "../../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../../objectStorage";
-import { getUser, savePlayerState } from "../../user";
+import { getOrCreatePlayer, savePlayerState } from "../../user";
 import { getAvatars } from "../avatar";
 import { isPublicKeyNPCCache } from "../caches";
 import {
@@ -64,8 +52,7 @@ import {
     type P2PLearnTransaction,
     type P2PTradeTransaction,
 } from "../player";
-import { playerRepository } from "../redis";
-import { fetchEntity } from "../redis/utils";
+import { fetchEntity, saveEntity } from "../redis/utils";
 import { npcs } from "../settings/npc";
 import {
     npcRespondToGive,
@@ -147,13 +134,6 @@ async function generateNPC(
     const locationType = options.locationType ?? "limbo";
     const geohash = options.geohash ?? playerId;
 
-    // Get fee payer anchor client
-    const anchorClient = new AnchorClient({
-        programId: new PublicKey(PROGRAM_ID),
-        keypair: feePayerKeypair,
-        cluster: PUBLIC_RPC_ENDPOINT,
-    });
-
     // Get instance
     const numInstances = await ObjectStorage.countObjects({
         owner: PUBLIC_FEE_PAYER_PUBKEY,
@@ -163,7 +143,7 @@ async function generateNPC(
     const npcInstanceId = `${npc}_${numInstances}${generatePin(4)}`; // prevent race condition by generating additional pin
 
     // Generate and validate NPC player metadata
-    const playerMetadata = await PlayerMetadataSchema.parse(
+    let playerMetadata = await PlayerMetadataSchema.parse(
         await generateNPCMetadata({
             player: playerId,
             demographic: options.demographic,
@@ -175,58 +155,12 @@ async function generateNPC(
     );
     playerMetadata.npc = npcInstanceId; // store the npc instance id on MINIO
 
-    // Create user account
-    let userMetadataUrl = await ObjectStorage.putJSONObject(
-        {
-            owner: null,
-            bucket: "user",
-            name: hashObject(["user", playerId]),
-            data: UserMetadataSchema.parse({
-                publicKey: playerId,
-            }),
-        },
-        { "Content-Type": "application/json" },
-    );
-    await anchorClient.createUser({
-        region: Array.from(stringToUint8Array(region)),
-        uri: userMetadataUrl,
-        wallet: keypair.publicKey,
-        signers: [keypair],
-    });
-
-    // Get user metadata
-    let userMetadata = await getUser(playerId);
-
-    // Check if player metadata (userMetadata.crossover) already exists (should not be since we generate a new key pair)
-    if (userMetadata?.crossover != null) {
-        throw new Error(`Player ${playerId} already exists (storage)`);
-    }
-
-    // Update user metadata with player metadata
-    userMetadata = await UserMetadataSchema.parse({
-        ...userMetadata,
-        crossover: playerMetadata,
-    });
-
-    // Store new user metadata and get url
-    userMetadataUrl = await ObjectStorage.putJSONObject({
-        bucket: "user",
-        owner: null,
-        data: userMetadata,
-        name: hashObject(["user", playerId]),
-    });
-
-    // Update account with metadata uri
-    await anchorClient.updateUser({
-        region: Array.from(stringToUint8Array(region)),
-        uri: userMetadataUrl,
-        wallet: keypair.publicKey,
-        signers: [keypair],
-    });
+    // Create player
+    playerMetadata = await getOrCreatePlayer(playerId, playerMetadata);
 
     // Store the secret keys in MINIO
     await ObjectStorage.putJSONObject({
-        owner: PUBLIC_FEE_PAYER_PUBKEY,
+        owner: PUBLIC_FEE_PAYER_PUBKEY, // owned by the program (who can access all the NPCs private keys if needed)
         bucket: "npc",
         name: `${npc}/${playerId}`,
         data: {
@@ -247,7 +181,7 @@ async function generateNPC(
     });
 
     // Save player state & entity
-    player = (await playerRepository.save(playerId, player)) as PlayerEntity;
+    player = await saveEntity(player);
     await savePlayerState(playerId); // must save after player entity
 
     return player;

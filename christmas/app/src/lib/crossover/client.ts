@@ -21,7 +21,7 @@ import {
     type BarterSerialized,
     type Direction,
     type EquipmentSlot,
-    type GeohashLocationType,
+    type GeohashLocation,
 } from "./world/types";
 
 export {
@@ -98,7 +98,6 @@ async function stream(headers: any = {}): Promise<[EventTarget, () => void]> {
     });
 
     async function close() {
-        console.log("User closed stream");
         abortController.abort();
     }
 
@@ -456,7 +455,7 @@ function crossoverPlayerQuest(writ: string, headers: HTTPHeaders = {}) {
 
 function crossoverWorldWorlds(
     geohash: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     headers: HTTPHeaders = {},
 ) {
     return trpc({ headers }).crossover.world.worlds.query({

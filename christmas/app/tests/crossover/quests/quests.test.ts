@@ -7,7 +7,7 @@ import type { Reward } from "$lib/crossover/types";
 import { minifiedEntity } from "$lib/crossover/utils";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
-import type { GeohashLocationType } from "$lib/crossover/world/types";
+import type { GeohashLocation } from "$lib/crossover/world/types";
 import { consumeResources } from "$lib/server/crossover";
 import { spawnMonster } from "$lib/server/crossover/dungeonMaster";
 import { awardKillCurrency } from "$lib/server/crossover/entity";
@@ -276,7 +276,7 @@ test("Test Kill And Deliver", async () => {
     // Spawn the quest beast
     const monster = await spawnMonster({
         geohash: playerOne.loc[0],
-        locationType: playerOne.locT as GeohashLocationType,
+        locationType: playerOne.locT as GeohashLocation,
         locationInstance: playerOne.locI,
         beast,
     });

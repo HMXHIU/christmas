@@ -1,3 +1,4 @@
+import { MemberMetadataSchema, type MemberMetadata } from "$lib/community";
 import {
     PlayerMetadataSchema,
     type PlayerMetadata,
@@ -10,6 +11,7 @@ import { playerRepository } from "./crossover/redis";
 import { ObjectStorage } from "./objectStorage";
 
 export {
+    getOrCreateMember,
     getOrCreatePlayer,
     getOrCreateUser,
     getPlayerState,
@@ -104,6 +106,30 @@ async function getOrCreatePlayer(
             data: userMetadata,
         });
         return playerMetadata;
+    }
+}
+
+async function getOrCreateMember(
+    publicKey: string,
+    memberMetadata: MemberMetadata,
+): Promise<MemberMetadata> {
+    const userMetadata = await getOrCreateUser(publicKey);
+
+    if (userMetadata.community) {
+        return MemberMetadataSchema.parse(userMetadata.community);
+    } else {
+        // Parse & validate member metadata
+        memberMetadata = MemberMetadataSchema.parse(memberMetadata);
+
+        // Update member Metadata
+        userMetadata.community = memberMetadata;
+        await ObjectStorage.putJSONObject({
+            bucket: "user",
+            owner: publicKey,
+            name: publicKey,
+            data: userMetadata,
+        });
+        return memberMetadata;
     }
 }
 

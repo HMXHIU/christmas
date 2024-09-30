@@ -4,7 +4,6 @@ import {
     type Coupon,
     type Store,
     type TransactionResult,
-    type User,
 } from "../anchorClient/types";
 
 import { logout as logoutCrossoover } from "$lib/crossover/client";
@@ -14,6 +13,7 @@ import type {
 } from "$lib/server/community/router";
 import { trpc } from "$lib/trpcClient";
 import { signAndSendTransaction } from "$lib/utils";
+import type { UserMetadata } from "$lib/utils/user";
 import type { HTTPHeaders } from "@trpc/client";
 import { get } from "svelte/store";
 import { z } from "zod";
@@ -30,7 +30,6 @@ import {
 } from "../../store";
 import { stringToUint8Array } from "../utils";
 import {
-    cleanUser,
     deserializeCouponBalance,
     deserializeCouponSupplyBalance,
     deserializeStoreAccount,
@@ -40,8 +39,8 @@ import {
 export {
     claimCoupon,
     createCoupon,
+    createMember,
     createStore,
-    createUser,
     fetchClaimedCoupons,
     fetchCouponMetadata,
     fetchMarketCoupons,
@@ -59,6 +58,7 @@ export {
     type ClaimCouponParams,
     type CreateCouponParams,
     type CreateStoreParams,
+    type MemberMetadata,
     type MintCouponParams,
     type RedeemCouponParams,
 };
@@ -101,6 +101,8 @@ interface CreateStoreParams {
 const MemberMetadataSchema = z.object({
     region: z.string(),
 });
+
+type MemberMetadata = z.infer<typeof MemberMetadataSchema>;
 
 /*
  * Coupon
@@ -376,37 +378,17 @@ async function createStore(
  * User
  */
 
-async function fetchUser(headers: HTTPHeaders = {}): Promise<User | null> {
-    return await trpc({ headers })
-        .community.user.user.query()
-        .then((user) => {
-            if (user == null) {
-                return null;
-            }
-            return cleanUser(user);
-        });
+async function fetchUser(headers: HTTPHeaders = {}): Promise<UserMetadata> {
+    return await trpc({ headers }).community.user.user.query();
 }
 
-async function createUser(
-    { region }: { region: number[] | string },
-    options?: { headers?: HTTPHeaders; wallet?: any },
-): Promise<TransactionResult> {
-    region =
-        typeof region === "string"
-            ? Array.from(stringToUint8Array(region))
-            : region;
-
-    return await trpc({ headers: options?.headers || {} })
-        .community.user.create.mutate({
-            region,
-        })
-        .then(({ transaction }) => {
-            return signAndSendTransaction({
-                tx: Transaction.from(Buffer.from(transaction, "base64")),
-                wallet: options?.wallet,
-                commitment: "confirmed",
-            });
-        });
+async function createMember(
+    member: MemberMetadata,
+    options?: { headers?: HTTPHeaders },
+): Promise<MemberMetadata> {
+    return await trpc({
+        headers: options?.headers || {},
+    }).community.user.create.mutate(member);
 }
 
 /*

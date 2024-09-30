@@ -1,11 +1,8 @@
-import type {
-    DialogueEntity,
-    Dialogues,
-    GameEntity,
-} from "$lib/crossover/types";
+import type { Dialogues, GameEntity } from "$lib/crossover/types";
 import { isPublicKeyNPCCache } from "../caches";
 import { dialogueRepository } from "../redis";
 import { fetchEntity } from "../redis/utils";
+import type { DialogueEntity } from "../types";
 
 export { isEntityHuman, isEntityNPC, isPublicKeyNPC, searchDialogues };
 

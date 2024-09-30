@@ -24,7 +24,7 @@ import {
 } from "$lib/crossover/world/settings/world";
 import {
     geohashLocationTypes,
-    type GeohashLocationType,
+    type GeohashLocation,
 } from "$lib/crossover/world/types";
 import { poisInWorld, type WorldPOIs } from "$lib/crossover/world/world";
 import type {
@@ -88,7 +88,7 @@ async function spawnMonsters(players: PlayerEntity[]) {
             // Get number of monsters in geohash
             const numMonsters = await monstersInGeohashQuerySet(
                 [geohash],
-                locationType as GeohashLocationType,
+                locationType as GeohashLocation,
                 locationInstance,
             ).count();
 
@@ -115,7 +115,7 @@ async function spawnMonsters(players: PlayerEntity[]) {
                 try {
                     const monster = await spawnMonster({
                         geohash: childGeohash,
-                        locationType: locationType as GeohashLocationType,
+                        locationType: locationType as GeohashLocation,
                         beast,
                         locationInstance,
                     });
@@ -142,12 +142,12 @@ async function spawnMonster({
     beast,
 }: {
     geohash: string;
-    locationType: GeohashLocationType;
+    locationType: GeohashLocation;
     locationInstance: string;
     beast: string;
 }): Promise<MonsterEntity> {
     if (!geohashLocationTypes.has(locationType)) {
-        throw new Error("Can only spawn monster on GeohashLocationType");
+        throw new Error("Can only spawn monster on GeohashLocation");
     }
 
     // Calculate location
@@ -223,7 +223,7 @@ async function spawnWorld({
 }: {
     world?: string; // use this as the worldId if specified
     geohash: string;
-    locationType: GeohashLocationType;
+    locationType: GeohashLocation;
     assetUrl: string;
     tileHeight: number;
     tileWidth: number;
@@ -239,7 +239,7 @@ async function spawnWorld({
     }
 
     if (!geohashLocationTypes.has(locationType)) {
-        throw new Error("Can only spawn world on GeohashLocationType");
+        throw new Error("Can only spawn world on GeohashLocation");
     }
 
     // Auto correct geohash to unit precision
@@ -429,7 +429,7 @@ async function spawnItemAtGeohash({
     configOwner,
 }: {
     geohash: string;
-    locationType: GeohashLocationType;
+    locationType: GeohashLocation;
     locationInstance: string;
     prop: string;
     owner?: string;
@@ -441,7 +441,7 @@ async function spawnItemAtGeohash({
     configOwner ??= "";
 
     if (!geohashLocationTypes.has(locationType)) {
-        throw new Error("Can only spawn item on GeohashLocationType");
+        throw new Error("Can only spawn item on GeohashLocation");
     }
 
     // Get prop
@@ -505,7 +505,7 @@ async function initializeGame() {
     const locationInstance = LOCATION_INSTANCE; // spawn in actual game instance
 
     // Spawn all blueprint items
-    const locationType: GeohashLocationType = "geohash";
+    const locationType: GeohashLocation = "geohash";
     for (const [territory, { land }] of Object.entries(topologicalAnalysis)) {
         if (land > 0.2) {
             console.info(`spawning items for blueprints at ${territory}`);

@@ -9,7 +9,7 @@ import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     geohashLocationTypes,
     type EquipmentSlot,
-    type GeohashLocationType,
+    type GeohashLocation,
 } from "$lib/crossover/world/types";
 import type { WorldPOIs } from "$lib/crossover/world/world";
 import {
@@ -106,7 +106,7 @@ async function useItem({
     const propAbility = propUtility.ability;
     const nearbyPlayerIds = await getNearbyPlayerIds(
         self.loc[0],
-        self.locT as GeohashLocationType,
+        self.locT as GeohashLocation,
         self.locI,
     );
 
@@ -232,7 +232,7 @@ async function equipItem(
     // Inform all players nearby of equipment change
     const nearbyPlayerIds = await getNearbyPlayerIds(
         player.loc[0],
-        player.locT as GeohashLocationType,
+        player.locT as GeohashLocation,
         player.locI,
     );
     await publishAffectedEntitiesToPlayers(
@@ -283,7 +283,7 @@ async function unequipItem(player: PlayerEntity, item: string, now?: number) {
     // Inform all players nearby of equipment change
     const nearbyPlayerIds = await getNearbyPlayerIds(
         player.loc[0],
-        player.locT as GeohashLocationType,
+        player.locT as GeohashLocation,
         player.locI,
     );
     await publishAffectedEntitiesToPlayers(
@@ -341,7 +341,7 @@ async function takeItem(player: PlayerEntity, item: string, now?: number) {
     // Inform all players nearby of item creation
     const nearbyPlayerIds = await getNearbyPlayerIds(
         player.loc[0],
-        player.locT as GeohashLocationType,
+        player.locT as GeohashLocation,
         player.locI,
     );
     await publishAffectedEntitiesToPlayers(
@@ -396,7 +396,7 @@ async function dropItem(player: PlayerEntity, item: string, now?: number) {
     // Inform all players nearby of item creation
     const nearbyPlayerIds = await getNearbyPlayerIds(
         player.loc[0],
-        player.locT as GeohashLocationType,
+        player.locT as GeohashLocation,
         player.locI,
     );
     await publishAffectedEntitiesToPlayers(
@@ -550,7 +550,7 @@ async function enterItem(
     let worldEntity = await spawnWorld({
         world, // specify the worldId manually
         geohash,
-        locationType: locationType as GeohashLocationType,
+        locationType: locationType as GeohashLocation,
         assetUrl: url,
         tileHeight: TILE_HEIGHT, // do not change this
         tileWidth: TILE_WIDTH,
@@ -573,13 +573,13 @@ async function enterItem(
 
     const nearbyPlayerIds = await getNearbyPlayerIds(
         player.loc[0],
-        player.locT as GeohashLocationType,
+        player.locT as GeohashLocation,
         player.locI,
     );
 
     // Change player location to world
     player.loc = playerLocation;
-    player.locT = locationType as GeohashLocationType;
+    player.locT = locationType as GeohashLocation;
     player.locI = locationInstance;
 
     // Save player

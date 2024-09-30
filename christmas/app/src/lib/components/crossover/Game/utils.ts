@@ -11,7 +11,7 @@ import { avatarMorphologies } from "$lib/crossover/world/bestiary";
 import { elevationAtGeohash } from "$lib/crossover/world/biomes";
 import type {
     AssetMetadata,
-    GeohashLocationType,
+    GeohashLocation,
 } from "$lib/crossover/world/types";
 import type { Tileset } from "$lib/crossover/world/world";
 import { seededRandom } from "$lib/utils";
@@ -83,7 +83,7 @@ interface Position {
     isoX: number;
     isoY: number;
     geohash: string;
-    locationType: GeohashLocationType;
+    locationType: GeohashLocation;
     locationInstance: string;
     precision: number;
     elevation: number;
@@ -91,7 +91,7 @@ interface Position {
 
 async function calculatePosition(
     geohash: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     locationInstance: string,
     options?: {
         cellWidth?: number;

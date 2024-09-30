@@ -1,23 +1,23 @@
 import type { CacheInterface } from "$lib/caches";
 import type { World } from "$lib/crossover/types";
 import { biomeAtGeohash, biomes } from "./biomes";
-import type { GeohashLocationType } from "./types";
+import type { GeohashLocation } from "./types";
 import { traversableSpeedInWorld } from "./world";
 
 export { isGeohashTraversable };
 
 async function isGeohashTraversable(
     geohash: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     locationInstance: string,
     hasCollidersInGeohash: (
         geohash: string,
-        locationType: GeohashLocationType,
+        locationType: GeohashLocation,
         locationInstance: string,
     ) => Promise<boolean>,
     getWorldForGeohash: (
         geohash: string,
-        locationType: GeohashLocationType,
+        locationType: GeohashLocation,
     ) => Promise<World | undefined>,
     options?: {
         topologyResultCache?: CacheInterface;

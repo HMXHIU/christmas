@@ -3,7 +3,7 @@ import { sampleFrom, seededRandom, stringToRandomNumber } from "$lib/utils";
 import { childrenGeohashesAtPrecision } from "../utils";
 import { elevationAtGeohash } from "./biomes";
 import { topologicalAnalysis, worldSeed } from "./settings/world";
-import type { GeohashLocationType } from "./types";
+import type { GeohashLocation } from "./types";
 
 export {
     blueprintsAtTerritory,
@@ -24,7 +24,7 @@ interface BluePrint {
             max: number;
         };
     };
-    locationType: GeohashLocationType;
+    locationType: GeohashLocation;
     plotPrecision: number; // eg. town (the actual size of the blueprint)
     clusters: {
         [cluster: string]: {
@@ -50,13 +50,13 @@ type BlueprintPropLocations = Record<string, BlueprintProp>;
 
 interface TerritoryBlueprint {
     territory: string;
-    locationType: GeohashLocationType;
+    locationType: GeohashLocation;
     props: BlueprintPropLocations;
 }
 
 async function blueprintsAtTerritory(
     territory: string, // 2 precision geohash
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     blueprints: Record<Templates, BluePrint>,
     blueprintOrder: Templates[], // for reproducibility
     options?: {
@@ -187,7 +187,7 @@ async function blueprintsAtTerritory(
 
 async function generateProps(
     location: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     blueprint: BluePrint,
     seed: number,
     options?: {

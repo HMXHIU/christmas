@@ -8,12 +8,9 @@ import {
     BarterSchema,
     EquipmentSlotsEnum,
     GeohashLocationSchema,
-    type GeohashLocationType,
+    type GeohashLocation,
 } from "$lib/crossover/world/types";
-import {
-    initializeClients,
-    playerRepository,
-} from "$lib/server/crossover/redis";
+import { initializeClients } from "$lib/server/crossover/redis";
 import {
     fetchEntity,
     fetchQuest,
@@ -357,7 +354,7 @@ const crossoverRouter = {
 
             const dungeonEntrances: Item[] = (await dungeonEntrancesQuerySet(
                 territory,
-                player.locT as GeohashLocationType,
+                player.locT as GeohashLocation,
             ).all()) as ItemEntity[];
 
             return {
@@ -697,10 +694,7 @@ const crossoverRouter = {
                 });
 
                 // Save player state & entity
-                player = (await playerRepository.save(
-                    ctx.user.publicKey,
-                    player,
-                )) as PlayerEntity;
+                player = await saveEntity(player);
                 await savePlayerState(ctx.user.publicKey); // must save after player entity
 
                 // Set player cookie (to know if user has signed up for crossover)
@@ -718,13 +712,13 @@ const crossoverRouter = {
         // auth.logout
         logout: authProcedure.query(async ({ ctx }) => {
             // Get player
-            const player = (await tryFetchEntity(
+            let player = (await tryFetchEntity(
                 ctx.user.publicKey,
             )) as PlayerEntity;
 
             // Logout & save player state
             player.lgn = false;
-            await playerRepository.save(player.player, player);
+            player = await saveEntity(player);
             await savePlayerState(ctx.user.publicKey);
 
             // Remove player cookie
@@ -767,7 +761,6 @@ async function tryFetchEntity(
     entity: string,
 ): Promise<PlayerEntity | MonsterEntity | ItemEntity> {
     const fetchedEntity = await fetchEntity(entity);
-
     if (fetchedEntity == null) {
         throw new TRPCError({
             code: "BAD_REQUEST",

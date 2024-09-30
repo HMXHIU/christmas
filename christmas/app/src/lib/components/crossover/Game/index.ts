@@ -15,7 +15,7 @@ import { actions } from "$lib/crossover/world/settings/actions";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     geohashLocationTypes,
-    type GeohashLocationType,
+    type GeohashLocation,
 } from "$lib/crossover/world/types";
 import { AsyncLock } from "$lib/utils";
 import type { HTTPHeaders } from "@trpc/client";
@@ -65,10 +65,7 @@ interface GameLogic {
  * @param geohash - geohash of the player
  * @returns
  */
-async function updateWorlds(
-    geohash: string,
-    locationType: GeohashLocationType,
-) {
+async function updateWorlds(geohash: string, locationType: GeohashLocation) {
     const t = geohash.slice(0, worldSeed.spatial.town.precision);
     // Already have world at town (Note: no world in town ({} is valid))
     if (get(worldRecord)[t] != null) {
@@ -230,7 +227,7 @@ async function updatePlayer(
         ) {
             await updateWorlds(
                 newEntity.loc[0],
-                newEntity.locT as GeohashLocationType,
+                newEntity.locT as GeohashLocation,
             );
         }
 

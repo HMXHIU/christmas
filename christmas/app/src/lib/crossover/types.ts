@@ -6,7 +6,7 @@ import type {
 import type { SkillLines } from "$lib/crossover/world/skills";
 import type {
     Direction,
-    GeohashLocationType,
+    GeohashLocation,
     LocationType,
 } from "$lib/crossover/world/types";
 import type { DamageType } from "./world/abilities";
@@ -148,7 +148,7 @@ interface World {
     world: string;
     url: string;
     loc: string[];
-    locT: GeohashLocationType;
+    locT: GeohashLocation;
 }
 
 /**

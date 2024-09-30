@@ -9,7 +9,7 @@ import { entityStats } from "$lib/crossover/world/entity";
 import { actions } from "$lib/crossover/world/settings/actions";
 import {
     type Direction,
-    type GeohashLocationType,
+    type GeohashLocation,
 } from "$lib/crossover/world/types";
 import {
     type ItemEntity,
@@ -24,7 +24,6 @@ import {
     type P2PLearnTransaction,
     type P2PTradeTransaction,
 } from "../player";
-import { playerRepository } from "../redis";
 import {
     getNearbyEntities,
     getNearbyPlayerIds,
@@ -87,7 +86,7 @@ async function say(
         // Get logged in players in geohash
         players = await playersInGeohashQuerySet(
             geohashesNearby(player.loc[0].slice(0, -1), true), // use p7 square for `say` radius
-            player.locT as GeohashLocationType,
+            player.locT as GeohashLocation,
             player.locI,
         ).return.allIds({ pageSize: LOOK_PAGE_SIZE }); // limit players using page size
     }
@@ -132,7 +131,7 @@ async function move(
     for (const direction of path) {
         const [isTraversable, location] = await isDirectionTraversable(
             loc,
-            entity.locT as GeohashLocationType,
+            entity.locT as GeohashLocation,
             entity.locI,
             direction,
         );
@@ -164,7 +163,7 @@ async function move(
     // Inform all players nearby of location change
     const nearbyPlayerIds = await getNearbyPlayerIds(
         entity.loc[0],
-        entity.locT as GeohashLocationType,
+        entity.locT as GeohashLocation,
         entity.locI,
     );
     publishAffectedEntitiesToPlayers(
@@ -178,7 +177,7 @@ async function move(
     if (p6Changed && entityType === "player") {
         const { players, monsters, items } = await getNearbyEntities(
             entity.loc[0],
-            entity.locT as GeohashLocationType,
+            entity.locT as GeohashLocation,
             entity.locI,
             LOOK_PAGE_SIZE,
         );
@@ -208,7 +207,7 @@ async function look(
 ): Promise<GameEntity[]> {
     const { monsters, players, items } = await getNearbyEntities(
         player.loc[0],
-        player.locT as GeohashLocationType,
+        player.locT as GeohashLocation,
         player.locI,
         LOOK_PAGE_SIZE,
     );
@@ -268,10 +267,7 @@ async function rest(player: PlayerEntity, now?: number) {
     player.mnd = mnd;
 
     // Save player
-    player = (await playerRepository.save(
-        player.player,
-        player,
-    )) as PlayerEntity;
+    player = await saveEntity(player);
 
     // Publish update event
     publishAffectedEntitiesToPlayers([player], {

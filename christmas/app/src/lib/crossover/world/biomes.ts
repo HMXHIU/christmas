@@ -9,7 +9,7 @@ import { worldSeed } from "./settings/world";
 import {
     geohashLocationTypes,
     type AssetMetadata,
-    type GeohashLocationType,
+    type GeohashLocation,
     type NoiseType,
 } from "./types";
 import { type WorldSeed } from "./world";
@@ -52,7 +52,7 @@ type BiomeParameters = {
 
 type LandGrading = Record<
     string,
-    { locationType: GeohashLocationType; elevation: number }
+    { locationType: GeohashLocation; elevation: number }
 >;
 
 interface Decoration {
@@ -510,7 +510,7 @@ async function topologyAtGeohash(
  */
 async function elevationAtGeohash(
     geohash: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     options?: {
         responseCache?: CacheInterface;
         resultsCache?: CacheInterface;
@@ -566,7 +566,7 @@ async function elevationAtGeohash(
  */
 async function biomeAtGeohash(
     geohash: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     options?: {
         seed?: WorldSeed;
         topologyResultCache?: CacheInterface;
@@ -583,7 +583,7 @@ async function biomeAtGeohash(
     if (cachedResult) return cachedResult;
 
     if (!geohashLocationTypes.has(locationType)) {
-        throw new Error("Location is not a GeohashLocationType");
+        throw new Error("Location is not a GeohashLocation");
     }
 
     const seed = options?.seed || worldSeed;

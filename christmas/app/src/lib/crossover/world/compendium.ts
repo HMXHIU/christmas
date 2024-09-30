@@ -15,7 +15,7 @@ import {
     WeaponSlots,
     type AssetMetadata,
     type EquipmentSlot,
-    type GeohashLocationType,
+    type GeohashLocation,
 } from "./types";
 
 export {
@@ -33,7 +33,7 @@ export {
 
 interface PropWorld {
     locationInstance: string; // variable substitutable to self.item
-    locationType: GeohashLocationType;
+    locationType: GeohashLocation;
     geohash: string; // location to spawn world (variable substitutable to self.loc[0])
     world: string; // id (variable substitutable to self.item)
     url: string; // url to world tilemap

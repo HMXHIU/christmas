@@ -26,7 +26,7 @@ import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     geohashLocationTypes,
-    type GeohashLocationType,
+    type GeohashLocation,
 } from "$lib/crossover/world/types";
 import { seededRandom, stringToRandomNumber } from "$lib/utils";
 import { KdTree } from "$lib/utils/kdtree";
@@ -87,7 +87,7 @@ async function calculateLandGrading(items: Item[]): Promise<LandGrading> {
         ) {
             const elevation = await elevationAtGeohash(
                 item.loc[0],
-                item.locT as GeohashLocationType,
+                item.locT as GeohashLocation,
                 {
                     responseCache: topologyResponseCache,
                     resultsCache: topologyResultCache,
@@ -97,7 +97,7 @@ async function calculateLandGrading(items: Item[]): Promise<LandGrading> {
             for (const l of item.loc) {
                 landGrading[l] = {
                     elevation,
-                    locationType: item.locT as GeohashLocationType,
+                    locationType: item.locT as GeohashLocation,
                 };
             }
         }
@@ -108,7 +108,7 @@ async function calculateLandGrading(items: Item[]): Promise<LandGrading> {
 async function calculateBiomeForRowCol(
     row: number,
     col: number,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     precision?: number,
 ): Promise<{
     texture: Texture;
@@ -212,7 +212,7 @@ async function calculateBiomeDecorationsForRowCol({
     isoX: number;
     isoY: number;
     elevation: number;
-    locationType: GeohashLocationType;
+    locationType: GeohashLocation;
 }): Promise<Record<string, ShaderTexture>> {
     // Get from cache
     const cacheKey = `${row}-${col}-${locationType}`;
@@ -302,7 +302,7 @@ async function calculateBiomeDecorationsForRowCol({
 
 async function calculateTextureBuffers(
     house: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
 ): Promise<
     [
         Record<string, ShaderTexture> | undefined,

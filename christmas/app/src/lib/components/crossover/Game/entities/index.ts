@@ -12,7 +12,7 @@ import { bestiary } from "$lib/crossover/world/settings/bestiary";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     geohashLocationTypes,
-    type GeohashLocationType,
+    type GeohashLocation,
 } from "$lib/crossover/world/types";
 import { AsyncLock } from "$lib/utils";
 import { Container } from "pixi.js";
@@ -79,14 +79,14 @@ async function upsertEntityContainer(
 ): Promise<[boolean, SimpleEntityContainer | AvatarEntityContainer]> {
     return upsertEntityContainerLock.withLock(async () => {
         if (!geohashLocationTypes.has(entity.locT)) {
-            throw new Error("entity location is not a GeohashLocationType");
+            throw new Error("entity location is not a GeohashLocation");
         }
         const [entityId, entityType] = getEntityId(entity);
 
         // Get position
         const position = await calculatePosition(
             entity.loc[0],
-            entity.locT as GeohashLocationType,
+            entity.locT as GeohashLocation,
             entity.locI,
         );
         const { row, col } = position;

@@ -21,7 +21,7 @@
     import { worldSeed } from "$lib/crossover/world/settings/world";
     import {
         geohashLocationTypes,
-        type GeohashLocationType,
+        type GeohashLocation,
     } from "$lib/crossover/world/types";
     import { cn } from "$lib/shadcn";
     import { groupBy, uniqBy } from "lodash-es";
@@ -49,7 +49,7 @@
         row: number;
         geohash: string;
         mapId: string;
-        locationType: GeohashLocationType;
+        locationType: GeohashLocation;
     };
 
     let containerElement: HTMLDivElement;
@@ -210,7 +210,7 @@
 
     async function dungeonEntrancesNeaby(
         territory: string,
-        locationType: GeohashLocationType,
+        locationType: GeohashLocation,
     ): Promise<Item[]> {
         // Check if in cache
         const cacheKey = `${territory}-${locationType}`;
@@ -259,7 +259,7 @@
                 row,
                 geohash: p.loc[0],
                 mapId: p.loc[0].slice(0, worldSeed.spatial.territory.precision),
-                locationType: p.locT as GeohashLocationType,
+                locationType: p.locT as GeohashLocation,
             };
 
             // Update map mesh

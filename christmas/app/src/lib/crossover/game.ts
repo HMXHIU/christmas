@@ -62,7 +62,7 @@ import {
     type BarterSerialized,
     type Direction,
     type EquipmentSlot,
-    type GeohashLocationType,
+    type GeohashLocation,
 } from "./world/types";
 import { isGeohashTraversable } from "./world/utils";
 
@@ -373,7 +373,7 @@ async function performAction(
 async function getTraversalCost(
     row: number,
     col: number,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     locationInstance: string,
     precision?: number,
 ): Promise<number> {
@@ -393,7 +393,7 @@ async function getTraversalCost(
 
 async function hasColliders(
     geohash: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     locationInstance: string,
 ): Promise<boolean> {
     for (const item of Object.values(get(itemRecord))) {
@@ -410,7 +410,7 @@ async function hasColliders(
 
 async function getWorldForGeohash(
     geohash: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
 ): Promise<World | undefined> {
     for (const [town, worlds] of Object.entries(get(worldRecord))) {
         if (!geohash.startsWith(town)) continue;
@@ -427,7 +427,7 @@ async function getWorldForGeohash(
 
 async function isGeohashTraversableClient(
     geohash: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     locationInstance: string,
 ): Promise<boolean> {
     return isGeohashTraversable(
@@ -452,7 +452,7 @@ async function isGeohashTraversableClient(
 async function getDirectionsToPosition(
     source: { row: number; col: number },
     target: { row: number; col: number },
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     locationInstance: string,
     options?: {
         range?: number;
@@ -514,7 +514,7 @@ async function moveInRangeOfTarget({
             row: targetRow,
             col: targetCol,
         },
-        target.locT as GeohashLocationType,
+        target.locT as GeohashLocation,
         target.locI,
         { range },
     );

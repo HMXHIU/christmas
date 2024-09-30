@@ -12,7 +12,7 @@ import {
 import type { BiomeType } from "./biomes";
 import { dungeons, type Dungeon } from "./settings/dungeons";
 import { worldSeed } from "./settings/world";
-import { geohashLocationTypes, type GeohashLocationType } from "./types";
+import { geohashLocationTypes, type GeohashLocation } from "./types";
 
 export { dungeonBiomeAtGeohash, generateDungeonGraph, getAllDungeons };
 
@@ -25,7 +25,7 @@ interface Room {
 interface DungeonGraph {
     rooms: Room[];
     territory: string;
-    locationType: GeohashLocationType;
+    locationType: GeohashLocation;
     corridors: Set<string>; // set of all corridor geohashes
     corridorPrecision: number; // precision of corridor geohashes
 }
@@ -37,14 +37,14 @@ const MAX_ENTRANCES = 3;
 
 async function dungeonBiomeAtGeohash(
     geohash: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     options?: {
         dungeonGraphCache?: CacheInterface;
         dungeons?: Dungeon[]; // for manually specifying dungeon locations
     },
 ): Promise<[BiomeType, number]> {
     if (!geohashLocationTypes.has(locationType)) {
-        throw new Error("Location is not GeohashLocationType");
+        throw new Error("Location is not GeohashLocation");
     }
     if (locationType === "geohash") {
         throw new Error("Location is not underground");
@@ -75,7 +75,7 @@ async function dungeonBiomeAtGeohash(
 
 async function generateDungeonGraph(
     territory: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     options?: {
         dungeon?: Dungeon;
         dungeonGraphCache?: CacheInterface;
@@ -242,7 +242,7 @@ function generateCorridor(
 }
 
 async function getAllDungeons(
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     options?: { dungeons?: Dungeon[] },
 ): Promise<Record<string, DungeonGraph>> {
     const dungeonGraphs: Record<string, DungeonGraph> = {};

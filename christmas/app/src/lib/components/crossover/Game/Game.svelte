@@ -15,7 +15,7 @@
     import { type Utility } from "$lib/crossover/world/compendium";
     import { actions } from "$lib/crossover/world/settings/actions";
     import { compendium } from "$lib/crossover/world/settings/compendium";
-    import type { GeohashLocationType } from "$lib/crossover/world/types";
+    import type { GeohashLocation } from "$lib/crossover/world/types";
     import { cn } from "$lib/shadcn";
     import { sleep } from "$lib/utils";
     import gsap from "gsap";
@@ -390,10 +390,7 @@
             calibrateWorldOffset($player.loc[0]);
 
             // Look at surroundings & update inventory
-            await updateWorlds(
-                $player.loc[0],
-                $player.locT as GeohashLocationType,
-            );
+            await updateWorlds($player.loc[0], $player.locT as GeohashLocation);
 
             await tryExecuteGameCommand([actions.look, { self: $player }]);
             await tryExecuteGameCommand([actions.inventory, { self: $player }]);
@@ -424,7 +421,7 @@
                 playerAbilities.set(getPlayerAbilities(p));
 
                 // Look at surroundings & update inventory
-                await updateWorlds(p.loc[0], p.locT as GeohashLocationType);
+                await updateWorlds(p.loc[0], p.locT as GeohashLocation);
                 await tryExecuteGameCommand([actions.look, { self: p }]);
                 await tryExecuteGameCommand([actions.inventory, { self: p }]);
             }),

@@ -15,7 +15,7 @@ export {
     type BarterSerialized,
     type Direction,
     type EquipmentSlot,
-    type GeohashLocationType,
+    type GeohashLocation,
     type GridCell,
     type LocationType,
     type NoiseType,
@@ -143,11 +143,10 @@ const Directions: Direction[] = [
 ];
 
 type LocationType =
-    | GeohashLocationType // environment
+    | GeohashLocation // environment
     | EquipmentSlot // equiped
     | "inv" // inventory
     | "item" // inside an item
-    | "limbo" // npcs created first start in limbo before being placed
     | "quest"; // quest item waiting to be dropped
 
 const geohashLocationTypes = new Set([
@@ -161,10 +160,10 @@ const geohashLocationTypes = new Set([
     "d7",
     "d8",
     "d9",
-    "in", // inside
+    "in", // inside building
+    "limbo", // npcs created first start in limbo before being placed
 ]);
 
-type GeohashLocationType = z.infer<typeof GeohashLocationSchema>;
 const GeohashLocationSchema = z.enum([
     "geohash",
     "d1",
@@ -176,5 +175,7 @@ const GeohashLocationSchema = z.enum([
     "d7",
     "d8",
     "d9",
-    "in", // inside
+    "in",
+    "limbo",
 ]);
+type GeohashLocation = z.infer<typeof GeohashLocationSchema>;

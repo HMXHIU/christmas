@@ -313,7 +313,7 @@ export async function createRandomPlayer({
     });
 
     await signup(playerMetadata, { headers: { Cookie: cookies }, wallet });
-    const { status, player } = await loginCrossover(
+    const player = await loginCrossover(
         { geohash, region },
         { Cookie: cookies },
     );

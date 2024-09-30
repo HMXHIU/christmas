@@ -8,7 +8,7 @@ import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import type {
     EquipmentSlot,
-    GeohashLocationType,
+    GeohashLocation,
 } from "$lib/crossover/world/types";
 import { EquipmentSlots, WeaponSlots } from "$lib/crossover/world/types";
 import {
@@ -63,7 +63,7 @@ export {
  */
 async function getNearbyEntities(
     geohash: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     locationInstance: string,
     playersPageSize: number,
     options: {
@@ -109,7 +109,7 @@ async function getNearbyEntities(
 
 async function getNearbyPlayerIds(
     geohash: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     locationInstance: string,
 ): Promise<string[]> {
     const { players } = await getNearbyEntities(
@@ -135,7 +135,7 @@ async function getPlayerIdsNearbyEntities(
                 uniq(entities).map((entity) =>
                     getNearbyPlayerIds(
                         entity.loc[0],
-                        entity.locT as GeohashLocationType,
+                        entity.locT as GeohashLocation,
                         entity.locI,
                     ),
                 ),
@@ -146,7 +146,7 @@ async function getPlayerIdsNearbyEntities(
 
 async function hasCollidersInGeohash(
     geohash: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     locationInstance: string,
 ): Promise<boolean> {
     return (
@@ -159,7 +159,7 @@ async function hasCollidersInGeohash(
 
 async function isGeohashInWorld(
     geohash: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
 ): Promise<boolean> {
     return (
         (await worldsContainingGeohashQuerySet(
@@ -188,7 +188,7 @@ function loggedInPlayersQuerySet(): Search {
  */
 function playersInGeohashQuerySet(
     geohashes: string[],
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     locationInstance: string,
 ): Search {
     return loggedInPlayersQuerySet()
@@ -216,7 +216,7 @@ function npcsNotInLimboQuerySet(npc: NPCs): Search {
  */
 function monstersInGeohashQuerySet(
     geohashes: string[],
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     locationInstance: string,
 ): Search {
     return monsterRepository
@@ -236,7 +236,7 @@ function monstersInGeohashQuerySet(
  */
 function itemsInGeohashQuerySet(
     geohashes: string[],
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     locationInstance: string,
 ): Search {
     return itemRepository
@@ -258,7 +258,7 @@ function itemsInGeohashQuerySet(
  */
 function worldsContainingGeohashQuerySet(
     geohashes: string[],
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     precision?: number,
 ): Search {
     precision ??= worldSeed.spatial.town.precision;
@@ -277,7 +277,7 @@ function worldsContainingGeohashQuerySet(
  */
 function worldsInGeohashQuerySet(
     geohashes: string[],
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
 ): Search {
     return worldRepository
         .search()
@@ -375,7 +375,7 @@ function equipmentQuerySet(
 
 function dungeonEntrancesQuerySet(
     territory: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
 ): Search {
     return itemRepository
         .search()

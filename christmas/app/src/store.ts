@@ -9,7 +9,7 @@ import type {
 } from "$lib/server/community/router";
 import type { CTA } from "$lib/server/crossover/player";
 import { UserDeviceClient } from "$lib/userDeviceClient";
-import type { UserMetadataSchema } from "$lib/utils/user";
+import type { UserMetadata } from "$lib/utils/user";
 import { writable } from "svelte/store";
 import { z } from "zod";
 import type {
@@ -35,9 +35,7 @@ export let mintedCoupons = writable<
 export let couponsMetadata = writable<
     Record<string, z.infer<typeof CouponMetadataSchema>>
 >({});
-export let userMetadata = writable<z.infer<typeof UserMetadataSchema> | null>(
-    null,
-);
+export let userMetadata = writable<UserMetadata | null>(null);
 
 // Crossver
 export let inGame = writable<boolean>(false);

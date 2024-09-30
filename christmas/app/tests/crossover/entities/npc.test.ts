@@ -11,7 +11,7 @@ import { spawnItemInInventory } from "$lib/server/crossover/dungeonMaster";
 import { initializeClients } from "$lib/server/crossover/redis";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
 import { npcs } from "$lib/server/crossover/settings/npc";
-import { getUserMetadata } from "$lib/server/crossover/utils";
+import { getUser } from "$lib/server/user";
 import { sleep } from "$lib/utils";
 import { beforeAll, expect, test } from "vitest";
 import {
@@ -238,7 +238,7 @@ test("Test Learn From NPC", async () => {
 
 test("Test `generateNPC`", async () => {
     // Test UserMetadata
-    const npcUserMetadata = await getUserMetadata(innKeeper.player);
+    const npcUserMetadata = await getUser(innKeeper.player);
     expect(npcUserMetadata).toMatchObject({
         publicKey: innKeeper.player,
         crossover: {

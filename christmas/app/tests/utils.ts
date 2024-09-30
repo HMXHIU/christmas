@@ -1,4 +1,4 @@
-import { createUser } from "$lib/community";
+import { createMember } from "$lib/community";
 import { trpc } from "$lib/trpcClient";
 import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
 import { stringToUint8Array } from "$lib/utils";
@@ -117,12 +117,11 @@ async function createRandomUser({
     let response = await login(user);
     const cookies = getCookiesFromResponse(response);
 
-    // Create User Account
-    await createUser(
+    // Create Member Account
+    await createMember(
         { region },
         {
             headers: { Cookie: cookies },
-            wallet,
         },
     );
 

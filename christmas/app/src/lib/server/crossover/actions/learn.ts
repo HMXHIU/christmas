@@ -6,7 +6,7 @@ import {
     skillLevelProgression,
     type SkillLines,
 } from "$lib/crossover/world/skills";
-import { type GeohashLocationType } from "$lib/crossover/world/types";
+import { type GeohashLocation } from "$lib/crossover/world/types";
 import {
     type ItemEntity,
     type PlayerEntity,
@@ -100,7 +100,7 @@ async function learn(
     // Get nearby players
     const nearbyPlayerIds = await getNearbyPlayerIds(
         player.loc[0],
-        player.locT as GeohashLocationType,
+        player.locT as GeohashLocation,
         player.locI,
     );
 

@@ -6,7 +6,7 @@ import { compendium } from "$lib/crossover/world/settings/compendium";
 import type {
     Direction,
     EquipmentSlot,
-    GeohashLocationType,
+    GeohashLocation,
 } from "$lib/crossover/world/types";
 import { isGeohashTraversable } from "$lib/crossover/world/utils";
 import {
@@ -55,7 +55,7 @@ function entityIsBusy(entity: Player | Monster): [boolean, number] {
 
 async function getWorldAtGeohash(
     geohash: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
 ): Promise<WorldEntity | undefined> {
     return (await worldsContainingGeohashQuerySet(
         [geohash],
@@ -65,7 +65,7 @@ async function getWorldAtGeohash(
 
 async function isGeohashTraversableServer(
     geohash: string,
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     locationInstance: string,
 ): Promise<boolean> {
     return await isGeohashTraversable(
@@ -89,7 +89,7 @@ async function isGeohashTraversableServer(
 
 async function isLocationTraversable(
     location: string[],
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     locationInstance: string,
 ): Promise<boolean> {
     for (const geohash of location) {
@@ -108,7 +108,7 @@ async function isLocationTraversable(
 
 async function isDirectionTraversable(
     loc: string[], // entity might be more than 1 cell in size
-    locationType: GeohashLocationType,
+    locationType: GeohashLocation,
     locationInstance: string,
     direction: Direction,
 ): Promise<[boolean, string[]]> {
