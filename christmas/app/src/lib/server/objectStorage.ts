@@ -318,6 +318,7 @@ class ObjectStorage {
         name: string;
     }): Promise<object> {
         const readable = await this.getObject({ owner, bucket, name });
+        console.log("getJSONObject", owner, bucket, name);
         return JSON.parse(await readable.read());
     }
 
