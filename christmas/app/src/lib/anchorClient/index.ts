@@ -28,8 +28,8 @@ import {
 } from "@solana/web3.js";
 import BN from "bn.js";
 import bs58 from "bs58";
-import idl from "../../../../target/idl/christmas.json";
-import { type Christmas } from "../../../../target/types/christmas";
+import idl from "./christmas/idl/christmas.json";
+import { type Christmas } from "./christmas/types/christmas";
 import {
     DISCRIMINATOR_SIZE,
     GEOHASH_SIZE,
