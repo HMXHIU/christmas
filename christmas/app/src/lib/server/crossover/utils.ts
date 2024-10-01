@@ -1,4 +1,4 @@
-import { ENVIRONMENT } from "$env/static/private";
+import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 import type { Monster, Player } from "$lib/crossover/types";
 import { entityInRange, geohashNeighbour } from "$lib/crossover/utils";
 import { type ItemVariables } from "$lib/crossover/world/compendium";
@@ -315,7 +315,7 @@ async function itemVariableValue(
 }
 
 function random() {
-    if (ENVIRONMENT === "development") {
+    if (PUBLIC_ENVIRONMENT === "development") {
         return 0.5;
     }
     return Math.random();

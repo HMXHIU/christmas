@@ -1,9 +1,9 @@
 import {
     DUNGEON_MASTER_TOKEN,
-    ENVIRONMENT,
     INTERNAL_SERVICE_KEY,
     JWT_SECRET_KEY,
 } from "$env/static/private";
+import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 import { verifyJWT } from "$lib/server";
 import { createContext } from "$lib/server/trpc/context";
 import { router } from "$lib/server/trpc/router";
@@ -60,7 +60,7 @@ const handleTRPC: Handle = createTRPCHandle({
     createContext,
     onError(opts) {
         // Only display debug on console during development
-        if (ENVIRONMENT === "development") {
+        if (PUBLIC_ENVIRONMENT === "development") {
             console.error("TRPC Error:", opts.error);
         }
     },

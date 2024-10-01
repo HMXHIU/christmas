@@ -1,8 +1,6 @@
+import { FEE_PAYER_PRIVATE_KEY as FEE_PAYER_PRIVATE_KEY_JSON } from "$env/static/private";
 import {
-    ENVIRONMENT,
-    FEE_PAYER_PRIVATE_KEY as FEE_PAYER_PRIVATE_KEY_JSON,
-} from "$env/static/private";
-import {
+    PUBLIC_ENVIRONMENT,
     PUBLIC_FEE_PAYER_PUBKEY,
     PUBLIC_HOST,
     PUBLIC_RPC_ENDPOINT,
@@ -100,9 +98,9 @@ async function createSignInDataForSIWS(): Promise<SolanaSignInInput> {
     const currentDateTime = now.toISOString();
 
     let chainId = "localnet";
-    if (ENVIRONMENT === "production") {
+    if (PUBLIC_ENVIRONMENT === "production") {
         chainId = "mainnet";
-    } else if (ENVIRONMENT === "staging") {
+    } else if (PUBLIC_ENVIRONMENT === "staging") {
         chainId = "devnet";
     }
 
@@ -126,9 +124,9 @@ async function createSignInDataForSIWS(): Promise<SolanaSignInInput> {
 function verifySIWS(input: SolanaSignInInput, output: any): boolean {
     // Get chains based on environment
     let chains: `${string}:${string}`[] = ["solana:localnet"];
-    if (ENVIRONMENT === "production") {
+    if (PUBLIC_ENVIRONMENT === "production") {
         chains = ["solana:mainnet"];
-    } else if (ENVIRONMENT === "staging") {
+    } else if (PUBLIC_ENVIRONMENT === "staging") {
         chains = ["solana:devnet"];
     }
 
