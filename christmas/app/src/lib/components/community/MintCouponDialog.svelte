@@ -12,8 +12,6 @@
     import { z } from "zod";
 
     export let coupon: Account<Coupon>;
-    export let supply: number;
-    export let balance: number;
 
     export let onMintCoupon: (
         mintCouponParams: MintCouponParams,
