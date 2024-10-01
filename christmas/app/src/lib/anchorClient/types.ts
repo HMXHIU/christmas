@@ -5,7 +5,7 @@ import type {
     SignatureResult,
     TransactionSignature,
 } from "@solana/web3.js";
-import BN from "bn.js";
+import type BN from "bn.js";
 
 export interface MemCmp {
     memcmp: {

@@ -419,10 +419,9 @@ async function logout() {
         if (get(player) != null) {
             await logoutCrossoover();
         }
-
+        // Logout
         await trpc().community.auth.logout.query();
 
-        // await fetch(`${PUBLIC_HOST || ""}/api/auth/logout`, { method: "POST" });
         await window.solana.disconnect();
         token.set(null);
 
@@ -433,7 +432,6 @@ async function logout() {
         redeemedCoupons.set({});
     } catch (error) {
         // If logout fails, reload the page (window.solana.disconnect() might fail if user is not logged in)
-        console.error("Failed to log out", error);
         await window.solana.disconnect();
         location.reload();
     }

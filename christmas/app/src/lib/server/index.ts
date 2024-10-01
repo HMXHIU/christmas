@@ -9,6 +9,7 @@ import {
 } from "$env/static/public";
 import { AnchorClient } from "$lib/anchorClient";
 import { PROGRAM_ID } from "$lib/anchorClient/defs";
+import { stringToUint8Array } from "$lib/utils";
 import type {
     SolanaSignInInput,
     SolanaSignInOutput,
@@ -24,8 +25,8 @@ import {
 } from "@solana/web3.js";
 import { error, type RequestEvent } from "@sveltejs/kit";
 import base58 from "bs58";
-import { createHash, getRandomValues } from "crypto";
 import jwt, { type JwtPayload } from "jsonwebtoken";
+import tweetnacl from "tweetnacl";
 
 // Exports
 export {
@@ -87,6 +88,11 @@ async function verifyJWT(
     });
 }
 
+function generateNonce(): string {
+    const nonceBytes = tweetnacl.randomBytes(8);
+    return base58.encode(nonceBytes);
+}
+
 async function createSignInDataForSIWS(): Promise<SolanaSignInInput> {
     const now: Date = new Date();
     const currentUrl = new URL(PUBLIC_HOST);
@@ -101,7 +107,7 @@ async function createSignInDataForSIWS(): Promise<SolanaSignInInput> {
     }
 
     // generate random nonce (min 8 chars) TODO: Who checks the nonce????
-    const nonce = base58.encode(getRandomValues(new Uint8Array(8)));
+    const nonce = generateNonce();
 
     const signInData: SolanaSignInInput = {
         domain,
@@ -148,11 +154,20 @@ function requireLogin(request: RequestEvent): App.UserSession {
     return request.locals.user;
 }
 
-function hashObject(obj: any, algorithm?: string): string {
+function hashObject(
+    obj: any,
+    algorithm: "sha256" | "sha512" | "md5" = "sha256",
+): string {
     const str = sortedStringify(obj);
-    const hash = createHash(algorithm ?? "sha256");
-    hash.update(str);
-    return hash.digest("hex");
+    let hashedArray = tweetnacl.hash(stringToUint8Array(str)); // tweetnacl uses sha512
+    if (algorithm === "sha256") {
+        hashedArray = hashedArray.subarray(0, 32);
+    } else if (algorithm == "md5") {
+        hashedArray = hashedArray.subarray(0, 16);
+    }
+    return Array.from(hashedArray)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
 }
 
 function sortedStringify(obj: any): string {

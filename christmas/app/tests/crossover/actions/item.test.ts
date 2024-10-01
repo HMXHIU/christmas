@@ -17,7 +17,7 @@ import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
 import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
 import { itemVariableValue } from "$lib/server/crossover/utils";
 import { sleep, substituteValues } from "$lib/utils";
-import { cloneDeep } from "lodash";
+import { cloneDeep } from "lodash-es";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import {
     collectAllEventDataForDuration,
