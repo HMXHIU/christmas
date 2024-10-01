@@ -11,7 +11,6 @@ export default defineConfig({
     resolve: {
         alias: {
             process: "process/browser",
-            crypto: "crypto-browserify",
         },
     },
     server: {

@@ -64,6 +64,7 @@
     "@pixi/sound": "^6.0.0",
     "@solana/pay": "^0.2.5",
     "@solana/qr-code-styling": "^1.6.0",
+    "@solana/wallet-standard-util": "^1.1.1",
     "@sveltejs/adapter-node": "^4.0.1",
     "@trpc/client": "^10.45.1",
     "@trpc/server": "^10.45.1",
