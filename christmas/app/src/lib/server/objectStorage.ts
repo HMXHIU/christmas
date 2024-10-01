@@ -14,7 +14,7 @@ export { BUCKETS, ObjectStorage };
 
 const endPoint = MINIO_ENDPOINT;
 const port = parseInt(MINIO_PORT);
-const useSSL = JSON.parse(MINIO_USE_SSL);
+const useSSL = MINIO_USE_SSL.toLowerCase().trim() === "false" ? false : true;
 const accessKey = MINIO_ACCESS_KEY;
 const secretKey = MINIO_SECRET_KEY;
 
