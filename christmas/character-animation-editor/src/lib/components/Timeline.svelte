@@ -173,7 +173,7 @@
 </script>
 
 {#if animation}
-    <div class="flex flex-col timeline h-full p-4">
+    <div class="flex flex-col timeline w-full p-4">
         <!-- Timeline slider -->
         <div class="flex items-center space-x-4">
             <h2 class="text-sm font-bold my-auto">Timeline</h2>
@@ -204,10 +204,10 @@
         </div>
 
         <!-- Bone Keyframes -->
-        <div class="mt-4 flex flex-col">
+        <div class="mt-4 mb-2 flex flex-col" style="overflow: scroll;">
             {#each animation.bones as { boneName, keyframes }}
                 <div class="flex items-center space-x-4">
-                    <span class="w-12 text-xs text-ellipsis">{boneName}</span>
+                    <span class="w-fit text-xs text-ellipsis">{boneName}</span>
                     {#each keyframesByTime(keyframes, animation.duration) as [time, kf]}
                         <div
                             class={`w-10 bg-blue-200 rounded p-1 ${time === currentTime ? "bg-yellow-200" : ""}`}
