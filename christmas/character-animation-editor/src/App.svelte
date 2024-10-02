@@ -35,8 +35,8 @@
     });
 </script>
 
-<main class="w-full h-full flex flex-col bg-gray-200">
-    <div class="flex flex-row">
+<main class="w-full h-screen flex flex-col bg-gray-200">
+    <div class="flex flex-row h-4/5">
         <div class="w-[280px]">
             <ControlPanel bind:selectedAnimation bind:selectedPose />
         </div>
@@ -47,11 +47,13 @@
             {currentTime}
         />
     </div>
-    <Timeline
-        animation={selectedAnimation}
-        pose={selectedPose}
-        bind:currentTime
-    />
+    <div class="flex flex-row h-1/5">
+        <Timeline
+            animation={selectedAnimation}
+            pose={selectedPose}
+            bind:currentTime
+        />
+    </div>
 </main>
 
 <style>
