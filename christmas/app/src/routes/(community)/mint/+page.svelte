@@ -1,15 +1,12 @@
 <script lang="ts">
-    import {
-        createStore,
-        fetchStores,
-        type CreateStoreParams,
-    } from "$lib/community";
+    import { createStore, fetchStores } from "$lib/community";
+    import type { CreateStore } from "$lib/community/types";
     import CreateStoreDialog from "$lib/components/community/CreateStoreDialog.svelte";
 
     import StoreSection from "$lib/components/community/StoreSection.svelte";
     import { stores } from "../../../store";
 
-    async function onCreateStore(createStoreParams: CreateStoreParams) {
+    async function onCreateStore(createStoreParams: CreateStore) {
         await createStore(createStoreParams);
         await fetchStores();
     }
@@ -17,7 +14,7 @@
 
 <!-- Stores -->
 {#await fetchStores() then}
-    {#each $stores as s (s.publicKey)}
+    {#each $stores as s (s.store)}
         <StoreSection store={s}></StoreSection>
     {/each}
 {/await}

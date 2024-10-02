@@ -1,35 +1,27 @@
 <script lang="ts">
-    import BaseCouponCard from "./BaseCouponCard.svelte";
-
-    import type { Account, Coupon } from "$lib/anchorClient/types";
-    import { fetchCouponMetadata, type MintCouponParams } from "$lib/community";
-    import { timeStampToDate } from "$lib/utils";
+    import { fetchCouponMetadata } from "$lib/community";
+    import type { Coupon, MintCoupon } from "$lib/community/types";
     import { couponsMetadata } from "../../../store";
-
+    import BaseCouponCard from "./BaseCouponCard.svelte";
     import MintCouponDialog from "./MintCouponDialog.svelte";
 
-    export let coupon: Account<Coupon>;
+    export let coupon: Coupon;
     export let balance: number;
     export let supply: number;
-
-    export let onMintCoupon: (
-        mintCouponParams: MintCouponParams,
-    ) => Promise<void>;
-
-    const couponKey = coupon.publicKey.toString();
+    export let onMintCoupon: (mintCouponParams: MintCoupon) => Promise<void>;
 </script>
 
 {#await fetchCouponMetadata(coupon) then}
     <BaseCouponCard
-        couponName={coupon.account.name}
-        couponDescription={$couponsMetadata[couponKey].description}
-        couponImageUrl={$couponsMetadata[couponKey].image}
+        couponName={coupon.name}
+        couponDescription={$couponsMetadata[coupon.coupon].description}
+        couponImageUrl={$couponsMetadata[coupon.coupon].image}
         {balance}
         {supply}
-        expiry={timeStampToDate(coupon.account.validTo)}
+        expiry={coupon.validTo}
     >
         <div class="p-3 flex mx-auto my-auto">
-            <MintCouponDialog {coupon} {supply} {balance} {onMintCoupon} />
+            <MintCouponDialog {coupon} {onMintCoupon} />
         </div>
     </BaseCouponCard>
 {/await}

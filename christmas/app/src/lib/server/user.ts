@@ -1,4 +1,7 @@
-import { MemberMetadataSchema, type MemberMetadata } from "$lib/community";
+import {
+    MemberMetadataSchema,
+    type MemberMetadata,
+} from "$lib/community/types";
 import {
     PlayerMetadataSchema,
     type PlayerMetadata,

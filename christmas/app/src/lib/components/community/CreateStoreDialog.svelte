@@ -1,8 +1,9 @@
 <script lang="ts">
     import {
-        STORE_NAME_SIZE,
-        STRING_PREFIX_SIZE,
-    } from "$lib/anchorClient/defs";
+        CreateStoreSchema,
+        MAX_STORE_NAME_LENGTH,
+        type CreateStore,
+    } from "$lib/community/types";
     import ImageInput from "$lib/components/common/ImageInput.svelte";
     import LocationSearch from "$lib/components/common/LocationSearch.svelte";
     import { Button } from "$lib/components/ui/button";
@@ -13,39 +14,16 @@
     import { Separator } from "$lib/components/ui/separator";
     import { Textarea } from "$lib/components/ui/textarea";
     import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
-    import { parseZodErrors, stringToUint8Array } from "$lib/utils";
+    import { parseZodErrors } from "$lib/utils";
     import { Dialog as BitsDialog } from "bits-ui";
     import { uniqWith } from "lodash";
     import ngeohash from "ngeohash";
     import { onMount } from "svelte";
-
-    import type { CreateStoreParams } from "$lib/community";
-    import { z } from "zod";
     import { stores, userDeviceClient } from "../../../store";
 
-    const CreateStoreSchema = z.object({
-        name: z.string().min(1, "Store name is required"),
-        description: z.string().min(1, "Store description is required"),
-        region: z.array(z.number()).min(1, "Region is required"),
-        geohash: z.array(z.number()).min(1, "Geohash is required"),
-        latitude: z.number({ required_error: "Latitude is required" }),
-        longitude: z.number({ required_error: "Longitude is required" }),
-        address: z
-            .string({
-                required_error: "Store address is required",
-                invalid_type_error: "Store address is required",
-            })
-            .min(1, "Store address is required"),
-        image: z.string({
-            required_error: "Store image is required",
-            invalid_type_error: "Store image is required",
-        }),
-    });
-
-    export let onCreateStore: (values: CreateStoreParams) => Promise<void>;
+    export let onCreateStore: (values: CreateStore) => Promise<void>;
 
     let openDialog: boolean = false;
-
     let name: string = "";
     let description: string = "";
     let address: string = "";
@@ -66,16 +44,13 @@
         image?: string;
     } = {};
 
-    // update geohash if user manually changes latitude or longitude
+    // Update geohash if user manually changes latitude or longitude
     if (latitude != null && longitude != null) {
         geohash = ngeohash.encode(latitude, longitude, 6);
     }
 
     onMount(async () => {
-        // Use default location on initial load
-        const regionCode = String.fromCharCode(
-            ...($userDeviceClient?.location?.country?.code || []),
-        );
+        const regionCode = $userDeviceClient?.location?.country?.code ?? "USA";
         region = {
             value: regionCode,
             label: COUNTRY_DETAILS[regionCode][1],
@@ -86,9 +61,7 @@
         longitude =
             $userDeviceClient?.location?.geolocationCoordinates?.longitude ||
             null;
-        geohash = String.fromCharCode(
-            ...($userDeviceClient?.location?.geohash || []),
-        );
+        geohash = $userDeviceClient?.location?.geohash ?? "";
     });
 
     async function onSubmit() {
@@ -100,10 +73,8 @@
                 latitude,
                 longitude,
                 image,
-                geohash: geohash && Array.from(stringToUint8Array(geohash)),
-                region:
-                    region?.value &&
-                    Array.from(stringToUint8Array(region.value)),
+                geohash,
+                region: region?.value,
             });
             errors = {};
             await onCreateStore(createStoreParams);
@@ -147,7 +118,7 @@
                 <Input
                     id="store-name"
                     type="text"
-                    maxlength={STORE_NAME_SIZE - STRING_PREFIX_SIZE}
+                    maxlength={MAX_STORE_NAME_LENGTH}
                     bind:value={name}
                     placeholder="Your community store"
                     autocomplete="off"

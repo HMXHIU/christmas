@@ -1,47 +1,33 @@
 <script lang="ts">
     import {
-        COUPON_NAME_SIZE,
-        STRING_PREFIX_SIZE,
-    } from "$lib/anchorClient/defs";
+        CreateCouponSchema,
+        MAX_COUPON_NAME_LENGTH,
+        type CreateCoupon,
+        type Store,
+    } from "$lib/community/types";
     import DateInput from "$lib/components/common/DateInput.svelte";
     import ImageInput from "$lib/components/common/ImageInput.svelte";
+    import CouponSvg from "$lib/components/svg/CouponSvg.svelte";
+    import PlusSvg from "$lib/components/svg/PlusSvg.svelte";
     import { Badge } from "$lib/components/ui/badge";
     import { Button } from "$lib/components/ui/button";
     import * as Dialog from "$lib/components/ui/dialog";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
-    import { Textarea } from "$lib/components/ui/textarea";
-    import { Dialog as BitsDialog } from "bits-ui";
-
-    import type { Account, Store } from "$lib/anchorClient/types";
-    import type { CreateCouponParams } from "$lib/community";
-    import CouponSvg from "$lib/components/svg/CouponSvg.svelte";
-    import PlusSvg from "$lib/components/svg/PlusSvg.svelte";
     import { Separator } from "$lib/components/ui/separator";
+    import { Textarea } from "$lib/components/ui/textarea";
     import { parseZodErrors } from "$lib/utils";
     import {
         getLocalTimeZone,
         today,
         type DateValue,
     } from "@internationalized/date";
-    import { z } from "zod";
+    import { Dialog as BitsDialog } from "bits-ui";
 
-    export let store: Account<Store>;
+    export let store: Store;
     export let onCreateCoupon: (
-        createCouponParams: CreateCouponParams,
+        createCouponParams: CreateCoupon,
     ) => Promise<void>;
-
-    const CreateCouponSchema = z.object({
-        name: z.string().min(1, "Coupon name is required"),
-        description: z.string().min(1, "Coupon description is required"),
-        validFrom: z.coerce.date({
-            required_error: "Coupon start date is required",
-        }),
-        validTo: z.coerce.date({
-            required_error: "Coupon expiry date is required",
-        }),
-        image: z.string().min(1, "Coupon image is required"),
-    });
 
     let name: string = "";
     let description: string = "";
@@ -67,16 +53,16 @@
                 validFrom,
                 validTo,
                 image,
-                store,
+                store: store.store,
+                region: store.region,
+                geohash: store.geohash,
             });
             errors = {};
-            await onCreateCoupon({
-                ...createCouponParams,
-                store,
-            });
+            await onCreateCoupon(createCouponParams);
             openDialog = false;
-        } catch (err) {
+        } catch (err: any) {
             errors = parseZodErrors(err);
+            console.error(err.message);
         }
     }
 </script>
@@ -118,7 +104,7 @@
                 <Input
                     id="coupon-name"
                     type="text"
-                    maxlength={COUPON_NAME_SIZE - STRING_PREFIX_SIZE}
+                    maxlength={MAX_COUPON_NAME_LENGTH}
                     bind:value={name}
                     placeholder="What is your coupon called?"
                 />

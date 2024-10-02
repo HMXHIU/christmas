@@ -1,23 +1,10 @@
-import { PUBLIC_RPC_ENDPOINT } from "$env/static/public";
-import {
-    Connection,
-    type Commitment,
-    type SendOptions,
-    type SerializeConfig,
-    type Transaction,
-    type VersionedTransaction,
-} from "@solana/web3.js";
-import BN from "bn.js";
 import bs58 from "bs58";
 import { z } from "zod";
-import type { TransactionResult } from "../anchorClient/types";
 
 export {
     AsyncLock,
     calculateDistance,
     cleanString,
-    confirmTransaction,
-    connection,
     divmod,
     extractQueryParams,
     generatePin,
@@ -32,19 +19,14 @@ export {
     retry,
     sampleFrom,
     seededRandom,
-    signAndSendTransaction,
     sleep,
-    storage_uri_to_url,
     stringToBase58,
     stringToRandomNumber,
     stringToUint8Array,
     substituteValues,
     substituteVariables,
     substituteVariablesRecursively,
-    timeStampToDate,
 };
-
-const connection = new Connection(PUBLIC_RPC_ENDPOINT, "processed");
 
 /**
  * Converts a string (seed) to a random number.
@@ -190,10 +172,6 @@ function calculateDistance(
     return distance;
 }
 
-function timeStampToDate(timeStamp: BN): Date {
-    return new Date(timeStamp.toNumber());
-}
-
 function getErrorMessage(error: any): string {
     // Parse error if its a JSON string
     try {
@@ -236,70 +214,6 @@ function generateURL(kwargs: Record<string, string>, uri?: string) {
 
 function extractQueryParams(url: string): Record<string, string> {
     return Object.fromEntries(new URL(url).searchParams.entries());
-}
-
-function storage_uri_to_url(uri: string): string {
-    const PUBLIC_IPFS_HTTP_GATEWAY = "ipfs.io";
-
-    // Replace with uri prefixes (eg. IPFS) with public gateways
-    const regex = /ipfs:\/\/(.+)/;
-    const match = uri.match(regex);
-    if (match && match[1]) {
-        return `https://${PUBLIC_IPFS_HTTP_GATEWAY}/ipfs/${match[1]}`;
-    }
-    return uri;
-}
-
-async function signAndSendTransaction({
-    tx,
-    options,
-    serializeConfig,
-    skipSign,
-    wallet,
-    commitment,
-}: {
-    tx: Transaction | VersionedTransaction;
-    options?: SendOptions;
-    serializeConfig?: SerializeConfig;
-    skipSign?: boolean;
-    wallet?: any;
-    commitment?: Commitment;
-}): Promise<TransactionResult> {
-    options = options || {};
-    skipSign = skipSign || false;
-
-    // defaults to window.solana
-    wallet = wallet || (window as any).solana;
-
-    // sign
-    const signedTx = skipSign ? tx : await wallet.signTransaction(tx);
-
-    // send transaction
-    const signature = await connection.sendRawTransaction(
-        signedTx.serialize(serializeConfig),
-        options,
-    );
-
-    // confirm transaction
-    return await confirmTransaction(signature, commitment);
-}
-
-async function confirmTransaction(
-    signature: string,
-    commitment?: Commitment,
-): Promise<TransactionResult> {
-    const bh = await connection.getLatestBlockhash();
-    const result = (
-        await connection.confirmTransaction(
-            {
-                blockhash: bh.blockhash,
-                lastValidBlockHeight: bh.lastValidBlockHeight,
-                signature: signature,
-            },
-            commitment,
-        )
-    ).value;
-    return { result, signature };
 }
 
 async function imageDataUrlToFile(

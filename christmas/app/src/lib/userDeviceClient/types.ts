@@ -1,10 +1,10 @@
 export interface Location {
     geolocationCoordinates: GeolocationCoordinates | null;
-    geohash: number[] | null;
+    geohash: string | null;
     country: Country | null;
 }
 
 export interface Country {
-    code: number[];
+    code: string;
     name: string;
 }

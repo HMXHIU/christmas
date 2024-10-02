@@ -29,18 +29,18 @@
         const qrParams = extractQueryParams(decodedText);
 
         if (qrParams) {
-            const { signature, mint, numTokens, wallet } = qrParams;
+            const { signature, coupon, numTokens, wallet } = qrParams;
 
             // Verify redemption
             try {
                 verifyRemdeptionParams = {
                     signature,
-                    mint,
+                    coupon,
                     numTokens,
                     wallet,
                     verifyRedemption: await verifyRedemption({
                         signature,
-                        mint,
+                        coupon,
                         numTokens: parseInt(numTokens),
                         wallet,
                     }),
@@ -48,7 +48,7 @@
             } catch (err: any) {
                 verifyRemdeptionParams = {
                     signature,
-                    mint,
+                    coupon,
                     numTokens,
                     wallet,
                     verifyRedemption: {

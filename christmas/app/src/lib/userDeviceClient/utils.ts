@@ -1,4 +1,3 @@
-import { stringToUint8Array } from "$lib/utils";
 import { getCountriesForTimezone } from "countries-and-timezones";
 import geohash from "ngeohash";
 import { COUNTRY_DETAILS, DEFAULT_GEOHASH_PRECISION } from "./defs";
@@ -18,9 +17,9 @@ export async function getLocation(
             heading: 0,
             speed: 0,
         },
-        geohash: Array.from(stringToUint8Array("gbsuv77e")),
+        geohash: "gbsuv77e",
         country: {
-            code: Array.from(stringToUint8Array("SGP")),
+            code: "SGP",
             name: "Singapore",
         },
     };
@@ -29,29 +28,21 @@ export async function getLocation(
 
     return {
         geolocationCoordinates,
-        geohash: Array.from(
-            stringToUint8Array(
-                geohash.encode(
-                    geolocationCoordinates.latitude,
-                    geolocationCoordinates.longitude,
-                    geoHashPrecision ?? DEFAULT_GEOHASH_PRECISION,
-                ),
-            ),
+        geohash: geohash.encode(
+            geolocationCoordinates.latitude,
+            geolocationCoordinates.longitude,
+            geoHashPrecision ?? DEFAULT_GEOHASH_PRECISION,
         ),
         country: getCountry(),
     };
 }
 
-export async function getGeohash(precision?: number): Promise<number[]> {
+export async function getGeohash(precision?: number): Promise<string> {
     const { latitude, longitude } = await getGeolocationCoordinates();
-    return Array.from(
-        stringToUint8Array(
-            geohash.encode(
-                latitude,
-                longitude,
-                precision ?? DEFAULT_GEOHASH_PRECISION,
-            ),
-        ),
+    return geohash.encode(
+        latitude,
+        longitude,
+        precision ?? DEFAULT_GEOHASH_PRECISION,
     );
 }
 
@@ -90,12 +81,10 @@ export function getTimezone(): string {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
-export function getCountry(): { code: number[]; name: string } {
+export function getCountry(): { code: string; name: string } {
     const first = getCountriesForTimezone(getTimezone())[0];
     return {
-        code: Array.from(
-            stringToUint8Array(COUNTRY_DETAILS[first.id][0] || "USA"),
-        ),
+        code: COUNTRY_DETAILS[first.id][0] || "USA",
         name: first.name,
     };
 }

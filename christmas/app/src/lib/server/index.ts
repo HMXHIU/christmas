@@ -1,26 +1,10 @@
-import { FEE_PAYER_PRIVATE_KEY as FEE_PAYER_PRIVATE_KEY_JSON } from "$env/static/private";
-import {
-    PUBLIC_ENVIRONMENT,
-    PUBLIC_FEE_PAYER_PUBKEY,
-    PUBLIC_HOST,
-    PUBLIC_RPC_ENDPOINT,
-} from "$env/static/public";
-import { AnchorClient } from "$lib/anchorClient";
-import { PROGRAM_ID } from "$lib/anchorClient/defs";
+import { PUBLIC_ENVIRONMENT, PUBLIC_HOST } from "$env/static/public";
 import { stringToUint8Array } from "$lib/utils";
 import type {
     SolanaSignInInput,
     SolanaSignInOutput,
 } from "@solana/wallet-standard-features";
 import { verifySignIn } from "@solana/wallet-standard-util";
-import {
-    Connection,
-    Keypair,
-    PublicKey,
-    Transaction,
-    TransactionInstruction,
-    type Signer,
-} from "@solana/web3.js";
 import { error, type RequestEvent } from "@sveltejs/kit";
 import base58 from "bs58";
 import jwt, { type JwtPayload } from "jsonwebtoken";
@@ -28,32 +12,14 @@ import tweetnacl from "tweetnacl";
 
 // Exports
 export {
-    createSerializedTransaction,
     createSignInDataForSIWS,
-    FEE_PAYER_PUBKEY,
-    feePayerKeypair,
+    generateNonce,
     hashObject,
     requireLogin,
-    serverAnchorClient,
     signJWT,
     verifyJWT,
     verifySIWS,
 };
-
-// Load fee payer keypair
-const FEE_PAYER_PUBKEY = new PublicKey(PUBLIC_FEE_PAYER_PUBKEY);
-const FEE_PAYER_PRIVATE_KEY = new Uint8Array(
-    JSON.parse(FEE_PAYER_PRIVATE_KEY_JSON),
-);
-const feePayerKeypair = Keypair.fromSecretKey(FEE_PAYER_PRIVATE_KEY);
-
-// Create server anchor client
-const serverAnchorClientKeypair = Keypair.generate();
-const serverAnchorClient = new AnchorClient({
-    programId: new PublicKey(PROGRAM_ID),
-    keypair: serverAnchorClientKeypair,
-    cluster: PUBLIC_RPC_ENDPOINT,
-});
 
 async function signJWT(
     payload: object,
@@ -86,8 +52,8 @@ async function verifyJWT(
     });
 }
 
-function generateNonce(): string {
-    const nonceBytes = tweetnacl.randomBytes(8);
+function generateNonce(length: number = 8): string {
+    const nonceBytes = tweetnacl.randomBytes(length);
     return base58.encode(nonceBytes);
 }
 
@@ -177,42 +143,4 @@ function sortedStringify(obj: any): string {
         .map((key) => `${JSON.stringify(key)}:${sortedStringify(obj[key])}`)
         .join(",");
     return `{${sortedObj}}`;
-}
-
-async function createSerializedTransaction(
-    ix: TransactionInstruction,
-    signers?: Array<Signer>,
-) {
-    // Set up connection and signer
-    const connection = new Connection(PUBLIC_RPC_ENDPOINT, "processed");
-
-    // Get latest blockchash and block height
-    let latestBlockHash = await connection.getLatestBlockhash();
-
-    // Create tx with recent blockhash and splTransferIx
-    let tx = new Transaction({
-        blockhash: latestBlockHash.blockhash,
-        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-        feePayer: FEE_PAYER_PUBKEY, // pay for transaction fee
-    });
-
-    // Add procedure instruction
-    tx.add(ix);
-
-    // Partially sign to take on fees
-    tx.partialSign(feePayerKeypair);
-
-    // additional signers if required
-    if (signers) {
-        tx.partialSign(...signers);
-    }
-
-    // Serialize partially signed transaction (serialize verification done on client side).
-    const serializedTransaction = tx.serialize({
-        verifySignatures: false,
-        requireAllSignatures: false,
-    });
-    const base64Transaction = serializedTransaction.toString("base64");
-
-    return base64Transaction;
 }

@@ -4,7 +4,7 @@ import type { Actions } from "$lib/crossover/world/actions";
 import { requireLogin } from "$lib/server";
 import { connectedUsers } from "$lib/server/crossover";
 import type { CTA } from "$lib/server/crossover/player";
-import { redisSubscribeClient } from "$lib/server/crossover/redis";
+import { redisSubscribeClient } from "$lib/server/redis";
 import type { RequestHandler } from "@sveltejs/kit";
 
 export type StreamEvent =

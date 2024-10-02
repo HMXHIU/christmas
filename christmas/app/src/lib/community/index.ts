@@ -1,18 +1,5 @@
-import { PublicKey, Transaction, type HttpHeaders } from "@solana/web3.js";
-import {
-    type Account,
-    type Coupon,
-    type Store,
-    type TransactionResult,
-} from "../anchorClient/types";
-
 import { logout as logoutCrossoover } from "$lib/crossover/client";
-import type {
-    CouponMetadataSchema,
-    StoreMetadataSchema,
-} from "$lib/server/community/router";
 import { trpc } from "$lib/trpcClient";
-import { signAndSendTransaction } from "$lib/utils";
 import type { UserMetadata } from "$lib/utils/user";
 import type { HTTPHeaders } from "@trpc/client";
 import { get } from "svelte/store";
@@ -28,12 +15,16 @@ import {
     storesMetadata,
     token,
 } from "../../store";
-import { stringToUint8Array } from "../utils";
 import {
-    deserializeCouponBalance,
-    deserializeCouponSupplyBalance,
-    deserializeStoreAccount,
-} from "./utils";
+    CouponSchema,
+    type Coupon,
+    type CouponMetadataSchema,
+    type MemberMetadata,
+    type MintCoupon,
+    type Store,
+    type StoreMetadataSchema,
+    type TransactionResult,
+} from "./types";
 
 // Exports
 export {
@@ -50,59 +41,11 @@ export {
     fetchUser,
     login,
     logout,
-    MemberMetadataSchema,
     mintCoupon,
     redeemCoupon,
     refresh,
     verifyRedemption,
-    type ClaimCouponParams,
-    type CreateCouponParams,
-    type CreateStoreParams,
-    type MemberMetadata,
-    type MintCouponParams,
-    type RedeemCouponParams,
 };
-
-interface MintCouponParams {
-    coupon: Account<Coupon>;
-    numTokens: number;
-}
-
-interface CreateCouponParams {
-    name: string;
-    description: string;
-    validFrom: Date;
-    validTo: Date;
-    image: string;
-    store: Account<Store>;
-}
-
-interface ClaimCouponParams {
-    numTokens: number;
-    coupon: Account<Coupon>;
-}
-
-interface RedeemCouponParams {
-    numTokens: number;
-    coupon: Account<Coupon>;
-}
-
-interface CreateStoreParams {
-    name: string;
-    description: string;
-    region: number[];
-    geohash: number[];
-    latitude: number;
-    longitude: number;
-    address: string;
-    image: string;
-}
-
-const MemberMetadataSchema = z.object({
-    region: z.string(),
-});
-
-type MemberMetadata = z.infer<typeof MemberMetadataSchema>;
 
 /*
  * Coupon
@@ -113,35 +56,31 @@ async function fetchMarketCoupons(
         region,
         geohash,
     }: {
-        region: number[] | string;
-        geohash: number[] | string;
+        region: string;
+        geohash: string;
     },
     headers: HTTPHeaders = {},
-): Promise<[Account<Coupon>, number][]> {
-    const coupons = (
-        await trpc({ headers }).community.coupon.market.query({
-            region:
-                typeof region === "string"
-                    ? Array.from(stringToUint8Array(region))
-                    : region,
-            geohash:
-                typeof geohash === "string"
-                    ? Array.from(stringToUint8Array(geohash))
-                    : geohash,
-        })
-    ).map(deserializeCouponBalance);
+): Promise<[Coupon, number][]> {
+    let coupons = await trpc({ headers }).community.coupon.market.query({
+        region,
+        geohash,
+    });
+
+    const parsed = coupons.map(
+        ([c, s]) => [CouponSchema.parse(c), s] as [Coupon, number],
+    );
 
     // Update `$marketCoupons`
-    marketCoupons.set(coupons);
+    marketCoupons.set(parsed);
 
-    return coupons;
+    return parsed;
 }
 
 async function fetchCouponMetadata(
-    coupon: Account<Coupon>,
+    coupon: Coupon,
     headers: HeadersInit = {},
 ): Promise<z.infer<typeof CouponMetadataSchema>> {
-    const couponMetadata = await fetch(coupon.account.uri, { headers }).then(
+    const couponMetadata = await fetch(coupon.uri, { headers }).then(
         async (response) => {
             if (!response.ok) {
                 throw new Error(await response.text());
@@ -152,7 +91,7 @@ async function fetchCouponMetadata(
 
     // Update `$couponMetadata`
     couponsMetadata.update((d) => {
-        d[coupon.publicKey.toString()] = couponMetadata;
+        d[coupon.coupon] = couponMetadata;
         return d;
     });
 
@@ -160,82 +99,98 @@ async function fetchCouponMetadata(
 }
 
 async function fetchMintedCouponSupplyBalance(
-    store: PublicKey | string,
+    store: string,
     headers: HTTPHeaders = {},
-): Promise<[Account<Coupon>, number, number][]> {
-    store = store instanceof PublicKey ? store.toBase58() : store;
+): Promise<[Coupon, number, number][]> {
+    const couponsSupplyBalance = await trpc({
+        headers,
+    }).community.coupon.minted.query({
+        store: store,
+    });
 
-    const couponsSupplyBalance = await trpc({ headers })
-        .community.coupon.minted.query({
-            store: store,
-        })
-        .then((coupons) => {
-            return coupons.map(deserializeCouponSupplyBalance);
-        });
+    const parsed = couponsSupplyBalance.map(
+        ([c, b, s]) =>
+            [CouponSchema.parse(c), s, b] as [Coupon, number, number],
+    );
 
     // Update `$mintedCoupons`
     mintedCoupons.update((d) => {
-        d[store as string] = couponsSupplyBalance;
+        d[store] = parsed;
         return d;
     });
 
-    return couponsSupplyBalance;
+    return parsed;
 }
 
 async function fetchClaimedCoupons(
     headers: HTTPHeaders = {},
-): Promise<[Account<Coupon>, number][]> {
-    const coupons = await trpc({ headers })
-        .community.coupon.claimed.query()
-        .then((coupons) => {
-            return coupons.map(deserializeCouponBalance);
-        });
+): Promise<[Coupon, number][]> {
+    const coupons = await trpc({ headers }).community.coupon.claimed.query();
+
+    const parsed = coupons.map(
+        ([c, s]) => [CouponSchema.parse(c), s] as [Coupon, number],
+    );
 
     // Update `$claimedCoupons`
-    claimedCoupons.set(coupons);
+    claimedCoupons.set(parsed);
 
-    return coupons;
+    return parsed;
 }
 
 async function claimCoupon(
-    { coupon, numTokens }: ClaimCouponParams,
+    { coupon, numTokens }: { coupon: Coupon; numTokens: number },
     options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
     return await trpc({ headers: options?.headers || {} })
         .community.coupon.claim.mutate({
             numTokens,
-            mint: coupon.account.mint.toString(),
+            coupon: coupon.coupon,
         })
-        .then(({ transaction }) => {
-            return signAndSendTransaction({
-                tx: Transaction.from(Buffer.from(transaction, "base64")),
-                wallet: options?.wallet,
-                commitment: "confirmed",
-            });
+        .then(() => {
+            return {
+                result: { err: null },
+                signature: "",
+            };
         });
 }
 
 async function redeemCoupon(
-    { coupon, numTokens }: RedeemCouponParams,
+    { coupon, numTokens }: { coupon: Coupon; numTokens: number },
     options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
     return await trpc({ headers: options?.headers || {} })
         .community.coupon.redeem.mutate({
-            coupon: coupon.publicKey.toString(),
+            coupon: coupon.coupon,
             numTokens,
-            mint: coupon.account.mint.toString(),
         })
-        .then(({ transaction }) => {
-            return signAndSendTransaction({
-                tx: Transaction.from(Buffer.from(transaction, "base64")),
-                wallet: options?.wallet,
-                commitment: "confirmed",
-            });
+        .then(() => {
+            return {
+                result: { err: null },
+                signature: "",
+            };
         });
 }
 
 async function createCoupon(
-    { image, name, description, validFrom, validTo, store }: CreateCouponParams,
+    {
+        image,
+        name,
+        description,
+        validFrom,
+        validTo,
+        store,
+        geohash,
+        region,
+    }: {
+        image: string;
+        name: string;
+        description: string;
+        validFrom: Date;
+        validTo: Date;
+        store: string;
+        geohash: string;
+        region: string;
+    },
     options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
     return await trpc({ headers: options?.headers || {} })
@@ -245,51 +200,45 @@ async function createCoupon(
             description,
             validFrom,
             validTo,
-            store: store.publicKey.toString(),
-            geohash: store.account.geohash,
-            region: store.account.region,
+            store: store,
+            geohash: geohash,
+            region: region,
         })
-        .then(({ transaction }) => {
-            return signAndSendTransaction({
-                tx: Transaction.from(Buffer.from(transaction, "base64")),
-                wallet: options?.wallet,
-                commitment: "confirmed",
-            });
+        .then(() => {
+            return {
+                result: { err: null },
+                signature: "",
+            };
         });
 }
 
 async function mintCoupon(
-    { coupon, numTokens }: MintCouponParams,
+    { coupon, numTokens, region }: MintCoupon,
     options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
     return await trpc({ headers: options?.headers || {} })
         .community.coupon.mint.mutate({
-            mint: coupon.account.mint.toBase58(),
-            region: coupon.account.region,
-            coupon:
-                coupon.publicKey instanceof PublicKey
-                    ? coupon.publicKey.toBase58()
-                    : coupon.publicKey,
+            coupon: coupon,
+            region: region,
             numTokens,
         })
-        .then(({ transaction }) => {
-            return signAndSendTransaction({
-                tx: Transaction.from(Buffer.from(transaction, "base64")),
-                wallet: options?.wallet,
-                commitment: "confirmed",
-            });
+        .then(() => {
+            return {
+                result: { err: null },
+                signature: "",
+            };
         });
 }
 
 async function verifyRedemption(
     {
         signature,
-        mint,
+        coupon,
         numTokens,
         wallet,
     }: {
         signature: string;
-        mint: string;
+        coupon: string;
         numTokens: number;
         wallet: string;
     },
@@ -297,7 +246,7 @@ async function verifyRedemption(
 ): Promise<{ isVerified: boolean; err: string }> {
     return await trpc({ headers }).community.coupon.verify.query({
         signature,
-        mint,
+        coupon,
         wallet,
         numTokens,
     });
@@ -307,12 +256,8 @@ async function verifyRedemption(
  * Store
  */
 
-async function fetchStores(
-    headers: HTTPHeaders = {},
-): Promise<Account<Store>[]> {
-    const userStores = (
-        await trpc({ headers }).community.store.user.query()
-    ).map(deserializeStoreAccount);
+async function fetchStores(headers: HTTPHeaders = {}): Promise<Store[]> {
+    const userStores = await trpc({ headers }).community.store.user.query();
 
     // Update `$stores`
     stores.set(userStores);
@@ -321,20 +266,17 @@ async function fetchStores(
 }
 
 async function fetchStoreMetadata(
-    storePda: PublicKey | string,
+    storeId: string,
     headers: HTTPHeaders = {},
 ): Promise<z.infer<typeof StoreMetadataSchema>> {
-    if (storePda instanceof PublicKey) {
-    }
-    storePda = storePda instanceof PublicKey ? storePda.toBase58() : storePda;
     const store = await trpc({ headers }).community.store.store.query({
-        store: storePda,
+        store: storeId,
     });
     const storeMetadata = await (await fetch(store.uri)).json();
 
     // Update `$storeMetadata`
     storesMetadata.update((d) => {
-        d[storePda as string] = storeMetadata;
+        d[store.store] = storeMetadata;
         return d;
     });
 
@@ -351,8 +293,17 @@ async function createStore(
         longitude,
         geohash,
         image,
-    }: CreateStoreParams,
-    options?: { headers?: HttpHeaders; wallet?: any },
+    }: {
+        name: string;
+        description: string;
+        address: string;
+        region: string;
+        latitude: number;
+        longitude: number;
+        geohash: string;
+        image: string;
+    },
+    options?: { headers?: HTTPHeaders; wallet?: any },
 ): Promise<TransactionResult> {
     return await trpc({ headers: options?.headers || {} })
         .community.store.create.mutate({
@@ -365,12 +316,11 @@ async function createStore(
             geohash,
             image,
         })
-        .then(({ transaction }) => {
-            return signAndSendTransaction({
-                tx: Transaction.from(Buffer.from(transaction, "base64")),
-                wallet: options?.wallet,
-                commitment: "confirmed",
-            });
+        .then(() => {
+            return {
+                result: { err: null },
+                signature: "",
+            };
         });
 }
 

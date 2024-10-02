@@ -3,6 +3,7 @@ import {
     type MonsterEntity,
     type PlayerEntity,
 } from "$lib/server/crossover/types";
+import type { Repository } from "redis-om";
 import {
     itemRepository,
     monsterRepository,
@@ -11,7 +12,7 @@ import {
 } from ".";
 import type { QuestEntity } from "../quests/types";
 
-export { fetchEntity, fetchQuest, saveEntities, saveEntity };
+export { fetchEntity, fetchQuest, getOrCreateEntity, saveEntities, saveEntity };
 
 async function fetchEntity(
     entity: string,
@@ -69,5 +70,18 @@ async function saveEntities(
 ) {
     for (const e of entities) {
         await saveEntity(e);
+    }
+}
+
+async function getOrCreateEntity<T>(
+    id: string,
+    data: T,
+    repository: Repository<Record<string, any>>,
+): Promise<T> {
+    const entity = await repository.fetch(id);
+    if (entity) {
+        return entity as T;
+    } else {
+        return (await repository.save(id, data as Record<string, any>)) as T;
     }
 }

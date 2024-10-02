@@ -1,21 +1,20 @@
 <script lang="ts">
-    import type { Account, Coupon } from "$lib/anchorClient/types";
-    import {
-        fetchCouponMetadata,
-        fetchStoreMetadata,
-        type ClaimCouponParams,
-    } from "$lib/community";
+    import { fetchCouponMetadata, fetchStoreMetadata } from "$lib/community";
+    import type { Coupon } from "$lib/community/types";
     import { Button } from "$lib/components/ui/button";
     import * as Dialog from "$lib/components/ui/dialog";
-    import { calculateDistance, timeStampToDate } from "$lib/utils";
+    import { calculateDistance } from "$lib/utils";
     import { Dialog as BitsDialog } from "bits-ui";
     import { userDeviceClient } from "../../../store";
     import BaseCouponCard from "./BaseCouponCard.svelte";
     import LoadingCoupon from "./LoadingCoupon.svelte";
 
-    export let coupon: Account<Coupon>;
+    export let coupon: Coupon;
     export let balance: number;
-    export let onClaimCoupon: (claimCouponParams: ClaimCouponParams) => void;
+    export let onClaimCoupon: (claimCouponParams: {
+        numTokens: number;
+        coupon: Coupon;
+    }) => void;
 
     let claimCouponOpen: boolean = false;
     let fetchMetadataAsync = fetchMetadata();
@@ -24,7 +23,7 @@
         //sleep for 1 second
         await new Promise((r) => setTimeout(r, 3000));
         const couponMetadata = await fetchCouponMetadata(coupon);
-        const storeMetadata = await fetchStoreMetadata(coupon.account.store);
+        const storeMetadata = await fetchStoreMetadata(coupon.store);
         const distance = calculateDistance(
             storeMetadata.latitude,
             storeMetadata.longitude,
@@ -51,13 +50,13 @@
     <Dialog.Root bind:open={claimCouponOpen}>
         <Dialog.Trigger>
             <BaseCouponCard
-                couponName={coupon.account.name}
+                couponName={coupon.name}
                 couponImageUrl={couponMetadata.image}
                 storeName={storeMetadata.name}
                 storeAddress={storeMetadata.address}
                 storeImageUrl={storeMetadata.image}
                 {distance}
-                expiry={timeStampToDate(coupon.account.validTo)}
+                expiry={coupon.validTo}
             ></BaseCouponCard>
         </Dialog.Trigger>
         <Dialog.Content class="sm:max-w-[425px]">
@@ -69,7 +68,7 @@
                 </Dialog.Description>
             </Dialog.Header>
             <BaseCouponCard
-                couponName={coupon.account.name}
+                couponName={coupon.name}
                 couponDescription={couponMetadata.description}
                 couponImageUrl={couponMetadata.image}
                 storeName={storeMetadata.name}
@@ -77,7 +76,7 @@
                 storeImageUrl={storeMetadata.image}
                 {distance}
                 remaining={balance}
-                expiry={timeStampToDate(coupon.account.validTo)}
+                expiry={coupon.validTo}
             ></BaseCouponCard>
             <Dialog.Footer class="flex flex-row justify-end gap-4">
                 <BitsDialog.Close

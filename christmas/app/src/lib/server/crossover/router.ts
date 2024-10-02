@@ -10,7 +10,6 @@ import {
     GeohashLocationSchema,
     type GeohashLocation,
 } from "$lib/crossover/world/types";
-import { initializeClients } from "$lib/server/crossover/redis";
 import {
     fetchEntity,
     fetchQuest,
@@ -70,6 +69,8 @@ import {
 
 import type { Quest } from "$lib/crossover/types";
 import { AbilitiesEnum } from "$lib/crossover/world/abilities";
+import { initializeCommunityRedisRepositories } from "../community/redis";
+import { initializeRedisClients } from "../redis";
 import {
     getOrCreatePlayer,
     getPlayerState,
@@ -77,6 +78,7 @@ import {
     savePlayerState,
 } from "../user";
 import { attack } from "./actions/attack";
+import { initializeCrossoverRedisRepositories } from "./redis";
 import {
     dungeonEntrancesQuerySet,
     loggedInPlayersQuerySet,
@@ -87,7 +89,10 @@ import { entityIsBusy } from "./utils";
 export { crossoverRouter, SaySchema };
 
 // Initialize redis clients, repositiories, indexes
-initializeClients();
+initializeRedisClients(async (redisClient) => {
+    await initializeCrossoverRedisRepositories(redisClient);
+    await initializeCommunityRedisRepositories(redisClient);
+});
 
 // Schemas - auth
 const LoginSchema = z.object({

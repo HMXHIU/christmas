@@ -1,16 +1,12 @@
 <script lang="ts">
-    import type { Account, Store } from "$lib/anchorClient/types";
     import {
         createCoupon,
         fetchMarketCoupons,
         fetchMintedCouponSupplyBalance,
         fetchStoreMetadata,
         mintCoupon,
-        type CreateCouponParams,
-        type MintCouponParams,
     } from "$lib/community";
     import { cleanString } from "$lib/utils";
-    import { PublicKey } from "@solana/web3.js";
     import {
         mintedCoupons,
         storesMetadata,
@@ -18,18 +14,14 @@
     } from "../../../store";
     import MintedCouponCard from "./MintedCouponCard.svelte";
 
+    import type { CreateCoupon, MintCoupon, Store } from "$lib/community/types";
     import * as Avatar from "$lib/components/ui/avatar";
     import CreateCouponDialog from "./CreateCouponDialog.svelte";
 
-    export let store: Account<Store>;
-
-    const storeKey =
-        store.publicKey instanceof PublicKey
-            ? store.publicKey.toBase58()
-            : store.publicKey;
+    export let store: Store;
 
     async function fetchCoupons() {
-        await fetchMintedCouponSupplyBalance(store.publicKey);
+        await fetchMintedCouponSupplyBalance(store.store);
         if (
             $userDeviceClient?.location?.country?.code &&
             $userDeviceClient?.location?.geohash
@@ -41,13 +33,13 @@
         }
     }
 
-    async function onCreateCoupon(createCouponParams: CreateCouponParams) {
+    async function onCreateCoupon(createCouponParams: CreateCoupon) {
         await createCoupon(createCouponParams);
         // Refetch coupons
         await fetchCoupons();
     }
 
-    async function onMintCoupon(mintCouponParams: MintCouponParams) {
+    async function onMintCoupon(mintCouponParams: MintCoupon) {
         // Mint coupon
         await mintCoupon(mintCouponParams);
         // Refetch coupons
@@ -55,7 +47,7 @@
     }
 </script>
 
-{#await fetchStoreMetadata(store.publicKey) then}
+{#await fetchStoreMetadata(store.store) then}
     <div class="flex flex-col">
         <!-- Store -->
         <header class="flex flex-row justify-between px-4 py-3 bg-secondary">
@@ -63,25 +55,23 @@
                 <!-- Logo -->
                 <Avatar.Root class="my-auto">
                     <Avatar.Image
-                        src={$storesMetadata[storeKey].image}
-                        alt={store.account.name}
+                        src={$storesMetadata[store.store].image}
+                        alt={store.name}
                     />
-                    <Avatar.Fallback
-                        >{store.account.name.slice(0, 2)}</Avatar.Fallback
-                    >
+                    <Avatar.Fallback>{store.name.slice(0, 2)}</Avatar.Fallback>
                 </Avatar.Root>
                 <div class="flex flex-col my-auto">
                     <!-- Name -->
                     <p class="text-base font-bold">
-                        {cleanString(store.account.name)}
+                        {cleanString(store.name)}
                     </p>
                     <!-- Address -->
                     <p class="text-sm font-light text-muted-foreground">
-                        {$storesMetadata[storeKey].address}
+                        {$storesMetadata[store.store].address}
                     </p>
                     <!-- Description -->
                     <p class="text-xs italic pt-2 text-muted-foreground">
-                        {$storesMetadata[storeKey].description}
+                        {$storesMetadata[store.store].description}
                     </p>
                 </div>
             </div>
@@ -93,8 +83,8 @@
         <div
             class="container grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 px-4 py-4 mt-2"
         >
-            {#await fetchMintedCouponSupplyBalance(store.publicKey) then}
-                {#each $mintedCoupons[store.publicKey.toString()] as [coupon, supply, balance]}
+            {#await fetchMintedCouponSupplyBalance(store.store) then}
+                {#each $mintedCoupons[store.store.toString()] as [coupon, supply, balance]}
                     <MintedCouponCard {coupon} {balance} {supply} {onMintCoupon}
                     ></MintedCouponCard>
                 {/each}

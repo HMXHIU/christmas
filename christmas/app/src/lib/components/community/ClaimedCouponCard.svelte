@@ -1,30 +1,28 @@
 <script lang="ts">
-    import type { Account, Coupon } from "$lib/anchorClient/types";
-    import {
-        fetchCouponMetadata,
-        fetchStoreMetadata,
-        type RedeemCouponParams,
-    } from "$lib/community";
+    import { fetchCouponMetadata, fetchStoreMetadata } from "$lib/community";
+    import type { Coupon } from "$lib/community/types";
     import QrCode from "$lib/components/common/QRCode.svelte";
     import { Button } from "$lib/components/ui/button";
     import * as Dialog from "$lib/components/ui/dialog";
     import { Separator } from "$lib/components/ui/separator";
-    import { calculateDistance, timeStampToDate } from "$lib/utils";
+    import { calculateDistance } from "$lib/utils";
     import { Dialog as BitsDialog } from "bits-ui";
     import { redeemedCoupons, userDeviceClient } from "../../../store";
     import BaseCouponCard from "./BaseCouponCard.svelte";
     import LoadingCoupon from "./LoadingCoupon.svelte";
 
-    export let coupon: Account<Coupon>;
+    export let coupon: Coupon;
     export let balance: number;
-    export let onRedeemCoupon: (redeemCouponParams: RedeemCouponParams) => void;
+    export let onRedeemCoupon: (redeemCouponParams: {
+        numTokens: number;
+        coupon: Coupon;
+    }) => void;
 
-    const couponKey = coupon.publicKey.toString();
     let redeemCouponOpen: boolean = false;
 
     async function fetchMetadata() {
         const couponMetadata = await fetchCouponMetadata(coupon);
-        const storeMetadata = await fetchStoreMetadata(coupon.account.store);
+        const storeMetadata = await fetchStoreMetadata(coupon.store);
         const distance = calculateDistance(
             storeMetadata.latitude,
             storeMetadata.longitude,
@@ -51,12 +49,12 @@
     <Dialog.Root bind:open={redeemCouponOpen}>
         <Dialog.Trigger>
             <BaseCouponCard
-                couponName={coupon.account.name}
+                couponName={coupon.name}
                 couponNameSuffix={`by ${storeMetadata.name}`}
                 couponImageUrl={couponMetadata.image}
                 {distance}
-                expiry={timeStampToDate(coupon.account.validTo)}
-                redemptionQRCodeURL={$redeemedCoupons[couponKey]}
+                expiry={coupon.validTo}
+                redemptionQRCodeURL={$redeemedCoupons[coupon.coupon]}
             ></BaseCouponCard>
         </Dialog.Trigger>
         <Dialog.Content class="sm:max-w-[425px]">
@@ -64,23 +62,23 @@
                 <Dialog.Title>
                     {#if balance < 1}
                         This coupon has been used
-                    {:else if $redeemedCoupons[couponKey]}
+                    {:else if $redeemedCoupons[coupon.coupon]}
                         <QrCode
-                            data={$redeemedCoupons[couponKey]}
+                            data={$redeemedCoupons[coupon.coupon]}
                             height={300}
                             width={300}
                             class="p-6 justify-center"
                         ></QrCode>
                     {:else}
-                        {`Redeem ${coupon.account.name}?`}
+                        {`Redeem ${coupon.name}?`}
                     {/if}
                 </Dialog.Title>
             </Dialog.Header>
             <Separator />
 
-            {#if balance > 0 && !$redeemedCoupons[couponKey]}
+            {#if balance > 0 && !$redeemedCoupons[coupon.coupon]}
                 <BaseCouponCard
-                    couponName={coupon.account.name}
+                    couponName={coupon.name}
                     couponDescription={couponMetadata.description}
                     couponImageUrl={couponMetadata.image}
                     storeName={storeMetadata.name}
@@ -88,8 +86,8 @@
                     storeImageUrl={storeMetadata.image}
                     {distance}
                     remaining={balance}
-                    expiry={timeStampToDate(coupon.account.validTo)}
-                    redemptionQRCodeURL={$redeemedCoupons[couponKey]}
+                    expiry={coupon.validTo}
+                    redemptionQRCodeURL={$redeemedCoupons[coupon.coupon]}
                 ></BaseCouponCard>
             {/if}
 
@@ -104,13 +102,13 @@
 
             <Dialog.Footer class="flex flex-row justify-end gap-4">
                 <BitsDialog.Close>
-                    {#if $redeemedCoupons[couponKey]}
+                    {#if $redeemedCoupons[coupon.coupon]}
                         <Button>Ok it's verified</Button>
                     {:else}
                         <Button>Save it for later</Button>
                     {/if}
                 </BitsDialog.Close>
-                {#if !$redeemedCoupons[couponKey]}
+                {#if !$redeemedCoupons[coupon.coupon]}
                     <Button on:click={onClick}>Use it now</Button>
                 {/if}
             </Dialog.Footer>

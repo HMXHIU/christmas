@@ -1,12 +1,13 @@
-import type { Account, Coupon, Store } from "$lib/anchorClient/types";
+import type {
+    Coupon,
+    CouponMetadataSchema,
+    Store,
+    StoreMetadataSchema,
+} from "$lib/community/types";
 import type { MessageFeed } from "$lib/components/crossover/GameWindow";
 import type { Item, Monster, Player, World } from "$lib/crossover/types";
 import type { Ability } from "$lib/crossover/world/abilities";
 import type { LandGrading } from "$lib/crossover/world/biomes";
-import type {
-    CouponMetadataSchema,
-    StoreMetadataSchema,
-} from "$lib/server/community/router";
 import type { CTA } from "$lib/server/crossover/player";
 import { UserDeviceClient } from "$lib/userDeviceClient";
 import type { UserMetadata } from "$lib/utils/user";
@@ -22,16 +23,16 @@ import type {
 // Community
 export let token = writable<string | null>(null); // jwt access token (cookies fallback, null if logged out)
 export let userDeviceClient = writable<UserDeviceClient | null>(null);
-export let marketCoupons = writable<[Account<Coupon>, number][]>([]);
-export let claimedCoupons = writable<[Account<Coupon>, number][]>([]);
+export let marketCoupons = writable<[Coupon, number][]>([]);
+export let claimedCoupons = writable<[Coupon, number][]>([]);
 export let redeemedCoupons = writable<Record<string, string>>({});
-export let stores = writable<Account<Store>[]>([]);
+export let stores = writable<Store[]>([]);
 export let storesMetadata = writable<
     Record<string, z.infer<typeof StoreMetadataSchema>>
 >({});
-export let mintedCoupons = writable<
-    Record<string, [Account<Coupon>, number, number][]>
->({});
+export let mintedCoupons = writable<Record<string, [Coupon, number, number][]>>(
+    {},
+);
 export let couponsMetadata = writable<
     Record<string, z.infer<typeof CouponMetadataSchema>>
 >({});

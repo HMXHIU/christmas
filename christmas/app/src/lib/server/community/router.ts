@@ -3,103 +3,70 @@ import {
     PUBLIC_JWT_EXPIRES_IN,
     PUBLIC_REFRESH_JWT_EXPIRES_IN,
 } from "$env/static/public";
-import { MemberMetadataSchema } from "$lib/community";
 import {
-    cleanCouponBalance,
-    cleanCouponSupplyBalance,
-    cleanStore,
-    cleanStoreAccount,
-} from "$lib/community/utils";
+    CouponMetadataSchema,
+    CreateCouponSchema,
+    CreateStoreSchema,
+    MemberMetadataSchema,
+    MintCouponSchema,
+    StoreMetadataSchema,
+    type Coupon,
+    type CouponAccount,
+    type Store,
+} from "$lib/community/types";
 import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
 import { imageDataUrlToFile } from "$lib/utils";
-import { Keypair, PublicKey } from "@solana/web3.js";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
-    FEE_PAYER_PUBKEY,
-    createSerializedTransaction,
     createSignInDataForSIWS,
+    generateNonce,
     hashObject,
-    serverAnchorClient,
     signJWT,
     verifyJWT,
     verifySIWS,
 } from "..";
+import { getOrCreateEntity } from "../crossover/redis/utils";
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, publicProcedure, t } from "../trpc";
 import { getOrCreateMember, getUser } from "../user";
+import {
+    couponAccountRepository,
+    couponRepository,
+    storeRepository,
+} from "./redis";
+import type { CouponEntity, StoreEntity } from "./redis/schema";
 
-export {
-    CouponMetadataSchema,
-    CreateCouponSchema,
-    CreateStoreSchema,
-    LoginSchema,
-    StoreMetadataSchema,
-    communityRouter,
-};
+export { communityRouter };
+
+const COUPON_PAGE_SIZE = 20;
 
 // Schema
 const LoginSchema = z.object({
     solanaSignInInput: z.any(),
     solanaSignInOutput: z.any(),
 });
-const CreateStoreSchema = z.object({
-    name: z.string(),
-    description: z.string(),
-    region: z.array(z.number()),
-    geohash: z.array(z.number()),
-    latitude: z.number(),
-    longitude: z.number(),
-    address: z.string(),
-    image: z.string(),
-});
-const StoreMetadataSchema = z.object({
-    name: z.string(),
-    description: z.string(),
-    image: z.string(),
-    address: z.string(),
-    latitude: z.number(),
-    longitude: z.number(),
-});
-const CreateCouponSchema = z.object({
-    name: z.string(),
-    description: z.string(),
-    region: z.array(z.number()),
-    geohash: z.array(z.number()),
-    store: z.string(),
-    validFrom: z.coerce.date(),
-    validTo: z.coerce.date(),
-    image: z.string(),
-});
-const CouponMetadataSchema = z.object({
-    name: z.string(),
-    description: z.string(),
-    image: z.string(),
-});
-const MintCouponSchema = z.object({
-    region: z.array(z.number()),
-    mint: z.string(),
-    coupon: z.string(),
-    numTokens: z.number().int().min(1).positive(),
-});
+
 const ClaimCouponSchema = z.object({
     numTokens: z.number().positive().int(),
-    mint: z.string(),
+    coupon: z.string(),
 });
+
 const RedeemCouponSchema = z.object({
     coupon: z.string(),
     numTokens: z.number().positive().int(),
-    mint: z.string(),
 });
+
 const VerifyRedemptionSchema = z.object({
     signature: z.string(),
-    mint: z.string(),
+    coupon: z.string(),
     wallet: z.string(),
     numTokens: z.number().positive().int(),
 });
-const MarketCouponSchema = z.object({
-    region: z.array(z.number()),
-    geohash: z.array(z.number()),
+
+const MarketSchema = z.object({
+    region: z.string(),
+    geohash: z.string(),
 });
 
 // Router
@@ -124,171 +91,268 @@ const communityRouter = {
                 const { mimeType, file: imageFile } =
                     await imageDataUrlToFile(image);
 
-                // Generate a new mint for coupon
-                const mint = Keypair.generate();
+                // Coupon id
+                const coupon = generateNonce(32);
 
-                // Upload image
+                // Upload coupon image to image bucket
                 const imageUrl = await ObjectStorage.putObject(
                     {
                         owner: null,
                         bucket: "image",
-                        name: hashObject([
-                            "image",
-                            ctx.user.publicKey,
-                            mint.publicKey.toBase58(),
-                        ]),
+                        name: hashObject(["image", ctx.user.publicKey, coupon]), // we can find it via this hash
                         data: Buffer.from(await imageFile.arrayBuffer()),
                     },
                     { "Content-Type": imageFile.type },
                 );
 
-                // Validate & upload coupon metadata
-                const metadata = await CouponMetadataSchema.parse({
-                    name,
-                    description,
-                    image: imageUrl,
-                });
+                // Validate & upload couponMetadata to coupon bucket
                 const couponMetadataUrl = await ObjectStorage.putJSONObject({
                     owner: null,
                     bucket: "coupon",
-                    name: hashObject([
-                        "coupon",
-                        ctx.user.publicKey,
-                        mint.publicKey.toBase58(),
-                    ]),
-                    data: metadata,
+                    name: hashObject(["coupon", ctx.user.publicKey, coupon]), // we can find it via this hash
+                    data: await CouponMetadataSchema.parse({
+                        name,
+                        description,
+                        image: imageUrl,
+                    }),
                 });
 
-                const ix = await serverAnchorClient.createCouponIx({
-                    mint,
-                    name,
+                let couponEntity: Coupon = {
+                    coupon,
                     region,
                     geohash,
-                    store: new PublicKey(store),
+                    name,
+                    uri: couponMetadataUrl,
+                    store,
                     validFrom,
                     validTo,
-                    uri: couponMetadataUrl,
-                    payer: FEE_PAYER_PUBKEY,
-                    wallet: new PublicKey(ctx.user.publicKey),
-                });
-
-                const base64Transaction = await createSerializedTransaction(
-                    ix,
-                    [mint],
-                ); // mint needs to sign as well
-                return {
-                    transaction: base64Transaction,
+                    owner: ctx.user.publicKey,
                 };
+
+                // Save CouponEntity
+                couponEntity = (await couponRepository.save(
+                    coupon,
+                    couponEntity,
+                )) as CouponEntity;
+
+                // TODO: SOLANA SIGNED MESSAGE
             }),
 
         // coupon.mint
         mint: authProcedure
             .input(MintCouponSchema)
             .mutation(async ({ ctx, input }) => {
-                // Validate request body
-                const { region, mint, coupon, numTokens } = input;
+                const { region, coupon, numTokens } = input;
 
-                const ix = await serverAnchorClient.mintToMarketIx({
-                    mint: new PublicKey(mint),
-                    coupon: new PublicKey(coupon),
-                    numTokens,
-                    region,
-                    payer: FEE_PAYER_PUBKEY,
-                    wallet: new PublicKey(ctx.user.publicKey),
-                });
+                // Get the region coupon account id
+                const regionAccountId = hashObject([coupon, region]);
+                const regionAccount = await getOrCreateEntity<CouponAccount>(
+                    regionAccountId,
+                    {
+                        account: regionAccountId,
+                        owner: region,
+                        supply: 0,
+                        coupon,
+                    },
+                    couponAccountRepository,
+                );
+                regionAccount.supply += numTokens;
+                await couponAccountRepository.save(
+                    regionAccountId,
+                    regionAccount,
+                );
 
-                const base64Transaction = await createSerializedTransaction(ix);
-                return {
-                    transaction: base64Transaction,
-                };
+                // TODO: SOLANA SIGNED MESSAGE
             }),
         // coupon.claim
         claim: authProcedure
             .input(ClaimCouponSchema)
             .mutation(async ({ ctx, input }) => {
-                const { numTokens, mint } = input;
+                const { numTokens, coupon } = input;
 
-                const ix = await serverAnchorClient.claimFromMarketIx({
-                    mint: new PublicKey(mint),
-                    numTokens,
-                    wallet: new PublicKey(ctx.user.publicKey),
-                    payer: FEE_PAYER_PUBKEY,
-                });
+                // Get the coupon region
+                const couponEntity = (await couponRepository.fetch(
+                    coupon,
+                )) as CouponEntity;
+                if (!couponEntity) {
+                    throw new Error(`${coupon} does not exists`);
+                }
 
-                const base64Transaction = await createSerializedTransaction(ix);
-                return {
-                    transaction: base64Transaction,
-                };
+                // Get the region account
+                const regionAccountId = hashObject([
+                    coupon,
+                    couponEntity.region,
+                ]);
+                const regionAccount = await getOrCreateEntity<CouponAccount>(
+                    regionAccountId,
+                    {
+                        account: regionAccountId,
+                        owner: couponEntity.region,
+                        supply: 0,
+                        coupon,
+                    },
+                    couponAccountRepository,
+                );
+
+                // Get user  account
+                const userAccountId = hashObject([coupon, ctx.user.publicKey]);
+                const userAccount = await getOrCreateEntity<CouponAccount>(
+                    userAccountId,
+                    {
+                        account: userAccountId,
+                        owner: ctx.user.publicKey,
+                        supply: 0,
+                        coupon,
+                    },
+                    couponAccountRepository,
+                );
+
+                if (regionAccount.supply >= numTokens) {
+                    regionAccount.supply -= numTokens;
+                    userAccount.supply += numTokens;
+
+                    await couponAccountRepository.save(
+                        regionAccount.account,
+                        regionAccount,
+                    );
+                    await couponAccountRepository.save(
+                        userAccount.account,
+                        userAccount,
+                    );
+                } else {
+                    throw new Error(
+                        `${couponEntity.region} does not have sufficient ${coupon} to be claimed.`,
+                    );
+                }
+
+                // TODO: SOLANA SIGNED MESSAGE
             }),
         // coupon.redeem
         redeem: authProcedure
             .input(RedeemCouponSchema)
             .mutation(async ({ ctx, input }) => {
-                const { coupon, numTokens, mint } = input;
+                const { coupon, numTokens } = input;
 
-                const ix = await serverAnchorClient.redeemCouponIx({
-                    wallet: new PublicKey(ctx.user.publicKey),
-                    payer: FEE_PAYER_PUBKEY,
-                    coupon: new PublicKey(coupon),
-                    numTokens,
-                    mint: new PublicKey(mint),
-                });
+                // Get user  account
+                const userAccountId = hashObject([coupon, ctx.user.publicKey]);
+                const userAccount = await getOrCreateEntity<CouponAccount>(
+                    userAccountId,
+                    {
+                        account: userAccountId,
+                        owner: ctx.user.publicKey,
+                        supply: 0,
+                        coupon,
+                    },
+                    couponAccountRepository,
+                );
 
-                const base64Transaction = await createSerializedTransaction(ix);
-                return {
-                    transaction: base64Transaction,
-                };
+                if (userAccount.supply >= numTokens) {
+                    userAccount.supply -= numTokens;
+                    await couponAccountRepository.save(
+                        userAccount.account,
+                        userAccount,
+                    );
+                } else {
+                    throw new Error(
+                        `${ctx.user.publicKey} does not have sufficient ${coupon} to redeem.`,
+                    );
+                }
+
+                // TODO: SOLANA SIGNED MESSAGE
             }),
         // coupon.verify
         verify: authProcedure
             .input(VerifyRedemptionSchema)
             .query(async ({ ctx, input }) => {
-                const { signature, mint, wallet, numTokens } = input;
+                const { signature, coupon, wallet, numTokens } = input;
 
-                const { isVerified, err } =
-                    await serverAnchorClient.verifyRedemption({
-                        mint: new PublicKey(mint),
-                        wallet: new PublicKey(wallet),
-                        numTokens,
-                        signature,
-                    });
+                // TODO: Not implemented
 
                 return {
-                    isVerified,
-                    err,
+                    isVerified: true,
+                    err: "",
                 };
             }),
         // coupon.market
         market: authProcedure
-            .input(MarketCouponSchema)
+            .input(MarketSchema)
             .query(async ({ ctx, input }) => {
                 const { region, geohash } = input;
-                return (
-                    await serverAnchorClient.getCoupons({
-                        region,
-                        geohash,
-                        date: new Date(), // current date
-                    })
-                ).map(cleanCouponBalance);
+
+                const accounts = (await couponAccountRepository
+                    .search()
+                    .where("owner")
+                    .equal(region)
+                    .and("supply")
+                    .greaterThan(0)
+                    .returnAll({
+                        pageSize: COUPON_PAGE_SIZE,
+                    })) as CouponAccount[];
+
+                const coupons: [Coupon, number][] = await Promise.all(
+                    accounts.map(({ coupon, supply }) => {
+                        return couponRepository.fetch(coupon).then((e) => {
+                            return [e as Coupon, supply] as [Coupon, number];
+                        });
+                    }),
+                );
+
+                return coupons;
             }),
         // coupon.claimed
         claimed: authProcedure.query(async ({ ctx }) => {
-            return (
-                await serverAnchorClient.getClaimedCoupons(
-                    new PublicKey(ctx.user.publicKey),
-                )
-            ).map(cleanCouponBalance);
+            const accounts = (await couponAccountRepository
+                .search()
+                .where("owner")
+                .equal(ctx.user.publicKey)
+                .and("supply")
+                .greaterThan(0)
+                .returnAll({ pageSize: COUPON_PAGE_SIZE })) as CouponAccount[];
+
+            const coupons: [Coupon, number][] = await Promise.all(
+                accounts.map(({ coupon, supply }) => {
+                    return couponRepository.fetch(coupon).then((e) => {
+                        return [e as Coupon, supply] as [Coupon, number];
+                    });
+                }),
+            );
+
+            return coupons;
         }),
         // coupon.minted
         minted: authProcedure
             .input(z.object({ store: z.string() }))
             .query(async ({ ctx, input }) => {
                 const { store } = input;
-                return (
-                    await serverAnchorClient.getMintedCoupons({
-                        store: new PublicKey(store),
-                    })
-                ).map(cleanCouponSupplyBalance);
+
+                const coupons = (await couponRepository
+                    .search()
+                    .where("store")
+                    .equal(store)
+                    .and("owner")
+                    .equal(ctx.user.publicKey)
+                    .returnAll({
+                        pageSize: COUPON_PAGE_SIZE,
+                    })) as CouponEntity[];
+
+                let couponBalances: [Coupon, number, number][] = [];
+
+                for (const c of coupons) {
+                    const { region, coupon } = c;
+                    const regionAccount = await couponAccountRepository
+                        .search()
+                        .where("coupon")
+                        .equal(c.coupon)
+                        .and("owner")
+                        .equal(c.region)
+                        .first();
+                    if (regionAccount) {
+                        const supply = (regionAccount as CouponAccount).supply;
+                        couponBalances.push([c, supply, supply]);
+                    }
+                }
+
+                return couponBalances;
             }),
     }),
 
@@ -313,18 +377,18 @@ const communityRouter = {
                     await imageDataUrlToFile(image);
 
                 // Get store id
-                const storeId = await serverAnchorClient.getAvailableStoreId();
+                const storeId = hashObject([
+                    ctx.user.publicKey,
+                    region,
+                    generateNonce(),
+                ]);
 
-                // Store image
+                // Upload store image
                 const imageUrl = await ObjectStorage.putObject(
                     {
                         owner: null,
                         bucket: "image",
-                        name: hashObject([
-                            "image",
-                            ctx.user.publicKey,
-                            storeId.toNumber(),
-                        ]),
+                        name: hashObject(["image", storeId]),
                         data: Buffer.from(await imageFile.arrayBuffer()),
                     },
                     { "Content-Type": imageFile.type },
@@ -335,11 +399,7 @@ const communityRouter = {
                     {
                         owner: null,
                         bucket: "store",
-                        name: hashObject([
-                            "store",
-                            ctx.user.publicKey,
-                            storeId.toNumber(),
-                        ]),
+                        name: hashObject(["store", storeId]),
                         data: await StoreMetadataSchema.parse({
                             name,
                             description,
@@ -352,42 +412,40 @@ const communityRouter = {
                     { "Content-Type": "application/json" },
                 );
 
-                const ix = await serverAnchorClient.createStoreIx({
-                    name,
-                    uri: storeMetadataUrl,
+                let store: Store = {
+                    store: storeId,
                     region,
                     geohash,
-                    storeId,
-                    payer: FEE_PAYER_PUBKEY,
-                    wallet: new PublicKey(ctx.user.publicKey),
-                });
-
-                const base64Transaction = await createSerializedTransaction(ix);
-                return {
-                    transaction: base64Transaction,
+                    name,
+                    uri: storeMetadataUrl,
+                    owner: ctx.user.publicKey,
                 };
+
+                // Save StoreEntity
+                const storeEntity = (await storeRepository.save(
+                    storeId,
+                    store,
+                )) as CouponEntity;
+
+                // TODO: SOLANA SIGNED MESSAGE
             }),
 
         // store.user
         user: authProcedure.query(async ({ ctx }) => {
-            // Note that store.id BN is serialized as string and needs to be deserialized on client
-            return (
-                await serverAnchorClient.getStores(
-                    new PublicKey(ctx.user.publicKey),
-                )
-            ).map(cleanStoreAccount);
+            const stores = (await storeRepository
+                .search()
+                .where("owner")
+                .equal(ctx.user.publicKey)
+                .returnAll()) as StoreEntity[];
+            return stores as Store[];
         }),
 
         // store.store
         store: authProcedure
             .input(z.object({ store: z.string() }))
             .query(async ({ ctx, input }) => {
-                const { store: storePda } = input;
-                return cleanStore(
-                    await serverAnchorClient.getStoreByPda(
-                        new PublicKey(storePda),
-                    ),
-                );
+                const { store } = input;
+                return (await storeRepository.fetch(store)) as Store;
             }),
     }),
     user: t.router({
@@ -502,7 +560,6 @@ const communityRouter = {
 
             // Check userSession has publicKey
             if (!userSession.publicKey) {
-                console.log("Invalid refreshToken");
                 throw new TRPCError({
                     code: "UNAUTHORIZED",
                     message: "Invalid refreshToken",

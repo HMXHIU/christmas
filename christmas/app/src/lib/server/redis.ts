@@ -1,0 +1,35 @@
+import {
+    REDIS_HOST,
+    REDIS_PASSWORD,
+    REDIS_PORT,
+    REDIS_USERNAME,
+} from "$env/static/private";
+import { createClient } from "redis";
+
+export { initializeRedisClients, redisClient, redisSubscribeClient };
+
+// Create redis pub sub clients
+const redisClient = createClient({
+    username: REDIS_USERNAME,
+    password: REDIS_PASSWORD,
+    socket: {
+        host: REDIS_HOST,
+        port: parseInt(REDIS_PORT),
+    },
+});
+const redisSubscribeClient = redisClient.duplicate();
+
+async function initializeRedisClients(
+    callback: (redisClient: any) => Promise<void>,
+) {
+    if (!redisClient.isOpen) {
+        await redisClient.connect();
+        console.info("Connected to Redis[pub]");
+    }
+    if (!redisSubscribeClient.isOpen) {
+        await redisSubscribeClient.connect();
+        console.info("Connected to Redis[sub]");
+    }
+
+    await callback(redisClient);
+}

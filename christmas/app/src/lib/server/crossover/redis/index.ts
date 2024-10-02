@@ -1,12 +1,5 @@
-import {
-    REDIS_HOST,
-    REDIS_PASSWORD,
-    REDIS_PORT,
-    REDIS_USERNAME,
-} from "$env/static/private";
 import { hashObject } from "$lib/server";
 import { type DialogueEntity } from "$lib/server/crossover/types";
-import { createClient } from "redis";
 import { Repository } from "redis-om";
 import { dialogues } from "../settings/npc";
 import {
@@ -21,13 +14,11 @@ import {
 // Exports
 export {
     dialogueRepository,
-    initializeClients,
+    initializeCrossoverRedisRepositories,
     itemRepository,
     monsterRepository,
     playerRepository,
     questRepository,
-    redisClient,
-    redisSubscribeClient,
     worldRepository,
 };
 
@@ -39,38 +30,18 @@ let worldRepository: Repository;
 let dialogueRepository: Repository;
 let questRepository: Repository;
 
-// Create clients
-const redisClient = createClient({
-    username: REDIS_USERNAME,
-    password: REDIS_PASSWORD,
-    socket: {
-        host: REDIS_HOST,
-        port: parseInt(REDIS_PORT),
-    },
-});
-const redisSubscribeClient = redisClient.duplicate();
+async function initializeCrossoverRedisRepositories(redisClient: any) {
+    // Register Schemas
+    registerSchemas(redisClient);
 
-async function initializeClients() {
-    if (!redisClient.isOpen) {
-        await redisClient.connect();
-        console.info("Connected to Redis[pub]");
+    // Create Indexes
+    await createIndexes();
 
-        // Register Schemas
-        registerSchemas();
-
-        // Create Indexes
-        await createIndexes();
-
-        // Index Dialogues
-        await indexDialogues();
-    }
-    if (!redisSubscribeClient.isOpen) {
-        await redisSubscribeClient.connect();
-        console.info("Connected to Redis[sub]");
-    }
+    // Index Dialogues
+    await indexDialogues();
 }
 
-function registerSchemas() {
+function registerSchemas(redisClient: any) {
     console.info("Registering redis schemas");
     playerRepository = new Repository(PlayerEntitySchema, redisClient);
     monsterRepository = new Repository(MonsterEntitySchema, redisClient);

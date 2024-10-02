@@ -1,6 +1,9 @@
 <script lang="ts">
-    import type { Account, Coupon } from "$lib/anchorClient/types";
-    import type { MintCouponParams } from "$lib/community";
+    import {
+        MintCouponSchema,
+        type Coupon,
+        type MintCoupon,
+    } from "$lib/community/types";
     import { Button } from "$lib/components/ui/button";
     import * as Dialog from "$lib/components/ui/dialog";
     import { Input } from "$lib/components/ui/input";
@@ -8,34 +11,25 @@
     import { Separator } from "$lib/components/ui/separator";
     import { parseZodErrors } from "$lib/utils";
     import { Dialog as BitsDialog } from "bits-ui";
-    import { onMount } from "svelte";
-    import { z } from "zod";
 
-    export let coupon: Account<Coupon>;
-
-    export let onMintCoupon: (
-        mintCouponParams: MintCouponParams,
-    ) => Promise<void>;
+    export let coupon: Coupon;
+    export let onMintCoupon: (mintCouponParams: MintCoupon) => Promise<void>;
 
     let openDialog = false;
-
     let numTokens: number = 1;
-
     let errors: {
         numTokens?: number;
     } = {};
 
-    const schema = z.object({
-        numTokens: z.coerce.number().int().min(1).positive(),
-    });
-
-    onMount(() => {});
-
     async function onSubmit() {
         try {
-            const mintCouponParams = await schema.parse({ numTokens });
+            const mintCouponParams = await MintCouponSchema.parse({
+                numTokens,
+                region: coupon.region,
+                coupon: coupon.coupon,
+            });
             errors = {};
-            await onMintCoupon({ ...mintCouponParams, coupon });
+            await onMintCoupon(mintCouponParams);
             openDialog = false;
         } catch (err) {
             errors = parseZodErrors(err);

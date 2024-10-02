@@ -1,4 +1,4 @@
-import { MemberMetadataSchema } from "$lib/community";
+import { MemberMetadataSchema } from "$lib/community/types";
 import { PlayerMetadataSchema } from "$lib/crossover/world/player";
 import { z } from "zod";
 

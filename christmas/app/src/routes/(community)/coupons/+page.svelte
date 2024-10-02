@@ -3,9 +3,8 @@
         claimCoupon,
         fetchClaimedCoupons,
         redeemCoupon,
-        type ClaimCouponParams,
-        type RedeemCouponParams,
     } from "$lib/community";
+    import type { Coupon } from "$lib/community/types";
     import ClaimedCouponCard from "$lib/components/community/ClaimedCouponCard.svelte";
     import MarketCouponCard from "$lib/components/community/MarketCouponCard.svelte";
 
@@ -49,14 +48,20 @@
         "Fallen autumn leaves, Whispers of the empty wind, Nature's void perceived",
     ];
 
-    async function onClaimCoupon(claimCouponParams: ClaimCouponParams) {
+    async function onClaimCoupon(claimCouponParams: {
+        numTokens: number;
+        coupon: Coupon;
+    }) {
         // Claim coupon
         await claimCoupon(claimCouponParams);
         // Refetch claimed coupons
         await fetchClaimedCoupons();
     }
 
-    async function onRedeemCoupon(redeemCouponParams: RedeemCouponParams) {
+    async function onRedeemCoupon(redeemCouponParams: {
+        numTokens: number;
+        coupon: Coupon;
+    }) {
         const { coupon, numTokens } = redeemCouponParams;
 
         // Redeem coupon
@@ -67,14 +72,14 @@
             const redemptionQRCodeURL = generateURL({
                 signature: transactionResult.signature,
                 wallet: (window as any).solana.publicKey.toString(),
-                mint: coupon.account.mint.toString(),
+                coupon: coupon.coupon,
                 numTokens: String(numTokens),
             });
 
             // Update `redeemedCoupons` store
             if (redemptionQRCodeURL) {
                 redeemedCoupons.update((r) => {
-                    r[coupon.publicKey.toString()] = redemptionQRCodeURL;
+                    r[coupon.coupon] = redemptionQRCodeURL;
                     return r;
                 });
             }
@@ -86,7 +91,7 @@
 <div
     class="container scroll-container snap-x scroll-px-4 snap-mandatory scroll-smooth flex gap-4 overflow-x-auto px-4 py-3"
 >
-    {#each $claimedCoupons as [coupon, balance] (coupon.publicKey)}
+    {#each $claimedCoupons as [coupon, balance] (coupon.coupon)}
         <div class="snap-start w-52 shrink-0 flex items-stretch">
             <ClaimedCouponCard {coupon} {balance} {onRedeemCoupon}
             ></ClaimedCouponCard>
@@ -117,7 +122,7 @@
 <div
     class="container grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 px-4 py-4 mt-2"
 >
-    {#each $marketCoupons as [coupon, balance] (coupon.publicKey)}
+    {#each $marketCoupons as [coupon, balance] (coupon.coupon)}
         <MarketCouponCard {coupon} {balance} {onClaimCoupon}></MarketCouponCard>
     {/each}
 </div>
