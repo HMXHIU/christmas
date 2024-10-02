@@ -57,7 +57,6 @@
   },
   "type": "module",
   "dependencies": {
-    "@coral-xyz/anchor": "^0.29.0",
     "@googlemaps/js-api-loader": "^1.16.2",
     "@internationalized/date": "^3.5.2",
     "@pixi/sound": "^6.0.0",
@@ -72,6 +71,7 @@
     "clsx": "^2.1.0",
     "cmdk-sv": "^0.0.13",
     "countries-and-timezones": "^3.6.0",
+    "encoding": "^0.1.13",
     "gsap": "^3.12.5",
     "html5-qrcode": "^2.3.8",
     "jsonwebtoken": "^9.0.2",
