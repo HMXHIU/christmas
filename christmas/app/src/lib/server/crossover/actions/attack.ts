@@ -55,7 +55,7 @@ async function attack(
     // Check if can attack
     const [ok, error] = canAttackTarget(player, targetEntity);
     if (!ok) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message: error,
         });
@@ -68,7 +68,7 @@ async function attack(
     // Inform weapon durability
     for (const weapon of weapons) {
         if (weapon.dur <= 0) {
-            publishFeedEvent(player.player, {
+            await publishFeedEvent(player.player, {
                 type: "message",
                 message: `Your ${weapon.name} feels brittle, too damaged to be of any use.`,
             });

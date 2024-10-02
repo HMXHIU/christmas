@@ -93,7 +93,7 @@ async function say(
 
     // Send message to all players in the geohash (non blocking)
     for (const publicKey of players) {
-        publishFeedEvent(publicKey, {
+        await publishFeedEvent(publicKey, {
             type: "message",
             message: options?.overwrite
                 ? "${message}"
@@ -112,7 +112,7 @@ async function move(
     entity: PlayerEntity | MonsterEntity,
     path: Direction[],
     now?: number,
-): Promise<PlayerEntity | MonsterEntity> {
+) {
     // Get path duration
     now = now ?? Date.now();
     const duration = calculatePathDuration(path);
@@ -138,7 +138,7 @@ async function move(
         if (!isTraversable) {
             const error = `Path is not traversable`;
             if (entityType === "player") {
-                publishFeedEvent(entityId, {
+                await publishFeedEvent(entityId, {
                     type: "error",
                     message: error,
                 });
@@ -158,7 +158,7 @@ async function move(
     entity.pthdur = duration;
     entity.pthclk = now;
     entity.loc = loc; // update loc immediately to final location (client and server to use `pthclk` to determine exact location)
-    entity = (await saveEntity(entity)) as PlayerEntity | MonsterEntity;
+    entity = await saveEntity(entity);
 
     // Inform all players nearby of location change
     const nearbyPlayerIds = await getNearbyPlayerIds(
@@ -166,7 +166,7 @@ async function move(
         entity.locT as GeohashLocation,
         entity.locI,
     );
-    publishAffectedEntitiesToPlayers(
+    await publishAffectedEntitiesToPlayers(
         [minifiedEntity(entity, { location: true, demographics: true })],
         {
             publishTo: nearbyPlayerIds,
@@ -181,7 +181,7 @@ async function move(
             entity.locI,
             LOOK_PAGE_SIZE,
         );
-        publishAffectedEntitiesToPlayers(
+        await publishAffectedEntitiesToPlayers(
             [
                 ...monsters.map((e) => minifiedEntity(e, { location: true })),
                 ...players
@@ -197,8 +197,6 @@ async function move(
             { publishTo: [entityId] },
         );
     }
-
-    return entity;
 }
 
 async function look(
@@ -234,7 +232,7 @@ async function look(
         ...inventoryItems,
     ];
 
-    publishAffectedEntitiesToPlayers(entities, {
+    await publishAffectedEntitiesToPlayers(entities, {
         publishTo: [player.player],
         op: "replace",
     });
@@ -247,7 +245,7 @@ async function inventory(player: PlayerEntity) {
         player.player,
     ).return.all()) as ItemEntity[];
 
-    publishAffectedEntitiesToPlayers(inventoryItems, {
+    await publishAffectedEntitiesToPlayers(inventoryItems, {
         publishTo: [player.player],
     });
 }
@@ -270,7 +268,7 @@ async function rest(player: PlayerEntity, now?: number) {
     player = await saveEntity(player);
 
     // Publish update event
-    publishAffectedEntitiesToPlayers([player], {
+    await publishAffectedEntitiesToPlayers([player], {
         publishTo: [player.player],
     });
 }
@@ -279,7 +277,7 @@ async function fulfill(player: PlayerEntity, writ: string) {
     const writEntity = (await fetchEntity(writ)) as ItemEntity;
 
     if (!writEntity) {
-        publishFeedEvent(player.player, {
+        await publishFeedEvent(player.player, {
             type: "error",
             message: "The writ no longer exists or has already been fulfilled.",
         });

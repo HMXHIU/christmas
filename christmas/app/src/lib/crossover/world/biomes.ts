@@ -360,6 +360,7 @@ function bilinearInterpolation({
     return I;
 }
 
+// ???? this is causing node to crash __filename != fileName
 async function topologyAtGeohash(
     geohash: string,
     options?: {
@@ -594,7 +595,6 @@ async function biomeAtGeohash(
         result = await dungeonBiomeAtGeohash(geohash, locationType, {
             dungeonGraphCache: options?.dungeonGraphCache,
         });
-        // result = [biomes.grassland.biome, 1];
     }
     // Leave h9* for ice for testing (fully traversable)
     else if (geohash.startsWith("h9")) {
