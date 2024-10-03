@@ -75,11 +75,13 @@ async function saveEntities(
 
 async function getOrCreateEntity<T>(
     id: string,
+    idKey: string,
     data: T,
     repository: Repository<Record<string, any>>,
 ): Promise<T> {
     const entity = await repository.fetch(id);
-    if (entity) {
+    // Note: redis will return empty entity which is not null, need to check a known key
+    if (entity[idKey]) {
         return entity as T;
     } else {
         return (await repository.save(id, data as Record<string, any>)) as T;

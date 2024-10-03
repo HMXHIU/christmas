@@ -24,7 +24,7 @@
     async function onSubmit() {
         try {
             const mintCouponParams = await MintCouponSchema.parse({
-                numTokens,
+                numTokens: Number(numTokens),
                 region: coupon.region,
                 coupon: coupon.coupon,
             });

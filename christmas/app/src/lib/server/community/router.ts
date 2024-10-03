@@ -129,6 +129,24 @@ const communityRouter = {
                     owner: ctx.user.publicKey,
                 };
 
+                console.log(
+                    JSON.stringify(
+                        {
+                            coupon,
+                            region,
+                            geohash,
+                            name,
+                            uri: couponMetadataUrl,
+                            store,
+                            validFrom,
+                            validTo,
+                            owner: ctx.user.publicKey,
+                        },
+                        null,
+                        2,
+                    ),
+                );
+
                 // Save CouponEntity
                 couponEntity = (await couponRepository.save(
                     coupon,
@@ -148,6 +166,7 @@ const communityRouter = {
                 const regionAccountId = hashObject([coupon, region]);
                 const regionAccount = await getOrCreateEntity<CouponAccount>(
                     regionAccountId,
+                    "account",
                     {
                         account: regionAccountId,
                         owner: region,
@@ -156,6 +175,7 @@ const communityRouter = {
                     },
                     couponAccountRepository,
                 );
+
                 regionAccount.supply += numTokens;
                 await couponAccountRepository.save(
                     regionAccountId,
@@ -185,6 +205,7 @@ const communityRouter = {
                 ]);
                 const regionAccount = await getOrCreateEntity<CouponAccount>(
                     regionAccountId,
+                    "account",
                     {
                         account: regionAccountId,
                         owner: couponEntity.region,
@@ -198,6 +219,7 @@ const communityRouter = {
                 const userAccountId = hashObject([coupon, ctx.user.publicKey]);
                 const userAccount = await getOrCreateEntity<CouponAccount>(
                     userAccountId,
+                    "account",
                     {
                         account: userAccountId,
                         owner: ctx.user.publicKey,
@@ -237,6 +259,7 @@ const communityRouter = {
                 const userAccountId = hashObject([coupon, ctx.user.publicKey]);
                 const userAccount = await getOrCreateEntity<CouponAccount>(
                     userAccountId,
+                    "account",
                     {
                         account: userAccountId,
                         owner: ctx.user.publicKey,
@@ -325,6 +348,7 @@ const communityRouter = {
             .query(async ({ ctx, input }) => {
                 const { store } = input;
 
+                // Get coupons belonging to owner's store
                 const coupons = (await couponRepository
                     .search()
                     .where("store")
@@ -336,20 +360,24 @@ const communityRouter = {
                     })) as CouponEntity[];
 
                 let couponBalances: [Coupon, number, number][] = [];
-
                 for (const c of coupons) {
-                    const { region, coupon } = c;
-                    const regionAccount = await couponAccountRepository
-                        .search()
-                        .where("coupon")
-                        .equal(c.coupon)
-                        .and("owner")
-                        .equal(c.region)
-                        .first();
-                    if (regionAccount) {
-                        const supply = (regionAccount as CouponAccount).supply;
-                        couponBalances.push([c, supply, supply]);
-                    }
+                    // Get/Create the region account for the coupon
+                    const regionAccountId = hashObject([c.coupon, c.region]);
+                    const regionAccount =
+                        await getOrCreateEntity<CouponAccount>(
+                            regionAccountId,
+                            "account",
+                            {
+                                account: regionAccountId,
+                                owner: c.region,
+                                supply: 0,
+                                coupon: c.coupon,
+                            },
+                            couponAccountRepository,
+                        );
+
+                    const supply = (regionAccount as CouponAccount).supply;
+                    couponBalances.push([c, supply, supply]);
                 }
 
                 return couponBalances;

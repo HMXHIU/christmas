@@ -1,5 +1,3 @@
-import { Client, CopyConditions, type BucketItem } from "minio";
-
 import {
     MINIO_ACCESS_KEY,
     MINIO_ENDPOINT,
@@ -8,6 +6,7 @@ import {
     MINIO_USE_SSL,
 } from "$env/static/private";
 import { PUBLIC_HOST } from "$env/static/public";
+import { Client, CopyConditions, type BucketItem } from "minio";
 import type { Readable } from "stream";
 
 export { BUCKETS, ObjectStorage };
