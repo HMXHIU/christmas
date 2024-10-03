@@ -249,6 +249,10 @@ export class AnimationManager {
     getAnimation(name: string): Animation | undefined {
         return this.animations[name];
     }
+
+    setAnimation(name: string, animation: Animation): void {
+        this.animations[name] = animation;
+    }
 }
 
 export function timeIndex(time: number | string) {
