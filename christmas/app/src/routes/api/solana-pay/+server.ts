@@ -1,5 +1,5 @@
-import { json } from "@sveltejs/kit";
 import { parseURL } from "@solana/pay";
+import { json } from "@sveltejs/kit";
 
 /** @type {import('@sveltejs/kit').RequestHandler} */
 export const GET = (event: any) => {
@@ -20,7 +20,6 @@ export const POST = async (event: any) => {
     let signer_ip = event.request.headers.get("x-forwarded-for");
 
     const solanaPayParameters = parseURL(event.url);
-    console.log(JSON.stringify(solanaPayParameters, null, 2));
 
     return json({
         transaction: "base64Transaction", // return serialized partially signed transaction

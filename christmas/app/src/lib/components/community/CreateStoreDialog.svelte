@@ -76,7 +76,6 @@
                 geohash,
                 region: region?.value,
             });
-            console.log(JSON.stringify(createStoreParams, null, 2));
             errors = {};
             await onCreateStore(createStoreParams);
             openDialog = false;

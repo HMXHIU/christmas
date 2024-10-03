@@ -32,8 +32,6 @@ async function executeGiveCTA(
         });
     }
 
-    console.log(JSON.stringify({ receiver, item, player }, null, 2));
-
     await give(
         (await fetchEntity(player)) as PlayerEntity,
         (await fetchEntity(receiver)) as PlayerEntity,
