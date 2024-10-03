@@ -6,12 +6,16 @@
     } from "../../../../app/src/lib/components/crossover/avatar/types";
     import { avatar } from "../store";
     import RiggingTool from "./RiggingTool.svelte";
+    import Modal from "./Modal.svelte";
+    import { kebabCase } from "lodash";
 
     export let selectedAnimation: Animation | null = null;
     export let selectedPose: Pose | null = null;
 
     let showRiggingTool: boolean = false;
     let loopAnimation: boolean = false;
+    let showModal: boolean = false;
+    let animationName: string = "";
 
     function handleAvatarFileSelect(event: Event) {
         const input = event.target as HTMLInputElement;
@@ -157,7 +161,67 @@
                 {/each}
             {/if}
         </select>
+        <button
+            type="button"
+            on:click={() => (showModal = true)}
+            class="ml-1 mb-2 text-sm"
+            style="color: blue; text-decoration: underline;"
+        >
+            Add Animation
+        </button>
     </div>
+
+    <Modal bind:showModal>
+        <h2 slot="header">Add Animation</h2>
+        <div class="p-2 mb-4">
+            <label class="block mb-2" for="animationName">Name</label>
+            <input
+                type="text"
+                id="animationName"
+                class="w-full p-2 border rounded"
+                on:change={(e) => {
+                    let newAnimationName = e.target.value;
+                    if (newAnimationName == null) {
+                        console.error("No animation name to add");
+                        return;
+                    }
+                    if ($avatar == null) {
+                        console.error("No avatar to add animation to");
+                        return;
+                    }
+
+                    // reference from idle
+                    let newAnimation = {
+                        ...Object.values(
+                            $avatar.animationManager.animations,
+                        )[1],
+                        animation: kebabCase(newAnimationName),
+                    };
+
+                    newAnimation = {
+                        ...newAnimation,
+                        bones: newAnimation.bones.map((bone) => {
+                            return {
+                                ...bone,
+                                keyframes: [],
+                            };
+                        }),
+                    };
+
+                    console.log(newAnimation);
+
+                    $avatar.animationManager.setAnimation(
+                        kebabCase(newAnimationName),
+                        newAnimation,
+                    );
+
+                    $avatar.animationManager.animations =
+                        $avatar.animationManager.animations;
+                    selectedAnimation = newAnimation;
+                }}
+            />
+        </div>
+    </Modal>
 
     <!-- Select Pose -->
     <div class="mb-4">
