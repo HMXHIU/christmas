@@ -36,15 +36,8 @@ export class Avatar extends Container {
 
     async preloadTextures(): Promise<void> {
         if (!this.metadata) return;
-        const texturePromises = Object.values(this.metadata.textures).map(
-            (t) => {
-                console.log(
-                    `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology${t}`,
-                );
-                return Assets.load(
-                    `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology${t}`,
-                );
-            },
+        const texturePromises = Object.values(this.metadata.textures).map((t) =>
+            Assets.load(t),
         );
         await Promise.all(texturePromises);
     }
@@ -84,6 +77,12 @@ export class Avatar extends Container {
         metadata: AvatarMetadata,
         entityId: string,
     ): Promise<void> {
+        // Patch textures with actual url
+        for (const k of Object.keys(metadata.textures)) {
+            metadata.textures[k] =
+                `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology${metadata.textures[k]}`;
+        }
+
         this.metadata = cloneDeep(metadata);
 
         // Clear existing bones
