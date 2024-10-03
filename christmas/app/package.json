@@ -1,6 +1,9 @@
 {
   "name": "app-svelte",
   "version": "0.0.1",
+  "engines": {
+    "node": "20.x"
+  },
   "private": true,
   "scripts": {
     "dev": "vite dev",
