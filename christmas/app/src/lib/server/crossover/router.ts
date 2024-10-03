@@ -178,7 +178,7 @@ const BuffEntitySchema = z.object({
 const SpawnWorldSchema = z.object({
     geohash: z.string(),
     locationType: GeohashLocationSchema,
-    tilemap: z.string(), // tilemap in `PUBLIC_TILED_MINIO_BUCKET` bucket
+    tilemap: z.string(), // in minio bucket `game/worlds/tilemaps/${tilemap}`
 });
 
 // Schemas - player
@@ -300,8 +300,8 @@ const crossoverRouter = {
                 const { geohash, tilemap, locationType } = input;
                 const assetUrl = ObjectStorage.objectUrl({
                     owner: null,
-                    bucket: "tiled",
-                    name: `tilemaps/${tilemap}`,
+                    bucket: "game",
+                    name: `worlds/tilemaps/${tilemap}`,
                 });
                 const world = await spawnWorld({
                     geohash,

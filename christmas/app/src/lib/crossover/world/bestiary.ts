@@ -1,4 +1,4 @@
-import { PUBLIC_HOST } from "$env/static/public";
+import { PUBLIC_MINIO_ENDPOINT } from "$env/static/public";
 import type { NPCs } from "$lib/server/crossover/npc/types";
 import type { SkillLines } from "./skills";
 import type { AssetMetadata } from "./types";
@@ -16,12 +16,12 @@ const avatarMorphologies: Record<
     { avatar: string; animation: string }
 > = {
     humanoid: {
-        avatar: `${PUBLIC_HOST}/avatar/humanoid.json`,
-        animation: `${PUBLIC_HOST}/avatar/humanoid_animation.json`,
+        avatar: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/humanoid.json`, // make sure to upload to the game/avatar/morphology bucket
+        animation: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/humanoid_animation.json`,
     },
     canine: {
-        avatar: `${PUBLIC_HOST}/avatar/canine.json`,
-        animation: `${PUBLIC_HOST}/avatar/canine.json`,
+        avatar: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/canine.json`,
+        animation: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/canine_animation.json`,
     },
 };
 

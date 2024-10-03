@@ -1,4 +1,5 @@
 // src/lib/Avatar.ts
+import { PUBLIC_MINIO_ENDPOINT } from "$env/static/public";
 import { cloneDeep } from "lodash";
 import { Assets, Container, Sprite, type DestroyOptions } from "pixi.js";
 import { AnimationManager } from "./AnimationManager";
@@ -36,7 +37,14 @@ export class Avatar extends Container {
     async preloadTextures(): Promise<void> {
         if (!this.metadata) return;
         const texturePromises = Object.values(this.metadata.textures).map(
-            (url) => Assets.load(url),
+            (t) => {
+                console.log(
+                    `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology${t}`,
+                );
+                return Assets.load(
+                    `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology${t}`,
+                );
+            },
         );
         await Promise.all(texturePromises);
     }

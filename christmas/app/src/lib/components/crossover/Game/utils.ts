@@ -1,4 +1,4 @@
-import { PUBLIC_TILED_MINIO_BUCKET } from "$env/static/public";
+import { PUBLIC_MINIO_ENDPOINT } from "$env/static/public";
 import {
     topologyBufferCache,
     topologyResponseCache,
@@ -232,11 +232,13 @@ async function loadAssetTexture(
 }
 
 function decodeTiledSource(path: string): string {
-    const source = decodeURIComponent(path) // strip '../'
-        .split("/")
-        .slice(1)
-        .join("/");
-    return `/api/storage/${PUBLIC_TILED_MINIO_BUCKET}/public/${source}`;
+    // const source = decodeURIComponent(path) // strip '../'
+    //     .split("/")
+    //     .slice(1)
+    //     .join("/");
+
+    // eg. path should be the path in the games bucket (eg. /worlds/tilesets/farm.json)
+    return `${PUBLIC_MINIO_ENDPOINT}/game${path}`;
 }
 
 async function getTilesetForTile(
@@ -275,17 +277,43 @@ async function getImageForTile(
     throw new Error(`Missing image for tileId ${tileId}`);
 }
 
+function updateSrcWithDomain(data: any, domain: string) {
+    // Check if data is an array
+    if (Array.isArray(data)) {
+        data.forEach((item) => updateSrcWithDomain(item, domain));
+    }
+    // Check if data is an object
+    else if (typeof data === "object" && data !== null) {
+        Object.keys(data).forEach((key) => {
+            if (key === "src" && typeof data[key] === "string") {
+                // If src does not start with 'http', prepend the domain
+                if (!data[key].startsWith("http")) {
+                    data[key] = domain + data[key];
+                }
+            } else {
+                // Recursively process nested objects or arrays
+                updateSrcWithDomain(data[key], domain);
+            }
+        });
+    }
+}
+
 async function initAssetManager() {
+    const manifestUrl = `${PUBLIC_MINIO_ENDPOINT}/game/sprites/manifest.json`;
+    let manifest = await (await fetch(manifestUrl)).json();
+    // Recursively patch all `src` in the manifest which does not start with http to the game bucket
+    manifest = updateSrcWithDomain(manifest, `${PUBLIC_MINIO_ENDPOINT}/game`);
+    console.log(JSON.stringify(manifest, null, 2));
+
     // Load assets in background
-    await Assets.init({ manifest: "/sprites/manifest.json" });
+    await Assets.init({ manifest });
     Assets.backgroundLoadBundle([
-        "player",
         "biomes",
         "bestiary",
         "props",
-        "pedestals",
         "actions",
         "sound-effects",
+        "animation-effects",
     ]);
 }
 

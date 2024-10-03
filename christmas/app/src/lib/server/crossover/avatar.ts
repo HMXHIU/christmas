@@ -78,21 +78,17 @@ function getAvatarTextures({
     // Male
     if (demographic.gender === "male") {
         textures = {
-            head: "http://localhost:5173/avatar/images/head/face/female_default/face.png",
-            front_hair:
-                "http://localhost:5173/avatar/images/head/hair/female_long/front_hair.png",
-            back_hair:
-                "http://localhost:5173/avatar/images/head/hair/female_long/back_hair.png",
+            head: "/images/head/face/female_default/face.png",
+            front_hair: "/images/head/hair/female_long/front_hair.png",
+            back_hair: "/images/head/hair/female_long/back_hair.png",
         };
     }
     // Female
     else {
         textures = {
-            head: "http://localhost:5173/avatar/images/head/face/female_default/face.png",
-            front_hair:
-                "http://localhost:5173/avatar/images/head/hair/female_long/front_hair.png",
-            back_hair:
-                "http://localhost:5173/avatar/images/head/hair/female_long/back_hair.png",
+            head: "/images/head/face/female_default/face.png",
+            front_hair: "/images/head/hair/female_long/front_hair.png",
+            back_hair: "/images/head/hair/female_long/back_hair.png",
         };
     }
 

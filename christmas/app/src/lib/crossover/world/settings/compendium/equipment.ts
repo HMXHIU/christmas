@@ -1,3 +1,4 @@
+import { PUBLIC_MINIO_ENDPOINT } from "$env/static/public";
 import type { Prop } from "../../compendium";
 import { tints } from "../../materials";
 
@@ -8,12 +9,12 @@ export let equipment: Record<string, Prop> = {
     steelplate: {
         prop: "steelplate",
         asset: {
-            path: "http://localhost:5173/avatar/images/female_steel_plate/torso.png",
+            path: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/images/female_steel_plate/torso.png`,
         },
         equipmentAssets: {
             torsoBone: {
                 asset: {
-                    path: "http://localhost:5173/avatar/images/female_steel_plate/torso.png",
+                    path: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/images/female_steel_plate/torso.png`,
                 },
                 tint: tints.black,
             },
@@ -37,18 +38,18 @@ export let equipment: Record<string, Prop> = {
     steelleg: {
         prop: "steelleg",
         asset: {
-            path: "http://localhost:5173/avatar/images/female_steel_plate/front_upper_leg.png",
+            path: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/images/female_steel_plate/front_upper_leg.png`,
         },
         equipmentAssets: {
             frontUpperLegBone: {
                 asset: {
-                    path: "http://localhost:5173/avatar/images/female_steel_plate/front_upper_leg.png",
+                    path: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/images/female_steel_plate/front_upper_leg.png`,
                 },
                 tint: tints.black,
             },
             backUpperLegBone: {
                 asset: {
-                    path: "http://localhost:5173/avatar/images/female_steel_plate/back_upper_leg.png",
+                    path: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/images/female_steel_plate/back_upper_leg.png`,
                 },
                 tint: tints.black,
             },
@@ -78,19 +79,19 @@ export let equipment: Record<string, Prop> = {
     steelboot: {
         prop: "steelboot",
         asset: {
-            path: "http://localhost:5173/avatar/images/female_steel_plate/front_lower_leg.png",
+            path: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/images/female_steel_plate/front_lower_leg.png`,
         },
         equipmentAssets: {
             frontLowerLegBone: {
                 asset: {
-                    path: "http://localhost:5173/avatar/images/female_steel_plate/front_lower_leg.png",
+                    path: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/images/female_steel_plate/front_lower_leg.png`,
                 },
                 replace: true,
                 tint: tints.none, // replace and remove tints added from other armor
             },
             backLowerLegBone: {
                 asset: {
-                    path: "http://localhost:5173/avatar/images/female_steel_plate/back_lower_leg.png",
+                    path: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/images/female_steel_plate/back_lower_leg.png`,
                 },
                 replace: true,
                 tint: tints.none,
@@ -115,7 +116,7 @@ export let equipment: Record<string, Prop> = {
     steelpauldron: {
         prop: "steelpauldron",
         asset: {
-            path: "http://localhost:5173/avatar/images/female_steel_plate/front_upper_arm.png",
+            path: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/images/female_steel_plate/front_upper_arm.png`,
         },
         equipmentAssets: {
             frontLowerArmBone: {
@@ -126,13 +127,13 @@ export let equipment: Record<string, Prop> = {
             },
             frontUpperArmBone: {
                 asset: {
-                    path: "http://localhost:5173/avatar/images/female_steel_plate/front_upper_arm.png",
+                    path: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/images/female_steel_plate/front_upper_arm.png`,
                 },
                 tint: tints.black,
             },
             backUpperArmBone: {
                 asset: {
-                    path: "http://localhost:5173/avatar/images/female_steel_plate/back_upper_arm.png",
+                    path: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/images/female_steel_plate/back_upper_arm.png`,
                 },
                 tint: tints.black,
             },
@@ -156,18 +157,18 @@ export let equipment: Record<string, Prop> = {
     steelgauntlet: {
         prop: "steelgauntlet",
         asset: {
-            path: "http://localhost:5173/avatar/images/female_steel_plate/front_lower_arm.png",
+            path: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/images/female_steel_plate/front_lower_arm.png`,
         },
         equipmentAssets: {
             frontLowerArmBone: {
                 asset: {
-                    path: "http://localhost:5173/avatar/images/female_steel_plate/front_lower_arm.png",
+                    path: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/images/female_steel_plate/front_lower_arm.png`,
                 },
                 tint: tints.black,
             },
             backLowerArmBone: {
                 asset: {
-                    path: "http://localhost:5173/avatar/images/female_steel_plate/back_lower_arm.png",
+                    path: `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology/images/female_steel_plate/back_lower_arm.png`,
                 },
                 tint: tints.black,
             },

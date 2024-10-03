@@ -1,4 +1,4 @@
-import { PUBLIC_TOPOLOGY_ENDPOINT } from "$env/static/public";
+import { PUBLIC_MINIO_ENDPOINT } from "$env/static/public";
 import { type CacheInterface } from "$lib/caches";
 import { geohashToColRow } from "$lib/crossover/utils";
 import { seededRandom, stringToRandomNumber } from "$lib/utils";
@@ -287,7 +287,7 @@ function topologyTile(geohash: string): {
     const [col, row] = geohashToColRow(geohash);
 
     return {
-        url: `${PUBLIC_TOPOLOGY_ENDPOINT}/${tile}.png`,
+        url: `${PUBLIC_MINIO_ENDPOINT}/topology/topology_2p/${tile}.png`,
         topLeft,
         rows,
         cols,

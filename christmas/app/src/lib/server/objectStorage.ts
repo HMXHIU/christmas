@@ -33,7 +33,7 @@ const BUCKETS = {
     image: "image",
     npc: "npc",
     avatar: "avatar",
-    tiled: "tiled",
+    game: "game", // everything inside is public readonly
 };
 
 /**
@@ -76,6 +76,8 @@ class ObjectStorage {
         // Upload object
         console.log(
             `WRITE DATA to ${bucket} ${prefix}/${name} size ${size} ${metaData}`,
+            "\n",
+            typeof data,
             data,
         );
         await client.putObject(
