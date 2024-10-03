@@ -9,7 +9,7 @@ import { PUBLIC_HOST } from "$env/static/public";
 import { Client, CopyConditions, type BucketItem } from "minio";
 import type { Readable } from "stream";
 
-export { BUCKETS, ObjectStorage };
+export { BUCKETS, initializeBuckets, ObjectStorage };
 
 const endPoint = MINIO_ENDPOINT;
 const port = parseInt(MINIO_PORT);
@@ -35,9 +35,6 @@ const BUCKETS = {
     avatar: "avatar",
     tiled: "tiled",
 };
-
-// Initialize buckets
-initializeBuckets();
 
 /**
  * ObjectStorage
@@ -497,13 +494,18 @@ class ObjectStorage {
 }
 
 async function initializeBuckets() {
-    for (const bucket of Object.values(BUCKETS)) {
-        if (await client.bucketExists(bucket)) {
-            console.info(`Bucket ${bucket} already exists`);
-        } else {
-            await client.makeBucket(bucket);
-            console.info(`Creating bucket ${bucket}`);
+    try {
+        for (const bucket of Object.values(BUCKETS)) {
+            if (await client.bucketExists(bucket)) {
+                console.info(`Bucket ${bucket} already exists`);
+            } else {
+                await client.makeBucket(bucket);
+                console.info(`Creating bucket ${bucket}`);
+            }
         }
+    } catch (error: any) {
+        // During build time it does not have connection to MINIO
+        console.error(`Failed to initialize buckets: ${error.message}`);
     }
 }
 

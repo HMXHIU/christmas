@@ -9,6 +9,10 @@ import { error, type RequestEvent } from "@sveltejs/kit";
 import base58 from "bs58";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import tweetnacl from "tweetnacl";
+import { initializeCommunityRedisRepositories } from "./community/redis";
+import { initializeCrossoverRedisRepositories } from "./crossover/redis";
+import { initializeBuckets } from "./objectStorage";
+import { initializeRedisClients } from "./redis";
 
 // Exports
 export {
@@ -20,6 +24,15 @@ export {
     verifyJWT,
     verifySIWS,
 };
+
+// Initialize redis clients, repositiories, indexes
+initializeRedisClients(async (redisClient) => {
+    await initializeCrossoverRedisRepositories(redisClient);
+    await initializeCommunityRedisRepositories(redisClient);
+});
+
+// Initialize minio buckets
+initializeBuckets();
 
 async function signJWT(
     payload: object,
