@@ -600,13 +600,12 @@ async function biomeAtGeohash(
     else if (geohash.startsWith("h9")) {
         result = [biomes.tundra.biome, 0]; // strength=0 no decorations
     } else {
-        // Get elevation (??? crashing on the server nodejs)
-        // const height = await elevationAtGeohash(geohash, locationType, {
-        //     responseCache: options?.topologyResponseCache,
-        //     resultsCache: options?.topologyResultCache,
-        //     bufferCache: options?.topologyBufferCache,
-        // });
-        const height = 1;
+        // Get elevation
+        const height = await elevationAtGeohash(geohash, locationType, {
+            responseCache: options?.topologyResponseCache,
+            resultsCache: options?.topologyResultCache,
+            bufferCache: options?.topologyBufferCache,
+        });
 
         // Below sea level
         if (height < 1) {
