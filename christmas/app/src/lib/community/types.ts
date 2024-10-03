@@ -75,8 +75,8 @@ const StoreMetadataSchema = z.object({
     description: z.string(),
     image: z.string(),
     address: z.string(),
-    latitude: z.number(),
-    longitude: z.number(),
+    latitude: z.coerce.number(),
+    longitude: z.coerce.number(),
 });
 
 type StoreMetadata = z.infer<typeof StoreMetadataSchema>;
@@ -116,8 +116,8 @@ const CreateStoreSchema = z.object({
     description: z.string().min(1, "Store description is required"),
     region: z.string().min(1, "Region is required"),
     geohash: z.string().min(1, "Geohash is required"),
-    latitude: z.number({ required_error: "Latitude is required" }),
-    longitude: z.number({ required_error: "Longitude is required" }),
+    latitude: z.coerce.number({ required_error: "Latitude is required" }),
+    longitude: z.coerce.number({ required_error: "Longitude is required" }),
     address: z
         .string({
             required_error: "Store address is required",

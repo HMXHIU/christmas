@@ -76,11 +76,13 @@
                 geohash,
                 region: region?.value,
             });
+            console.log(JSON.stringify(createStoreParams, null, 2));
             errors = {};
             await onCreateStore(createStoreParams);
             openDialog = false;
-        } catch (err) {
+        } catch (err: any) {
             errors = parseZodErrors(err);
+            console.error(err.message);
         }
     }
 
