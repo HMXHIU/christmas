@@ -69,14 +69,34 @@ class ObjectStorage {
             throw new Error(`Invalid bucket: ${bucket}`);
         }
 
+        let size: number | undefined;
+        if (typeof data === "string") {
+            size = Buffer.byteLength(data);
+        } else if (Buffer.isBuffer(data)) {
+            size = data.length;
+        }
+
         // Upload object
-        await client.putObject(bucket, `${prefix}/${name}`, data, metaData);
+        await client.putObject(
+            bucket,
+            `${prefix}/${name}`,
+            data,
+            size,
+            metaData,
+        );
 
         // Tag private objects
         if (owner != null) {
-            await client.setObjectTagging(bucket, `${prefix}/${name}`, {
-                owner,
-            });
+            await client.setObjectTagging(
+                bucket,
+                `${prefix}/${name}`,
+                {
+                    owner,
+                },
+                {
+                    versionId: "",
+                },
+            );
         }
 
         return this.objectUrl({ owner, bucket, name });
@@ -210,6 +230,9 @@ class ObjectStorage {
                 `${destPrefix}/${destName}`,
                 {
                     owner: destOwner,
+                },
+                {
+                    versionId: "",
                 },
             );
         }
@@ -473,21 +496,14 @@ class ObjectStorage {
     }
 }
 
-function initializeBuckets() {
+async function initializeBuckets() {
     for (const bucket of Object.values(BUCKETS)) {
-        client.bucketExists(bucket, (error, exists) => {
-            if (error) {
-                console.error(`Error creating bucket ${bucket}: ${error}`);
-            } else if (!exists) {
-                client.makeBucket(bucket, (error) => {
-                    if (error) {
-                        throw error;
-                    }
-                });
-            } else {
-                console.log(`Bucket ${bucket} already exists`);
-            }
-        });
+        if (await client.bucketExists(bucket)) {
+            console.info(`Bucket ${bucket} already exists`);
+        } else {
+            await client.makeBucket(bucket);
+            console.info(`Creating bucket ${bucket}`);
+        }
     }
 }
 

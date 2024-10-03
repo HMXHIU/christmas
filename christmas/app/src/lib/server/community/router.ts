@@ -129,24 +129,6 @@ const communityRouter = {
                     owner: ctx.user.publicKey,
                 };
 
-                console.log(
-                    JSON.stringify(
-                        {
-                            coupon,
-                            region,
-                            geohash,
-                            name,
-                            uri: couponMetadataUrl,
-                            store,
-                            validFrom,
-                            validTo,
-                            owner: ctx.user.publicKey,
-                        },
-                        null,
-                        2,
-                    ),
-                );
-
                 // Save CouponEntity
                 couponEntity = (await couponRepository.save(
                     coupon,
