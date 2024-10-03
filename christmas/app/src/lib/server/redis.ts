@@ -22,14 +22,18 @@ const redisSubscribeClient = redisClient.duplicate();
 async function initializeRedisClients(
     callback: (redisClient: any) => Promise<void>,
 ) {
-    if (!redisClient.isOpen) {
-        await redisClient.connect();
-        console.info("Connected to Redis[pub]");
+    try {
+        if (!redisClient.isOpen) {
+            await redisClient.connect();
+            console.info("Connected to Redis[pub]");
+        }
+        if (!redisSubscribeClient.isOpen) {
+            await redisSubscribeClient.connect();
+            console.info("Connected to Redis[sub]");
+        }
+        await callback(redisClient);
+    } catch (error: any) {
+        // During build time it does not have connection to redis
+        console.error(`Failed to initialize redis clients: ${error.message}`);
     }
-    if (!redisSubscribeClient.isOpen) {
-        await redisSubscribeClient.connect();
-        console.info("Connected to Redis[sub]");
-    }
-
-    await callback(redisClient);
 }
