@@ -287,7 +287,7 @@ function topologyTile(geohash: string): {
     const [col, row] = geohashToColRow(geohash);
 
     return {
-        url: `${PUBLIC_MINIO_ENDPOINT}/topology/topology_2p/${tile}.png`,
+        url: `${PUBLIC_MINIO_ENDPOINT}/game/topology/topology_2p/${tile}.png`,
         topLeft,
         rows,
         cols,

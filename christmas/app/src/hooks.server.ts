@@ -60,10 +60,26 @@ const handleTRPC: Handle = createTRPCHandle({
     createContext,
     onError(opts) {
         // Only display debug on console during development
-        if (PUBLIC_ENVIRONMENT === "development") {
-            console.error("TRPC Error:", opts.error);
+        if (
+            PUBLIC_ENVIRONMENT === "development" ||
+            PUBLIC_ENVIRONMENT === "production"
+        ) {
+            console.error(opts.error);
         }
     },
 });
 
 export const handle = sequence(handleBase, handleTRPC);
+
+// // Add CORS headers
+// response.headers.set('Access-Control-Allow-Origin', '*'); // Or specify the allowed domain
+// response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+// response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+// // If it's a preflight request (OPTIONS method), respond with 200
+// if (event.request.method === 'OPTIONS') {
+//   return new Response(null, {
+//     status: 200,
+//     headers: response.headers
+//   });
+// }
