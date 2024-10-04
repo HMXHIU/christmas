@@ -54,6 +54,7 @@ async function getAvatars({
             name: hash,
             data: textures,
         });
+        console.log("Store avatar image", avatarImageUrl);
         return [avatarImageUrl];
     } else {
         const urls = bucketItems.map((item) => {
@@ -63,6 +64,7 @@ async function getAvatars({
                 name: item.name!.split("/").slice(-1)[0], // remove prefix (public, private)
             });
         });
+        console.log("avatar urls", JSON.stringify(urls, null, 2));
         return urls;
     }
 }
