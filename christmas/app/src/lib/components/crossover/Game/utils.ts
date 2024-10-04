@@ -277,36 +277,13 @@ async function getImageForTile(
     throw new Error(`Missing image for tileId ${tileId}`);
 }
 
-function updateSrcWithDomain(data: any, domain: string) {
-    // Check if data is an array
-    if (Array.isArray(data)) {
-        data.forEach((item) => updateSrcWithDomain(item, domain));
-    }
-    // Check if data is an object
-    else if (typeof data === "object" && data !== null) {
-        Object.keys(data).forEach((key) => {
-            if (key === "src" && typeof data[key] === "string") {
-                // If src does not start with 'http', prepend the domain
-                if (!data[key].startsWith("http")) {
-                    data[key] = domain + data[key];
-                }
-            } else {
-                // Recursively process nested objects or arrays
-                updateSrcWithDomain(data[key], domain);
-            }
-        });
-    }
-}
-
 async function initAssetManager() {
-    const manifestUrl = `${PUBLIC_MINIO_ENDPOINT}/game/sprites/manifest.json`;
-    let manifest = await (await fetch(manifestUrl)).json();
-    // Recursively patch all `src` in the manifest which does not start with http to the game bucket
-    manifest = updateSrcWithDomain(manifest, `${PUBLIC_MINIO_ENDPOINT}/game`);
-    console.log(JSON.stringify(manifest, null, 2));
+    let manifest = await (
+        await fetch(`${PUBLIC_MINIO_ENDPOINT}/game/manifest.json`)
+    ).json();
 
     // Load assets in background
-    await Assets.init({ manifest });
+    await Assets.init({ manifest, basePath: PUBLIC_MINIO_ENDPOINT });
     Assets.backgroundLoadBundle([
         "biomes",
         "bestiary",

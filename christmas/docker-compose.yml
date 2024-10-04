@@ -2,7 +2,6 @@ version: "3"
 
 services:
     minio:
-        # image: docker.io/bitnami/minio:2022
         image: minio/minio:latest
         ports:
             - "9000:9000"
@@ -15,6 +14,7 @@ services:
             - MINIO_ROOT_USER=user # development only
             - MINIO_ROOT_PASSWORD=password # development only
             - MINIO_DEFAULT_BUCKETS=bucket # development only
+            - MINIO_BROWSER_SESSION_DURATION=7d
         command: server /data --console-address ":9001"
 
     redis-stack-svc:

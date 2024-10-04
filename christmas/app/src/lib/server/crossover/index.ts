@@ -15,8 +15,10 @@ import {
     type MonsterEntity,
     type PlayerEntity,
 } from "$lib/server/crossover/types";
+import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
 import { z } from "zod";
 import { getPlayerState, getUser } from "../user";
+import { respawnPlayer } from "./combat/utils";
 import { fetchEntity, saveEntity } from "./redis/utils";
 
 export {
@@ -76,10 +78,10 @@ async function loadPlayerEntity(
     // Get user metadata
     const userMetadata = await getUser(publicKey);
     if (userMetadata == null) {
-        throw new Error(`Player ${publicKey} not found`);
+        throw new Error(`User ${publicKey} not found`);
     }
     if (userMetadata.crossover == null) {
-        throw new Error(`Player ${publicKey} missing crossover metadata`);
+        throw new Error(`Player ${publicKey} not found`);
     }
 
     const { avatar, name, demographic, npc } = userMetadata.crossover;
@@ -124,6 +126,13 @@ async function loadPlayerEntity(
         ...playerEntity,
         lgn: options.loggedIn,
     };
+
+    // Fix any misconfigured region or geohash
+    if (!COUNTRY_DETAILS[player.rgn]) {
+        player.rgn = options.region;
+        player = respawnPlayer(player); // respawn player (to his sancuary)
+    }
+    console.log(JSON.stringify(player, null, 2));
 
     // Auto correct player's geohash precision (try fix if corrupted, unstuck player)
     if (

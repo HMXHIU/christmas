@@ -37,8 +37,8 @@
         try {
             // Try login to crossover
             const player = await login({
-                region: String.fromCharCode(...region),
-                geohash: String.fromCharCode(...geohash),
+                region,
+                geohash,
                 retryWithRefresh: true,
             });
             onLogin(player);
