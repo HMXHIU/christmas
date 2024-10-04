@@ -225,7 +225,7 @@ async function resolveAttack(
 
             // Damage & Debuffs
             const dieRoll: DieRoll = weapon
-                ? compendium[weapon.prop].dieRoll ?? d4
+                ? (compendium[weapon.prop].dieRoll ?? d4)
                 : d4;
             ({ damage, attacker, defender } = resolveDamageEffects(
                 attacker,
@@ -480,7 +480,7 @@ async function handleEntityDeath(
 
     // Respawn dead player
     if (deadEntity.player) {
-        deadEntity = respawnPlayer(deadEntity as PlayerEntity);
+        deadEntity = await respawnPlayer(deadEntity as PlayerEntity);
         await publishFeedEvent(deadEntity.player, {
             type: "message",
             message: deadMessage,

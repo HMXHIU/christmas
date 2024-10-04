@@ -17,7 +17,7 @@ import {
 } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { BASE_ATTRIBUTES } from "$lib/crossover/world/settings/entity";
-import { sanctuaries } from "$lib/crossover/world/settings/world";
+import { sanctuaryAtRegion } from "$lib/crossover/world/settings/world";
 import type { EquipmentSlot } from "$lib/crossover/world/types";
 import type {
     GameRedisEntities,
@@ -166,7 +166,7 @@ function attackRollForWeapon(
     const defenderAttributes =
         "item" in defender ? BASE_ATTRIBUTES : entityAttributes(defender);
     const modifiers: Attribute[] = weapon
-        ? compendium[weapon.prop].dieRoll?.modifiers ?? ["str"]
+        ? (compendium[weapon.prop].dieRoll?.modifiers ?? ["str"])
         : ["str", "dex"];
     const attackerModifier = calculateModifier(modifiers, attackerAttributes);
     const defenderModifier = calculateModifier(modifiers, defenderAttributes);
@@ -240,9 +240,9 @@ function entityDied(
     return (before as PlayerEntity).hp > 0 && (after as PlayerEntity).hp <= 0;
 }
 
-function respawnPlayer(player: PlayerEntity) {
+async function respawnPlayer(player: PlayerEntity) {
     // Respawn player at sanctuary
-    const sanctuary = sanctuaries.find((s) => s.region === player.rgn);
+    const sanctuary = await sanctuaryAtRegion(player.rgn);
     if (!sanctuary) {
         throw new Error(`${player.player} has no sanctuary`);
     }

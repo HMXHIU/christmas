@@ -1,21 +1,56 @@
+import { PUBLIC_MINIO_ENDPOINT } from "$env/static/public";
 import type { Sanctuary, WorldSeed } from "../world";
-import sanctuariesJSON from "./sanctuaries.json";
-import topologicalAnalysisJSON from "./topological_analysis.json";
 
-export { sanctuaries, topologicalAnalysis, worldSeed, type WorldSeed };
-
-const topologicalAnalysis: TopologicalAnalysis = topologicalAnalysisJSON;
-const sanctuaries: Sanctuary[] = sanctuariesJSON;
+export {
+    sanctuaries,
+    sanctuaryAtRegion,
+    topologicalAnalysis,
+    worldSeed,
+    type TopologicalAnalysis,
+    type WorldSeed,
+};
 
 interface TopologicalAnalysis {
-    [territory: string]: {
-        water: number;
-        land: number;
-        elevation: {
-            mean: number;
-            iqr: number;
-        };
+    water: number;
+    land: number;
+    elevation: {
+        mean: number;
+        iqr: number;
     };
+}
+
+const _topologicalAnalysis: Record<string, TopologicalAnalysis> | undefined =
+    undefined;
+const _sanctuaries: Sanctuary[] | undefined = undefined;
+
+async function topologicalAnalysis(): Promise<
+    Record<string, TopologicalAnalysis>
+> {
+    if (_topologicalAnalysis) {
+        return _topologicalAnalysis;
+    }
+    return await (
+        await fetch(
+            `${PUBLIC_MINIO_ENDPOINT}/game/topology/topological_analysis.json`,
+        )
+    ).json();
+}
+
+async function sanctuaries(): Promise<Sanctuary[]> {
+    if (_sanctuaries) {
+        return _sanctuaries;
+    }
+    return await (
+        await fetch(
+            `${PUBLIC_MINIO_ENDPOINT}/game/sanctuaries/sanctuaries.json`,
+        )
+    ).json();
+}
+
+async function sanctuaryAtRegion(
+    region: string,
+): Promise<Sanctuary | undefined> {
+    return (await sanctuaries()).find((s) => s.region === region);
 }
 
 /**

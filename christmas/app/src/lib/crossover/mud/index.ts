@@ -7,7 +7,6 @@ import {
 } from "../world/biomes";
 import { type WorldSeed } from "../world/settings/world";
 import { geohashLocationTypes, type LocationType } from "../world/types";
-import type { Sanctuary } from "../world/world";
 import { describeBiome } from "./biome";
 import { descibeEntities } from "./entities";
 import { biomeDescriptors, entityDescriptors } from "./settings";
@@ -29,7 +28,6 @@ interface LocationDescription {
 
 class MudDescriptionGenerator {
     public worldSeed: WorldSeed;
-    public sanctuaries: Sanctuary[];
     public biomes: Record<string, Biome>;
 
     topologyResultCache?: CacheInterface;
@@ -38,21 +36,18 @@ class MudDescriptionGenerator {
 
     constructor({
         worldSeed,
-        sanctuaries,
         biomes,
         topologyResultCache,
         topologyBufferCache,
         topologyResponseCache,
     }: {
         worldSeed: WorldSeed;
-        sanctuaries: Sanctuary[];
         biomes: Record<string, Biome>;
         topologyResultCache?: CacheInterface;
         topologyBufferCache?: CacheInterface;
         topologyResponseCache?: CacheInterface;
     }) {
         this.worldSeed = worldSeed;
-        this.sanctuaries = sanctuaries;
         this.biomes = biomes;
         this.topologyResultCache = topologyResultCache;
         this.topologyBufferCache = topologyBufferCache;

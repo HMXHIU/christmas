@@ -130,9 +130,8 @@ async function loadPlayerEntity(
     // Fix any misconfigured region or geohash
     if (!COUNTRY_DETAILS[player.rgn]) {
         player.rgn = options.region;
-        player = respawnPlayer(player); // respawn player (to his sancuary)
+        player = await respawnPlayer(player); // respawn player (to his sancuary)
     }
-    console.log(JSON.stringify(player, null, 2));
 
     // Auto correct player's geohash precision (try fix if corrupted, unstuck player)
     if (

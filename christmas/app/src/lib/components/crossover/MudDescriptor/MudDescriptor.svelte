@@ -9,10 +9,7 @@
         type LocationDescription,
     } from "$lib/crossover/mud";
     import { biomes } from "$lib/crossover/world/biomes";
-    import {
-        sanctuaries,
-        worldSeed,
-    } from "$lib/crossover/world/settings/world";
+    import { worldSeed } from "$lib/crossover/world/settings/world";
     import {
         geohashLocationTypes,
         type LocationType,
@@ -28,7 +25,6 @@
 
     const descriptionGenerator = new MudDescriptionGenerator({
         worldSeed,
-        sanctuaries,
         biomes,
         topologyResultCache,
         topologyBufferCache,

@@ -81,7 +81,7 @@ async function blueprintsAtTerritory(
     };
 
     // Do not spawn blueprints on territories with little land
-    const ta = topologicalAnalysis[territory];
+    const ta = (await topologicalAnalysis())[territory];
     if (!ta || ta.land < 0.2) {
         return territoryBlueprint;
     }

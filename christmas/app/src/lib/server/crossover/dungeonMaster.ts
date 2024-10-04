@@ -506,10 +506,11 @@ async function initializeGame() {
 
     // Spawn all blueprint items
     const locationType: GeohashLocation = "geohash";
-    for (const [territory, { land }] of Object.entries(topologicalAnalysis)) {
+    for (const [territory, { land }] of Object.entries(
+        await topologicalAnalysis(),
+    )) {
         if (land > 0.2) {
             console.info(`spawning items for blueprints at ${territory}`);
-
             const bps = await blueprintsAtTerritory(
                 territory,
                 locationType,
