@@ -225,15 +225,15 @@
 
     <!-- Bottom Panel -->
     <div class="h-60 flex flex-row grow">
-        <div class="flex flex-col w-full">
+        <div class="flex flex-col w-full min-w-60">
             <!-- Chat Input -->
             <ChatInput class="mb-1 mt-0 py-0" {onEnterKeyPress} {onPartial}
             ></ChatInput>
             <!-- Chat Window -->
-            <ChatWindow></ChatWindow>
+            <ChatWindow class="overflow-auto"></ChatWindow>
         </div>
         <!-- Environment  -->
-        <div class="w-96 shrink-0 p-2">
+        <div class="p-2 overflow-auto">
             <MudDescriptor></MudDescriptor>
         </div>
         <!-- Map/Look -->
