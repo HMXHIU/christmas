@@ -54,13 +54,13 @@ async function sanctuaryAtRegion(
     return (await sanctuaries()).find((s) => s.region === region);
 }
 
-function spatialAtPrecision(p: number): Spatial {
+function spatialAtPrecision(p: number): Spatial | null {
     for (const [s, { precision }] of Object.entries(worldSeed.spatial)) {
         if (precision === p) {
             return s as Spatial;
         }
     }
-    throw new Error(`No defined spatial for precision ${p}`);
+    return null;
 }
 
 /**
@@ -97,13 +97,13 @@ const worldSeed: WorldSeed = {
     },
     constants: {
         monsterLimit: {
-            continent: (3 * 32 ** 6) / 2 ** 6,
-            territory: (3 * 32 ** 5) / 2 ** 5,
-            region: (3 * 32 ** 4) / 2 ** 4,
-            city: (3 * 32 ** 3) / 2 ** 3,
-            town: (3 * 32 ** 2) / 2 ** 2,
-            village: (3 * 32) / 2,
-            house: 3,
+            continent: Math.floor((2 * 32 ** 6) / 6 ** 6),
+            territory: Math.floor((2 * 32 ** 5) / 6 ** 5),
+            region: Math.floor((2 * 32 ** 4) / 6 ** 4),
+            city: Math.floor((2 * 32 ** 3) / 6 ** 3),
+            town: Math.floor((2 * 32 ** 2) / 6 ** 2),
+            village: Math.floor((2 * 32) / 6),
+            house: 2,
         },
     },
     time: {

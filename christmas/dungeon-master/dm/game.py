@@ -88,6 +88,9 @@ class Game:
         world_colliders = self.world_index.search(Query(f"@cld:{{{geohash}*}}")).total
         return (item_colliders + world_colliders) > 0
 
+    async def query_monster_abilities(self, monster: Monster) -> List[str]:
+        return await self.api_client.monster_abilities(tuple(monster["skills"].items()))
+
     async def perform_monster_ability(
         self, monster: Monster, player: Player, ability_str: str
     ):
@@ -99,6 +102,14 @@ class Game:
         if in_range:
             await self.api_client.monster_ability(
                 monster=monster["monster"], target=player["player"], ability=ability_str
+            )
+
+    async def perform_monster_attack(self, monster: Monster, player: Player):
+        # check in range (attack has range 1)
+        in_range, distance = entity_in_range(monster, player, 1)
+        if in_range:
+            await self.api_client.monster_attack(
+                monster=monster["monster"], target=player["player"]
             )
 
     async def perform_monster_move(

@@ -12,7 +12,6 @@ def players_in_geohash_query(geohashes):
 
 def monsters_in_geohash_query(geohashes):
     geohash_query = " | ".join([f"(@loc:{{{gh}*}})" for gh in geohashes])
-
     return Query(f"(@locT:{{geohash}}) ({geohash_query})")
 
 

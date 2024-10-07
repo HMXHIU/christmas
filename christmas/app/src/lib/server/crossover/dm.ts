@@ -41,7 +41,7 @@ import {
     substituteValues,
     substituteVariablesRecursively,
 } from "$lib/utils";
-import { groupBy } from "lodash-es";
+import { groupBy, uniq } from "lodash-es";
 import {
     blueprintsAtTerritoryCache,
     topologyBufferCache,
@@ -67,6 +67,37 @@ export {
     spawnWorld,
     spawnWorldPOIs,
 };
+
+// TODO: Add time cache
+async function checkCanSpawnMonsters(
+    geohash: string,
+    locationType: GeohashLocation,
+    locationInstance: string,
+): Promise<boolean> {
+    const numMonsters = await monstersInGeohashQuerySet(
+        [geohash],
+        locationType as GeohashLocation,
+        locationInstance,
+    ).count();
+    const spatial = spatialAtPrecision(geohash.length);
+
+    if (spatial) {
+        const monsterLimit = worldSeed.constants.monsterLimit[spatial];
+        if (numMonsters < monsterLimit) {
+            if (spatial === "continent") {
+                return true;
+            } else {
+                return await checkCanSpawnMonsters(
+                    geohash.slice(0, -1),
+                    locationType,
+                    locationInstance,
+                );
+            }
+        }
+    }
+
+    return false;
+}
 
 /**
  * Respawns monsters in locationInstance (defaults to actual game world @) considering the provided players locations
@@ -96,19 +127,21 @@ async function respawnMonsters({
         groupBy(playerEntities, "locT"),
     )) {
         // Get all parent geohashes (only interested with geohashes 1 level above unit precision)
-        const parentGeohashes = ps.map(({ loc }) => {
-            return loc[0].slice(0, -1);
-        });
+        const parentGeohashes = uniq(ps.map(({ loc }) => loc[0].slice(0, -1)));
 
         // Get all peripheral geohashes where there are no players
         const peripheralGeohashes = await borderingGeohashes(parentGeohashes);
-
         for (const geohash of peripheralGeohashes) {
-            // Get monster limit for each peripheral geohash
-            const monsterLimit =
-                worldSeed.constants.monsterLimit[
-                    spatialAtPrecision(geohash.length)
-                ];
+            // Check if can spawn
+            if (
+                !(await checkCanSpawnMonsters(
+                    geohash,
+                    locationType as GeohashLocation,
+                    locationInstance,
+                ))
+            ) {
+                continue;
+            }
 
             // Get number of monsters in geohash
             const numMonsters = await monstersInGeohashQuerySet(
@@ -118,17 +151,17 @@ async function respawnMonsters({
             ).count();
 
             // Number of monsters to spawn
-            const numMonstersToSpawn = monsterLimit - numMonsters;
-            if (numMonstersToSpawn <= 0) {
+            const spatial = spatialAtPrecision(geohash.length);
+            if (!spatial) {
                 continue;
             }
+            const monsterLimit = worldSeed.constants.monsterLimit[spatial];
+            const numMonstersToSpawn = monsterLimit - numMonsters;
 
-            // Select a random set of child geohashes to spawn monsters
+            // Shuffle child geohashes to spawn monsters
             const childGeohashes = childrenGeohashes(geohash).sort(
                 () => Math.random() - 0.5,
             );
-
-            // Spawn monsters
             for (let i = 0; i < numMonstersToSpawn; i++) {
                 // Get a random child geohash
                 const childGeohash = childGeohashes[i % childGeohashes.length];

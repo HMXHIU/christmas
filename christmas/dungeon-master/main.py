@@ -6,7 +6,8 @@ from time import time
 import logging
 import asyncio
 from asyncio import Queue
-from typing import Dict, List, Any, Set
+import traceback
+from typing import Dict, List, Any, Set, Tuple
 from dm.game import Game
 from dm.types import Monster, Player
 from dm.world.bestiary import bestiary
@@ -63,34 +64,50 @@ async def process_entities(context: Context):
                 context.monsters_by_id[m] = context.game.fetch_entity(m)
                 context.dirty_entities.remove(m)
 
-            # Choose monster ability
-            monster = context.monsters_by_id[m]
-            beast = bestiary[monster["beast"]]
-            ability_str = beast["abilities"]["offensive"][0]
-            ability = abilities[ability_str]
-
-            # Check player in range of ability
-            player = context.players_by_id[p]
-            in_range, distance = entity_in_range(monster, player, ability["range"])
-            if in_range:
-                # Perform ability
-                await context.jobs.put(["perform_monster_ability", m, p, ability_str])
-            else:
-                # Move in range
-                await context.jobs.put(["perform_monster_move", m, player["loc"][0]])
+            # Determine if monster should attack, move, perform ability
+            monster_action = await determine_monster_action(
+                context.monsters_by_id[m], context.players_by_id[p], context
+            )
+            if monster_action:
+                await context.jobs.put(monster_action)
 
         if processed % 50 == 0:
             logging.info(f"{processed}/{len(context.players_by_id)} players processed")
 
 
-async def spawn_monsters(
-    monsters_by_id: Dict[str, Monster], players_by_id: Dict[str, Player]
-):
-    """
-    Determine when and where to spawn new monsters as players explore
-    - Should also take into account not spawning immediately when the player comes back to the area
-    """
-    pass
+async def determine_monster_action(
+    monster: Monster, player: Player, context: Context
+) -> Tuple | None:
+
+    # Don't do anything if range > 5
+    in_range, distance = entity_in_range(monster, player, 5)
+    if not in_range:
+        return None
+
+    # # Query monster abilities
+    # monster_abilities = await context.game.query_monster_abilities(monster)
+
+    # # Try to find offensive ability in range
+    # offensive_abilities = [
+    #     a for a in monster_abilities if abilities[a]["type"] == "offensive"
+    # ]
+    # for a in offensive_abilities:
+    #     ability = abilities[a]
+    #     # Check player in range of ability
+    #     if distance <= ability["range"]:
+    #         return [
+    #             "perform_monster_ability",
+    #             monster["monster"],
+    #             player["player"],
+    #             ability["ability"],
+    #         ]
+
+    # Try to attack (attack range is 1)
+    if distance <= 1:
+        return ["perform_monster_attack", monster["monster"], player["player"]]
+
+    # Move in range
+    return ["perform_monster_move", monster["monster"], player["loc"][0]]
 
 
 async def update_entities_record_loop(context: Context, interval: int):
@@ -127,10 +144,7 @@ async def update_entities_record_loop(context: Context, interval: int):
 async def spawn_monsters_loop(context: Context, interval: int):
     while True:
         now = time()
-        await spawn_monsters(
-            monsters_by_id=context.monsters_by_id,
-            players_by_id=context.players_by_id,
-        )
+        await context.game.api_client.respawn_monsters()
         took = time() - now
         logger.info(f"Spawn monsters took {took:.1f} seconds")
 
@@ -152,50 +166,73 @@ async def process_entities_loop(context: Context, interval: int):
             await asyncio.sleep(remaining)
 
 
+async def process_job(context: Context, job: Tuple):
+
+    job_type, *args = job
+
+    if job_type == "perform_monster_ability":
+        monster_id, player_id, ability_str = args
+        if monster_id in context.monsters_by_id and player_id in context.players_by_id:
+            await context.game.perform_monster_ability(
+                monster=context.monsters_by_id[monster_id],
+                player=context.players_by_id[player_id],
+                ability_str=ability_str,
+            )
+            context.dirty_entities.add(monster_id)
+            context.dirty_entities.add(player_id)
+            # logger.debug(f"{monster_id} perform {ability_str} on {player_id}")
+
+    elif job_type == "perform_monster_attack":
+        monster_id, player_id = args
+        if monster_id in context.monsters_by_id and player_id in context.players_by_id:
+            await context.game.perform_monster_attack(
+                monster=context.monsters_by_id[monster_id],
+                player=context.players_by_id[player_id],
+            )
+            context.dirty_entities.add(monster_id)
+            context.dirty_entities.add(player_id)
+            # logger.debug(f"{monster_id} attack {player_id}")
+
+    elif job_type == "perform_monster_move":
+        monster_id, target_geohash = args
+        if monster_id in context.monsters_by_id:
+            await context.game.perform_monster_move(
+                monster=context.monsters_by_id[monster_id],
+                geohash=target_geohash,
+            )
+            context.dirty_entities.add(monster_id)
+            # logger.debug(f"{monster_id} move to {target_geohash}")
+
+
 async def process_jobs_loop(context: Context):
     while True:
-        job = await context.jobs.get()
-        if job:
-            job_type, *args = job
-            if job_type == "perform_monster_ability":
-                monster_id, player_id, ability_str = args
+        try:
+            # Collect a batch of jobs
+            jobs: List[Tuple] = []
+            for _ in range(500):  # Adjust the batch size as needed
+                try:
+                    job = context.jobs.get_nowait()
+                    jobs.append(job)
+                except asyncio.QueueEmpty:
+                    break
 
-                # FOR TESTING
-                if (
-                    player_id != "9WQYjAQUcwFwE6oBuTdjKzT9VSHzN5yZVK8RcReJ5A4v"
-                    or monster_id != "monster_goblin10620"
-                ):
-                    continue
+            if not jobs:
+                # If no jobs, wait a bit before checking again
+                await asyncio.sleep(0.1)
+                continue
 
-                if (
-                    monster_id in context.monsters_by_id
-                    and player_id in context.players_by_id
-                ):
-                    print(job)
-                    await context.game.perform_monster_ability(
-                        monster=context.monsters_by_id[monster_id],
-                        player=context.players_by_id[player_id],
-                        ability_str=ability_str,
-                    )
-                    context.dirty_entities.add(monster_id)  # set dirty
-                    context.dirty_entities.add(player_id)  # set dirty
+            # Process the batch of jobs concurrently
+            await asyncio.gather(*[process_job(context, job) for job in jobs])
 
-            elif job_type == "perform_monster_move":
-                monster_id, target_geohash = args
+            logger.debug(f"Processed {len(jobs)}/{context.jobs.qsize()} jobs")
 
-                # FOR TESTING
-                if monster_id != "monster_goblin10620":
-                    continue
+            # Mark all processed jobs as done
+            for _ in jobs:
+                context.jobs.task_done()
 
-                if monster_id in context.monsters_by_id:
-                    print(job)
-                    await context.game.perform_monster_move(
-                        monster=context.monsters_by_id[monster_id],
-                        geohash=target_geohash,
-                    )
-                    context.dirty_entities.add(monster_id)  # set dirty
-            # Mark job as done
-            context.jobs.task_done()
+        except Exception as e:
+            logger.error(f"Error in process_jobs_loop: {e}")
+            logger.error(traceback.format_exc())
 
 
 async def main():
@@ -239,8 +276,8 @@ async def main():
             interval=10,
         )
     )
-    spawn_task = asyncio.create_task(spawn_monsters_loop(context, interval=30))
-    process_task = asyncio.create_task(process_entities_loop(context, interval=3))
+    spawn_task = asyncio.create_task(spawn_monsters_loop(context, interval=60 * 60))
+    process_task = asyncio.create_task(process_entities_loop(context, interval=7))
     job_task = asyncio.create_task(process_jobs_loop(context))
 
     # Run tasks

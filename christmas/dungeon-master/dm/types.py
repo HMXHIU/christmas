@@ -1,4 +1,4 @@
-from typing import Union, Literal, TypedDict, List
+from typing import Union, Literal, TypedDict, List, Dict
 
 EntityType = Literal["player", "monster", "item"]
 LocationType = Literal["geohash", "inv"]
@@ -8,6 +8,7 @@ class Player(TypedDict):
     player: str
     locT: LocationType
     loc: List[str]
+    skills: Dict[str, int]
 
 
 class Monster(TypedDict):
@@ -15,6 +16,7 @@ class Monster(TypedDict):
     beast: str
     locT: LocationType
     loc: List[str]
+    skills: Dict[str, int]
 
 
 class Item(TypedDict):
