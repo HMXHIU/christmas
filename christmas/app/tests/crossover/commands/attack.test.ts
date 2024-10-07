@@ -2,7 +2,6 @@ import { executeGameCommand } from "$lib/crossover/game";
 import { searchPossibleCommands } from "$lib/crossover/ir";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
-import { initializeClients } from "$lib/server/crossover/redis";
 import {
     afterAll,
     beforeAll,
@@ -20,8 +19,6 @@ import {
     createTestItems,
     resetEntityResources,
 } from "../utils";
-
-await initializeClients(); // create redis repositories
 
 let { geohash, playerOne, playerOneCookies, playerOneStream, playerTwo } =
     await createGandalfSarumanSauron();

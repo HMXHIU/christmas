@@ -1,4 +1,11 @@
-import type { Item, Monster, PathParams, Player } from "$lib/crossover/types";
+import type {
+    Actor,
+    Creature,
+    Item,
+    Monster,
+    PathParams,
+    Player,
+} from "$lib/crossover/types";
 import {
     geohashesNearby,
     getEntityId,
@@ -52,7 +59,7 @@ async function upsertEntitySigil(
     stage: Container,
     attributes?: Attributes,
 ): Promise<EntitySigil> {
-    const entity = ec.entity as Monster | Player;
+    const entity = ec.entity as Creature;
 
     // Check if already exists
     if (entitySigils[ec.entityId]) {
@@ -61,7 +68,7 @@ async function upsertEntitySigil(
     }
 
     // Create
-    let maxStats = entityStats(ec.entity as Player | Monster);
+    let maxStats = entityStats(ec.entity as Creature);
     const sigil = new EntitySigil(ec, maxStats, entity, {
         anchor: { x: 0, y: -0.825 },
         radius: 48,
@@ -74,7 +81,7 @@ async function upsertEntitySigil(
 
 const upsertEntityContainerLock = new AsyncLock();
 async function upsertEntityContainer(
-    entity: Player | Item | Monster,
+    entity: Actor,
     stage: Container,
 ): Promise<[boolean, SimpleEntityContainer | AvatarEntityContainer]> {
     return upsertEntityContainerLock.withLock(async () => {
@@ -129,7 +136,7 @@ async function upsertEntityContainer(
         else {
             if (entityType == "player" || entityType == "monster") {
                 // Entity is moving
-                if (isEntityInMotion(entity as Player | Monster)) {
+                if (isEntityInMotion(entity as Creature)) {
                     await ec.followPath(entity as PathParams);
                 } else {
                     ec.setIsoPosition(position);
@@ -324,7 +331,7 @@ function onMouseLeaveEntity(entityId: string) {
     }
 }
 
-function onClickEntity(entity: Player | Item | Monster) {
+function onClickEntity(entity: Actor) {
     // Set target
     target.set(entity);
 }

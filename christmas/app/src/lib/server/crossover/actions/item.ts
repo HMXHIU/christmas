@@ -13,7 +13,8 @@ import {
 } from "$lib/crossover/world/types";
 import type { WorldPOIs } from "$lib/crossover/world/world";
 import {
-    type GameRedisEntities,
+    type ActorEntity,
+    type CreatureEntity,
     type ItemEntity,
     type MonsterEntity,
     type PlayerEntity,
@@ -22,11 +23,7 @@ import { substituteValues } from "$lib/utils";
 import { setEntityBusy } from "..";
 import { performAbility } from "../abilities";
 import { worldAssetMetadataCache, worldPOIsCache } from "../caches";
-import {
-    spawnItemInInventory,
-    spawnWorld,
-    spawnWorldPOIs,
-} from "../dungeonMaster";
+import { spawnItemInInventory, spawnWorld, spawnWorldPOIs } from "../dm";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../events";
 import { itemRepository } from "../redis";
 import { getNearbyPlayerIds, inventoryQuerySet } from "../redis/queries";
@@ -67,7 +64,7 @@ async function useItem({
 }: {
     item: string;
     utility: string;
-    self: PlayerEntity | MonsterEntity;
+    self: CreatureEntity;
     target?: string; // target can be an `item`
     now?: number;
 }) {
@@ -135,7 +132,7 @@ async function useItem({
             targetEntity = (await itemVariableValue(
                 itemEntity,
                 "target",
-            )) as GameRedisEntities;
+            )) as ActorEntity;
             target = getEntityId(targetEntity)[0];
         }
 

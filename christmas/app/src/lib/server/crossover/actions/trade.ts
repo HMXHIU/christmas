@@ -13,7 +13,7 @@ import {
 import { generatePin } from "$lib/utils";
 import { say } from ".";
 import { savePlayerState } from "../../user";
-import { spawnItemInInventory } from "../dungeonMaster";
+import { spawnItemInInventory } from "../dm";
 import {
     publishActionEvent,
     publishAffectedEntitiesToPlayers,

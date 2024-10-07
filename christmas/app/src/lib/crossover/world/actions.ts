@@ -1,4 +1,10 @@
-import type { EntityType, Item, Monster, Player } from "$lib/crossover/types";
+import type {
+    Creature,
+    EntityType,
+    Item,
+    Monster,
+    Player,
+} from "$lib/crossover/types";
 import type { GameActionEntities, TokenPositions } from "../ir";
 import { getEntityId, isEntityAlive } from "../utils";
 import { actions } from "./settings/actions";
@@ -102,8 +108,8 @@ function parseBarter(barterString: string): BarterSerialized | undefined {
 
 function filterTargetCreaturesByAction(
     action: Actions,
-    self: Player | Monster,
-    creatures: (Player | Monster)[],
+    self: Creature,
+    creatures: Creature[],
 ) {
     // Can only attack non destroyed objects
     if (action === actions.attack.action) {
@@ -115,7 +121,7 @@ function filterTargetCreaturesByAction(
 
 function filterTargetItemsByAction(
     action: Actions,
-    self: Player | Monster,
+    self: Creature,
     items: Item[],
 ) {
     // Can only equip/give an item in inventory
@@ -174,7 +180,7 @@ function resolveActionEntities({
     queryTokens: string[];
     tokenPositions: TokenPositions;
     action: Action;
-    self: Player | Monster;
+    self: Creature;
     monsters: Monster[];
     players: Player[];
     items: Item[];

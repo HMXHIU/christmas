@@ -1,10 +1,4 @@
-import type {
-    DieRoll,
-    EntityType,
-    Item,
-    Monster,
-    Player,
-} from "$lib/crossover/types";
+import type { Actor, DieRoll, EntityType, Item } from "$lib/crossover/types";
 import { substituteVariablesRecursively } from "$lib/utils";
 import { getEntityId } from "../utils";
 import type { Abilities } from "./abilities";
@@ -127,17 +121,14 @@ function itemVariables(item: Item): ItemVariables {
     return vars;
 }
 
-function isItemEquipped(item: Item, entity: Player | Monster | Item): boolean {
+function isItemEquipped(item: Item, entity: Actor): boolean {
     return (
         EquipmentSlots.includes(item.locT as EquipmentSlot) &&
         item.loc[0] === getEntityId(entity)[0]
     );
 }
 
-function isWeaponEquipped(
-    item: Item,
-    entity: Player | Monster | Item,
-): boolean {
+function isWeaponEquipped(item: Item, entity: Actor): boolean {
     return (
         WeaponSlots.includes(item.locT as EquipmentSlot) &&
         item.loc[0] === getEntityId(entity)[0]

@@ -1,9 +1,7 @@
-import {
-    DUNGEON_MASTER_TOKEN,
-    INTERNAL_SERVICE_KEY,
-} from "$env/static/private";
+import { DUNGEON_MASTER_TOKEN } from "$env/static/private";
 import { login as loginCrossover, signup, stream } from "$lib/crossover/client";
-import type { Monster, Player } from "$lib/crossover/types";
+import { GAME_TILEMAPS } from "$lib/crossover/defs";
+import type { Creature, Monster, Player } from "$lib/crossover/types";
 import type { Abilities } from "$lib/crossover/world/abilities";
 import { ArchetypesEnum } from "$lib/crossover/world/demographic";
 import { resetEntityStats } from "$lib/crossover/world/entity";
@@ -16,22 +14,28 @@ import type {
     WorldAssetMetadata,
 } from "$lib/crossover/world/types";
 import { generateAvatarHash } from "$lib/server/crossover/avatar";
-import {
-    spawnItemAtGeohash,
-    spawnMonster,
-} from "$lib/server/crossover/dungeonMaster";
+import { spawnItemAtGeohash, spawnMonster } from "$lib/server/crossover/dm";
 import { generateNPC } from "$lib/server/crossover/npc";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
+import type {
+    BuffCreatureSchema,
+    EntityPerformAbilitySchema,
+    EntityTargetEntitySchema,
+    RespawnMonstersSchema,
+    SkillsSchema,
+    SpawnMonsterSchema,
+} from "$lib/server/crossover/router";
 import { npcs } from "$lib/server/crossover/settings/npc";
 import type {
+    CreatureEntity,
     ItemEntity,
-    MonsterEntity,
     PlayerEntity,
 } from "$lib/server/crossover/types";
 import { BUCKETS, ObjectStorage } from "$lib/server/objectStorage";
 import { generateRandomSeed, sleep } from "$lib/utils";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { expect } from "vitest";
+import type { z } from "zod";
 import type {
     ActionEvent,
     CTAEvent,
@@ -40,15 +44,6 @@ import type {
     UpdateEntitiesEvent,
 } from "../../src/routes/api/crossover/stream/+server";
 import { createRandomUser, getRandomRegion } from "../utils";
-
-export type PerformAbilityTestResults =
-    | "outOfRange"
-    | "busy"
-    | "insufficientResources"
-    | "targetPredicateNotMet"
-    | "itemConditionsNotMet"
-    | "failure"
-    | "success";
 
 export const allActions = [
     actions.say,
@@ -240,9 +235,9 @@ export async function createWorldAsset(): Promise<{
 }> {
     const url = await ObjectStorage.putJSONObject({
         owner: null,
-        name: "tilemaps/test_world_asset.json",
+        name: `${GAME_TILEMAPS}/test_world_asset.json`,
         data: testWorldAsset,
-        bucket: BUCKETS.tiled,
+        bucket: BUCKETS.game,
     });
 
     return {
@@ -527,9 +522,7 @@ export async function createGoblinSpiderDragon(geohash?: string) {
     };
 }
 
-export async function resetEntityResources(
-    ...entities: (PlayerEntity | MonsterEntity)[]
-) {
+export async function resetEntityResources(...entities: CreatureEntity[]) {
     for (const entity of entities) {
         resetEntityStats(entity);
         entity.lum = 0;
@@ -780,53 +773,43 @@ export function generateRandomGeohash(
     return geohash;
 }
 
-export async function buffEntity(
-    entity: string,
-    {
-        level,
-        hp,
-        mp,
-        st,
-        ap,
-        buffs,
-        debuffs,
-    }: {
-        level?: number;
-        hp?: number;
-        mp?: number;
-        st?: number;
-        ap?: number;
-        buffs?: string[];
-        debuffs?: string[];
-    },
-): Promise<Player | Monster> {
+export async function dmBuffEntity({
+    entity,
+    hp,
+    cha,
+    mnd,
+    lum,
+    umb,
+    buffs,
+    debuffs,
+}: z.infer<typeof BuffCreatureSchema>): Promise<Creature> {
     const { result } = await (
-        await fetch("http://localhost:5173/trpc/crossover.world.buffEntity", {
+        await fetch("http://localhost:5173/trpc/crossover.dm.buffCreature", {
             method: "POST",
             headers: {
-                Authorization: `Bearer ${INTERNAL_SERVICE_KEY}`,
+                Authorization: `Bearer ${DUNGEON_MASTER_TOKEN}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
                 entity,
-                level,
                 hp,
-                mp,
-                st,
-                ap,
+                cha,
+                mnd,
+                lum,
+                umb,
                 buffs,
                 debuffs,
             }),
         })
     ).json();
-    return result.data as Player | Monster;
+    return result.data as Creature;
 }
 
-export async function performMonsterAbility(
-    entity: string,
-    target: string,
-    ability: Abilities,
-) {
+export async function dmPerformMonsterAbility({
+    ability,
+    target,
+    entity,
+}: z.infer<typeof EntityPerformAbilitySchema>) {
     return fetch(
         "http://localhost:5173/trpc/crossover.dm.performMonsterAbility",
         {
@@ -842,4 +825,91 @@ export async function performMonsterAbility(
             }),
         },
     );
+}
+
+export async function dmPerformMonsterAttack({
+    target,
+    entity,
+}: z.infer<typeof EntityTargetEntitySchema>) {
+    return fetch(
+        "http://localhost:5173/trpc/crossover.dm.performMonsterAttack",
+        {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${DUNGEON_MASTER_TOKEN}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                entity,
+                target,
+            }),
+        },
+    );
+}
+
+export async function dmSpawnMonster({
+    geohash,
+    locationInstance,
+    locationType,
+    beast,
+    additionalSkills,
+}: z.infer<typeof SpawnMonsterSchema>): Promise<Monster> {
+    const { result } = await (
+        await fetch("http://localhost:5173/trpc/crossover.dm.spawnMonster", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${DUNGEON_MASTER_TOKEN}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                geohash,
+                locationInstance,
+                locationType,
+                beast,
+                additionalSkills,
+            }),
+        })
+    ).json();
+
+    return result.data as Monster;
+}
+
+export async function dmRespawnMonsters({
+    locationInstance,
+    players,
+}: z.infer<typeof RespawnMonstersSchema>): Promise<Record<string, number>> {
+    const { result } = await (
+        await fetch("http://localhost:5173/trpc/crossover.dm.respawnMonsters", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${DUNGEON_MASTER_TOKEN}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                locationInstance,
+                players,
+            }),
+        })
+    ).json();
+
+    return result.data as Record<string, number>;
+}
+
+export async function dmMonsterAbilities(
+    skills: z.infer<typeof SkillsSchema>,
+): Promise<Abilities[]> {
+    const { result } = await (
+        await fetch(
+            "http://localhost:5173/trpc/crossover.dm.monsterAbilities",
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${DUNGEON_MASTER_TOKEN}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(skills),
+            },
+        )
+    ).json();
+    return result.data as Abilities[];
 }

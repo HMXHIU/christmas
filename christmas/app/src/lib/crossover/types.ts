@@ -3,7 +3,6 @@ import type {
     Genders,
     Races,
 } from "$lib/crossover/world/demographic";
-import type { SkillLines } from "$lib/crossover/world/skills";
 import type {
     Direction,
     GeohashLocation,
@@ -11,9 +10,12 @@ import type {
 } from "$lib/crossover/world/types";
 import type { DamageType } from "./world/abilities";
 import type { Attribute } from "./world/entity";
+import type { SkillLines } from "./world/skills";
 
 export type {
+    Actor,
     BodyPart,
+    Creature,
     Currency,
     CurrencyParams,
     Dialogue,
@@ -27,7 +29,6 @@ export type {
     EntityState,
     EntityStats,
     EntityType,
-    GameEntity,
     GiveTrigger,
     Item,
     KillTrigger,
@@ -37,6 +38,7 @@ export type {
     Player,
     Quest,
     Reward,
+    Skills,
     Stat,
     Trigger,
     Triggers,
@@ -55,10 +57,12 @@ interface DieRoll {
 }
 
 type EntityType = "player" | "monster" | "item";
-type GameEntity = Monster | Player | Item;
+type Actor = Monster | Player | Item;
+type Creature = Monster | Player;
 
 type EntityStats = Record<Stat, number>;
 type CurrencyParams = Record<Currency, number>;
+type Skills = Partial<Record<SkillLines, number>>;
 
 interface PathParams {
     pthclk: number; // time the pth movement was started
@@ -81,10 +85,8 @@ interface EntityState
     buclk: number; // busy clock (time the entity is busy till)
     dbuf: string[]; // debuffs
     buf: string[]; // buffs
-    skills: SkillLevels; // skill levels
+    skills: Skills; // skill levels
 }
-
-type SkillLevels = Partial<Record<SkillLines, number>>;
 
 /**
  * Player

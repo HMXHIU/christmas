@@ -1,5 +1,5 @@
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
-import type { Monster, Player } from "$lib/crossover/types";
+import type { Creature } from "$lib/crossover/types";
 import { entityInRange, geohashNeighbour } from "$lib/crossover/utils";
 import { type ItemVariables } from "$lib/crossover/world/compendium";
 import { compendium } from "$lib/crossover/world/settings/compendium";
@@ -20,6 +20,8 @@ import {
     worldTraversableCellsCache,
 } from "$lib/server/crossover/caches";
 import type {
+    ActorEntity,
+    CreatureEntity,
     ItemEntity,
     MonsterEntity,
     PlayerEntity,
@@ -45,7 +47,7 @@ export {
     random,
 };
 
-function entityIsBusy(entity: Player | Monster): [boolean, number] {
+function entityIsBusy(entity: Creature): [boolean, number] {
     const now = Date.now();
     if (entity.buclk > now) {
         return [true, now];
@@ -140,26 +142,20 @@ async function isDirectionTraversable(
     return [true, location];
 }
 
-function hasItemOwnerPermissions(
-    item: ItemEntity,
-    self: PlayerEntity | MonsterEntity,
-) {
+function hasItemOwnerPermissions(item: ItemEntity, self: CreatureEntity) {
     return (
         item.own === "" || item.own === self.player || item.own === self.monster
     );
 }
 
-function hasItemConfigOwnerPermissions(
-    item: ItemEntity,
-    self: PlayerEntity | MonsterEntity,
-) {
+function hasItemConfigOwnerPermissions(item: ItemEntity, self: CreatureEntity) {
     return (
         item.cfg === "" || item.cfg === self.player || item.cfg === self.monster
     );
 }
 
 function canConfigureItem(
-    self: PlayerEntity | MonsterEntity,
+    self: CreatureEntity,
     item: ItemEntity,
 ): { canConfigure: boolean; message: string } {
     // Check valid prop
@@ -185,7 +181,7 @@ function canConfigureItem(
 }
 
 function canUseItem(
-    self: PlayerEntity | MonsterEntity,
+    self: CreatureEntity,
     item: ItemEntity,
     utility: string,
 ): { canUse: boolean; message: string } {
@@ -285,9 +281,7 @@ function parseItemVariables(
 async function itemVariableValue(
     item: ItemEntity,
     key: string,
-): Promise<
-    string | number | boolean | PlayerEntity | MonsterEntity | ItemEntity
-> {
+): Promise<string | number | boolean | ActorEntity> {
     const itemVariables = item.vars;
     const propVariables = compendium[item.prop].variables;
     const { type } = propVariables[key];

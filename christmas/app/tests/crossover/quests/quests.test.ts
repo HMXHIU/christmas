@@ -9,12 +9,11 @@ import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import type { GeohashLocation } from "$lib/crossover/world/types";
 import { consumeResources } from "$lib/server/crossover";
-import { spawnMonster } from "$lib/server/crossover/dungeonMaster";
+import { spawnMonster } from "$lib/server/crossover/dm";
 import { awardKillCurrency } from "$lib/server/crossover/entity";
 import { generateNPC } from "$lib/server/crossover/npc";
 import type { NPCs } from "$lib/server/crossover/npc/types";
 import { createQuest, createQuestWrit } from "$lib/server/crossover/quests";
-import { initializeClients } from "$lib/server/crossover/redis";
 import {
     fetchEntity,
     fetchQuest,
@@ -29,8 +28,6 @@ import {
     createGandalfSarumanSauron,
     generateRandomGeohash,
 } from "../utils";
-
-await initializeClients(); // create redis repositories
 
 let {
     playerOne,

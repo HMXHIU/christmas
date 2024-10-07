@@ -14,15 +14,12 @@ import { abilities } from "$lib/crossover/world/settings/abilities";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
-import { initializeClients } from "$lib/server/crossover/redis";
 import { expect, test } from "vitest";
 import {
     createGandalfSarumanSauron,
     createGoblinSpiderDragon,
     createTestItems,
 } from "../utils";
-
-await initializeClients(); // create redis repositories
 
 let { playerOne, playerTwo, playerThree } = await createGandalfSarumanSauron();
 let { woodenDoor, woodenClub, woodenClubThree, woodenClubTwo, portalOne } =

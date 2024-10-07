@@ -1,4 +1,4 @@
-import type { Item, Monster, Player } from "$lib/crossover/types";
+import type { Actor, Item, Monster, Player } from "$lib/crossover/types";
 import { uniq, uniqBy } from "lodash-es";
 import type {
     ActionEvent,
@@ -68,7 +68,7 @@ async function publishActionEvent(
 }
 
 async function publishAffectedEntitiesToPlayers(
-    entities: (Player | Monster | Item)[],
+    entities: Actor[],
     options?: {
         publishTo?: string[];
         op?: "replace" | "upsert";

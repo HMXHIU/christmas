@@ -1,4 +1,5 @@
 import {
+    type ActorEntity,
     type ItemEntity,
     type MonsterEntity,
     type PlayerEntity,
@@ -14,9 +15,7 @@ import type { QuestEntity } from "../quests/types";
 
 export { fetchEntity, fetchQuest, getOrCreateEntity, saveEntities, saveEntity };
 
-async function fetchEntity(
-    entity: string,
-): Promise<PlayerEntity | MonsterEntity | ItemEntity | null> {
+async function fetchEntity(entity: string): Promise<ActorEntity | null> {
     if (entity.startsWith("monster")) {
         const monster = (await monsterRepository.fetch(
             entity,
@@ -38,9 +37,9 @@ async function fetchQuest(questId: string): Promise<QuestEntity | null> {
     return null;
 }
 
-async function saveEntity<
-    T extends PlayerEntity | MonsterEntity | ItemEntity | QuestEntity,
->(entity: T): Promise<T> {
+async function saveEntity<T extends ActorEntity | QuestEntity>(
+    entity: T,
+): Promise<T> {
     if (entity.player) {
         return (await playerRepository.save(
             (entity as PlayerEntity).player,
@@ -65,9 +64,7 @@ async function saveEntity<
     throw new Error("Invalid entity");
 }
 
-async function saveEntities(
-    ...entities: (PlayerEntity | MonsterEntity | ItemEntity | QuestEntity)[]
-) {
+async function saveEntities(...entities: (ActorEntity | QuestEntity)[]) {
     for (const e of entities) {
         await saveEntity(e);
     }

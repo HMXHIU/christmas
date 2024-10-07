@@ -10,8 +10,8 @@ import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import type {
+    CreatureEntity,
     ItemEntity,
-    MonsterEntity,
     PlayerEntity,
 } from "$lib/server/crossover/types";
 import {
@@ -21,7 +21,7 @@ import {
     substituteVariablesRecursively,
 } from "$lib/utils";
 import { look } from "../actions";
-import { spawnItemInInventory, spawnQuestItem } from "../dungeonMaster";
+import { spawnItemInInventory, spawnQuestItem } from "../dm";
 import { publishFeedEvent } from "../events";
 import type { NPCs } from "../npc/types";
 import { itemRepository, questRepository } from "../redis";
@@ -261,7 +261,7 @@ async function resolveQuestObjective(
     await look(player, { inventory: true });
 }
 
-async function resolveQuestReward<T extends PlayerEntity | MonsterEntity>(
+async function resolveQuestReward<T extends CreatureEntity>(
     entity: T,
     reward: Reward,
 ): Promise<T> {

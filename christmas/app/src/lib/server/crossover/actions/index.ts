@@ -1,4 +1,4 @@
-import { type GameEntity } from "$lib/crossover/types";
+import { type Actor } from "$lib/crossover/types";
 import {
     calculatePathDuration,
     geohashesNearby,
@@ -12,8 +12,8 @@ import {
     type GeohashLocation,
 } from "$lib/crossover/world/types";
 import {
+    type CreatureEntity,
     type ItemEntity,
-    type MonsterEntity,
     type PlayerEntity,
 } from "$lib/server/crossover/types";
 import { cloneDeep } from "lodash-es";
@@ -109,10 +109,10 @@ async function say(
 }
 
 async function move(
-    entity: PlayerEntity | MonsterEntity,
+    entity: CreatureEntity,
     path: Direction[],
     now?: number,
-) {
+): Promise<CreatureEntity> {
     // Get path duration
     now = now ?? Date.now();
     const duration = calculatePathDuration(path);
@@ -197,12 +197,14 @@ async function move(
             { publishTo: [entityId] },
         );
     }
+
+    return entity;
 }
 
 async function look(
     player: PlayerEntity,
     options?: { inventory?: boolean },
-): Promise<GameEntity[]> {
+): Promise<Actor[]> {
     const { monsters, players, items } = await getNearbyEntities(
         player.loc[0],
         player.locT as GeohashLocation,

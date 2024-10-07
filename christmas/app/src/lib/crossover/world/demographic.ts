@@ -1,11 +1,8 @@
+import type { Skills } from "../types";
 import type { Abilities } from "./abilities";
 import type { Actions } from "./actions";
 import type { Attribute, Attributes } from "./entity";
-import {
-    abilitiesFromSkills,
-    actionsFromSkills,
-    type SkillLines,
-} from "./skills";
+import { abilitiesFromSkills, actionsFromSkills } from "./skills";
 
 export {
     abilitiesFromDemographics,
@@ -71,7 +68,7 @@ function skillsFromDemographics({
     race: Races;
     gender: Genders;
     archetype: Archetypes;
-}): Partial<Record<SkillLines, number>> {
+}): Skills {
     return races[race].skills;
 }
 
@@ -157,7 +154,7 @@ interface Race {
     label: string;
     description: string;
     attributes: Partial<Attributes>;
-    skills: Partial<Record<SkillLines, number>>;
+    skills: Skills;
 }
 
 const races: Record<Races, Race> = {

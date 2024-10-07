@@ -6,15 +6,12 @@ import {
 } from "$lib/crossover/world/dungeons";
 import { dungeons } from "$lib/crossover/world/settings/dungeons";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import { initializeClients } from "$lib/server/crossover/redis";
 import { dungeonEntrancesQuerySet } from "$lib/server/crossover/redis/queries";
 import type { ItemEntity } from "$lib/server/crossover/types";
 import { flatten } from "lodash-es";
 import { beforeAll, describe, expect, test } from "vitest";
 
-beforeAll(async () => {
-    await initializeClients(); // create redis repositories
-});
+beforeAll(async () => {});
 
 describe("Dungeons Tests", () => {
     test("Test `getAllDungeons`", async () => {
@@ -66,9 +63,9 @@ describe("Dungeons Tests", () => {
         var [biome, strength] = await biomeAtGeohash(geohash, locationType);
         expect(biomes[biome].traversableSpeed).greaterThan(0);
 
-        // Check biome at corridoor is traversable
+        // Check biome at corridor is traversable
         geohash = autoCorrectGeohashPrecision(
-            dg.corridors.values().next().value,
+            dg.corridors.values().next().value!,
             worldSeed.spatial.unit.precision,
         );
         var [biome, strength] = await biomeAtGeohash(geohash, locationType);

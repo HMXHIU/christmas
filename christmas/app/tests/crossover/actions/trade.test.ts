@@ -6,8 +6,7 @@ import {
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
-import { initializeClients } from "$lib/server/crossover/redis";
+import { spawnItemAtGeohash } from "$lib/server/crossover/dm";
 import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
 import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
 import { sleep } from "$lib/utils";
@@ -18,8 +17,6 @@ import {
     resetEntityResources,
     waitForEventData,
 } from "../utils";
-
-await initializeClients(); // create redis repositories
 
 let {
     geohash,

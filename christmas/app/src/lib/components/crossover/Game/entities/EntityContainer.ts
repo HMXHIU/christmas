@@ -1,11 +1,5 @@
 // EntityContainer.ts
-import type {
-    EntityType,
-    Item,
-    Monster,
-    PathParams,
-    Player,
-} from "$lib/crossover/types";
+import type { Actor, EntityType, PathParams } from "$lib/crossover/types";
 import {
     directionDuration,
     geohashToGridCell,
@@ -23,7 +17,7 @@ import { ActionBubble } from "./ActionBubble";
 export class EntityContainer extends Container {
     public entityId: string;
     public entityType: EntityType;
-    public entity: Player | Monster | Item;
+    public entity: Actor;
 
     public depthStart: number = 0;
     public depthScale: number = 0;
@@ -40,7 +34,7 @@ export class EntityContainer extends Container {
         depthLayer,
         depthScale,
     }: {
-        entity: Player | Monster | Item;
+        entity: Actor;
         depthStart: number;
         depthScale: number;
         depthLayer: number;

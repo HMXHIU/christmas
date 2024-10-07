@@ -12,7 +12,7 @@ import {
     type LocationType,
 } from "$lib/crossover/world/types";
 import {
-    type MonsterEntity,
+    type CreatureEntity,
     type PlayerEntity,
 } from "$lib/server/crossover/types";
 import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
@@ -150,7 +150,7 @@ async function loadPlayerEntity(
     return player;
 }
 
-async function setEntityBusy<T extends PlayerEntity | MonsterEntity>({
+async function setEntityBusy<T extends CreatureEntity>({
     entity,
     action,
     ability,
@@ -193,7 +193,7 @@ async function setEntityBusy<T extends PlayerEntity | MonsterEntity>({
 }
 
 async function consumeResources(
-    entity: PlayerEntity | MonsterEntity,
+    entity: CreatureEntity,
     {
         cha,
         mnd,
@@ -208,7 +208,7 @@ async function consumeResources(
         hp?: number;
     },
     save: boolean = true,
-): Promise<PlayerEntity | MonsterEntity> {
+): Promise<CreatureEntity> {
     // Get max stats (also fixes stats when it goes over max)
     const { hp: maxHp, mnd: maxSt, cha: maxCha } = entityStats(entity);
 

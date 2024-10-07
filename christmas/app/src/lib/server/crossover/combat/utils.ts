@@ -20,9 +20,9 @@ import { BASE_ATTRIBUTES } from "$lib/crossover/world/settings/entity";
 import { sanctuaryAtRegion } from "$lib/crossover/world/settings/world";
 import type { EquipmentSlot } from "$lib/crossover/world/types";
 import type {
-    GameRedisEntities,
+    ActorEntity,
+    CreatureEntity,
     ItemEntity,
-    MonsterEntity,
     PlayerEntity,
 } from "$lib/server/crossover/types";
 import { uniq } from "lodash-es";
@@ -92,16 +92,16 @@ function rollDice(dieRoll: DieRoll): number {
 }
 
 function resolveDamageEffects(
-    attacker: PlayerEntity | MonsterEntity,
-    defender: PlayerEntity | MonsterEntity | ItemEntity,
+    attacker: CreatureEntity,
+    defender: ActorEntity,
     bodyPartHit: BodyPart,
     dieRoll: DieRoll,
 ): {
     damage: number;
     debuffs: Debuff[];
     damageType: DamageType;
-    attacker: PlayerEntity | MonsterEntity;
-    defender: PlayerEntity | MonsterEntity | ItemEntity;
+    attacker: CreatureEntity;
+    defender: ActorEntity;
 } {
     // TODO: MINIS defender.dr TO DEFENDER AND ADD DR TO DEFENDER ROLL
 
@@ -148,8 +148,8 @@ function resolveDamageEffects(
 }
 
 function attackRollForWeapon(
-    attacker: PlayerEntity | MonsterEntity,
-    defender: PlayerEntity | MonsterEntity | ItemEntity,
+    attacker: CreatureEntity,
+    defender: ActorEntity,
     weapon?: Item,
 ): {
     success: boolean;
@@ -182,8 +182,8 @@ function attackRollForWeapon(
 }
 
 function attackRollForProcedureEffect(
-    attacker: PlayerEntity | MonsterEntity,
-    defender: PlayerEntity | MonsterEntity | ItemEntity,
+    attacker: CreatureEntity,
+    defender: ActorEntity,
     procedureEffect: ProcedureEffect,
 ): {
     success: boolean;
@@ -230,10 +230,7 @@ function attackRollForProcedureEffect(
     }
 }
 
-function entityDied(
-    before: GameRedisEntities,
-    after: GameRedisEntities,
-): boolean {
+function entityDied(before: ActorEntity, after: ActorEntity): boolean {
     if ("item" in before) {
         return (before as ItemEntity).dur > 0 && (after as ItemEntity).dur <= 0;
     }

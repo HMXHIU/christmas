@@ -5,8 +5,7 @@ import { abilities } from "$lib/crossover/world/settings/abilities";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
-import { spawnItemInInventory } from "$lib/server/crossover/dungeonMaster";
-import { initializeClients } from "$lib/server/crossover/redis";
+import { spawnItemInInventory } from "$lib/server/crossover/dm";
 import { inventoryQuerySet } from "$lib/server/crossover/redis/queries";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
 import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
@@ -19,8 +18,6 @@ import {
     createTestItems,
     resetEntityResources,
 } from "../utils";
-
-await initializeClients(); // create redis repositories
 
 let { geohash, playerOne, playerTwo, playerOneCookies, playerTwoCookies } =
     await createGandalfSarumanSauron();

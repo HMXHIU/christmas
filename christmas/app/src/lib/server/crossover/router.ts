@@ -1,5 +1,5 @@
 import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
-import type { Item, Player, World } from "$lib/crossover/types";
+import type { Item, Monster, Player, World } from "$lib/crossover/types";
 import { PlayerMetadataSchema } from "$lib/crossover/world/player";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/settings/world";
@@ -16,13 +16,14 @@ import {
     saveEntity,
 } from "$lib/server/crossover/redis/utils";
 import type {
+    ActorEntity,
+    CreatureEntity,
     ItemEntity,
     MonsterEntity,
     PlayerEntity,
     WorldEntity,
 } from "$lib/server/crossover/types";
 import { TRPCError } from "@trpc/server";
-import { performance } from "perf_hooks";
 import { z } from "zod";
 import { loadPlayerEntity } from ".";
 import { ObjectStorage } from "../objectStorage";
@@ -55,10 +56,10 @@ import {
 } from "./actions/trade";
 import {
     initializeGame,
+    respawnMonsters,
     spawnMonster,
-    spawnMonsters,
     spawnWorld,
-} from "./dungeonMaster";
+} from "./dm";
 import { publishCTAEvent, publishFeedEvent } from "./events";
 import {
     verifyP2PTransaction,
@@ -69,7 +70,7 @@ import {
 
 import type { Quest } from "$lib/crossover/types";
 import { AbilitiesEnum } from "$lib/crossover/world/abilities";
-
+import { entityAbilities } from "$lib/crossover/world/entity";
 import {
     getOrCreatePlayer,
     getPlayerState,
@@ -79,12 +80,20 @@ import {
 import { attack } from "./actions/attack";
 import {
     dungeonEntrancesQuerySet,
-    loggedInPlayersQuerySet,
     worldsInGeohashQuerySet,
 } from "./redis/queries";
 import { entityIsBusy } from "./utils";
 
-export { crossoverRouter, SaySchema };
+export {
+    BuffCreatureSchema,
+    crossoverRouter,
+    EntityPerformAbilitySchema,
+    EntityTargetEntitySchema,
+    RespawnMonstersSchema,
+    SaySchema,
+    SkillsSchema,
+    SpawnMonsterSchema,
+};
 
 // Schemas - auth
 const LoginSchema = z.object({
@@ -146,6 +155,9 @@ const TargetPlayerSchema = z.object({
 const TargetEntitySchema = z.object({
     target: z.string(),
 });
+const EntityTargetEntitySchema = TargetEntitySchema.extend({
+    entity: z.string(),
+});
 const ConfigureItemSchema = z.object({
     item: z.string(),
     variables: z.record(z.union([z.string(), z.number(), z.boolean()])),
@@ -156,16 +168,21 @@ const CreateItemSchema = z.object({
         .record(z.union([z.string(), z.number(), z.boolean()]))
         .optional(),
 });
+const RespawnMonstersSchema = z.object({
+    locationInstance: z.string().optional(),
+    players: z.array(z.string()).optional(),
+});
 
 // Schemas - world
+const SkillsSchema = z.record(z.enum(SkillLinesEnum), z.number());
 const SpawnMonsterSchema = z.object({
     geohash: z.string(),
     locationType: GeohashLocationSchema,
     locationInstance: z.string(),
-    level: z.number(),
     beast: z.string(),
+    additionalSkills: SkillsSchema.optional(),
 });
-const BuffEntitySchema = z.object({
+const BuffCreatureSchema = z.object({
     entity: z.string(),
     hp: z.number().optional(),
     cha: z.number().optional(),
@@ -232,50 +249,52 @@ const playerAuthBusyProcedure = playerAuthProcedure.use(
 const crossoverRouter = {
     //  Dungeon master (requires dm token)
     dm: t.router({
+        initialize: internalServiceProcedure.mutation(async () => {
+            await initializeGame();
+        }),
         moveMonster: dmServiceProcedure
             .input(EntityPathSchema)
             .mutation(async ({ ctx, input }) => {
                 const { path, entity } = input;
-                await move(
-                    (await fetchEntity(entity)) as PlayerEntity | MonsterEntity,
-                    path,
-                );
+                await move((await fetchEntity(entity)) as CreatureEntity, path);
             }),
         performMonsterAbility: dmServiceProcedure
             .input(EntityPerformAbilitySchema)
             .mutation(async ({ ctx, input }) => {
                 const { ability, target, entity } = input;
                 await performAbility({
-                    self: (await fetchEntity(entity)) as
-                        | PlayerEntity
-                        | MonsterEntity,
+                    self: (await fetchEntity(entity)) as CreatureEntity,
                     target,
                     ability,
                 });
             }),
-        initialize: internalServiceProcedure.mutation(async () => {
-            await initializeGame();
-        }),
-        respawnMonsters: internalServiceProcedure.mutation(async () => {
-            const start = performance.now();
-            // Get all logged in players
-            const players =
-                (await loggedInPlayersQuerySet().return.all()) as PlayerEntity[];
-
-            await spawnMonsters(players);
-
-            const end = performance.now();
-            return { status: "success", time: end - start };
-        }),
+        performMonsterAttack: dmServiceProcedure
+            .input(EntityTargetEntitySchema)
+            .mutation(async ({ ctx, input }) => {
+                const { target, entity } = input;
+                const monsterEntity = (await fetchEntity(
+                    entity,
+                )) as MonsterEntity;
+                await attack(monsterEntity, target);
+            }),
+        respawnMonsters: dmServiceProcedure
+            .input(RespawnMonstersSchema)
+            .mutation(async ({ ctx, input }) => {
+                const { locationInstance, players } = input;
+                return await respawnMonsters({
+                    players,
+                    locationInstance,
+                });
+            }),
         spawnMonster: dmServiceProcedure
             .input(SpawnMonsterSchema)
             .mutation(async ({ input }) => {
                 const {
                     geohash,
-                    level,
                     beast,
                     locationType,
                     locationInstance,
+                    additionalSkills,
                 } = input;
 
                 // Check geohash is unit precision
@@ -291,8 +310,9 @@ const crossoverRouter = {
                     beast,
                     locationType,
                     locationInstance,
+                    additionalSkills,
                 });
-                return monster;
+                return monster as Monster;
             }),
         spawnWorld: dmServiceProcedure
             .input(SpawnWorldSchema)
@@ -312,8 +332,13 @@ const crossoverRouter = {
                 });
                 return world as World;
             }),
-        buffEntity: dmServiceProcedure
-            .input(BuffEntitySchema)
+        monsterAbilities: dmServiceProcedure
+            .input(SkillsSchema)
+            .mutation(({ input }) => {
+                return entityAbilities({ skills: input });
+            }),
+        buffCreature: dmServiceProcedure
+            .input(BuffCreatureSchema)
             .mutation(async ({ input }) => {
                 const { entity, hp, cha, lum, umb, mnd, buffs, debuffs } =
                     input;
@@ -754,9 +779,7 @@ const crossoverRouter = {
     }),
 };
 
-async function tryFetchEntity(
-    entity: string,
-): Promise<PlayerEntity | MonsterEntity | ItemEntity> {
+async function tryFetchEntity(entity: string): Promise<ActorEntity> {
     const fetchedEntity = await fetchEntity(entity);
     if (fetchedEntity == null) {
         throw new TRPCError({

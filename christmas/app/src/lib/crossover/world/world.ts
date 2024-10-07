@@ -16,6 +16,7 @@ export {
     traversableCellsInWorld,
     traversableSpeedInWorld,
     type Sanctuary,
+    type Spatial,
     type Tileset,
     type WorldPOIs,
     type WorldSeed,
@@ -28,38 +29,23 @@ interface Sanctuary {
     geohash: string; // unit precision respawn point
 }
 
+type Spatial =
+    | "continent"
+    | "territory"
+    | "region"
+    | "city"
+    | "town"
+    | "village"
+    | "house"
+    | "unit";
+
 interface WorldSeed {
     name: string;
     description: string;
     constants: {
-        maxMonstersPerContinent: number;
+        monsterLimit: Record<string, number>;
     };
-    spatial: {
-        continent: {
-            precision: number;
-        };
-        territory: {
-            precision: number;
-        };
-        region: {
-            precision: number;
-        };
-        city: {
-            precision: number;
-        };
-        town: {
-            precision: number;
-        };
-        village: {
-            precision: number;
-        };
-        house: {
-            precision: number;
-        };
-        unit: {
-            precision: number;
-        };
-    };
+    spatial: Record<Spatial, { precision: number }>;
     seeds: {
         continent: {
             [key: string]: {

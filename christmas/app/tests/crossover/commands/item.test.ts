@@ -7,7 +7,6 @@ import { abilities } from "$lib/crossover/world/settings/abilities";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
-import { initializeClients } from "$lib/server/crossover/redis";
 import { saveEntities, saveEntity } from "$lib/server/crossover/redis/utils";
 import { sleep } from "$lib/utils";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
@@ -20,8 +19,6 @@ import {
     resetEntityResources,
     waitForEventData,
 } from "../utils";
-
-await initializeClients(); // create redis repositories
 
 let { geohash, playerOne, playerOneCookies, playerOneStream } =
     await createGandalfSarumanSauron();

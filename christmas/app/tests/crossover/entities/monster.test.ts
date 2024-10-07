@@ -10,15 +10,9 @@ import {
 } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import {
-    spawnItemAtGeohash,
-    spawnMonster,
-} from "$lib/server/crossover/dungeonMaster";
-import { initializeClients } from "$lib/server/crossover/redis";
+import { spawnItemAtGeohash, spawnMonster } from "$lib/server/crossover/dm";
 import { expect, test } from "vitest";
 import { createGoblinSpiderDragon, generateRandomGeohash } from "../utils";
-
-await initializeClients(); // create redis repositories
 
 let { goblin, dragon } = await createGoblinSpiderDragon();
 

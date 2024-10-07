@@ -7,7 +7,6 @@ import {
 } from "$lib/crossover/client";
 import { type PlayerMetadata } from "$lib/crossover/world/player";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import { initializeClients } from "$lib/server/crossover/redis";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { Keypair } from "@solana/web3.js";
 import jwt, { type JwtPayload } from "jsonwebtoken";
@@ -48,8 +47,6 @@ let playerMetadata: PlayerMetadata = {
 let playerCookies: string;
 
 beforeAll(async () => {
-    await initializeClients();
-
     // Test Can Login (SIWS) - Does not need User Account at this point
     let response = await login(user);
     const loginResult = (await response.json()).result.data;

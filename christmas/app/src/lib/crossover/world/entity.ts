@@ -1,11 +1,13 @@
 import type {
+    Creature,
     Currency,
     EntityStats,
     Monster,
     Player,
+    Skills,
     Stat,
 } from "$lib/crossover/types";
-import { clone, isNumber, mergeWith, uniq } from "lodash-es";
+import { isNumber, mergeWith, uniq } from "lodash-es";
 import type { Abilities } from "./abilities";
 import type { Actions } from "./actions";
 import {
@@ -18,7 +20,6 @@ import {
     abilitiesFromSkills,
     actionsFromSkills,
     attributesFromSkills,
-    type SkillLines,
 } from "./skills";
 
 export {
@@ -31,6 +32,7 @@ export {
     entityLevel,
     entitySkills,
     entityStats,
+    mergeAdditive,
     mergeNumericAdd,
     resetEntityStats,
     type Attribute,
@@ -52,7 +54,7 @@ const describeResource: Record<Stat | Attribute | Currency, string> = {
     umb: "umbra",
 };
 
-function entityLevel(entity: Player | Monster): number {
+function entityLevel(entity: Creature): number {
     // Entity's level is its highest skill level
     return Math.max(1, ...Object.values(entity.skills));
 }
@@ -67,11 +69,11 @@ function calculateModifier(
     );
 }
 
-function resetEntityStats(entity: Player | Monster): Player | Monster {
+function resetEntityStats(entity: Creature): Creature {
     return Object.assign(entity, entityStats(entity));
 }
 
-function entityStats(entity: Player | Monster): EntityStats {
+function entityStats(entity: Creature): EntityStats {
     const attributes = entityAttributes(entity);
     const level = entityLevel(entity);
     return {
@@ -81,6 +83,14 @@ function entityStats(entity: Player | Monster): EntityStats {
     };
 }
 
+function mergeAdditive<T>(u: T, v: T): T {
+    return mergeWith(
+        { ...u }, // mergeWith will modify in place, do a shallow copy
+        v,
+        mergeNumericAdd,
+    );
+}
+
 function mergeNumericAdd(s: any, d: any) {
     if (isNumber(s) && isNumber(d)) {
         return s + d;
@@ -88,61 +98,58 @@ function mergeNumericAdd(s: any, d: any) {
     return s ?? d ?? 0;
 }
 
-function entitySkills(
-    entity: Player | Monster,
-): Partial<Record<SkillLines, number>> {
-    // Add abilities from demographics
+type EntitySkillsInput =
+    | Pick<Player, "player" | "skills" | "race" | "gen" | "arch">
+    | Pick<Monster, "skills">;
+
+function entitySkills(entity: EntitySkillsInput): Skills {
+    // Add abilities from demographics (monster does not have skills from demographics)
     if ("player" in entity) {
-        // Add skill levels from demographics (additive)
-        return mergeWith(
-            { ...entity.skills }, // mergeWith will modify entity.skills
+        // Add skill levels from demographics
+        return mergeAdditive(
+            entity.skills,
             skillsFromDemographics({
                 race: entity.race,
                 gender: entity.gen,
                 archetype: entity.arch,
             }),
-            mergeNumericAdd,
         );
     }
 
     return entity.skills;
 }
 
-function entityAttributes(entity: Player | Monster): Attributes {
+function entityAttributes(entity: EntitySkillsInput): Attributes {
     // Add attributes from skills
-    let attributes: Attributes = mergeWith(
-        clone(BASE_ATTRIBUTES),
+    let attributes: Attributes = mergeAdditive(
+        BASE_ATTRIBUTES,
         attributesFromSkills(entitySkills(entity)),
-        mergeNumericAdd,
     );
 
     // Add attributes from demographics
     if ("player" in entity) {
-        attributes = mergeWith(
+        attributes = mergeAdditive(
             attributes,
             attributesFromDemographics({
                 race: entity.race,
                 gender: entity.gen,
                 archetype: entity.arch,
             }),
-            mergeNumericAdd,
         );
     }
 
     return attributes;
 }
 
-function entityAbilities(entity: Player | Monster): Abilities[] {
+function entityAbilities(entity: EntitySkillsInput): Abilities[] {
     return uniq(abilitiesFromSkills(entitySkills(entity)));
 }
 
-function entityActions(entity: Player | Monster): Actions[] {
+function entityActions(entity: EntitySkillsInput): Actions[] {
     return uniq(actionsFromSkills(entitySkills(entity)));
 }
 
-function entityCurrencyReward(
-    entity: Player | Monster,
-): Record<Currency, number> {
+function entityCurrencyReward(entity: Creature): Record<Currency, number> {
     // TODO: player alignment (now assumed to be good)
     const alignment =
         "monster" in entity ? bestiary[entity.beast].alignment : "good";

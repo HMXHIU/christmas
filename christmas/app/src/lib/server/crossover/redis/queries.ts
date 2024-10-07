@@ -12,7 +12,8 @@ import type {
 } from "$lib/crossover/world/types";
 import { EquipmentSlots, WeaponSlots } from "$lib/crossover/world/types";
 import {
-    type GameRedisEntities,
+    type ActorEntity,
+    type CreatureEntity,
     type ItemEntity,
     type MonsterEntity,
     type PlayerEntity,
@@ -32,6 +33,7 @@ import type { QuestEntity } from "../quests/types";
 
 // Exports
 export {
+    chainOr,
     dungeonEntrancesQuerySet,
     equipmentQuerySet,
     equippedWeapons,
@@ -127,7 +129,7 @@ async function getNearbyPlayerIds(
 }
 
 async function getPlayerIdsNearbyEntities(
-    ...entities: GameRedisEntities[]
+    ...entities: ActorEntity[]
 ): Promise<string[]> {
     return uniq(
         (
@@ -324,6 +326,18 @@ function relevantQuestsQuerySet(quests: string[], entities: string[]): Search {
     return qs.and("entityIds").containOneOf(...entities);
 }
 
+function chainOr(
+    qs: Search<Record<string, any>>,
+    field: string,
+    contains: string[],
+): Search<Record<string, any>> {
+    qs = qs.where(field).equal(contains[0]);
+    for (let i = 1; i < contains.length; i++) {
+        qs = qs.or(field).equalTo(contains[i]);
+    }
+    return qs;
+}
+
 async function playerQuestsInvolvingEntities(
     player: string,
     entities: string[],
@@ -387,9 +401,7 @@ function dungeonEntrancesQuerySet(
         .containOneOf(`${territory}*`);
 }
 
-async function equippedWeapons(
-    entity: PlayerEntity | MonsterEntity,
-): Promise<ItemEntity[]> {
+async function equippedWeapons(entity: CreatureEntity): Promise<ItemEntity[]> {
     let weapons = (await equipmentQuerySet(
         getEntityId(entity)[0],
         WeaponSlots,

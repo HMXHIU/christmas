@@ -8,11 +8,8 @@ import {
 } from "$lib/crossover/world/entity";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { createItem } from "$lib/server/crossover/actions/item";
-import { initializeClients } from "$lib/server/crossover/redis";
 import { expect, test } from "vitest";
 import { createGandalfSarumanSauron } from "../utils";
-
-await initializeClients(); // create redis repositories
 
 let {
     region,

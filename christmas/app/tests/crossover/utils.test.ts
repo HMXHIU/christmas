@@ -1,4 +1,5 @@
 import {
+    borderingGeohashes,
     calculateLocation,
     childrenGeohashes,
     expandGeohashes,
@@ -11,8 +12,7 @@ import {
     gridCellToGeohash,
 } from "$lib/crossover/utils";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
-import { spawnMonster } from "$lib/server/crossover/dungeonMaster";
-import { initializeClients } from "$lib/server/crossover/redis";
+import { spawnMonster } from "$lib/server/crossover/dm";
 import { sampleFrom } from "$lib/utils";
 import { KdTree } from "$lib/utils/kdtree";
 import { beforeAll, beforeEach, describe, expect, it, test } from "vitest";
@@ -23,9 +23,7 @@ interface TestData {
 }
 let tree: KdTree<TestData>;
 
-beforeAll(async () => {
-    await initializeClients(); // create redis repositories
-});
+beforeAll(async () => {});
 
 describe("Test KD Tree", async () => {
     beforeEach(() => {
@@ -199,8 +197,6 @@ describe("Test Utils", () => {
     });
 
     test("Test Geohash", async () => {
-        await initializeClients(); // create redis repositories
-
         /*
          * Test `geohashToColRow` `geohashToGridCell`
          */
@@ -347,5 +343,32 @@ describe("Test Utils", () => {
             geohashNeighbour(parentGeohash, "s"),
             geohashNeighbour(geohashNeighbour(parentGeohash, "s"), "e"),
         ]);
+
+        /*
+         * Test `borderingGeohashes`
+         */
+
+        // Get peripheral neighboring geohashes
+        const peripheralGeohashes = await borderingGeohashes([
+            "w21z3ts",
+            "w21z3tt",
+            "w21z3tk",
+        ]);
+        expect(peripheralGeohashes.sort()).to.deep.equal(
+            [
+                "w21z3tg",
+                "w21z3tu",
+                "w21z3tv",
+                "w21z3ty",
+                "w21z3te",
+                "w21z3tw",
+                "w21z3t7",
+                "w21z3tm",
+                "w21z3tq",
+                "w21z3t5",
+                "w21z3th",
+                "w21z3tj",
+            ].sort(),
+        );
     });
 });

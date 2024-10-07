@@ -1,8 +1,7 @@
 import { crossoverCmdLook } from "$lib/crossover/client";
 import { minifiedEntity } from "$lib/crossover/utils";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
-import { spawnMonster } from "$lib/server/crossover/dungeonMaster";
-import { initializeClients } from "$lib/server/crossover/redis";
+import { spawnMonster } from "$lib/server/crossover/dm";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import {
@@ -11,8 +10,6 @@ import {
     generateRandomGeohash,
     waitForEventData,
 } from "../utils";
-
-await initializeClients();
 
 let {
     geohash,

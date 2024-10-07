@@ -5,7 +5,7 @@ import type {
     StoreMetadataSchema,
 } from "$lib/community/types";
 import type { MessageFeed } from "$lib/components/crossover/GameWindow";
-import type { Item, Monster, Player, World } from "$lib/crossover/types";
+import type { Actor, Item, Monster, Player, World } from "$lib/crossover/types";
 import type { Ability } from "$lib/crossover/world/abilities";
 import type { LandGrading } from "$lib/crossover/world/biomes";
 import type { CTA } from "$lib/server/crossover/player";
@@ -53,7 +53,7 @@ export let monsterRecord = writable<Record<string, Monster>>({});
 export let equipmentRecord = writable<Record<string, Record<string, Item>>>({});
 export let worldRecord = writable<Record<string, Record<string, World>>>({});
 export let messageFeed = writable<MessageFeed[]>([]);
-export let target = writable<Player | Monster | Item | null>(null);
+export let target = writable<Actor | null>(null);
 export let landGrading = writable<LandGrading>({});
 
 export let worldOffset = writable<{ row: number; col: number }>({

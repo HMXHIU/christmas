@@ -1,4 +1,4 @@
-import type { Item, Monster, Player } from "$lib/crossover/types";
+import type { Actor } from "$lib/crossover/types";
 import { getEntityId } from "$lib/crossover/utils";
 import { Container } from "pixi.js";
 import { entityContainers } from "./entities";
@@ -9,8 +9,8 @@ function drawTargetUI({
     target,
     highlight,
 }: {
-    source: Player | Monster | Item;
-    target: Player | Monster | Item | null;
+    source: Actor;
+    target: Actor | null;
     stage: Container;
     highlight: number;
 }) {

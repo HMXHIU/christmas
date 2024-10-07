@@ -1,14 +1,14 @@
 import { entityCurrencyReward } from "$lib/crossover/world/entity";
-import type { MonsterEntity, PlayerEntity } from "$lib/server/crossover/types";
+import type { CreatureEntity } from "$lib/server/crossover/types";
 import { saveEntity } from "./redis/utils";
 
 export { awardKillCurrency };
 
 async function awardKillCurrency(
-    entity: PlayerEntity | MonsterEntity,
-    killed: PlayerEntity | MonsterEntity,
+    entity: CreatureEntity,
+    killed: CreatureEntity,
     save: boolean = true,
-): Promise<PlayerEntity | MonsterEntity> {
+): Promise<CreatureEntity> {
     const { lum, umb } = entityCurrencyReward(killed);
     entity.lum += lum;
     entity.umb += umb;

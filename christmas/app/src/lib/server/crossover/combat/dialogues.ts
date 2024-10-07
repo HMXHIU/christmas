@@ -2,10 +2,12 @@ import { type BodyPart } from "$lib/crossover/types";
 import type { Abilities, DamageType } from "$lib/crossover/world/abilities";
 import type { Genders } from "$lib/crossover/world/demographic";
 import {
+    type ActorEntity,
+    type CreatureEntity,
     type ItemEntity,
-    type MonsterEntity,
     type PlayerEntity,
 } from "$lib/server/crossover/types";
+import { random } from "../utils";
 
 export { entityPronoun, generateHitMessage, generateMissMessage };
 
@@ -56,7 +58,7 @@ const genderPronouns: Record<
 };
 
 function entityPronoun(
-    entity: PlayerEntity | MonsterEntity | ItemEntity,
+    entity: ActorEntity,
     type: "possessive" | "reflexive" | "object" | "subject" = "possessive",
 ): string {
     if ("player" in entity) {
@@ -66,10 +68,7 @@ function entityPronoun(
     }
 }
 
-function entityHitNoun(
-    entity: PlayerEntity | MonsterEntity | ItemEntity,
-    bodyPartHit?: BodyPart,
-): string {
+function entityHitNoun(entity: ActorEntity, bodyPartHit?: BodyPart): string {
     if ("item" in entity) {
         return entity.name;
     } else {
@@ -115,8 +114,8 @@ function generateHitMessage({
     damageType,
     ability,
 }: {
-    attacker: PlayerEntity | MonsterEntity;
-    target: PlayerEntity | MonsterEntity | ItemEntity;
+    attacker: CreatureEntity;
+    target: ActorEntity;
     bodyPartHit: BodyPart;
     damageType?: DamageType;
     damage?: number;
@@ -144,8 +143,8 @@ function generateHitMessage({
 }
 
 function generateMissMessage(
-    attacker: PlayerEntity | MonsterEntity,
-    target: PlayerEntity | MonsterEntity | ItemEntity,
+    attacker: CreatureEntity,
+    target: ActorEntity,
     weapon?: ItemEntity,
 ): string {
     const missReasons = [
@@ -154,8 +153,7 @@ function generateMissMessage(
         "it fails to connect",
         "is blocked",
     ];
-    const missReason =
-        missReasons[Math.floor(Math.random() * missReasons.length)];
+    const missReason = missReasons[Math.floor(random() * missReasons.length)];
     if (weapon) {
         return `${attacker.name} attacks ${target.name} with ${entityPronoun(attacker)} ${weapon.name} but ${missReason}.`;
     } else {
@@ -165,7 +163,7 @@ function generateMissMessage(
 
 // // TODO: Move this to game instead
 // function generateDebuffMessage(
-//     target: PlayerEntity | MonsterEntity,
+//     target: CreatureEntity,
 //     debuffs: Debuff[],
 // ): string {
 //     if (debuffs.length > 0) {

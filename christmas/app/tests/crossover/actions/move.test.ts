@@ -11,8 +11,7 @@ import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { Direction } from "$lib/crossover/world/types";
 import { move } from "$lib/server/crossover/actions";
-import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
-import { initializeClients } from "$lib/server/crossover/redis";
+import { spawnItemAtGeohash } from "$lib/server/crossover/dm";
 import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
 import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
 import { sleep } from "$lib/utils";
@@ -26,7 +25,6 @@ import {
     waitForEventData,
 } from "../utils";
 
-await initializeClients(); // create redis repositories
 let { playerOne, playerOneCookies, playerOneStream } =
     await createGandalfSarumanSauron();
 
@@ -141,10 +139,10 @@ describe("Movement Tests", () => {
 
         // PlayerOne tries to move south (obstructed by tavern)
         await expect(
-            crossoverCmdMove({ path: ["s"] }, { Cookie: playerOneCookies })
+            crossoverCmdMove({ path: ["s"] }, { Cookie: playerOneCookies }),
         ).rejects.toThrowError("Path is not traversable");
         await expect(
-            waitForEventData(playerOneStream, "feed")
+            waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
             type: "error",
             message: "Path is not traversable",
@@ -158,7 +156,7 @@ describe("Movement Tests", () => {
         const biome = (
             await biomeAtGeohash(
                 geohashNeighbour(playerOneGeohash, "e"),
-                "geohash"
+                "geohash",
             )
         )[0];
         expect(biomes[biome].traversableSpeed).toBeGreaterThan(0);
@@ -166,10 +164,10 @@ describe("Movement Tests", () => {
 
         // PlayerOne tries to move south (obstructed by tavern)
         await expect(
-            crossoverCmdMove({ path: ["s"] }, { Cookie: playerOneCookies })
+            crossoverCmdMove({ path: ["s"] }, { Cookie: playerOneCookies }),
         ).rejects.toThrowError("Path is not traversable");
         await expect(
-            waitForEventData(playerOneStream, "feed")
+            waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
             type: "error",
             message: "Path is not traversable",
@@ -182,15 +180,15 @@ describe("Movement Tests", () => {
         await sleep(MS_PER_TICK * 2);
         playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
         expect(playerOne.loc[0]).toBe(
-            geohashNeighbour(playerOneBefore.loc[0], "se")
+            geohashNeighbour(playerOneBefore.loc[0], "se"),
         );
 
         // PlayerOne move west (obstructed by tavern)
         await expect(
-            crossoverCmdMove({ path: ["w"] }, { Cookie: playerOneCookies })
+            crossoverCmdMove({ path: ["w"] }, { Cookie: playerOneCookies }),
         ).rejects.toThrowError("Path is not traversable");
         await expect(
-            waitForEventData(playerOneStream, "feed")
+            waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
             type: "error",
             message: "Path is not traversable",
@@ -203,10 +201,7 @@ describe("Movement Tests", () => {
         const finalGeohash = geohashNeighbour(playerOneGeohash, "s", 4);
 
         await flushEventChannel(playerOneStream, "entities");
-        playerOne = (await move(
-            playerOne as PlayerEntity,
-            path
-        )) as PlayerEntity;
+        playerOne = (await move(playerOne, path)) as PlayerEntity;
 
         // Check in motion
         expect(isEntityInMotion(playerOne)).equal(true);
@@ -226,7 +221,7 @@ describe("Movement Tests", () => {
         // Check correct events
         const entityEvents = await collectEventDataForDuration(
             playerOneStream,
-            "entities"
+            "entities",
         );
         expect(entityEvents.length).equal(1); // check no duplicates
         expect(entityEvents[0]).toMatchObject({

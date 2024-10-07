@@ -1,9 +1,10 @@
-import type { GameEntity, Monster, Player } from "$lib/crossover/types";
+import type { Actor, Creature } from "$lib/crossover/types";
 import { entityInRange, isEntityAlive } from "$lib/crossover/utils";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
 import {
-    type GameRedisEntities,
+    type ActorEntity,
+    type CreatureEntity,
     type PlayerEntity,
 } from "$lib/server/crossover/types";
 import { sleep } from "$lib/utils";
@@ -15,10 +16,7 @@ import { fetchEntity } from "../redis/utils";
 
 export { attack };
 
-function canAttackTarget(
-    attacker: Player | Monster,
-    target: GameEntity,
-): [boolean, string] {
+function canAttackTarget(attacker: Creature, target: Actor): [boolean, string] {
     // Out of range
     if (!entityInRange(attacker, target, actions.attack.range)[0]) {
         return [false, `${target.name} is out of range`];
@@ -37,41 +35,45 @@ function canAttackTarget(
 }
 
 async function attack(
-    player: PlayerEntity,
+    creature: CreatureEntity,
     target: string,
     options?: {
         now?: number;
     },
 ) {
     // Set busy
-    player = (await setEntityBusy({
-        entity: player,
+    creature = (await setEntityBusy({
+        entity: creature,
         action: actions.attack.action,
         now: options?.now,
     })) as PlayerEntity;
 
-    const targetEntity = (await fetchEntity(target)) as GameRedisEntities;
+    const targetEntity = (await fetchEntity(target)) as ActorEntity;
 
     // Check if can attack
-    const [ok, error] = canAttackTarget(player, targetEntity);
+    const [ok, error] = canAttackTarget(creature, targetEntity);
     if (!ok) {
-        await publishFeedEvent(player.player, {
-            type: "error",
-            message: error,
-        });
+        if (creature.player) {
+            await publishFeedEvent(creature.player, {
+                type: "error",
+                message: error,
+            });
+        }
         return;
     }
 
-    // Get player equipped weapons or unarmed
-    let weapons = await equippedWeapons(player);
+    // Get creature equipped weapons or unarmed
+    let weapons = await equippedWeapons(creature);
 
     // Inform weapon durability
     for (const weapon of weapons) {
         if (weapon.dur <= 0) {
-            await publishFeedEvent(player.player, {
-                type: "message",
-                message: `Your ${weapon.name} feels brittle, too damaged to be of any use.`,
-            });
+            if (creature.player) {
+                await publishFeedEvent(creature.player, {
+                    type: "message",
+                    message: `Your ${weapon.name} feels brittle, too damaged to be of any use.`,
+                });
+            }
         }
     }
 
@@ -85,7 +87,7 @@ async function attack(
             (MS_PER_TICK * actions.attack.ticks) / weaponsOrUnarmed.length,
         );
         // Resolve combat
-        await resolveCombat(player, targetEntity, {
+        await resolveCombat(creature, targetEntity, {
             attack: { action: "attack", weapon },
         });
     }

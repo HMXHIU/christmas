@@ -1,5 +1,5 @@
 import { groupBy, partition } from "lodash-es";
-import type { EntityType, GameEntity, Item, Monster } from "../types";
+import type { Actor, EntityType, Item, Monster } from "../types";
 import { isEntityAlive } from "../utils";
 import { bestiary } from "../world/settings/bestiary";
 import { compendium } from "../world/settings/compendium";
@@ -8,7 +8,7 @@ import type { EntityDescriptionState, EntityDescriptors } from "./settings";
 export { descibeEntities };
 
 function descibeEntities(
-    entities: GameEntity[],
+    entities: Actor[],
     entityType: EntityType,
     entityDescriptors: Record<EntityType, EntityDescriptors>,
 ): string {
@@ -16,7 +16,7 @@ function descibeEntities(
     const [aliveEntities, deadEntities] = partition(entities, isEntityAlive);
 
     function describeEntityGroup(
-        entities: GameEntity[],
+        entities: Actor[],
         entityState: EntityDescriptionState,
     ): string {
         const entitiesByCategory = groupBy(entities, (e) => {
@@ -53,10 +53,7 @@ function descibeEntities(
         .join("\n");
 }
 
-function getAdditionalInfo(
-    entities: GameEntity[],
-    entityType: EntityType,
-): string {
+function getAdditionalInfo(entities: Actor[], entityType: EntityType): string {
     const sample = entities[0];
     if (!sample) {
         return "";
@@ -80,7 +77,7 @@ function getAdditionalInfo(
 }
 
 function applyEntityDescriptors(
-    entities: GameEntity[],
+    entities: Actor[],
     rules: EntityDescriptors,
     entityState: EntityDescriptionState,
 ): string {

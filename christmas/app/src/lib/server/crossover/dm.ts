@@ -1,4 +1,5 @@
 import type { CacheInterface } from "$lib/caches";
+import type { Skills } from "$lib/crossover/types";
 import {
     autoCorrectGeohashPrecision,
     borderingGeohashes,
@@ -10,7 +11,7 @@ import {
 import { blueprintsAtTerritory } from "$lib/crossover/world/blueprint";
 import { type PropAttributes } from "$lib/crossover/world/compendium";
 import { getAllDungeons } from "$lib/crossover/world/dungeons";
-import { entityStats } from "$lib/crossover/world/entity";
+import { entityStats, mergeAdditive } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
 import {
@@ -19,6 +20,7 @@ import {
 } from "$lib/crossover/world/settings/blueprint";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
+    spatialAtPrecision,
     topologicalAnalysis,
     worldSeed,
 } from "$lib/crossover/world/settings/world";
@@ -28,6 +30,7 @@ import {
 } from "$lib/crossover/world/types";
 import { poisInWorld, type WorldPOIs } from "$lib/crossover/world/world";
 import type {
+    CreatureEntity,
     ItemEntity,
     MonsterEntity,
     PlayerEntity,
@@ -47,6 +50,8 @@ import {
 } from "./caches";
 import { itemRepository, monsterRepository, worldRepository } from "./redis";
 import {
+    chainOr,
+    loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
     worldsContainingGeohashQuerySet,
 } from "./redis/queries";
@@ -54,36 +59,56 @@ import { isLocationTraversable, parseItemVariables } from "./utils";
 
 export {
     initializeGame,
+    respawnMonsters,
     spawnItemAtGeohash,
     spawnItemInInventory,
     spawnMonster,
-    spawnMonsters,
     spawnQuestItem,
     spawnWorld,
     spawnWorldPOIs,
 };
 
-/** TODO: DEPRECATE THIS (SPAWN USING SPAWN POINTS OR PG)
+/**
+ * Respawns monsters in locationInstance (defaults to actual game world @) considering the provided players locations
  *
- * Spawns monsters in the game world based on the given players' locations.
  * @param players - An array of PlayerEntity objects representing the players' locations.
  * @returns A Promise that resolves when all the monsters have been spawned.
  */
-async function spawnMonsters(players: PlayerEntity[]) {
-    const locationInstance = LOCATION_INSTANCE; // spawn in actual game instance
+async function respawnMonsters({
+    players,
+    locationInstance,
+}: {
+    players?: string[];
+    locationInstance?: string;
+}) {
+    locationInstance = locationInstance ?? LOCATION_INSTANCE;
+    let qs = loggedInPlayersQuerySet().where("locI").equal(locationInstance);
+    if (players && players.length > 0) {
+        qs = chainOr(qs, "player", players);
+    }
 
-    for (const [locationType, ps] of Object.entries(groupBy(players, "locT"))) {
+    const spawned: Record<string, number> = {};
+
+    // Get all players
+    const playerEntities = (await qs.return.all()) as PlayerEntity[];
+
+    for (const [locationType, ps] of Object.entries(
+        groupBy(playerEntities, "locT"),
+    )) {
         // Get all parent geohashes (only interested with geohashes 1 level above unit precision)
         const parentGeohashes = ps.map(({ loc }) => {
             return loc[0].slice(0, -1);
         });
 
-        // Get all neighboring geohashes where there are no players
-        const uninhabitedGeohashes = await borderingGeohashes(parentGeohashes);
+        // Get all peripheral geohashes where there are no players
+        const peripheralGeohashes = await borderingGeohashes(parentGeohashes);
 
-        for (const geohash of uninhabitedGeohashes) {
-            // Get monster limit for each uninhabited geohash
-            const monsterLimit = 1000;
+        for (const geohash of peripheralGeohashes) {
+            // Get monster limit for each peripheral geohash
+            const monsterLimit =
+                worldSeed.constants.monsterLimit[
+                    spatialAtPrecision(geohash.length)
+                ];
 
             // Get number of monsters in geohash
             const numMonsters = await monstersInGeohashQuerySet(
@@ -94,12 +119,11 @@ async function spawnMonsters(players: PlayerEntity[]) {
 
             // Number of monsters to spawn
             const numMonstersToSpawn = monsterLimit - numMonsters;
-
             if (numMonstersToSpawn <= 0) {
                 continue;
             }
 
-            // Select a random set of child geo hashes to spawn monsters
+            // Select a random set of child geohashes to spawn monsters
             const childGeohashes = childrenGeohashes(geohash).sort(
                 () => Math.random() - 0.5,
             );
@@ -119,12 +143,18 @@ async function spawnMonsters(players: PlayerEntity[]) {
                         beast,
                         locationInstance,
                     });
+                    spawned[monster.beast] =
+                        spawned[monster.beast] == null
+                            ? 1
+                            : spawned[monster.beast] + 1;
                 } catch (error) {
                     console.log(`Error spawning ${beast}`, error);
                 }
             }
         }
     }
+
+    return spawned;
 }
 
 /**
@@ -140,11 +170,13 @@ async function spawnMonster({
     locationType,
     locationInstance,
     beast,
+    additionalSkills,
 }: {
     geohash: string;
     locationType: GeohashLocation;
     locationInstance: string;
     beast: string;
+    additionalSkills?: Skills;
 }): Promise<MonsterEntity> {
     if (!geohashLocationTypes.has(locationType)) {
         throw new Error("Can only spawn monster on GeohashLocation");
@@ -166,16 +198,23 @@ async function spawnMonster({
     if (
         !(await isLocationTraversable(location, locationType, locationInstance))
     ) {
-        throw new Error(`Cannot spawn ${beast} at ${geohash}`);
+        throw new Error(
+            `Cannot spawn ${beast} at ${geohash}, ${location} is untraversable`,
+        );
     }
 
     // Get monster count
     const count = await monsterRepository.search().count();
     const monsterId = `monster_${beast}${count}${generatePin(4)}`; // prevent race condition by generating additional pin
 
+    // Add any additional skills
+    const skills = additionalSkills
+        ? mergeAdditive(additionalSkills, bestiary[beast].skills)
+        : bestiary[beast].skills;
+
     // Get monster stats
     let monster: MonsterEntity = {
-        monster: monsterId, // unique monster id
+        monster: monsterId,
         name: beast,
         beast,
         loc: location,
@@ -186,7 +225,7 @@ async function spawnMonster({
         cha: 0,
         lum: 0,
         umb: 0,
-        skills: bestiary[beast].skillLines,
+        skills,
         buclk: 0,
         buf: [],
         dbuf: [],
@@ -334,10 +373,8 @@ async function spawnQuestItem({
     );
 
     // Get item id
-    // In between getting the count and saving, the count could have changed.
-    // Instead of locking, we use a random pin in addition to the count to prevent race condition
     const count = await itemRepository.search().count();
-    const itemId = `item_${prop}${count}${generatePin(4)}`;
+    const itemId = `item_${prop}${count}${generatePin(4)}`; // Instead of locking, we use a random pin in addition to the count to prevent race condition
 
     const item: ItemEntity = {
         item: itemId,
@@ -367,7 +404,7 @@ async function spawnItemInInventory({
     owner,
     configOwner,
 }: {
-    entity: PlayerEntity | MonsterEntity;
+    entity: CreatureEntity;
     prop: string;
     variables?: Record<string, any>;
     owner?: string;

@@ -1,4 +1,11 @@
-import type { Item, Monster, Player, World } from "$lib/crossover/types";
+import type {
+    Actor,
+    Creature,
+    Item,
+    Monster,
+    Player,
+    World,
+} from "$lib/crossover/types";
 import {
     entityInRange,
     geohashToColRow,
@@ -110,7 +117,7 @@ async function executeGameCommand(
         // Move in range of target
         await moveInRangeOfTarget({
             range: ability.range,
-            target: target as Player | Monster | Item,
+            target: target as Actor,
         });
 
         // Perform ability
@@ -155,8 +162,8 @@ async function performAction(
         item,
     }: {
         action: Action;
-        self: Player | Monster;
-        target?: Player | Monster | Item;
+        self: Creature;
+        target?: Actor;
         skill?: SkillLines;
         item?: Item;
         offer?: BarterSerialized;
@@ -482,7 +489,7 @@ async function moveInRangeOfTarget({
     retries,
 }: {
     range: number;
-    target: Player | Monster | Item;
+    target: Actor;
     retries?: number;
 }) {
     retries ??= 1;

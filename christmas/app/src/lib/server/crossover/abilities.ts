@@ -12,8 +12,8 @@ import {
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import type {
-    ItemEntity,
-    MonsterEntity,
+    ActorEntity,
+    CreatureEntity,
     PlayerEntity,
 } from "$lib/server/crossover/types";
 import { sleep } from "$lib/utils";
@@ -31,7 +31,7 @@ async function performAbility({
     ignoreCost,
     now,
 }: {
-    self: PlayerEntity | MonsterEntity;
+    self: CreatureEntity;
     target: string;
     ability: Abilities;
     ignoreCost?: boolean;
@@ -143,7 +143,7 @@ function performEffectCheck({
     entity,
     effect,
 }: {
-    entity: PlayerEntity | MonsterEntity | ItemEntity;
+    entity: ActorEntity;
     effect: ProcedureEffect;
 }): boolean {
     const { debuffs, buffs } = effect;

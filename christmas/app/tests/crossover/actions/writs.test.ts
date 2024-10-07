@@ -6,8 +6,7 @@ import {
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { spawnItemInInventory } from "$lib/server/crossover/dungeonMaster";
-import { initializeClients } from "$lib/server/crossover/redis";
+import { spawnItemInInventory } from "$lib/server/crossover/dm";
 import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
 import { sleep } from "$lib/utils";
 import { beforeEach, describe, expect, test } from "vitest";
@@ -17,8 +16,6 @@ import {
     waitForAnyEventData,
     waitForEventData,
 } from "../utils";
-
-await initializeClients(); // create redis repositories
 
 let {
     geohash,

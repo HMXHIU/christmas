@@ -1,11 +1,9 @@
 import { crossoverCmdSay } from "$lib/crossover/client";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
-import { initializeClients } from "$lib/server/crossover/redis";
 import { sleep } from "$lib/utils";
 import { describe, expect, test } from "vitest";
 import { createGandalfSarumanSauron, waitForEventData } from "../utils";
 
-await initializeClients(); // create redis repositories
 let {
     playerOne,
     playerOneCookies,

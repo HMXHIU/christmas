@@ -1,9 +1,10 @@
 import { PUBLIC_MINIO_ENDPOINT } from "$env/static/public";
-import type { Sanctuary, WorldSeed } from "../world";
+import type { Sanctuary, Spatial, WorldSeed } from "../world";
 
 export {
     sanctuaries,
     sanctuaryAtRegion,
+    spatialAtPrecision,
     topologicalAnalysis,
     worldSeed,
     type TopologicalAnalysis,
@@ -53,6 +54,15 @@ async function sanctuaryAtRegion(
     return (await sanctuaries()).find((s) => s.region === region);
 }
 
+function spatialAtPrecision(p: number): Spatial {
+    for (const [s, { precision }] of Object.entries(worldSeed.spatial)) {
+        if (precision === p) {
+            return s as Spatial;
+        }
+    }
+    throw new Error(`No defined spatial for precision ${p}`);
+}
+
 /**
  * `worldSeed` is a template used to generate a `World` instance.
  */
@@ -86,7 +96,15 @@ const worldSeed: WorldSeed = {
         },
     },
     constants: {
-        maxMonstersPerContinent: 10000000000, // 10 billion
+        monsterLimit: {
+            continent: (3 * 32 ** 6) / 2 ** 6,
+            territory: (3 * 32 ** 5) / 2 ** 5,
+            region: (3 * 32 ** 4) / 2 ** 4,
+            city: (3 * 32 ** 3) / 2 ** 3,
+            town: (3 * 32 ** 2) / 2 ** 2,
+            village: (3 * 32) / 2,
+            house: 3,
+        },
     },
     time: {
         dayLengthHours: 24,

@@ -4,8 +4,7 @@ import { searchPossibleCommands } from "$lib/crossover/ir";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
-import { spawnItemInInventory } from "$lib/server/crossover/dungeonMaster";
-import { initializeClients } from "$lib/server/crossover/redis";
+import { spawnItemInInventory } from "$lib/server/crossover/dm";
 import { describe, expect, test } from "vitest";
 import type { CTAEvent } from "../../../src/routes/api/crossover/stream/+server";
 import {
@@ -15,8 +14,6 @@ import {
     waitForAnyEventData,
     waitForEventData,
 } from "../utils";
-
-await initializeClients(); // create redis repositories
 
 let {
     playerOne,

@@ -2,15 +2,12 @@ import { searchPossibleCommands } from "$lib/crossover/ir";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
-import { initializeClients } from "$lib/server/crossover/redis";
 import { describe, expect, test } from "vitest";
 import {
     createGandalfSarumanSauron,
     createGoblinSpiderDragon,
     createTestItems,
 } from "../utils";
-
-await initializeClients(); // create redis repositories
 
 let { geohash, playerOne } = await createGandalfSarumanSauron();
 let { dragon, goblin } = await createGoblinSpiderDragon(geohash);

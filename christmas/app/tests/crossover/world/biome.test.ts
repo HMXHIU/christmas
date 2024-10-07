@@ -9,8 +9,7 @@ import {
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
-import { initializeClients } from "$lib/server/crossover/redis";
+import { spawnItemAtGeohash } from "$lib/server/crossover/dm";
 import type { ItemEntity } from "$lib/server/crossover/types";
 import { isGeohashTraversableServer } from "$lib/server/crossover/utils";
 import { omit } from "lodash-es";
@@ -19,8 +18,6 @@ import { itemRecord } from "../../../src/store";
 import { generateRandomGeohash } from "../utils";
 
 // Create redis repositories
-await initializeClients();
-
 let woodenDoor = (await spawnItemAtGeohash({
     geohash: generateRandomGeohash(8, "h9"),
     locationType: "geohash",

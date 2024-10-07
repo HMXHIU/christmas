@@ -7,8 +7,7 @@ import {
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { BarterSerialized } from "$lib/crossover/world/types";
-import { spawnItemInInventory } from "$lib/server/crossover/dungeonMaster";
-import { initializeClients } from "$lib/server/crossover/redis";
+import { spawnItemInInventory } from "$lib/server/crossover/dm";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
 import { npcs } from "$lib/server/crossover/settings/npc";
 import { getUser } from "$lib/server/user";
@@ -20,8 +19,6 @@ import {
     waitForAnyEventData,
     waitForEventData,
 } from "../utils";
-
-await initializeClients(); // create redis repositories
 
 let { playerOne, playerOneCookies, playerOneStream } =
     await createGandalfSarumanSauron();

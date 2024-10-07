@@ -74,12 +74,6 @@ class ObjectStorage {
         }
 
         // Upload object
-        console.log(
-            `WRITE DATA to ${bucket} ${prefix}/${name} size ${size} ${metaData}`,
-            "\n",
-            typeof data,
-            data,
-        );
         await client.putObject(
             bucket,
             `${prefix}/${name}`,

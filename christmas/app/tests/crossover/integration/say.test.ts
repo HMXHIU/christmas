@@ -1,6 +1,5 @@
 import { crossoverCmdSay } from "$lib/crossover/client";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import { initializeClients } from "$lib/server/crossover/redis";
 import { saveEntities } from "$lib/server/crossover/redis/utils";
 import type { PlayerEntity } from "$lib/server/crossover/types";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
@@ -20,8 +19,6 @@ let playerThreeStream: EventTarget;
 let playerTwoStream: EventTarget;
 
 beforeAll(async () => {
-    await initializeClients(); // create redis repositories
-
     ({
         geohash,
         playerOne,

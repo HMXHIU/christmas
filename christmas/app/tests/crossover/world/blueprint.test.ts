@@ -9,16 +9,13 @@ import {
     type Templates,
 } from "$lib/crossover/world/blueprint";
 import { blueprints } from "$lib/crossover/world/settings/blueprint";
-import { initializeClients } from "$lib/server/crossover/redis";
 import { groupBy, uniqBy } from "lodash-es";
 import { beforeAll, describe, expect, test } from "vitest";
 
 const topologyBufferCache = new LRUMemoryCache({ max: 10 });
 const topologyResultCache = new LRUMemoryCache({ max: 10 });
 
-beforeAll(async () => {
-    await initializeClients(); // create redis repositories
-});
+beforeAll(async () => {});
 
 describe("Blueprint Tests", () => {
     test("Test `sampleChildrenGeohashesAtPrecision`", async () => {

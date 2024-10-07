@@ -17,9 +17,8 @@ import {
     spawnItemAtGeohash,
     spawnWorld,
     spawnWorldPOIs,
-} from "$lib/server/crossover/dungeonMaster";
+} from "$lib/server/crossover/dm";
 import {
-    initializeClients,
     itemRepository,
     monsterRepository,
     worldRepository,
@@ -36,8 +35,6 @@ import {
 } from "../utils";
 
 // Create redis repositories
-await initializeClients();
-
 let { playerOneCookies } = await createGandalfSarumanSauron();
 
 let woodenDoor = (await spawnItemAtGeohash({

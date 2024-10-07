@@ -1,4 +1,4 @@
-import type { Monster, Player } from "$lib/crossover/types";
+import type { Creature, Player } from "$lib/crossover/types";
 import type { Abilities } from "$lib/crossover/world/abilities";
 import type {
     DialogueEntity,
@@ -176,7 +176,7 @@ async function npcRespondToAbility({
     target,
     ability,
 }: {
-    entity: Player | Monster;
+    entity: Creature;
     target: Player;
     ability: Abilities;
 }) {

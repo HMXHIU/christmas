@@ -18,4 +18,7 @@ export default defineConfig({
             ignored: ["**/node_modules/**", "**/test-ledger/**"],
         },
     },
+    test: {
+        globalSetup: ["tests/setup.ts"],
+    },
 });

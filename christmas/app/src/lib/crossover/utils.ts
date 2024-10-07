@@ -1,6 +1,7 @@
 import type {
+    Actor,
+    Creature,
     EntityType,
-    GameEntity,
     Item,
     Monster,
     Player,
@@ -425,7 +426,7 @@ function getAllUnitGeohashes(geohash: string): string[] {
  * @returns An object containing the width, height, and precision of the entity.
  * @throws {Error} If the entity is invalid.
  */
-function entityDimensions(entity: Player | Monster | Item) {
+function entityDimensions(entity: Actor) {
     // Player
     if ((entity as Player).player) {
         return {
@@ -496,7 +497,7 @@ function calculateLocation(
  * @param entity - The entity (Player, Monster, or Item) for which to get the ID.
  * @returns The ID of the entity and its type.
  */
-function getEntityId(entity: Player | Monster | Item): [string, EntityType] {
+function getEntityId(entity: Actor): [string, EntityType] {
     if ("player" in entity) {
         return [entity.player, "player"];
     } else if ("monster" in entity) {
@@ -506,19 +507,19 @@ function getEntityId(entity: Player | Monster | Item): [string, EntityType] {
     }
 }
 
-function isEntityInMotion(entity: Player | Monster, now?: number): boolean {
+function isEntityInMotion(entity: Creature, now?: number): boolean {
     return entity.pthclk + entity.pthdur > (now ?? Date.now());
 }
 
 function minifiedEntity(
-    entity: Player | Monster | Item,
+    entity: Actor,
     options?: {
         location?: boolean;
         stats?: boolean; // hp, cha, mnd, lum, umb etc ...
         demographics?: boolean; // archetype, gender, race
         timers?: boolean; // buclk
     },
-): Player | Monster | Item {
+): Actor {
     // Common
     let fields: string[] = ["name"];
 
@@ -548,7 +549,7 @@ function minifiedEntity(
     // Monster & Player specific
     if ("player" in entity || "monster" in entity) {
         // Path
-        if (options?.location && isEntityInMotion(entity as Monster | Player)) {
+        if (options?.location && isEntityInMotion(entity as Creature)) {
             fields.push("pth", "pthst", "pthclk", "pthdur");
         }
         // Stats
@@ -566,7 +567,7 @@ function minifiedEntity(
         fields.push("loc", "locT", "locI");
     }
 
-    return pick(entity, fields) as Player | Monster | Item;
+    return pick(entity, fields) as Actor;
 }
 
 /**
@@ -733,7 +734,7 @@ function getGeohashesForPath(geohash: string, path: Direction[]): string[] {
     return geohashes;
 }
 
-function isEntityAlive(entity: GameEntity): boolean {
+function isEntityAlive(entity: Actor): boolean {
     if ("player" in entity || "monster" in entity) {
         return entity.hp > 0;
     } else {
@@ -742,8 +743,8 @@ function isEntityAlive(entity: GameEntity): boolean {
 }
 
 function entityInRange(
-    self: Player | Monster,
-    target: Player | Monster | Item,
+    self: Creature,
+    target: Actor,
     range: number,
     diagonal: boolean = true,
 ): [boolean, number] {
@@ -807,8 +808,8 @@ function inRange({
 }
 
 function filterSortEntitiesInRange(
-    self: Player | Monster,
-    entities: (Player | Monster | Item)[],
+    self: Creature,
+    entities: Actor[],
     range: number,
 ) {
     return entities

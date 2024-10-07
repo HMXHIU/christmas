@@ -1,4 +1,6 @@
 import type {
+    Actor,
+    Creature,
     Currency,
     CurrencyParams,
     DieRoll,
@@ -144,8 +146,8 @@ function patchEffectWithVariables({
     target,
 }: {
     effect: ProcedureEffect;
-    self: Player | Monster | Item;
-    target: Player | Monster | Item;
+    self: Actor;
+    target: Actor;
 }): ProcedureEffect {
     const effectClone = cloneDeep(effect); // don't modify the template
 
@@ -202,7 +204,7 @@ function patchEffectWithVariables({
 }
 
 function hasResourcesForAbility(
-    self: Player | Monster,
+    self: Creature,
     ability: Abilities,
 ): { hasResources: boolean; message: string } {
     for (const [res, amt] of Object.entries(abilities[ability].cost)) {
@@ -243,7 +245,7 @@ function resolveAbilityEntities({
     queryTokens: string[];
     tokenPositions: TokenPositions;
     ability: Abilities;
-    self: Player | Monster;
+    self: Creature;
     monsters: Monster[];
     players: Player[];
     items: Item[];

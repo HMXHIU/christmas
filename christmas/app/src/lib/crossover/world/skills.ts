@@ -1,4 +1,4 @@
-import type { Currency } from "../types";
+import type { Currency, Skills } from "../types";
 import type { Abilities } from "./abilities";
 import type { Actions } from "./actions";
 import { type Attribute, type Attributes } from "./entity";
@@ -74,9 +74,7 @@ function skillLevelProgression(level: number): number {
     return xpTable[level - 1] ?? 0;
 }
 
-function attributesFromSkills(
-    skills: Partial<Record<SkillLines, number>>,
-): Attributes {
+function attributesFromSkills(skills: Skills): Attributes {
     const attributes: Attributes = {
         str: 0,
         dex: 0,
@@ -107,9 +105,7 @@ function attributesFromSkills(
     return attributes;
 }
 
-function actionsFromSkills(
-    skills: Partial<Record<SkillLines, number>>,
-): Actions[] {
+function actionsFromSkills(skills: Skills): Actions[] {
     const actions: Actions[] = [];
 
     for (const [skillLine, skillLevel] of Object.entries(skills)) {
@@ -128,9 +124,7 @@ function actionsFromSkills(
     return actions;
 }
 
-function abilitiesFromSkills(
-    skills: Partial<Record<SkillLines, number>>,
-): Abilities[] {
+function abilitiesFromSkills(skills: Skills): Abilities[] {
     const abilities: Abilities[] = [];
 
     for (const [skillLine, skillLevel] of Object.entries(skills)) {

@@ -1,4 +1,4 @@
-import type { Dialogues, GameEntity } from "$lib/crossover/types";
+import type { Actor, Dialogues } from "$lib/crossover/types";
 import { isPublicKeyNPCCache } from "../caches";
 import { dialogueRepository } from "../redis";
 import { fetchEntity } from "../redis/utils";
@@ -37,14 +37,14 @@ async function searchDialogues(
     return dialogues;
 }
 
-function isEntityNPC(entity: GameEntity): boolean {
+function isEntityNPC(entity: Actor): boolean {
     if ("player" in entity && entity.npc) {
         return true;
     }
     return false;
 }
 
-function isEntityHuman(entity: GameEntity): boolean {
+function isEntityHuman(entity: Actor): boolean {
     if ("player" in entity && !entity.npc) {
         return true;
     }

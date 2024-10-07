@@ -8,7 +8,13 @@ import { addMessageFeed } from "$lib/components/crossover/GameWindow";
 import { crossoverWorldWorlds } from "$lib/crossover/client";
 import { executeGameCommand } from "$lib/crossover/game";
 import type { GameCommand } from "$lib/crossover/ir";
-import type { Item, Monster, Player } from "$lib/crossover/types";
+import type {
+    Actor,
+    Creature,
+    Item,
+    Monster,
+    Player,
+} from "$lib/crossover/types";
 import { getEntityId } from "$lib/crossover/utils";
 import { entityAttributes } from "$lib/crossover/world/entity";
 import { actions } from "$lib/crossover/world/settings/actions";
@@ -91,7 +97,7 @@ async function updateWorlds(geohash: string, locationType: GeohashLocation) {
  * @param oldEntity - Old entity before change
  * @param newEntity - New entity after change
  */
-function displayEntityEffects<T extends Player | Monster | Item>(
+function displayEntityEffects<T extends Actor>(
     oldEntity: T | null,
     newEntity: T,
     game: GameLogic,
@@ -134,7 +140,7 @@ function displayEntityEffects<T extends Player | Monster | Item>(
  * @param game
  */
 const updateEntityContainerLock = new AsyncLock();
-async function updateEntityContainer<T extends Player | Monster | Item>(
+async function updateEntityContainer<T extends Actor>(
     oldEntity: T | null,
     newEntity: T,
     game: GameLogic,
@@ -192,9 +198,7 @@ async function updateEntityContainer<T extends Player | Monster | Item>(
 
             // Update sigils (only upsert if already created as we dont want sigils for every entity)
             if (entitySigils[ec.entityId]) {
-                entitySigils[ec.entityId].updateStats(
-                    newEntity as Player | Monster,
-                );
+                entitySigils[ec.entityId].updateStats(newEntity as Creature);
             }
         } else {
             // Cull ec if not in environment

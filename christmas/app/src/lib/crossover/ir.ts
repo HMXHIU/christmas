@@ -1,4 +1,10 @@
-import type { Item, Monster, Player } from "$lib/crossover/types";
+import type {
+    Actor,
+    Creature,
+    Item,
+    Monster,
+    Player,
+} from "$lib/crossover/types";
 import { filterSortEntitiesInRange, gameActionId, getEntityId } from "./utils";
 import { resolveAbilityEntities, type Ability } from "./world/abilities";
 import { resolveActionEntities, type Action } from "./world/actions";
@@ -36,8 +42,8 @@ type GameCommandVariables = {
     queryIrrelevant: string; // stripped of relevant tokens (eg. entities, actions, abilities, utility)
 };
 type GameActionEntities = {
-    self: Player | Monster;
-    target?: Player | Monster | Item;
+    self: Creature;
+    target?: Actor;
     item?: Item;
     skill?: SkillLines;
     offer?: BarterSerialized;

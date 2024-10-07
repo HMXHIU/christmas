@@ -11,10 +11,10 @@ const bestiary: Record<string, Beast> = {
         beast: "goblin",
         description:
             "A small, resourceful green creature that loves to steal shiny things.",
-        skillLines: {
+        skills: {
             beast: 1,
             dirtyfighting: 1,
-            monster: 1,
+            monster: 1, // all monsters must have monster skill (which also is their level)
             firstaid: 1,
         },
         alignment: "evil",
@@ -34,7 +34,7 @@ const bestiary: Record<string, Beast> = {
     giantSpider: {
         beast: "giantSpider",
         description: "A huge spider that can paralyze its prey.",
-        skillLines: {
+        skills: {
             arachnid: 3,
             monster: 1,
         },
@@ -51,7 +51,7 @@ const bestiary: Record<string, Beast> = {
     dragon: {
         beast: "dragon",
         description: "A huge, fire-breathing lizard.",
-        skillLines: {
+        skills: {
             draconic: 8,
             monster: 1,
         },

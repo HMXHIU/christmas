@@ -6,6 +6,7 @@
     import * as Select from "$lib/components/ui/select/index.js";
     import { Textarea } from "$lib/components/ui/textarea";
     import { crossoverAvailableAvatars } from "$lib/crossover/client";
+    import type { Skills } from "$lib/crossover/types";
     import type { Abilities } from "$lib/crossover/world/abilities";
     import { type Actions } from "$lib/crossover/world/actions";
     import {
@@ -39,7 +40,6 @@
     } from "$lib/crossover/world/player";
     import { abilities } from "$lib/crossover/world/settings/abilities";
     import { actions } from "$lib/crossover/world/settings/actions";
-    import type { SkillLines } from "$lib/crossover/world/skills";
     import { cn } from "$lib/shadcn";
     import { parseZodErrors } from "$lib/utils";
     import { onMount } from "svelte";
@@ -67,7 +67,7 @@
     let attributes: Partial<Attributes> = {};
     let playerActions: Actions[] = [];
     let playerAbilities: Abilities[] = [];
-    let playerSkills: Partial<Record<SkillLines, number>> = {};
+    let playerSkills: Skills = {};
 
     let selectedHairType = HairStylesSelection[0];
     let selectedHairColor = HairColorsSelection[0];

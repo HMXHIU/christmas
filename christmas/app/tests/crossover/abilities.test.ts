@@ -7,7 +7,6 @@ import { worldSeed } from "$lib/crossover/world/settings/world";
 import { consumeResources } from "$lib/server/crossover";
 import { respawnPlayer } from "$lib/server/crossover/combat/utils";
 import { awardKillCurrency } from "$lib/server/crossover/entity";
-import { initializeClients } from "$lib/server/crossover/redis";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
 import type { PlayerEntity } from "$lib/server/crossover/types";
 import { sleep } from "$lib/utils";
@@ -18,8 +17,6 @@ import {
     generateRandomGeohash,
     resetEntityResources,
 } from "./utils";
-
-await initializeClients(); // create redis repositories
 
 let {
     geohash,
@@ -210,7 +207,7 @@ But something tells you that this is not the end.`,
                 {
                     event: "entities",
                     players: [
-                        minifiedEntity(respawnPlayer(playerTwo), {
+                        minifiedEntity(await respawnPlayer(playerTwo), {
                             stats: true,
                             location: true,
                             timers: true,

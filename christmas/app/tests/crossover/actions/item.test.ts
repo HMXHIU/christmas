@@ -10,9 +10,8 @@ import {
     useItem,
 } from "$lib/server/crossover/actions/item";
 import { respawnPlayer } from "$lib/server/crossover/combat/utils";
-import { spawnItemAtGeohash } from "$lib/server/crossover/dungeonMaster";
+import { spawnItemAtGeohash } from "$lib/server/crossover/dm";
 import { awardKillCurrency } from "$lib/server/crossover/entity";
-import { initializeClients } from "$lib/server/crossover/redis";
 import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
 import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
 import { itemVariableValue } from "$lib/server/crossover/utils";
@@ -27,8 +26,6 @@ import {
     generateRandomGeohash,
     waitForEventData,
 } from "../utils";
-
-await initializeClients(); // create redis repositories
 
 let {
     region,
@@ -457,7 +454,7 @@ But something tells you that this is not the end.`,
                 {
                     event: "entities",
                     players: [
-                        minifiedEntity(respawnPlayer(playerTwo), {
+                        minifiedEntity(await respawnPlayer(playerTwo), {
                             stats: true,
                             location: true,
                             timers: true,

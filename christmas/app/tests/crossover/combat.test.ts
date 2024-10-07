@@ -5,7 +5,6 @@ import {
     TICKS_PER_TURN,
 } from "$lib/crossover/world/settings";
 import { entityDied, respawnPlayer } from "$lib/server/crossover/combat/utils";
-import { initializeClients } from "$lib/server/crossover/redis";
 import { clone } from "lodash-es";
 import { beforeEach, expect, test } from "vitest";
 import {
@@ -13,8 +12,6 @@ import {
     createGoblinSpiderDragon,
     resetEntityResources,
 } from "./utils";
-
-await initializeClients(); // create redis repositories
 
 let {
     geohash,
@@ -39,13 +36,13 @@ test("Test `entityDied`", () => {
     expect(entityDied(playerOne, playerOneAfter)).toBe(true);
 });
 
-test("Test `respawnPlayer`", () => {
+test("Test `respawnPlayer`", async () => {
     playerOne.hp = 0;
     playerOne.cha = 0;
     playerOne.mnd = 0;
     playerOne.lum = 10;
     playerOne.umb = 10;
-    expect(respawnPlayer(playerOne)).toMatchObject({
+    expect(await respawnPlayer(playerOne)).toMatchObject({
         ...entityStats(playerOne),
         lum: Math.floor(10 / 2),
         umb: Math.floor(10 / 2),

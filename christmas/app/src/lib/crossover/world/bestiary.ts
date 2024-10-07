@@ -1,6 +1,6 @@
 import { PUBLIC_MINIO_ENDPOINT } from "$env/static/public";
 import type { NPCs } from "$lib/server/crossover/npc/types";
-import type { SkillLines } from "./skills";
+import type { Skills } from "../types";
 import type { AssetMetadata } from "./types";
 
 export {
@@ -33,7 +33,7 @@ type Alignment = "good" | "neutral" | "evil";
 interface Beast {
     beast: string;
     description: string;
-    skillLines: Partial<Record<SkillLines, number>>;
+    skills: Skills;
     alignment: Alignment;
     asset: AssetMetadata;
     trophies: Partial<Record<NPCs, string[]>>;

@@ -13,7 +13,8 @@ import type {
 import type { Actions } from "$lib/crossover/world/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import type {
-    GameRedisEntities,
+    ActorEntity,
+    CreatureEntity,
     ItemEntity,
     MonsterEntity,
     PlayerEntity,
@@ -56,8 +57,8 @@ Time seems meaningless here, yet you sense that you are bound—unable to move, 
 But something tells you that this is not the end.`;
 
 async function resolveCombat(
-    attacker: PlayerEntity | MonsterEntity,
-    defender: PlayerEntity | MonsterEntity | ItemEntity,
+    attacker: CreatureEntity,
+    defender: ActorEntity,
     options: {
         attack?: {
             action: Actions;
@@ -69,16 +70,16 @@ async function resolveCombat(
         };
     },
 ): Promise<{
-    attacker: PlayerEntity | MonsterEntity;
-    defender: PlayerEntity | MonsterEntity | ItemEntity;
-    entities: GameRedisEntities[];
+    attacker: CreatureEntity;
+    defender: ActorEntity;
+    entities: ActorEntity[];
     success: boolean;
 }> {
     const attackerBefore = clone(attacker);
     const defenderBefore = clone(defender);
 
     let success = false;
-    let entities: GameRedisEntities[] = [];
+    let entities: ActorEntity[] = [];
     let bodyPartHit: BodyPart | undefined = undefined;
     let damage: number | undefined = undefined;
     let damageType: DamageType | undefined = undefined;
@@ -195,8 +196,8 @@ async function resolveCombat(
 }
 
 async function resolveAttack(
-    attacker: PlayerEntity | MonsterEntity,
-    defender: PlayerEntity | MonsterEntity | ItemEntity,
+    attacker: CreatureEntity,
+    defender: ActorEntity,
     action: Actions,
     weapon?: ItemEntity,
 ): Promise<{
@@ -204,11 +205,11 @@ async function resolveAttack(
     bodyPartHit?: BodyPart;
     damage?: number;
     damageType: DamageType;
-    entities: GameRedisEntities[];
-    attacker: PlayerEntity | MonsterEntity;
-    defender: PlayerEntity | MonsterEntity | ItemEntity;
+    entities: ActorEntity[];
+    attacker: CreatureEntity;
+    defender: ActorEntity;
 }> {
-    const entities: GameRedisEntities[] = []; // affected entities
+    const entities: ActorEntity[] = []; // affected entities
     let success = false;
     let bodyPartHit: BodyPart | undefined = undefined;
     let damage: number | undefined = undefined;
@@ -264,19 +265,19 @@ async function resolveAttack(
 }
 
 async function resolveProcedureEffect(
-    attacker: PlayerEntity | MonsterEntity,
-    defender: PlayerEntity | MonsterEntity | ItemEntity,
+    attacker: CreatureEntity,
+    defender: ActorEntity,
     procedureEffect: ProcedureEffect,
 ): Promise<{
     success: boolean;
     bodyPartHit?: BodyPart;
     damage?: number;
     damageType?: DamageType;
-    entities: GameRedisEntities[];
-    attacker: PlayerEntity | MonsterEntity;
-    defender: PlayerEntity | MonsterEntity | ItemEntity;
+    entities: ActorEntity[];
+    attacker: CreatureEntity;
+    defender: ActorEntity;
 }> {
-    const entities: GameRedisEntities[] = []; // affected entities
+    const entities: ActorEntity[] = []; // affected entities
     let success = false;
     let damage: number | undefined = undefined;
     let bodyPartHit: BodyPart | undefined = undefined;
@@ -391,19 +392,19 @@ async function resolveCombatConsequences({
     attacker,
     defender,
 }: {
-    attackerBefore: PlayerEntity | MonsterEntity;
-    defenderBefore: PlayerEntity | MonsterEntity | ItemEntity;
-    attacker: PlayerEntity | MonsterEntity;
-    defender: PlayerEntity | MonsterEntity | ItemEntity;
+    attackerBefore: CreatureEntity;
+    defenderBefore: ActorEntity;
+    attacker: CreatureEntity;
+    defender: ActorEntity;
 }): Promise<{
-    attacker: PlayerEntity | MonsterEntity;
-    defender: PlayerEntity | MonsterEntity | ItemEntity;
+    attacker: CreatureEntity;
+    defender: ActorEntity;
 }> {
     // Defender killed attacker
     if (entityDied(attackerBefore, attacker)) {
         ({ attacker, defender } = await handleEntityDeath(
             attacker,
-            defender as PlayerEntity | MonsterEntity,
+            defender as CreatureEntity,
             true,
         ));
         if (defender.player) {
@@ -414,7 +415,7 @@ async function resolveCombatConsequences({
     // Attacker killed defender
     if (entityDied(defenderBefore, defender)) {
         ({ attacker, defender } = await handleEntityDeath(
-            defender as PlayerEntity | MonsterEntity,
+            defender as CreatureEntity,
             attacker,
             false,
         ));
@@ -427,7 +428,7 @@ async function resolveCombatConsequences({
 }
 
 async function handleQuestTrigger(
-    deadEntity: PlayerEntity | MonsterEntity,
+    deadEntity: CreatureEntity,
     killerEntity: PlayerEntity,
 ) {
     // Get quest entities
@@ -456,8 +457,8 @@ async function handleQuestTrigger(
 }
 
 async function handleEntityDeath(
-    deadEntity: PlayerEntity | MonsterEntity,
-    killerEntity: PlayerEntity | MonsterEntity,
+    deadEntity: CreatureEntity,
+    killerEntity: CreatureEntity,
     isAttacker: boolean, // dead entity is attacker
 ) {
     // Award currency to killer
