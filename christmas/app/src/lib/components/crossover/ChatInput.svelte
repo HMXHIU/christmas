@@ -52,14 +52,6 @@
         on:keydown={onKeyDown}
         autocomplete="off"
     />
-    <!-- <Textarea
-        bind:value={message}
-        class="bg-transparent ring-0 border-0 border-l border-r rounded-none min-h-[60px]"
-        name="prompt"
-        id="prompt"
-        rows={1}
-        on:keydown={onKeyDown}
-    /> -->
     <!-- Send Button -->
     <Button
         variant="ghost"

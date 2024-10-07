@@ -84,23 +84,23 @@ async def determine_monster_action(
     if not in_range:
         return None
 
-    # # Query monster abilities
-    # monster_abilities = await context.game.query_monster_abilities(monster)
+    # Query monster abilities
+    monster_abilities = await context.game.query_monster_abilities(monster)
 
-    # # Try to find offensive ability in range
-    # offensive_abilities = [
-    #     a for a in monster_abilities if abilities[a]["type"] == "offensive"
-    # ]
-    # for a in offensive_abilities:
-    #     ability = abilities[a]
-    #     # Check player in range of ability
-    #     if distance <= ability["range"]:
-    #         return [
-    #             "perform_monster_ability",
-    #             monster["monster"],
-    #             player["player"],
-    #             ability["ability"],
-    #         ]
+    # Try to find offensive ability in range
+    offensive_abilities = [
+        a for a in monster_abilities if abilities[a]["type"] == "offensive"
+    ]
+    for a in offensive_abilities:
+        ability = abilities[a]
+        # Check player in range of ability
+        if distance <= ability["range"]:
+            return [
+                "perform_monster_ability",
+                monster["monster"],
+                player["player"],
+                ability["ability"],
+            ]
 
     # Try to attack (attack range is 1)
     if distance <= 1:

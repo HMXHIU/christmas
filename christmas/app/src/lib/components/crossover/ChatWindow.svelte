@@ -15,27 +15,30 @@
     >
         {#each $messageFeed as message}
             <div class="flex flex-row text-left">
-                <div class="flex flex-col w-16 shrink-0">
-                    <small class="opacity-50 text-xs"
-                        >{getCurrentTimestamp(message.timestamp)}</small
-                    >
-                    <p class="opacity-50 text-xs">{message.name}</p>
-                </div>
+                <!-- Show time on system messages -->
+                {#if message.messageFeedType === "system"}
+                    <div class="flex flex-col w-16 shrink-0">
+                        <small class="opacity-50 text-xs"
+                            >{getCurrentTimestamp(message.timestamp)}</small
+                        >
+                        <p class="opacity-50 text-xs">{message.name}</p>
+                    </div>
+                {/if}
                 {#if message.messageFeedType === "message"}
                     <!-- Normal Messages -->
-                    <p class="text-sm font-extralight px-2 text-left">
+                    <p class="text-xs font-extralight px-2 text-left">
                         {message.message}
                     </p>
                 {:else if message.messageFeedType === "error"}
                     <!-- Error Messages -->
                     <p
-                        class="text-sm font-extralight px-2 text-left text-destructive"
+                        class="text-xs font-extralight px-2 text-left text-destructive"
                     >
                         {message.message}
                     </p>
                 {:else if message.messageFeedType === "system"}
                     <!-- System Messages -->
-                    <p class="text-sm font-extralight px-2 text-left">
+                    <p class="text-xs font-extralight px-2 text-left">
                         {message.message}
                     </p>
                 {/if}

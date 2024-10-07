@@ -9,7 +9,7 @@
     import { substituteVariables } from "$lib/utils";
     import { gsap } from "gsap";
     import { onDestroy, onMount } from "svelte";
-    import { addMessageFeed } from ".";
+    import { addMessageFeed, clearStaleMessageFeed } from ".";
     import {
         ctaEvent,
         feedEvent,
@@ -166,10 +166,17 @@
             }),
         ];
 
+        // Set interval to clear stale messages
+        const clearStaleMessageFeedInterval = setInterval(
+            clearStaleMessageFeed,
+            1000,
+        );
+
         return () => {
             for (const unsubscribe of subscriptions) {
                 unsubscribe();
             }
+            clearInterval(clearStaleMessageFeedInterval);
         };
     });
 
