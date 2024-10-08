@@ -1,11 +1,12 @@
+import { dungeonGraphCache } from "$lib/crossover/caches";
 import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
 import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
 import {
-    generateDungeonGraph,
+    generateDungeonGraphsForTerritory,
     getAllDungeons,
 } from "$lib/crossover/world/dungeons";
 import { generateRoomsBSP } from "$lib/crossover/world/dungeons/bsp";
-import { dungeons } from "$lib/crossover/world/settings/dungeons";
+import { prefabDungeons } from "$lib/crossover/world/settings/dungeons";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { dungeonEntrancesQuerySet } from "$lib/server/crossover/redis/queries";
 import type { ItemEntity } from "$lib/server/crossover/types";
@@ -31,92 +32,83 @@ describe("Dungeons Tests", () => {
     });
 
     test("Test `getAllDungeons` (this will take awhile)", async () => {
-        const dungeons = await getAllDungeons("d1");
-        expect(Object.keys(dungeons).length).toBe(32 * 32);
+        const dungeons = await getAllDungeons("d1", {
+            dungeonGraphCache: dungeonGraphCache,
+        });
+        const numPrefabDungeons = Object.keys(prefabDungeons).length;
+        expect(Object.keys(dungeons).length).toBe(32 * 32 + numPrefabDungeons);
 
         console.log(JSON.stringify(dungeons["w2"], null, 2));
     });
 
-    // test("Test manual dungeons", async () => {
-    //     const territory = "w2";
-    //     const locationType = "d1";
-
-    //     // Get dungeon
-    //     const dungeon = dungeons.find((d) => d.dungeon.startsWith(territory));
-    //     expect(dungeon?.dungeon.startsWith(territory)).toBe(true);
-    //     const dg = await generateDungeonGraph(territory, locationType, {
-    //         dungeon,
-    //     });
-
-    //     // Check all manually defined rooms are present
-    //     for (const { room, entrances } of dungeon!.rooms) {
-    //         expect(dg.rooms.some((r) => r.geohash === room)).toBe(true);
-    //     }
-
-    //     // Check entrances
-    //     const definedEntrances = flatten(
-    //         dungeon?.rooms.map((r) => r.entrances),
-    //     );
-    //     const generatedEntrances = flatten(dg.rooms.map((r) => r.entrances));
-    //     expect(
-    //         definedEntrances.every((e) => generatedEntrances.includes(e)),
-    //     ).toBe(true);
-    // });
+    test("Test prefab dungeons", async () => {
+        const territory = "w2";
+        const locationType = "d1";
+        let graphs = await generateDungeonGraphsForTerritory(
+            territory,
+            locationType,
+            {
+                dungeonGraphCache: dungeonGraphCache,
+            },
+        );
+        expect(Object.keys(graphs).length).toBe(2);
+    });
 
     test("Test `generateDungeonGraph`", async () => {
         const territory = "v7";
         const locationType = "d1";
-        const dg = await generateDungeonGraph(territory, locationType);
-
-        // Check graph parameters
-        expect(dg.locationType).toBe(locationType);
-        expect(dg.territory).toBe(territory);
-
-        // Check biome at room is traversable
-        const room = dg.rooms[0].room;
-        var geohash = autoCorrectGeohashPrecision(
-            room,
-            worldSeed.spatial.unit.precision,
+        const graphs = await generateDungeonGraphsForTerritory(
+            territory,
+            locationType,
+            {
+                dungeonGraphCache: dungeonGraphCache,
+            },
         );
-        var [biome, strength] = await biomeAtGeohash(geohash, locationType);
-        expect(biomes[biome].traversableSpeed).greaterThan(0);
 
-        // Check biome at corridor is traversable
-        geohash = autoCorrectGeohashPrecision(
-            dg.corridors.values().next().value!,
-            worldSeed.spatial.unit.precision,
-        );
-        var [biome, strength] = await biomeAtGeohash(geohash, locationType);
-        expect(biomes[biome].traversableSpeed).greaterThan(0);
+        for (const [dungeon, dg] of Object.entries(graphs)) {
+            // Check graph parameters
+            expect(dg.locationType).toBe(locationType);
+            expect(dg.dungeon.startsWith(territory)).toBe(true);
 
-        // Check entrances
-        const entrances = flatten(dg.rooms.map((r) => r.entrances));
-        expect(entrances.length).greaterThan(1);
+            // Check biome at room is traversable
+            const room = dg.rooms[0].room;
+            var geohash = autoCorrectGeohashPrecision(
+                room,
+                worldSeed.spatial.unit.precision,
+            );
+            var [biome, strength] = await biomeAtGeohash(geohash, locationType);
+            expect(biomes[biome].traversableSpeed).greaterThan(0);
+
+            // Check biome at corridor is traversable
+            geohash = autoCorrectGeohashPrecision(
+                dg.corridors.values().next().value!,
+                worldSeed.spatial.unit.precision,
+            );
+            var [biome, strength] = await biomeAtGeohash(geohash, locationType);
+            expect(biomes[biome].traversableSpeed).greaterThan(0);
+
+            // Check entrances
+            const entrances = flatten(dg.rooms.map((r) => r.entrances));
+            expect(entrances.length).greaterThan(1);
+            for (const ent of entrances) {
+                expect(ent.startsWith(dg.dungeon));
+            }
+        }
     });
 
     test("Test `dungeonEntrancesQuerySet` (require initialize world)", async () => {
-        // Run initialize world before running this test
-
-        const dungeon = dungeons[0];
-        const territory = dungeon.dungeon.slice(
+        const dungeon = Object.keys(prefabDungeons)[0];
+        const territory = dungeon.slice(
             0,
             worldSeed.spatial.territory.precision,
         );
         const locationType = "geohash";
-        const definedEntraceLocations = flatten(
-            dungeon.rooms.map((r) => r.entrances),
-        );
 
+        // Run initialize world to create the dungeon entrances
         const entrances = (await dungeonEntrancesQuerySet(
             territory,
             locationType,
         ).all()) as ItemEntity[];
         expect(entrances.length).greaterThan(1);
-
-        // Test all entrances defined are present
-        const entranceLocations = flatten(entrances.map((e) => e.loc));
-        expect(
-            definedEntraceLocations.every((e) => entranceLocations.includes(e)),
-        ).toBe(true);
     });
 });

@@ -9,13 +9,18 @@ import {
     oddGeohashCharacters,
 } from "../../utils";
 import type { BiomeType } from "../biomes";
-import { dungeons, type Dungeon } from "../settings/dungeons";
+import { prefabDungeons } from "../settings/dungeons";
 import { worldSeed } from "../settings/world";
 import { geohashLocationTypes, type GeohashLocation } from "../types";
 import { generateRoomsBSP } from "./bsp";
 import type { DungeonGraph, Room } from "./types";
 
-export { dungeonBiomeAtGeohash, generateDungeonGraph, getAllDungeons };
+export {
+    dungeonBiomeAtGeohash,
+    generateDungeonGraph,
+    generateDungeonGraphsForTerritory,
+    getAllDungeons,
+};
 
 const MIN_ROOMS = 12;
 const MAX_ROOMS = 18;
@@ -30,7 +35,6 @@ async function dungeonBiomeAtGeohash(
     locationType: GeohashLocation,
     options?: {
         dungeonGraphCache?: CacheInterface;
-        dungeons?: Dungeon[]; // for manually specifying dungeon locations
     },
 ): Promise<[BiomeType, number]> {
     if (!geohashLocationTypes.has(locationType)) {
@@ -39,46 +43,86 @@ async function dungeonBiomeAtGeohash(
     if (locationType === "geohash") {
         throw new Error("Location is not underground");
     }
+
+    // Get the dungeon graphs for the territory
     const territory = geohash.slice(0, 2);
-    let dungeon = (options?.dungeons ?? dungeons).find((d) =>
-        d.dungeon.startsWith(territory),
+    let graphs = await generateDungeonGraphsForTerritory(
+        territory,
+        locationType,
+        {
+            dungeonGraphCache: options?.dungeonGraphCache,
+        },
     );
 
-    let graph = await generateDungeonGraph(territory, locationType, {
-        dungeonGraphCache: options?.dungeonGraphCache,
-        dungeon,
-    });
-
-    // In room
-    if (
-        graph.rooms.some((r) => r.plots.has(geohash.slice(0, r.plotPrecision)))
-    ) {
-        return ["grassland", 1];
-    }
-
-    // Check if geohash is in a corridor
-    if (graph.corridors.has(geohash.slice(0, graph.corridorPrecision))) {
-        return ["grassland", 1];
+    for (const graph of Object.values(graphs)) {
+        // In room
+        if (
+            graph.rooms.some((r) =>
+                r.plots.has(geohash.slice(0, r.plotPrecision)),
+            )
+        ) {
+            return ["grassland", 1];
+        }
+        // In corridor
+        if (graph.corridors.has(geohash.slice(0, graph.corridorPrecision))) {
+            return ["grassland", 1];
+        }
     }
 
     // If not in a room or corridor, it's a wall
     return ["underground", 1];
 }
 
-async function generateDungeonGraph(
+async function generateDungeonGraphsForTerritory(
     territory: string,
     locationType: GeohashLocation,
     options?: {
-        dungeon?: Dungeon;
+        dungeonGraphCache?: CacheInterface;
+    },
+): Promise<Record<string, DungeonGraph>> {
+    const graphs: Record<string, DungeonGraph> = {};
+    // Generate prefabricated dungeons
+    for (const [dungeon, _] of Object.entries(prefabDungeons)) {
+        if (dungeon.startsWith(territory)) {
+            graphs[dungeon] = await generateDungeonGraph(
+                dungeon,
+                locationType,
+                {
+                    dungeonGraphCache: options?.dungeonGraphCache,
+                },
+            );
+        }
+    }
+
+    // Procedurally generate dungeon at territory
+    const seed = stringToRandomNumber(territory + locationType);
+    const rv = seededRandom(seed);
+    let dungeon = autoCorrectGeohashPrecision(territory, DUNGEON_PRECISION, rv);
+
+    // Check no overlap between prefab dungeons
+    const hasOverlap = Object.keys(graphs).find((d) => dungeon.startsWith(d));
+    if (!hasOverlap) {
+        graphs[dungeon] = await generateDungeonGraph(dungeon, locationType, {
+            dungeonGraphCache: options?.dungeonGraphCache,
+        });
+    }
+
+    return graphs;
+}
+
+async function generateDungeonGraph(
+    dungeon: string,
+    locationType: GeohashLocation,
+    options?: {
         dungeonGraphCache?: CacheInterface;
     },
 ): Promise<DungeonGraph> {
     // Get from cache
-    const cacheKey = `${territory}-${locationType}`;
-    let graph = await options?.dungeonGraphCache?.get(cacheKey);
+    const cacheKey = `${dungeon}-${locationType}`;
+    let graph: DungeonGraph = await options?.dungeonGraphCache?.get(cacheKey);
     if (graph) return graph;
 
-    const seed = stringToRandomNumber(territory + locationType);
+    const seed = stringToRandomNumber(dungeon + locationType);
     const rv = seededRandom(seed);
 
     // Determine number of rooms and entrances
@@ -86,31 +130,9 @@ async function generateDungeonGraph(
     const numEntrances =
         Math.floor(rv * (MAX_ENTRANCES - MIN_ENTRANCES + 1)) + MIN_ENTRANCES;
 
-    // // Dungeon location is city precision
-    // const dungeon = options?.dungeon;
-    // const city = dungeon
-    //     ? dungeon.dungeon
-    //     : autoCorrectGeohashPrecision(
-    //           territory,
-    //           worldSeed.spatial.city.precision,
-    //           rv,
-    //       );
-
-    // // Generate rooms (town precision) - manually defined
-    // if (dungeon) {
-    //     for (const { room, entrances } of dungeon.rooms) {
-    //         const town = autoCorrectGeohashPrecision(
-    //             room,
-    //             worldSeed.spatial.town.precision,
-    //         );
-    //         rooms.push({ geohash: town, connections: [], entrances });
-    //     }
-    // }
-
     // Generate rooms
-    let geohash = autoCorrectGeohashPrecision(territory, DUNGEON_PRECISION, rv);
     let rooms: Room[] = generateRoomsBSP({
-        geohash,
+        geohash: dungeon,
         unitPrecision: ROOM_UNIT_PRECISION,
         minDepth: 7,
         maxDepth: 10,
@@ -129,7 +151,7 @@ async function generateDungeonGraph(
             autoCorrectGeohashPrecision(
                 plotWithEntrance,
                 worldSeed.spatial.unit.precision,
-                stringToRandomNumber(plotWithEntrance),
+                seededRandom(stringToRandomNumber(plotWithEntrance)),
             ),
         );
     }
@@ -169,7 +191,13 @@ async function generateDungeonGraph(
         currentRoom = unconnectedRooms[0];
     }
 
-    graph = { rooms, corridors, corridorPrecision, locationType, territory };
+    graph = {
+        dungeon,
+        rooms,
+        corridors,
+        corridorPrecision,
+        locationType,
+    };
 
     // Set cache
     if (options?.dungeonGraphCache) {
@@ -228,22 +256,21 @@ function generateCorridor(
 
 async function getAllDungeons(
     locationType: GeohashLocation,
-    options?: { dungeons?: Dungeon[] },
+    options?: {
+        dungeonGraphCache?: CacheInterface;
+    },
 ): Promise<Record<string, DungeonGraph>> {
     const dungeonGraphs: Record<string, DungeonGraph> = {};
     for (const a of oddGeohashCharacters) {
         for (const b of evenGeohashCharacters) {
             const territory = a + b;
-            let dungeon = (options?.dungeons ?? dungeons).find((d) =>
-                d.dungeon.startsWith(territory),
-            );
-            dungeonGraphs[territory] = await generateDungeonGraph(
+            const graphs = await generateDungeonGraphsForTerritory(
                 territory,
                 locationType,
-                { dungeon },
+                { dungeonGraphCache: options?.dungeonGraphCache },
             );
+            Object.assign(dungeonGraphs, graphs);
         }
     }
-
     return dungeonGraphs;
 }

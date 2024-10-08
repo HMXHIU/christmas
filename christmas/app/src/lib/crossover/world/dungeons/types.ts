@@ -11,8 +11,8 @@ interface Room {
 }
 
 interface DungeonGraph {
+    dungeon: string; // the dungeon id (geohash of the entire dungeon)
     rooms: Room[];
-    territory: string;
     locationType: GeohashLocation;
     corridors: Set<string>; // set of all corridor geohashes
     corridorPrecision: number; // precision of corridor geohashes

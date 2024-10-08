@@ -1,21 +1,12 @@
-export { dungeons, type Dungeon };
+export { prefabDungeons, type Dungeon };
 
 interface Dungeon {
-    dungeon: string;
-    rooms: {
-        room: string;
-        entrances: string[];
-    }[];
+    dungeon: string; // the geohash of the dungeon (as well as the dungeon id)
 }
 
-const dungeons: Dungeon[] = [
-    {
-        dungeon: "w21",
-        rooms: [
-            {
-                room: "w21z9",
-                entrances: ["w21z9edk"],
-            },
-        ],
+// These are manually defined dungeons in addition to the procedurally generated dungeons
+const prefabDungeons: Record<string, Dungeon> = {
+    w21z9: {
+        dungeon: "",
     },
-];
+};
