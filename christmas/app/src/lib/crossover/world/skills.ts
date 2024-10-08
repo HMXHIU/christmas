@@ -144,6 +144,7 @@ function abilitiesFromSkills(skills: Skills): Abilities[] {
 
     return abilities;
 }
+
 function learningDialoguesForSkill(
     skill: SkillLines,
     skillLevel: number,

@@ -1,6 +1,5 @@
 import type { CacheInterface } from "$lib/caches";
-import { seededRandom, stringToRandomNumber } from "$lib/utils";
-import { uniqBy } from "lodash-es";
+import { sampleFrom, seededRandom, stringToRandomNumber } from "$lib/utils";
 import {
     autoCorrectGeohashPrecision,
     evenGeohashCharacters,
@@ -8,32 +7,23 @@ import {
     geohashToColRow,
     gridCellToGeohash,
     oddGeohashCharacters,
-} from "../utils";
-import type { BiomeType } from "./biomes";
-import { dungeons, type Dungeon } from "./settings/dungeons";
-import { worldSeed } from "./settings/world";
-import { geohashLocationTypes, type GeohashLocation } from "./types";
+} from "../../utils";
+import type { BiomeType } from "../biomes";
+import { dungeons, type Dungeon } from "../settings/dungeons";
+import { worldSeed } from "../settings/world";
+import { geohashLocationTypes, type GeohashLocation } from "../types";
+import { generateRoomsBSP } from "./bsp";
+import type { DungeonGraph, Room } from "./types";
 
 export { dungeonBiomeAtGeohash, generateDungeonGraph, getAllDungeons };
-
-interface Room {
-    geohash: string; // town
-    connections: string[]; // connected room geohashes
-    entrances: string[]; // to connect above to below ground
-}
-
-interface DungeonGraph {
-    rooms: Room[];
-    territory: string;
-    locationType: GeohashLocation;
-    corridors: Set<string>; // set of all corridor geohashes
-    corridorPrecision: number; // precision of corridor geohashes
-}
 
 const MIN_ROOMS = 12;
 const MAX_ROOMS = 18;
 const MIN_ENTRANCES = 1;
 const MAX_ENTRANCES = 3;
+
+const ROOM_UNIT_PRECISION = worldSeed.spatial.house.precision;
+const DUNGEON_PRECISION = worldSeed.spatial.town.precision;
 
 async function dungeonBiomeAtGeohash(
     geohash: string,
@@ -59,13 +49,15 @@ async function dungeonBiomeAtGeohash(
         dungeon,
     });
 
-    // geohash is in a room/chamber
-    if (graph.rooms.some((r) => geohash.startsWith(r.geohash))) {
+    // In room
+    if (
+        graph.rooms.some((r) => r.plots.has(geohash.slice(0, r.plotPrecision)))
+    ) {
         return ["grassland", 1];
     }
 
     // Check if geohash is in a corridor
-    if (inCorridor(geohash, graph)) {
+    if (graph.corridors.has(geohash.slice(0, graph.corridorPrecision))) {
         return ["grassland", 1];
     }
 
@@ -86,80 +78,78 @@ async function generateDungeonGraph(
     let graph = await options?.dungeonGraphCache?.get(cacheKey);
     if (graph) return graph;
 
-    const rv = seededRandom(stringToRandomNumber(territory + locationType));
+    const seed = stringToRandomNumber(territory + locationType);
+    const rv = seededRandom(seed);
 
-    // Dungeon location is city precision
-    const dungeon = options?.dungeon;
-    const city = dungeon
-        ? dungeon.dungeon
-        : autoCorrectGeohashPrecision(
-              territory,
-              worldSeed.spatial.city.precision,
-              rv,
-          );
-
-    let rooms: Room[] = [];
-
-    // Generate rooms (town precision) - manually defined
-    if (dungeon) {
-        for (const { room, entrances } of dungeon.rooms) {
-            const town = autoCorrectGeohashPrecision(
-                room,
-                worldSeed.spatial.town.precision,
-            );
-            rooms.push({ geohash: town, connections: [], entrances });
-        }
-    }
-
-    // Generate rooms (town precision) - randomly
+    // Determine number of rooms and entrances
     const numRooms = Math.floor(rv * (MAX_ROOMS - MIN_ROOMS + 1)) + MIN_ROOMS;
     const numEntrances =
         Math.floor(rv * (MAX_ENTRANCES - MIN_ENTRANCES + 1)) + MIN_ENTRANCES;
-    let entranceCount = 0;
-    for (let i = 0; i < numRooms; i++) {
-        const roomRv = seededRandom(
-            stringToRandomNumber(territory + locationType) + i,
-        );
-        const town = autoCorrectGeohashPrecision(
-            city,
-            worldSeed.spatial.town.precision,
-            roomRv,
-        );
 
-        // Generate entrance
-        const entrances: string[] = [];
-        if (entranceCount < numEntrances) {
-            entrances.push(
-                autoCorrectGeohashPrecision(
-                    town,
-                    worldSeed.spatial.unit.precision,
-                    roomRv,
-                ),
-            );
-            entranceCount += 1;
-        }
+    // // Dungeon location is city precision
+    // const dungeon = options?.dungeon;
+    // const city = dungeon
+    //     ? dungeon.dungeon
+    //     : autoCorrectGeohashPrecision(
+    //           territory,
+    //           worldSeed.spatial.city.precision,
+    //           rv,
+    //       );
 
-        rooms.push({ geohash: town, connections: [], entrances });
+    // // Generate rooms (town precision) - manually defined
+    // if (dungeon) {
+    //     for (const { room, entrances } of dungeon.rooms) {
+    //         const town = autoCorrectGeohashPrecision(
+    //             room,
+    //             worldSeed.spatial.town.precision,
+    //         );
+    //         rooms.push({ geohash: town, connections: [], entrances });
+    //     }
+    // }
+
+    // Generate rooms
+    let geohash = autoCorrectGeohashPrecision(territory, DUNGEON_PRECISION, rv);
+    let rooms: Room[] = generateRoomsBSP({
+        geohash,
+        unitPrecision: ROOM_UNIT_PRECISION,
+        minDepth: 7,
+        maxDepth: 10,
+        numRooms,
+    });
+
+    // Generate room entrances
+    const roomsWithEntrances = sampleFrom(rooms, numEntrances, seed);
+    for (const r of roomsWithEntrances) {
+        const plotWithEntrance = sampleFrom(
+            Array.from(r.plots).sort(),
+            1,
+            seed,
+        )[0];
+        r.entrances.push(
+            autoCorrectGeohashPrecision(
+                plotWithEntrance,
+                worldSeed.spatial.unit.precision,
+                stringToRandomNumber(plotWithEntrance),
+            ),
+        );
     }
-    rooms = uniqBy(rooms, (r) => r.geohash);
 
-    // Connect rooms and generate corridors
+    // Connect rooms with corridors
     const corridors = new Set<string>();
-    const corridorPrecision = worldSeed.spatial.house.precision; // corridor should be thinner than the room (town)
+    const corridorPrecision = worldSeed.spatial.house.precision;
     const connectedRooms = new Set<string>();
     let currentRoom = rooms[Math.floor(rv * rooms.length)];
-    connectedRooms.add(currentRoom.geohash);
+    connectedRooms.add(currentRoom.room);
 
     while (connectedRooms.size < rooms.length) {
         const unconnectedRooms = rooms.filter(
-            (r) => !connectedRooms.has(r.geohash),
+            (r) => !connectedRooms.has(r.room),
         );
         unconnectedRooms.sort(
             (a, b) =>
-                geohashDistance(currentRoom.geohash, a.geohash) -
-                geohashDistance(currentRoom.geohash, b.geohash),
+                geohashDistance(currentRoom.room, a.room) -
+                geohashDistance(currentRoom.room, b.room),
         );
-
         const numConnections = Math.min(
             1 + Math.floor(rv * 2),
             unconnectedRooms.length,
@@ -167,13 +157,13 @@ async function generateDungeonGraph(
         for (let i = 0; i < numConnections; i++) {
             const nextRoom = unconnectedRooms[i];
             generateCorridor(
-                currentRoom.geohash,
-                nextRoom.geohash,
+                currentRoom.room,
+                nextRoom.room,
                 corridorPrecision,
             ).forEach((c) => corridors.add(c));
-            currentRoom.connections.push(nextRoom.geohash);
-            nextRoom.connections.push(currentRoom.geohash);
-            connectedRooms.add(nextRoom.geohash);
+            currentRoom.connections.push(nextRoom.room);
+            nextRoom.connections.push(currentRoom.room);
+            connectedRooms.add(nextRoom.room);
         }
 
         currentRoom = unconnectedRooms[0];
@@ -187,11 +177,6 @@ async function generateDungeonGraph(
     }
 
     return graph;
-}
-
-function inCorridor(geohash: string, graph: DungeonGraph): boolean {
-    const corridorGeohash = geohash.slice(0, graph.corridorPrecision);
-    return graph.corridors.has(corridorGeohash);
 }
 
 function generateCorridor(
