@@ -576,6 +576,7 @@ async function biomeAtGeohash(
         biomeAtGeohashCache?: CacheInterface;
         biomeParametersAtCityCache?: CacheInterface;
         dungeonGraphCache?: CacheInterface;
+        dungeonsAtTerritoryCache?: CacheInterface;
     },
 ): Promise<[BiomeType, number]> {
     // Get from cache
@@ -594,8 +595,13 @@ async function biomeAtGeohash(
     if (locationType !== "geohash") {
         result = await dungeonBiomeAtGeohash(geohash, locationType, {
             dungeonGraphCache: options?.dungeonGraphCache,
+            dungeonsAtTerritoryCache: options?.dungeonsAtTerritoryCache,
+            topologyBufferCache: options?.topologyBufferCache,
+            topologyResponseCache: options?.topologyResponseCache,
+            topologyResultCache: options?.topologyResultCache,
         });
     }
+
     // Leave h9* for ice for testing (fully traversable)
     else if (geohash.startsWith("h9")) {
         result = [biomes.tundra.biome, 0]; // strength=0 no decorations

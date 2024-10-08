@@ -28,6 +28,7 @@ async function isGeohashTraversable(
         biomeAtGeohashCache?: CacheInterface;
         biomeParametersAtCityCache?: CacheInterface;
         dungeonGraphCache?: CacheInterface;
+        dungeonsAtTerritoryCache?: CacheInterface;
     },
 ): Promise<boolean> {
     // Early return false if has colliders (items)
@@ -43,6 +44,7 @@ async function isGeohashTraversable(
         biomeAtGeohashCache: options?.biomeAtGeohashCache,
         biomeParametersAtCityCache: options?.biomeParametersAtCityCache,
         dungeonGraphCache: options?.dungeonGraphCache,
+        dungeonsAtTerritoryCache: options?.dungeonsAtTerritoryCache,
     });
     const biomeSpeed = biomes[biome].traversableSpeed;
 

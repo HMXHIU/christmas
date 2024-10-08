@@ -3,6 +3,7 @@ import {
     biomeAtGeohashCache,
     biomeParametersAtCityCache,
     dungeonGraphCache,
+    dungeonsAtTerritoryCache,
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
@@ -140,6 +141,7 @@ async function calculateBiomeForRowCol(
         biomeAtGeohashCache,
         biomeParametersAtCityCache,
         dungeonGraphCache,
+        dungeonsAtTerritoryCache,
     });
 
     const elevation =

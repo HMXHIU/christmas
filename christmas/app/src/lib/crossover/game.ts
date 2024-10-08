@@ -20,6 +20,7 @@ import {
     biomeAtGeohashCache,
     biomeParametersAtCityCache,
     dungeonGraphCache,
+    dungeonsAtTerritoryCache,
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
@@ -452,6 +453,7 @@ async function isGeohashTraversableClient(
             biomeAtGeohashCache,
             biomeParametersAtCityCache,
             dungeonGraphCache,
+            dungeonsAtTerritoryCache,
         },
     );
 }
