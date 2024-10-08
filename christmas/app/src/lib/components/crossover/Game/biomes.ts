@@ -29,8 +29,8 @@ import {
     geohashLocationTypes,
     type GeohashLocation,
 } from "$lib/crossover/world/types";
-import { seededRandom, stringToRandomNumber } from "$lib/utils";
 import { KdTree } from "$lib/utils/kdtree";
+import { seededRandom, stringToRandomNumber } from "$lib/utils/random";
 import type { Container, Texture } from "pixi.js";
 import { get } from "svelte/store";
 import { landGrading } from "../../../../store";

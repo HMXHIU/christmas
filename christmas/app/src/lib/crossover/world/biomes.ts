@@ -1,7 +1,7 @@
 import { PUBLIC_MINIO_ENDPOINT } from "$env/static/public";
 import { type CacheInterface } from "$lib/caches";
 import { geohashToColRow } from "$lib/crossover/utils";
-import { seededRandom, stringToRandomNumber } from "$lib/utils";
+import { seededRandom, stringToRandomNumber } from "$lib/utils/random";
 import { cloneDeep } from "lodash-es";
 import { PNG, type PNGWithMetadata } from "pngjs";
 import { dungeonBiomeAtGeohash } from "./dungeons";

@@ -1,11 +1,11 @@
-import type { BluePrint, Templates } from "../blueprint";
+import type { BluePrint, BluePrints } from "../blueprint";
 import { worldSeed } from "./world";
 
 export { blueprintOrder, blueprints };
 
-const blueprintOrder: Templates[] = ["outpost", "town"];
+const blueprintOrder: BluePrints[] = ["outpost", "town"];
 
-const blueprints: Record<Templates, BluePrint> = {
+const blueprints: Record<BluePrints, BluePrint> = {
     outpost: {
         template: "outpost",
         locationType: "geohash",
@@ -16,15 +16,20 @@ const blueprints: Record<Templates, BluePrint> = {
                 max: 1,
             },
         },
-        plotPrecision: worldSeed.spatial.town.precision,
+        precision: worldSeed.spatial.town.precision,
         clusters: {
             market: {
+                precision: worldSeed.spatial.village.precision,
                 props: {
                     tavern: {
-                        instances: { min: 1, max: 1 },
+                        min: 1,
+                        max: 1,
+                        pattern: "random",
                     },
                 },
                 pattern: "random",
+                min: 1,
+                max: 1,
             },
         },
     },
@@ -38,15 +43,20 @@ const blueprints: Record<Templates, BluePrint> = {
                 max: 1,
             },
         },
-        plotPrecision: worldSeed.spatial.town.precision,
+        precision: worldSeed.spatial.town.precision,
         clusters: {
             market: {
+                precision: worldSeed.spatial.village.precision,
                 props: {
                     tavern: {
-                        instances: { min: 1, max: 1 },
+                        min: 1,
+                        max: 1,
+                        pattern: "random",
                     },
                 },
                 pattern: "random",
+                min: 1,
+                max: 1,
             },
         },
     },

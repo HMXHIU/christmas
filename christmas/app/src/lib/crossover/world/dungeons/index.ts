@@ -1,5 +1,9 @@
 import type { CacheInterface } from "$lib/caches";
-import { sampleFrom, seededRandom, stringToRandomNumber } from "$lib/utils";
+import {
+    sampleFrom,
+    seededRandom,
+    stringToRandomNumber,
+} from "$lib/utils/random";
 import {
     autoCorrectGeohashPrecision,
     evenGeohashCharacters,

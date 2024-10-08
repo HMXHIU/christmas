@@ -1,22 +1,26 @@
 import type { CacheInterface } from "$lib/caches";
-import { sampleFrom, seededRandom, stringToRandomNumber } from "$lib/utils";
+import {
+    sampleFrom,
+    seededRandomNumberBetween,
+    stringToRandomNumber,
+} from "$lib/utils/random";
 import { childrenGeohashesAtPrecision } from "../utils";
 import { elevationAtGeohash } from "./biomes";
 import { topologicalAnalysis, worldSeed } from "./settings/world";
 import type { GeohashLocation } from "./types";
 
 export {
+    blueprintProps,
     blueprintsAtTerritory,
-    generateProps,
     sampleChildrenGeohashesAtPrecision,
     type BluePrint,
-    type Templates,
+    type BluePrints,
 };
 
-type Templates = "outpost" | "town";
+type BluePrints = "outpost" | "town";
 
 interface BluePrint {
-    template: Templates;
+    template: BluePrints;
     frequency: {
         precision: number; // eg. region (how many instances of the blueprint in the region)
         instances: {
@@ -25,25 +29,27 @@ interface BluePrint {
         };
     };
     locationType: GeohashLocation;
-    plotPrecision: number; // eg. town (the actual size of the blueprint)
+    precision: number; // size of the blueprint (eg. town)
     clusters: {
         [cluster: string]: {
+            precision: number; // size of the cluster
             props: {
                 [prop: string]: {
-                    instances: {
-                        min: number;
-                        max: number;
-                    };
+                    min: number; // number of props in a cluster
+                    max: number;
+                    pattern: "random" | "center" | "peripheral"; // distribution of props in the cluster
                 };
             };
-            pattern: "random" | "center" | "peripheral";
+            min: number; // number of clusters
+            max: number;
+            pattern: "random" | "center" | "peripheral"; // distribution of clusters in the plot
         };
     };
 }
 
 interface BlueprintProp {
     prop: string;
-    blueprint: Templates;
+    blueprint: BluePrints;
 }
 
 type BlueprintPropLocations = Record<string, BlueprintProp>;
@@ -51,14 +57,14 @@ type BlueprintPropLocations = Record<string, BlueprintProp>;
 interface TerritoryBlueprint {
     territory: string;
     locationType: GeohashLocation;
-    props: BlueprintPropLocations;
+    props: BlueprintPropLocations; // location of the props to spawn
 }
 
 async function blueprintsAtTerritory(
-    territory: string, // 2 precision geohash
+    territory: string,
     locationType: GeohashLocation,
-    blueprints: Record<Templates, BluePrint>,
-    blueprintOrder: Templates[], // for reproducibility
+    blueprints: Record<BluePrints, BluePrint>,
+    blueprintsToSpawn: BluePrints[], // order matters for reproducibility
     options?: {
         topologyResponseCache?: CacheInterface;
         topologyResultCache?: CacheInterface;
@@ -86,20 +92,16 @@ async function blueprintsAtTerritory(
         return territoryBlueprint;
     }
 
-    const blueprintLocations = new Set<string>();
-
-    for (const blueprint of blueprintOrder.map((t) => blueprints[t])) {
+    const bpLocations = new Set<string>(); // keep track of chosen locations so we don't overlap
+    for (const blueprint of blueprintsToSpawn.map((t) => blueprints[t])) {
         // Check locationType
         if (blueprint.locationType !== locationType) {
             continue;
         }
 
-        const { frequency, plotPrecision } = blueprint;
-
+        // Check frequency precision (must be greater than territory)
+        const { frequency, precision } = blueprint;
         if (frequency.precision <= territory.length) {
-            console.warn(
-                `blueprint.frequency.precision must be greater than territory`,
-            );
             continue;
         }
 
@@ -108,9 +110,8 @@ async function blueprintsAtTerritory(
             territory,
             frequency.precision,
         );
-
         for (const plot of plots) {
-            // Exclude plots not on land
+            // Check plot on land
             const elevation = await elevationAtGeohash(plot, locationType, {
                 responseCache: options?.topologyResponseCache,
                 resultsCache: options?.topologyResultCache,
@@ -120,29 +121,21 @@ async function blueprintsAtTerritory(
                 continue;
             }
 
-            const seed = stringToRandomNumber(plot);
-            const rv = seededRandom(seed);
-
             // Generate the number of instances of the blueprint in the plot
-            const numInstances = Math.floor(
-                rv * (frequency.instances.max - frequency.instances.min + 1) +
-                    frequency.instances.min,
-            );
+            let seed = stringToRandomNumber(blueprint.template + plot);
+            const { min, max } = frequency.instances;
+            const numInstances = seededRandomNumberBetween(min, max, seed++);
 
-            // Generate possible blueprint locations (sort for reproducibility)
-            const availableLocations = childrenGeohashesAtPrecision(
-                plot,
-                plotPrecision,
-            ).filter((geohash) => !blueprintLocations.has(geohash));
-
-            // Select numInstances locations
-            const chosenLocations = sampleFrom(
-                availableLocations,
+            // Generate blueprint locations
+            const blueprintLocations = sampleFrom(
+                childrenGeohashesAtPrecision(plot, precision).filter(
+                    (geohash) => !bpLocations.has(geohash),
+                ), // this makes the ordering of blueprintsToSpawn matter
                 numInstances,
-                seed,
+                seed++,
             );
 
-            for (const location of chosenLocations) {
+            for (const location of blueprintLocations) {
                 // Exclude plots not on land
                 const elevation = await elevationAtGeohash(
                     location,
@@ -156,12 +149,10 @@ async function blueprintsAtTerritory(
                 if (elevation < 1) {
                     continue;
                 }
-
-                const props = await generateProps(
+                const props = await blueprintProps(
                     location,
                     locationType,
                     blueprint,
-                    seed,
                     {
                         topologyResponseCache: options?.topologyResponseCache,
                         topologyResultCache: options?.topologyResultCache,
@@ -169,7 +160,7 @@ async function blueprintsAtTerritory(
                     },
                 );
                 Object.assign(territoryBlueprint.props, props);
-                blueprintLocations.add(location);
+                bpLocations.add(location);
             }
         }
     }
@@ -185,11 +176,10 @@ async function blueprintsAtTerritory(
     return territoryBlueprint;
 }
 
-async function generateProps(
-    location: string,
+async function blueprintProps(
+    location: string, // the blueprint geohash
     locationType: GeohashLocation,
     blueprint: BluePrint,
-    seed: number,
     options?: {
         topologyResponseCache?: CacheInterface;
         topologyResultCache?: CacheInterface;
@@ -197,56 +187,51 @@ async function generateProps(
     },
 ): Promise<BlueprintPropLocations> {
     const propLocations: BlueprintPropLocations = {};
-    const locationPrecision = location.length;
-    const clusterPrecision = locationPrecision + 1; // 1/32
+    for (const [
+        cluster,
+        { props, pattern, precision, min, max },
+    ] of Object.entries(blueprint.clusters)) {
+        let seed = stringToRandomNumber(location + locationType + cluster);
 
-    for (const [cluster, { props, pattern }] of Object.entries(
-        blueprint.clusters,
-    )) {
         // Determine the location of the cluster where the prop should be spawned
-        const clusterLocation = sampleChildrenGeohashesAtPrecision(
+        const clusterLocations = sampleChildrenGeohashesAtPrecision(
             location,
-            clusterPrecision,
+            precision,
             pattern,
-            1,
-            seed++,
-        )[0];
-
-        // Exclude plots not on land
-        const elevation = await elevationAtGeohash(
-            clusterLocation,
-            locationType,
-            {
-                responseCache: options?.topologyResponseCache,
-                resultsCache: options?.topologyResultCache,
-                bufferCache: options?.topologyBufferCache,
-            },
+            seededRandomNumberBetween(min, max, seed),
+            seed,
         );
-        if (elevation < 1) {
-            continue;
-        }
 
-        for (const [prop, { instances }] of Object.entries(props)) {
-            // Determine number of instances of prop in the clusterLocation
-            const propInstances = Math.floor(
-                seededRandom(seed++) * (instances.max - instances.min + 1) +
-                    instances.min,
+        for (const clusterLocation of clusterLocations) {
+            // Exclude plots not on land
+            const elevation = await elevationAtGeohash(
+                clusterLocation,
+                locationType,
+                {
+                    responseCache: options?.topologyResponseCache,
+                    resultsCache: options?.topologyResultCache,
+                    bufferCache: options?.topologyBufferCache,
+                },
             );
+            if (elevation < 1) {
+                continue;
+            }
 
-            const locations = sampleFrom(
-                childrenGeohashesAtPrecision(
+            for (const [prop, { min, max, pattern }] of Object.entries(props)) {
+                let propSeed = stringToRandomNumber(clusterLocation + prop);
+                const propGeohashes = sampleChildrenGeohashesAtPrecision(
                     clusterLocation,
                     worldSeed.spatial.unit.precision,
-                ),
-                propInstances,
-                seed++,
-            );
-
-            for (const geohash of locations) {
-                propLocations[geohash] = {
-                    prop,
-                    blueprint: blueprint.template,
-                };
+                    pattern,
+                    seededRandomNumberBetween(min, max, propSeed),
+                    propSeed,
+                );
+                for (const geohash of propGeohashes) {
+                    propLocations[geohash] = {
+                        prop,
+                        blueprint: blueprint.template,
+                    };
+                }
             }
         }
     }

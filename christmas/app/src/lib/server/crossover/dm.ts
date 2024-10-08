@@ -36,11 +36,8 @@ import type {
     PlayerEntity,
     WorldEntity,
 } from "$lib/server/crossover/types";
-import {
-    generatePin,
-    substituteValues,
-    substituteVariablesRecursively,
-} from "$lib/utils";
+import { substituteValues, substituteVariablesRecursively } from "$lib/utils";
+import { generatePin } from "$lib/utils/random";
 import { groupBy, uniq } from "lodash-es";
 import {
     blueprintsAtTerritoryCache,

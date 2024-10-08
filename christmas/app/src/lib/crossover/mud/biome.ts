@@ -1,4 +1,4 @@
-import { seededRandom, stringToRandomNumber } from "$lib/utils";
+import { seededRandom, stringToRandomNumber } from "$lib/utils/random";
 import type { BiomeParameters, BiomeType } from "../world/biomes";
 import type { BiomeDescriptors } from "./settings";
 

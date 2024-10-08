@@ -13,7 +13,7 @@
     import { topologyAtGeohash } from "$lib/crossover/world/biomes";
     import {
         blueprintsAtTerritory,
-        type Templates,
+        type BluePrints,
     } from "$lib/crossover/world/blueprint";
     import {
         blueprintOrder,
@@ -194,14 +194,14 @@
         );
         for (const [blueprint, entries] of Object.entries(blueprintProps)) {
             const plotPrecision =
-                blueprints[blueprint as Templates].plotPrecision;
+                blueprints[blueprint as BluePrints].plotPrecision;
             const propLocations = entries.map((xs) => xs[0]);
             const blueprintLocations = uniqBy(propLocations, (l) =>
                 l.slice(0, plotPrecision),
             );
             for (const loc of blueprintLocations) {
                 const [col, row] = geohashToColRow(loc);
-                if ((blueprint as Templates) === "outpost") {
+                if ((blueprint as BluePrints) === "outpost") {
                     const d = new Graphics()
                         .circle(col * texelX, row * texelY, 5)
                         .fill({ color: 0xff00ff });

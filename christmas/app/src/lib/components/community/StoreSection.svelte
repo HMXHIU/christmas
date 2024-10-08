@@ -6,7 +6,6 @@
         fetchStoreMetadata,
         mintCoupon,
     } from "$lib/community";
-    import { cleanString } from "$lib/utils";
     import {
         mintedCoupons,
         storesMetadata,
@@ -63,7 +62,7 @@
                 <div class="flex flex-col my-auto">
                     <!-- Name -->
                     <p class="text-base font-bold">
-                        {cleanString(store.name)}
+                        {store.name}
                     </p>
                     <!-- Address -->
                     <p class="text-sm font-light text-muted-foreground">

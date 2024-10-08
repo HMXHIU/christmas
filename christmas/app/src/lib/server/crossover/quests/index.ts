@@ -15,11 +15,10 @@ import type {
     PlayerEntity,
 } from "$lib/server/crossover/types";
 import {
-    generateRandomSeed,
-    sampleFrom,
     substituteVariables,
     substituteVariablesRecursively,
 } from "$lib/utils";
+import { generateRandomSeed, sampleFrom } from "$lib/utils/random";
 import { look } from "../actions";
 import { spawnItemInInventory, spawnQuestItem } from "../dm";
 import { publishFeedEvent } from "../events";

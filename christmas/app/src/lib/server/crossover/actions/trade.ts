@@ -10,7 +10,7 @@ import {
     type ItemEntity,
     type PlayerEntity,
 } from "$lib/server/crossover/types";
-import { generatePin } from "$lib/utils";
+import { generatePin } from "$lib/utils/random";
 import { say } from ".";
 import { savePlayerState } from "../../user";
 import { spawnItemInInventory } from "../dm";

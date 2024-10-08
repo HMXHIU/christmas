@@ -35,7 +35,11 @@ import {
 } from "$lib/crossover/world/player";
 import type { LocationType } from "$lib/crossover/world/types";
 import type { PlayerEntity } from "$lib/server/crossover/types";
-import { generatePin, sampleFrom, stringToRandomNumber } from "$lib/utils";
+import {
+    generatePin,
+    sampleFrom,
+    stringToRandomNumber,
+} from "$lib/utils/random";
 import { Keypair } from "@solana/web3.js";
 import { loadPlayerEntity } from "..";
 import type {

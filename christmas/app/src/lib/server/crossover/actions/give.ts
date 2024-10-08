@@ -3,7 +3,7 @@ import {
     type ItemEntity,
     type PlayerEntity,
 } from "$lib/server/crossover/types";
-import { generatePin } from "$lib/utils";
+import { generatePin } from "$lib/utils/random";
 import { say } from ".";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../events";
 import {

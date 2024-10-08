@@ -10,7 +10,7 @@ import {
     geohashLocationTypes,
     type GeohashLocation,
 } from "$lib/crossover/world/types";
-import { seededRandom, stringToRandomNumber } from "$lib/utils";
+import { seededRandom, stringToRandomNumber } from "$lib/utils/random";
 import { Assets, Container, Graphics } from "pixi.js";
 import { createNoise2D } from "simplex-noise";
 import { get } from "svelte/store";

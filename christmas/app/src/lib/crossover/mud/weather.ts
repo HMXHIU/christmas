@@ -1,4 +1,4 @@
-import { seededRandom, stringToRandomNumber } from "$lib/utils";
+import { seededRandom, stringToRandomNumber } from "$lib/utils/random";
 import { worldSeed } from "../world/settings/world";
 import { geohashLocationTypes, type LocationType } from "../world/types";
 import type { Season, TimeOfDay } from "./time";

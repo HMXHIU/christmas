@@ -1,7 +1,6 @@
 <script lang="ts">
     import * as Avatar from "$lib/components/ui/avatar";
     import * as Card from "$lib/components/ui/card";
-    import { cleanString } from "$lib/utils";
 
     export let couponName: string;
     export let couponNameSuffix: string | null = null;
@@ -121,7 +120,7 @@
             <!-- Coupon Name -->
             <p class="text-left leading-tight">
                 <span class="font-semibold">
-                    {cleanString(couponName)}
+                    {couponName}
                 </span>
                 {#if couponNameSuffix}
                     <span class="text-xs text-muted-foreground">
@@ -132,7 +131,7 @@
             <!-- Coupon Description -->
             {#if couponDescription}
                 <p class="text-sm font-light">
-                    {cleanString(couponDescription)}
+                    {couponDescription}
                 </p>
             {/if}
         </div>

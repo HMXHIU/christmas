@@ -14,7 +14,7 @@ import type {
     GeohashLocation,
 } from "$lib/crossover/world/types";
 import type { Tileset } from "$lib/crossover/world/world";
-import { seededRandom } from "$lib/utils";
+import { seededRandom } from "$lib/utils/random";
 import { gsap } from "gsap";
 import { PixiPlugin } from "gsap/PixiPlugin";
 import * as PIXI from "pixi.js";

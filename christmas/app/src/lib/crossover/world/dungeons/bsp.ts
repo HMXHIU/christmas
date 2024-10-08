@@ -1,5 +1,9 @@
 import { geohashToColRow, gridCellToGeohash } from "$lib/crossover/utils";
-import { sampleFrom, seededRandom, stringToRandomNumber } from "$lib/utils";
+import {
+    sampleFrom,
+    seededRandom,
+    stringToRandomNumber,
+} from "$lib/utils/random";
 import type { Room } from "./types";
 
 export { generateRoomsBSP };

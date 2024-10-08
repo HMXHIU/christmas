@@ -1,6 +1,6 @@
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
-import { generateRandomSeed, sampleFrom } from "$lib/utils";
+import { generateRandomSeed, sampleFrom } from "$lib/utils/random";
 import { createQuest, createQuestWrit } from ".";
 import type { NPCs } from "../npc/types";
 import { npcsNotInLimboQuerySet, questWritsQuerySet } from "../redis/queries";

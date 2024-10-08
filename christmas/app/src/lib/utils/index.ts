@@ -4,11 +4,8 @@ import { z } from "zod";
 export {
     AsyncLock,
     calculateDistance,
-    cleanString,
     divmod,
     extractQueryParams,
-    generatePin,
-    generateRandomSeed,
     generateURL,
     getCurrentTimestamp,
     getErrorMessage,
@@ -17,57 +14,24 @@ export {
     isBrowser,
     parseZodErrors,
     retry,
-    sampleFrom,
-    seededRandom,
     sleep,
     stringToBase58,
-    stringToRandomNumber,
     stringToUint8Array,
     substituteValues,
     substituteVariables,
     substituteVariablesRecursively,
 };
 
-/**
- * Converts a string (seed) to a random number.
- *
- * @param str - The string to convert.
- * @returns The random number generated from the string (seed).
- */
-function stringToRandomNumber(str: string): number {
-    var hash = 0;
-    if (str.length === 0) return hash;
-    for (var i = 0; i < str.length; i++) {
-        var char = str.charCodeAt(i);
-        hash = (hash << 5) - hash + char; // Bitwise left shift and subtraction
-        hash &= hash; // Convert to 32bit integer
-    }
-    return Math.abs(hash); // Ensure positive number
-}
-
-/**
- * Generates a seeded random number between 0 and 1.
- *
- * @param seed - The seed value used to generate the random number.
- * @returns A random number between 0 (inclusive) and 1 (exclusive).
- */
-function seededRandom(seed: number): number {
-    var x = Math.sin(seed) * 10000; // how many decimal places
-    return x - Math.floor(x);
-}
-
 function substituteValues(
     d: Record<string, string>,
     variables: Record<string, any>,
 ) {
     const result: Record<string, string> = {};
-
     for (const key in d) {
         if (d.hasOwnProperty(key)) {
             result[key] = substituteVariables(d[key], variables);
         }
     }
-
     return result;
 }
 
@@ -125,18 +89,12 @@ function substituteVariablesRecursively(
     return result;
 }
 
-function cleanString(s: string) {
-    return s.replace(/\u0000+$/, "");
-}
-
 function stringToBase58(str: string) {
-    const buffer = Buffer.from(str);
-    return bs58.encode(buffer);
+    return bs58.encode(Buffer.from(str));
 }
 
 function stringToUint8Array(input: string): Uint8Array {
-    const encoder = new TextEncoder();
-    return encoder.encode(input);
+    return new TextEncoder().encode(input);
 }
 
 function getCurrentTimestamp(date: Date): string {
@@ -322,15 +280,6 @@ async function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function generateRandomSeed(rand?: number): number {
-    rand = rand ?? Math.random();
-    // Define the range for the seed, e.g., 0 to 2^32 - 1
-    const maxSeed = Math.pow(2, 32) - 1;
-    // Generate a random integer within the range
-    const randomSeed = Math.floor(rand * maxSeed);
-    return randomSeed;
-}
-
 class AsyncLock {
     private locked: boolean = false;
     private waitingQueue: (() => void)[] = [];
@@ -371,29 +320,4 @@ function divmod(n: number, d: number): [number, number] {
 
 function isBrowser(): boolean {
     return typeof window !== "undefined";
-}
-
-function sampleFrom<T>(items: T[], count: number, seed: number): T[] {
-    const shuffled = [...items];
-    let currentIndex = shuffled.length;
-    let randomIndex: number;
-
-    while (currentIndex !== 0) {
-        randomIndex = Math.floor(seededRandom(seed++) * currentIndex);
-        currentIndex--;
-
-        [shuffled[currentIndex], shuffled[randomIndex]] = [
-            shuffled[randomIndex],
-            shuffled[currentIndex],
-        ];
-    }
-
-    return shuffled.slice(0, count);
-}
-
-function generatePin(length: number) {
-    if (length <= 0) return "";
-    const min = 10 ** (length - 1);
-    const max = 10 ** length - 1;
-    return Math.floor(min + Math.random() * (max - min + 1)).toString();
 }
