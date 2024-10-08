@@ -6,6 +6,7 @@ export {
     biomeParametersAtCityCache,
     blueprintsAtTerritoryCache,
     dungeonGraphCache,
+    dungeonsAtTerritoryCache,
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
@@ -24,4 +25,5 @@ const worldTraversableCellsCache = new LRUMemoryCache({ max: 100 });
 const biomeAtGeohashCache = new LRUMemoryCache({ max: 100 });
 const biomeParametersAtCityCache = new LRUMemoryCache({ max: 100 });
 const dungeonGraphCache = new LRUMemoryCache({ max: 10 });
+const dungeonsAtTerritoryCache = new LRUMemoryCache({ max: 10 });
 const blueprintsAtTerritoryCache = new LRUMemoryCache({ max: 32 });

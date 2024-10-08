@@ -1,4 +1,10 @@
-import { dungeonGraphCache } from "$lib/crossover/caches";
+import {
+    dungeonGraphCache,
+    dungeonsAtTerritoryCache,
+    topologyBufferCache,
+    topologyResponseCache,
+    topologyResultCache,
+} from "$lib/crossover/caches";
 import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
 import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
 import {
@@ -31,27 +37,42 @@ describe("Dungeons Tests", () => {
         }
     });
 
-    test("Test `getAllDungeons` (this will take awhile)", async () => {
+    test("Test `getAllDungeons`", async () => {
+        // This will take a while
         const dungeons = await getAllDungeons("d1", {
-            dungeonGraphCache: dungeonGraphCache,
+            dungeonGraphCache,
+            dungeonsAtTerritoryCache,
+            topologyBufferCache,
+            topologyResponseCache,
+            topologyResultCache,
         });
+        // Only spawns on land
         const numPrefabDungeons = Object.keys(prefabDungeons).length;
-        expect(Object.keys(dungeons).length).toBe(32 * 32 + numPrefabDungeons);
+        expect(Object.keys(dungeons).length).toBe(314);
 
         console.log(JSON.stringify(dungeons["w2"], null, 2));
     });
 
     test("Test prefab dungeons", async () => {
-        const territory = "w2";
-        const locationType = "d1";
-        let graphs = await generateDungeonGraphsForTerritory(
-            territory,
-            locationType,
-            {
-                dungeonGraphCache: dungeonGraphCache,
-            },
-        );
-        expect(Object.keys(graphs).length).toBe(2);
+        for (const [dungeon, _] of Object.entries(prefabDungeons)) {
+            const territory = dungeon.slice(0, 2);
+            const locationType = "d1";
+            let graphs = await generateDungeonGraphsForTerritory(
+                territory,
+                locationType,
+                {
+                    dungeonGraphCache,
+                    dungeonsAtTerritoryCache,
+                    topologyBufferCache,
+                    topologyResponseCache,
+                    topologyResultCache,
+                },
+            );
+            expect(Object.keys(graphs).length).greaterThan(0);
+            expect(
+                Object.keys(graphs).find((g) => dungeon.startsWith(g)),
+            ).toBeTruthy();
+        }
     });
 
     test("Test `generateDungeonGraph`", async () => {
@@ -61,7 +82,11 @@ describe("Dungeons Tests", () => {
             territory,
             locationType,
             {
-                dungeonGraphCache: dungeonGraphCache,
+                dungeonGraphCache,
+                dungeonsAtTerritoryCache,
+                topologyBufferCache,
+                topologyResponseCache,
+                topologyResultCache,
             },
         );
 

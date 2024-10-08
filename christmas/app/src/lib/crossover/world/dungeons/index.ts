@@ -8,9 +8,9 @@ import {
     gridCellToGeohash,
     oddGeohashCharacters,
 } from "../../utils";
-import type { BiomeType } from "../biomes";
+import { elevationAtGeohash, type BiomeType } from "../biomes";
 import { prefabDungeons } from "../settings/dungeons";
-import { worldSeed } from "../settings/world";
+import { topologicalAnalysis, worldSeed } from "../settings/world";
 import { geohashLocationTypes, type GeohashLocation } from "../types";
 import { generateRoomsBSP } from "./bsp";
 import type { DungeonGraph, Room } from "./types";
@@ -35,6 +35,10 @@ async function dungeonBiomeAtGeohash(
     locationType: GeohashLocation,
     options?: {
         dungeonGraphCache?: CacheInterface;
+        dungeonsAtTerritoryCache?: CacheInterface;
+        topologyResponseCache?: CacheInterface;
+        topologyResultCache?: CacheInterface;
+        topologyBufferCache?: CacheInterface;
     },
 ): Promise<[BiomeType, number]> {
     if (!geohashLocationTypes.has(locationType)) {
@@ -51,6 +55,10 @@ async function dungeonBiomeAtGeohash(
         locationType,
         {
             dungeonGraphCache: options?.dungeonGraphCache,
+            dungeonsAtTerritoryCache: options?.dungeonsAtTerritoryCache,
+            topologyResponseCache: options?.topologyResponseCache,
+            topologyResultCache: options?.topologyResultCache,
+            topologyBufferCache: options?.topologyBufferCache,
         },
     );
 
@@ -78,10 +86,20 @@ async function generateDungeonGraphsForTerritory(
     locationType: GeohashLocation,
     options?: {
         dungeonGraphCache?: CacheInterface;
+        dungeonsAtTerritoryCache?: CacheInterface;
+        topologyResponseCache?: CacheInterface;
+        topologyResultCache?: CacheInterface;
+        topologyBufferCache?: CacheInterface;
     },
 ): Promise<Record<string, DungeonGraph>> {
-    const graphs: Record<string, DungeonGraph> = {};
+    // Get from cache
+    const cacheKey = territory;
+    let graphs: Record<string, DungeonGraph> =
+        await options?.dungeonsAtTerritoryCache?.get(cacheKey);
+    if (graphs) return graphs;
+
     // Generate prefabricated dungeons
+    graphs = {};
     for (const [dungeon, _] of Object.entries(prefabDungeons)) {
         if (dungeon.startsWith(territory)) {
             graphs[dungeon] = await generateDungeonGraph(
@@ -94,17 +112,45 @@ async function generateDungeonGraphsForTerritory(
         }
     }
 
-    // Procedurally generate dungeon at territory
-    const seed = stringToRandomNumber(territory + locationType);
-    const rv = seededRandom(seed);
-    let dungeon = autoCorrectGeohashPrecision(territory, DUNGEON_PRECISION, rv);
+    // Exclude territories with little land
+    const ta = (await topologicalAnalysis())[territory];
+    if (ta && ta.land >= 0.2) {
+        // Procedurally generate dungeon at territory
+        const seed = stringToRandomNumber(territory + locationType);
+        const rv = seededRandom(seed);
+        let dungeon = autoCorrectGeohashPrecision(
+            territory,
+            DUNGEON_PRECISION,
+            rv,
+        );
 
-    // Check no overlap between prefab dungeons
-    const hasOverlap = Object.keys(graphs).find((d) => dungeon.startsWith(d));
-    if (!hasOverlap) {
-        graphs[dungeon] = await generateDungeonGraph(dungeon, locationType, {
-            dungeonGraphCache: options?.dungeonGraphCache,
+        // Exclude dungeons not on land (Note: dungeons are underground but accessible from above ground)
+        const elevation = await elevationAtGeohash(dungeon, "geohash", {
+            responseCache: options?.topologyResponseCache,
+            resultsCache: options?.topologyResultCache,
+            bufferCache: options?.topologyBufferCache,
         });
+
+        if (elevation >= 1) {
+            // Check no overlap between prefab dungeons
+            const hasOverlap = Object.keys(graphs).find((d) =>
+                dungeon.startsWith(d),
+            );
+            if (!hasOverlap) {
+                graphs[dungeon] = await generateDungeonGraph(
+                    dungeon,
+                    locationType,
+                    {
+                        dungeonGraphCache: options?.dungeonGraphCache,
+                    },
+                );
+            }
+        }
+    }
+
+    // Set cache
+    if (options?.dungeonsAtTerritoryCache) {
+        options.dungeonsAtTerritoryCache.set(cacheKey, graphs);
     }
 
     return graphs;
@@ -258,6 +304,10 @@ async function getAllDungeons(
     locationType: GeohashLocation,
     options?: {
         dungeonGraphCache?: CacheInterface;
+        dungeonsAtTerritoryCache?: CacheInterface;
+        topologyResponseCache?: CacheInterface;
+        topologyResultCache?: CacheInterface;
+        topologyBufferCache?: CacheInterface;
     },
 ): Promise<Record<string, DungeonGraph>> {
     const dungeonGraphs: Record<string, DungeonGraph> = {};
@@ -267,7 +317,13 @@ async function getAllDungeons(
             const graphs = await generateDungeonGraphsForTerritory(
                 territory,
                 locationType,
-                { dungeonGraphCache: options?.dungeonGraphCache },
+                {
+                    dungeonGraphCache: options?.dungeonGraphCache,
+                    dungeonsAtTerritoryCache: options?.dungeonsAtTerritoryCache,
+                    topologyResponseCache: options?.topologyResponseCache,
+                    topologyResultCache: options?.topologyResultCache,
+                    topologyBufferCache: options?.topologyBufferCache,
+                },
             );
             Object.assign(dungeonGraphs, graphs);
         }
