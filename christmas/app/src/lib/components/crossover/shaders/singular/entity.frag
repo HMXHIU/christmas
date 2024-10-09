@@ -31,9 +31,9 @@ void main() {
     }
     
     // Note: entities can't have alpha = 0, else it is hard to get the rendering order correct with grass
-    // if (color.a < 0.1) {
-    //     discard;
-    // }
+    if (color.a < 0.1) {
+        discard;
+    }
 
     // Highlighting
     if (vInstanceHighlight > 0.0) {
