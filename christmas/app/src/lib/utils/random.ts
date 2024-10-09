@@ -48,9 +48,8 @@ function sampleFrom<T>(items: T[], count: number, seed: number): T[] {
     let randomIndex: number;
 
     while (currentIndex !== 0) {
-        randomIndex = Math.floor(seededRandom(seed++) * currentIndex);
+        randomIndex = Math.floor(seededRandom(seed) * currentIndex);
         currentIndex--;
-
         [shuffled[currentIndex], shuffled[randomIndex]] = [
             shuffled[randomIndex],
             shuffled[currentIndex],
@@ -65,8 +64,7 @@ function generateRandomSeed(rand?: number): number {
     // Define the range for the seed, e.g., 0 to 2^32 - 1
     const maxSeed = Math.pow(2, 32) - 1;
     // Generate a random integer within the range
-    const randomSeed = Math.floor(rand * maxSeed);
-    return randomSeed;
+    return Math.floor(rand * maxSeed);
 }
 
 function seededRandomNumberBetween(

@@ -2,7 +2,7 @@
     import { PUBLIC_MINIO_ENDPOINT } from "$env/static/public";
     import { LRUMemoryCache } from "$lib/caches";
     import {
-        blueprintsAtTerritoryCache,
+        blueprintsAtLocationCache,
         topologyBufferCache,
         topologyResponseCache,
         topologyResultCache,
@@ -16,7 +16,7 @@
         type BluePrints,
     } from "$lib/crossover/world/blueprint";
     import {
-        blueprintOrder,
+        blueprintsToSpawn,
         blueprints,
     } from "$lib/crossover/world/settings/blueprint";
     import { worldSeed } from "$lib/crossover/world/settings/world";
@@ -179,20 +179,22 @@
             playerMapPosition.mapId,
             playerMapPosition.locationType,
             blueprints,
-            blueprintOrder,
+            blueprintsToSpawn,
             {
                 topologyBufferCache,
                 topologyResponseCache,
                 topologyResultCache,
-                blueprintsAtTerritoryCache,
+                blueprintsAtLocationCache,
             },
         );
 
-        const blueprintProps = groupBy(
+        const stencilFromBlueprint = groupBy(
             Object.entries(bps.props),
             ([loc, p]) => p.blueprint,
         );
-        for (const [blueprint, entries] of Object.entries(blueprintProps)) {
+        for (const [blueprint, entries] of Object.entries(
+            stencilFromBlueprint,
+        )) {
             const plotPrecision =
                 blueprints[blueprint as BluePrints].plotPrecision;
             const propLocations = entries.map((xs) => xs[0]);

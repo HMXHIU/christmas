@@ -1,23 +1,78 @@
-import { LRUMemoryCache } from "$lib/caches";
+import {
+    blueprintsAtLocationCache,
+    dungeonGraphCache,
+    dungeonsAtTerritoryCache,
+    topologyBufferCache,
+    topologyResponseCache,
+    topologyResultCache,
+} from "$lib/crossover/caches";
 import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
 import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
 import {
+    blueprintsAtDungeon,
     blueprintsAtTerritory,
-    generateProps,
-    sampleChildrenGeohashesAtPrecision,
-    type BluePrint,
-    type Templates,
 } from "$lib/crossover/world/blueprint";
-import { blueprints } from "$lib/crossover/world/settings/blueprint";
+import type { BluePrints } from "$lib/crossover/world/blueprint/types";
+import {
+    sampleChildrenGeohashesAtPrecision,
+    stencilFromBlueprint,
+} from "$lib/crossover/world/blueprint/utils";
+import { generateDungeonGraphsForTerritory } from "$lib/crossover/world/dungeons";
+import {
+    blueprints,
+    dungeonBlueprints,
+    dungeonBlueprintsToSpawn,
+} from "$lib/crossover/world/settings/blueprint";
 import { groupBy, uniqBy } from "lodash-es";
 import { beforeAll, describe, expect, test } from "vitest";
-
-const topologyBufferCache = new LRUMemoryCache({ max: 10 });
-const topologyResultCache = new LRUMemoryCache({ max: 10 });
 
 beforeAll(async () => {});
 
 describe("Blueprint Tests", () => {
+    test("Test Dungeon Blueprints", async () => {
+        // Get the dungeon
+        let dungeonGraphs = await generateDungeonGraphsForTerritory(
+            "w2",
+            "d1",
+            {
+                dungeonGraphCache,
+                dungeonsAtTerritoryCache,
+                topologyBufferCache,
+                topologyResponseCache,
+                topologyResultCache,
+            },
+        );
+        const dungeonGraph = Object.values(dungeonGraphs)[0];
+        expect(dungeonGraph).toBeTruthy();
+
+        // Generate the dungeon blueprint
+        const dungeonBlueprint = await blueprintsAtDungeon(
+            dungeonGraph.dungeon,
+            dungeonGraph.locationType,
+            dungeonBlueprints,
+            dungeonBlueprintsToSpawn,
+            {
+                blueprintsAtLocationCache: blueprintsAtLocationCache,
+                dungeonGraphCache: dungeonGraphCache,
+            },
+        );
+
+        expect(dungeonBlueprint).toMatchObject({
+            location: "w21z9",
+            locationType: "d1",
+            stencil: {
+                w21z6p8m: {
+                    prop: "dungeonentrance",
+                    blueprint: "entrance",
+                },
+                w21zd057: {
+                    prop: "woodendoor",
+                    blueprint: "control",
+                },
+            },
+        });
+    });
+
     test("Test `sampleChildrenGeohashesAtPrecision`", async () => {
         var samples = sampleChildrenGeohashesAtPrecision(
             "ske",
@@ -73,9 +128,14 @@ describe("Blueprint Tests", () => {
     });
 
     test("Test `generateProps`", async () => {
-        const outpost: BluePrint = blueprints.outpost;
-        const plot = autoCorrectGeohashPrecision("sk", outpost.plotPrecision);
-        const props = await generateProps(plot, "geohash", outpost, 10);
+        const outpost = blueprints.outpost;
+        const plot = autoCorrectGeohashPrecision("sk", outpost.precision);
+        const props = await stencilFromBlueprint(
+            plot,
+            "geohash",
+            outpost,
+            async (loc, locT) => true,
+        );
 
         expect(props).toMatchObject({
             skbpbq37: {
@@ -103,13 +163,13 @@ describe("Blueprint Tests", () => {
 
         // Test no overlapping plots for each blueprint
         const propsByBlueprint = groupBy(
-            Object.entries(territoryBlueprints.props),
+            Object.entries(territoryBlueprints.stencil),
             ([loc, b]) => b.blueprint,
         );
         for (const [b, ps] of Object.entries(propsByBlueprint)) {
             const propLocs = ps.map(([loc, { prop, blueprint }]) => loc);
             const uniquePlots = uniqBy(propLocs, (l) =>
-                l.slice(0, blueprints[b as Templates].plotPrecision),
+                l.slice(0, blueprints[b as BluePrints].precision),
             );
             expect(propLocs.length).toBe(uniquePlots.length);
         }
@@ -245,7 +305,7 @@ describe("Blueprint Tests", () => {
                 topologyResultCache,
             },
         );
-        expect(Object.values(territoryBlueprints.props).length).toBe(0);
+        expect(Object.values(territoryBlueprints.stencil).length).toBe(0);
 
         // Test coastal areas
         var territoryBlueprints = await blueprintsAtTerritory(
@@ -259,7 +319,7 @@ describe("Blueprint Tests", () => {
             },
         );
         // Check prop locations on land
-        for (const loc of Object.keys(territoryBlueprints.props)) {
+        for (const loc of Object.keys(territoryBlueprints.stencil)) {
             const [biome, strength] = await biomeAtGeohash(loc, "geohash", {
                 topologyBufferCache,
                 topologyResultCache,

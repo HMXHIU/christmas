@@ -3,7 +3,7 @@ import { LRUMemoryCache } from "$lib/caches";
 export {
     biomeAtGeohashCache,
     biomeParametersAtCityCache,
-    blueprintsAtTerritoryCache,
+    blueprintsAtLocationCache,
     dungeonGraphCache,
     dungeonsAtTerritoryCache,
     isPublicKeyNPCCache,
@@ -26,5 +26,5 @@ const biomeAtGeohashCache = new LRUMemoryCache({ max: 1000 });
 const biomeParametersAtCityCache = new LRUMemoryCache({ max: 1000 });
 const dungeonGraphCache = new LRUMemoryCache({ max: 100 });
 const dungeonsAtTerritoryCache = new LRUMemoryCache({ max: 100 });
-const blueprintsAtTerritoryCache = new LRUMemoryCache({ max: 32 });
+const blueprintsAtLocationCache = new LRUMemoryCache({ max: 32 });
 const isPublicKeyNPCCache = new LRUMemoryCache<boolean>({ max: 1000 });

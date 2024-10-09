@@ -15,8 +15,8 @@ import { entityStats, mergeAdditive } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
 import {
-    blueprintOrder,
     blueprints,
+    blueprintsToSpawn,
 } from "$lib/crossover/world/settings/blueprint";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
@@ -40,7 +40,7 @@ import { substituteValues, substituteVariablesRecursively } from "$lib/utils";
 import { generatePin } from "$lib/utils/random";
 import { groupBy, uniq } from "lodash-es";
 import {
-    blueprintsAtTerritoryCache,
+    blueprintsAtLocationCache,
     topologyBufferCache,
     topologyResponseCache,
     topologyResultCache,
@@ -582,12 +582,12 @@ async function initializeGame() {
                 territory,
                 locationType,
                 blueprints,
-                blueprintOrder,
+                blueprintsToSpawn,
                 {
                     topologyBufferCache,
                     topologyResponseCache,
                     topologyResultCache,
-                    blueprintsAtTerritoryCache,
+                    blueprintsAtLocationCache,
                 },
             );
 
