@@ -1,4 +1,5 @@
 import type { NPCs } from "$lib/server/crossover/npc/types";
+import type { ItemVariables } from "../compendium";
 import type { GeohashLocation } from "../types";
 
 export type {
@@ -53,26 +54,26 @@ interface DungeonBluePrint {
     clusters: {
         [cluster: string]: {
             props?: {
-                [prop: string]: {
-                    min: number; // number of props in a cluster
-                    max: number;
-                    pattern: "random" | "center" | "peripheral"; // distribution of props in the cluster
-                };
-            };
+                ref?: string;
+                prop: string;
+                min: number; // number of props in a cluster
+                max: number;
+                pattern: "random" | "center" | "peripheral"; // distribution of props in the cluster
+                variables?: ItemVariables; // item variables to be set when spawning the item
+                overwrite?: Record<string, string | boolean | number>;
+            }[];
             npcs?: {
-                [npc in NPCs]: {
-                    min: number; // number of npcs in a cluster
-                    max: number;
-                    pattern: "random" | "center" | "peripheral"; // distribution of npcs in the cluster
-                };
-            };
+                npc: NPCs;
+                min: number; // number of npcs in a cluster
+                max: number;
+                pattern: "random" | "center" | "peripheral"; // distribution of npcs in the cluster
+            }[];
             beasts?: {
-                [beast: string]: {
-                    min: number; // number of monsters in a cluster
-                    max: number;
-                    pattern: "random" | "center" | "peripheral"; // distribution of monsters in the cluster
-                };
-            };
+                beast: string;
+                min: number; // number of monsters in a cluster
+                max: number;
+                pattern: "random" | "center" | "peripheral"; // distribution of monsters in the cluster
+            }[];
             min: number; // number of clusters
             max: number;
             pattern: "random" | "center" | "peripheral"; // distribution of clusters in the blueprint location
@@ -84,7 +85,10 @@ interface Stencil {
     [location: string]: {
         prop?: string;
         beast?: string;
-        npc?: string;
+        npc?: NPCs;
+        ref?: string;
+        variables?: ItemVariables;
+        overwrite?: Record<string, string | boolean | number>;
         blueprint: BluePrints | DungeonBluePrints;
     };
 }

@@ -8,20 +8,14 @@ import {
     getEntityId,
     getPlotsAtGeohash,
 } from "$lib/crossover/utils";
-import { blueprintsAtTerritory } from "$lib/crossover/world/blueprint";
 import { type PropAttributes } from "$lib/crossover/world/compendium";
 import { getAllDungeons } from "$lib/crossover/world/dungeons";
 import { entityStats, mergeAdditive } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
-import {
-    blueprints,
-    blueprintsToSpawn,
-} from "$lib/crossover/world/settings/blueprint";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     spatialAtPrecision,
-    topologicalAnalysis,
     worldSeed,
 } from "$lib/crossover/world/settings/world";
 import {
@@ -40,11 +34,9 @@ import { substituteValues, substituteVariablesRecursively } from "$lib/utils";
 import { generatePin } from "$lib/utils/random";
 import { groupBy, uniq } from "lodash-es";
 import {
-    blueprintsAtLocationCache,
-    topologyBufferCache,
-    topologyResponseCache,
-    topologyResultCache,
-} from "./caches";
+    instantiateBlueprintsAtTerritories,
+    instantiateBlueprintsInDungeons,
+} from "./blueprint";
 import { itemRepository, monsterRepository, worldRepository } from "./redis";
 import {
     chainOr,
@@ -569,44 +561,11 @@ async function spawnItemAtGeohash({
  * Initialize the game world (only need to do once)
  */
 async function initializeGame() {
-    const locationInstance = LOCATION_INSTANCE; // spawn in actual game instance
+    // Instantiate blueprints at ground level
+    await instantiateBlueprintsAtTerritories("geohash", LOCATION_INSTANCE);
 
-    // Spawn all blueprint items
-    const locationType: GeohashLocation = "geohash";
-    for (const [territory, { land }] of Object.entries(
-        await topologicalAnalysis(),
-    )) {
-        if (land > 0.2) {
-            console.info(`spawning items for blueprints at ${territory}`);
-            const bps = await blueprintsAtTerritory(
-                territory,
-                locationType,
-                blueprints,
-                blueprintsToSpawn,
-                {
-                    topologyBufferCache,
-                    topologyResponseCache,
-                    topologyResultCache,
-                    blueprintsAtLocationCache,
-                },
-            );
-
-            for (const [loc, { prop, blueprint }] of Object.entries(
-                bps.props,
-            )) {
-                try {
-                    await spawnItemAtGeohash({
-                        geohash: loc,
-                        locationType,
-                        prop,
-                        locationInstance,
-                    });
-                } catch (error: any) {
-                    console.warn(error.message);
-                }
-            }
-        }
-    }
+    // Instantiate blueprints for dungeons at d1
+    await instantiateBlueprintsInDungeons("d1", LOCATION_INSTANCE);
 
     // Create all dungeon entrances
     const dgs = await getAllDungeons("d1");
@@ -619,13 +578,13 @@ async function initializeGame() {
                         geohash: entrance,
                         locationType: "d1",
                         prop: compendium.dungeonentrance.prop,
-                        locationInstance,
+                        locationInstance: LOCATION_INSTANCE,
                     });
                     let enter = await spawnItemAtGeohash({
                         geohash: entrance,
                         locationType: "geohash",
                         prop: compendium.dungeonentrance.prop,
-                        locationInstance,
+                        locationInstance: LOCATION_INSTANCE,
                     });
                     // Configure the item targets to point to each other
                     exit.vars = parseItemVariables(
@@ -688,7 +647,6 @@ async function spawnWorldPOIs(
             // Spawn item
             if ("prop" in poi) {
                 // Substutite variables with `source` if provided
-
                 const variables = options?.source
                     ? substituteValues(poi.variables as any, {
                           source: options.source,

@@ -27,13 +27,31 @@ const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
         },
         clusters: {
             entrance: {
-                props: {
-                    dungeonentrance: {
+                props: [
+                    {
+                        ref: "entrance",
+                        prop: "dungeonentrance",
                         min: 1,
                         max: 1,
                         pattern: "center",
+                        variables: {
+                            target: "${exit.item}",
+                        },
+                        overwrite: {
+                            locT: "geohash", // entrance is at ground level
+                        },
                     },
-                },
+                    {
+                        ref: "exit",
+                        prop: "dungeonentrance",
+                        min: 1,
+                        max: 1,
+                        pattern: "center",
+                        variables: {
+                            target: "${entrance.item}",
+                        },
+                    },
+                ],
                 min: 1,
                 max: 1,
                 pattern: "center",
@@ -50,14 +68,14 @@ const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
         },
         clusters: {
             control: {
-                props: {
-                    woodendoor: {
-                        // TODO: change to control point
+                props: [
+                    {
+                        prop: "woodendoor", // TODO: change to control point
                         min: 1,
                         max: 1,
                         pattern: "center",
                     },
-                },
+                ],
                 min: 1,
                 max: 1,
                 pattern: "center",

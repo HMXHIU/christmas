@@ -57,15 +57,32 @@ describe("Blueprint Tests", () => {
             },
         );
 
+        console.log(JSON.stringify(dungeonBlueprint, null, 2));
+
         expect(dungeonBlueprint).toMatchObject({
             location: "w21z9",
             locationType: "d1",
             stencil: {
-                w21z6p8m: {
+                w21z6p8p: {
                     prop: "dungeonentrance",
+                    ref: "entrance",
+                    variables: {
+                        target: "${exit.item}",
+                    },
+                    overwrite: {
+                        locT: "geohash",
+                    },
                     blueprint: "entrance",
                 },
-                w21zd057: {
+                w21z6p8r: {
+                    prop: "dungeonentrance",
+                    ref: "exit",
+                    variables: {
+                        target: "${entrance.item}",
+                    },
+                    blueprint: "entrance",
+                },
+                w21zd055: {
                     prop: "woodendoor",
                     blueprint: "control",
                 },

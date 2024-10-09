@@ -29,4 +29,10 @@ test("Test Utils", async () => {
     expect(substituteVariables("{{point.y}}", { point: { x: 0, y: 1 } })).toBe(
         1,
     );
+
+    /**
+     * Test `substituteVariablesRecursively`
+     */
+
+    // substituteVariablesRecursively
 });
