@@ -55,6 +55,7 @@ export {
     minifiedEntity,
     oddGeohashCharacters,
     REGEX_STRIP_ENTITY_TYPE,
+    territoriesIterator,
 };
 
 const REGEX_STRIP_ENTITY_TYPE = /^(monster_|item_)/;
@@ -365,6 +366,14 @@ function getPlotsAtGeohash(
 
 const oddGeohashCharacters = "bcfguvyz89destwx2367kmqr0145hjnp";
 const evenGeohashCharacters = "prxznqwyjmtvhksu57eg46df139c028b";
+
+function* territoriesIterator() {
+    for (const u of oddGeohashCharacters) {
+        for (const v of evenGeohashCharacters) {
+            yield u + v;
+        }
+    }
+}
 
 /**
  * Generates an array of geohashes representing the children of the given geohash.

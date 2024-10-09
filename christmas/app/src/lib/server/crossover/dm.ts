@@ -40,6 +40,7 @@ import {
 import { itemRepository, monsterRepository, worldRepository } from "./redis";
 import {
     chainOr,
+    itemsInGeohashQuerySet,
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
     worldsContainingGeohashQuerySet,
@@ -486,6 +487,8 @@ async function spawnItemAtGeohash({
     variables,
     owner,
     configOwner,
+    ignoreCollider,
+    destroyCollidingEntities,
 }: {
     geohash: string;
     locationType: GeohashLocation;
@@ -494,6 +497,8 @@ async function spawnItemAtGeohash({
     owner?: string;
     configOwner?: string;
     variables?: Record<string, any>;
+    ignoreCollider?: boolean;
+    destroyCollidingEntities?: boolean;
 }): Promise<ItemEntity> {
     // Owner defaults to public
     owner ??= "";
@@ -525,8 +530,22 @@ async function spawnItemAtGeohash({
     // Calculate location
     const location = calculateLocation(geohash, width, height);
 
+    // Destroy colliding entities at spawn point
+    if (destroyCollidingEntities) {
+        for (const item of (await itemsInGeohashQuerySet(
+            location,
+            locationType,
+            locationInstance,
+        ).returnAll()) as ItemEntity[]) {
+            if (item.cld) {
+                await itemRepository.remove(item.item);
+            }
+        }
+    }
+
     // Check location for traversability
     if (
+        !ignoreCollider &&
         !(await isLocationTraversable(location, locationType, locationInstance))
     ) {
         throw new Error(`Cannot spawn ${prop} at ${location}`);
@@ -535,7 +554,6 @@ async function spawnItemAtGeohash({
     // Get item count
     const count = await itemRepository.search().count();
     const itemId = `item_${prop}${count}${generatePin(4)}`;
-
     const entity: ItemEntity = {
         item: itemId,
         name: attributes.name,

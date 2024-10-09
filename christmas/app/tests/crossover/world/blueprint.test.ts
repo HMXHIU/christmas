@@ -18,17 +18,71 @@ import {
     stencilFromBlueprint,
 } from "$lib/crossover/world/blueprint/utils";
 import { generateDungeonGraphsForTerritory } from "$lib/crossover/world/dungeons";
+import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import {
     blueprints,
     dungeonBlueprints,
     dungeonBlueprintsToSpawn,
 } from "$lib/crossover/world/settings/blueprint";
+import { instantiateBlueprintsInDungeons } from "$lib/server/crossover/blueprint";
+import type { ItemEntity } from "$lib/server/crossover/types";
+import { itemVariableValue } from "$lib/server/crossover/utils";
 import { groupBy, uniqBy } from "lodash-es";
 import { beforeAll, describe, expect, test } from "vitest";
 
 beforeAll(async () => {});
 
 describe("Blueprint Tests", () => {
+    test("Test Instantiate Dungeon Blueprints", async () => {
+        const spawnedEntities = await instantiateBlueprintsInDungeons(
+            "d1",
+            LOCATION_INSTANCE,
+            ["w2"],
+        );
+
+        // Check items spawned
+        expect(spawnedEntities).toMatchObject([
+            {
+                prop: "dungeonentrance",
+                loc: ["w21z6p8p", "w21z6p8r", "w21z6p8n", "w21z6p8q"],
+                locT: "geohash", // check at geohash
+                locI: "@",
+            },
+            {
+                prop: "dungeonentrance",
+                loc: ["w21z6p8r", "w21z6p8x", "w21z6p8q", "w21z6p8w"],
+                locT: "d1", // check at d1
+                locI: "@",
+            },
+            {
+                prop: "woodendoor",
+                loc: ["w21zd055"],
+                locT: "d1",
+                locI: "@",
+                state: "default",
+                vars: {},
+            },
+        ]);
+
+        // check entrances configured correctly
+        const entrance = spawnedEntities[0];
+        const exit = spawnedEntities[1];
+        const entranceTarget = (
+            (await itemVariableValue(
+                entrance as ItemEntity,
+                "target",
+            )) as ItemEntity
+        ).item;
+        const exitTarget = (
+            (await itemVariableValue(
+                exit as ItemEntity,
+                "target",
+            )) as ItemEntity
+        ).item;
+        expect(entranceTarget).toBe(exit.item);
+        expect(exitTarget).toBe(entrance.item);
+    });
+
     test("Test Dungeon Blueprints", async () => {
         // Get the dungeon
         let dungeonGraphs = await generateDungeonGraphsForTerritory(
@@ -56,9 +110,6 @@ describe("Blueprint Tests", () => {
                 dungeonGraphCache: dungeonGraphCache,
             },
         );
-
-        console.log(JSON.stringify(dungeonBlueprint, null, 2));
-
         expect(dungeonBlueprint).toMatchObject({
             location: "w21z9",
             locationType: "d1",

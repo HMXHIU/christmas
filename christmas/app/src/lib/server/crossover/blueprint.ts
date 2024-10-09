@@ -1,6 +1,7 @@
 import {
     evenGeohashCharacters,
     oddGeohashCharacters,
+    territoriesIterator,
 } from "$lib/crossover/utils";
 import {
     blueprintsAtDungeon,
@@ -79,139 +80,139 @@ async function instantiateBlueprintsAtTerritories(
 async function instantiateBlueprintsInDungeons(
     locationType: GeohashLocation = "d1",
     locationInstance: string = LOCATION_INSTANCE,
+    territories?: string[],
 ): Promise<ActorEntity[]> {
     const spawnedEntities: ActorEntity[] = [];
 
     // Iterate over all territories
-    for (const u of oddGeohashCharacters) {
-        for (const v of evenGeohashCharacters) {
-            const territory = u + v;
-
-            // Instantiate dungeon blueprints
-            const dungeonGraphs = await generateDungeonGraphsForTerritory(
-                territory,
+    territories = territories ?? Array.from(territoriesIterator());
+    for (const territory of territories) {
+        // Instantiate dungeon blueprints
+        const dungeonGraphs = await generateDungeonGraphsForTerritory(
+            territory,
+            locationType,
+            {
+                dungeonGraphCache,
+                dungeonsAtTerritoryCache,
+                topologyResponseCache,
+                topologyResultCache,
+                topologyBufferCache,
+            },
+        );
+        for (const graph of Object.values(dungeonGraphs)) {
+            const dungeonBlueprint = await blueprintsAtDungeon(
+                graph.dungeon,
                 locationType,
+                dungeonBlueprints,
+                dungeonBlueprintsToSpawn,
                 {
+                    blueprintsAtLocationCache,
                     dungeonGraphCache,
-                    dungeonsAtTerritoryCache,
-                    topologyResponseCache,
-                    topologyResultCache,
-                    topologyBufferCache,
                 },
             );
-            for (const graph of Object.values(dungeonGraphs)) {
-                const dungeonBlueprint = await blueprintsAtDungeon(
-                    graph.dungeon,
-                    locationType,
-                    dungeonBlueprints,
-                    dungeonBlueprintsToSpawn,
-                    {
-                        blueprintsAtLocationCache,
-                        dungeonGraphCache,
-                    },
-                );
 
-                const referencedEntities: Record<string, ActorEntity> = {}; // we only need 1 for variable substitution
-                const entitiesToConfigure: {
-                    entity: ActorEntity;
-                    variables?: ItemVariables;
-                    overwrite?: Record<string, string | boolean | number>;
-                }[] = [];
+            const referencedEntities: Record<string, ActorEntity> = {}; // we only need 1 for variable substitution
+            const entitiesToConfigure: {
+                entity: ActorEntity;
+                variables?: ItemVariables;
+                overwrite?: Record<string, string | boolean | number>;
+            }[] = [];
 
-                // Spawn entities
-                for (const [
-                    loc,
-                    { prop, beast, npc, ref, variables, overwrite },
-                ] of Object.entries(dungeonBlueprint.stencil)) {
-                    try {
-                        if (prop) {
-                            const item = await spawnItemAtGeohash({
-                                geohash: loc,
-                                locationType,
-                                prop,
-                                locationInstance,
-                            });
-                            if (ref && !referencedEntities[ref]) {
-                                referencedEntities[ref] = item;
-                            }
-                            if (variables || overwrite) {
-                                entitiesToConfigure.push({
-                                    entity: item,
-                                    overwrite,
-                                    variables,
-                                });
-                            }
-                            spawnedEntities.push(item);
+            // Spawn entities
+            for (const [
+                loc,
+                { prop, beast, npc, ref, variables, overwrite },
+            ] of Object.entries(dungeonBlueprint.stencil)) {
+                try {
+                    if (prop) {
+                        const item = await spawnItemAtGeohash({
+                            geohash: loc,
+                            locationType,
+                            prop,
+                            locationInstance,
+                            destroyCollidingEntities: true, // prevent creating multiple of the same entities
+                            ignoreCollider: true, // should spawn even in untraversable locations
+                        });
+                        if (ref && !referencedEntities[ref]) {
+                            referencedEntities[ref] = item;
                         }
-                        if (beast) {
-                            const monster = await spawnMonster({
-                                geohash: loc,
-                                locationType,
-                                beast,
-                                locationInstance,
-                            });
-                            if (ref && !referencedEntities[ref]) {
-                                referencedEntities[ref] = monster;
-                            }
-                            if (variables || overwrite) {
-                                entitiesToConfigure.push({
-                                    entity: monster,
-                                    overwrite,
-                                    variables,
-                                });
-                            }
-                            spawnedEntities.push(monster);
-                        }
-                        if (npc) {
-                            const player = await generateNPC(npc, {
-                                demographic: {},
-                                appearance: {},
-                                geohash: loc,
-                                locationInstance,
-                                locationType,
-                            });
-                            if (ref && !referencedEntities[ref]) {
-                                referencedEntities[ref] = player;
-                            }
-                            if (variables || overwrite) {
-                                entitiesToConfigure.push({
-                                    entity: player,
-                                    overwrite,
-                                    variables,
-                                });
-                            }
-                            spawnedEntities.push(player);
-                        }
-                    } catch (error: any) {
-                        console.warn(error.message);
-                    }
-                }
-
-                // Configure entities
-                for (const {
-                    entity,
-                    variables,
-                    overwrite,
-                } of entitiesToConfigure) {
-                    // Substitute and set entity vars
-                    if (entity.prop && variables) {
-                        entity.vars = parseItemVariables(
-                            substituteVariablesRecursively(
+                        if (variables || overwrite) {
+                            entitiesToConfigure.push({
+                                entity: item,
+                                overwrite,
                                 variables,
-                                referencedEntities,
-                            ),
-                            (entity as ItemEntity).prop,
-                        );
-                    }
-                    // Substitute and set entity properties
-                    if (overwrite) {
-                        for (const [k, v] of Object.entries(overwrite)) {
-                            entity[k] = v;
+                            });
                         }
+                        spawnedEntities.push(item);
                     }
-                    // Save entity
-                    await saveEntity(entity);
+                    if (beast) {
+                        const monster = await spawnMonster({
+                            geohash: loc,
+                            locationType,
+                            beast,
+                            locationInstance,
+                        });
+                        if (ref && !referencedEntities[ref]) {
+                            referencedEntities[ref] = monster;
+                        }
+                        if (variables || overwrite) {
+                            entitiesToConfigure.push({
+                                entity: monster,
+                                overwrite,
+                                variables,
+                            });
+                        }
+                        spawnedEntities.push(monster);
+                    }
+                    if (npc) {
+                        const player = await generateNPC(npc, {
+                            demographic: {},
+                            appearance: {},
+                            geohash: loc,
+                            locationInstance,
+                            locationType,
+                        });
+                        if (ref && !referencedEntities[ref]) {
+                            referencedEntities[ref] = player;
+                        }
+                        if (variables || overwrite) {
+                            entitiesToConfigure.push({
+                                entity: player,
+                                overwrite,
+                                variables,
+                            });
+                        }
+                        spawnedEntities.push(player);
+                    }
+                } catch (error: any) {
+                    console.warn(error.message);
                 }
+            }
+
+            // Configure entities
+            for (const {
+                entity,
+                variables,
+                overwrite,
+            } of entitiesToConfigure) {
+                // Substitute and set entity vars
+                if (entity.prop && variables) {
+                    entity.vars = parseItemVariables(
+                        substituteVariablesRecursively(
+                            variables,
+                            referencedEntities,
+                        ),
+                        (entity as ItemEntity).prop,
+                    );
+                }
+                // Substitute and set entity properties
+                if (overwrite) {
+                    for (const [k, v] of Object.entries(overwrite)) {
+                        entity[k] = v;
+                    }
+                }
+                // Save entity
+                await saveEntity(entity);
             }
         }
     }
