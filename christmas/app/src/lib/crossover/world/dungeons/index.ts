@@ -1,9 +1,5 @@
 import type { CacheInterface } from "$lib/caches";
-import {
-    sampleFrom,
-    seededRandom,
-    stringToRandomNumber,
-} from "$lib/utils/random";
+import { seededRandom, stringToRandomNumber } from "$lib/utils/random";
 import {
     autoCorrectGeohashPrecision,
     evenGeohashCharacters,
@@ -28,8 +24,6 @@ export {
 
 const MIN_ROOMS = 12;
 const MAX_ROOMS = 18;
-const MIN_ENTRANCES = 1;
-const MAX_ENTRANCES = 3;
 
 const ROOM_UNIT_PRECISION = worldSeed.spatial.house.precision;
 const DUNGEON_PRECISION = worldSeed.spatial.town.precision;
@@ -175,10 +169,8 @@ async function generateDungeonGraph(
     const seed = stringToRandomNumber(dungeon + locationType);
     const rv = seededRandom(seed);
 
-    // Determine number of rooms and entrances
+    // Determine number of rooms
     const numRooms = Math.floor(rv * (MAX_ROOMS - MIN_ROOMS + 1)) + MIN_ROOMS;
-    const numEntrances =
-        Math.floor(rv * (MAX_ENTRANCES - MIN_ENTRANCES + 1)) + MIN_ENTRANCES;
 
     // Generate rooms
     let rooms: Room[] = generateRoomsBSP({
@@ -188,23 +180,6 @@ async function generateDungeonGraph(
         maxDepth: 10,
         numRooms,
     });
-
-    // Generate room entrances
-    const roomsWithEntrances = sampleFrom(rooms, numEntrances, seed);
-    for (const r of roomsWithEntrances) {
-        const plotWithEntrance = sampleFrom(
-            Array.from(r.plots).sort(),
-            1,
-            seed,
-        )[0];
-        r.entrances.push(
-            autoCorrectGeohashPrecision(
-                plotWithEntrance,
-                worldSeed.spatial.unit.precision,
-                seededRandom(stringToRandomNumber(plotWithEntrance)),
-            ),
-        );
-    }
 
     // Connect rooms with corridors
     const corridors = new Set<string>();

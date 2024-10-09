@@ -175,7 +175,6 @@ function generateRoomsBSP({
             plots,
             plotPrecision: unitPrecision,
             connections: [],
-            entrances: [],
         });
     }
 

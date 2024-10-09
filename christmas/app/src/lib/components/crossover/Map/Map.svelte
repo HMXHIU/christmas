@@ -16,8 +16,8 @@
         type BluePrints,
     } from "$lib/crossover/world/blueprint";
     import {
-        blueprintsToSpawn,
         blueprints,
+        blueprintsToSpawn,
     } from "$lib/crossover/world/settings/blueprint";
     import { worldSeed } from "$lib/crossover/world/settings/world";
     import {
@@ -160,7 +160,7 @@
         app.stage.addChild(p);
 
         // Dungeon entrance sprites
-        const dungeonEntrances = await dungeonEntrancesNeaby(
+        const dungeonEntrances = await dungeonEntrancesNearby(
             playerMapPosition.mapId,
             playerMapPosition.locationType,
         );
@@ -213,7 +213,7 @@
         }
     }
 
-    async function dungeonEntrancesNeaby(
+    async function dungeonEntrancesNearby(
         territory: string,
         locationType: GeohashLocation,
     ): Promise<Item[]> {

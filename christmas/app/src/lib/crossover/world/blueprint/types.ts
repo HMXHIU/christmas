@@ -39,8 +39,6 @@ interface BluePrint {
     };
 }
 
-// Todo: Add DungeonBluePrints + BluePrint, use it to spawn entrances, control points, npcs, monsters
-
 type DungeonBluePrints = "entrance" | "control";
 
 interface DungeonBluePrint {

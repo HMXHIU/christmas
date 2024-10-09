@@ -7,7 +7,6 @@ interface Room {
     plots: Set<string>;
     plotPrecision: number;
     connections: string[]; // to other rooms
-    entrances: string[]; // to connect above to below ground
 }
 
 interface DungeonGraph {

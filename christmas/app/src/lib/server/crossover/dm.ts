@@ -9,7 +9,6 @@ import {
     getPlotsAtGeohash,
 } from "$lib/crossover/utils";
 import { type PropAttributes } from "$lib/crossover/world/compendium";
-import { getAllDungeons } from "$lib/crossover/world/dungeons";
 import { entityStats, mergeAdditive } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
@@ -584,49 +583,6 @@ async function initializeGame() {
 
     // Instantiate blueprints for dungeons at d1
     await instantiateBlueprintsInDungeons("d1", LOCATION_INSTANCE);
-
-    // Create all dungeon entrances
-    const dgs = await getAllDungeons("d1");
-    for (const { rooms } of Object.values(dgs)) {
-        for (const { entrances } of rooms) {
-            for (const entrance of entrances) {
-                try {
-                    // Spawn entrance at geohash and d1 and link them together
-                    let exit = await spawnItemAtGeohash({
-                        geohash: entrance,
-                        locationType: "d1",
-                        prop: compendium.dungeonentrance.prop,
-                        locationInstance: LOCATION_INSTANCE,
-                    });
-                    let enter = await spawnItemAtGeohash({
-                        geohash: entrance,
-                        locationType: "geohash",
-                        prop: compendium.dungeonentrance.prop,
-                        locationInstance: LOCATION_INSTANCE,
-                    });
-                    // Configure the item targets to point to each other
-                    exit.vars = parseItemVariables(
-                        { target: enter.item },
-                        exit.prop,
-                    );
-                    exit = (await itemRepository.save(
-                        exit.item,
-                        exit,
-                    )) as ItemEntity;
-                    enter.vars = parseItemVariables(
-                        { target: exit.item },
-                        enter.prop,
-                    );
-                    enter = (await itemRepository.save(
-                        enter.item,
-                        enter,
-                    )) as ItemEntity;
-                } catch (error: any) {
-                    console.warn(error.message);
-                }
-            }
-        }
-    }
 }
 
 async function spawnWorldPOIs(
