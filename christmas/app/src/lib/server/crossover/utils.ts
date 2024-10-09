@@ -237,7 +237,6 @@ function canUseItem(
     }
 
     // Check has enough charges or durability
-
     if (item.chg < propUtility.cost.charges) {
         return {
             canUse: false,

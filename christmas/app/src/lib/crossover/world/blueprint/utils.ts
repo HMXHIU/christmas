@@ -16,8 +16,14 @@ function sampleChildrenGeohashesAtPrecision(
     pattern: "random" | "center" | "peripheral",
     count: number,
     seed: number,
+    predicate?: (location: string) => boolean,
 ): string[] {
-    const locations = childrenGeohashesAtPrecision(location, precision);
+    let locations = childrenGeohashesAtPrecision(location, precision);
+
+    // Filter using predicate if provided
+    if (predicate) {
+        locations = locations.filter(predicate);
+    }
 
     switch (pattern) {
         case "random":

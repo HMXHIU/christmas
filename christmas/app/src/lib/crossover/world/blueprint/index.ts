@@ -119,6 +119,7 @@ async function blueprintsAtDungeon(
                         ref,
                         prop,
                         pattern,
+                        unique,
                         min,
                         max,
                         variables,
@@ -131,21 +132,24 @@ async function blueprintsAtDungeon(
                             );
 
                             // Determine the location of the cluster where the prop should be spawned
-                            const propLocations = sampleFrom(
-                                childrenGeohashesAtPrecision(
+                            const propLocations =
+                                sampleChildrenGeohashesAtPrecision(
                                     clusterLocation,
                                     worldSeed.spatial.unit.precision,
-                                ).filter((g) => !usedPropLocations.has(g)),
-                                seededRandomNumberBetween(min, max, seed),
-                                seed,
-                            );
+                                    pattern,
+                                    seededRandomNumberBetween(min, max, seed),
+                                    seed,
+                                    (g) => !usedPropLocations.has(g),
+                                );
+
                             for (const geohash of propLocations) {
                                 dungeonBlueprint.stencil[geohash] = {
+                                    blueprint: blueprint.template,
                                     prop,
                                     ref,
                                     variables,
                                     overwrite,
-                                    blueprint: blueprint.template,
+                                    unique,
                                 };
                                 usedPropLocations.add(geohash);
                             }
@@ -154,7 +158,7 @@ async function blueprintsAtDungeon(
                 }
 
                 if (beasts) {
-                    for (const { beast, min, max, pattern } of beasts) {
+                    for (const { beast, min, max, pattern, unique } of beasts) {
                         // Generate stencil (beast locations)
                         for (const clusterLocation of chosenClusters) {
                             let seed = stringToRandomNumber(
@@ -172,8 +176,9 @@ async function blueprintsAtDungeon(
                                 );
                             for (const geohash of beastLocations) {
                                 dungeonBlueprint.stencil[geohash] = {
-                                    beast,
                                     blueprint: blueprint.template,
+                                    beast,
+                                    unique,
                                 };
                             }
                         }
@@ -181,7 +186,7 @@ async function blueprintsAtDungeon(
                 }
 
                 if (npcs) {
-                    for (const { npc, min, max, pattern } of npcs) {
+                    for (const { npc, min, max, pattern, unique } of npcs) {
                         // Generate stencil (npc locations)
                         for (const clusterLocation of chosenClusters) {
                             let seed = stringToRandomNumber(
@@ -199,8 +204,9 @@ async function blueprintsAtDungeon(
                                 );
                             for (const geohash of npcLocations) {
                                 dungeonBlueprint.stencil[geohash] = {
-                                    npc,
                                     blueprint: blueprint.template,
+                                    npc,
+                                    unique,
                                 };
                             }
                         }

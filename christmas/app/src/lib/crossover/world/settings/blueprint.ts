@@ -40,6 +40,7 @@ const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
                         overwrite: {
                             locT: "geohash", // entrance is at ground level
                         },
+                        unique: true,
                     },
                     {
                         ref: "exit",
@@ -50,6 +51,7 @@ const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
                         variables: {
                             target: "${entrance.item}",
                         },
+                        unique: true,
                     },
                 ],
                 min: 1,
@@ -74,6 +76,7 @@ const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
                         min: 1,
                         max: 1,
                         pattern: "center",
+                        unique: true,
                     },
                 ],
                 min: 1,

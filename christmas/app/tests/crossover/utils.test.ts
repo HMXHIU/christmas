@@ -2,6 +2,7 @@ import {
     borderingGeohashes,
     calculateLocation,
     childrenGeohashes,
+    entityInRange,
     expandGeohashes,
     filterSortEntitiesInRange,
     geohashNeighbour,
@@ -13,8 +14,8 @@ import {
 } from "$lib/crossover/utils";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { spawnMonster } from "$lib/server/crossover/dm";
-import { sampleFrom } from "$lib/utils";
 import { KdTree } from "$lib/utils/kdtree";
+import { sampleFrom } from "$lib/utils/random";
 import { beforeAll, beforeEach, describe, expect, it, test } from "vitest";
 import { generateRandomGeohash } from "./utils";
 
@@ -126,10 +127,10 @@ describe("Test Utils", () => {
         expect(samples.length).toBe(2);
         expect(samples).toMatchObject([
             {
-                i: 2,
+                i: 1,
             },
             {
-                i: 3,
+                i: 2,
             },
         ]);
         // Test reproducibility
@@ -194,6 +195,19 @@ describe("Test Utils", () => {
                 1,
             ),
         ).toMatchObject([]);
+
+        /*
+         * Test `entityInRange`
+         */
+
+        expect(entityInRange(goblin, giantSpider, 2)).toMatchObject([true, 2]);
+        expect(entityInRange(goblin, giantSpider, 1)).toMatchObject([false, 2]);
+
+        // Check range=-1 in range even if locT and locI are different
+        goblin.locT = "d1";
+        goblin.locI = goblin.monster;
+        expect(entityInRange(goblin, giantSpider, 2)).toMatchObject([false, 0]);
+        expect(entityInRange(goblin, giantSpider, -1)).toMatchObject([true, 0]);
     });
 
     test("Test Geohash", async () => {

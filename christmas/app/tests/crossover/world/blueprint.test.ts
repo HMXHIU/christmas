@@ -44,19 +44,19 @@ describe("Blueprint Tests", () => {
         expect(spawnedEntities).toMatchObject([
             {
                 prop: "dungeonentrance",
-                loc: ["w21z6p8p", "w21z6p8r", "w21z6p8n", "w21z6p8q"],
+                loc: ["w21z6p8m", "w21z6p8t", "w21z6p8k", "w21z6p8s"],
                 locT: "geohash", // check at geohash
                 locI: "@",
             },
             {
                 prop: "dungeonentrance",
-                loc: ["w21z6p8r", "w21z6p8x", "w21z6p8q", "w21z6p8w"],
+                loc: ["w21z6p8t", "w21z6p8v", "w21z6p8s", "w21z6p8u"],
                 locT: "d1", // check at d1
                 locI: "@",
             },
             {
                 prop: "woodendoor",
-                loc: ["w21zd055"],
+                loc: ["w21zd057"],
                 locT: "d1",
                 locI: "@",
                 state: "default",

@@ -49,14 +49,13 @@ import type {
 import { ObjectStorage } from "../../objectStorage";
 import { getOrCreatePlayer, savePlayerState } from "../../user";
 import { getAvatars } from "../avatar";
-import { isPublicKeyNPCCache } from "../caches";
 import {
     verifyP2PTransaction,
     type P2PGiveTransaction,
     type P2PLearnTransaction,
     type P2PTradeTransaction,
 } from "../player";
-import { fetchEntity, saveEntity } from "../redis/utils";
+import { saveEntity } from "../redis/utils";
 import { npcs } from "../settings/npc";
 import {
     npcRespondToGive,
@@ -67,7 +66,7 @@ import {
 } from "./actions";
 import type { NPC, NPCs } from "./types";
 
-export { generateNPC, generateNPCMetadata, npcRespondToEvent };
+export { createNPCMetadata, npcRespondToEvent, spawnNPC };
 
 async function npcRespondToEvent(
     event: CTAEvent | FeedEvent,
@@ -116,7 +115,7 @@ async function npcRespondToEvent(
     }
 }
 
-async function generateNPC(
+async function spawnNPC(
     npc: NPCs,
     options: {
         name?: string;
@@ -126,30 +125,27 @@ async function generateNPC(
         locationType?: LocationType;
         demographic: Partial<PlayerDemographic>;
         appearance: Partial<PlayerAppearance>;
+        uniqueSuffix?: string;
     },
 ): Promise<PlayerEntity> {
-    // Generate keys (store private keys in MINIO)
-    const keypair = Keypair.generate();
-    const playerId = keypair.publicKey.toString();
-    const region = "@@@"; // special region reserved for NPCs
-
-    // Default location for NPCs is in its own world in limbo
-    const locationInstance = options.locationInstance ?? playerId;
-    const locationType = options.locationType ?? "limbo";
-    const geohash = options.geohash ?? playerId;
-
-    // Get instance
-    const numInstances = await ObjectStorage.countObjects({
+    // Generate the npc id
+    const npcCount = await ObjectStorage.countObjects({
         owner: PUBLIC_FEE_PAYER_PUBKEY,
         bucket: "npc",
         prefix: npc,
     });
-    const npcInstanceId = `${npc}_${numInstances}${generatePin(4)}`; // prevent race condition by generating additional pin
+    const suffix = options?.uniqueSuffix ?? `${npcCount}${generatePin(4)}`; // prevent race condition by generating additional pin
+    const npcId = `${npc}/${suffix}`; // `npcId` is used for identifying the npc not the it's public key
+
+    // Default location for NPCs is in its own world in limbo
+    const locationInstance = options.locationInstance ?? npcId;
+    const locationType = options.locationType ?? "limbo";
+    const geohash = options.geohash ?? npcId;
 
     // Generate and validate NPC player metadata
     let playerMetadata = await PlayerMetadataSchema.parse(
-        await generateNPCMetadata({
-            player: playerId,
+        await createNPCMetadata({
+            player: npcId,
             demographic: options.demographic,
             appearance: options.appearance,
             npc: npcs[npc],
@@ -157,28 +153,37 @@ async function generateNPC(
             description: options.description,
         }),
     );
-    playerMetadata.npc = npcInstanceId; // store the npc instance id on MINIO
+    playerMetadata.npc = npcId; // store the npc instance id on MINIO
 
     // Create player
-    playerMetadata = await getOrCreatePlayer(playerId, playerMetadata);
+    playerMetadata = await getOrCreatePlayer(npcId, playerMetadata);
 
-    // Store the secret keys in MINIO
-    await ObjectStorage.putJSONObject({
-        owner: PUBLIC_FEE_PAYER_PUBKEY, // owned by the program (who can access all the NPCs private keys if needed)
-        bucket: "npc",
-        name: `${npc}/${playerId}`,
-        data: {
-            npc,
-            instance: npcInstanceId,
-            publicKey: playerId,
-            secretKey: keypair.secretKey,
-        },
-    });
+    // Store the keypair for npc in MINIO
+    if (
+        await !ObjectStorage.objectExists({
+            bucket: "npc",
+            name: npcId,
+            owner: PUBLIC_FEE_PAYER_PUBKEY,
+        })
+    ) {
+        const keypair = Keypair.generate();
+        await ObjectStorage.putJSONObject({
+            owner: PUBLIC_FEE_PAYER_PUBKEY, // owned by the program (who can access all the NPCs private keys if needed)
+            bucket: "npc",
+            name: npcId,
+            data: {
+                npc,
+                instance: npcId,
+                publicKey: keypair.publicKey.toString(),
+                secretKey: keypair.secretKey,
+            },
+        });
+    }
 
     // Get or load player entity
-    let player = await loadPlayerEntity(playerId, {
+    let player = await loadPlayerEntity(npcId, {
         geohash,
-        region,
+        region: "@@@", // special region reserved for NPCs,
         loggedIn: true,
         locationInstance,
         locationType,
@@ -186,12 +191,12 @@ async function generateNPC(
 
     // Save player state & entity
     player = await saveEntity(player);
-    await savePlayerState(playerId); // must save after player entity
+    await savePlayerState(npcId); // must save after player entity
 
     return player;
 }
 
-async function generateNPCMetadata({
+async function createNPCMetadata({
     player,
     demographic,
     appearance,
@@ -271,14 +276,4 @@ async function generateNPCMetadata({
         demographic: demographic as PlayerDemographic,
         appearance: appearance as PlayerAppearance,
     };
-}
-
-async function isPublicKeyNPC(publicKey: string): Promise<boolean> {
-    const cached = await isPublicKeyNPCCache.get(publicKey);
-    if (cached !== undefined) {
-        return cached;
-    }
-    const isNPC = Boolean((await fetchEntity(publicKey))?.npc);
-    await isPublicKeyNPCCache.set(publicKey, isNPC);
-    return isNPC;
 }

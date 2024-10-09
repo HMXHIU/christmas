@@ -752,7 +752,7 @@ function isEntityAlive(entity: Actor): boolean {
 }
 
 function entityInRange(
-    self: Creature,
+    self: Actor,
     target: Actor,
     range: number,
     diagonal: boolean = true,
@@ -769,11 +769,16 @@ function entityInRange(
             return [false, 0];
         }
     }
-    // Check if self and target are in the same locT and locI
-    else if (target.locI !== self.locI || target.locT !== self.locT) {
-        return [false, 0];
+
+    // range=-1, always in range even if locI and locT and different
+    if (range < 0) {
+        return [true, 0];
     }
 
+    // Check if self and target are in the same locT and locI
+    if (target.locI !== self.locI || target.locT !== self.locT) {
+        return [false, 0];
+    }
     const { row: r1, col: c1 } = geohashToGridCell(self.loc[0]);
     const { row: r2, col: c2 } = geohashToGridCell(target.loc[0]);
 

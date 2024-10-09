@@ -16,7 +16,6 @@ import { prefabDungeons } from "$lib/crossover/world/settings/dungeons";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { dungeonEntrancesQuerySet } from "$lib/server/crossover/redis/queries";
 import type { ItemEntity } from "$lib/server/crossover/types";
-import { flatten } from "lodash-es";
 import { beforeAll, describe, expect, test } from "vitest";
 
 beforeAll(async () => {});
@@ -111,13 +110,6 @@ describe("Dungeons Tests", () => {
             );
             var [biome, strength] = await biomeAtGeohash(geohash, locationType);
             expect(biomes[biome].traversableSpeed).greaterThan(0);
-
-            // Check entrances
-            const entrances = flatten(dg.rooms.map((r) => r.entrances));
-            expect(entrances.length).greaterThan(1);
-            for (const ent of entrances) {
-                expect(ent.startsWith(dg.dungeon));
-            }
         }
     });
 

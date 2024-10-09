@@ -1,6 +1,6 @@
 import { crossoverCmdSay } from "$lib/crossover/client";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
-import { generateNPC } from "$lib/server/crossover/npc";
+import { spawnNPC } from "$lib/server/crossover/npc";
 import { generateInnKeeperQuests } from "$lib/server/crossover/quests/generator";
 import { questWritsQuerySet } from "$lib/server/crossover/redis/queries";
 import type { ItemEntity } from "$lib/server/crossover/types";
@@ -19,7 +19,7 @@ test("Test InnKeeper Generates Quests Automatically", async () => {});
 
 test("Test Generate Generic Quests", async () => {
     // Generate innKeeper
-    const innKeeper = await generateNPC("innkeeper", {
+    const innKeeper = await spawnNPC("innkeeper", {
         demographic: {},
         appearance: {},
         geohash: playerOne.loc[0],

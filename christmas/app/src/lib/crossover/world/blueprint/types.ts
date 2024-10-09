@@ -59,18 +59,21 @@ interface DungeonBluePrint {
                 pattern: "random" | "center" | "peripheral"; // distribution of props in the cluster
                 variables?: ItemVariables; // item variables to be set when spawning the item
                 overwrite?: Record<string, string | boolean | number>;
+                unique?: boolean;
             }[];
             npcs?: {
                 npc: NPCs;
                 min: number; // number of npcs in a cluster
                 max: number;
                 pattern: "random" | "center" | "peripheral"; // distribution of npcs in the cluster
+                unique?: boolean;
             }[];
             beasts?: {
                 beast: string;
                 min: number; // number of monsters in a cluster
                 max: number;
                 pattern: "random" | "center" | "peripheral"; // distribution of monsters in the cluster
+                unique?: boolean;
             }[];
             min: number; // number of clusters
             max: number;
@@ -81,13 +84,14 @@ interface DungeonBluePrint {
 
 interface Stencil {
     [location: string]: {
+        blueprint: BluePrints | DungeonBluePrints;
         prop?: string;
         beast?: string;
         npc?: NPCs;
         ref?: string;
         variables?: ItemVariables;
         overwrite?: Record<string, string | boolean | number>;
-        blueprint: BluePrints | DungeonBluePrints;
+        unique?: boolean;
     };
 }
 

@@ -193,12 +193,14 @@ async function spawnMonster({
     locationInstance,
     beast,
     additionalSkills,
+    uniqueSuffix,
 }: {
     geohash: string;
     locationType: GeohashLocation;
     locationInstance: string;
     beast: string;
     additionalSkills?: Skills;
+    uniqueSuffix?: string;
 }): Promise<MonsterEntity> {
     if (!geohashLocationTypes.has(locationType)) {
         throw new Error("Can only spawn monster on GeohashLocation");
@@ -225,14 +227,21 @@ async function spawnMonster({
         );
     }
 
-    // Get monster count
-    const count = await monsterRepository.search().count();
-    const monsterId = `monster_${beast}${count}${generatePin(4)}`; // prevent race condition by generating additional pin
-
     // Add any additional skills
     const skills = additionalSkills
         ? mergeAdditive(additionalSkills, bestiary[beast].skills)
         : bestiary[beast].skills;
+
+    // Get monster suffix
+    const suffix = uniqueSuffix
+        ? `${beast}${uniqueSuffix}`
+        : `${beast}${await monsterRepository.search().count()}${generatePin(4)}`; // prevent race condition by generating additional pin
+    const monsterId = `monster_${suffix}`;
+
+    // Destroy any monster with the same uniqueSuffix if provided
+    if (uniqueSuffix) {
+        await monsterRepository.remove(monsterId);
+    }
 
     // Get monster stats
     let monster: MonsterEntity = {
@@ -476,6 +485,7 @@ async function spawnItemInInventory({
  * @param owner - Who owns or can use the item (player | monster | public (default="") | dm).
  * @param configOwner - Who can configure the item (player | monster | public (default="") | dm).
  * @param variables - The variables for the item.
+ * @param uniqueSuffix - A unique suffix for the item id, if provided will destroy any existing item with the same id
  * @returns A promise that resolves to the spawned item entity.
  */
 async function spawnItemAtGeohash({
@@ -488,6 +498,7 @@ async function spawnItemAtGeohash({
     configOwner,
     ignoreCollider,
     destroyCollidingEntities,
+    uniqueSuffix,
 }: {
     geohash: string;
     locationType: GeohashLocation;
@@ -498,6 +509,7 @@ async function spawnItemAtGeohash({
     variables?: Record<string, any>;
     ignoreCollider?: boolean;
     destroyCollidingEntities?: boolean;
+    uniqueSuffix?: string;
 }): Promise<ItemEntity> {
     // Owner defaults to public
     owner ??= "";
@@ -550,9 +562,17 @@ async function spawnItemAtGeohash({
         throw new Error(`Cannot spawn ${prop} at ${location}`);
     }
 
-    // Get item count
-    const count = await itemRepository.search().count();
-    const itemId = `item_${prop}${count}${generatePin(4)}`;
+    // Get item suffix
+    const suffix = uniqueSuffix
+        ? `${prop}${uniqueSuffix}`
+        : `${prop}${await itemRepository.search().count()}${generatePin(4)}`;
+    const itemId = `item_${suffix}`;
+
+    // Destroy any item with the same uniqueSuffix if provided
+    if (uniqueSuffix) {
+        await itemRepository.remove(itemId);
+    }
+
     const entity: ItemEntity = {
         item: itemId,
         name: attributes.name,

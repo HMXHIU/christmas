@@ -11,7 +11,7 @@ import type { GeohashLocation } from "$lib/crossover/world/types";
 import { consumeResources } from "$lib/server/crossover";
 import { spawnMonster } from "$lib/server/crossover/dm";
 import { awardKillCurrency } from "$lib/server/crossover/entity";
-import { generateNPC } from "$lib/server/crossover/npc";
+import { spawnNPC } from "$lib/server/crossover/npc";
 import type { NPCs } from "$lib/server/crossover/npc/types";
 import { createQuest, createQuestWrit } from "$lib/server/crossover/quests";
 import {
@@ -64,7 +64,7 @@ test("Test Quest in NPC Greet Dialogue", async () => {
 
     // Create npc involved in quest
     expect(quest.entityIds.includes("grocer")).toBe(true);
-    const npcEntity = await generateNPC("grocer", {
+    const npcEntity = await spawnNPC("grocer", {
         demographic: {},
         appearance: {},
         geohash: playerTwo.loc[0],
@@ -406,7 +406,7 @@ test("Test Kill And Deliver", async () => {
     });
 
     // Spawn the npc
-    const npcEntity = await generateNPC(npc as NPCs, {
+    const npcEntity = await spawnNPC(npc as NPCs, {
         demographic: {},
         appearance: {},
         geohash: playerOne.loc[0],

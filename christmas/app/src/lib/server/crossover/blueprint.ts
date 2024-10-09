@@ -18,6 +18,7 @@ import {
 } from "$lib/crossover/world/settings/blueprint";
 import type { GeohashLocation } from "$lib/crossover/world/types";
 import { substituteVariablesRecursively } from "$lib/utils";
+import { hashObject } from "..";
 import {
     blueprintsAtLocationCache,
     dungeonGraphCache,
@@ -27,7 +28,7 @@ import {
     topologyResultCache,
 } from "./caches";
 import { spawnItemAtGeohash, spawnMonster } from "./dm";
-import { generateNPC } from "./npc";
+import { spawnNPC } from "./npc";
 import { saveEntity } from "./redis/utils";
 import type { ActorEntity, ItemEntity } from "./types";
 import { parseItemVariables } from "./utils";
@@ -121,10 +122,22 @@ async function instantiateBlueprintsInDungeons(
             // Spawn entities
             for (const [
                 loc,
-                { prop, beast, npc, ref, variables, overwrite },
+                {
+                    prop,
+                    beast,
+                    npc,
+                    ref,
+                    variables,
+                    overwrite,
+                    unique,
+                    blueprint,
+                },
             ] of Object.entries(dungeonBlueprint.stencil)) {
                 try {
                     if (prop) {
+                        const uniqueSuffix: string | undefined = unique
+                            ? hashObject([blueprint, prop, loc], "md5")
+                            : undefined;
                         const item = await spawnItemAtGeohash({
                             geohash: loc,
                             locationType,
@@ -132,6 +145,7 @@ async function instantiateBlueprintsInDungeons(
                             locationInstance,
                             destroyCollidingEntities: true, // prevent creating multiple of the same entities
                             ignoreCollider: true, // should spawn even in untraversable locations
+                            uniqueSuffix, // destroy any existing if unique
                         });
                         if (ref && !referencedEntities[ref]) {
                             referencedEntities[ref] = item;
@@ -146,11 +160,15 @@ async function instantiateBlueprintsInDungeons(
                         spawnedEntities.push(item);
                     }
                     if (beast) {
+                        const uniqueSuffix: string | undefined = unique
+                            ? hashObject([blueprint, beast, loc], "md5")
+                            : undefined;
                         const monster = await spawnMonster({
                             geohash: loc,
                             locationType,
                             beast,
                             locationInstance,
+                            uniqueSuffix,
                         });
                         if (ref && !referencedEntities[ref]) {
                             referencedEntities[ref] = monster;
@@ -165,12 +183,16 @@ async function instantiateBlueprintsInDungeons(
                         spawnedEntities.push(monster);
                     }
                     if (npc) {
-                        const player = await generateNPC(npc, {
+                        const uniqueSuffix: string | undefined = unique
+                            ? hashObject([blueprint, npc, loc], "md5")
+                            : undefined;
+                        const player = await spawnNPC(npc, {
                             demographic: {},
                             appearance: {},
                             geohash: loc,
                             locationInstance,
                             locationType,
+                            uniqueSuffix,
                         });
                         if (ref && !referencedEntities[ref]) {
                             referencedEntities[ref] = player;

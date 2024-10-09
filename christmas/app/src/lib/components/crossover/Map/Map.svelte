@@ -11,10 +11,8 @@
     import type { Item } from "$lib/crossover/types";
     import { geohashToColRow } from "$lib/crossover/utils";
     import { topologyAtGeohash } from "$lib/crossover/world/biomes";
-    import {
-        blueprintsAtTerritory,
-        type BluePrints,
-    } from "$lib/crossover/world/blueprint";
+    import { blueprintsAtTerritory } from "$lib/crossover/world/blueprint";
+    import type { BluePrints } from "$lib/crossover/world/blueprint/types";
     import {
         blueprints,
         blueprintsToSpawn,
@@ -189,14 +187,13 @@
         );
 
         const stencilFromBlueprint = groupBy(
-            Object.entries(bps.props),
+            Object.entries(bps.stencil),
             ([loc, p]) => p.blueprint,
         );
         for (const [blueprint, entries] of Object.entries(
             stencilFromBlueprint,
         )) {
-            const plotPrecision =
-                blueprints[blueprint as BluePrints].plotPrecision;
+            const plotPrecision = blueprints[blueprint as BluePrints].precision;
             const propLocations = entries.map((xs) => xs[0]);
             const blueprintLocations = uniqBy(propLocations, (l) =>
                 l.slice(0, plotPrecision),

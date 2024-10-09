@@ -15,7 +15,7 @@ import type {
 } from "$lib/crossover/world/types";
 import { generateAvatarHash } from "$lib/server/crossover/avatar";
 import { spawnItemAtGeohash, spawnMonster } from "$lib/server/crossover/dm";
-import { generateNPC } from "$lib/server/crossover/npc";
+import { spawnNPC } from "$lib/server/crossover/npc";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
 import type {
     BuffCreatureSchema,
@@ -325,21 +325,21 @@ export async function createNPCs({
     locationInstance?: string;
     locationType?: LocationType;
 }) {
-    const blackSmith = await generateNPC(npcs.blacksmith.npc, {
+    const blackSmith = await spawnNPC(npcs.blacksmith.npc, {
         demographic: {},
         appearance: {},
         geohash,
         locationInstance,
         locationType,
     });
-    const innKeeper = await generateNPC(npcs.innkeeper.npc, {
+    const innKeeper = await spawnNPC(npcs.innkeeper.npc, {
         demographic: {},
         appearance: {},
         geohash,
         locationInstance,
         locationType,
     });
-    const grocer = await generateNPC(npcs.grocer.npc, {
+    const grocer = await spawnNPC(npcs.grocer.npc, {
         demographic: {},
         appearance: {},
         geohash,

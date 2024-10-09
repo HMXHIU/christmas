@@ -39,6 +39,7 @@ export let landmarks: Record<string, Prop> = {
                     charges: 1,
                     durability: 0,
                 },
+                range: 2,
                 state: {
                     start: "default",
                     end: "default",

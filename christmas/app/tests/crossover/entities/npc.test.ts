@@ -233,7 +233,7 @@ test("Test Learn From NPC", async () => {
     await sleep(MS_PER_TICK * 4);
 });
 
-test("Test `generateNPC`", async () => {
+test("Test `spawnNPC`", async () => {
     // Test UserMetadata
     const npcUserMetadata = await getUser(innKeeper.player);
     expect(npcUserMetadata).toMatchObject({
