@@ -25,7 +25,7 @@ import {
 } from "$lib/crossover/world/types";
 import { AsyncLock } from "$lib/utils";
 import type { HTTPHeaders } from "@trpc/client";
-import { groupBy } from "lodash-es";
+import { groupBy, isEqual } from "lodash-es";
 import { Container, type Application } from "pixi.js";
 import { get, type Writable } from "svelte/store";
 import {
@@ -336,10 +336,17 @@ function updateEntities(
             onComplete: async (record) => {
                 // Load player inventory
                 loadInventory(record);
+
                 // Update the land grading
-                landGrading.set(
-                    await calculateLandGrading(Object.values(record)),
+                const updatedLandGrading = await calculateLandGrading(
+                    Object.values(record),
                 );
+                // If the land grading has changed,
+                if (!isEqual(updatedLandGrading, landGrading)) {
+                    landGrading.set(updatedLandGrading);
+
+                    // TODO: redraw the decorations
+                }
             },
         });
     }

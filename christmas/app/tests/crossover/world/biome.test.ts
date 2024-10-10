@@ -61,6 +61,15 @@ describe("Biome Topology Tests", () => {
         });
     });
 
+    test("Test `topologyAtGeohash` average intensity", async () => {
+        expect(omit(await topologyAtGeohash("w25"), ["png"]).intensity).toBe(0);
+        expect(omit(await topologyAtGeohash("w2f"), ["png"]).intensity).toBe(0);
+        expect(omit(await topologyAtGeohash("w2g"), ["png"]).intensity).toBe(0);
+        expect(
+            omit(await topologyAtGeohash("w2b"), ["png"]).intensity,
+        ).toBeGreaterThan(31);
+    });
+
     test("Test isGeohashTraversable", async () => {
         // Wooden door collider not traversable
         await expect(

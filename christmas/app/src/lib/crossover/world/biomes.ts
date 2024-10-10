@@ -414,10 +414,11 @@ async function topologyAtGeohash(
         const yPixels = Math.floor(height / rows);
         let xStep = Math.max(Math.floor(xPixels / 16), 1);
         let yStep = Math.max(Math.floor(yPixels / 16), 1);
-
+        const xStart = Math.floor((width * col) / cols);
+        const yStart = Math.floor((height * row) / rows);
         let total = 0;
-        for (let i = x; i < x + xPixels; i += xStep) {
-            for (let j = y; j < y + yPixels; j += yStep) {
+        for (let j = yStart; j < yStart + yPixels; j += yStep) {
+            for (let i = xStart; i < xStart + xPixels; i += xStep) {
                 intensity += data[(j * width + i) * 4];
                 total += 1;
             }

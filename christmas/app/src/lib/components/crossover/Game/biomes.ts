@@ -100,8 +100,8 @@ async function calculateLandGrading(items: Item[]): Promise<LandGrading> {
                 },
             );
 
+            // Init
             item.locT = item.locT as GeohashLocation;
-
             if (landGrading[item.locT] == null) {
                 landGrading[item.locT] = {};
             }
