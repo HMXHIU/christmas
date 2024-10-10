@@ -18,6 +18,7 @@ import {
 } from "$lib/server/crossover/types";
 import { cloneDeep } from "lodash-es";
 import { setEntityBusy } from "..";
+import type { FeedEventVariables } from "../../../../routes/api/crossover/stream/+server";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../events";
 import {
     verifyP2PTransaction,
@@ -93,17 +94,23 @@ async function say(
 
     // Send message to all players in the geohash (non blocking)
     for (const publicKey of players) {
+        const variables: FeedEventVariables = {
+            cmd: "say",
+            player: player.player, // the player saying
+            name: player.name,
+            message: message,
+        };
+
+        if (options?.target) {
+            variables.target = options.target;
+        }
+
         await publishFeedEvent(publicKey, {
             type: "message",
             message: options?.overwrite
                 ? "${message}"
                 : "${name} says ${message}",
-            variables: {
-                cmd: "say",
-                player: player.player,
-                name: player.name,
-                message: message,
-            },
+            variables,
         });
     }
 }

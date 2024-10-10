@@ -74,10 +74,12 @@ async function npcRespondToEvent(
 ) {
     // Feed events
     if (event.event === "feed" && event.type === "message" && event.variables) {
+        // Say/Greet
         if (event.variables.cmd === "say") {
-            let { message, player } = event.variables;
+            let { message, player, target } = event.variables;
             message = (message as string).trim();
-            if (player) {
+            // NPCs only respond to targeted greet/say
+            if (player && target === npc) {
                 // Greet is just a say with no message
                 if (message === "") {
                     await npcRespondToGreet(npc, player as string);

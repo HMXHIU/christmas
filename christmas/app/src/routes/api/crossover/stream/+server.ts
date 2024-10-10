@@ -13,11 +13,13 @@ export type StreamEvent =
     | ActionEvent
     | CTAEvent;
 
+export type FeedEventVariables = Record<string, string | number | boolean>;
+
 export interface FeedEvent {
     event: "feed";
     type: "message" | "system" | "error";
     message: string;
-    variables?: Record<string, string | number | boolean>;
+    variables?: FeedEventVariables;
 }
 
 export interface UpdateEntitiesEvent {

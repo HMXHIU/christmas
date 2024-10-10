@@ -56,6 +56,13 @@ const greetings: Dialogue[] = [
         msg: "${self.name} greets you, 'Well met ${player.name}, you may *rest* here'.",
         tgt: "${player.player}",
     },
+    // grocer
+    {
+        dia: "grt",
+        mst: ["npc=grocer"],
+        msg: "${self.name} greets you, 'Well met ${player.name}, why don't you *browse* my wares?'.",
+        tgt: "${player.player}",
+    },
 ];
 
 const ignores: Dialogue[] = [

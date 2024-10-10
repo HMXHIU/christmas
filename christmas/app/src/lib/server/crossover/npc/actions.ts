@@ -58,7 +58,6 @@ async function npcRespondToMessage(
     message: string,
 ) {
     const npcEntity = (await fetchEntity(npc)) as PlayerEntity;
-
     const tokens = message.split(" ");
 
     // Asked about quest (*ask [npc] about [quest]*)
@@ -110,7 +109,7 @@ async function npcRespondToMessage(
 async function npcRespondToGreet(npc: string, player: string) {
     const playerEntity = (await fetchEntity(player)) as PlayerEntity;
     const npcEntity = (await fetchEntity(npc)) as PlayerEntity;
-    const npcTemplate = npcEntity.npc?.split("_")[0] as NPCs;
+    const npcTemplate = npcEntity.npc?.split(/[_\/]/)[0] as NPCs; // split on _ or /
     const tags = [`npc=${npcTemplate}`];
     let dialogue = await npcGreetResponse(tags);
 
