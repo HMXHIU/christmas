@@ -98,15 +98,19 @@ function applyEntityDescriptors(
 
     // Replace placeholders
     description = description
-        .replace(/{name}/g, entities[0].name)
-        .replace(
+        .replace(/{count}/g, count.toString())
+        .replace(/{name}/g, entities[0].name); // use the first entity for {name}
+
+    // Use the remaining entities for {names}
+    if (entities.length > 1) {
+        description = description.replace(
             /{names}/g,
             entities
-                .slice(0, -1)
+                .slice(1)
                 .map((e) => e.name)
                 .join(", "),
-        )
-        .replace(/{count}/g, count.toString());
+        );
+    }
 
     return description;
 }

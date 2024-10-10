@@ -21,7 +21,7 @@
         monsterRecord,
         player,
         playerRecord,
-    } from "../../../../store";
+    } from "../../../store";
 
     const descriptionGenerator = new MudDescriptionGenerator({
         worldSeed,

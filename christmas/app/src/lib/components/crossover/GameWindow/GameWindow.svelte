@@ -27,7 +27,7 @@
     import Game, { tryExecuteGameCommand } from "../Game";
     import { initAssetManager } from "../Game/utils";
     import Map from "../Map/Map.svelte";
-    import MudDescriptor from "../MudDescriptor/MudDescriptor.svelte";
+    import MudDescriptor from "../MudDescriptor.svelte";
     import Tool from "../Tool.svelte";
 
     const LARGE_SCREEN = 1000;
