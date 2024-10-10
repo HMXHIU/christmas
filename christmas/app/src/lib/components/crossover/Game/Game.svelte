@@ -2,11 +2,7 @@
     import { crossoverPlayerMetadata } from "$lib/crossover/client";
     import { getDirectionsToPosition } from "$lib/crossover/game";
     import { getGameActionId, type GameCommand } from "$lib/crossover/ir";
-    import {
-        geohashToColRow,
-        getEntityId,
-        getPositionsForPath,
-    } from "$lib/crossover/utils";
+    import { getEntityId, getPositionsForPath } from "$lib/crossover/utils";
     import {
         getPlayerAbilities,
         type Ability,
@@ -27,7 +23,12 @@
         WebGLRenderer,
     } from "pixi.js";
     import { onDestroy, onMount } from "svelte";
-    import { tryExecuteGameCommand, updateEntities, updateWorlds } from ".";
+    import {
+        calibrateWorldOffset,
+        tryExecuteGameCommand,
+        updateEntities,
+        updateWorlds,
+    } from ".";
     import type { ActionEvent } from "../../../../routes/api/crossover/stream/+server";
     import {
         actionEvent,
@@ -395,11 +396,6 @@
             await tryExecuteGameCommand([actions.look, { self: $player }]);
             await tryExecuteGameCommand([actions.inventory, { self: $player }]);
         }
-    }
-
-    function calibrateWorldOffset(geohash: string) {
-        const [col, row] = geohashToColRow(geohash);
-        worldOffset.set({ col: col, row: row });
     }
 
     onMount(() => {

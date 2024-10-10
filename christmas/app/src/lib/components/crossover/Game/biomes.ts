@@ -55,12 +55,14 @@ export {
     calculateBiomeDecorationsForRowCol,
     calculateBiomeForRowCol,
     calculateLandGrading,
-    clearBiomeBuffers,
     drawBiomeShaders,
     screenToGeohashKDtree,
 };
 
-const screenToGeohashKDtree = new KdTree<string>(2); // [screenX, screenY] => geohash
+let screenToGeohashKDtree: Partial<Record<GeohashLocation, KdTree<string>>> = {
+    geohash: new KdTree<string>(2), // [screenX, screenY] => geohash
+    d1: new KdTree<string>(2),
+};
 
 // Caches
 const biomeCache = new LRUMemoryCache({ max: 2000 });
@@ -97,22 +99,27 @@ async function calculateLandGrading(items: Item[]): Promise<LandGrading> {
                     bufferCache: topologyBufferCache,
                 },
             );
+
+            item.locT = item.locT as GeohashLocation;
+
+            if (landGrading[item.locT] == null) {
+                landGrading[item.locT] = {};
+            }
+
             // Flatten the elevation
             for (const l of item.loc) {
-                landGrading[l] = {
+                landGrading[item.locT]![l] = {
                     elevation,
-                    locationType: item.locT as GeohashLocation,
                     decorations: false,
                 };
             }
             // Disable decorations on bordering geohashes
             for (const l of borderingGeohashes(item.loc)) {
-                if (landGrading[l]) {
-                    landGrading[l].decorations = false;
+                if (landGrading[item.locT]![l]) {
+                    landGrading[item.locT]![l].decorations = false;
                 } else {
-                    landGrading[l] = {
-                        elevation, // TODO: set as undefined
-                        locationType: item.locT as GeohashLocation,
+                    landGrading[item.locT]![l] = {
+                        elevation,
                         decorations: false,
                     };
                 }
@@ -240,7 +247,7 @@ async function calculateBiomeDecorationsForRowCol({
     const texturePositions: Record<string, ShaderTexture> = {};
 
     // Check land grading ig this cell should have decorations
-    if (get(landGrading)[geohash]?.decorations === false) {
+    if (get(landGrading)[locationType]?.[geohash]?.decorations === false) {
         return texturePositions;
     }
 
@@ -338,9 +345,9 @@ async function calculateTextureBuffers(
     const biomeShaderTextures = await biomeTextureBuffers.get(bufferKey);
     const decorationShaderTextures =
         await decorationsTextureBuffers.get(bufferKey);
-    if (biomeShaderTextures && decorationShaderTextures) {
-        return [biomeShaderTextures, decorationShaderTextures];
-    }
+    // if (biomeShaderTextures && decorationShaderTextures) {
+    //     return [biomeShaderTextures, decorationShaderTextures];
+    // }
 
     // Reset instances
     if (biomeShaderTextures) {
@@ -382,7 +389,10 @@ async function calculateTextureBuffers(
 
             // Update screenToGeohashKDtree (for hittesting screen coordiates to the geohash)
             // TODO: need to garbage collect
-            screenToGeohashKDtree.insert([isoX, isoY - elevation], geohash);
+            screenToGeohashKDtree[locationType]!.insert(
+                [isoX, isoY - elevation],
+                geohash,
+            );
 
             // Use the entire sprite sheet as the texture (Note: must all be in the same sheet)
             const textureUid = texture.source.label;
@@ -632,13 +642,4 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
         depthStart,
         depthLayer: depthLayer - depthSize, // bump the zIndex for grass down 1 layer for alpha blending
     });
-}
-
-async function clearBiomeBuffers() {
-    for await (const [k, v] of biomeTextureBuffers.entries()) {
-        await biomeTextureBuffers.delete(k);
-    }
-    for await (const [k, v] of decorationsTextureBuffers.entries()) {
-        await decorationsTextureBuffers.delete(k);
-    }
 }

@@ -60,7 +60,9 @@ function createHIDHandlers(stage: Container) {
         if (!playerPosition || !state.isMouseDown) return;
 
         // Convert screenXY to actual biome geohash
-        const node = screenToGeohashKDtree.findNearest([x, y]);
+        const node = screenToGeohashKDtree[
+            playerPosition.locationType
+        ]!.findNearest([x, y]);
         if (node) {
             const [colEnd, rowEnd] = geohashToColRow(node.data);
 

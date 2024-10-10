@@ -50,9 +50,17 @@ type BiomeParameters = {
     [s in BiomeType]?: number;
 };
 
-type LandGrading = Record<
-    string,
-    { locationType: GeohashLocation; elevation?: number; decorations?: boolean }
+type LandGrading = Partial<
+    Record<
+        GeohashLocation,
+        Record<
+            string,
+            {
+                elevation?: number;
+                decorations?: boolean;
+            }
+        >
+    >
 >;
 
 interface Decoration {
@@ -360,7 +368,6 @@ function bilinearInterpolation({
     return I;
 }
 
-// ???? this is causing node to crash __filename != fileName
 async function topologyAtGeohash(
     geohash: string,
     options?: {
@@ -520,13 +527,16 @@ async function elevationAtGeohash(
     },
 ): Promise<number> {
     // Check if land grading exists (overwrite calculation)
-    const grading = options?.landGrading?.[geohash];
-    if (
-        grading &&
-        grading.locationType === locationType &&
-        grading.elevation != null
-    ) {
+    const grading = options?.landGrading?.[locationType]?.[geohash];
+    if (grading && grading.elevation != null) {
         return grading.elevation;
+    }
+
+    // Check cache (Note: land grading takes precedence over the cache)
+    const cacheKey = `${locationType}-${geohash}`;
+    const cached = await options?.resultsCache?.get(cacheKey);
+    if (cached) {
+        return cached;
     }
 
     // Underground (d1, d2, d3, ...)
@@ -534,12 +544,7 @@ async function elevationAtGeohash(
         return 0;
     }
 
-    const cachedResult = await options?.resultsCache?.get(geohash);
-    if (cachedResult) {
-        return cachedResult;
-    }
-
-    const result = Math.ceil(
+    const elevation = Math.ceil(
         (
             await topologyAtGeohash(geohash, {
                 responseCache: options?.responseCache,
@@ -549,10 +554,10 @@ async function elevationAtGeohash(
     );
 
     if (options?.resultsCache) {
-        options.resultsCache.set(geohash, result);
+        options.resultsCache.set(cacheKey, elevation);
     }
 
-    return result;
+    return elevation;
 }
 
 /**
@@ -585,8 +590,8 @@ async function biomeAtGeohash(
 ): Promise<[BiomeType, number]> {
     // Get from cache
     const cacheKey = `${geohash}-${locationType}`;
-    const cachedResult = await options?.biomeAtGeohashCache?.get(cacheKey);
-    if (cachedResult) return cachedResult;
+    const cached = await options?.biomeAtGeohashCache?.get(cacheKey);
+    if (cached) return cached;
 
     if (!geohashLocationTypes.has(locationType)) {
         throw new Error("Location is not a GeohashLocation");

@@ -15,7 +15,7 @@ import type {
     Monster,
     Player,
 } from "$lib/crossover/types";
-import { getEntityId } from "$lib/crossover/utils";
+import { geohashToColRow, getEntityId } from "$lib/crossover/utils";
 import { entityAttributes } from "$lib/crossover/world/entity";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { worldSeed } from "$lib/crossover/world/settings/world";
@@ -37,6 +37,7 @@ import {
     playerEquippedItems,
     playerInventoryItems,
     playerRecord,
+    worldOffset,
     worldRecord,
 } from "../../../../store";
 import { calculateLandGrading } from "./biomes";
@@ -51,7 +52,13 @@ import {
 import { AvatarEntityContainer } from "./entities/AvatarEntityContainer";
 import { garbageCollectWorldEntityContainers } from "./world";
 
-export { tryExecuteGameCommand, updateEntities, updateWorlds, type GameLogic };
+export {
+    calibrateWorldOffset,
+    tryExecuteGameCommand,
+    updateEntities,
+    updateWorlds,
+    type GameLogic,
+};
 
 export default Root;
 
@@ -63,6 +70,11 @@ interface GameLogic {
         position: Position;
         duration?: number;
     }) => Promise<void>;
+}
+
+function calibrateWorldOffset(geohash: string) {
+    const [col, row] = geohashToColRow(geohash);
+    worldOffset.set({ col: col, row: row });
 }
 
 /**
@@ -241,6 +253,8 @@ async function updatePlayer(
             (oldEntity.locT !== newEntity.locT ||
                 oldEntity.locI !== newEntity.locI)
         ) {
+            // Calibrate worldOffset
+            calibrateWorldOffset(newEntity.loc[0]);
             await tryExecuteGameCommand([actions.look, { self: newEntity }]);
         }
     }
@@ -341,7 +355,7 @@ function updateEntities(
     if (players?.length) {
         updateRecord<Player>(playerRecord, players, "player", op, game, {
             handleChanged: [
-                updatePlayer, // Update player (self)
+                updatePlayer, // update player (self)
                 updateEntityContainer,
                 displayEntityEffects,
             ],
