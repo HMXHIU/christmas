@@ -32,7 +32,8 @@ import type {
     PlayerEntity,
 } from "$lib/server/crossover/types";
 import { BUCKETS, ObjectStorage } from "$lib/server/objectStorage";
-import { generateRandomSeed, sleep } from "$lib/utils";
+import { sleep } from "$lib/utils";
+import { generateRandomSeed } from "$lib/utils/random";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { expect } from "vitest";
 import type { z } from "zod";

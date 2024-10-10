@@ -14,7 +14,11 @@ export {
 };
 
 const blueprintsToSpawn: BluePrints[] = ["outpost", "town"];
-const dungeonBlueprintsToSpawn: DungeonBluePrints[] = ["entrance", "control"];
+const dungeonBlueprintsToSpawn: DungeonBluePrints[] = [
+    "entrance",
+    "control",
+    "market",
+];
 
 const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
     entrance: {
@@ -82,6 +86,73 @@ const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
                 min: 1,
                 max: 1,
                 pattern: "center",
+            },
+        },
+    },
+    market: {
+        template: "market",
+        locationType: "d1",
+        frequency: {
+            max: 1,
+            min: 1,
+            type: "room",
+        },
+        clusters: {
+            innkeeper: {
+                npcs: [
+                    {
+                        npc: "innkeeper",
+                        min: 1,
+                        max: 1,
+                        pattern: "random",
+                        unique: true,
+                    },
+                ],
+                min: 1,
+                max: 1,
+                pattern: "peripheral",
+            },
+            blacksmith: {
+                npcs: [
+                    {
+                        npc: "blacksmith",
+                        min: 1,
+                        max: 1,
+                        pattern: "random",
+                        unique: true,
+                    },
+                ],
+                min: 1,
+                max: 1,
+                pattern: "peripheral",
+            },
+            grocer: {
+                npcs: [
+                    {
+                        npc: "grocer",
+                        min: 1,
+                        max: 1,
+                        pattern: "random",
+                        unique: true,
+                    },
+                ],
+                min: 1,
+                max: 1,
+                pattern: "peripheral",
+            },
+            alchemist: {
+                npcs: [
+                    {
+                        npc: "alchemist",
+                        min: 1,
+                        max: 1,
+                        pattern: "random",
+                        unique: true,
+                    },
+                ],
+                min: 1,
+                max: 1,
+                pattern: "peripheral",
             },
         },
     },

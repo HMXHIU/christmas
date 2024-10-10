@@ -40,6 +40,8 @@ describe("Blueprint Tests", () => {
             ["w2"],
         );
 
+        console.log(JSON.stringify(spawnedEntities, null, 2));
+
         // Check items spawned
         expect(spawnedEntities).toMatchObject([
             {
@@ -61,6 +63,46 @@ describe("Blueprint Tests", () => {
                 locI: "@",
                 state: "default",
                 vars: {},
+            },
+            {
+                player: "innkeeper/15967ded7db164e37a7783609c4a700e",
+                name: "Inn Keeper",
+                lgn: true,
+                rgn: "@@@",
+                loc: ["w21vumpp"],
+                locT: "d1",
+                locI: "@",
+                npc: "innkeeper/15967ded7db164e37a7783609c4a700e",
+            },
+            {
+                player: "blacksmith/08075e6875846ad8e34d663e38e13e1c",
+                name: "Blacksmith",
+                lgn: true,
+                rgn: "@@@",
+                loc: ["w21vuqpr"],
+                locT: "d1",
+                locI: "@",
+                npc: "blacksmith/08075e6875846ad8e34d663e38e13e1c",
+            },
+            {
+                player: "grocer/5facae6f52682a0393f82a2f78d78275",
+                name: "Grocer",
+                lgn: true,
+                rgn: "@@@",
+                loc: ["w21vuqpp"],
+                locT: "d1",
+                locI: "@",
+                npc: "grocer/5facae6f52682a0393f82a2f78d78275",
+            },
+            {
+                player: "alchemist/09b02b48219b465e96f480775dbf6321",
+                name: "Alchemist",
+                lgn: true,
+                rgn: "@@@",
+                loc: ["w21vuusv"],
+                locT: "d1",
+                locI: "@",
+                npc: "alchemist/09b02b48219b465e96f480775dbf6321",
             },
         ]);
 

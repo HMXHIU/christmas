@@ -141,24 +141,13 @@ class ObjectStorage {
         }
 
         // Check object owner if private
-        if (owner != null) {
-            let ownerTag = await getObjectTag(
-                bucket,
-                `${prefix}/${name}`,
-                "owner",
-            );
-
-            if (ownerTag == null) {
-                throw new Error(
-                    `Private object ${bucket}/${prefix}/${name} missing owner tag`,
-                );
-            }
-
-            if (ownerTag !== owner) {
-                throw new Error(
-                    `Permission denied: ${owner} does not own ${bucket}/${prefix}/${name}`,
-                );
-            }
+        const [ok, err] = await this.hasOwnership({
+            owner,
+            bucket,
+            name: name,
+        });
+        if (!ok) {
+            throw new Error(err);
         }
 
         await client.removeObject(bucket, `${prefix}/${name}`);
@@ -192,24 +181,13 @@ class ObjectStorage {
         }
 
         // Check object owner if private
-        if (sourceOwner != null) {
-            let ownerTag = await getObjectTag(
-                sourceBucket,
-                `${sourcePrefix}/${sourceName}`,
-                "owner",
-            );
-
-            if (ownerTag == null) {
-                throw new Error(
-                    `Private object ${sourceBucket}/${sourcePrefix}/${sourceName} missing owner tag`,
-                );
-            }
-
-            if (ownerTag !== sourceOwner) {
-                throw new Error(
-                    `Permission denied: ${sourceOwner} does not own ${sourceBucket}/${sourcePrefix}/${sourceName}`,
-                );
-            }
+        const [ok, err] = await this.hasOwnership({
+            owner: sourceOwner,
+            bucket: sourceBucket,
+            name: sourceName,
+        });
+        if (!ok) {
+            throw new Error(err);
         }
 
         // Copy object
@@ -235,6 +213,52 @@ class ObjectStorage {
         }
     }
 
+    static async hasOwnership({
+        owner,
+        bucket,
+        name,
+    }: {
+        owner: string | null;
+        bucket: string;
+        name: string;
+    }): Promise<[boolean, string]> {
+        const prefix = owner ? "private" : "public";
+
+        // Check if object exists
+        try {
+            await client.statObject(bucket, `${prefix}/${name}`);
+        } catch (error) {
+            return [
+                false,
+                `Object ${bucket}/${prefix}/${name} does not exists`,
+            ];
+        }
+
+        // Check object owner if private
+        if (owner != null) {
+            let ownerTag = await getObjectTag(
+                bucket,
+                `${prefix}/${name}`,
+                "owner",
+            );
+
+            if (ownerTag == null) {
+                return [
+                    false,
+                    `Private object ${bucket}/${prefix}/${name} missing owner tag`,
+                ];
+            }
+
+            if (ownerTag !== owner) {
+                return [
+                    false,
+                    `Permission denied: ${owner} does not own ${bucket}/${prefix}/${name}`,
+                ];
+            }
+        }
+        return [true, ""];
+    }
+
     static async renameObject({
         owner,
         bucket,
@@ -254,24 +278,13 @@ class ObjectStorage {
         }
 
         // Check object owner if private
-        if (owner != null) {
-            let ownerTag = await getObjectTag(
-                bucket,
-                `${prefix}/${oldName}`,
-                "owner",
-            );
-
-            if (ownerTag == null) {
-                throw new Error(
-                    `Private object ${bucket}/${prefix}/${oldName} missing owner tag`,
-                );
-            }
-
-            if (ownerTag !== owner) {
-                throw new Error(
-                    `Permission denied: ${owner} does not own ${bucket}/${prefix}/${oldName}`,
-                );
-            }
+        const [ok, err] = await this.hasOwnership({
+            owner,
+            bucket,
+            name: oldName,
+        });
+        if (!ok) {
+            throw new Error(err);
         }
 
         // Rename object
@@ -304,24 +317,13 @@ class ObjectStorage {
         }
 
         // Check object owner if private
-        if (owner != null) {
-            let ownerTag = await getObjectTag(
-                bucket,
-                `${prefix}/${name}`,
-                "owner",
-            );
-
-            if (ownerTag == null) {
-                throw new Error(
-                    `Private object ${bucket}/${prefix}/${name} missing owner tag`,
-                );
-            }
-
-            if (ownerTag !== owner) {
-                throw new Error(
-                    `Permission denied: ${owner} does not own ${bucket}/${prefix}/${name}`,
-                );
-            }
+        const [ok, err] = await this.hasOwnership({
+            owner,
+            bucket,
+            name: name,
+        });
+        if (!ok) {
+            throw new Error(err);
         }
 
         return await client.getObject(bucket, `${prefix}/${name}`);
@@ -479,13 +481,17 @@ class ObjectStorage {
         owner: string | null;
     }): Promise<boolean> {
         const prefix = owner ? "private" : "public";
-        if (owner && name !== owner) {
-            throw new Error(
-                `Permission denied: ${owner} does not own ${bucket}/${prefix}/${name}`,
-            );
-        }
         try {
             await client.statObject(bucket, `${prefix}/${name}`);
+            // Check object owner if private
+            const [ok, err] = await this.hasOwnership({
+                owner,
+                bucket,
+                name: name,
+            });
+            if (!ok) {
+                throw new Error(err);
+            }
             return true;
         } catch (error) {
             return false;
