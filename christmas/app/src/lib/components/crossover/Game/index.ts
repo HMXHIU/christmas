@@ -17,7 +17,6 @@ import type {
 } from "$lib/crossover/types";
 import { geohashToColRow, getEntityId } from "$lib/crossover/utils";
 import { entityAttributes } from "$lib/crossover/world/entity";
-import { actions } from "$lib/crossover/world/settings/actions";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     geohashLocationTypes,
@@ -65,7 +64,10 @@ export default Root;
 interface GameLogic {
     app: Application;
     stage: Container;
-    handlePlayerPositionUpdate: (position: Position) => Promise<void>;
+    handlePlayerPositionUpdate: (
+        oldPosition: Position | null,
+        newPosition: Position,
+    ) => Promise<void>;
     handleTrackPlayer: (params: {
         position: Position;
         duration?: number;
@@ -185,7 +187,7 @@ async function updateEntityContainer<T extends Actor>(
 
                     // Initial event
                     if (ec.isoPosition != null) {
-                        game.handlePlayerPositionUpdate(ec.isoPosition);
+                        game.handlePlayerPositionUpdate(null, ec.isoPosition);
                         game.handleTrackPlayer({ position: ec.isoPosition });
                     }
 
@@ -245,17 +247,6 @@ async function updatePlayer(
                 newEntity.loc[0],
                 newEntity.locT as GeohashLocation,
             );
-        }
-
-        // Perform `look` if locT/I changed
-        if (
-            oldEntity &&
-            (oldEntity.locT !== newEntity.locT ||
-                oldEntity.locI !== newEntity.locI)
-        ) {
-            // Calibrate worldOffset
-            calibrateWorldOffset(newEntity.loc[0]);
-            await tryExecuteGameCommand([actions.look, { self: newEntity }]);
         }
     }
 }

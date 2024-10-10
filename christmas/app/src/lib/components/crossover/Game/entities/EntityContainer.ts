@@ -10,6 +10,7 @@ import {
 import { type Actions } from "$lib/crossover/world/actions";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { gsap } from "gsap";
+import { clone } from "lodash-es";
 import { Container, type DestroyOptions } from "pixi.js";
 import { calculatePosition, type Position } from "../utils";
 import { ActionBubble } from "./ActionBubble";
@@ -55,8 +56,11 @@ export class EntityContainer extends Container {
         this.cullable = true;
     }
 
-    protected emitPositionUpdate() {
-        this.emit("positionUpdate", this.isoPosition);
+    protected emitPositionUpdate(
+        oldPosition: Position | null,
+        newPosition: Position,
+    ) {
+        this.emit("positionUpdate", oldPosition, newPosition);
     }
 
     protected emitTrackEntity(position: Position, duration?: number) {
@@ -120,9 +124,10 @@ export class EntityContainer extends Container {
                     duration: directionDuration(pth[index]) / 1000,
                     ease: "linear",
                     onComplete: () => {
+                        const oldPosition = clone(this.isoPosition);
                         this.isoPosition = isoPosition;
                         this.updateDepth(isoPosition.isoY);
-                        this.emitPositionUpdate();
+                        this.emitPositionUpdate(oldPosition, isoPosition);
                     },
                     onUpdate: () => {
                         // Safely kill the timeline if 'this' is destroyed
@@ -164,22 +169,24 @@ export class EntityContainer extends Container {
                 duration,
                 overwrite: true,
                 onComplete: () => {
+                    const oldPosition = clone(this.isoPosition);
                     this.isoPosition = isoPosition;
                     this.updateDepth(isoPosition.isoY);
-                    this.emitPositionUpdate();
+                    this.emitPositionUpdate(oldPosition, isoPosition);
                 },
             });
             this.emitTrackEntity(isoPosition, duration);
         }
         // Set position immediately
         else {
+            const oldPosition = clone(this.isoPosition);
             this.isoPosition = isoPosition;
             this.position.set(
                 isoPosition.isoX,
                 isoPosition.isoY - isoPosition.elevation,
             );
             this.updateDepth(isoPosition.isoY);
-            this.emitPositionUpdate();
+            this.emitPositionUpdate(oldPosition, isoPosition);
             this.emitTrackEntity(isoPosition);
         }
     }

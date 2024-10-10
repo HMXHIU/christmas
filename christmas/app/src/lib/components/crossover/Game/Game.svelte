@@ -238,23 +238,36 @@
         updateShaderUniforms({ deltaTime: seconds });
     }
 
-    export async function handlePlayerPositionUpdate(position: Position) {
+    export async function handlePlayerPositionUpdate(
+        oldPosition: Position | null,
+        newPosition: Position,
+    ) {
         if (worldStage == null) {
             return;
         }
 
         // Cull entity meshes outside view
-        garbageCollectEntityContainers(position);
+        garbageCollectEntityContainers(newPosition);
 
         // Cull world meshes outside town
-        garbageCollectWorldEntityContainers(position);
+        garbageCollectWorldEntityContainers(newPosition);
 
-        // Check if need to reload the game (typically because the `worldOfffset` as strayed too far)
-        const cols = Math.abs($worldOffset.col - position.col);
-        const rows = Math.abs($worldOffset.row - position.row);
+        // Reload the game (if strayed to far off the `worldOfffset`)
+        const cols = Math.abs($worldOffset.col - newPosition.col);
+        const rows = Math.abs($worldOffset.row - newPosition.row);
         const maxDistance = 15000;
         if (cols > maxDistance || rows > maxDistance) {
-            await reloadGame();
+            // Recalibrate worldOffset (this affects cartToIso & isoToCart)
+            calibrateWorldOffset(newPosition.geohash);
+            await reloadGame(newPosition);
+        }
+        // Reload game if enter a new locationType
+        else if (
+            oldPosition &&
+            (oldPosition.locationType !== newPosition.locationType ||
+                oldPosition.locationInstance !== newPosition.locationInstance)
+        ) {
+            await reloadGame(newPosition);
         }
 
         // Debug World
@@ -367,32 +380,28 @@
         }
     }
 
-    async function reloadGame() {
+    export async function reloadGame(position: Position) {
+        console.log("Reloading world ...");
+
+        // Stop tweens
+        stopTweens();
+
+        playerRecord.set({});
+        itemRecord.set({});
+        monsterRecord.set({});
+        equipmentRecord.set({});
+        worldRecord.set({});
+
+        // Clear all entity containers (items, monsters, players, worlds)
+        cullAllEntityContainers();
+        cullAllWorldEntityContainers();
+
+        // Wait for busy
+        await sleep(1000);
+
+        // Look at surroundings & update inventory
+        await updateWorlds(position.geohash, position.locationType);
         if ($player) {
-            console.log("Reloading world ...");
-
-            // Stop tweens
-            stopTweens();
-
-            playerRecord.set({});
-            itemRecord.set({});
-            monsterRecord.set({});
-            equipmentRecord.set({});
-            worldRecord.set({});
-
-            // Clear all entity containers (items, monsters, players, worlds)
-            cullAllEntityContainers();
-            cullAllWorldEntityContainers();
-
-            // Wait for busy
-            await sleep(1000);
-
-            // Calibrate worldOffset
-            calibrateWorldOffset($player.loc[0]);
-
-            // Look at surroundings & update inventory
-            await updateWorlds($player.loc[0], $player.locT as GeohashLocation);
-
             await tryExecuteGameCommand([actions.look, { self: $player }]);
             await tryExecuteGameCommand([actions.inventory, { self: $player }]);
         }

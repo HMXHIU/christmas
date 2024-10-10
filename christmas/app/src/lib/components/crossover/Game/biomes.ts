@@ -345,9 +345,9 @@ async function calculateTextureBuffers(
     const biomeShaderTextures = await biomeTextureBuffers.get(bufferKey);
     const decorationShaderTextures =
         await decorationsTextureBuffers.get(bufferKey);
-    // if (biomeShaderTextures && decorationShaderTextures) {
-    //     return [biomeShaderTextures, decorationShaderTextures];
-    // }
+    if (biomeShaderTextures && decorationShaderTextures) {
+        return [biomeShaderTextures, decorationShaderTextures];
+    }
 
     // Reset instances
     if (biomeShaderTextures) {
