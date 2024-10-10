@@ -43,6 +43,7 @@ class AvatarEntityContainer extends EntityContainer {
         asset: AssetMetadata,
         replace: boolean = false,
     ): Promise<string | null> {
+        console.log(this.entityId, "setBoneEquipmentTexture");
         const textureKey = equippedTextureKey(bone.name);
         if (replace) {
             await bone.setTexture(textureKey, {

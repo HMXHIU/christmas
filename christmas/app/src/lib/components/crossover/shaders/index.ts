@@ -148,6 +148,7 @@ function swapMeshTexture(
         console.error("Missing shader for mesh");
         return;
     }
+
     if (overlay) {
         mesh.shader.resources.uOverlayTexture = texture.source;
     } else {
@@ -190,7 +191,7 @@ function loadShaderGeometry(
     const shaderGeometry = loadedShaderGeometries[shaderGeometryUid];
 
     if (shaderGeometry == null) {
-        // Get/Create geometry
+        // Get or create geometry
         let geometry = loadedGeometries[geometryUid];
         if (!geometry) {
             geometry =
@@ -205,8 +206,12 @@ function loadShaderGeometry(
             loadedGeometries[geometryUid] = geometry;
         }
 
-        // Get/Create shader
-        let shader = loadedShaders[shaderUid];
+        /* Get or create shader
+        Must use shaderGeometryUid as each entity must have its own shader,
+        this is because texture is tied to the shader,
+        thus it cannot be shared among different entities
+        */
+        let shader = loadedShaders[shaderGeometryUid];
         if (!shader) {
             shader = createShader(
                 {
@@ -221,7 +226,7 @@ function loadShaderGeometry(
                     textures: options.textures,
                 },
             );
-            loadedShaders[shaderUid] = shader;
+            loadedShaders[shaderGeometryUid] = shader;
         }
 
         loadedShaderGeometries[shaderGeometryUid] = {

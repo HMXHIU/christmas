@@ -335,8 +335,6 @@ function updateEntities(
                 // If the land grading has changed,
                 if (!isEqual(updatedLandGrading, landGrading)) {
                     landGrading.set(updatedLandGrading);
-
-                    // TODO: redraw the decorations
                 }
             },
         });

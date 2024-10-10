@@ -71,7 +71,9 @@
                                 >
                             {/each}
                         {:else}
-                            <p>Nothing in your bag</p>
+                            <p class="text-xs text-muted-foreground">
+                                Nothing in your bag
+                            </p>
                         {/if}
                     </div>
                 </div>
