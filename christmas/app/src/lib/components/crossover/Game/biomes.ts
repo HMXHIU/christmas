@@ -11,6 +11,7 @@ import {
 import type { Item } from "$lib/crossover/types";
 import {
     autoCorrectGeohashPrecision,
+    borderingGeohashes,
     generateEvenlySpacedPoints,
     geohashesNearby,
     geohashToColRow,
@@ -80,6 +81,7 @@ async function calculateLandGrading(items: Item[]): Promise<LandGrading> {
 
     for (const item of items) {
         const prop = compendium[item.prop];
+
         // Immovable objects with dimensions greater than 1 cell
         if (
             geohashLocationTypes.has(item.locT) &&
@@ -95,11 +97,25 @@ async function calculateLandGrading(items: Item[]): Promise<LandGrading> {
                     bufferCache: topologyBufferCache,
                 },
             );
+            // Flatten the elevation
             for (const l of item.loc) {
                 landGrading[l] = {
                     elevation,
                     locationType: item.locT as GeohashLocation,
+                    decorations: false,
                 };
+            }
+            // Disable decorations on bordering geohashes
+            for (const l of borderingGeohashes(item.loc)) {
+                if (landGrading[l]) {
+                    landGrading[l].decorations = false;
+                } else {
+                    landGrading[l] = {
+                        elevation, // TODO: set as undefined
+                        locationType: item.locT as GeohashLocation,
+                        decorations: false,
+                    };
+                }
             }
         }
     }
@@ -222,6 +238,11 @@ async function calculateBiomeDecorationsForRowCol({
     if (cached) return cached;
 
     const texturePositions: Record<string, ShaderTexture> = {};
+
+    // Check land grading ig this cell should have decorations
+    if (get(landGrading)[geohash]?.decorations === false) {
+        return texturePositions;
+    }
 
     // Get biome decorations
     const decorations = biomes[biome].decorations;

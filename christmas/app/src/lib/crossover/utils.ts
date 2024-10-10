@@ -270,11 +270,8 @@ function expandGeohashes(geohashes: string[], precision: number): string[] {
  * @param geohashes - An array of geohashes.
  * @returns A promise that resolves to an array of bordering geohashes.
  */
-async function borderingGeohashes(geohashes: string[]): Promise<string[]> {
-    // Get all parent geohashes
+function borderingGeohashes(geohashes: string[]): string[] {
     const innerGeohashes = new Set(geohashes);
-
-    // Get all neighboring geohashes (exclude parent geohashes)
     const borderingGeohashes = new Set<string>();
     for (const geohash of innerGeohashes) {
         for (const neighborGeohash of ngeohash.neighbors(geohash)) {

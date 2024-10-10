@@ -119,7 +119,7 @@ async function respawnMonsters({
         const parentGeohashes = uniq(ps.map(({ loc }) => loc[0].slice(0, -1)));
 
         // Get all peripheral geohashes where there are no players
-        const peripheralGeohashes = await borderingGeohashes(parentGeohashes);
+        const peripheralGeohashes = borderingGeohashes(parentGeohashes);
         for (const geohash of peripheralGeohashes) {
             // Check if can spawn
             if (

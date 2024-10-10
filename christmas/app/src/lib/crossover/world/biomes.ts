@@ -52,7 +52,7 @@ type BiomeParameters = {
 
 type LandGrading = Record<
     string,
-    { locationType: GeohashLocation; elevation: number }
+    { locationType: GeohashLocation; elevation?: number; decorations?: boolean }
 >;
 
 interface Decoration {
@@ -521,7 +521,11 @@ async function elevationAtGeohash(
 ): Promise<number> {
     // Check if land grading exists (overwrite calculation)
     const grading = options?.landGrading?.[geohash];
-    if (grading && grading.locationType === locationType) {
+    if (
+        grading &&
+        grading.locationType === locationType &&
+        grading.elevation != null
+    ) {
         return grading.elevation;
     }
 
