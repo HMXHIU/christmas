@@ -72,7 +72,7 @@ describe("Inventory & Equipment Tests", async () => {
         });
 
         // Check inventory
-        await crossoverPlayerInventory({ Cookie: playerOneCookies });
+        crossoverPlayerInventory({ Cookie: playerOneCookies });
         await expect(
             waitForEventData(playerOneStream, "entities"),
         ).resolves.toMatchObject({
@@ -176,7 +176,7 @@ describe("Inventory & Equipment Tests", async () => {
         });
 
         // Check inventory
-        await crossoverPlayerInventory({ Cookie: playerOneCookies });
+        crossoverPlayerInventory({ Cookie: playerOneCookies });
         await expect(
             waitForEventData(playerOneStream, "entities"),
         ).resolves.toMatchObject({
@@ -206,7 +206,7 @@ describe("Inventory & Equipment Tests", async () => {
         });
 
         // Check inventory
-        await crossoverPlayerInventory({ Cookie: playerOneCookies });
+        crossoverPlayerInventory({ Cookie: playerOneCookies });
         await expect(
             waitForEventData(playerOneStream, "entities"),
         ).resolves.toMatchObject({

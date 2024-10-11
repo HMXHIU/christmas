@@ -138,6 +138,10 @@ describe("Trade Tests", async () => {
             skills: [...SkillLinesEnum],
         });
 
+        // console.log(JSON.stringify(fulfillCommands, null, 2));
+
+        expect(fulfillCommands.length).toBe(1);
+
         expect(fulfillCommands).toMatchObject([
             [
                 {

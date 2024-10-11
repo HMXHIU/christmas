@@ -5,6 +5,7 @@ import type {
     Monster,
     Player,
 } from "$lib/crossover/types";
+import { uniqBy } from "lodash-es";
 import { filterSortEntitiesInRange, gameActionId, getEntityId } from "./utils";
 import { resolveAbilityEntities, type Ability } from "./world/abilities";
 import { resolveActionEntities, type Action } from "./world/actions";
@@ -197,22 +198,28 @@ function entitiesIR({
         });
 
     return {
-        monsters: filterEntities(monsters, (monster) => [
-            monster.beast,
-            monster.name,
-            monster.monster,
-            monster.monster.slice("monster_".length),
-        ]),
-        players: filterEntities(players, (player) => [
-            player.name,
-            player.player,
-        ]),
-        items: filterEntities(items, (item) => [
-            item.prop,
-            item.name,
-            item.item,
-            item.item.slice("item_".length),
-        ]),
+        monsters: uniqBy(
+            filterEntities(monsters, (monster) => [
+                monster.beast,
+                monster.name,
+                monster.monster,
+                monster.monster.slice("monster_".length),
+            ]),
+            "monster",
+        ),
+        players: uniqBy(
+            filterEntities(players, (player) => [player.name, player.player]),
+            "player",
+        ),
+        items: uniqBy(
+            filterEntities(items, (item) => [
+                item.prop,
+                item.name,
+                item.item,
+                item.item.slice("item_".length),
+            ]),
+            "item",
+        ),
         skills: filterEntities(skills, (skill) => [
             skill,
             skillLines[skill as SkillLines].name,

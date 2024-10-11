@@ -89,6 +89,15 @@ async function publishAffectedEntitiesToPlayers(
         "item",
     );
 
+    // No effected entities
+    if (
+        effectedPlayers.length < 0 &&
+        effectedMonsters.length < 0 &&
+        effectedItems.length < 0
+    ) {
+        return;
+    }
+
     const event = JSON.stringify({
         event: "entities",
         players: effectedPlayers,
