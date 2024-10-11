@@ -209,7 +209,6 @@ But something tells you that this is not the end.`,
                     players: [
                         minifiedEntity(await respawnPlayer(playerTwo), {
                             stats: true,
-                            location: true,
                             timers: true,
                         }),
                     ],

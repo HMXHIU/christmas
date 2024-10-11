@@ -24,6 +24,7 @@ import {
     dungeonBlueprints,
     dungeonBlueprintsToSpawn,
 } from "$lib/crossover/world/settings/blueprint";
+import { hashObject } from "$lib/server";
 import { instantiateBlueprintsInDungeons } from "$lib/server/crossover/blueprint";
 import type { ItemEntity } from "$lib/server/crossover/types";
 import { itemVariableValue } from "$lib/server/crossover/utils";
@@ -37,8 +38,6 @@ describe("Blueprint Tests", async () => {
             LOCATION_INSTANCE,
             ["w2"],
         );
-
-        console.log(JSON.stringify(spawnedEntities, null, 2));
 
         // Check items spawned
         expect(spawnedEntities).toMatchObject([
@@ -154,7 +153,8 @@ describe("Blueprint Tests", async () => {
             location: "w21z9",
             locationType: "d1",
             stencil: {
-                w21z6p8p: {
+                w21z6p8m: {
+                    blueprint: "entrance",
                     prop: "dungeonentrance",
                     ref: "entrance",
                     variables: {
@@ -163,19 +163,41 @@ describe("Blueprint Tests", async () => {
                     overwrite: {
                         locT: "geohash",
                     },
-                    blueprint: "entrance",
+                    unique: true,
                 },
-                w21z6p8r: {
+                w21z6p8t: {
+                    blueprint: "entrance",
                     prop: "dungeonentrance",
                     ref: "exit",
                     variables: {
                         target: "${entrance.item}",
                     },
-                    blueprint: "entrance",
+                    unique: true,
                 },
-                w21zd055: {
-                    prop: "woodendoor",
+                w21zd057: {
                     blueprint: "control",
+                    prop: "woodendoor",
+                    unique: true,
+                },
+                w21vumpp: {
+                    blueprint: "market",
+                    npc: "innkeeper",
+                    unique: true,
+                },
+                w21vuqpr: {
+                    blueprint: "market",
+                    npc: "blacksmith",
+                    unique: true,
+                },
+                w21vuqpp: {
+                    blueprint: "market",
+                    npc: "grocer",
+                    unique: true,
+                },
+                w21vuusv: {
+                    blueprint: "market",
+                    npc: "alchemist",
+                    unique: true,
                 },
             },
         });
@@ -189,16 +211,19 @@ describe("Blueprint Tests", async () => {
             8,
             10,
         );
-        expect(samples).toMatchObject([
-            "ske7",
-            "skee",
-            "skek",
-            "sked",
-            "skes",
-            "sket",
-            "skem",
-            "ske6",
-        ]);
+
+        expect(samples.sort()).toMatchObject(
+            [
+                "ske7",
+                "skee",
+                "skek",
+                "sked",
+                "skes",
+                "sket",
+                "skem",
+                "ske6",
+            ].sort(),
+        );
 
         var samples = sampleChildrenGeohashesAtPrecision(
             "ske",
@@ -207,32 +232,34 @@ describe("Blueprint Tests", async () => {
             24,
             10,
         );
-        expect(samples).toMatchObject([
-            "ske5",
-            "skeg",
-            "skec",
-            "skev",
-            "skez",
-            "skeb",
-            "ske0",
-            "skeh",
-            "sken",
-            "skef",
-            "skej",
-            "ske2",
-            "skey",
-            "skew",
-            "skeu",
-            "ske8",
-            "skep",
-            "ske3",
-            "ske1",
-            "sker",
-            "ske4",
-            "skeq",
-            "skex",
-            "ske9",
-        ]);
+        expect(samples.sort()).toMatchObject(
+            [
+                "ske5",
+                "skeg",
+                "skec",
+                "skev",
+                "skez",
+                "skeb",
+                "ske0",
+                "skeh",
+                "sken",
+                "skef",
+                "skej",
+                "ske2",
+                "skey",
+                "skew",
+                "skeu",
+                "ske8",
+                "skep",
+                "ske3",
+                "ske1",
+                "sker",
+                "ske4",
+                "skeq",
+                "skex",
+                "ske9",
+            ].sort(),
+        );
     });
 
     test("Test `generateProps`", async () => {
@@ -246,7 +273,7 @@ describe("Blueprint Tests", async () => {
         );
 
         expect(props).toMatchObject({
-            skbpbq37: {
+            skbpbpbp: {
                 prop: "tavern",
                 blueprint: "outpost",
             },
@@ -282,123 +309,10 @@ describe("Blueprint Tests", async () => {
             expect(propLocs.length).toBe(uniquePlots.length);
         }
 
-        expect(territoryBlueprints).toMatchObject({
-            territory: "sk",
-            props: {
-                skbk8tkk: {
-                    prop: "tavern",
-                    blueprint: "outpost",
-                },
-                skc1bv21: {
-                    prop: "tavern",
-                    blueprint: "outpost",
-                },
-                skgqp2me: {
-                    prop: "tavern",
-                    blueprint: "outpost",
-                },
-                skvvxskc: {
-                    prop: "tavern",
-                    blueprint: "outpost",
-                },
-                skyz4q1r: {
-                    prop: "tavern",
-                    blueprint: "outpost",
-                },
-                skd4twfs: {
-                    prop: "tavern",
-                    blueprint: "outpost",
-                },
-                sktq4yeu: {
-                    prop: "tavern",
-                    blueprint: "outpost",
-                },
-                skw3bug9: {
-                    prop: "tavern",
-                    blueprint: "outpost",
-                },
-                skx459v7: {
-                    prop: "tavern",
-                    blueprint: "outpost",
-                },
-                sk21dbfg: {
-                    prop: "tavern",
-                    blueprint: "outpost",
-                },
-                sk34smzb: {
-                    prop: "tavern",
-                    blueprint: "outpost",
-                },
-                sk7hhgvr: {
-                    prop: "tavern",
-                    blueprint: "outpost",
-                },
-                skkxxe43: {
-                    prop: "tavern",
-                    blueprint: "outpost",
-                },
-                skn0sxeg: {
-                    prop: "tavern",
-                    blueprint: "outpost",
-                },
-                skbs3tkk: {
-                    prop: "tavern",
-                    blueprint: "town",
-                },
-                skck8v21: {
-                    prop: "tavern",
-                    blueprint: "town",
-                },
-                skgxw2me: {
-                    prop: "tavern",
-                    blueprint: "town",
-                },
-                skvntskc: {
-                    prop: "tavern",
-                    blueprint: "town",
-                },
-                sky4hq1r: {
-                    prop: "tavern",
-                    blueprint: "town",
-                },
-                skd1cwfs: {
-                    prop: "tavern",
-                    blueprint: "town",
-                },
-                sktgdyeu: {
-                    prop: "tavern",
-                    blueprint: "town",
-                },
-                skwvxug9: {
-                    prop: "tavern",
-                    blueprint: "town",
-                },
-                skx3c9v7: {
-                    prop: "tavern",
-                    blueprint: "town",
-                },
-                sk272bfg: {
-                    prop: "tavern",
-                    blueprint: "town",
-                },
-                sk31emzb: {
-                    prop: "tavern",
-                    blueprint: "town",
-                },
-                sk766gvr: {
-                    prop: "tavern",
-                    blueprint: "town",
-                },
-                skkkve43: {
-                    prop: "tavern",
-                    blueprint: "town",
-                },
-                skn91xeg: {
-                    prop: "tavern",
-                    blueprint: "town",
-                },
-            },
-        });
+        // If this change means our world will change!
+        expect(hashObject(territoryBlueprints)).toBe(
+            "6994c15a7d718821924e55d37ded77398cddb4815a2e025737c61d7f4734f2e2",
+        );
     });
 
     test("Test `blueprintsAtTerritory` on land", async () => {
@@ -434,16 +348,15 @@ describe("Blueprint Tests", async () => {
             });
             expect(biomes[biome].traversableSpeed > 0);
         }
-
         expect(territoryBlueprints).toMatchObject({
-            territory: "w2",
+            location: "w2",
             locationType: "geohash",
-            props: {
-                w28d9kjb: {
+            stencil: {
+                w2c6epbp: {
                     prop: "tavern",
-                    blueprint: "outpost",
+                    blueprint: "town",
                 },
-                w286tkjb: {
+                w29j4093: {
                     prop: "tavern",
                     blueprint: "town",
                 },
