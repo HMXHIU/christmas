@@ -105,6 +105,20 @@ async function say(
             variables.target = options.target;
         }
 
+        console.log(
+            JSON.stringify(
+                {
+                    type: "message",
+                    message: options?.overwrite
+                        ? "${message}"
+                        : "${name} says ${message}",
+                    variables,
+                },
+                null,
+                2,
+            ),
+        );
+
         await publishFeedEvent(publicKey, {
             type: "message",
             message: options?.overwrite

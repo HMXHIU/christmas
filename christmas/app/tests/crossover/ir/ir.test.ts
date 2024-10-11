@@ -2,12 +2,16 @@ import {
     entitiesIR,
     fuzzyMatch,
     gameActionsIR,
+    getCommandVariables,
     tokenize,
 } from "$lib/crossover/ir";
 import type { Item } from "$lib/crossover/types";
 import { type Ability } from "$lib/crossover/world/abilities";
+import { resolveActionEntities } from "$lib/crossover/world/actions";
 import type { Utility } from "$lib/crossover/world/compendium";
+import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { abilities } from "$lib/crossover/world/settings/abilities";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import { describe, expect, test } from "vitest";
@@ -15,10 +19,11 @@ import {
     allActions,
     createGandalfSarumanSauron,
     createGoblinSpiderDragon,
+    createNPCs,
     createTestItems,
 } from "../utils";
 
-let { playerOne, playerTwo } = await createGandalfSarumanSauron();
+let { geohash, playerOne, playerTwo } = await createGandalfSarumanSauron();
 let {
     woodenDoor,
     woodenClub,
@@ -29,7 +34,122 @@ let {
 } = await createTestItems({});
 let { goblin, dragon } = await createGoblinSpiderDragon();
 
+const { innKeeper } = await createNPCs({
+    geohash,
+    locationInstance: LOCATION_INSTANCE,
+    locationType: "geohash",
+});
+
 describe("IR Tests", () => {
+    describe("Query irrelevant & command variables", () => {
+        test("Test token positions and query irrelevant", () => {
+            const queryTokens = tokenize("greet inn keeper");
+
+            const ga = gameActionsIR({
+                queryTokens,
+                abilities: [],
+                itemUtilities: [],
+                actions: allActions,
+            });
+            expect(ga.tokenPositions).toMatchObject({
+                say: {
+                    "0": {
+                        token: "greet",
+                        score: 1,
+                    },
+                },
+            });
+
+            const entitiesRetrieved = entitiesIR({
+                queryTokens,
+                monsters: [],
+                players: [innKeeper],
+                items: [],
+                skills: [],
+            });
+            expect(entitiesRetrieved).toMatchObject({
+                players: [
+                    {
+                        player: innKeeper.player,
+                        name: "Inn Keeper",
+                        npc: innKeeper.player,
+                    },
+                ],
+                tokenPositions: {
+                    [innKeeper.player]: {
+                        "1": {
+                            token: "inn",
+                            score: 1,
+                        },
+                        "2": {
+                            token: "keeper",
+                            score: 1,
+                        },
+                    },
+                },
+            });
+
+            const allTokenPositions = {
+                ...entitiesRetrieved.tokenPositions,
+                ...ga.tokenPositions,
+            };
+
+            expect(allTokenPositions).toMatchObject({
+                [innKeeper.player]: {
+                    "1": {
+                        token: "inn",
+                        score: 1,
+                    },
+                    "2": {
+                        token: "keeper",
+                        score: 1,
+                    },
+                },
+                say: {
+                    "0": {
+                        token: "greet",
+                        score: 1,
+                    },
+                },
+            });
+
+            const entitiesResolved = resolveActionEntities({
+                queryTokens,
+                tokenPositions: allTokenPositions,
+                action: actions.say,
+                self: playerOne,
+                monsters: [],
+                players: [innKeeper],
+                items: [],
+                skills: [],
+            });
+
+            expect(entitiesResolved).toMatchObject([
+                {
+                    self: {
+                        player: playerOne.player,
+                    },
+                    target: {
+                        player: innKeeper.player,
+                        npc: innKeeper.player,
+                    },
+                },
+            ]);
+
+            const variables = getCommandVariables({
+                action: actions.say,
+                gameEntities: entitiesResolved[0],
+                queryTokens,
+                tokenPositions: allTokenPositions,
+            });
+
+            expect(variables).toMatchObject({
+                query: "greet inn keeper",
+                queryIrrelevant: "",
+            });
+        });
+    });
+
     describe("fuzzyMatch Tests", () => {
         test("should match identical strings", () => {
             expect(fuzzyMatch("Gandalf", "Gandalf", 1)).toMatchObject({
@@ -286,12 +406,13 @@ describe("IR Tests", () => {
 
         test("should match multiple items with the same prop", () => {
             const res = entitiesIR({
-                queryTokens: tokenize(`take ${woodenClub.item}`),
+                queryTokens: tokenize(`take woodenclub`),
                 monsters: [dragon, goblin],
                 players: [playerOne],
                 items: [woodenClub, woodenClubTwo, woodenClubThree],
                 skills: [...SkillLinesEnum],
             });
+
             expect(res).toMatchObject({
                 monsters: [],
                 players: [],
@@ -309,17 +430,17 @@ describe("IR Tests", () => {
                 tokenPositions: {
                     [woodenClub.item]: {
                         "1": {
-                            token: woodenClub.item,
+                            token: "woodenclub",
                         },
                     },
                     [woodenClubTwo.item]: {
                         "1": {
-                            token: woodenClub.item,
+                            token: "woodenclub",
                         },
                     },
                     [woodenClubThree.item]: {
                         "1": {
-                            token: woodenClub.item,
+                            token: "woodenclub",
                         },
                     },
                 },
@@ -363,7 +484,7 @@ describe("IR Tests", () => {
                     {
                         action: "say",
                         description: "Say something.",
-                        synonyms: ["greet"],
+                        synonyms: ["greet", "ask", "tell"],
                     },
                 ],
                 tokenPositions: {

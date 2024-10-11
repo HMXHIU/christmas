@@ -552,4 +552,5 @@ const playerActions = [
     actions.trade,
     actions.fulfill,
     actions.writ,
+    actions.browse,
 ];

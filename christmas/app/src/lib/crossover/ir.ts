@@ -21,6 +21,7 @@ export {
     entitiesIR,
     fuzzyMatch,
     gameActionsIR,
+    getCommandVariables,
     getGameActionId,
     searchPossibleCommands,
     tokenize,
@@ -561,7 +562,7 @@ function searchPossibleCommands({
             });
         })
         .map(({ action, entities }) => {
-            const variables = commandVariables({
+            const variables = getCommandVariables({
                 action,
                 gameEntities: entities,
                 queryTokens,
@@ -617,7 +618,7 @@ function searchPossibleCommands({
     };
 }
 
-function commandVariables({
+function getCommandVariables({
     action,
     gameEntities,
     queryTokens,
@@ -640,10 +641,15 @@ function commandVariables({
         for (const [_, matchedTokenPosition] of Object.entries(
             tokenPositions,
         )) {
-            for (const matchedPosition of Object.keys(matchedTokenPosition)) {
-                if (parseInt(matchedPosition) === position) {
-                    relevantPositions.push(position);
-                }
+            /* 
+            Multiple tokens might belong to the same entity (eg. inn keeper)
+            If any of the position matches, consider the whole groupe matched
+            */
+            const matchedPositions =
+                Object.keys(matchedTokenPosition).map(Number);
+            const entityMatched = matchedPositions.find((p) => p === position);
+            if (entityMatched) {
+                relevantPositions.push(...matchedPositions);
             }
         }
     }
