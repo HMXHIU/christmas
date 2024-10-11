@@ -8,6 +8,7 @@ import {
 } from "$lib/crossover/utils";
 import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
 import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { Direction } from "$lib/crossover/world/types";
 import { move } from "$lib/server/crossover/actions";
@@ -18,7 +19,7 @@ import { sleep } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import { beforeEach, describe, expect, test } from "vitest";
 import {
-    collectEventDataForDuration,
+    collectAllEventDataForDuration,
     createGandalfSarumanSauron,
     flushEventChannel,
     generateRandomGeohash,
@@ -138,9 +139,7 @@ describe("Movement Tests", async () => {
         });
 
         // PlayerOne tries to move south (obstructed by tavern)
-        await expect(
-            crossoverCmdMove({ path: ["s"] }, { Cookie: playerOneCookies }),
-        ).rejects.toThrowError("Path is not traversable");
+        crossoverCmdMove({ path: ["s"] }, { Cookie: playerOneCookies });
 
         await expect(
             waitForEventData(playerOneStream, "feed"),
@@ -164,9 +163,7 @@ describe("Movement Tests", async () => {
         expect(playerOne.loc[0]).toBe(geohashNeighbour(playerOneGeohash, "e"));
 
         // PlayerOne tries to move south (obstructed by tavern)
-        await expect(
-            crossoverCmdMove({ path: ["s"] }, { Cookie: playerOneCookies }),
-        ).rejects.toThrowError("Path is not traversable");
+        crossoverCmdMove({ path: ["s"] }, { Cookie: playerOneCookies });
         await expect(
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
@@ -185,9 +182,7 @@ describe("Movement Tests", async () => {
         );
 
         // PlayerOne move west (obstructed by tavern)
-        await expect(
-            crossoverCmdMove({ path: ["w"] }, { Cookie: playerOneCookies }),
-        ).rejects.toThrowError("Path is not traversable");
+        crossoverCmdMove({ path: ["w"] }, { Cookie: playerOneCookies });
         await expect(
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
@@ -197,47 +192,52 @@ describe("Movement Tests", async () => {
     });
 
     test("Test `move`", async () => {
+        await flushEventChannel(playerOneStream, "entities");
+
         const playerOneGeohash = playerOne.loc[0];
         const path: Direction[] = ["s", "s", "s", "s"];
         const finalGeohash = geohashNeighbour(playerOneGeohash, "s", 4);
 
-        await flushEventChannel(playerOneStream, "entities");
-        playerOne = (await move(playerOne, path)) as PlayerEntity;
-
-        // Check in motion
-        expect(isEntityInMotion(playerOne)).equal(true);
-
-        // Check pthst
-        expect(playerOne.pthst).toBe(playerOneGeohash);
-
-        // Check pth
-        expect(playerOne.pth).toMatchObject(["s", "s", "s", "s"]);
-
-        // Check pthdur, pthclk
-        expect(playerOne.pthclk + playerOne.pthdur).toBeGreaterThan(Date.now());
-
-        // Check final destination
-        expect(playerOne.loc[0]).toBe(finalGeohash);
-
-        // Check correct events
-        const entityEvents = await collectEventDataForDuration(
-            playerOneStream,
-            "entities",
-        );
-        expect(entityEvents.length).equal(1); // check no duplicates
-        expect(entityEvents[0]).toMatchObject({
-            event: "entities",
-            players: [
+        // Move along path
+        move(playerOne, path);
+        const evs = await collectAllEventDataForDuration(playerOneStream);
+        expect(evs).toMatchObject({
+            feed: [],
+            entities: [
                 {
-                    name: playerOne.name,
-                    player: playerOne.player,
-                    loc: [finalGeohash],
-                    locT: "geohash",
-                    pth: ["s", "s", "s", "s"],
-                    pthst: playerOneGeohash,
+                    event: "entities",
+                    players: [
+                        {
+                            name: playerOne.name,
+                            player: playerOne.player,
+                            loc: [finalGeohash],
+                            locT: "geohash",
+                            pth: ["s", "s", "s", "s"],
+                            pthst: playerOneGeohash,
+                        },
+                    ],
+                    monsters: [],
+                    items: [],
+                    op: "upsert",
                 },
             ],
-            op: "upsert",
+            cta: [],
+            action: [],
         });
+
+        // Check final entity
+        playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
+        expect(playerOne.pthst).toBe(playerOneGeohash);
+        expect(playerOne.pth).toMatchObject(["s", "s", "s", "s"]);
+        expect(playerOne.loc[0]).toBe(finalGeohash);
+
+        // Test in motion
+        move(playerOne, ["n", "n", "n", "n"]);
+        await sleep(MS_PER_TICK * actions.move.ticks);
+        playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
+
+        // Check in motion
+        expect(playerOne.pthclk + playerOne.pthdur).toBeGreaterThan(Date.now());
+        expect(isEntityInMotion(playerOne)).equal(true);
     });
 });

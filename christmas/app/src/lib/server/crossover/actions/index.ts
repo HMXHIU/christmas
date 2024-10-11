@@ -129,17 +129,13 @@ async function say(
     }
 }
 
-async function move(
-    entity: CreatureEntity,
-    path: Direction[],
-    now?: number,
-): Promise<CreatureEntity> {
+async function move(entity: CreatureEntity, path: Direction[], now?: number) {
     // Get path duration
     now = now ?? Date.now();
     const duration = calculatePathDuration(path);
     const [entityId, entityType] = getEntityId(entity);
 
-    // Check if entity is busy
+    // Set busy
     entity = await setEntityBusy({
         entity: entity,
         action: actions.move.action,
@@ -164,7 +160,7 @@ async function move(
                     message: error,
                 });
             }
-            throw new Error(error);
+            return; // do not proceed
         } else {
             loc = location;
         }
@@ -213,8 +209,6 @@ async function move(
             { publishTo: [entityId] },
         );
     }
-
-    return entity;
 }
 
 async function look(
