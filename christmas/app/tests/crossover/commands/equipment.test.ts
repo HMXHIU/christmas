@@ -17,18 +17,23 @@ describe("Equipment & Inventory Tests", async () => {
     );
 
     test("Drop action only for inventory items", async () => {
+        // woodenClubTwo in inventory (can drop)
         woodenClubTwo.locT = "inv";
         woodenClubTwo.loc = [playerOne.player];
 
+        // woodenClub equipped (can't drop)
+        woodenClub.locT = "rh";
+        woodenClub.loc = [playerOne.player];
+
         const commands = searchPossibleCommands({
-            query: `drop ${woodenClubTwo.item}`,
+            query: `drop woodenClub`,
             player: playerOne,
             actions: [actions.drop],
             playerAbilities: [abilities.bruise, abilities.bandage],
-            playerItems: [woodenClubTwo],
+            playerItems: [woodenClubTwo, woodenClub],
             monsters: [dragon, goblin],
             players: [],
-            items: [woodenClubThree, woodenClub],
+            items: [woodenClubThree],
             skills: [...SkillLinesEnum],
         }).commands;
 
@@ -47,7 +52,7 @@ describe("Equipment & Inventory Tests", async () => {
                     },
                 },
                 {
-                    query: `drop ${woodenClubTwo.item}`,
+                    query: `drop woodenclub`,
                     queryIrrelevant: "",
                 },
             ],

@@ -3,6 +3,7 @@ import {
     getEntityId,
     minifiedEntity,
 } from "$lib/crossover/utils";
+import { isItemEquipped } from "$lib/crossover/world/compendium";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
@@ -360,10 +361,20 @@ async function dropItem(player: PlayerEntity, item: string, now?: number) {
         return;
     }
 
+    // Check item is on player
     if (itemEntity.loc[0] !== player.player) {
         await publishFeedEvent(player.player, {
             type: "error",
             message: `${item} is not in inventory`,
+        });
+        return;
+    }
+
+    // Check can't drop equipped item
+    if (isItemEquipped(itemEntity, player)) {
+        await publishFeedEvent(player.player, {
+            type: "error",
+            message: `Can't drop equipped ${item}, unequip it first`,
         });
         return;
     }

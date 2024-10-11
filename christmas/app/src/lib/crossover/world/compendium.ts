@@ -12,6 +12,7 @@ import {
 
 export {
     isItemEquipped,
+    isItemInInventory,
     isWeaponEquipped,
     itemAttibutes,
     type EquipmentAsset,
@@ -121,6 +122,10 @@ function itemVariables(item: Item): ItemVariables {
 
 function isItemEquipped(item: Item, entity: Actor): boolean {
     return isEntityEquipment(item) && item.loc[0] === getEntityId(entity)[0];
+}
+
+function isItemInInventory(item: Item, entity: Actor): boolean {
+    return item.locT === "inv" && item.loc[0] === getEntityId(entity)[0];
 }
 
 function isWeaponEquipped(item: Item, entity: Actor): boolean {

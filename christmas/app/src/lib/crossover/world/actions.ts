@@ -7,15 +7,11 @@ import type {
 } from "$lib/crossover/types";
 import type { GameActionEntities, TokenPositions } from "../ir";
 import { getEntityId, isEntityAlive } from "../utils";
+import { isItemEquipped, isItemInInventory } from "./compendium";
 import { actions } from "./settings/actions";
 import { compendium } from "./settings/compendium";
 import type { SkillLines } from "./skills";
-import {
-    equipmentSlots,
-    geohashLocationTypes,
-    type BarterSerialized,
-    type EquipmentSlot,
-} from "./types";
+import { geohashLocationTypes, type BarterSerialized } from "./types";
 
 export {
     resolveActionEntities,
@@ -128,32 +124,21 @@ function filterTargetItemsByAction(
     self: Creature,
     items: Item[],
 ) {
-    // Can only equip/give an item in inventory
-    if (action === actions.equip.action || action === actions.give.action) {
-        return items.filter(
-            (item) =>
-                item.locT === "inv" && item.loc[0] === getEntityId(self)[0],
-        );
+    // Can only equip/give/drop an item in inventory (unequipped)
+    if (
+        action === actions.equip.action ||
+        action === actions.give.action ||
+        action === actions.drop.action
+    ) {
+        return items.filter((item) => isItemInInventory(item, self));
     }
     // Can only unequip an item already equipped
     else if (action === actions.unequip.action) {
-        return items.filter(
-            (item) =>
-                equipmentSlots.has(item.locT as EquipmentSlot) &&
-                item.loc[0] === getEntityId(self)[0],
-        );
+        return items.filter((item) => isItemEquipped(item, self));
     }
     // Can only take an item from environment
     else if (action === actions.take.action) {
         return items.filter((item) => geohashLocationTypes.has(item.locT));
-    }
-    // Can only drop an item from inventory/equipped
-    else if (action === actions.drop.action) {
-        return items.filter(
-            (item) =>
-                item.locT === "inv" ||
-                equipmentSlots.has(item.locT as EquipmentSlot),
-        );
     }
     // Can only enter an item with a world
     else if (action === actions.enter.action) {
