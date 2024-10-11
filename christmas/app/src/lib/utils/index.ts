@@ -17,23 +17,9 @@ export {
     sleep,
     stringToBase58,
     stringToUint8Array,
-    substituteValues,
     substituteVariables,
     substituteVariablesRecursively,
 };
-
-function substituteValues(
-    d: Record<string, string>,
-    variables: Record<string, any>,
-) {
-    const result: Record<string, string> = {};
-    for (const key in d) {
-        if (d.hasOwnProperty(key)) {
-            result[key] = substituteVariables(d[key], variables);
-        }
-    }
-    return result;
-}
 
 /**
  * {{variable access}} only works when the string begins with {{ and ends with }}

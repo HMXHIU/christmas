@@ -15,7 +15,7 @@ import { awardKillCurrency } from "$lib/server/crossover/entity";
 import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
 import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
 import { itemVariableValue } from "$lib/server/crossover/utils";
-import { sleep, substituteValues } from "$lib/utils";
+import { sleep, substituteVariablesRecursively } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import {
@@ -125,7 +125,7 @@ describe("Test Items", async () => {
         expect(compendium[tavern.prop].world != null).toBe(true);
 
         // Test variable substitution
-        const propWorld = substituteValues(
+        const propWorld = substituteVariablesRecursively(
             compendium[tavern.prop].world as any,
             {
                 ...tavern.vars,

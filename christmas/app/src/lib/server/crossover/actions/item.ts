@@ -19,7 +19,7 @@ import {
     type MonsterEntity,
     type PlayerEntity,
 } from "$lib/server/crossover/types";
-import { substituteValues } from "$lib/utils";
+import { substituteVariablesRecursively } from "$lib/utils";
 import { setEntityBusy } from "..";
 import { performAbility } from "../abilities";
 import { worldAssetMetadataCache, worldPOIsCache } from "../caches";
@@ -533,7 +533,7 @@ async function enterItem(
 
     // Substitute world variables
     const { locationInstance, geohash, world, url, locationType } =
-        substituteValues(prop.world as any, {
+        substituteVariablesRecursively(prop.world as any, {
             ...itemEntity.vars,
             self: itemEntity,
         });

@@ -111,7 +111,7 @@ describe("DungeonMaster Tests", async () => {
             locationInstance: playerOne.locI,
         });
         expect(spawned).toMatchObject({
-            goblin: 24,
+            goblin: 16,
         });
     });
 

@@ -29,7 +29,7 @@ import type {
     PlayerEntity,
     WorldEntity,
 } from "$lib/server/crossover/types";
-import { substituteValues, substituteVariablesRecursively } from "$lib/utils";
+import { substituteVariablesRecursively } from "$lib/utils";
 import { generatePin } from "$lib/utils/random";
 import { groupBy, uniq } from "lodash-es";
 import {
@@ -642,7 +642,7 @@ async function spawnWorldPOIs(
             if ("prop" in poi) {
                 // Substutite variables with `source` if provided
                 const variables = options?.source
-                    ? substituteValues(poi.variables as any, {
+                    ? substituteVariablesRecursively(poi.variables as any, {
                           source: options.source,
                       })
                     : poi.variables;
