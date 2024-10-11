@@ -11,41 +11,41 @@ import {
     waitForEventData,
 } from "../utils";
 
-let {
-    geohash,
-    playerOne,
-    playerTwo,
-    playerThree,
-    playerOneCookies,
-    playerOneStream,
-} = await createGandalfSarumanSauron();
-let { woodenDoor } = await createTestItems({});
-let goblin = await spawnMonster({
-    geohash,
-    locationType: "geohash",
-    locationInstance: LOCATION_INSTANCE,
-    beast: "goblin",
-});
+describe("Look Tests", async () => {
+    let {
+        geohash,
+        playerOne,
+        playerTwo,
+        playerThree,
+        playerOneCookies,
+        playerOneStream,
+    } = await createGandalfSarumanSauron();
+    let { woodenDoor } = await createTestItems({});
+    let goblin = await spawnMonster({
+        geohash,
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        beast: "goblin",
+    });
 
-beforeAll(async () => {
-    woodenDoor.loc = [geohash];
-    woodenDoor = await saveEntity(woodenDoor);
-});
+    beforeAll(async () => {
+        woodenDoor.loc = [geohash];
+        woodenDoor = await saveEntity(woodenDoor);
+    });
 
-beforeEach(async () => {
-    // playerOne and playerThree should be same location
-    playerOne.loc = [geohash];
-    playerOne = await saveEntity(playerOne);
+    beforeEach(async () => {
+        // playerOne and playerThree should be same location
+        playerOne.loc = [geohash];
+        playerOne = await saveEntity(playerOne);
 
-    playerThree.loc = [geohash];
-    playerThree = await saveEntity(playerThree);
+        playerThree.loc = [geohash];
+        playerThree = await saveEntity(playerThree);
 
-    // Change playerTwo location away from playerOne & playerThree
-    playerTwo.loc = [generateRandomGeohash(8, "h9r")];
-    playerTwo = await saveEntity(playerTwo);
-});
+        // Change playerTwo location away from playerOne & playerThree
+        playerTwo.loc = [generateRandomGeohash(8, "h9r")];
+        playerTwo = await saveEntity(playerTwo);
+    });
 
-describe("Look Tests", () => {
     test("Test Look", async () => {
         // playerOne look
         crossoverCmdLook({}, { Cookie: playerOneCookies });
@@ -56,7 +56,6 @@ describe("Look Tests", () => {
         ).resolves.toMatchObject({
             players: [
                 minifiedEntity(playerOne, {
-                    location: true,
                     stats: true,
                     timers: true,
                     demographics: true,

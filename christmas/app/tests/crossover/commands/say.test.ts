@@ -9,11 +9,11 @@ import {
     createTestItems,
 } from "../utils";
 
-let { geohash, playerOne, playerTwo } = await createGandalfSarumanSauron();
-let { dragon } = await createGoblinSpiderDragon(geohash);
-let { woodenDoor, woodenClub } = await createTestItems({});
+describe("Say Tests", async () => {
+    let { geohash, playerOne, playerTwo } = await createGandalfSarumanSauron();
+    let { dragon } = await createGoblinSpiderDragon(geohash);
+    let { woodenDoor, woodenClub } = await createTestItems({});
 
-describe("Say Tests", () => {
     test("Say action with message to specific target", () => {
         // Test commands search
         const { commands } = searchPossibleCommands({

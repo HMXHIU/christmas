@@ -15,21 +15,21 @@ import {
     waitForEventData,
 } from "../utils";
 
-let {
-    playerOne,
-    playerTwo,
-    playerOneCookies,
-    playerOneStream,
-    playerTwoCookies,
-    playerTwoStream,
-} = await createGandalfSarumanSauron();
-let { goblin, dragon } = await createGoblinSpiderDragon();
-let woodenClub = await spawnItemInInventory({
-    entity: playerOne,
-    prop: compendium.woodenclub.prop,
-});
+describe("Give Tests", async () => {
+    let {
+        playerOne,
+        playerTwo,
+        playerOneCookies,
+        playerOneStream,
+        playerTwoCookies,
+        playerTwoStream,
+    } = await createGandalfSarumanSauron();
+    let { goblin, dragon } = await createGoblinSpiderDragon();
+    let woodenClub = await spawnItemInInventory({
+        entity: playerOne,
+        prop: compendium.woodenclub.prop,
+    });
 
-describe("Give Tests", () => {
     test("Give item to player", async () => {
         // Test command search
         const { commands, queryTokens, tokenPositions } =

@@ -10,11 +10,11 @@ import {
     createTestItems,
 } from "../utils";
 
-let { geohash, playerOne, playerTwo } = await createGandalfSarumanSauron();
-let { dragon, goblin } = await createGoblinSpiderDragon(geohash);
-let { woodenDoor, woodenClub } = await createTestItems({});
+describe("Actions Tests", async () => {
+    let { geohash, playerOne, playerTwo } = await createGandalfSarumanSauron();
+    let { dragon, goblin } = await createGoblinSpiderDragon(geohash);
+    let { woodenDoor, woodenClub } = await createTestItems({});
 
-describe("Actions Tests", () => {
     test("Look action without target", () => {
         const commands = searchPossibleCommands({
             query: "look",

@@ -19,6 +19,7 @@ export {
     monsterRepository,
     playerRepository,
     questRepository,
+    registerSchemas,
     worldRepository,
 };
 

@@ -17,32 +17,32 @@ import {
     waitForEventData,
 } from "../utils";
 
-let {
-    geohash,
-    playerOne,
-    playerOneCookies,
-    playerOneStream,
-    playerTwo,
-    playerTwoCookies,
-    playerTwoStream,
-} = await createGandalfSarumanSauron();
+describe("Writ Tests", async () => {
+    let {
+        geohash,
+        playerOne,
+        playerOneCookies,
+        playerOneStream,
+        playerTwo,
+        playerTwoCookies,
+        playerTwoStream,
+    } = await createGandalfSarumanSauron();
 
-let woodenclub = await spawnItemInInventory({
-    entity: playerTwo,
-    prop: compendium.woodenclub.prop,
-});
+    let woodenclub = await spawnItemInInventory({
+        entity: playerTwo,
+        prop: compendium.woodenclub.prop,
+    });
 
-beforeEach(async () => {
-    await resetEntityResources(playerOne, playerTwo);
+    beforeEach(async () => {
+        await resetEntityResources(playerOne, playerTwo);
 
-    // Put woodenclub in `playerTwo` inventory
-    woodenclub.loc[0] = playerTwo.player;
-    woodenclub.locI = playerTwo.locI;
-    woodenclub.locT = "inv";
-    woodenclub = await saveEntity(woodenclub);
-});
+        // Put woodenclub in `playerTwo` inventory
+        woodenclub.loc[0] = playerTwo.player;
+        woodenclub.locI = playerTwo.locI;
+        woodenclub.locT = "inv";
+        woodenclub = await saveEntity(woodenclub);
+    });
 
-describe("Writ Tests", () => {
     test("Create, Browse, Fulfill trade writs", async () => {
         /**
          * Create

@@ -19,16 +19,16 @@ import {
     resetEntityResources,
 } from "../utils";
 
-let { geohash, playerOne, playerTwo, playerOneCookies, playerTwoCookies } =
-    await createGandalfSarumanSauron();
-let { dragon, goblin } = await createGoblinSpiderDragon(geohash);
-let { woodenDoor, woodenClub } = await createTestItems({});
+describe("Trade Tests", async () => {
+    let { geohash, playerOne, playerTwo, playerOneCookies, playerTwoCookies } =
+        await createGandalfSarumanSauron();
+    let { dragon, goblin } = await createGoblinSpiderDragon(geohash);
+    let { woodenDoor, woodenClub } = await createTestItems({});
 
-beforeEach(async () => {
-    resetEntityResources(playerOne, playerTwo);
-});
+    beforeEach(async () => {
+        resetEntityResources(playerOne, playerTwo);
+    });
 
-describe("Trade Tests", () => {
     test("Create writ", async () => {
         // Test command search
         const { commands, queryTokens, tokenPositions } =

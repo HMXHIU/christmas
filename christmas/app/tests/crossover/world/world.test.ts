@@ -34,84 +34,85 @@ import {
     generateRandomGeohash,
 } from "../utils";
 
-// Create redis repositories
-let { playerOneCookies } = await createGandalfSarumanSauron();
+describe("World Tests", async () => {
+    let { playerOneCookies } = await createGandalfSarumanSauron();
 
-let woodenDoor = (await spawnItemAtGeohash({
-    geohash: generateRandomGeohash(8, "h9"),
-    locationType: "geohash",
-    locationInstance: LOCATION_INSTANCE,
-    prop: compendium.woodendoor.prop,
-    variables: {
-        [compendium.woodendoor.variables!.doorsign.variable]:
-            "A custom door sign",
-    },
-})) as ItemEntity;
-
-let assetUrl: string;
-let asset: WorldAssetMetadata;
-let world: WorldEntity;
-let worldGeohash: string;
-let worldTwo: WorldEntity;
-let worldTwoGeohash: string;
-let worldThree: WorldEntity;
-let worldThreeGeohash: string;
-
-beforeAll(async () => {
-    // Store the test world asset in storage and get the url
-    const worldAsset = await createWorldAsset();
-    asset = worldAsset.asset;
-    assetUrl = worldAsset.url;
-
-    // Remove all worlds in test area
-    const existingWorlds = await worldsInGeohashQuerySet(
-        ["w21z", "gbsu", "y78j"],
-        "geohash",
-    ).all();
-    worldRepository.remove(existingWorlds.map((w) => (w as WorldEntity).world));
-    await sleep(1000);
-
-    // Spawn worlds
-    worldGeohash = "w21z8ucp"; // top left plot
-    world = await spawnWorld({
-        assetUrl,
-        geohash: worldGeohash,
+    let woodenDoor = (await spawnItemAtGeohash({
+        geohash: generateRandomGeohash(8, "h9"),
         locationType: "geohash",
-        tileHeight: asset.tileheight,
-        tileWidth: asset.tilewidth,
-    });
-    worldTwoGeohash = "y78jdmsq";
-    worldTwo = await spawnWorld({
-        assetUrl,
-        geohash: worldTwoGeohash,
-        locationType: "geohash",
-        tileHeight: asset.tileheight / 2, // 128 / 2 = 64
-        tileWidth: asset.tilewidth / 2, // 256 / 2 = 128
-    });
-    worldThreeGeohash = "gbsuv7xp";
-    worldThree = await spawnWorld({
-        assetUrl,
-        geohash: worldThreeGeohash,
-        locationType: "geohash",
-        tileHeight: TILE_HEIGHT,
-        tileWidth: TILE_WIDTH,
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.woodendoor.prop,
+        variables: {
+            [compendium.woodendoor.variables!.doorsign.variable]:
+                "A custom door sign",
+        },
+    })) as ItemEntity;
+
+    let assetUrl: string;
+    let asset: WorldAssetMetadata;
+    let world: WorldEntity;
+    let worldGeohash: string;
+    let worldTwo: WorldEntity;
+    let worldTwoGeohash: string;
+    let worldThree: WorldEntity;
+    let worldThreeGeohash: string;
+
+    beforeAll(async () => {
+        // Store the test world asset in storage and get the url
+        const worldAsset = await createWorldAsset();
+        asset = worldAsset.asset;
+        assetUrl = worldAsset.url;
+
+        // Remove all worlds in test area
+        const existingWorlds = await worldsInGeohashQuerySet(
+            ["w21z", "gbsu", "y78j"],
+            "geohash",
+        ).all();
+        worldRepository.remove(
+            existingWorlds.map((w) => (w as WorldEntity).world),
+        );
+        await sleep(1000);
+
+        // Spawn worlds
+        worldGeohash = "w21z8ucp"; // top left plot
+        world = await spawnWorld({
+            assetUrl,
+            geohash: worldGeohash,
+            locationType: "geohash",
+            tileHeight: asset.tileheight,
+            tileWidth: asset.tilewidth,
+        });
+        worldTwoGeohash = "y78jdmsq";
+        worldTwo = await spawnWorld({
+            assetUrl,
+            geohash: worldTwoGeohash,
+            locationType: "geohash",
+            tileHeight: asset.tileheight / 2, // 128 / 2 = 64
+            tileWidth: asset.tilewidth / 2, // 256 / 2 = 128
+        });
+        worldThreeGeohash = "gbsuv7xp";
+        worldThree = await spawnWorld({
+            assetUrl,
+            geohash: worldThreeGeohash,
+            locationType: "geohash",
+            tileHeight: TILE_HEIGHT,
+            tileWidth: TILE_WIDTH,
+        });
+
+        // Set worldRecord
+        worldRecord.set({
+            [worldGeohash.slice(-2)]: {
+                [world.world]: world,
+            },
+            [worldTwoGeohash.slice(-2)]: {
+                [worldTwo.world]: worldTwo,
+            },
+            [worldThreeGeohash.slice(-2)]: {
+                [worldThree.world]: worldThree,
+            },
+        });
     });
 
-    // Set worldRecord
-    worldRecord.set({
-        [worldGeohash.slice(-2)]: {
-            [world.world]: world,
-        },
-        [worldTwoGeohash.slice(-2)]: {
-            [worldTwo.world]: worldTwo,
-        },
-        [worldThreeGeohash.slice(-2)]: {
-            [worldThree.world]: worldThree,
-        },
-    });
-});
-
-describe("World Tests", () => {
     test("Test traversableCellsInWorld", async () => {
         // Test when cell dimensions == tile dimensions
         let traversableCells = await traversableCellsInWorld({

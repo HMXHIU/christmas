@@ -12,45 +12,45 @@ import { sleep } from "$lib/utils";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import { createGandalfSarumanSauron, generateRandomGeohash } from "../utils";
 
-let geohash: string;
-let playerOne: PlayerEntity;
-let playerTwo: PlayerEntity;
-let playerThree: PlayerEntity;
-let playerOneCookies: string;
-let playerOneStream: EventTarget;
-let playerThreeStream: EventTarget;
-let playerTwoStream: EventTarget;
+describe("Item Integration Tests", async () => {
+    let geohash: string;
+    let playerOne: PlayerEntity;
+    let playerTwo: PlayerEntity;
+    let playerThree: PlayerEntity;
+    let playerOneCookies: string;
+    let playerOneStream: EventTarget;
+    let playerThreeStream: EventTarget;
+    let playerTwoStream: EventTarget;
 
-beforeAll(async () => {
-    ({
-        geohash,
-        playerOne,
-        playerTwo,
-        playerThree,
-        playerOneCookies,
-        playerOneStream,
-        playerTwoStream,
-        playerThreeStream,
-    } = await createGandalfSarumanSauron());
+    beforeAll(async () => {
+        ({
+            geohash,
+            playerOne,
+            playerTwo,
+            playerThree,
+            playerOneCookies,
+            playerOneStream,
+            playerTwoStream,
+            playerThreeStream,
+        } = await createGandalfSarumanSauron());
 
-    // Test location geohash
-    expect(playerOne.loc[0].length).toBe(worldSeed.spatial.unit.precision);
-    expect(playerOne.loc[0].startsWith(geohash)).toBe(true);
-});
+        // Test location geohash
+        expect(playerOne.loc[0].length).toBe(worldSeed.spatial.unit.precision);
+        expect(playerOne.loc[0].startsWith(geohash)).toBe(true);
+    });
 
-beforeEach(async () => {
-    geohash = generateRandomGeohash(8, "h9b");
+    beforeEach(async () => {
+        geohash = generateRandomGeohash(8, "h9b");
 
-    // playerOne and playerThree should be same location
-    playerOne.loc = [geohash];
-    playerThree.loc = [geohash];
-    // Change playerTwo location away from playerOne & playerThree
-    playerTwo.loc = [generateRandomGeohash(8, "h9r")];
+        // playerOne and playerThree should be same location
+        playerOne.loc = [geohash];
+        playerThree.loc = [geohash];
+        // Change playerTwo location away from playerOne & playerThree
+        playerTwo.loc = [generateRandomGeohash(8, "h9r")];
 
-    saveEntities(playerOne, playerTwo, playerThree);
-});
+        saveEntities(playerOne, playerTwo, playerThree);
+    });
 
-describe("Item Integration Tests", () => {
     test("Test Portals Configuration And Usage", async () => {
         // Create portalOne at playerOne (public owner)
         let portalOne = await spawnItemAtGeohash({

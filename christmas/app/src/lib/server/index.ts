@@ -19,20 +19,25 @@ export {
     createSignInDataForSIWS,
     generateNonce,
     hashObject,
+    initServer,
     requireLogin,
     signJWT,
     verifyJWT,
     verifySIWS,
 };
 
-// Initialize redis clients, repositiories, indexes
-initializeRedisClients(async (redisClient) => {
-    await initializeCrossoverRedisRepositories(redisClient);
-    await initializeCommunityRedisRepositories(redisClient);
-});
+initServer(); // init the server on boot
 
-// Initialize minio buckets
-initializeBuckets();
+async function initServer() {
+    // Initialize redis clients, repositiories, indexes
+    await initializeRedisClients(async (redisClient) => {
+        await initializeCrossoverRedisRepositories(redisClient);
+        await initializeCommunityRedisRepositories(redisClient);
+    });
+
+    // Initialize minio buckets
+    await initializeBuckets();
+}
 
 async function signJWT(
     payload: object,

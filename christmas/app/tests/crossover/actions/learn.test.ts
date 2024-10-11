@@ -14,26 +14,26 @@ import {
     waitForEventData,
 } from "../utils";
 
-let {
-    geohash,
-    playerOne,
-    playerOneCookies,
-    playerOneStream,
-    playerTwo,
-    playerTwoCookies,
-    playerTwoStream,
-} = await createGandalfSarumanSauron();
-let { blackSmith } = await createNPCs({
-    geohash,
-    locationInstance: LOCATION_INSTANCE,
-    locationType: "geohash",
-});
+describe("Learn Tests", async () => {
+    let {
+        geohash,
+        playerOne,
+        playerOneCookies,
+        playerOneStream,
+        playerTwo,
+        playerTwoCookies,
+        playerTwoStream,
+    } = await createGandalfSarumanSauron();
+    let { blackSmith } = await createNPCs({
+        geohash,
+        locationInstance: LOCATION_INSTANCE,
+        locationType: "geohash",
+    });
 
-beforeEach(async () => {
-    resetEntityResources(playerOne, playerTwo);
-});
+    beforeEach(async () => {
+        resetEntityResources(playerOne, playerTwo);
+    });
 
-describe("Learn Tests", () => {
     test("Learn skill from human player", async () => {
         // Increase `playerTwo` skills and `playerOne` resources
         playerTwo.skills["exploration"] = 10;

@@ -4,7 +4,7 @@ import {
 } from "$lib/crossover/world/skills";
 import { describe, expect, test } from "vitest";
 
-describe("Skills Tests", () => {
+describe("Skills Tests", async () => {
     test("Test `skillLevelProgression`", async () => {
         expect(skillLevelProgression(0)).toBe(0);
         expect(skillLevelProgression(1)).toBe(100);

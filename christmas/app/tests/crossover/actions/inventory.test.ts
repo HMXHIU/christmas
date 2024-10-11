@@ -13,24 +13,22 @@ import { spawnItemAtGeohash } from "$lib/server/crossover/dm";
 import { fetchEntity } from "$lib/server/crossover/redis/utils";
 import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
 import { sleep } from "$lib/utils";
-import { beforeAll, describe, expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { createGandalfSarumanSauron, waitForEventData } from "../utils";
 
-let { geohash, playerOne, playerOneCookies, playerOneStream } =
-    await createGandalfSarumanSauron();
+describe("Inventory & Equipment Tests", async () => {
+    let { geohash, playerOne, playerOneCookies, playerOneStream } =
+        await createGandalfSarumanSauron();
 
-let woodenClub: ItemEntity = await spawnItemAtGeohash({
-    geohash,
-    locationType: "geohash",
-    locationInstance: LOCATION_INSTANCE,
-    prop: compendium.woodenclub.prop,
-    owner: playerOne.player,
-    configOwner: playerOne.player,
-});
+    let woodenClub: ItemEntity = await spawnItemAtGeohash({
+        geohash,
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.woodenclub.prop,
+        owner: playerOne.player,
+        configOwner: playerOne.player,
+    });
 
-beforeAll(async () => {});
-
-describe("Inventory & Equipment Tests", () => {
     test("Unable to equip item if not in inventory", async () => {
         crossoverCmdEquip(
             { item: woodenClub.item, slot: "rh" },

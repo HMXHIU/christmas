@@ -2,15 +2,7 @@ import { executeGameCommand } from "$lib/crossover/game";
 import { searchPossibleCommands } from "$lib/crossover/ir";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
-import {
-    afterAll,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    test,
-    vi,
-} from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 import {
     allActions,
     collectAllEventDataForDuration,
@@ -20,27 +12,20 @@ import {
     resetEntityResources,
 } from "../utils";
 
-let { geohash, playerOne, playerOneCookies, playerOneStream, playerTwo } =
-    await createGandalfSarumanSauron();
-let { dragon, goblin } = await createGoblinSpiderDragon(geohash);
-let { woodenDoor, woodenClub } = await createTestItems({});
+describe("Attack Tests", async () => {
+    let { geohash, playerOne, playerOneCookies, playerOneStream, playerTwo } =
+        await createGandalfSarumanSauron();
+    let { dragon, goblin } = await createGoblinSpiderDragon(geohash);
+    let { woodenDoor, woodenClub } = await createTestItems({});
 
-beforeAll(async () => {
-    vi.spyOn(Math, "random").mockImplementation(() => 0.5);
-});
-afterAll(() => {
-    vi.restoreAllMocks();
-});
+    beforeEach(async () => {
+        playerOne.loc = [geohash];
+        playerOne.skills.exploration = 10;
+        playerOne.skills.dirtyfighting = 10;
+        await resetEntityResources(playerOne, playerTwo);
+        await resetEntityResources(goblin, dragon);
+    });
 
-beforeEach(async () => {
-    playerOne.loc = [geohash];
-    playerOne.skills.exploration = 10;
-    playerOne.skills.dirtyfighting = 10;
-    await resetEntityResources(playerOne, playerTwo);
-    await resetEntityResources(goblin, dragon);
-});
-
-describe("Attack Tests", () => {
     test("Attack monster", async () => {
         const commands = searchPossibleCommands({
             query: "attack goblin",

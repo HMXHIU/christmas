@@ -25,16 +25,16 @@ import {
     waitForEventData,
 } from "../utils";
 
-let { playerOne, playerOneCookies, playerOneStream } =
-    await createGandalfSarumanSauron();
+describe("Movement Tests", async () => {
+    let { playerOne, playerOneCookies, playerOneStream } =
+        await createGandalfSarumanSauron();
 
-beforeEach(async () => {
-    // Randomize playerOne location
-    playerOne.loc = [generateRandomGeohash(8, "h9b")];
-    playerOne = await saveEntity(playerOne);
-});
+    beforeEach(async () => {
+        // Randomize playerOne location
+        playerOne.loc = [generateRandomGeohash(8, "h9b")];
+        playerOne = await saveEntity(playerOne);
+    });
 
-describe("Movement Tests", () => {
     test("Test Pathfinding", async () => {
         // Test `getGeohashesForPath`
         expect(getGeohashesForPath("swbb81k4", ["e", "e"])).toMatchObject([
@@ -141,6 +141,7 @@ describe("Movement Tests", () => {
         await expect(
             crossoverCmdMove({ path: ["s"] }, { Cookie: playerOneCookies }),
         ).rejects.toThrowError("Path is not traversable");
+
         await expect(
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({

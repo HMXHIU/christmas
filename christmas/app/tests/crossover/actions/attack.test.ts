@@ -25,63 +25,61 @@ import {
     resetEntityResources,
 } from "../utils";
 
-let {
-    region,
-    geohash,
-    playerOne,
-    playerTwo,
-    playerThree,
-    playerOneCookies,
-    playerOneStream,
-    playerTwoStream,
-} = await createGandalfSarumanSauron();
+describe("Test Attack", async () => {
+    let {
+        region,
+        geohash,
+        playerOne,
+        playerTwo,
+        playerThree,
+        playerOneCookies,
+        playerOneStream,
+        playerTwoStream,
+    } = await createGandalfSarumanSauron();
 
-let { woodenClub } = await createTestItems({});
+    let { woodenClub } = await createTestItems({});
 
-beforeAll(async () => {
-    vi.spyOn(Math, "random").mockImplementation(() => 0.5);
+    beforeAll(async () => {
+        // Configure player positions
+        playerOne.loc = [geohash];
+        playerOne = await saveEntity(playerOne);
+        playerTwo.loc = [geohash];
+        playerTwo = await saveEntity(playerTwo);
+        playerThree.loc = [geohash];
+        playerThree = await saveEntity(playerThree);
 
-    // Configure player positions
-    playerOne.loc = [geohash];
-    playerOne = await saveEntity(playerOne);
-    playerTwo.loc = [geohash];
-    playerTwo = await saveEntity(playerTwo);
-    playerThree.loc = [geohash];
-    playerThree = await saveEntity(playerThree);
+        // Give skills
+        playerOne.skills.exploration = 10;
+        playerOne = await saveEntity(playerOne);
+    });
 
-    // Give skills
-    playerOne.skills.exploration = 10;
-    playerOne = await saveEntity(playerOne);
-});
+    afterAll(() => {
+        vi.restoreAllMocks();
+    });
 
-afterAll(() => {
-    vi.restoreAllMocks();
-});
+    beforeEach(async () => {
+        // Reset entities locations & resources
+        playerOne.loc = [geohash];
+        playerOne.locT = "geohash";
+        playerOne.locI = LOCATION_INSTANCE;
 
-beforeEach(async () => {
-    // Reset entities locations & resources
-    playerOne.loc = [geohash];
-    playerOne.locT = "geohash";
-    playerOne.locI = LOCATION_INSTANCE;
+        playerTwo.loc = [geohash];
+        playerTwo.locT = "geohash";
+        playerTwo.locI = LOCATION_INSTANCE;
 
-    playerTwo.loc = [geohash];
-    playerTwo.locT = "geohash";
-    playerTwo.locI = LOCATION_INSTANCE;
+        playerThree.loc = [geohash];
+        playerThree.locT = "geohash";
+        playerThree.locI = LOCATION_INSTANCE;
 
-    playerThree.loc = [geohash];
-    playerThree.locT = "geohash";
-    playerThree.locI = LOCATION_INSTANCE;
+        await resetEntityResources(playerOne, playerTwo, playerThree);
 
-    await resetEntityResources(playerOne, playerTwo, playerThree);
+        woodenClub.loc = [geohash];
+        woodenClub.locT = "geohash";
+        woodenClub.locI = LOCATION_INSTANCE;
 
-    woodenClub.loc = [geohash];
-    woodenClub.locT = "geohash";
-    woodenClub.locI = LOCATION_INSTANCE;
+        woodenClub = await saveEntity(woodenClub);
+    });
 
-    woodenClub = await saveEntity(woodenClub);
-});
-
-describe("Test Attack", () => {
     test("Test Attack Out Of Range", async () => {
         playerTwo.loc = [generateRandomGeohash(8, "h9")];
         playerTwo = await saveEntity(playerTwo);

@@ -14,18 +14,18 @@ import {
     dmSpawnMonster,
 } from "./utils";
 
-let {
-    region,
-    geohash,
-    playerOne,
-    playerOneCookies,
-    playerTwoStream,
-    playerOneStream,
-    playerThree,
-    playerTwo,
-} = await createGandalfSarumanSauron();
+describe("DungeonMaster Tests", async () => {
+    let {
+        region,
+        geohash,
+        playerOne,
+        playerOneCookies,
+        playerTwoStream,
+        playerOneStream,
+        playerThree,
+        playerTwo,
+    } = await createGandalfSarumanSauron();
 
-describe("DungeonMaster Tests", () => {
     test("dm.performMonsterAttack", async () => {
         // Spawn goblin to attack player
         const goblin = await spawnMonster({

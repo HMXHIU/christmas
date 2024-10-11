@@ -4,15 +4,15 @@ import { sleep } from "$lib/utils";
 import { describe, expect, test } from "vitest";
 import { createGandalfSarumanSauron, waitForEventData } from "../utils";
 
-let {
-    playerOne,
-    playerOneCookies,
-    playerTwo,
-    playerTwoStream,
-    playerThreeStream,
-} = await createGandalfSarumanSauron();
+describe("Say Tests", async () => {
+    let {
+        playerOne,
+        playerOneCookies,
+        playerTwo,
+        playerTwoStream,
+        playerThreeStream,
+    } = await createGandalfSarumanSauron();
 
-describe("Say Tests", () => {
     test("Say to specific `target`", async () => {
         // `playerOne` says hello to `playerTwo`
         crossoverCmdSay(

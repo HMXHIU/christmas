@@ -23,24 +23,24 @@ import {
     createTestItems,
 } from "../utils";
 
-let { geohash, playerOne, playerTwo } = await createGandalfSarumanSauron();
-let {
-    woodenDoor,
-    woodenClub,
-    woodenClubThree,
-    woodenClubTwo,
-    portalOne,
-    tavern,
-} = await createTestItems({});
-let { goblin, dragon } = await createGoblinSpiderDragon();
+describe("IR Tests", async () => {
+    let { geohash, playerOne, playerTwo } = await createGandalfSarumanSauron();
+    let {
+        woodenDoor,
+        woodenClub,
+        woodenClubThree,
+        woodenClubTwo,
+        portalOne,
+        tavern,
+    } = await createTestItems({});
+    let { goblin, dragon } = await createGoblinSpiderDragon();
 
-const { innKeeper } = await createNPCs({
-    geohash,
-    locationInstance: LOCATION_INSTANCE,
-    locationType: "geohash",
-});
+    const { innKeeper } = await createNPCs({
+        geohash,
+        locationInstance: LOCATION_INSTANCE,
+        locationType: "geohash",
+    });
 
-describe("IR Tests", () => {
     describe("Query irrelevant & command variables", () => {
         test("Test token positions and query irrelevant", () => {
             const queryTokens = tokenize("greet inn keeper");
@@ -150,7 +150,7 @@ describe("IR Tests", () => {
         });
     });
 
-    describe("fuzzyMatch Tests", () => {
+    describe("fuzzyMatch Tests", async () => {
         test("should match identical strings", () => {
             expect(fuzzyMatch("Gandalf", "Gandalf", 1)).toMatchObject({
                 isMatch: true,
@@ -175,7 +175,7 @@ describe("IR Tests", () => {
         });
     });
 
-    describe("entitiesIR Tests", () => {
+    describe("entitiesIR Tests", async () => {
         test("should find skill", () => {
             expect(
                 entitiesIR({

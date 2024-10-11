@@ -28,11 +28,9 @@ import { instantiateBlueprintsInDungeons } from "$lib/server/crossover/blueprint
 import type { ItemEntity } from "$lib/server/crossover/types";
 import { itemVariableValue } from "$lib/server/crossover/utils";
 import { groupBy, uniqBy } from "lodash-es";
-import { beforeAll, describe, expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 
-beforeAll(async () => {});
-
-describe("Blueprint Tests", () => {
+describe("Blueprint Tests", async () => {
     test("Test Instantiate Dungeon Blueprints", async () => {
         const spawnedEntities = await instantiateBlueprintsInDungeons(
             "d1",

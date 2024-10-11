@@ -20,52 +20,55 @@ import {
     waitForEventData,
 } from "../utils";
 
-let { geohash, playerOne, playerOneCookies, playerOneStream } =
-    await createGandalfSarumanSauron();
-let { dragon, goblin } = await createGoblinSpiderDragon(geohash);
-let {
-    woodenClubTwo,
-    woodenClubThree,
-    woodenClub,
-    woodenDoor,
-    tavern,
-    portalOne,
-} = await createTestItems({});
-
-beforeAll(async () => {
-    playerOne.loc = [portalOne.loc[0]];
-    woodenClub.loc = woodenClubTwo.loc = woodenClubThree.loc = playerOne.loc;
-    dragon.loc = [
-        geohashNeighbour(geohashNeighbour(playerOne.loc[0], "s"), "s"),
-    ];
-    goblin.loc = playerOne.loc;
-    await saveEntities(
-        playerOne,
-        woodenClub,
+describe("Item Tests", async () => {
+    let { geohash, playerOne, playerOneCookies, playerOneStream } =
+        await createGandalfSarumanSauron();
+    let { dragon, goblin } = await createGoblinSpiderDragon(geohash);
+    let {
         woodenClubTwo,
         woodenClubThree,
-        dragon,
-        goblin,
-    );
-});
+        woodenClub,
+        woodenDoor,
+        tavern,
+        portalOne,
+    } = await createTestItems({});
 
-beforeEach(async () => {
-    playerOne.loc = [portalOne.loc[0]];
-    playerOne.locI = LOCATION_INSTANCE;
-    playerOne.locT = "geohash";
+    beforeAll(async () => {
+        playerOne.loc = [portalOne.loc[0]];
+        woodenClub.loc =
+            woodenClubTwo.loc =
+            woodenClubThree.loc =
+                playerOne.loc;
+        dragon.loc = [
+            geohashNeighbour(geohashNeighbour(playerOne.loc[0], "s"), "s"),
+        ];
+        goblin.loc = playerOne.loc;
+        await saveEntities(
+            playerOne,
+            woodenClub,
+            woodenClubTwo,
+            woodenClubThree,
+            dragon,
+            goblin,
+        );
+    });
 
-    await resetEntityResources(playerOne);
-    await resetEntityResources(goblin, dragon);
+    beforeEach(async () => {
+        playerOne.loc = [portalOne.loc[0]];
+        playerOne.locI = LOCATION_INSTANCE;
+        playerOne.locT = "geohash";
 
-    woodenClub.loc = [portalOne.loc[0]];
-    woodenClub.locI = LOCATION_INSTANCE;
-    woodenClub.locT = "geohash";
-    woodenClub.chg = compendium.woodenclub.charges;
-    woodenClub.dur = compendium.woodenclub.durability;
-    woodenClub = await saveEntity(woodenClub);
-});
+        await resetEntityResources(playerOne);
+        await resetEntityResources(goblin, dragon);
 
-describe("Item Tests", () => {
+        woodenClub.loc = [portalOne.loc[0]];
+        woodenClub.locI = LOCATION_INSTANCE;
+        woodenClub.locT = "geohash";
+        woodenClub.chg = compendium.woodenclub.charges;
+        woodenClub.dur = compendium.woodenclub.durability;
+        woodenClub = await saveEntity(woodenClub);
+    });
+
     test("Enter tavern", async () => {
         // Move to tavern
         playerOne.loc = [tavern.loc[0]];

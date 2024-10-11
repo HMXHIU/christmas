@@ -27,87 +27,93 @@ import {
     waitForEventData,
 } from "../utils";
 
-let {
-    region,
-    geohash,
-    playerOne,
-    playerTwo,
-    playerThree,
-    playerOneCookies,
-    playerOneStream,
-    playerTwoStream,
-    playerThreeStream,
-} = await createGandalfSarumanSauron();
+describe("Test Items", async () => {
+    let {
+        region,
+        geohash,
+        playerOne,
+        playerTwo,
+        playerThree,
+        playerOneCookies,
+        playerOneStream,
+        playerTwoStream,
+        playerThreeStream,
+    } = await createGandalfSarumanSauron();
 
-let { woodenDoor, portalOne, portalTwo, tavern, worldAsset, worldAssetUrl } =
-    await createTestItems({});
+    let {
+        woodenDoor,
+        portalOne,
+        portalTwo,
+        tavern,
+        worldAsset,
+        worldAssetUrl,
+    } = await createTestItems({});
 
-beforeAll(async () => {
-    // Configure player positions
-    playerOne.loc = [portalOne.loc[0]];
-    playerOne = await saveEntity(playerOne);
-    playerTwo.loc = [portalTwo.loc[0]];
-    playerTwo = await saveEntity(playerTwo);
-    playerThree.loc = [woodenDoor.loc[0]];
-    playerThree = await saveEntity(playerThree);
+    beforeAll(async () => {
+        // Configure player positions
+        playerOne.loc = [portalOne.loc[0]];
+        playerOne = await saveEntity(playerOne);
+        playerTwo.loc = [portalTwo.loc[0]];
+        playerTwo = await saveEntity(playerTwo);
+        playerThree.loc = [woodenDoor.loc[0]];
+        playerThree = await saveEntity(playerThree);
 
-    // Test item location (more than 1 cell)
-    const portalTwoGeohash = portalTwo.loc[0];
-    expect(portalTwo.loc).toMatchObject([
-        portalTwoGeohash,
-        geohashNeighbour(portalTwoGeohash, "e"),
-        geohashNeighbour(portalTwoGeohash, "s"),
-        geohashNeighbour(portalTwoGeohash, "se"),
-    ]);
+        // Test item location (more than 1 cell)
+        const portalTwoGeohash = portalTwo.loc[0];
+        expect(portalTwo.loc).toMatchObject([
+            portalTwoGeohash,
+            geohashNeighbour(portalTwoGeohash, "e"),
+            geohashNeighbour(portalTwoGeohash, "s"),
+            geohashNeighbour(portalTwoGeohash, "se"),
+        ]);
 
-    // Test initial attributes
-    let portalOneAttributes = itemAttibutes(portalOne);
-    let portalTwoAttributes = itemAttibutes(portalTwo);
-    expect(portalOneAttributes).toMatchObject({
-        destructible: false,
-        description: "Portal One. It is tuned to teleport to .",
-        variant: "default",
+        // Test initial attributes
+        let portalOneAttributes = itemAttibutes(portalOne);
+        let portalTwoAttributes = itemAttibutes(portalTwo);
+        expect(portalOneAttributes).toMatchObject({
+            destructible: false,
+            description: "Portal One. It is tuned to teleport to .",
+            variant: "default",
+        });
+        expect(portalTwoAttributes).toMatchObject({
+            destructible: false,
+            description: "Portal Two. It is tuned to teleport to .",
+            variant: "default",
+        });
+
+        // Configure portalOne to point to portalTwo
+        await configureItem(playerOne as PlayerEntity, portalOne.item, {
+            [compendium.portal.variables!.target.variable]: portalTwo.item,
+        });
+        await sleep(MS_PER_TICK * 4); // wait for item to be updated
+        portalOne = (await fetchEntity(portalOne.item)) as ItemEntity;
+
+        // Configure portalTwo to point to portalOne
+        await configureItem(playerTwo as PlayerEntity, portalTwo.item, {
+            [compendium.portal.variables!.target.variable]: portalOne.item,
+        });
+        await sleep(MS_PER_TICK * 4); // wait for item to be updated
+        portalTwo = (await fetchEntity(portalTwo.item)) as ItemEntity;
     });
-    expect(portalTwoAttributes).toMatchObject({
-        destructible: false,
-        description: "Portal Two. It is tuned to teleport to .",
-        variant: "default",
+
+    beforeEach(async () => {
+        // Reset entities locations
+        playerOne.loc = [portalOne.loc[0]];
+        playerOne.locT = "geohash";
+        playerOne.locI = LOCATION_INSTANCE;
+        playerOne = await saveEntity(playerOne);
+
+        playerTwo.loc = [portalTwo.loc[0]];
+        playerTwo.locT = "geohash";
+        playerTwo.locI = LOCATION_INSTANCE;
+        playerTwo = await saveEntity(playerTwo);
+
+        playerThree.loc = [woodenDoor.loc[0]];
+        playerThree.locT = "geohash";
+        playerThree.locI = LOCATION_INSTANCE;
+        playerThree = await saveEntity(playerThree);
     });
 
-    // Configure portalOne to point to portalTwo
-    await configureItem(playerOne as PlayerEntity, portalOne.item, {
-        [compendium.portal.variables!.target.variable]: portalTwo.item,
-    });
-    await sleep(MS_PER_TICK * 4); // wait for item to be updated
-    portalOne = (await fetchEntity(portalOne.item)) as ItemEntity;
-
-    // Configure portalTwo to point to portalOne
-    await configureItem(playerTwo as PlayerEntity, portalTwo.item, {
-        [compendium.portal.variables!.target.variable]: portalOne.item,
-    });
-    await sleep(MS_PER_TICK * 4); // wait for item to be updated
-    portalTwo = (await fetchEntity(portalTwo.item)) as ItemEntity;
-});
-
-beforeEach(async () => {
-    // Reset entities locations
-    playerOne.loc = [portalOne.loc[0]];
-    playerOne.locT = "geohash";
-    playerOne.locI = LOCATION_INSTANCE;
-    playerOne = await saveEntity(playerOne);
-
-    playerTwo.loc = [portalTwo.loc[0]];
-    playerTwo.locT = "geohash";
-    playerTwo.locI = LOCATION_INSTANCE;
-    playerTwo = await saveEntity(playerTwo);
-
-    playerThree.loc = [woodenDoor.loc[0]];
-    playerThree.locT = "geohash";
-    playerThree.locI = LOCATION_INSTANCE;
-    playerThree = await saveEntity(playerThree);
-});
-
-describe("Test Items", () => {
     test("Test Enter Item", async () => {
         // Move playerOne to tavern
         playerOne.loc = [tavern.loc[0]];

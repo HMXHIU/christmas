@@ -16,11 +16,9 @@ import { prefabDungeons } from "$lib/crossover/world/settings/dungeons";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import { dungeonEntrancesQuerySet } from "$lib/server/crossover/redis/queries";
 import type { ItemEntity } from "$lib/server/crossover/types";
-import { beforeAll, describe, expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 
-beforeAll(async () => {});
-
-describe("Dungeons Tests", () => {
+describe("Dungeons Tests", async () => {
     test("Test `generateRoomsBSP`", async () => {
         const dungeon = "w21zd";
         const rooms = await generateRoomsBSP({

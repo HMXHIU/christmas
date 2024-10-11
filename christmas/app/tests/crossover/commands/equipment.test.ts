@@ -9,11 +9,13 @@ import {
     createTestItems,
 } from "../utils";
 
-let { geohash, playerOne } = await createGandalfSarumanSauron();
-let { dragon, goblin } = await createGoblinSpiderDragon(geohash);
-let { woodenClubTwo, woodenClubThree, woodenClub } = await createTestItems({});
+describe("Equipment & Inventory Tests", async () => {
+    let { geohash, playerOne } = await createGandalfSarumanSauron();
+    let { dragon, goblin } = await createGoblinSpiderDragon(geohash);
+    let { woodenClubTwo, woodenClubThree, woodenClub } = await createTestItems(
+        {},
+    );
 
-describe("Equipment & Inventory Tests", () => {
     test("Drop action only for inventory items", async () => {
         woodenClubTwo.locT = "inv";
         woodenClubTwo.loc = [playerOne.player];

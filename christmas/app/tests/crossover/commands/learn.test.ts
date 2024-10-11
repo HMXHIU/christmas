@@ -1,7 +1,7 @@
 import { searchPossibleCommands } from "$lib/crossover/ir";
 import { abilities } from "$lib/crossover/world/settings/abilities";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
-import { beforeEach, describe, expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
     allActions,
     createGandalfSarumanSauron,
@@ -9,13 +9,11 @@ import {
     createTestItems,
 } from "../utils";
 
-let { geohash, playerOne, playerTwo } = await createGandalfSarumanSauron();
-let { dragon, goblin } = await createGoblinSpiderDragon(geohash);
-let { woodenClub, tavern } = await createTestItems({});
+describe("Learn Tests", async () => {
+    let { geohash, playerOne, playerTwo } = await createGandalfSarumanSauron();
+    let { dragon, goblin } = await createGoblinSpiderDragon(geohash);
+    let { woodenClub, tavern } = await createTestItems({});
 
-beforeEach(async () => {});
-
-describe("Learn Tests", () => {
     test("Learn skill from player", async () => {
         // Test command search
         const { commands, queryTokens, tokenPositions } =

@@ -17,26 +17,25 @@ import { beforeAll, describe, expect, test } from "vitest";
 import { itemRecord } from "../../../src/store";
 import { generateRandomGeohash } from "../utils";
 
-// Create redis repositories
-let woodenDoor = (await spawnItemAtGeohash({
-    geohash: generateRandomGeohash(8, "h9"),
-    locationType: "geohash",
-    locationInstance: LOCATION_INSTANCE,
-    prop: compendium.woodendoor.prop,
-    variables: {
-        [compendium.woodendoor.variables!.doorsign.variable]:
-            "A custom door sign",
-    },
-})) as ItemEntity;
+describe("Biome Topology Tests", async () => {
+    let woodenDoor = (await spawnItemAtGeohash({
+        geohash: generateRandomGeohash(8, "h9"),
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.woodendoor.prop,
+        variables: {
+            [compendium.woodendoor.variables!.doorsign.variable]:
+                "A custom door sign",
+        },
+    })) as ItemEntity;
 
-beforeAll(async () => {
-    // Set itemRecord
-    itemRecord.set({
-        [woodenDoor.item]: woodenDoor,
+    beforeAll(async () => {
+        // Set itemRecord
+        itemRecord.set({
+            [woodenDoor.item]: woodenDoor,
+        });
     });
-});
 
-describe("Biome Topology Tests", () => {
     test("Test `topologyTile`", async () => {
         // Test at different precisions
 

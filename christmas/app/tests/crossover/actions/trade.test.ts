@@ -18,45 +18,45 @@ import {
     waitForEventData,
 } from "../utils";
 
-let {
-    geohash,
-    playerOne,
-    playerOneCookies,
-    playerOneStream,
-    playerTwo,
-    playerTwoCookies,
-    playerTwoStream,
-} = await createGandalfSarumanSauron();
+describe("Trade Tests", async () => {
+    let {
+        geohash,
+        playerOne,
+        playerOneCookies,
+        playerOneStream,
+        playerTwo,
+        playerTwoCookies,
+        playerTwoStream,
+    } = await createGandalfSarumanSauron();
 
-let woodenclub = (await spawnItemAtGeohash({
-    geohash,
-    locationType: "geohash",
-    locationInstance: LOCATION_INSTANCE,
-    prop: compendium.woodenclub.prop,
-})) as ItemEntity;
+    let woodenclub = (await spawnItemAtGeohash({
+        geohash,
+        locationType: "geohash",
+        locationInstance: LOCATION_INSTANCE,
+        prop: compendium.woodenclub.prop,
+    })) as ItemEntity;
 
-beforeAll(async () => {
-    // `playerTwo` take `woodenClub`
-    await crossoverCmdTake(
-        { item: woodenclub.item },
-        { Cookie: playerTwoCookies },
-    );
-    await sleep(MS_PER_TICK * actions.take.ticks);
-    woodenclub = (await fetchEntity(woodenclub.item)) as ItemEntity;
-    expect(woodenclub.loc[0]).toBe(playerTwo.player);
-});
+    beforeAll(async () => {
+        // `playerTwo` take `woodenClub`
+        await crossoverCmdTake(
+            { item: woodenclub.item },
+            { Cookie: playerTwoCookies },
+        );
+        await sleep(MS_PER_TICK * actions.take.ticks);
+        woodenclub = (await fetchEntity(woodenclub.item)) as ItemEntity;
+        expect(woodenclub.loc[0]).toBe(playerTwo.player);
+    });
 
-beforeEach(async () => {
-    await resetEntityResources(playerOne, playerTwo);
+    beforeEach(async () => {
+        await resetEntityResources(playerOne, playerTwo);
 
-    // Put woodenclub in `playerTwo` inventory
-    woodenclub.loc[0] = playerTwo.player;
-    woodenclub.locI = playerTwo.locI;
-    woodenclub.locT = "inv";
-    woodenclub = await saveEntity(woodenclub);
-});
+        // Put woodenclub in `playerTwo` inventory
+        woodenclub.loc[0] = playerTwo.player;
+        woodenclub.locI = playerTwo.locI;
+        woodenclub.locT = "inv";
+        woodenclub = await saveEntity(woodenclub);
+    });
 
-describe("Trade Tests", () => {
     test("Trade with player", async () => {
         /**
          * Buy CTA

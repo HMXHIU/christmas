@@ -16,15 +16,13 @@ import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { spawnMonster } from "$lib/server/crossover/dm";
 import { KdTree } from "$lib/utils/kdtree";
 import { sampleFrom } from "$lib/utils/random";
-import { beforeAll, beforeEach, describe, expect, it, test } from "vitest";
+import { beforeEach, describe, expect, it, test } from "vitest";
 import { generateRandomGeohash } from "./utils";
 
 interface TestData {
     id: string;
 }
 let tree: KdTree<TestData>;
-
-beforeAll(async () => {});
 
 describe("Test KD Tree", async () => {
     beforeEach(() => {

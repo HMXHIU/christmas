@@ -18,22 +18,22 @@ import {
     resetEntityResources,
 } from "./utils";
 
-let {
-    geohash,
-    playerOne,
-    playerOneCookies,
-    playerTwoStream,
-    playerOneStream,
-    playerTwo,
-} = await createGandalfSarumanSauron();
+describe("Abilities Tests", async () => {
+    let {
+        geohash,
+        playerOne,
+        playerOneCookies,
+        playerTwoStream,
+        playerOneStream,
+        playerTwo,
+    } = await createGandalfSarumanSauron();
 
-beforeEach(async () => {
-    playerOne.loc = [geohash];
-    playerTwo.loc = [geohash];
-    resetEntityResources(playerOne, playerTwo);
-});
+    beforeEach(async () => {
+        playerOne.loc = [geohash];
+        playerTwo.loc = [geohash];
+        resetEntityResources(playerOne, playerTwo);
+    });
 
-describe("Abilities Tests", () => {
     test("Ability out of range", async () => {
         // Move `playerTwo` out of range
         playerTwo.loc = [

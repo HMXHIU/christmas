@@ -19,34 +19,34 @@ import {
     generateRandomGeohash,
 } from "../utils";
 
-let {
-    region,
-    geohash,
-    playerOne,
-    playerTwo,
-    playerThree,
-    playerOneCookies,
-    playerTwoCookies,
-    playerThreeCookies,
-    playerOneStream,
-    playerTwoStream,
-    playerThreeStream,
-    playerOneWallet,
-    playerTwoWallet,
-    playerThreeWallet,
-} = await createGandalfSarumanSauron();
+describe("Combat Integration Tests", async () => {
+    let {
+        region,
+        geohash,
+        playerOne,
+        playerTwo,
+        playerThree,
+        playerOneCookies,
+        playerTwoCookies,
+        playerThreeCookies,
+        playerOneStream,
+        playerTwoStream,
+        playerThreeStream,
+        playerOneWallet,
+        playerTwoWallet,
+        playerThreeWallet,
+    } = await createGandalfSarumanSauron();
 
-beforeEach(async () => {
-    geohash = generateRandomGeohash(8, "h9b");
-    // `playerOne` and `playerTwo` should be same location
-    playerOne.loc = [geohash];
-    playerTwo.loc = [geohash];
-    // Change `playerThree` location away from `playerOne` & `playerThree`
-    playerThree.loc = [generateRandomGeohash(8, "h9r")];
-    saveEntities(playerOne, playerTwo, playerThree);
-});
+    beforeEach(async () => {
+        geohash = generateRandomGeohash(8, "h9b");
+        // `playerOne` and `playerTwo` should be same location
+        playerOne.loc = [geohash];
+        playerTwo.loc = [geohash];
+        // Change `playerThree` location away from `playerOne` & `playerThree`
+        playerThree.loc = [generateRandomGeohash(8, "h9r")];
+        saveEntities(playerOne, playerTwo, playerThree);
+    });
 
-describe("Combat Integration Tests", () => {
     test("Test Create, Take, Equip, Attack, Ability, Unequip, Drop Item", async () => {
         // Create Weapon In `playerOne` inventory
         await crossoverCmdCreateItem(
