@@ -30,6 +30,7 @@ import {
 import {
     crossoverCmdAccept,
     crossoverCmdAttack,
+    crossoverCmdBrowse,
     crossoverCmdConfigureItem,
     crossoverCmdCreateItem,
     crossoverCmdDrop,
@@ -373,6 +374,13 @@ async function performAction(
     // rest
     else if (action.action === "rest") {
         return await crossoverCmdRest(headers);
+    }
+    // browse
+    else if (action.action === "browse") {
+        if (!target || !(target as Player).player) {
+            throw new Error(`Who are you browsing?`);
+        }
+        return await crossoverCmdBrowse({ player: (target as Player).player });
     }
 
     throw new Error(`Unknown action ${action}`);

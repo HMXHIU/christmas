@@ -306,14 +306,9 @@ async function browse(
         .map(({ vars, item }) => `${vars.offer} for ${vars.receive} [${item}]`)
         .join("\n");
 
-    let message = "";
-    if (orders) {
-        message += `${merchantEntity.name} is offering:\n\n${orders}\n\n`;
-    }
-
-    if (orders) {
-        message += "You may *fulfill writ* to execute a trade.";
-    }
+    let message = orders
+        ? `${merchantEntity.name} is offering:\n\n${orders}\n\nYou may *fulfill writ* to execute a trade.`
+        : `${merchantEntity.name}'s stall stands barren, devoid of goods for trade this day.`;
 
     // Send writs to browsing player
     await publishAffectedEntitiesToPlayers(

@@ -115,6 +115,10 @@ function filterTargetCreaturesByAction(
     if (action === actions.attack.action) {
         return creatures.filter(isEntityAlive);
     }
+    // Can only browse players
+    else if (action === actions.browse.action) {
+        return creatures.filter((creature) => (creature as Player).player);
+    }
 
     return creatures;
 }
