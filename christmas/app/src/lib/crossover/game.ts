@@ -67,7 +67,7 @@ import { worldSeed } from "./world/settings/world";
 import { type SkillLines } from "./world/skills";
 import {
     Directions,
-    EquipmentSlots,
+    equipmentSlots,
     type BarterSerialized,
     type Direction,
     type EquipmentSlot,
@@ -323,7 +323,7 @@ async function performAction(
         // Get equipment slot from query else from prop
         const item = target as Item;
         const slotFromQuery = variables.queryIrrelevant as EquipmentSlot;
-        const slot = EquipmentSlots.includes(slotFromQuery)
+        const slot = equipmentSlots.has(slotFromQuery)
             ? slotFromQuery
             : compendium[item.prop].equipmentSlot?.[0];
         if (slot) {

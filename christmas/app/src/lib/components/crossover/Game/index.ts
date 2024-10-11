@@ -15,7 +15,12 @@ import type {
     Monster,
     Player,
 } from "$lib/crossover/types";
-import { geohashToColRow, getEntityId } from "$lib/crossover/utils";
+import {
+    geohashToColRow,
+    getEntityId,
+    isEntityEquipment,
+    isEntityEquipmentOrInventory,
+} from "$lib/crossover/utils";
 import { entityAttributes } from "$lib/crossover/world/entity";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
@@ -252,7 +257,7 @@ async function updatePlayer(
 }
 
 /**
- * Use this to update the player (self) and perform additional logic
+ * Update the equipment record for all entities
  *
  * @param oldItem - Old Entity before change
  * @param newItem - New Entity after change
@@ -264,13 +269,16 @@ async function updateEquipment(
 ) {
     if (!geohashLocationTypes.has(newItem.locT)) {
         equipmentRecord.update((er) => {
-            const entityId = newItem.loc[0];
-            if (er[entityId]) {
-                er[entityId][newItem.item] = newItem;
-            } else {
-                er[entityId] = {
-                    [newItem.item]: newItem,
-                };
+            // Minified entity might not contain location information, need to check if present
+            if (isEntityEquipment(newItem)) {
+                const creatureId = newItem.loc[0]; // this is the creature the item is on
+                if (er[creatureId]) {
+                    er[creatureId][newItem.item] = newItem;
+                } else {
+                    er[creatureId] = {
+                        [newItem.item]: newItem,
+                    };
+                }
             }
             return er;
         });
@@ -279,21 +287,19 @@ async function updateEquipment(
 
 function loadInventory(record: Record<string, Item>) {
     const playerId = get(player)?.player;
-    for (const [entityId, items] of Object.entries(
+    for (const [creatureId, items] of Object.entries(
         groupBy(
-            Object.values(record).filter(
-                (i) => !geohashLocationTypes.has(i.locT),
-            ),
+            Object.values(record).filter(isEntityEquipmentOrInventory),
             (i) => i.loc[0],
         ),
     )) {
-        const ec = entityContainers[entityId];
+        const ec = entityContainers[creatureId];
         if (ec && ec instanceof AvatarEntityContainer) {
             ec.loadInventory(items);
         }
 
         // Set player (self) equipment & inventory
-        if (playerId === entityId) {
+        if (playerId === creatureId) {
             playerEquippedItems.set(items.filter((i) => i.locT !== "inv"));
             playerInventoryItems.set(items.filter((i) => i.locT === "inv"));
         }
@@ -332,6 +338,7 @@ function updateEntities(
                 const updatedLandGrading = await calculateLandGrading(
                     Object.values(record),
                 );
+
                 // If the land grading has changed,
                 if (!isEqual(updatedLandGrading, landGrading)) {
                     landGrading.set(updatedLandGrading);

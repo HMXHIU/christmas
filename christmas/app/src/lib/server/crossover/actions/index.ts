@@ -188,7 +188,7 @@ async function move(
         entity.locI,
     );
     await publishAffectedEntitiesToPlayers(
-        [minifiedEntity(entity, { location: true, demographics: true })],
+        [minifiedEntity(entity, { demographics: true })],
         {
             publishTo: nearbyPlayerIds,
         },
@@ -204,16 +204,11 @@ async function move(
         );
         await publishAffectedEntitiesToPlayers(
             [
-                ...monsters.map((e) => minifiedEntity(e, { location: true })),
+                ...monsters.map((e) => minifiedEntity(e)),
                 ...players
                     .filter((p) => p.player !== entityId)
-                    .map((e) =>
-                        minifiedEntity(e, {
-                            location: true,
-                            demographics: true,
-                        }),
-                    ), // exclude self (already received above)
-                ...items.map((e) => minifiedEntity(e, { location: true })),
+                    .map((e) => minifiedEntity(e, { demographics: true })), // exclude self (already received above)
+                ...items.map((e) => minifiedEntity(e)),
             ],
             { publishTo: [entityId] },
         );
@@ -241,17 +236,14 @@ async function look(
 
     const entities = [
         player,
-        ...monsters.map((e) =>
-            minifiedEntity(e, { location: true, stats: true }),
-        ),
+        ...monsters.map((e) => minifiedEntity(e, { stats: true })),
         ...players.map((e) =>
             minifiedEntity(e, {
-                location: true,
                 demographics: true,
                 stats: true,
             }),
         ),
-        ...items.map((e) => minifiedEntity(e, { location: true, stats: true })),
+        ...items.map((e) => minifiedEntity(e, { stats: true })),
         ...inventoryItems,
     ];
 

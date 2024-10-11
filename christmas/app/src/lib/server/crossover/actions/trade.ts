@@ -310,7 +310,7 @@ async function browse(
         ? `${merchantEntity.name} is offering:\n\n${orders}\n\nYou may *fulfill writ* to execute a trade.`
         : `${merchantEntity.name}'s stall stands barren, devoid of goods for trade this day.`;
 
-    // Send writs to browsing player
+    // Send writs to browsing player (player may fulfill writs even if they are in the NPCs inventory)
     await publishAffectedEntitiesToPlayers(
         writItems.map((i) => minifiedEntity(i)),
         {

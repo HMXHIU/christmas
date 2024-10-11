@@ -7,8 +7,11 @@ import type {
     Player,
 } from "$lib/crossover/types";
 import {
+    equipmentSlots,
     geohashLocationTypes,
+    weaponSlots,
     type Direction,
+    type EquipmentSlot,
     type GridCell,
 } from "$lib/crossover/world/types";
 import { divmod } from "$lib/utils";
@@ -51,7 +54,11 @@ export {
     gridSizeAtPrecision,
     inRange,
     isEntityAlive,
+    isEntityEquipment,
+    isEntityEquipmentOrInventory,
     isEntityInMotion,
+    isEntityOnGeohashLocation,
+    isEntityWeapon,
     minifiedEntity,
     oddGeohashCharacters,
     REGEX_STRIP_ENTITY_TYPE,
@@ -517,17 +524,50 @@ function isEntityInMotion(entity: Creature, now?: number): boolean {
     return entity.pthclk + entity.pthdur > (now ?? Date.now());
 }
 
+function isEntityOnGeohashLocation(entity: Actor): boolean {
+    return (
+        entity.loc != null &&
+        entity.locT != null &&
+        geohashLocationTypes.has(entity.locT)
+    );
+}
+
+function isEntityEquipment(entity: Actor): boolean {
+    return (
+        entity.loc != null &&
+        entity.locT != null &&
+        equipmentSlots.has(entity.locT as EquipmentSlot)
+    );
+}
+
+function isEntityEquipmentOrInventory(entity: Actor): boolean {
+    return (
+        entity.loc != null &&
+        entity.locT != null &&
+        (equipmentSlots.has(entity.locT as EquipmentSlot) ||
+            entity.locT == "inv")
+    );
+}
+
+function isEntityWeapon(entity: Actor): boolean {
+    return (
+        entity.loc != null &&
+        entity.locT != null &&
+        weaponSlots.has(entity.locT as EquipmentSlot)
+    );
+}
+
 function minifiedEntity(
     entity: Actor,
     options?: {
-        location?: boolean;
+        path?: boolean; // pth, pthst, pthclk, pthdur
         stats?: boolean; // hp, cha, mnd, lum, umb etc ...
         demographics?: boolean; // archetype, gender, race
         timers?: boolean; // buclk
     },
 ): Actor {
     // Common
-    let fields: string[] = ["name"];
+    let fields: string[] = ["name", "loc", "locT", "locI"];
 
     // Player specific
     if ("player" in entity) {
@@ -554,8 +594,8 @@ function minifiedEntity(
 
     // Monster & Player specific
     if ("player" in entity || "monster" in entity) {
-        // Path
-        if (options?.location && isEntityInMotion(entity as Creature)) {
+        // Path (only need to send if entity is in motion)
+        if (isEntityInMotion(entity as Creature)) {
             fields.push("pth", "pthst", "pthclk", "pthdur");
         }
         // Stats
@@ -566,11 +606,6 @@ function minifiedEntity(
         if (options?.timers) {
             fields.push("buclk"); // need to include ap
         }
-    }
-
-    // Location
-    if (options?.location) {
-        fields.push("loc", "locT", "locI");
     }
 
     return pick(entity, fields) as Actor;
@@ -757,12 +792,13 @@ function entityInRange(
     // If the target is not a geohash, check if the target is on self
     if (!geohashLocationTypes.has(target.locT)) {
         // Allow targeting items on self
-        if (target.loc[0] === getEntityId(self)[0]) {
+        if (target.loc != null && target.loc[0] === getEntityId(self)[0]) {
             return [true, 0];
-        }
-        // Not allowed to target items on other entities
-        else {
-            // TODO: should targetting other player's items be supported ???
+        } else {
+            /* 
+        Not allowed to target items on other entities.
+        For items like tradewrits which can be targeted on another entity, perform the logic in the calling code
+        */
             return [false, 0];
         }
     }

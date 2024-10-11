@@ -165,7 +165,7 @@ async function useItem({
 
     // Publish item state to nearby players
     await publishAffectedEntitiesToPlayers(
-        [minifiedEntity(itemEntity, { stats: true, location: true })],
+        [minifiedEntity(itemEntity, { stats: true })],
         {
             publishTo: nearbyPlayerIds,
         },
@@ -233,9 +233,7 @@ async function equipItem(
         player.locI,
     );
     await publishAffectedEntitiesToPlayers(
-        [itemToEquip, ...exitingItemsInSlot].map((e) =>
-            minifiedEntity(e, { location: true }),
-        ),
+        [itemToEquip, ...exitingItemsInSlot].map((e) => minifiedEntity(e)),
         {
             publishTo: nearbyPlayerIds,
         },
@@ -283,12 +281,9 @@ async function unequipItem(player: PlayerEntity, item: string, now?: number) {
         player.locT as GeohashLocation,
         player.locI,
     );
-    await publishAffectedEntitiesToPlayers(
-        [minifiedEntity(itemEntity, { location: true })],
-        {
-            publishTo: nearbyPlayerIds,
-        },
-    );
+    await publishAffectedEntitiesToPlayers([minifiedEntity(itemEntity)], {
+        publishTo: nearbyPlayerIds,
+    });
 }
 
 async function takeItem(player: PlayerEntity, item: string, now?: number) {
@@ -342,7 +337,7 @@ async function takeItem(player: PlayerEntity, item: string, now?: number) {
         player.locI,
     );
     await publishAffectedEntitiesToPlayers(
-        [minifiedEntity(itemEntity, { location: true, stats: true })],
+        [minifiedEntity(itemEntity, { stats: true })],
         { publishTo: nearbyPlayerIds },
     );
 }
@@ -397,7 +392,7 @@ async function dropItem(player: PlayerEntity, item: string, now?: number) {
         player.locI,
     );
     await publishAffectedEntitiesToPlayers(
-        [minifiedEntity(itemEntity, { location: true, stats: true })],
+        [minifiedEntity(itemEntity, { stats: true })],
         { publishTo: nearbyPlayerIds },
     );
 }
@@ -425,7 +420,7 @@ async function createItem(
             configOwner: player.player,
         });
         await publishAffectedEntitiesToPlayers(
-            [minifiedEntity(item, { location: true, stats: true })],
+            [minifiedEntity(item, { stats: true })],
             { publishTo: [player.player] },
         );
     } catch (error: any) {
@@ -584,7 +579,7 @@ async function enterItem(
 
     // Inform all players of self location change
     await publishAffectedEntitiesToPlayers(
-        [minifiedEntity(player, { location: true, stats: true })],
+        [minifiedEntity(player, { stats: true })],
         { publishTo: nearbyPlayerIds },
     );
 

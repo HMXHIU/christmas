@@ -149,7 +149,6 @@ async function resolveCombat(
                 minifiedEntity(e, {
                     stats: true,
                     timers: true,
-                    location: true,
                 }),
             ),
             {
@@ -471,7 +470,7 @@ async function handleEntityDeath(
             [
                 minifiedEntity(killerEntity, {
                     stats: true,
-                    location: true,
+
                     timers: true,
                 }),
             ],
@@ -490,7 +489,7 @@ async function handleEntityDeath(
             [
                 minifiedEntity(deadEntity, {
                     stats: true,
-                    location: true,
+
                     timers: true,
                 }),
             ],

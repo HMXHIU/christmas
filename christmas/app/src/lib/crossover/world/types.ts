@@ -5,11 +5,12 @@ import type { Currency } from "../types";
 export {
     BarterSchema,
     Directions,
-    EquipmentSlots,
+    EQUIPMENT_SLOTS,
+    equipmentSlots,
     EquipmentSlotsEnum,
     GeohashLocationSchema,
     geohashLocationTypes,
-    WeaponSlots,
+    weaponSlots,
     type AssetMetadata,
     type Barter,
     type BarterSerialized,
@@ -41,39 +42,32 @@ const BarterSchema = z.object({
         .optional(),
 });
 
-type EquipmentSlot =
+const EQUIPMENT_SLOTS = {
     // armor
-    | "ch" // chest
-    | "lg" // legs
-    | "ft" // feet
-    | "sh" // shoulders
-    | "gl" // gloves
+    ch: "chest",
+    lg: "legs",
+    ft: "feet",
+    sh: "shoulders",
+    gl: "gloves",
     // weapons
-    | "rh" // right hand
-    | "lh" // left hand
+    rh: "right hand",
+    lh: "left hand",
     // non visible
-    | "hd" // head
-    | "nk" // neck
-    | "r1" // ring 1
-    | "r2"; // ring 2
+    hd: "head",
+    nk: "neck",
+    r1: "ring 1",
+    r2: "ring 2",
+} as const;
+type EquipmentSlot = keyof typeof EQUIPMENT_SLOTS;
+const EquipmentSlotsEnum = Object.keys(EQUIPMENT_SLOTS) as [
+    EquipmentSlot,
+    ...EquipmentSlot[],
+]; // for use with zod
+const equipmentSlots = new Set<EquipmentSlot>(
+    Object.keys(EQUIPMENT_SLOTS) as EquipmentSlot[],
+); // for fast checking
 
-const EquipmentSlotsEnum = [
-    "ch",
-    "lg",
-    "ft",
-    "sh",
-    "gl",
-    "rh",
-    "lh",
-    "hd",
-    "nk",
-    "r1",
-    "r2",
-] as const;
-
-const EquipmentSlots: EquipmentSlot[] = [...EquipmentSlotsEnum];
-
-const WeaponSlots: EquipmentSlot[] = ["rh", "lh"];
+const weaponSlots = new Set<EquipmentSlot>(["rh", "lh"]);
 
 type NoiseType = "simplex" | "random";
 

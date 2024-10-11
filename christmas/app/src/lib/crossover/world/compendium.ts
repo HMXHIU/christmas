@@ -1,12 +1,10 @@
 import type { Actor, DieRoll, EntityType, Item } from "$lib/crossover/types";
 import { substituteVariablesRecursively } from "$lib/utils";
-import { getEntityId } from "../utils";
+import { getEntityId, isEntityEquipment, isEntityWeapon } from "../utils";
 import type { Abilities } from "./abilities";
 import type { Actions } from "./actions";
 import { compendium } from "./settings/compendium";
 import {
-    EquipmentSlots,
-    WeaponSlots,
     type AssetMetadata,
     type EquipmentSlot,
     type GeohashLocation,
@@ -122,15 +120,9 @@ function itemVariables(item: Item): ItemVariables {
 }
 
 function isItemEquipped(item: Item, entity: Actor): boolean {
-    return (
-        EquipmentSlots.includes(item.locT as EquipmentSlot) &&
-        item.loc[0] === getEntityId(entity)[0]
-    );
+    return isEntityEquipment(item) && item.loc[0] === getEntityId(entity)[0];
 }
 
 function isWeaponEquipped(item: Item, entity: Actor): boolean {
-    return (
-        WeaponSlots.includes(item.locT as EquipmentSlot) &&
-        item.loc[0] === getEntityId(entity)[0]
-    );
+    return isEntityWeapon(item) && item.loc[0] === getEntityId(entity)[0];
 }

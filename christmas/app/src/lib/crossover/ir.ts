@@ -458,6 +458,12 @@ function searchPossibleCommands({
 } {
     const queryTokens = tokenize(query);
 
+    /* 
+    Writ items can be interacted with even in another player's inventory (get via `browse`)
+    Extract before `filterSortEntitiesInRange`
+    */
+    const writs = items.filter((i) => i.prop === compendium.tradewrit.prop);
+
     // Filter entities in range
     monsters = filterSortEntitiesInRange(
         player,
@@ -475,8 +481,7 @@ function searchPossibleCommands({
         COMMAND_SEARCH_RANGE,
     ) as Item[];
 
-    // Writ items can be interacted with even in another player's inventory (get via `browse`)
-    const writs = items.filter((i) => i.prop === compendium.tradewrit.prop);
+    // Add back the writs
     items.push(...writs);
 
     // Entities in environment relevant to the query

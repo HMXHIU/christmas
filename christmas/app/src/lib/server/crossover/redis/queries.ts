@@ -10,7 +10,7 @@ import type {
     EquipmentSlot,
     GeohashLocation,
 } from "$lib/crossover/world/types";
-import { EquipmentSlots, WeaponSlots } from "$lib/crossover/world/types";
+import { equipmentSlots, weaponSlots } from "$lib/crossover/world/types";
 import {
     type ActorEntity,
     type CreatureEntity,
@@ -376,13 +376,13 @@ async function playerQuestsInvolvingEntities(
  */
 function equipmentQuerySet(
     player: string,
-    equipmentSlots?: EquipmentSlot[],
+    equipment?: EquipmentSlot[],
 ): Search {
-    equipmentSlots = equipmentSlots ?? EquipmentSlots;
+    equipment = equipment ?? Array.from(equipmentSlots);
     let qs = itemRepository.search().where("loc").contains(player);
-    qs = qs.and("locT").equal(equipmentSlots[0]);
-    for (let i = 1; i < equipmentSlots.length; i++) {
-        qs = qs.or("locT").equalTo(equipmentSlots[i]);
+    qs = qs.and("locT").equal(equipment[0]);
+    for (let i = 1; i < equipment.length; i++) {
+        qs = qs.or("locT").equalTo(equipment[i]);
     }
     return qs;
 }
@@ -404,7 +404,7 @@ function dungeonEntrancesQuerySet(
 async function equippedWeapons(entity: CreatureEntity): Promise<ItemEntity[]> {
     let weapons = (await equipmentQuerySet(
         getEntityId(entity)[0],
-        WeaponSlots,
+        Array.from(weaponSlots),
     ).returnAll()) as ItemEntity[];
     weapons = weapons.filter((i) => compendium[i.prop].dieRoll); // remove shields etc ..
     return weapons;

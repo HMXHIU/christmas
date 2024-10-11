@@ -553,4 +553,5 @@ const playerActions = [
     actions.fulfill,
     actions.writ,
     actions.browse,
+    actions.give,
 ];

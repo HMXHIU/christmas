@@ -11,7 +11,7 @@ import { actions } from "./settings/actions";
 import { compendium } from "./settings/compendium";
 import type { SkillLines } from "./skills";
 import {
-    EquipmentSlots,
+    equipmentSlots,
     geohashLocationTypes,
     type BarterSerialized,
     type EquipmentSlot,
@@ -139,7 +139,7 @@ function filterTargetItemsByAction(
     else if (action === actions.unequip.action) {
         return items.filter(
             (item) =>
-                EquipmentSlots.includes(item.locT as EquipmentSlot) &&
+                equipmentSlots.has(item.locT as EquipmentSlot) &&
                 item.loc[0] === getEntityId(self)[0],
         );
     }
@@ -152,7 +152,7 @@ function filterTargetItemsByAction(
         return items.filter(
             (item) =>
                 item.locT === "inv" ||
-                EquipmentSlots.includes(item.locT as EquipmentSlot),
+                equipmentSlots.has(item.locT as EquipmentSlot),
         );
     }
     // Can only enter an item with a world
