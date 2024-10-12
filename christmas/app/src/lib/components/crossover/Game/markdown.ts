@@ -9,8 +9,7 @@ function markdown(text?: string): string {
             .replace(/\n/g, "<br>")
             .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
             .replace(/\*(.*?)\*/g, "<em>$1</em>")
-            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-            .replace(/\b(item_\w+)\b/g, '<span class="item-name">$1</span>'),
+            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>'),
         { USE_PROFILES: { html: true } },
     );
 }

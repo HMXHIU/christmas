@@ -3,6 +3,7 @@ import {
     fuzzyMatch,
     gameActionsIR,
     getCommandVariables,
+    searchPossibleCommands,
     tokenize,
 } from "$lib/crossover/ir";
 import type { Item } from "$lib/crossover/types";
@@ -42,6 +43,36 @@ describe("IR Tests", async () => {
     });
 
     describe("Query irrelevant & command variables", () => {
+        test("Test 'say item' does not mask out item", () => {
+            let sayCommand = searchPossibleCommands({
+                query: `say ${woodenClub.item}`,
+                // Player
+                player: playerOne,
+                playerAbilities: [abilities.bruise, abilities.bandage],
+                playerItems: [woodenClub],
+                actions: [actions.say],
+                // Environment
+                monsters: [goblin, dragon],
+                players: [playerOne],
+                items: [woodenDoor],
+                skills: [...SkillLinesEnum],
+            }).commands[0];
+            expect(sayCommand).toMatchObject([
+                {
+                    action: "say",
+                },
+                {
+                    self: {
+                        player: playerOne.player,
+                    },
+                },
+                {
+                    query: `say ${woodenClub.item}`,
+                    queryIrrelevant: `${woodenClub.item}`, // item should be in queryIrrelevant as say only can target creatures
+                },
+            ]);
+        });
+
         test("Test token positions and query irrelevant", () => {
             const queryTokens = tokenize("greet inn keeper");
 

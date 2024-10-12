@@ -383,9 +383,11 @@ function fuzzyMatch(
     // Fill the rest of the table
     for (let i = 1; i <= m; i++) {
         for (let j = 1; j <= n; j++) {
-            // If the characters at positions i-1 in str1 and j-1 in str2 are the same,
-            // it assigns the value from the top-left diagonal cell (dp[i - 1][j - 1]) to the current cell.
-            // This operation represents no change (i.e., a match).
+            /* 
+            If the characters at positions i-1 in str1 and j-1 in str2 are the same,
+            it assigns the value from the top-left diagonal cell (dp[i - 1][j - 1]) to the current cell.
+            This operation represents no change (i.e., a match).
+            */
             if (str1[i - 1] === str2[j - 1]) {
                 dp[i][j] = dp[i - 1][j - 1];
             }
@@ -402,9 +404,11 @@ function fuzzyMatch(
 
             // Pruning
             if (dp[i][j] > maxErrors) {
-                // Early termination considering remaining characters
-                // even if we match the remaining characters perfectly,
-                // the total Levenshtein distance will still be greater than the allowed error threshold.
+                /* 
+                Early termination considering remaining characters
+                even if we match the remaining characters perfectly,
+                the total Levenshtein distance will still be greater than the allowed error threshold.
+                */
                 const remainingLength = m - i + n - j;
                 if (dp[i][j] > maxErrors + remainingLength) {
                     return {
@@ -647,19 +651,40 @@ function getCommandVariables({
         .map((c) => c.position);
 
     // Optional tokens if it appears
-    for (const [t, { position, optional }] of Object.entries(
+    for (const [t, { position, optional, entityTypes }] of Object.entries(
         action.predicate.tokens,
     )) {
-        for (const [_, matchedTokenPosition] of Object.entries(
+        if (!optional) continue;
+
+        for (const [id, matchedTokenPosition] of Object.entries(
             tokenPositions,
         )) {
             /* 
-            Multiple tokens might belong to the same entity (eg. inn keeper)
-            If any of the position matches, consider the whole groupe matched
+            Multiple tokens might belong to the same entity (eg. 'inn keeper')
+            If any of the position matches, consider the whole group matched
             */
             const matchedPositions =
                 Object.keys(matchedTokenPosition).map(Number);
-            const entityMatched = matchedPositions.find((p) => p === position);
+
+            const entityMatched = matchedPositions.find((p) => {
+                // Check position match
+                if (p !== position) return false;
+
+                // No entityTypes constraint
+                if (!entityTypes) return true;
+
+                // Check entityTypes if provided (only target uses entityType)
+                for (const entityType of entityTypes) {
+                    if (
+                        gameEntities.target &&
+                        getEntityId(gameEntities.target)[1] === entityType
+                    ) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+
             if (entityMatched) {
                 relevantPositions.push(...matchedPositions);
             }
