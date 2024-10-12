@@ -13,6 +13,7 @@
     import { startCase } from "lodash";
     import { Heart, Zap } from "lucide-svelte";
     import { playerEquippedItems, playerInventoryItems } from "../../../store";
+    import { markdown } from "./Game/markdown";
 
     let isDialogOpen = false;
     let selectedItem: Item | null = null;
@@ -99,9 +100,10 @@
                             >
                         </span></Dialog.Title
                     >
-                    <Dialog.Description
-                        >{itemAttibutes(selectedItem)
-                            .description}</Dialog.Description
+                    <Dialog.Description class="py-2"
+                        >{@html markdown(
+                            itemAttibutes(selectedItem).description,
+                        )}</Dialog.Description
                     >
                 </Dialog.Header>
 

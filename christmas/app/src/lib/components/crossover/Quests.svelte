@@ -10,6 +10,7 @@
     import { get } from "svelte/store";
     import { playerInventoryItems } from "../../../store";
     import Checkbox from "../ui/checkbox/checkbox.svelte";
+    import { markdown } from "./Game/markdown";
 
     interface QuestWrit {
         writ: string;
@@ -65,7 +66,7 @@
                         >
                     {/each}
                 {:else}
-                    <p>No Quests</p>
+                    <p class="text-xs text-muted-foreground">No Quests</p>
                 {/if}
             </div>
         </Card.Content>
@@ -78,7 +79,7 @@
                 <Dialog.Description>
                     <div class="flex flex-col space-y-2">
                         <p>{selectedQuest?.name}</p>
-                        <p>{selectedQuest?.description}</p>
+                        <p>{@html markdown(selectedQuest?.description)}</p>
                     </div>
                 </Dialog.Description>
             </Dialog.Header>
@@ -88,7 +89,7 @@
                     {#each selectedQuest?.objectives as objective}
                         <div class="flex space-x-2">
                             <Checkbox disabled checked={objective.fulfilled} />
-                            <p>{objective.description}</p>
+                            <p>{@html markdown(objective.description)}</p>
                         </div>
                     {/each}
                 {/if}

@@ -24,6 +24,7 @@
 
     import { abilities } from "$lib/crossover/world/settings/abilities";
     import { playerAbilities } from "../../../store";
+    import { markdown } from "./Game/markdown";
 
     let isDialogOpen = false;
     let selectedAbility: Ability | null = null;
@@ -72,8 +73,10 @@
         <Dialog.Content class="sm:max-w-[425px]">
             <Dialog.Header>
                 <Dialog.Title>{selectedAbility?.ability}</Dialog.Title>
-                <Dialog.Description
-                    >{selectedAbility?.description}</Dialog.Description
+                <Dialog.Description class="py-2"
+                    >{@html markdown(
+                        selectedAbility?.description,
+                    )}</Dialog.Description
                 >
             </Dialog.Header>
             <div class="flex flex-col gap-2">
