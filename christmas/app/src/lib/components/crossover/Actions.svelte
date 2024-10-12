@@ -11,6 +11,7 @@
     import { cn } from "$lib/shadcn";
     import { Clock, Target } from "lucide-svelte";
     import { markdown } from "./Game/markdown";
+    import QuickToolTip from "./QuickToolTip.svelte";
 
     let isDialogOpen = false;
     let selectedAction: Action | null = null;
@@ -43,8 +44,11 @@
         </Card.Content>
     </Card.Root>
 
-    <Dialog.Root bind:open={isDialogOpen}>
-        <Dialog.Content class="sm:max-w-[425px]">
+    <Dialog.Root
+        bind:open={isDialogOpen}
+        openFocus={"#grab-focus-from-tooltip"}
+    >
+        <Dialog.Content class="sm:max-w-[425px]" id="grab-focus-from-tooltip">
             <Dialog.Header>
                 <Dialog.Title>{selectedAction?.action}</Dialog.Title>
                 <Dialog.Description class="py-2"
@@ -55,15 +59,19 @@
             </Dialog.Header>
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row gap-2">
-                    <Badge>
-                        <Target class="h-4"></Target>
-                        {selectedAction?.range}
-                    </Badge>
-                    {#if selectedAction?.ticks && selectedAction?.ticks > 0}
+                    <QuickToolTip text="Range">
                         <Badge>
-                            <Clock class="h-4"></Clock>
-                            {selectedAction?.ticks}
+                            <Target class="h-4"></Target>
+                            {selectedAction?.range}
                         </Badge>
+                    </QuickToolTip>
+                    {#if selectedAction?.ticks && selectedAction?.ticks > 0}
+                        <QuickToolTip text="Ticks">
+                            <Badge>
+                                <Clock class="h-4"></Clock>
+                                {selectedAction?.ticks}
+                            </Badge>
+                        </QuickToolTip>
                     {/if}
                 </div>
             </div>

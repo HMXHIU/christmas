@@ -25,6 +25,7 @@
     import { abilities } from "$lib/crossover/world/settings/abilities";
     import { playerAbilities } from "../../../store";
     import { markdown } from "./Game/markdown";
+    import QuickToolTip from "./QuickToolTip.svelte";
 
     let isDialogOpen = false;
     let selectedAbility: Ability | null = null;
@@ -63,14 +64,17 @@
                         >
                     {/each}
                 {:else}
-                    <p>No abilities</p>
+                    <p class="text-xs text-muted-foreground">No abilities</p>
                 {/if}
             </div>
         </Card.Content>
     </Card.Root>
 
-    <Dialog.Root bind:open={isDialogOpen}>
-        <Dialog.Content class="sm:max-w-[425px]">
+    <Dialog.Root
+        bind:open={isDialogOpen}
+        openFocus={"#grab-focus-from-tooltip"}
+    >
+        <Dialog.Content class="sm:max-w-[425px]" id="grab-focus-from-tooltip">
             <Dialog.Header>
                 <Dialog.Title>{selectedAbility?.ability}</Dialog.Title>
                 <Dialog.Description class="py-2"
@@ -81,73 +85,89 @@
             </Dialog.Header>
             <div class="flex flex-col gap-2">
                 <div class="flex flex-row gap-2">
-                    <Badge
-                        class="
+                    <QuickToolTip text={selectedAbility?.type ?? "neutral"}>
+                        <Badge
+                            class="
                         {selectedAbility?.type === 'healing'
-                            ? 'bg-green-400'
-                            : ''}
+                                ? 'bg-green-400'
+                                : ''}
                         {selectedAbility?.type === 'offensive'
-                            ? 'bg-red-400'
-                            : ''}
+                                ? 'bg-red-400'
+                                : ''}
                         {selectedAbility?.type === 'defensive'
-                            ? 'bg-blue-400'
-                            : ''}
+                                ? 'bg-blue-400'
+                                : ''}
                         {selectedAbility?.type === 'neutral'
-                            ? 'bg-gray-400'
-                            : ''}"
-                    >
-                        {#if selectedAbility?.type === "healing"}
-                            <Cross class="h-4"></Cross>
-                        {:else if selectedAbility?.type === "offensive"}
-                            <Sword class="h-4"></Sword>
-                        {:else if selectedAbility?.type === "defensive"}
-                            <Shield class="h-4"></Shield>
-                        {:else if selectedAbility?.type === "neutral"}
-                            <Cog class="h-4"></Cog>
-                        {/if}
-                        {selectedAbility?.type}
-                    </Badge>
-                    <Badge>
-                        <Target class="h-4"></Target>
-                        {selectedAbility?.range}
-                    </Badge>
-                    {#if selectedAbility?.aoe && selectedAbility?.aoe > 0}
-                        <Badge>
-                            <Grid2X2 class="h-4"></Grid2X2>
-                            {selectedAbility?.aoe}
+                                ? 'bg-gray-400'
+                                : ''}"
+                        >
+                            {#if selectedAbility?.type === "healing"}
+                                <Cross class="h-4"></Cross>
+                            {:else if selectedAbility?.type === "offensive"}
+                                <Sword class="h-4"></Sword>
+                            {:else if selectedAbility?.type === "defensive"}
+                                <Shield class="h-4"></Shield>
+                            {:else if selectedAbility?.type === "neutral"}
+                                <Cog class="h-4"></Cog>
+                            {/if}
+                            {selectedAbility?.type}
                         </Badge>
+                    </QuickToolTip>
+                    <QuickToolTip text="Range">
+                        <Badge>
+                            <Target class="h-4"></Target>
+                            {selectedAbility?.range}
+                        </Badge>
+                    </QuickToolTip>
+                    {#if selectedAbility?.aoe && selectedAbility?.aoe > 0}
+                        <QuickToolTip text="AOE">
+                            <Badge>
+                                <Grid2X2 class="h-4"></Grid2X2>
+                                {selectedAbility?.aoe}
+                            </Badge>
+                        </QuickToolTip>
                     {/if}
                 </div>
                 <!-- Costs -->
                 <div class="flex flex-row space-2">
                     {#if selectedAbility?.cost.cha}
-                        <Badge class="bg-teal-400"
-                            ><Zap class="h-4"></Zap>{selectedAbility?.cost
-                                .cha}</Badge
+                        <QuickToolTip text="Chaos">
+                            <Badge class="bg-teal-400"
+                                ><Zap class="h-4"></Zap>{selectedAbility?.cost
+                                    .cha}</Badge
+                            ></QuickToolTip
                         >
                     {/if}
                     {#if selectedAbility?.cost.mnd}
-                        <Badge class="bg-blue-400"
-                            ><Brain class="h-4"></Brain>{selectedAbility?.cost
-                                .mnd}</Badge
-                        >
+                        <QuickToolTip text="Mind">
+                            <Badge class="bg-blue-400"
+                                ><Brain class="h-4"></Brain>{selectedAbility
+                                    ?.cost.mnd}</Badge
+                            >
+                        </QuickToolTip>
                     {/if}
                     {#if selectedAbility?.cost.lum}
-                        <Badge class="bg-yellow-400"
-                            ><Sun class="h-4"></Sun>{selectedAbility?.cost
-                                .lum}</Badge
+                        <QuickToolTip text="Lumina">
+                            <Badge class="bg-yellow-400"
+                                ><Sun class="h-4"></Sun>{selectedAbility?.cost
+                                    .lum}</Badge
+                            ></QuickToolTip
                         >
                     {/if}
                     {#if selectedAbility?.cost.umb}
-                        <Badge class="bg-purple-900"
-                            ><Moon class="h-4"></Moon>{selectedAbility?.cost
-                                .umb}</Badge
+                        <QuickToolTip text="Umbra">
+                            <Badge class="bg-purple-900"
+                                ><Moon class="h-4"></Moon>{selectedAbility?.cost
+                                    .umb}</Badge
+                            ></QuickToolTip
                         >
                     {/if}
                     {#if selectedAbility?.cost.hp}
-                        <Badge class="bg-red-400"
-                            ><Heart class="h-4"></Heart>{selectedAbility?.cost
-                                .hp}</Badge
+                        <QuickToolTip text="Health">
+                            <Badge class="bg-red-400"
+                                ><Heart class="h-4"></Heart>{selectedAbility
+                                    ?.cost.hp}</Badge
+                            ></QuickToolTip
                         >
                     {/if}
                 </div>

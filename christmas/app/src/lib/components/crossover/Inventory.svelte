@@ -14,6 +14,7 @@
     import { Heart, Zap } from "lucide-svelte";
     import { playerEquippedItems, playerInventoryItems } from "../../../store";
     import { markdown } from "./Game/markdown";
+    import QuickToolTip from "./QuickToolTip.svelte";
 
     let isDialogOpen = false;
     let selectedItem: Item | null = null;
@@ -82,21 +83,28 @@
         </Card.Content>
     </Card.Root>
 
-    <Dialog.Root bind:open={isDialogOpen}>
-        <Dialog.Content class="sm:max-w-[425px]">
+    <Dialog.Root
+        bind:open={isDialogOpen}
+        openFocus={"#grab-focus-from-tooltip"}
+    >
+        <Dialog.Content class="sm:max-w-[425px]" id="grab-focus-from-tooltip">
             {#if selectedItem != null}
                 <!-- Item Name & Description -->
                 <Dialog.Header>
                     <Dialog.Title
                         >{selectedItem.name}
                         <span>
-                            <Badge class="bg-blue-400 px-1.5 py-0"
-                                ><Zap class="h-3"
-                                ></Zap>{selectedItem?.chg}</Badge
+                            <QuickToolTip text="Charges"
+                                ><Badge class="bg-blue-400 px-1.5 py-0"
+                                    ><Zap class="h-3"
+                                    ></Zap>{selectedItem?.chg}</Badge
+                                ></QuickToolTip
                             >
-                            <Badge class="bg-red-400  px-1.5 py-0"
-                                ><Heart class="h-3"
-                                ></Heart>{selectedItem?.dur}</Badge
+                            <QuickToolTip text="Durability"
+                                ><Badge class="bg-red-400  px-1.5 py-0"
+                                    ><Heart class="h-3"
+                                    ></Heart>{selectedItem?.dur}</Badge
+                                ></QuickToolTip
                             >
                         </span></Dialog.Title
                     >
@@ -114,16 +122,25 @@
                             <p class="text-sm">
                                 {startCase(utility.utility)}
                                 <span>
-                                    {#if utility.cost.charges > 0}<Badge
-                                            class="bg-blue-400  px-1.5 py-0"
-                                            ><Zap class="h-3"></Zap>{utility
-                                                .cost.charges}</Badge
-                                        >{/if}
-                                    {#if utility.cost.durability > 0}<Badge
-                                            class="bg-red-400  px-1.5 py-0"
-                                            ><Heart class="h-3"></Heart>{utility
-                                                .cost.durability}</Badge
-                                        >{/if}
+                                    {#if utility.cost.charges > 0}
+                                        <QuickToolTip text="Charges">
+                                            <Badge
+                                                class="bg-blue-400  px-1.5 py-0"
+                                                ><Zap class="h-3"></Zap>{utility
+                                                    .cost.charges}</Badge
+                                            >
+                                        </QuickToolTip>
+                                    {/if}
+                                    {#if utility.cost.durability > 0}
+                                        <QuickToolTip text="Durability"
+                                            ><Badge
+                                                class="bg-red-400  px-1.5 py-0"
+                                                ><Heart class="h-3"
+                                                ></Heart>{utility.cost
+                                                    .durability}</Badge
+                                            ></QuickToolTip
+                                        >
+                                    {/if}
                                 </span>
                             </p>
                             <p class="text-sm text-muted-foreground">
