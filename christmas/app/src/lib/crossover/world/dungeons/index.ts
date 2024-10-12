@@ -203,11 +203,9 @@ async function generateDungeonGraph(
         );
         for (let i = 0; i < numConnections; i++) {
             const nextRoom = unconnectedRooms[i];
-            generateCorridor(
-                currentRoom.room,
-                nextRoom.room,
-                corridorPrecision,
-            ).forEach((c) => corridors.add(c));
+            generateCorridor(currentRoom, nextRoom, corridorPrecision).forEach(
+                (c) => corridors.add(c),
+            );
             currentRoom.connections.push(nextRoom.room);
             nextRoom.connections.push(currentRoom.room);
             connectedRooms.add(nextRoom.room);
@@ -233,12 +231,12 @@ async function generateDungeonGraph(
 }
 
 function generateCorridor(
-    start: string,
-    end: string,
+    startRoom: Room,
+    endRoom: Room,
     precision: number,
 ): string[] {
-    start = autoCorrectGeohashPrecision(start, precision);
-    end = autoCorrectGeohashPrecision(end, precision);
+    const start = autoCorrectGeohashPrecision(startRoom.room, precision);
+    const end = autoCorrectGeohashPrecision(endRoom.room, precision);
 
     const [x1, y1] = geohashToColRow(start);
     const [x2, y2] = geohashToColRow(end);
@@ -271,9 +269,25 @@ function generateCorridor(
                 currentX += dx > 0 ? 1 : -1;
             }
         }
-        points.push(
-            gridCellToGeohash({ col: currentX, row: currentY, precision }),
-        );
+        const plot = gridCellToGeohash({
+            col: currentX,
+            row: currentY,
+            precision,
+        });
+
+        // Exclude plot if it is in startRoom or endRoom
+        if (
+            !(
+                (precision >= startRoom.plotPrecision &&
+                    startRoom.plots.has(
+                        plot.slice(0, startRoom.plotPrecision),
+                    )) ||
+                (precision >= endRoom.plotPrecision &&
+                    endRoom.plots.has(plot.slice(0, endRoom.plotPrecision)))
+            )
+        ) {
+            points.push(plot);
+        }
     }
 
     return points;

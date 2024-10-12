@@ -39,7 +39,7 @@ interface BluePrint {
     };
 }
 
-type DungeonBluePrints = "entrance" | "control" | "market";
+type DungeonBluePrints = "entrance" | "control" | "market" | "corridorBeasts";
 
 interface DungeonBluePrint {
     template: DungeonBluePrints;

@@ -4,6 +4,7 @@ import {
     seededRandomNumberBetween,
     stringToRandomNumber,
 } from "$lib/utils/random";
+import { chunk } from "lodash-es";
 import { childrenGeohashesAtPrecision, geohashDistance } from "../../utils";
 import { elevationAtGeohash } from "../biomes";
 import { generateDungeonGraph } from "../dungeons";
@@ -65,22 +66,40 @@ async function blueprintsAtDungeon(
 
         const { type, min, max } = blueprint.frequency;
         let seed = stringToRandomNumber(dungeon + blueprint.template + type);
+        let clusterPlots: string[][] = [];
 
-        // TODO: Corridor
-
-        const chosenRooms = sampleFrom(
-            rooms.filter((r) => !usedRooms.has(r.room)),
-            seededRandomNumberBetween(min, max, seed),
-            seed,
-        );
-        chosenRooms.forEach((r) => usedRooms.add(r.room));
-
-        for (const { plots, room } of chosenRooms) {
-            // Sort plots by distance from the center (room is geohash at the center of the room)
-            const plotsCloseToCenter = Array.from(plots).sort((g) =>
-                geohashDistance(g, room),
+        if (type === "room") {
+            // Sample the chosen rooms
+            const chosenRooms = sampleFrom(
+                rooms.filter((r) => !usedRooms.has(r.room)),
+                seededRandomNumberBetween(min, max, seed),
+                seed,
             );
+            chosenRooms.forEach((r) => usedRooms.add(r.room));
 
+            // Sort plots by distance from the center (room is geohash at the center of the room)
+            clusterPlots = chosenRooms.map(({ plots, room }) =>
+                Array.from(plots).sort((g) => geohashDistance(g, room)),
+            );
+        } else if (type === "corridor") {
+            const sortedCorridors = Array.from(corridors).sort(); // so that we partitions are grouped together
+            const partitionSize =
+                sortedCorridors.length / Math.floor(rooms.length / 2);
+            const minPartitionSize = partitionSize / 2;
+            const corridorClusters = chunk(
+                sortedCorridors,
+                partitionSize,
+            ).filter((xs) => xs.length > minPartitionSize); // min partition size
+
+            // Sample the chosen corridors
+            clusterPlots = sampleFrom(
+                corridorClusters,
+                seededRandomNumberBetween(min, max, seed),
+                seed,
+            );
+        }
+
+        for (const plots of clusterPlots) {
             for (const [
                 cluster,
                 { props, npcs, beasts, min, max, pattern },
@@ -91,23 +110,21 @@ async function blueprintsAtDungeon(
 
                 // Sample the plots based on the frequency and pattern
                 const numClusters = seededRandomNumberBetween(min, max, seed);
-                const pivot = Math.floor(plotsCloseToCenter.length / 2);
+                const pivot = Math.floor(plots.length / 2);
                 let chosenClusters: string[] = [];
+
+                // Note: the plots is sorted by distance to the center of the room/corridor so choosing the front means picking the center
                 if (pattern === "random") {
-                    chosenClusters = sampleFrom(
-                        plotsCloseToCenter,
-                        numClusters,
-                        seed,
-                    );
+                    chosenClusters = sampleFrom(plots, numClusters, seed);
                 } else if (pattern === "center") {
                     chosenClusters = sampleFrom(
-                        plotsCloseToCenter.slice(0, pivot),
+                        plots.slice(0, pivot),
                         numClusters,
                         seed,
                     );
                 } else if (pattern === "peripheral") {
                     chosenClusters = sampleFrom(
-                        plotsCloseToCenter.slice(pivot),
+                        plots.slice(pivot),
                         numClusters,
                         seed,
                     );

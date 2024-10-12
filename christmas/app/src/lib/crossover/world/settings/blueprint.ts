@@ -18,6 +18,7 @@ const dungeonBlueprintsToSpawn: DungeonBluePrints[] = [
     "entrance",
     "control",
     "market",
+    "corridorBeasts",
 ];
 
 const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
@@ -86,6 +87,31 @@ const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
                 min: 1,
                 max: 1,
                 pattern: "center",
+            },
+        },
+    },
+    corridorBeasts: {
+        template: "corridorBeasts",
+        locationType: "d1",
+        frequency: {
+            max: 5,
+            min: 3,
+            type: "corridor",
+        },
+        clusters: {
+            goblins: {
+                beasts: [
+                    {
+                        beast: "goblin",
+                        min: 1,
+                        max: 3,
+                        pattern: "random",
+                        unique: true,
+                    },
+                ],
+                min: 2,
+                max: 5,
+                pattern: "random",
             },
         },
     },
