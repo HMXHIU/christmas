@@ -2,6 +2,7 @@
     import { cn } from "$lib/shadcn";
     import { getCurrentTimestamp } from "$lib/utils";
     import { messageFeed } from "../../../store";
+    import { markdown } from "./Game/markdown";
 
     let chatWindow: HTMLElement;
 </script>
@@ -27,7 +28,7 @@
                 {#if message.messageFeedType === "message"}
                     <!-- Normal Messages -->
                     <p class="text-xs font-extralight px-2 text-left">
-                        {message.message}
+                        {@html markdown(message.message)}
                     </p>
                 {:else if message.messageFeedType === "error"}
                     <!-- Error Messages -->

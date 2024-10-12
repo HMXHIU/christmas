@@ -13,6 +13,7 @@
     import { startCase } from "lodash";
     import { Heart, Zap } from "lucide-svelte";
     import { playerEquippedItems, playerInventoryItems } from "../../../store";
+    import CopyToClipboard from "./CopyToClipboard.svelte";
     import { markdown } from "./Game/markdown";
     import QuickToolTip from "./QuickToolTip.svelte";
 
@@ -92,7 +93,10 @@
                 <!-- Item Name & Description -->
                 <Dialog.Header>
                     <Dialog.Title
-                        >{selectedItem.name}
+                        ><span>
+                            <CopyToClipboard text={selectedItem.item}
+                            ></CopyToClipboard>
+                        </span>{selectedItem.name}
                         <span>
                             <QuickToolTip text="Charges"
                                 ><Badge class="bg-blue-400 px-1.5 py-0"
@@ -143,7 +147,7 @@
                                     {/if}
                                 </span>
                             </p>
-                            <p class="text-sm text-muted-foreground">
+                            <p class="text-sm text-muted-foreground pt-2">
                                 {utility.description}
                             </p>
                         </div>

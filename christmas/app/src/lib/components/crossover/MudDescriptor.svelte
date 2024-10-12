@@ -22,6 +22,7 @@
         player,
         playerRecord,
     } from "../../../store";
+    import CopyToClipboard from "./CopyToClipboard.svelte";
 
     const descriptionGenerator = new MudDescriptionGenerator({
         worldSeed,
@@ -84,6 +85,10 @@
     <div class={cn("w-full flex flex-col gap-2", $$restProps.class)}>
         <!-- Location Name -->
         <p class="text-xs text-primary-background">
+            <span
+                ><CopyToClipboard text={locationDescriptor.location}
+                ></CopyToClipboard></span
+            >
             {locationDescriptor.name || locationDescriptor.location}
         </p>
         <!-- Location -->
