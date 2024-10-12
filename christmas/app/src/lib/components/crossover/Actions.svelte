@@ -10,6 +10,7 @@
     } from "$lib/crossover/world/settings/actions";
     import { cn } from "$lib/shadcn";
     import { Clock, Target } from "lucide-svelte";
+    import { markdown } from "./Game/markdown";
 
     let isDialogOpen = false;
     let selectedAction: Action | null = null;
@@ -46,8 +47,10 @@
         <Dialog.Content class="sm:max-w-[425px]">
             <Dialog.Header>
                 <Dialog.Title>{selectedAction?.action}</Dialog.Title>
-                <Dialog.Description
-                    >{selectedAction?.description}</Dialog.Description
+                <Dialog.Description class="py-2"
+                    >{@html markdown(
+                        selectedAction?.description,
+                    )}</Dialog.Description
                 >
             </Dialog.Header>
             <div class="flex flex-col gap-2">
