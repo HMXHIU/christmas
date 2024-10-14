@@ -4,6 +4,7 @@ import {
     topologyResponseCache,
     topologyResultCache,
 } from "$lib/crossover/caches";
+import { GAME_PREFIX } from "$lib/crossover/defs";
 import { geohashToColRow, geohashToGridCell } from "$lib/crossover/utils";
 import type { Ability } from "$lib/crossover/world/abilities";
 import type { Action } from "$lib/crossover/world/actions";
@@ -232,13 +233,8 @@ async function loadAssetTexture(
 }
 
 function decodeTiledSource(path: string): string {
-    // const source = decodeURIComponent(path) // strip '../'
-    //     .split("/")
-    //     .slice(1)
-    //     .join("/");
-
     // eg. path should be the path in the games bucket (eg. /worlds/tilesets/farm.json)
-    return `${PUBLIC_MINIO_ENDPOINT}/game${path}`;
+    return `${GAME_PREFIX}${path}`;
 }
 
 async function getTilesetForTile(
@@ -278,9 +274,7 @@ async function getImageForTile(
 }
 
 async function initAssetManager() {
-    let manifest = await (
-        await fetch(`${PUBLIC_MINIO_ENDPOINT}/game/manifest.json`)
-    ).json();
+    let manifest = await (await fetch(`${GAME_PREFIX}/manifest.json`)).json();
 
     // Load assets in background
     await Assets.init({ manifest, basePath: PUBLIC_MINIO_ENDPOINT });

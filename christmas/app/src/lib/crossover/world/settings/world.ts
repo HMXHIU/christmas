@@ -1,4 +1,4 @@
-import { PUBLIC_MINIO_ENDPOINT } from "$env/static/public";
+import { GAME_SANCTUARIES, GAME_TOPOLOGY } from "$lib/crossover/defs";
 import type { Sanctuary, Spatial, WorldSeed } from "../world";
 
 export {
@@ -31,9 +31,7 @@ async function topologicalAnalysis(): Promise<
         return _topologicalAnalysis;
     }
     return await (
-        await fetch(
-            `${PUBLIC_MINIO_ENDPOINT}/game/topology/topological_analysis.json`,
-        )
+        await fetch(`${GAME_TOPOLOGY}/topological_analysis.json`)
     ).json();
 }
 
@@ -41,11 +39,7 @@ async function sanctuaries(): Promise<Sanctuary[]> {
     if (_sanctuaries) {
         return _sanctuaries;
     }
-    return await (
-        await fetch(
-            `${PUBLIC_MINIO_ENDPOINT}/game/sanctuaries/sanctuaries.json`,
-        )
-    ).json();
+    return await (await fetch(`${GAME_SANCTUARIES}/sanctuaries.json`)).json();
 }
 
 async function sanctuaryAtRegion(

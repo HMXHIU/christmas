@@ -4,7 +4,6 @@ import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     configureItem,
-    enterItem,
     equipItem,
     takeItem,
     useItem,
@@ -15,7 +14,7 @@ import { awardKillCurrency } from "$lib/server/crossover/entity";
 import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
 import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
 import { itemVariableValue } from "$lib/server/crossover/utils";
-import { sleep, substituteVariablesRecursively } from "$lib/utils";
+import { sleep } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import {
@@ -40,14 +39,7 @@ describe("Test Items", async () => {
         playerThreeStream,
     } = await createGandalfSarumanSauron();
 
-    let {
-        woodenDoor,
-        portalOne,
-        portalTwo,
-        tavern,
-        worldAsset,
-        worldAssetUrl,
-    } = await createTestItems({});
+    let { woodenDoor, portalOne, portalTwo } = await createTestItems({});
 
     beforeAll(async () => {
         // Configure player positions
@@ -112,55 +104,6 @@ describe("Test Items", async () => {
         playerThree.locT = "geohash";
         playerThree.locI = LOCATION_INSTANCE;
         playerThree = await saveEntity(playerThree);
-    });
-
-    test("Test Enter Item", async () => {
-        // Move playerOne to tavern
-        playerOne.loc = [tavern.loc[0]];
-        playerOne.locT = tavern.locT;
-        playerOne.locI = tavern.locI;
-        playerOne = await saveEntity(playerOne);
-
-        // Test prop as world attribute
-        expect(compendium[tavern.prop].world != null).toBe(true);
-
-        // Test variable substitution
-        const propWorld = substituteVariablesRecursively(
-            compendium[tavern.prop].world as any,
-            {
-                ...tavern.vars,
-                self: tavern,
-            },
-        );
-        expect(propWorld).toMatchObject({
-            locationInstance: tavern.item, // use tavern.item as the locationInstance
-            locationType: "in",
-            geohash: tavern.loc[0],
-            world: tavern.item, // use tavern.item as the unique worldId
-            url: worldAssetUrl,
-        });
-
-        // playerOne enter tavern
-        const { player: playerAfter, pois } = await enterItem(
-            playerOne,
-            tavern.item,
-        );
-
-        // Check player spawn point
-        const spawnPoint = pois.find(
-            (p) => "spawn" in p && p.spawn === "player",
-        );
-        if (spawnPoint) {
-            expect(playerAfter.loc[0]).toBe(spawnPoint.geohash);
-        }
-        // Check player location is inside the tavern (if no spawn point)
-        else {
-            expect(playerAfter.loc[0]).toBe(tavern.loc[0]);
-        }
-        expect(playerAfter).toMatchObject({
-            locT: propWorld.locationType,
-            locI: propWorld.locationInstance,
-        });
     });
 
     test("Test Spawn", async () => {

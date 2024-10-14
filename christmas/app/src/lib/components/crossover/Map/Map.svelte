@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { PUBLIC_MINIO_ENDPOINT } from "$env/static/public";
     import { LRUMemoryCache } from "$lib/caches";
     import {
         blueprintsAtLocationCache,
@@ -8,6 +7,7 @@
         topologyResultCache,
     } from "$lib/crossover/caches";
     import { crossoverWorldPOI } from "$lib/crossover/client";
+    import { GAME_TEXTURES } from "$lib/crossover/defs";
     import type { Item } from "$lib/crossover/types";
     import { geohashToColRow } from "$lib/crossover/utils";
     import { topologyAtGeohash } from "$lib/crossover/world/biomes";
@@ -105,7 +105,7 @@
         // Load shader and geometry (TODO: possible to create texture from cached png?)
         const texture = await Assets.load(url);
         const parchmentTexture = await Assets.load(
-            `${PUBLIC_MINIO_ENDPOINT}/game/sprites/textures/parchment.png`,
+            `${GAME_TEXTURES}/parchment.png`,
         );
 
         const { shader, geometry } = loadShaderGeometry(

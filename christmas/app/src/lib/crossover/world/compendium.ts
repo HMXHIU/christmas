@@ -29,7 +29,7 @@ interface PropWorld {
     locationType: GeohashLocation;
     geohash: string; // location to spawn world (variable substitutable to self.loc[0])
     world: string; // id (variable substitutable to self.item)
-    url: string; // url to world tilemap
+    uri: string; // url or urn to world tilemap (if urn, `GAME_TILEMAPS` is prefixed automatically)
 }
 
 /**

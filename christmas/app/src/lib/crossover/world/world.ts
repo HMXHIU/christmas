@@ -99,13 +99,13 @@ async function fetchWorldMetadata(
     world: World,
     worldAssetMetadataCache?: CacheInterface,
 ): Promise<WorldAssetMetadata> {
-    const cachedResult = await worldAssetMetadataCache?.get(world.url);
+    const cachedResult = await worldAssetMetadataCache?.get(world.uri);
     if (cachedResult) {
         return cachedResult;
     }
-    const metadata = await (await fetch(world.url)).json();
+    const metadata = await (await fetch(world.uri)).json();
     if (worldAssetMetadataCache) {
-        await worldAssetMetadataCache.set(world.url, metadata);
+        await worldAssetMetadataCache.set(world.uri, metadata);
     }
     return metadata;
 }
@@ -157,7 +157,7 @@ async function traversableCellsInWorld({
     worldAssetMetadataCache?: CacheInterface;
     worldTraversableCellsCache?: CacheInterface;
 }): Promise<Record<string, number>> {
-    const cachedResult = await worldTraversableCellsCache?.get(world.url);
+    const cachedResult = await worldTraversableCellsCache?.get(world.uri);
     if (cachedResult) {
         return cachedResult;
     }
@@ -219,7 +219,7 @@ async function traversableCellsInWorld({
     }
 
     if (worldTraversableCellsCache) {
-        worldTraversableCellsCache.set(world.url, traversableCells);
+        worldTraversableCellsCache.set(world.uri, traversableCells);
     }
 
     return traversableCells;
@@ -252,7 +252,7 @@ async function poisInWorld(
     },
 ): Promise<WorldPOIs> {
     // Get from cache
-    const cacheKey = world.url;
+    const cacheKey = world.uri;
     const cached = await options?.worldPOIsCache?.get(cacheKey);
     if (cached) return cached;
 

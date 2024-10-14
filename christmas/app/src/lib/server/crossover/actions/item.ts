@@ -1,3 +1,5 @@
+import { PUBLIC_GAME_BUCKET } from "$env/static/public";
+import { GAME_TILEMAPS } from "$lib/crossover/defs";
 import {
     entityInRange,
     getEntityId,
@@ -543,18 +545,22 @@ async function enterItem(
     }
 
     // Substitute world variables
-    const { locationInstance, geohash, world, url, locationType } =
+    const { locationInstance, geohash, world, uri, locationType } =
         substituteVariablesRecursively(prop.world as any, {
             ...itemEntity.vars,
             self: itemEntity,
         });
+
+    const url = uri.startsWith("http")
+        ? uri
+        : `${PUBLIC_GAME_BUCKET}/${GAME_TILEMAPS}/${uri}`;
 
     // Spawn world (if not exists)
     let worldEntity = await spawnWorld({
         world, // specify the worldId manually
         geohash,
         locationType: locationType as GeohashLocation,
-        assetUrl: url,
+        assetUrl: uri,
         tileHeight: TILE_HEIGHT, // do not change this
         tileWidth: TILE_WIDTH,
     });

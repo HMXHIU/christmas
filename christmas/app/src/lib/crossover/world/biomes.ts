@@ -1,9 +1,9 @@
-import { PUBLIC_MINIO_ENDPOINT } from "$env/static/public";
 import { type CacheInterface } from "$lib/caches";
 import { geohashToColRow } from "$lib/crossover/utils";
 import { seededRandom, stringToRandomNumber } from "$lib/utils/random";
 import { cloneDeep } from "lodash-es";
 import { PNG, type PNGWithMetadata } from "pngjs";
+import { GAME_TOPOLOGY_IMAGES } from "../defs";
 import { dungeonBiomeAtGeohash } from "./dungeons";
 import { worldSeed } from "./settings/world";
 import {
@@ -295,7 +295,7 @@ function topologyTile(geohash: string): {
     const [col, row] = geohashToColRow(geohash);
 
     return {
-        url: `${PUBLIC_MINIO_ENDPOINT}/game/topology/topology_2p/${tile}.png`,
+        url: `${GAME_TOPOLOGY_IMAGES}/${tile}.png`,
         topLeft,
         rows,
         cols,

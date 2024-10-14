@@ -241,6 +241,8 @@ export async function createWorldAsset(): Promise<{
         bucket: BUCKETS.game,
     });
 
+    console.log("CREATE WORLD ASSET", JSON.stringify(url, null, 2));
+
     return {
         url,
         asset: testWorldAsset,
@@ -452,7 +454,7 @@ export async function createTestItems({
         locationInstance: LOCATION_INSTANCE,
         prop: compendium.tavern.prop,
         variables: {
-            url: worldAssetUrl,
+            uri: worldAssetUrl,
         },
         owner,
         configOwner,

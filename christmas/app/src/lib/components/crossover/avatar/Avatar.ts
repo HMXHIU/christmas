@@ -1,5 +1,5 @@
 // src/lib/Avatar.ts
-import { PUBLIC_MINIO_ENDPOINT } from "$env/static/public";
+import { GAME_MORPHOLOGY } from "$lib/crossover/defs";
 import { cloneDeep } from "lodash";
 import { Assets, Container, Sprite, type DestroyOptions } from "pixi.js";
 import { AnimationManager } from "./AnimationManager";
@@ -79,8 +79,7 @@ export class Avatar extends Container {
     ): Promise<void> {
         // Patch textures with actual url
         for (const k of Object.keys(metadata.textures)) {
-            metadata.textures[k] =
-                `${PUBLIC_MINIO_ENDPOINT}/game/avatar/morphology${metadata.textures[k]}`;
+            metadata.textures[k] = `${GAME_MORPHOLOGY}${metadata.textures[k]}`;
         }
 
         this.metadata = cloneDeep(metadata);

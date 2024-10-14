@@ -148,7 +148,7 @@ interface Item extends LocationParams {
  */
 interface World {
     world: string;
-    url: string;
+    uri: string; // url or urn to world tilemap (if urn, `GAME_TILEMAPS` is prefixed automatically)
     loc: string[];
     locT: GeohashLocation;
 }

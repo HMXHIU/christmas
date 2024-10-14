@@ -83,7 +83,7 @@ async function loadWorld({
     if (worldEntityContainers[world.world]) {
         return;
     }
-    const tilemap = await Assets.load(world.url);
+    const tilemap = await Assets.load(world.uri);
     const { layers: tileMapLayers, tilesets, tileheight, tilewidth } = tilemap;
 
     // Note: we need to align the tiled editor's tile (anchor at bottom-left) to the game's tile center (center)

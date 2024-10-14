@@ -93,7 +93,7 @@ export let architecture: Record<string, Prop> = {
             locationType: "in",
             geohash: "{{self.loc[0]}}",
             world: "{{self.item}}",
-            url: "${url}",
+            uri: "${uri}", // the uri to the world asset to spawn when entering the tavern
         },
         utilities: {},
         variables: {
@@ -102,8 +102,8 @@ export let architecture: Record<string, Prop> = {
                 type: "string",
                 value: "A plain wooden door of the tavern greets you.",
             },
-            url: {
-                variable: "url",
+            uri: {
+                variable: "uri",
                 type: "string",
                 value: "",
             },

@@ -369,7 +369,7 @@ async function spawnWorld({
     // Create world asset
     const entity: WorldEntity = {
         world,
-        url: assetUrl || "",
+        uri: assetUrl || "",
         loc: plotGeohashes, // TODO: this can be optimized not just at unit precision -1
         locT: locationType,
     };
