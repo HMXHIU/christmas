@@ -2,19 +2,24 @@
     import * as Dialog from "$lib/components/ui/dialog";
     import type { EntityType } from "$lib/crossover/types";
     import { get } from "svelte/store";
-    import { itemRecord } from "../../../store";
+    import { itemRecord, monsterRecord, playerRecord } from "../../../store";
+    import CreatureDialog from "./CreatureDialog.svelte";
     import ItemDialog from "./ItemDialog.svelte";
 
     export let open = false;
     export let entityId: string;
     export let entityType: EntityType;
-
-    $: item =
-        entityType === "item" && entityId != null && get(itemRecord)[entityId];
 </script>
 
-{#if item}
-    <ItemDialog {item} bind:open></ItemDialog>
+{#if entityType === "item" && entityId != null}
+    <ItemDialog item={get(itemRecord)[entityId]} bind:open></ItemDialog>
+{:else if (entityType === "monster" || entityType === "player") && entityId != null}
+    <CreatureDialog
+        creature={entityType === "monster"
+            ? get(monsterRecord)[entityId]
+            : get(playerRecord)[entityId]}
+        bind:open
+    ></CreatureDialog>
 {:else}
     <!-- Unknown entity -->
     <Dialog.Root bind:open>
