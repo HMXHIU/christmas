@@ -1,10 +1,23 @@
 <script lang="ts">
+    import type { EntityType } from "$lib/crossover/types";
     import { cn } from "$lib/shadcn";
     import { getCurrentTimestamp } from "$lib/utils";
     import { messageFeed } from "../../../store";
+    import EntityDialog from "./EntityDialog.svelte";
     import InteractiveText from "./InteractiveText.svelte";
+    import type { EntityLink } from "./types";
 
     let chatWindow: HTMLElement;
+
+    let entityId: string;
+    let entityType: EntityType;
+    let openDialog: boolean = false;
+
+    function onClickEntityLink(event: CustomEvent) {
+        ({ entityId, entityType } = event.detail as EntityLink);
+        console.log(JSON.stringify({ entityId, entityType }, null, 2));
+        openDialog = true;
+    }
 </script>
 
 <div
@@ -28,9 +41,10 @@
                 {#if message.messageFeedType === "message"}
                     <!-- Normal Messages -->
                     <p class="text-xs font-extralight px-2 text-left">
-                        <InteractiveText text={message.message}
+                        <InteractiveText
+                            text={message.message}
+                            on:entityLink={onClickEntityLink}
                         ></InteractiveText>
-                        <!-- {@html markdown(message.message)} -->
                     </p>
                 {:else if message.messageFeedType === "error"}
                     <!-- Error Messages -->
@@ -49,6 +63,9 @@
         {/each}
     </section>
 </div>
+
+<!-- Entity Dialog -->
+<EntityDialog bind:open={openDialog} {entityId} {entityType}></EntityDialog>
 
 <!-- Styles -->
 <style>
