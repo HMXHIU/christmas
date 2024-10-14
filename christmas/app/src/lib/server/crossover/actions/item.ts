@@ -1,4 +1,3 @@
-import { PUBLIC_GAME_BUCKET } from "$env/static/public";
 import { GAME_TILEMAPS } from "$lib/crossover/defs";
 import {
     entityInRange,
@@ -551,16 +550,14 @@ async function enterItem(
             self: itemEntity,
         });
 
-    const url = uri.startsWith("http")
-        ? uri
-        : `${PUBLIC_GAME_BUCKET}/${GAME_TILEMAPS}/${uri}`;
+    const url = uri.startsWith("http") ? uri : `${GAME_TILEMAPS}/${uri}`;
 
     // Spawn world (if not exists)
     let worldEntity = await spawnWorld({
         world, // specify the worldId manually
         geohash,
         locationType: locationType as GeohashLocation,
-        assetUrl: uri,
+        assetUrl: url,
         tileHeight: TILE_HEIGHT, // do not change this
         tileWidth: TILE_WIDTH,
     });
@@ -572,7 +569,7 @@ async function enterItem(
         source: itemEntity,
     });
 
-    // Check for player spawn point (use item)
+    // Check for player spawn point (use world geohash as fall back)
     const playerSpawnPOI = pois.find(
         (p) => "spawn" in p && p.spawn === "player",
     );

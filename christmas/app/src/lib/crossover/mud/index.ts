@@ -16,14 +16,13 @@ import { describeWeather } from "./weather";
 export { MudDescriptionGenerator, type LocationDescription };
 
 interface LocationDescription {
-    name: string;
     descriptions: {
-        location: string;
+        location: string; // description of the surroundings
         time: string;
         weather: string;
     };
-    location: string;
-    locationType: LocationType;
+    location: string; // the actual entity location (eg. loc[0])
+    locationType: LocationType; // locT
 }
 
 class MudDescriptionGenerator {
@@ -79,7 +78,6 @@ class MudDescriptionGenerator {
         } = describeTime(time);
 
         const description: LocationDescription = {
-            name: location || "The Abyss", // TODO: Get appropriate name
             descriptions: {
                 location: "You are nowhere to be found",
                 // Time description

@@ -82,7 +82,8 @@ async function getNearbyEntities(
     const p6 = geohash.slice(0, -2);
     const nearbyGeohashes = geohashesNearby(p6);
 
-    return {
+    // Get entities in the vincinity of geohash
+    const entities = {
         players: options.players
             ? ((await playersInGeohashQuerySet(
                   nearbyGeohashes,
@@ -107,6 +108,18 @@ async function getNearbyEntities(
               ).return.all()) as ItemEntity[])
             : [],
     };
+
+    // When locT=in, locI=itemId -> also need to return the item that the entity is inside
+    if (options.items && locationType === "in") {
+        const inItem = (await itemRepository.fetch(
+            locationInstance,
+        )) as ItemEntity;
+        if (inItem) {
+            entities.items.push(inItem);
+        }
+    }
+
+    return entities;
 }
 
 async function getNearbyPlayerIds(

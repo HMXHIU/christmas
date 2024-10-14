@@ -8,6 +8,7 @@
         MudDescriptionGenerator,
         type LocationDescription,
     } from "$lib/crossover/mud";
+    import type { Player } from "$lib/crossover/types";
     import { biomes } from "$lib/crossover/world/biomes";
     import { worldSeed } from "$lib/crossover/world/settings/world";
     import {
@@ -16,6 +17,7 @@
     } from "$lib/crossover/world/types";
     import { cn } from "$lib/shadcn";
     import { onMount } from "svelte";
+    import { get } from "svelte/store";
     import {
         itemRecord,
         monsterRecord,
@@ -37,19 +39,36 @@
     let monsterDescriptor = "";
     let itemDescriptor = "";
 
-    async function updateDescriptor() {
-        if ($player) {
-            locationDescriptor =
-                await descriptionGenerator.locationDescriptions(
-                    $player.loc[0],
-                    $player.locT as LocationType,
-                );
+    $: name = $player && locationName($player);
+
+    function locationName(p: Player): string {
+        console.log(JSON.stringify(get(itemRecord), null, 2));
+
+        // Player is inside an item world
+        if (p.locT === "in") {
+            const item = get(itemRecord)[p.locI];
+            if (item) {
+                return item.name;
+            }
+        } else if (p.locT === "limbo") {
+            return "Limbo";
+        } else if (geohashLocationTypes.has(p.locT)) {
+            return p.loc[0];
         }
+        return "The Abyss";
     }
 
     onMount(() => {
         const subscriptions = [
-            player.subscribe(updateDescriptor),
+            player.subscribe(async (p) => {
+                if (p) {
+                    locationDescriptor =
+                        await descriptionGenerator.locationDescriptions(
+                            p.loc[0],
+                            p.locT as LocationType,
+                        );
+                }
+            }),
             monsterRecord.subscribe(async (mr) => {
                 monsterDescriptor =
                     await descriptionGenerator.monsterDescriptions(
@@ -90,7 +109,7 @@
                 ><CopyToClipboard text={locationDescriptor.location}
                 ></CopyToClipboard></span
             >
-            {locationDescriptor.name || locationDescriptor.location}
+            {name}
         </p>
         <!-- Location -->
         <p class="text-xs text-muted-foreground">
