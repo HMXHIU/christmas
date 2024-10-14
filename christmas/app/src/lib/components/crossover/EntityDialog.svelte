@@ -20,7 +20,7 @@
     <Dialog.Root bind:open>
         <Dialog.Content class="sm:max-w-[425px]">
             <Dialog.Header>
-                <Dialog.Title>{entityId}</Dialog.Title>
+                <Dialog.Title>Forbidden Knowledge</Dialog.Title>
                 <Dialog.Description class="py-2"
                     >You have no knowledge of {entityId}</Dialog.Description
                 >

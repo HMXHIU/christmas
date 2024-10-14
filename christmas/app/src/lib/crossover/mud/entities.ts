@@ -1,6 +1,6 @@
 import { groupBy, partition } from "lodash-es";
 import type { Actor, EntityType, Item, Monster } from "../types";
-import { isEntityAlive } from "../utils";
+import { getEntityId, isEntityAlive } from "../utils";
 import { bestiary } from "../world/settings/bestiary";
 import { compendium } from "../world/settings/compendium";
 import type { EntityDescriptionState, EntityDescriptors } from "./settings";
@@ -96,10 +96,10 @@ function applyEntityDescriptors(
         }
     }
 
-    // Replace placeholders
+    // Replace placeholders (count, name, names)
     description = description
         .replace(/{count}/g, count.toString())
-        .replace(/{name}/g, entities[0].name); // use the first entity for {name}
+        .replace(/{name}/g, nameEntityLink(entities[0])); // use the first entity
 
     // Use the remaining entities for {names}
     if (entities.length > 1) {
@@ -107,10 +107,15 @@ function applyEntityDescriptors(
             /{names}/g,
             entities
                 .slice(1)
-                .map((e) => e.name)
+                .map((e) => nameEntityLink(e))
                 .join(", "),
         );
     }
 
     return description;
+}
+
+function nameEntityLink(entity: Actor): string {
+    const [entityId, entityType] = getEntityId(entity);
+    return `{${entity.name}}[${entityType}:${entityId}]`;
 }

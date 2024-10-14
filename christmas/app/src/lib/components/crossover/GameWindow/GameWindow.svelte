@@ -3,6 +3,7 @@
         searchPossibleCommands,
         type GameCommand,
     } from "$lib/crossover/ir";
+    import type { EntityType } from "$lib/crossover/types";
     import { playerActions } from "$lib/crossover/world/settings/actions";
     import { SkillLinesEnum } from "$lib/crossover/world/skills";
     import { cn } from "$lib/shadcn";
@@ -24,11 +25,13 @@
     import AutocompleteGC from "../AutocompleteGC.svelte";
     import ChatInput from "../ChatInput.svelte";
     import ChatWindow from "../ChatWindow.svelte";
+    import EntityDialog from "../EntityDialog.svelte";
     import Game, { tryExecuteGameCommand } from "../Game";
     import { initAssetManager } from "../Game/utils";
     import Map from "../Map/Map.svelte";
     import MudDescriptor from "../MudDescriptor.svelte";
     import Tool from "../Tool.svelte";
+    import type { EntityLink } from "../types";
 
     const LARGE_SCREEN = 1000;
     const MEDIUM_SCREEN = 800;
@@ -43,6 +46,15 @@
     let command: GameCommand | null = null;
     let gameContainer: HTMLDivElement;
     let isMapExpanded = false;
+
+    let entityId: string;
+    let entityType: EntityType;
+    let openDialog: boolean = false;
+
+    function onClickEntityLink(event: CustomEvent) {
+        ({ entityId, entityType } = event.detail as EntityLink);
+        openDialog = true;
+    }
 
     function toggleMapSize(event: MouseEvent) {
         const mapElement = event.currentTarget as HTMLElement;
@@ -230,11 +242,12 @@
             <ChatInput class="mb-1 mt-0 py-0" {onEnterKeyPress} {onPartial}
             ></ChatInput>
             <!-- Chat Window -->
-            <ChatWindow class="overflow-auto"></ChatWindow>
+            <ChatWindow class="overflow-auto" on:entityLink={onClickEntityLink}
+            ></ChatWindow>
         </div>
         <!-- Environment  -->
         <div class="p-2 overflow-auto">
-            <MudDescriptor></MudDescriptor>
+            <MudDescriptor on:entityLink={onClickEntityLink}></MudDescriptor>
         </div>
         <!-- Map/Look -->
         <div class="w-60 aspect-square shrink-0">
@@ -242,3 +255,6 @@
         </div>
     </div>
 </div>
+
+<!-- Entity Dialog -->
+<EntityDialog bind:open={openDialog} {entityId} {entityType}></EntityDialog>

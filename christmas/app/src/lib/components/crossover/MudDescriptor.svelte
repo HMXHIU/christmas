@@ -23,6 +23,7 @@
         playerRecord,
     } from "../../../store";
     import CopyToClipboard from "./CopyToClipboard.svelte";
+    import InteractiveText from "./InteractiveText.svelte";
 
     const descriptionGenerator = new MudDescriptionGenerator({
         worldSeed,
@@ -104,19 +105,22 @@
             <!-- Monsters -->
             {#if monsterDescriptor}
                 <p class="text-xs text-rose-400">
-                    {monsterDescriptor}
+                    <InteractiveText text={monsterDescriptor} on:entityLink
+                    ></InteractiveText>
                 </p>
             {/if}
             <!-- items -->
             {#if itemDescriptor}
                 <p class="text-xs text-sky-400">
-                    {itemDescriptor}
+                    <InteractiveText text={itemDescriptor} on:entityLink
+                    ></InteractiveText>
                 </p>
             {/if}
             <!-- Players -->
             {#if playerDescriptor}
                 <p class="text-xs text-lime-400">
-                    {playerDescriptor}
+                    <InteractiveText text={playerDescriptor} on:entityLink
+                    ></InteractiveText>
                 </p>
             {/if}
         </div>
