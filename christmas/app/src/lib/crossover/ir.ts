@@ -13,7 +13,7 @@ import type { Utility } from "./world/compendium";
 import { compendium } from "./world/settings/compendium";
 import { skillLines } from "./world/settings/skills";
 import { type SkillLines } from "./world/skills";
-import type { BarterSerialized } from "./world/types";
+import { geohashLocationTypes, type BarterSerialized } from "./world/types";
 
 export {
     COMMAND_SEARCH_RANGE,
@@ -447,7 +447,7 @@ function searchPossibleCommands({
     // Environment
     monsters,
     players,
-    items,
+    items, // this includes all the items including playerItems
     // Actions
     actions,
     // Skills
@@ -519,8 +519,12 @@ function searchPossibleCommands({
         );
     });
 
-    // All possible utilities from environment
-    const environmentItemUtilities = items.flatMap((item) => {
+    const itemsInEnvironment = items.filter((i) =>
+        geohashLocationTypes.has(i.locT),
+    );
+
+    // All possible utilities from environment (only items.locT in GeohashLocation)
+    const environmentItemUtilities = itemsInEnvironment.flatMap((item) => {
         return Object.values(compendium[item.prop].utilities).map(
             (utility): [Item, Utility] => {
                 return [item, utility];

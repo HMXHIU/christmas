@@ -98,7 +98,7 @@
             commands = searchPossibleCommands({
                 query: message,
                 playerAbilities: $playerAbilities,
-                playerItems: $playerEquippedItems, // Only search on equiped items
+                playerItems: $playerEquippedItems, // Only search on equiped items (what about inventory items like potion?)
                 actions: playerActions,
                 monsters: Object.values($monsterRecord),
                 players: Object.values($playerRecord),
