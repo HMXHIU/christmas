@@ -42,8 +42,6 @@
     $: name = $player && locationName($player);
 
     function locationName(p: Player): string {
-        console.log(JSON.stringify(get(itemRecord), null, 2));
-
         // Player is inside an item world
         if (p.locT === "in") {
             const item = get(itemRecord)[p.locI];

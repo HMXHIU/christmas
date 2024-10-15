@@ -9,11 +9,13 @@ export {
     GAME_TILEMAPS,
     GAME_TOPOLOGY,
     GAME_TOPOLOGY_IMAGES,
+    GAME_WORLDS,
 };
 
 // Game bucket paths
 const GAME_PREFIX = `${PUBLIC_MINIO_ENDPOINT}/${PUBLIC_GAME_BUCKET}`;
 const GAME_TILEMAPS = `${GAME_PREFIX}/worlds/tilemaps`;
+const GAME_WORLDS = `${GAME_PREFIX}/worlds`;
 const GAME_MORPHOLOGY = `${GAME_PREFIX}/avatar/morphology`;
 const GAME_MORPHOLOGY_IMAGES = `${GAME_PREFIX}/avatar/morphology/images`;
 const GAME_TOPOLOGY = `${GAME_PREFIX}/topology`;

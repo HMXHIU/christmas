@@ -4,7 +4,7 @@ import {
     topologyResponseCache,
     topologyResultCache,
 } from "$lib/crossover/caches";
-import { GAME_PREFIX } from "$lib/crossover/defs";
+import { GAME_PREFIX, GAME_WORLDS } from "$lib/crossover/defs";
 import { geohashToColRow, geohashToGridCell } from "$lib/crossover/utils";
 import type { Ability } from "$lib/crossover/world/abilities";
 import type { Action } from "$lib/crossover/world/actions";
@@ -233,8 +233,11 @@ async function loadAssetTexture(
 }
 
 function decodeTiledSource(path: string): string {
-    // eg. path should be the path in the games bucket (eg. /worlds/tilesets/farm.json)
-    return `${GAME_PREFIX}${path}`;
+    /*
+    tileset and image references are relative so that they can be opened by the
+    tiled map editor. Replace relative paths with the full path to the `GAME_WORLDS` folder
+    */
+    return decodeURIComponent(path).replace(/^\.\./, GAME_WORLDS);
 }
 
 async function getTilesetForTile(
