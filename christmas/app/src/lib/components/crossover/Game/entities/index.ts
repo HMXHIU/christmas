@@ -224,6 +224,12 @@ async function upsertSimpleContainer(
             const item = entity as Item;
             const prop = compendium[item.prop];
             const asset = prop.asset;
+
+            // Item has no asset (text only)
+            if (!asset) {
+                return [false, ec];
+            }
+
             const variant = prop.states[item.state].variant;
             await ec.loadAsset(asset, { variant });
 

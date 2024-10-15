@@ -21,22 +21,24 @@ describe("Test Items", async () => {
 
     test("Test Item Variable Substitution", async () => {
         const doorExit = await spawnItemAtGeohash({
-            prop: "portal",
+            prop: "exit",
             geohash,
             locationType: "geohash",
             locationInstance: LOCATION_INSTANCE,
             variables: {
-                target: tavern.item,
+                name: "Tavern Door", // change the name of the item
                 description: "A door exiting the tavern",
-                state: "hidden", // use reserved `state` variable to specify initial state
-                name: "Tavern Door",
+                target: tavern.item,
             },
         });
+
+        expect(doorExit.name).toBe("Tavern Door");
+
         expect(itemAttibutes(doorExit)).toMatchObject({
-            name: "Tavern Door",
+            name: "Tavern Door", // check name changed
             destructible: false,
             description: "A door exiting the tavern",
-            variant: "hidden", // check spawned with hidden state
+            variant: "default",
         });
     });
 });

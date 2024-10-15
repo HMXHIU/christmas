@@ -9,7 +9,8 @@
     import { itemAttibutes } from "$lib/crossover/world/compendium";
     import { compendium } from "$lib/crossover/world/settings/compendium";
     import { startCase } from "lodash";
-    import { Heart, Zap } from "lucide-svelte";
+    import { ChevronDown, Heart, Zap } from "lucide-svelte";
+    import * as Collapsible from "../ui/collapsible";
     import CopyToClipboard from "./CopyToClipboard.svelte";
     import { markdown } from "./Game/markdown";
     import QuickToolTip from "./QuickToolTip.svelte";
@@ -34,16 +35,20 @@
                     <CopyToClipboard text={item.item}></CopyToClipboard>
                 </span>{item.name}
                 <span>
-                    <QuickToolTip text="Charges"
-                        ><Badge class="bg-blue-400 px-1.5 py-0"
-                            ><Zap class="h-3"></Zap>{item?.chg}</Badge
-                        ></QuickToolTip
-                    >
-                    <QuickToolTip text="Durability"
-                        ><Badge class="bg-red-400  px-1.5 py-0"
-                            ><Heart class="h-3"></Heart>{item?.dur}</Badge
-                        ></QuickToolTip
-                    >
+                    {#if item?.chg > 0}
+                        <QuickToolTip text="Charges"
+                            ><Badge class="bg-blue-400 px-1.5 py-0"
+                                ><Zap class="h-3"></Zap>{item?.chg}</Badge
+                            ></QuickToolTip
+                        >
+                    {/if}
+                    {#if item?.dur > 0}
+                        <QuickToolTip text="Durability"
+                            ><Badge class="bg-red-400  px-1.5 py-0"
+                                ><Heart class="h-3"></Heart>{item?.dur}</Badge
+                            ></QuickToolTip
+                        >
+                    {/if}
                 </span></Dialog.Title
             >
             <Dialog.Description class="py-2"
@@ -85,35 +90,59 @@
             {/each}
         </div>
 
-        <!-- Variables -->
+        <!-- Variables (TODO: Show only if owner) -->
         {#if Object.keys(compendium[item.prop].variables).length > 0}
-            <hr />
-            <div class="flex flex-col justify-between">
-                {#each Object.values(compendium[item.prop].variables) as { variable, type, value } (variable)}
-                    <Label class="text-sm my-auto p-2"
-                        >{startCase(variable)}</Label
-                    >
-                    <Input
-                        id={variable}
-                        type={type === "string"
-                            ? "text"
-                            : type === "number"
-                              ? "number"
-                              : "checkbox"}
-                        bind:value={item.vars[variable]}
-                        maxlength={100}
-                        autofocus={false}
-                        class="text-xs text-muted-foreground"
-                    />
-                {/each}
-            </div>
-            <Dialog.Footer class="flex flex-row justify-end gap-4">
-                <Button
-                    class="h-8"
-                    on:click={() => onConfigure(item, item.vars)}
-                    >Configure</Button
-                >
-            </Dialog.Footer>
+            <Collapsible.Root>
+                <div class="flex items-center justify-between">
+                    <h4 class="text-sm font-semibold text-muted-foreground">
+                        Configure
+                    </h4>
+                    <Collapsible.Trigger asChild let:builder>
+                        <Button
+                            builders={[builder]}
+                            variant="ghost"
+                            size="sm"
+                            class="w-9 p-0"
+                        >
+                            <ChevronDown class="h-4 w-4" />
+                            <span class="sr-only">Configure</span>
+                        </Button>
+                    </Collapsible.Trigger>
+                </div>
+                <Collapsible.Content>
+                    <div class="flex flex-col justify-between">
+                        {#each Object.values(compendium[item.prop].variables) as { variable, type, value } (variable)}
+                            <Label class="text-sm my-auto p-2"
+                                >{startCase(variable)}</Label
+                            >
+                            <Input
+                                id={variable}
+                                type={[
+                                    "string",
+                                    "item",
+                                    "monster",
+                                    "player",
+                                ].includes(type)
+                                    ? "text"
+                                    : type === "number"
+                                      ? "number"
+                                      : "checkbox"}
+                                bind:value={item.vars[variable]}
+                                maxlength={100}
+                                autofocus={false}
+                                class="text-xs text-muted-foreground"
+                            />
+                        {/each}
+                    </div>
+                    <div class="pt-4 flex justify-end">
+                        <Button
+                            class="h-8"
+                            on:click={() => onConfigure(item, item.vars)}
+                            >Configure</Button
+                        >
+                    </div>
+                </Collapsible.Content>
+            </Collapsible.Root>
         {/if}
     </Dialog.Content>
 </Dialog.Root>

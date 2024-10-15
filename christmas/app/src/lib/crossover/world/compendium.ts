@@ -37,7 +37,7 @@ interface PropWorld {
  */
 interface Prop {
     prop: string;
-    asset: AssetMetadata;
+    asset?: AssetMetadata; // items with no assets only appear in the MUD descriptor
     durability: number;
     charges: number;
     states: PropStates; // map item.state to prop attributes

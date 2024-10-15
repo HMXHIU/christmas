@@ -530,9 +530,9 @@ async function spawnItemAtGeohash({
     );
 
     const asset = compendium[prop].asset;
-    const width = asset.width ?? 1;
-    const height = asset.height ?? 1;
-    const precision = asset.precision ?? worldSeed.spatial.unit.precision;
+    const width = asset?.width ?? 1;
+    const height = asset?.height ?? 1;
+    const precision = asset?.precision ?? worldSeed.spatial.unit.precision;
 
     // Auto correct geohash precision
     if (geohash.length !== precision) {

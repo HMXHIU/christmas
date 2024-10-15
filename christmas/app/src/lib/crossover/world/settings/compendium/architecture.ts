@@ -139,8 +139,7 @@ export let architecture: Record<string, Prop> = {
         asset: {
             path: "props/gothic",
             variants: {
-                default: "ritual-circle", // TODO: Add variant for invisible object where no colliders, ABILITY TO SET VARIANT IN VARIABLES
-                hidden: "", // invisible door (eg. can be used as a room exit)
+                default: "ritual-circle",
             },
             width: 2,
             height: 2,
@@ -151,49 +150,84 @@ export let architecture: Record<string, Prop> = {
         collider: false, // ??? WHY CANT WALK TRHOUGH IT EVEN THOUGH COLLIDER IS FALSE
         states: {
             default: {
-                name: "${name}", // TODO: make this variable substitutable?
+                name: "${name}",
                 destructible: false,
                 description: "${description}",
                 variant: "default",
             },
-            hidden: {
-                name: "${name}", // TODO: make this variable substitutable?
-                destructible: false,
-                description: "${description}",
-                variant: "hidden",
-            },
         },
         variables: {
-            // Can be used to overwrite `target` or `self` provided by `useItem`
-            target: {
-                variable: "target",
-                type: "item", // a portal's target is the item to teleport to (eg. another portal)
-                value: "",
+            name: {
+                variable: "name",
+                type: "string",
+                value: "Portal",
             },
             description: {
                 variable: "description",
                 type: "string",
                 value: "A portal pulsing with magical energy",
             },
-            name: {
-                variable: "name",
-                type: "string",
-                value: "Portal",
-            },
-            // `state` is a reserved variable (determines the starting state when created)
-            state: {
-                variable: "name",
-                type: "string",
-                value: "default",
+            // Can be used to overwrite `target` or `self` provided by `useItem`
+            target: {
+                variable: "target",
+                type: "item", // a portal's target is the item to teleport to (eg. another portal)
+                value: "",
             },
         },
         utilities: {
             teleport: {
-                // TODO: make this variable substitutable?
                 utility: "teleport",
                 description: "Step through the portal.", // TODO: make this variable substitutable?
                 cost: {
                     charges: 1,
+                    durability: 0,
+                },
+                state: {
+                    start: "default", // TODO: make this variable substitutable?
+                    end: "default",
+                },
+                ability: abilities.teleport.ability,
+            },
+        },
+    },
+    // An invisible portal used for exiting a world
+    exit: {
+        prop: "exit",
+        durability: 0,
+        charges: 0,
+        weight: -1,
+        collider: false, // ??? WHY CANT WALK TRHOUGH IT EVEN THOUGH COLLIDER IS FALSE
+        states: {
+            default: {
+                name: "${name}",
+                destructible: false,
+                description: "${description}",
+                variant: "default",
+            },
+        },
+        variables: {
+            name: {
+                variable: "name",
+                type: "string",
+                value: "Exit",
+            },
+            description: {
+                variable: "description",
+                type: "string",
+                value: "An exit leading out of the area.",
+            },
+            target: {
+                variable: "target",
+                type: "item",
+                value: "",
+            },
+        },
+        utilities: {
+            use: {
+                utility: "use",
+                description: "Exit the area *[[use exit]]*.", // TODO: add link to copy to console for [[]]
+                cost: {
+                    charges: 0,
                     durability: 0,
                 },
                 state: {
