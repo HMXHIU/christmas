@@ -10,6 +10,7 @@ import {
     geohashLocationTypes,
     type GeohashLocation,
 } from "$lib/crossover/world/types";
+import { poisInWorld } from "$lib/crossover/world/world";
 import { seededRandom, stringToRandomNumber } from "$lib/utils/random";
 import { Assets, Container, Graphics } from "pixi.js";
 import { createNoise2D } from "simplex-noise";
@@ -187,17 +188,26 @@ async function loadWorld({
     }
 }
 
-async function debugWorld(stage: Container) {
-    const locationInstance = LOCATION_INSTANCE; // worlds are the same in all instances
-
+// TODO: make this debug game (accessible via hotkey in dev mode)
+async function debugWorld(
+    stage: Container,
+    locationInstance: string,
+    locationType: GeohashLocation,
+) {
     // Clear colliders
     for (const c of colliders) {
         c.destroy();
     }
 
-    // Draw item colliders
+    // Draw item colliders (in the same locationInstance and locationType)
     for (const item of Object.values(get(itemRecord))) {
-        if (!geohashLocationTypes.has(item.locT)) continue;
+        if (
+            !geohashLocationTypes.has(item.locT) ||
+            item.locT !== locationType ||
+            item.locI !== locationInstance
+        ) {
+            continue;
+        }
         for (const loc of item.loc) {
             if (
                 !(await isGeohashTraversableClient(
@@ -226,12 +236,17 @@ async function debugWorld(stage: Container) {
         }
     }
 
-    // Debug world
+    // Debug world (in the same locationType)
     for (const [town, worlds] of Object.entries(get(worldRecord))) {
         for (const world of Object.values(worlds)) {
-            if (!geohashLocationTypes.has(world.locT)) continue;
+            if (
+                !geohashLocationTypes.has(world.locT) ||
+                world.locT !== locationType
+            ) {
+                continue;
+            }
 
-            // Draw world origin
+            // Draw world origin (purple hollow circle)
             const origin = autoCorrectGeohashPrecision(
                 world.loc[0],
                 worldSeed.spatial.unit.precision,
@@ -253,14 +268,14 @@ async function debugWorld(stage: Container) {
                 ),
             );
 
+            // Draw world colliders (red hollow circle)
             for (const plot of world.loc) {
                 for (const loc of getAllUnitGeohashes(plot)) {
-                    // Draw world colliders
                     if (
                         !(await isGeohashTraversableClient(
                             loc,
                             world.locT as GeohashLocation,
-                            "", // World instances are the same across all instances
+                            locationInstance,
                         ))
                     ) {
                         const pos = await calculatePosition(
@@ -280,6 +295,43 @@ async function debugWorld(stage: Container) {
                             ),
                         );
                     }
+                }
+            }
+
+            // Draw world pois
+            const pois = await poisInWorld(world);
+            for (const poi of pois) {
+                // Item POI (green circle)
+                if ("prop" in poi) {
+                    const { geohash, prop } = poi;
+                    const pos = await calculatePosition(
+                        geohash,
+                        world.locT as GeohashLocation,
+                        locationInstance,
+                    );
+                    colliders.push(
+                        stage.addChild(
+                            new Graphics()
+                                .circle(pos.isoX, pos.isoY - pos.elevation, 5)
+                                .stroke({ color: 0x00ff00 }),
+                        ),
+                    );
+                }
+                // Monster POI (teal circle)
+                else if ("beast" in poi) {
+                    const { geohash, beast } = poi;
+                    const pos = await calculatePosition(
+                        geohash,
+                        world.locT as GeohashLocation,
+                        locationInstance,
+                    );
+                    colliders.push(
+                        stage.addChild(
+                            new Graphics()
+                                .circle(pos.isoX, pos.isoY - pos.elevation, 5)
+                                .stroke({ color: 0x00ffff }),
+                        ),
+                    );
                 }
             }
         }

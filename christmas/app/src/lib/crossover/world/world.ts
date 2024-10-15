@@ -279,6 +279,12 @@ async function poisInWorld(
     );
     let { layers, tileheight, tilewidth } = asset;
 
+    /* 
+    In the tiled map editor x, y are long the isometric axis 
+    +x means increasing bottom right, +y means increasing bottom left
+    */
+    const unitTile = Math.sqrt((tilewidth / 2) ** 2 + (tileheight / 2) ** 2);
+
     // Get objectgroup
     layers = layers.filter((l) => l.type === "objectgroup");
 
@@ -293,9 +299,10 @@ async function poisInWorld(
                     },
                     {},
                 );
+
                 // Convert x, y to geohash
-                const cols = Math.round(obj.x / tilewidth);
-                const rows = Math.round(obj.y / tileheight);
+                const cols = Math.round(obj.x / unitTile);
+                const rows = Math.round(obj.y / unitTile);
                 const originGeohash = autoCorrectGeohashPrecision(
                     world.loc[0],
                     worldSeed.spatial.unit.precision,

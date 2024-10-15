@@ -72,6 +72,7 @@
     } from "./utils";
     import {
         cullAllWorldEntityContainers,
+        debugWorld,
         drawWorlds,
         garbageCollectWorldEntityContainers,
     } from "./world";
@@ -271,7 +272,11 @@
         }
 
         // Debug World
-        // await debugWorld(worldStage);
+        await debugWorld(
+            worldStage,
+            newPosition.locationInstance,
+            newPosition.locationType,
+        );
     }
 
     export async function handleTrackPlayer({

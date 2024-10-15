@@ -241,8 +241,6 @@ export async function createWorldAsset(): Promise<{
         bucket: BUCKETS.game,
     });
 
-    console.log("CREATE WORLD ASSET", JSON.stringify(url, null, 2));
-
     return {
         url,
         asset: testWorldAsset,
