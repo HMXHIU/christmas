@@ -140,9 +140,13 @@ function filterTargetItemsByAction(
     else if (action === actions.take.action) {
         return items.filter((item) => geohashLocationTypes.has(item.locT));
     }
-    // Can only enter an item with a world
+    // Can only enter an item with a world and in the world
     else if (action === actions.enter.action) {
-        return items.filter((item) => compendium[item.prop].world != null);
+        return items.filter(
+            (item) =>
+                compendium[item.prop].world != null &&
+                geohashLocationTypes.has(item.locT),
+        );
     }
     // Can only fulfill a writ
     else if (action === actions.fulfill.action) {

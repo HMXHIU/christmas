@@ -72,7 +72,6 @@
     } from "./utils";
     import {
         cullAllWorldEntityContainers,
-        debugWorld,
         drawWorlds,
         garbageCollectWorldEntityContainers,
     } from "./world";
@@ -272,11 +271,11 @@
         }
 
         // Debug World
-        await debugWorld(
-            worldStage,
-            newPosition.locationInstance,
-            newPosition.locationType,
-        );
+        // await debugWorld(
+        //     worldStage,
+        //     newPosition.locationInstance,
+        //     newPosition.locationType,
+        // );
     }
 
     export async function handleTrackPlayer({
@@ -325,9 +324,10 @@
         await app.init({
             width: CANVAS_WIDTH,
             height: CANVAS_HEIGHT,
-            antialias: true,
             preference: "webgl",
-            roundPixels: true,
+            antialias: true,
+            // roundPixels: true,
+            autoDensity: true,
         });
 
         // Set up depth test

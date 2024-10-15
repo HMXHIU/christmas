@@ -542,6 +542,14 @@ async function enterItem(
         });
         throw new Error(message);
     }
+    if (!geohashLocationTypes.has(itemEntity.locT)) {
+        const message = `${itemEntity.item} is not in this world`;
+        await publishFeedEvent(player.player, {
+            type: "error",
+            message,
+        });
+        throw new Error(message);
+    }
 
     // Substitute world variables
     const { locationInstance, geohash, world, uri, locationType } =
