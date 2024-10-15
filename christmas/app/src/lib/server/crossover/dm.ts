@@ -574,6 +574,7 @@ async function spawnItemAtGeohash({
         await itemRepository.remove(itemId);
     }
 
+    // Check reserved state variable (determines the initial state, defaults to `default`)
     const entity: ItemEntity = {
         item: itemId,
         name: attributes.name,
@@ -586,7 +587,7 @@ async function spawnItemAtGeohash({
         cld: collider,
         dur: durability,
         chg: charges,
-        state: "default",
+        state: variables?.state ?? "default",
         vars: parseItemVariables(variables || {}, prop),
         dbuf: [],
         buf: [],

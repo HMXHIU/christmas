@@ -140,6 +140,7 @@ export let architecture: Record<string, Prop> = {
             path: "props/gothic",
             variants: {
                 default: "ritual-circle", // TODO: Add variant for invisible object where no colliders, ABILITY TO SET VARIANT IN VARIABLES
+                hidden: "", // invisible door (eg. can be used as a room exit)
             },
             width: 2,
             height: 2,
@@ -150,24 +151,40 @@ export let architecture: Record<string, Prop> = {
         collider: false, // ??? WHY CANT WALK TRHOUGH IT EVEN THOUGH COLLIDER IS FALSE
         states: {
             default: {
-                name: "Portal", // TODO: make this variable substitutable?
+                name: "${name}", // TODO: make this variable substitutable?
                 destructible: false,
-                description:
-                    "${description}. It is tuned to teleport to ${target}.",
+                description: "${description}",
                 variant: "default",
+            },
+            hidden: {
+                name: "${name}", // TODO: make this variable substitutable?
+                destructible: false,
+                description: "${description}",
+                variant: "hidden",
             },
         },
         variables: {
             // Can be used to overwrite `target` or `self` provided by `useItem`
             target: {
                 variable: "target",
-                type: "item", // portal's target is bound to an item to teleport to (another portal)
+                type: "item", // a portal's target is the item to teleport to (eg. another portal)
                 value: "",
             },
             description: {
                 variable: "description",
                 type: "string",
                 value: "A portal pulsing with magical energy",
+            },
+            name: {
+                variable: "name",
+                type: "string",
+                value: "Portal",
+            },
+            // `state` is a reserved variable (determines the starting state when created)
+            state: {
+                variable: "name",
+                type: "string",
+                value: "default",
             },
         },
         utilities: {
