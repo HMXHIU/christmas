@@ -289,30 +289,31 @@ describe("World Tests", async () => {
         expect(pois).toMatchObject([
             {
                 spawn: "player",
-                geohash: "y78jdmk9",
+                geohash: "y78jdmm5",
             },
             {
                 prop: "potionofhealth",
-                geohash: "y78jdmk9",
+                geohash: "y78jdmm5",
+                variables: {},
             },
             {
                 prop: "woodenclub",
-                geohash: "y78jdmk9",
+                geohash: "y78jdmm5",
                 variables: {
                     etching: "well used",
                 },
             },
             {
                 prop: "portal",
-                geohash: "y78jdmk9",
+                geohash: "y78jdmm5",
                 variables: {
                     target: "{{source.item}}",
+                    description: "Tavern exit",
                 },
             },
             {
                 beast: "goblin",
-                geohash: "y78jdmk9",
-                level: 2,
+                geohash: "y78jdmm5",
             },
         ]);
 
@@ -327,7 +328,7 @@ describe("World Tests", async () => {
             .where("prop")
             .equal("potionofhealth")
             .and("loc")
-            .containOneOf("y78jdmk9")
+            .containOneOf("y78jdmm5")
             .and("locI")
             .equal(LOCATION_INSTANCE)
             .and("locT")
@@ -339,7 +340,7 @@ describe("World Tests", async () => {
             .where("prop")
             .equal("woodenclub")
             .and("loc")
-            .containOneOf("y78jdmk9")
+            .containOneOf("y78jdmm5")
             .and("locI")
             .equal(LOCATION_INSTANCE)
             .and("locT")
@@ -351,7 +352,7 @@ describe("World Tests", async () => {
             .where("beast")
             .equal("goblin")
             .and("loc")
-            .containOneOf("y78jdmk9")
+            .containOneOf("y78jdmm5")
             .and("locI")
             .equal(LOCATION_INSTANCE)
             .and("locT")
@@ -363,7 +364,7 @@ describe("World Tests", async () => {
             .where("prop")
             .equal("portal")
             .and("loc")
-            .containOneOf("y78jdmk9")
+            .containOneOf("y78jdmm5")
             .and("locI")
             .equal(LOCATION_INSTANCE)
             .and("locT")

@@ -139,7 +139,7 @@ export let architecture: Record<string, Prop> = {
         asset: {
             path: "props/gothic",
             variants: {
-                default: "ritual-circle",
+                default: "ritual-circle", // TODO: Add variant for invisible object where no colliders, ABILITY TO SET VARIANT IN VARIABLES
             },
             width: 2,
             height: 2,
@@ -147,10 +147,10 @@ export let architecture: Record<string, Prop> = {
         durability: 100,
         charges: 100,
         weight: -1,
-        collider: false,
+        collider: false, // ??? WHY CANT WALK TRHOUGH IT EVEN THOUGH COLLIDER IS FALSE
         states: {
             default: {
-                name: "Portal",
+                name: "Portal", // TODO: make this variable substitutable?
                 destructible: false,
                 description:
                     "${description}. It is tuned to teleport to ${target}.",

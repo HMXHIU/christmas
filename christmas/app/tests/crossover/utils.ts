@@ -1,6 +1,5 @@
 import { DUNGEON_MASTER_TOKEN } from "$env/static/private";
 import { login as loginCrossover, signup, stream } from "$lib/crossover/client";
-import { GAME_TILEMAPS } from "$lib/crossover/defs";
 import type { Creature, Monster, Player } from "$lib/crossover/types";
 import type { Abilities } from "$lib/crossover/world/abilities";
 import { ArchetypesEnum } from "$lib/crossover/world/demographic";
@@ -236,7 +235,7 @@ export async function createWorldAsset(): Promise<{
 }> {
     const url = await ObjectStorage.putJSONObject({
         owner: null,
-        name: `${GAME_TILEMAPS}/test_world_asset.json`,
+        name: `worlds/tilemaps/test_world_asset.json`,
         data: testWorldAsset,
         bucket: BUCKETS.game,
     });
