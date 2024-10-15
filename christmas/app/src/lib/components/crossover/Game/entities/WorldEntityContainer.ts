@@ -76,9 +76,10 @@ class WorldEntityContainer extends Container {
             const scale = screenWidth / imageWidth;
             this.mesh.scale.set(scale, scale);
 
-            // Note:
-            //  - By default the tiled editor uses the bottom-left of an image as the anchor
-            //  - In pixi.js the pivot is based on the original size of the texture without scaling
+            /* 
+            By default the tiled editor uses the bottom-left of an image as the anchor
+            In pixi.js the pivot is based on the original size of the texture without scaling
+            */
             const anchor = { x: 0, y: 1 };
             const pivotX = anchor.x * imageWidth;
             const pivotY = anchor.y * imageHeight;

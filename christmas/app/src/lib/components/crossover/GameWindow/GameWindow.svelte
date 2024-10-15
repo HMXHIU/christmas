@@ -213,7 +213,7 @@
             <Game previewCommand={command}></Game>
         </div>
         <!-- Right panel -->
-        <div class="flex flex-col w-60 shrink-0 p-2 space-y-2">
+        <div class="flex flex-col w-60 shrink-0 p-2 space-y-2 overflow-y-auto">
             <!-- Player List -->
             <div class="h-60 bg-orange-400 shrink-0"></div>
             <!-- Quest Log -->

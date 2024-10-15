@@ -552,9 +552,9 @@ async function enterItem(
 
     const url = uri.startsWith("http") ? uri : `${GAME_TILEMAPS}/${uri}`;
 
-    // Spawn world (if not exists)
-    let worldEntity = await spawnWorld({
-        world, // specify the worldId manually
+    // Spawn world (only if not exists)
+    await spawnWorld({
+        world, // specify the worldId manually, if the world already exists it will fetch it without spawning
         geohash,
         locationType: locationType as GeohashLocation,
         assetUrl: url,

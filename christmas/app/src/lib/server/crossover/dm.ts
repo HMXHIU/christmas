@@ -32,6 +32,7 @@ import type {
 import { substituteVariablesRecursively } from "$lib/utils";
 import { generatePin } from "$lib/utils/random";
 import { groupBy, uniq } from "lodash-es";
+import { hashObject } from "..";
 import {
     instantiateBlueprintsAtTerritories,
     instantiateBlueprintsInDungeons,
@@ -618,87 +619,66 @@ async function spawnWorldPOIs(
     items?: ItemEntity[];
     monsters?: MonsterEntity[];
 }> {
-    // Note: This should only be done once, else it will spawn multiple items/monsters!
-    // TODO: how to respawn monsters/item? can set the id of monsters/items in words to be unique??
+    /*
+    POIs (monsters, items, npcs) should be spawned with unique ids (similar to blueprints)
+    so that they do not spawn multiple copies everytime this function is called
+    */
 
-    // Get world entity
-    const worldEntity = (await worldRepository
-        .search()
-        .where("world")
-        .equal(world)
-        .first()) as WorldEntity;
+    // Fetch world
+    const worldEntity = (await worldRepository.fetch(world)) as WorldEntity;
     if (!worldEntity) {
         throw new Error(`${world} does not exist`);
     }
 
-    // Get pois
+    // Get pois in world (for spawning items, monsters, players)
     const pois = await poisInWorld(worldEntity, options);
     const items: ItemEntity[] = [];
     const monsters: MonsterEntity[] = [];
 
     for (const poi of pois) {
         try {
-            // Spawn item
+            // Spawn item (unique)
             if ("prop" in poi) {
-                // Substutite variables with `source` if provided
+                // Substitute variables with `source` if provided
                 const variables = options?.source
                     ? substituteVariablesRecursively(poi.variables as any, {
                           source: options.source,
                       })
                     : poi.variables;
 
-                // Remove existing items
-                var existing = (await itemRepository
-                    .search()
-                    .where("prop")
-                    .equal(poi.prop)
-                    .and("loc")
-                    .containOneOf(poi.geohash)
-                    .and("locI")
-                    .equal(locationInstance)
-                    .and("locT")
-                    .equal(worldEntity.locT)
-                    .all()) as ItemEntity[];
-
-                await itemRepository.remove(...existing.map((i) => i.item));
-
-                // Spawn item
+                const uniqueSuffix = hashObject(
+                    [world, poi.prop, poi.geohash],
+                    "md5",
+                );
                 const item = await spawnItemAtGeohash({
                     geohash: poi.geohash,
                     prop: poi.prop,
                     locationType: worldEntity.locT,
                     locationInstance,
                     variables,
+                    uniqueSuffix,
                 });
                 console.info(
                     `Spawned ${item.item} in ${worldEntity.world} at ${locationInstance}`,
                 );
                 items.push(item);
             }
-            // Spawn monster
+            // Spawn monster (unique)
             else if ("beast" in poi) {
-                let monster = (await monsterRepository
-                    .search()
-                    .where("beast")
-                    .equal(poi.beast)
-                    .and("loc")
-                    .containOneOf(poi.geohash)
-                    .and("locI")
-                    .equal(locationInstance)
-                    .and("locT")
-                    .equal(worldEntity.locT)
-                    .first()) as MonsterEntity;
-                if (!monster) {
-                    monster = await spawnMonster({
-                        geohash: poi.geohash,
-                        locationType: worldEntity.locT,
-                        locationInstance,
-                        beast: poi.beast,
-                    });
-                    console.info(
-                        `Spawned ${monster.monster} in ${worldEntity.world} at ${locationInstance}`,
-                    );
-                }
+                const uniqueSuffix = hashObject(
+                    [world, poi.beast, poi.geohash],
+                    "md5",
+                );
+                const monster = await spawnMonster({
+                    geohash: poi.geohash,
+                    locationType: worldEntity.locT,
+                    locationInstance,
+                    beast: poi.beast,
+                    uniqueSuffix,
+                });
+                console.info(
+                    `Spawned ${monster.monster} in ${worldEntity.world} at ${locationInstance}`,
+                );
                 monsters.push(monster);
             }
         } catch (error: any) {

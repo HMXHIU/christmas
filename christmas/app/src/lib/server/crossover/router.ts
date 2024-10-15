@@ -1,4 +1,7 @@
-import { PUBLIC_REFRESH_JWT_EXPIRES_IN } from "$env/static/public";
+import {
+    PUBLIC_GAME_BUCKET,
+    PUBLIC_REFRESH_JWT_EXPIRES_IN,
+} from "$env/static/public";
 import type { Item, Monster, Player, World } from "$lib/crossover/types";
 import { PlayerMetadataSchema } from "$lib/crossover/world/player";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
@@ -320,7 +323,7 @@ const crossoverRouter = {
                 const { geohash, tilemap, locationType } = input;
                 const assetUrl = ObjectStorage.objectUrl({
                     owner: null,
-                    bucket: "game",
+                    bucket: PUBLIC_GAME_BUCKET,
                     name: `worlds/tilemaps/${tilemap}`,
                 });
                 const world = await spawnWorld({

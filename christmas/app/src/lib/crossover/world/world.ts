@@ -234,7 +234,6 @@ interface SpawnItemPOI {
 interface SpawnMonsterPOI {
     beast: string;
     geohash: string;
-    level: number;
 }
 
 interface SpawnPlayerPOI {
@@ -244,6 +243,22 @@ interface SpawnPlayerPOI {
 
 type WorldPOIs = (SpawnItemPOI | SpawnMonsterPOI | SpawnPlayerPOI)[];
 
+/**
+ * WorldPOIs in the world are added via an object layer in the tiled map editor
+ * `spawnWorldPOIs` will get the WorldPOIs and spawn the actual entities
+ *
+ * Properties in the object layer (configured in the tiled map editor) are used to configure the following:
+ *
+ *      beast: If defined, indicates a SpawnMonsterPOI and the beast to spawn
+ *      prop: If defined, indicates a SpawnItemPOI and the prop to spawn
+ *      spawn: If defined with value "player", indicates a SpawnPlayerPOI where the player will spawn upon entering the world
+ *      [k:v]: If prop is defined, all other fields will be considered item variables (tiled uses a flat structure there is no nesting)
+ *
+ * Variable substitution for item variables is performed during `spawnWorldPOIs` with the following properties:
+ *
+ *      source: The entity (ItemEntity | PlayerEntity) which spawned the world.
+ *              We can use this to create an exit by creating a portal which targets the source
+ */
 async function poisInWorld(
     world: World,
     options?: {
@@ -308,7 +323,6 @@ async function poisInWorld(
                     pois.push({
                         beast: properties.beast,
                         geohash,
-                        level: properties.level ?? 1,
                     });
                 }
 

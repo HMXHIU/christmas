@@ -172,8 +172,9 @@ export let architecture: Record<string, Prop> = {
         },
         utilities: {
             teleport: {
+                // TODO: make this variable substitutable?
                 utility: "teleport",
-                description: "Step through the portal.",
+                description: "Step through the portal.", // TODO: make this variable substitutable?
                 cost: {
                     charges: 1,
                     durability: 0,
