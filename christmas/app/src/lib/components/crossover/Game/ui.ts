@@ -1,9 +1,22 @@
 import type { Actor } from "$lib/crossover/types";
 import { getEntityId } from "$lib/crossover/utils";
+import type { GeohashLocation } from "$lib/crossover/world/types";
+import { KdTree } from "$lib/utils/kdtree";
 import { Container } from "pixi.js";
 import { entityContainers } from "./entities";
 
-export { clearAllHighlights, drawTargetUI };
+export {
+    clearAllHighlights,
+    drawTargetUI,
+    screenToGeohash,
+    updateScreenHitTesting,
+};
+
+// Note: `screenToGeohashKDtree` is exported as a reference do not recreate the entire object
+let screenToGeohashKDtree: Partial<Record<GeohashLocation, KdTree<string>>> = {
+    geohash: new KdTree<string>(2), // [screenX, screenY] => geohash
+    d1: new KdTree<string>(2),
+};
 
 function drawTargetUI({
     target,
@@ -52,4 +65,24 @@ function clearAllHighlights(highlight?: number) {
     for (const ec of Object.values(entityContainers)) {
         ec.clearHighlight(highlight);
     }
+}
+
+function updateScreenHitTesting(
+    p: number[],
+    locationType: GeohashLocation,
+    geohash: string,
+) {
+    if (screenToGeohashKDtree[locationType]) {
+        screenToGeohashKDtree[locationType].insert(p, geohash);
+    } else {
+        screenToGeohashKDtree[locationType] = new KdTree<string>(2);
+        screenToGeohashKDtree[locationType].insert(p, geohash);
+    }
+}
+
+function screenToGeohash(
+    p: number[],
+    locationType: GeohashLocation,
+): string | null {
+    return screenToGeohashKDtree[locationType]?.findNearest(p)?.data ?? null;
 }

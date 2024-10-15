@@ -4,8 +4,8 @@ import { geohashToColRow, getPositionsForPath } from "$lib/crossover/utils";
 import type { Direction } from "$lib/crossover/world/types";
 import type { Container, FederatedPointerEvent } from "pixi.js";
 import { highlightShaderInstances } from "../shaders";
-import { screenToGeohashKDtree } from "./biomes";
 import { HALF_ISO_CELL_HEIGHT, HALF_ISO_CELL_WIDTH } from "./settings";
+import { screenToGeohash } from "./ui";
 import { getPathHighlights, getPlayerPosition, snapToGrid } from "./utils";
 
 export { createHIDHandlers };
@@ -59,12 +59,11 @@ function createHIDHandlers(stage: Container) {
         const playerPosition = getPlayerPosition();
         if (!playerPosition || !state.isMouseDown) return;
 
-        // Convert screenXY to actual biome geohash
-        const node = screenToGeohashKDtree[
-            playerPosition.locationType
-        ]!.findNearest([x, y]);
-        if (node) {
-            const [colEnd, rowEnd] = geohashToColRow(node.data);
+        // Convert screen coordinates to geohash
+        const geohash = screenToGeohash([x, y], playerPosition.locationType);
+
+        if (geohash) {
+            const [colEnd, rowEnd] = geohashToColRow(geohash);
 
             state.path = await getDirectionsToPosition(
                 playerPosition,

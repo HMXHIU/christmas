@@ -30,7 +30,6 @@ import {
     geohashLocationTypes,
     type GeohashLocation,
 } from "$lib/crossover/world/types";
-import { KdTree } from "$lib/utils/kdtree";
 import { seededRandom, stringToRandomNumber } from "$lib/utils/random";
 import type { Container, Texture } from "pixi.js";
 import { get } from "svelte/store";
@@ -48,6 +47,7 @@ import {
     HALF_ISO_CELL_HEIGHT,
     HALF_ISO_CELL_WIDTH,
 } from "./settings";
+import { updateScreenHitTesting } from "./ui";
 import { cartToIso, loadAssetTexture, type Position } from "./utils";
 import { noise2D } from "./world";
 
@@ -56,12 +56,6 @@ export {
     calculateBiomeForRowCol,
     calculateLandGrading,
     drawBiomeShaders,
-    screenToGeohashKDtree,
-};
-
-let screenToGeohashKDtree: Partial<Record<GeohashLocation, KdTree<string>>> = {
-    geohash: new KdTree<string>(2), // [screenX, screenY] => geohash
-    d1: new KdTree<string>(2),
 };
 
 // Caches
@@ -388,9 +382,9 @@ async function calculateTextureBuffers(
             } = await calculateBiomeForRowCol(row, col, locationType);
 
             // Update screenToGeohashKDtree (for hittesting screen coordiates to the geohash)
-            // TODO: need to garbage collect
-            screenToGeohashKDtree[locationType]!.insert(
+            updateScreenHitTesting(
                 [isoX, isoY - elevation],
+                locationType,
                 geohash,
             );
 
