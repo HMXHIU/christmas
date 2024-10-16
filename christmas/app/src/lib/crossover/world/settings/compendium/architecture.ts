@@ -147,7 +147,7 @@ export let architecture: Record<string, Prop> = {
         durability: 100,
         charges: 100,
         weight: -1,
-        collider: false, // ??? WHY CANT WALK TRHOUGH IT EVEN THOUGH COLLIDER IS FALSE
+        collider: false,
         states: {
             default: {
                 name: "${name}",

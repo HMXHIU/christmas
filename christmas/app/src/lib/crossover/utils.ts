@@ -584,7 +584,7 @@ function minifiedEntity(
     }
     // Item specific
     else {
-        fields.push("item", "prop", "state", "vars");
+        fields.push("item", "prop", "state", "vars", "cld");
 
         // Stats
         if (options?.stats) {

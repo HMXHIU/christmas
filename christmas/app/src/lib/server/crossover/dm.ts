@@ -453,10 +453,10 @@ async function spawnItemInInventory({
     // Get prop
     const { states, durability, charges, collider } = compendium[prop];
 
-    // Substitute variables for default state attributes
-    const defaultAttributes: PropAttributes = substituteVariablesRecursively(
+    // Get default attributes (substitute provided variables first, then default)
+    const attributes: PropAttributes = substituteVariablesRecursively(
+        substituteVariablesRecursively(states.default, variables ?? {}),
         defaultPropAttributes(prop),
-        variables ?? {},
     );
 
     // Get item count
@@ -466,7 +466,7 @@ async function spawnItemInInventory({
 
     return (await itemRepository.save(itemId, {
         item: itemId,
-        name: defaultAttributes.name,
+        name: attributes.name,
         prop,
         loc: [entityId],
         locT: "inv",
@@ -528,10 +528,10 @@ async function spawnItemAtGeohash({
     // Get prop
     const { states, durability, charges, collider } = compendium[prop];
 
-    // Substitute variables for default state attributes
+    // Get default attributes (substitute provided variables first, then default)
     const attributes: PropAttributes = substituteVariablesRecursively(
+        substituteVariablesRecursively(states.default, variables ?? {}),
         defaultPropAttributes(prop),
-        variables ?? {},
     );
 
     const asset = compendium[prop].asset;

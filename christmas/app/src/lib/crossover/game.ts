@@ -416,7 +416,8 @@ async function hasColliders(
         if (
             item.locT === locationType &&
             item.loc.includes(geohash) &&
-            item.locI === locationInstance
+            item.locI === locationInstance &&
+            item.cld
         ) {
             return true;
         }
