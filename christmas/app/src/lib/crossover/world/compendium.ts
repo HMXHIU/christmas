@@ -1,5 +1,6 @@
 import type { Actor, DieRoll, EntityType, Item } from "$lib/crossover/types";
 import { substituteVariablesRecursively } from "$lib/utils";
+import { mapValues } from "lodash-es";
 import { getEntityId, isEntityEquipment, isEntityWeapon } from "../utils";
 import type { Abilities } from "./abilities";
 import type { Actions } from "./actions";
@@ -11,6 +12,7 @@ import {
 } from "./types";
 
 export {
+    defaultPropAttributes,
     isItemEquipped,
     isItemInInventory,
     isWeaponEquipped,
@@ -84,7 +86,7 @@ interface Utility {
     // abilities[ability] `self` and `target` will be provided when `useItem` is called but can be overwritten via `variables`
     ability?: Abilities;
     action?: Actions;
-    requireEquipped?: boolean; // defaults to false
+    requireEquipped?: boolean; // defaults to false/undefined
 }
 
 interface PropVariables {
@@ -107,6 +109,13 @@ function itemAttibutes(item: Item): PropAttributes {
     return substituteVariablesRecursively(
         compendium[item.prop].states[item.state],
         itemVariables(item),
+    );
+}
+
+function defaultPropAttributes(prop: string): PropAttributes {
+    return substituteVariablesRecursively(
+        compendium[prop].states["default"],
+        mapValues(compendium[prop].variables, (v) => v.value),
     );
 }
 

@@ -8,7 +8,10 @@ import {
     getEntityId,
     getPlotsAtGeohash,
 } from "$lib/crossover/utils";
-import { type PropAttributes } from "$lib/crossover/world/compendium";
+import {
+    defaultPropAttributes,
+    type PropAttributes,
+} from "$lib/crossover/world/compendium";
 import { entityStats, mergeAdditive } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
@@ -449,9 +452,10 @@ async function spawnItemInInventory({
 
     // Get prop
     const { states, durability, charges, collider } = compendium[prop];
+
     // Substitute variables for default state attributes
-    const attributes: PropAttributes = substituteVariablesRecursively(
-        states.default,
+    const defaultAttributes: PropAttributes = substituteVariablesRecursively(
+        defaultPropAttributes(prop),
         variables ?? {},
     );
 
@@ -462,7 +466,7 @@ async function spawnItemInInventory({
 
     return (await itemRepository.save(itemId, {
         item: itemId,
-        name: attributes.name,
+        name: defaultAttributes.name,
         prop,
         loc: [entityId],
         locT: "inv",
@@ -472,7 +476,7 @@ async function spawnItemInInventory({
         cld: collider,
         dur: durability,
         chg: charges,
-        state: "default",
+        state: variables?.state ?? "default",
         vars: parseItemVariables(variables || {}, prop),
         dbuf: [],
         buf: [],
@@ -526,7 +530,7 @@ async function spawnItemAtGeohash({
 
     // Substitute variables for default state attributes
     const attributes: PropAttributes = substituteVariablesRecursively(
-        states.default,
+        defaultPropAttributes(prop),
         variables ?? {},
     );
 

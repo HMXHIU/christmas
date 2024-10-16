@@ -57,6 +57,8 @@ const EQUIPMENT_SLOTS = {
     nk: "neck",
     r1: "ring 1",
     r2: "ring 2",
+    // consumables
+    bl: "belt",
 } as const;
 type EquipmentSlot = keyof typeof EQUIPMENT_SLOTS;
 const EquipmentSlotsEnum = Object.keys(EQUIPMENT_SLOTS) as [

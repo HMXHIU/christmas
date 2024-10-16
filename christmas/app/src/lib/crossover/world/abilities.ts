@@ -93,6 +93,12 @@ const AbilitiesEnum = [
     "hpSwap",
 ] as const;
 
+interface AbilityPredicate {
+    self: EntityType[];
+    target: EntityType[];
+    targetSelfAllowed: boolean;
+}
+
 interface Ability {
     ability: Abilities;
     type: AbilityType;
@@ -101,11 +107,7 @@ interface Ability {
     cost: Partial<EntityStats & CurrencyParams>;
     range: number; // range of the ability (number of unit precision geohashes)
     aoe: number; // area of effect (number of unit precision geohashes)
-    predicate: {
-        self: EntityType[];
-        target: EntityType[];
-        targetSelfAllowed: boolean;
-    };
+    predicate: AbilityPredicate;
 }
 
 type ProcedureStateEffects = "loc" | "locT" | "locI" | Stat | Currency;

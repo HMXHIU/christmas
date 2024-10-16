@@ -55,6 +55,7 @@ export let consumables: Record<string, Prop> = {
         charges: 5,
         weight: 1,
         collider: false,
+        equipmentSlot: ["bl"],
         states: {
             default: {
                 name: "Potion of Health",
