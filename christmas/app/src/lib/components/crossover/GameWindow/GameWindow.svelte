@@ -214,8 +214,10 @@
         </div>
         <!-- Right panel -->
         <div class="flex flex-col w-60 shrink-0 p-2 space-y-2 overflow-y-auto">
-            <!-- Player List -->
-            <div class="h-60 bg-orange-400 shrink-0"></div>
+            <!-- Map/Players -->
+            <div class="aspect-square shrink-0">
+                <Map></Map>
+            </div>
             <!-- Quest Log -->
             <Tool tool="quests"></Tool>
             <!-- Inventory -->
@@ -248,10 +250,6 @@
         <!-- Environment  -->
         <div class="p-2 overflow-auto">
             <MudDescriptor on:entityLink={onClickEntityLink}></MudDescriptor>
-        </div>
-        <!-- Map/Look -->
-        <div class="w-60 aspect-square shrink-0">
-            <Map></Map>
         </div>
     </div>
 </div>

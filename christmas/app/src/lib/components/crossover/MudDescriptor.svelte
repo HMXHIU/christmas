@@ -61,34 +61,34 @@
             player.subscribe(async (p) => {
                 if (p) {
                     locationDescriptor =
-                        await descriptionGenerator.locationDescriptions(
+                        await descriptionGenerator.describeSurroundings(
                             p.loc[0],
                             p.locT as LocationType,
+                            p.locI,
                         );
                 }
             }),
             monsterRecord.subscribe(async (mr) => {
                 monsterDescriptor =
-                    await descriptionGenerator.monsterDescriptions(
+                    await descriptionGenerator.descriptionsMonsters(
                         Object.values(mr).filter((p) =>
                             geohashLocationTypes.has(p.locT),
                         ),
                     );
             }),
             itemRecord.subscribe(async (ir) => {
-                itemDescriptor = await descriptionGenerator.itemDescriptions(
+                itemDescriptor = await descriptionGenerator.describeItems(
                     Object.values(ir).filter((p) =>
                         geohashLocationTypes.has(p.locT),
                     ),
                 );
             }),
             playerRecord.subscribe(async (pr) => {
-                playerDescriptor =
-                    await descriptionGenerator.playerDescriptions(
-                        Object.values(pr).filter((p) =>
-                            geohashLocationTypes.has(p.locT),
-                        ),
-                    );
+                playerDescriptor = await descriptionGenerator.describePlayers(
+                    Object.values(pr).filter((p) =>
+                        geohashLocationTypes.has(p.locT),
+                    ),
+                );
             }),
         ];
         return () => {

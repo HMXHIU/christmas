@@ -1,10 +1,13 @@
 import type { CacheInterface } from "$lib/caches";
 import type { Item, Monster, Player } from "$lib/crossover/types";
+import { get } from "svelte/store";
+import { itemRecord } from "../../../store";
 import {
     biomeParametersAtCity,
     elevationAtGeohash,
     type Biome,
 } from "../world/biomes";
+import { itemAttibutes } from "../world/compendium";
 import { type WorldSeed } from "../world/settings/world";
 import { geohashLocationTypes, type LocationType } from "../world/types";
 import { describeBiome } from "./biome";
@@ -23,6 +26,7 @@ interface LocationDescription {
     };
     location: string; // the actual entity location (eg. loc[0])
     locationType: LocationType; // locT
+    locationInstance: string; // locI
 }
 
 class MudDescriptionGenerator {
@@ -53,21 +57,22 @@ class MudDescriptionGenerator {
         this.topologyResponseCache = topologyResponseCache;
     }
 
-    async monsterDescriptions(monsters: Monster[]) {
+    async descriptionsMonsters(monsters: Monster[]) {
         return descibeEntities(monsters, "monster", entityDescriptors);
     }
 
-    async itemDescriptions(items: Item[]) {
+    async describeItems(items: Item[]) {
         return descibeEntities(items, "item", entityDescriptors);
     }
 
-    async playerDescriptions(players: Player[]) {
+    async describePlayers(players: Player[]) {
         return descibeEntities(players, "player", entityDescriptors);
     }
 
-    async locationDescriptions(
+    async describeSurroundings(
         location: string,
         locationType: LocationType,
+        locationInstance: string,
         time?: number,
     ): Promise<LocationDescription> {
         time = time ?? Date.now();
@@ -93,9 +98,19 @@ class MudDescriptionGenerator {
             },
             location,
             locationType,
+            locationInstance,
         };
 
-        if (geohashLocationTypes.has(locationType)) {
+        // Use item description if inside an item (eg. tavern)
+        if (locationType === "in") {
+            const item = get(itemRecord)?.[locationInstance];
+            if (item) {
+                description.descriptions.location =
+                    itemAttibutes(item).description;
+            }
+        }
+        // Use biome description
+        else if (geohashLocationTypes.has(locationType)) {
             const elevation = await elevationAtGeohash(location, "geohash", {
                 responseCache: this.topologyResponseCache,
                 resultsCache: this.topologyResultCache,
