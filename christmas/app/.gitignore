@@ -8,11 +8,3 @@ node_modules
 !.env.example
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-
-/static/*
-/static/demo/*
-/static/sprites/*
-/static/worlds/*
-/static/textures/*
-/static/topology_2p/*
-/static/avatar/*

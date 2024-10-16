@@ -3,7 +3,31 @@
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
-		<link href='https://fonts.googleapis.com/css?family=JetBrains Mono' rel='stylesheet'>
+		<!-- <link href='https://fonts.googleapis.com/css?family=JetBrains Mono' rel='stylesheet'> -->
+		<link rel="preload" href="%sveltekit.assets%/fonts/JetBrainsMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
+		<style>
+			@font-face {
+				font-family: 'JetBrains Mono';
+				src: url('%sveltekit.assets%/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+				font-weight: normal;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: 'JetBrains Mono';
+				src: url('%sveltekit.assets%/fonts/JetBrainsMono-Bold.woff2') format('woff2');
+				font-weight: bold;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: 'JetBrains Mono';
+				src: url('%sveltekit.assets%/fonts/JetBrainsMono-Italic.woff2') format('woff2');
+				font-weight: normal;
+				font-style: italic;
+				font-display: swap;
+			}
+		</style>
 		<meta name="viewport" content="width=device-width" />
 		%sveltekit.head%
 	</head>
