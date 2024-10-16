@@ -17,8 +17,8 @@ import {
 } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { BASE_ATTRIBUTES } from "$lib/crossover/world/settings/entity";
-import { sanctuaryAtRegion } from "$lib/crossover/world/settings/world";
 import type { EquipmentSlot } from "$lib/crossover/world/types";
+import { findClosestSanctuary } from "$lib/crossover/world/world";
 import type {
     ActorEntity,
     CreatureEntity,
@@ -239,7 +239,7 @@ function entityDied(before: ActorEntity, after: ActorEntity): boolean {
 
 async function respawnPlayer(player: PlayerEntity) {
     // Respawn player at sanctuary
-    const sanctuary = await sanctuaryAtRegion(player.rgn);
+    const sanctuary = await findClosestSanctuary(player.rgn, player.loc[0]);
     if (!sanctuary) {
         throw new Error(`${player.player} has no sanctuary`);
     }

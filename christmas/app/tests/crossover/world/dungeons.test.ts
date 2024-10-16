@@ -44,10 +44,7 @@ describe("Dungeons Tests", async () => {
             topologyResultCache,
         });
         // Only spawns on land
-        const numPrefabDungeons = Object.keys(prefabDungeons).length;
         expect(Object.keys(dungeons).length).toBe(314);
-
-        console.log(JSON.stringify(dungeons["w2"], null, 2));
     });
 
     test("Test prefab dungeons", async () => {

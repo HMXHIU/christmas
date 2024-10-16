@@ -6,7 +6,7 @@ interface Dungeon {
 
 // These are manually defined dungeons in addition to the procedurally generated dungeons
 const prefabDungeons: Record<string, Dungeon> = {
-    w21z9: {
-        dungeon: "w21z9",
+    jx1p7: {
+        dungeon: "jx1p7", // Grande-Terre
     },
 };

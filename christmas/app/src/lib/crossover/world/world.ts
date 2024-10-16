@@ -4,15 +4,17 @@ import type { NPCs } from "$lib/server/crossover/npc/types";
 import { omit } from "lodash-es";
 import {
     autoCorrectGeohashPrecision,
+    geohashDistance,
     geohashToColRow,
     gridCellToGeohash,
 } from "../utils";
 import type { BiomeParameters } from "./biomes";
 import { TILE_HEIGHT, TILE_WIDTH } from "./settings";
-import { worldSeed } from "./settings/world";
+import { sanctuaries, worldSeed } from "./settings/world";
 import type { ObjectLayer, TileLayer, WorldAssetMetadata } from "./types";
 
 export {
+    findClosestSanctuary,
     poisInWorld,
     traversableCellsInWorld,
     traversableSpeedInWorld,
@@ -94,6 +96,23 @@ interface Tileset {
     tilewidth: number;
     type: string;
     version: string;
+}
+
+async function findClosestSanctuary(
+    region: string,
+    geohash: string,
+): Promise<Sanctuary | undefined> {
+    const ss = await sanctuaries();
+    let closest: Sanctuary = ss[0];
+    let distance = Infinity;
+    for (const s of ss) {
+        const d = geohashDistance(geohash, s.geohash);
+        if (d < distance) {
+            distance = d;
+            closest = s;
+        }
+    }
+    return closest;
 }
 
 async function fetchWorldMetadata(

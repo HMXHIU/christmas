@@ -450,12 +450,12 @@ function entityDimensions(entity: Actor) {
     }
     // Item
     else if ((entity as Item).item) {
-        const { width, height, precision } =
-            compendium[(entity as Item).prop].asset;
+        compendium[(entity as Item).prop].asset;
+        const asset = compendium[(entity as Item).prop].asset;
         return {
-            width: width ?? 1,
-            height: height ?? 1,
-            precision: precision ?? worldSeed.spatial.unit.precision,
+            width: asset?.width ?? 1,
+            height: asset?.height ?? 1,
+            precision: asset?.precision ?? worldSeed.spatial.unit.precision,
         };
     }
     // Monster
@@ -819,6 +819,7 @@ function entityInRange(
 }
 
 function geohashDistance(geohash1: string, geohash2: string): number {
+    // Note: Both must be the same precision else it will not be accurate
     const [col1, row1] = geohashToColRow(geohash1);
     const [col2, row2] = geohashToColRow(geohash2);
     return Math.sqrt(Math.pow(col2 - col1, 2) + Math.pow(row2 - row1, 2));

@@ -10,7 +10,7 @@ import {
 } from "../../utils";
 import { elevationAtGeohash, type BiomeType } from "../biomes";
 import { prefabDungeons } from "../settings/dungeons";
-import { topologicalAnalysis, worldSeed } from "../settings/world";
+import { sanctuaries, topologicalAnalysis, worldSeed } from "../settings/world";
 import { geohashLocationTypes, type GeohashLocation } from "../types";
 import { generateRoomsBSP } from "./bsp";
 import type { DungeonGraph, Room } from "./types";
@@ -95,11 +95,12 @@ async function generateDungeonGraphsForTerritory(
     let graphs: Record<string, DungeonGraph> =
         await options?.dungeonsAtTerritoryCache?.get(cacheKey);
     if (graphs) return graphs;
-
-    // Generate prefabricated dungeons
     graphs = {};
-    for (const [dungeon, _] of Object.entries(prefabDungeons)) {
-        if (dungeon.startsWith(territory)) {
+
+    // Generate dungeons at every sanctuary
+    for (const s of await sanctuaries()) {
+        if (s.geohash.startsWith(territory)) {
+            let dungeon = s.geohash.slice(0, DUNGEON_PRECISION);
             graphs[dungeon] = await generateDungeonGraph(
                 dungeon,
                 locationType,
@@ -110,10 +111,28 @@ async function generateDungeonGraphsForTerritory(
         }
     }
 
-    // Exclude territories with little land
+    // Generate dungeons at prefab
+    for (const [dungeon, _] of Object.entries(prefabDungeons)) {
+        // Check no overlap between sanctuary dungeons
+        const hasOverlap = Object.keys(graphs).find((d) =>
+            dungeon.startsWith(d),
+        );
+        if (dungeon.startsWith(territory) && !hasOverlap) {
+            graphs[dungeon] = await generateDungeonGraph(
+                dungeon,
+                locationType,
+                {
+                    dungeonGraphCache: options?.dungeonGraphCache,
+                },
+            );
+        }
+    }
+
+    // Procedurally generate dungeon at territory
     const ta = (await topologicalAnalysis())[territory];
+
+    // Exclude territories with little land
     if (ta && ta.land >= 0.2) {
-        // Procedurally generate dungeon at territory
         const seed = stringToRandomNumber(territory + locationType);
         const rv = seededRandom(seed);
         let dungeon = autoCorrectGeohashPrecision(
@@ -130,7 +149,7 @@ async function generateDungeonGraphsForTerritory(
         });
 
         if (elevation >= 1) {
-            // Check no overlap between prefab dungeons
+            // Check no overlap between prefab & sanctuary dungeons
             const hasOverlap = Object.keys(graphs).find((d) =>
                 dungeon.startsWith(d),
             );

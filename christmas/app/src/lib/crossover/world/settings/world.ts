@@ -3,7 +3,6 @@ import type { Sanctuary, Spatial, WorldSeed } from "../world";
 
 export {
     sanctuaries,
-    sanctuaryAtRegion,
     spatialAtPrecision,
     topologicalAnalysis,
     worldSeed,
@@ -40,12 +39,6 @@ async function sanctuaries(): Promise<Sanctuary[]> {
         return _sanctuaries;
     }
     return await (await fetch(`${GAME_SANCTUARIES}/sanctuaries.json`)).json();
-}
-
-async function sanctuaryAtRegion(
-    region: string,
-): Promise<Sanctuary | undefined> {
-    return (await sanctuaries()).find((s) => s.region === region);
 }
 
 function spatialAtPrecision(p: number): Spatial | null {
