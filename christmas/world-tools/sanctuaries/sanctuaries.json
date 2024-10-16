@@ -1,0 +1,1946 @@
+[
+    {
+        "name": "Vatican City",
+        "region": "VAT",
+        "geohash": "sr2y7kk2",
+        "population": 832,
+        "timezone": "Europe/Vatican",
+        "description": ""
+    },
+    {
+        "name": "San Marino",
+        "region": "SMR",
+        "geohash": "srbcgn7f",
+        "population": 29579,
+        "timezone": "Europe/San_Marino",
+        "description": ""
+    },
+    {
+        "name": "Vaduz",
+        "region": "LIE",
+        "geohash": "u0qu0s3v",
+        "population": 36281,
+        "timezone": "Europe/Vaduz",
+        "description": ""
+    },
+    {
+        "name": "Lobamba",
+        "region": "SWZ",
+        "geohash": "keq1mvzh",
+        "population": 9782,
+        "timezone": "Africa/Mbabane",
+        "description": ""
+    },
+    {
+        "name": "Luxembourg",
+        "region": "LUX",
+        "geohash": "u0u65rx8",
+        "population": 107260,
+        "timezone": "Europe/Luxembourg",
+        "description": ""
+    },
+    {
+        "name": "Palikir",
+        "region": "FSM",
+        "geohash": "x90rqg1k",
+        "population": 4645,
+        "timezone": "Pacific/Ponape",
+        "description": ""
+    },
+    {
+        "name": "Majuro",
+        "region": "MHL",
+        "geohash": "xc3b7v51",
+        "population": 25400,
+        "timezone": "Pacific/Majuro",
+        "description": ""
+    },
+    {
+        "name": "Funafuti",
+        "region": "TUV",
+        "geohash": "ryrrw1td",
+        "population": 4749,
+        "timezone": "Pacific/Funafuti",
+        "description": ""
+    },
+    {
+        "name": "Melekeok",
+        "region": "PLW",
+        "geohash": "wcrdxe01",
+        "population": 7026,
+        "timezone": "Pacific/Palau",
+        "description": ""
+    },
+    {
+        "name": "Bir Lehlou",
+        "region": "SAH",
+        "geohash": "eu9hs6g5",
+        "population": 500,
+        "timezone": "Africa/El_Aaiun",
+        "description": ""
+    },
+    {
+        "name": "Monaco",
+        "region": "MCO",
+        "geohash": "spv2bd99",
+        "population": 36371,
+        "timezone": "Europe/Monaco",
+        "description": ""
+    },
+    {
+        "name": "Tarawa",
+        "region": "KIR",
+        "geohash": "xb5p95ee",
+        "population": 28802,
+        "timezone": "Pacific/Tarawa",
+        "description": ""
+    },
+    {
+        "name": "Moroni",
+        "region": "COM",
+        "geohash": "kvytrvqd",
+        "population": 128698,
+        "timezone": "Indian/Comoro",
+        "description": ""
+    },
+    {
+        "name": "Andorra",
+        "region": "AND",
+        "geohash": "sp91f8bk",
+        "population": 53998,
+        "timezone": "Europe/Madrid",
+        "description": ""
+    },
+    {
+        "name": "Port-of-Spain",
+        "region": "TTO",
+        "geohash": "d9uk85hs",
+        "population": 294934,
+        "timezone": "America/Port_of_Spain",
+        "description": ""
+    },
+    {
+        "name": "Kigali",
+        "region": "RWA",
+        "geohash": "kxtkguxy",
+        "population": 860000,
+        "timezone": "Africa/Kigali",
+        "description": ""
+    },
+    {
+        "name": "Mbabane",
+        "region": "SWZ",
+        "geohash": "keq4k3nw",
+        "population": 90138,
+        "timezone": "Africa/Mbabane",
+        "description": ""
+    },
+    {
+        "name": "Juba",
+        "region": "SSD",
+        "geohash": "s8y7qx7b",
+        "population": 111975,
+        "timezone": "Africa/Khartoum",
+        "description": ""
+    },
+    {
+        "name": "The Hague",
+        "region": "NLD",
+        "geohash": "u17030vk",
+        "population": 1406000,
+        "timezone": "Europe/Amsterdam",
+        "description": ""
+    },
+    {
+        "name": "Ljubljana",
+        "region": "SVN",
+        "geohash": "u24q4217",
+        "population": 314807,
+        "timezone": "Europe/Ljubljana",
+        "description": ""
+    },
+    {
+        "name": "Bratislava",
+        "region": "SVK",
+        "geohash": "u2s1vt2n",
+        "population": 423737,
+        "timezone": "Europe/Bratislava",
+        "description": ""
+    },
+    {
+        "name": "Doha",
+        "region": "QAT",
+        "geohash": "thkxuem0",
+        "population": 1450000,
+        "timezone": "Asia/Qatar",
+        "description": ""
+    },
+    {
+        "name": "Podgorica",
+        "region": "MNE",
+        "geohash": "srt9w6tq",
+        "population": 145850,
+        "timezone": "Europe/Podgorica",
+        "description": ""
+    },
+    {
+        "name": "Sri Jawewardenepura Kotte",
+        "region": "LKA",
+        "geohash": "tc0z721g",
+        "population": 115826,
+        "timezone": "Asia/Colombo",
+        "description": ""
+    },
+    {
+        "name": "Baguio City",
+        "region": "PHL",
+        "geohash": "wdvtrwur",
+        "population": 447824,
+        "timezone": "Asia/Manila",
+        "description": ""
+    },
+    {
+        "name": "Dodoma",
+        "region": "TZA",
+        "geohash": "kyckvd27",
+        "population": 218269,
+        "timezone": "Africa/Dar_es_Salaam",
+        "description": ""
+    },
+    {
+        "name": "Bern",
+        "region": "CHE",
+        "geohash": "u0m6cuvm",
+        "population": 275329,
+        "timezone": "Europe/Zurich",
+        "description": ""
+    },
+    {
+        "name": "Laayoune",
+        "region": "MAR",
+        "geohash": "esyd7ws0",
+        "population": 188084,
+        "timezone": "Africa/El_Aaiun",
+        "description": ""
+    },
+    {
+        "name": "Pristina",
+        "region": "KOS",
+        "geohash": "srx49xhx",
+        "population": 465186,
+        "timezone": "Europe/Belgrade",
+        "description": ""
+    },
+    {
+        "name": "Roseau",
+        "region": "DMA",
+        "geohash": "ddsr517q",
+        "population": 23336,
+        "timezone": "America/Dominica",
+        "description": ""
+    },
+    {
+        "name": "Djibouti",
+        "region": "DJI",
+        "geohash": "sfn9vyg3",
+        "population": 923000,
+        "timezone": "Africa/Djibouti",
+        "description": ""
+    },
+    {
+        "name": "Putrajaya",
+        "region": "MYS",
+        "geohash": "w282d63p",
+        "population": 67964,
+        "timezone": "Asia/Kuala_Lumpur",
+        "description": ""
+    },
+    {
+        "name": "Kyoto",
+        "region": "JPN",
+        "geohash": "xn0x312e",
+        "population": 1805000,
+        "timezone": "Asia/Tokyo",
+        "description": ""
+    },
+    {
+        "name": "Banjul",
+        "region": "GMB",
+        "geohash": "edkhw3nq",
+        "population": 43094,
+        "timezone": "Africa/Banjul",
+        "description": ""
+    },
+    {
+        "name": "Skopje",
+        "region": "MKD",
+        "geohash": "srrnztz7",
+        "population": 494087,
+        "timezone": "Europe/Skopje",
+        "description": ""
+    },
+    {
+        "name": "Bridgetown",
+        "region": "BRB",
+        "geohash": "ddmde3hs",
+        "population": 191152,
+        "timezone": "Australia/Perth",
+        "description": ""
+    },
+    {
+        "name": "Porto-Novo",
+        "region": "BEN",
+        "geohash": "s11ugs32",
+        "population": 300000,
+        "timezone": "Africa/Porto-Novo",
+        "description": ""
+    },
+    {
+        "name": "Bujumbura",
+        "region": "BDI",
+        "geohash": "kxkuu17k",
+        "population": 331700,
+        "timezone": "Africa/Bujumbura",
+        "description": ""
+    },
+    {
+        "name": "Kingstown",
+        "region": "VCT",
+        "geohash": "ddk6z1dd",
+        "population": 49485,
+        "timezone": "America/New_York",
+        "description": ""
+    },
+    {
+        "name": "Castries",
+        "region": "LCA",
+        "geohash": "ddkxeuvp",
+        "population": 37963,
+        "timezone": "Europe/Paris",
+        "description": ""
+    },
+    {
+        "name": "Basseterre",
+        "region": "KNA",
+        "geohash": "de56kvdz",
+        "population": 21887,
+        "timezone": "America/St_Kitts",
+        "description": ""
+    },
+    {
+        "name": "Port Louis",
+        "region": "MUS",
+        "geohash": "mk2vk2y0",
+        "population": 595491,
+        "timezone": "Indian/Mauritius",
+        "description": ""
+    },
+    {
+        "name": "Saint George's",
+        "region": "GRD",
+        "geohash": "ddhhe415",
+        "population": 33734,
+        "timezone": "America/Grenada",
+        "description": ""
+    },
+    {
+        "name": "Manama",
+        "region": "BHR",
+        "geohash": "thevr01k",
+        "population": 563920,
+        "timezone": "Asia/Bahrain",
+        "description": ""
+    },
+    {
+        "name": "Saint John's",
+        "region": "ATG",
+        "geohash": "deh12s4p",
+        "population": 35499,
+        "timezone": "America/Antigua",
+        "description": ""
+    },
+    {
+        "name": "Montevideo",
+        "region": "URY",
+        "geohash": "6cb19y8h",
+        "population": 1513000,
+        "timezone": "America/Chicago",
+        "description": ""
+    },
+    {
+        "name": "Lome",
+        "region": "TGO",
+        "geohash": "s10fgu8u",
+        "population": 1452000,
+        "timezone": "Africa/Lome",
+        "description": ""
+    },
+    {
+        "name": "Tunis",
+        "region": "TUN",
+        "geohash": "snx1resx",
+        "population": 2412500,
+        "timezone": "Africa/Tunis",
+        "description": ""
+    },
+    {
+        "name": "Abu Dhabi",
+        "region": "ARE",
+        "geohash": "thqejnh8",
+        "population": 603492,
+        "timezone": "Asia/Dubai",
+        "description": ""
+    },
+    {
+        "name": "Ashgabat",
+        "region": "TKM",
+        "geohash": "tq9xbs96",
+        "population": 727700,
+        "timezone": "Asia/Ashgabat",
+        "description": ""
+    },
+    {
+        "name": "Lusaka",
+        "region": "ZMB",
+        "geohash": "ktk079cf",
+        "population": 1328000,
+        "timezone": "Africa/Lusaka",
+        "description": ""
+    },
+    {
+        "name": "Harare",
+        "region": "ZWE",
+        "geohash": "ksy4dksx",
+        "population": 1572000,
+        "timezone": "Africa/Harare",
+        "description": ""
+    },
+    {
+        "name": "Dili",
+        "region": "TLS",
+        "geohash": "qy3r39u1",
+        "population": 234331,
+        "timezone": "Asia/Dili",
+        "description": ""
+    },
+    {
+        "name": "Port Vila",
+        "region": "VUT",
+        "geohash": "rszen5sr",
+        "population": 44040,
+        "timezone": "Pacific/Efate",
+        "description": ""
+    },
+    {
+        "name": "Tegucigalpa",
+        "region": "HND",
+        "geohash": "d49bpr89",
+        "population": 946000,
+        "timezone": "America/Tegucigalpa",
+        "description": ""
+    },
+    {
+        "name": "Georgetown",
+        "region": "GUY",
+        "geohash": "d9nwsqk0",
+        "population": 264350,
+        "timezone": "America/Guyana",
+        "description": ""
+    },
+    {
+        "name": "Reykjavik",
+        "region": "ISL",
+        "geohash": "ge2kuw0k",
+        "population": 166212,
+        "timezone": "Atlantic/Reykjavik",
+        "description": ""
+    },
+    {
+        "name": "Port-au-Prince",
+        "region": "HTI",
+        "geohash": "d7k93zth",
+        "population": 1998000,
+        "timezone": "America/Port-au-Prince",
+        "description": ""
+    },
+    {
+        "name": "Kampala",
+        "region": "UGA",
+        "geohash": "s8p1v6j0",
+        "population": 1420000,
+        "timezone": "Africa/Kampala",
+        "description": ""
+    },
+    {
+        "name": "Paramaribo",
+        "region": "SUR",
+        "geohash": "dc0c0whx",
+        "population": 254169,
+        "timezone": "America/Paramaribo",
+        "description": ""
+    },
+    {
+        "name": "Niamey",
+        "region": "NER",
+        "geohash": "s43sbhgz",
+        "population": 915000,
+        "timezone": "Africa/Niamey",
+        "description": ""
+    },
+    {
+        "name": "Dushanbe",
+        "region": "TJK",
+        "geohash": "twbgkgxs",
+        "population": 1086244,
+        "timezone": "Asia/Dushanbe",
+        "description": ""
+    },
+    {
+        "name": "Asuncion",
+        "region": "PRY",
+        "geohash": "6ex00733",
+        "population": 1870000,
+        "timezone": "Asia/Manila",
+        "description": ""
+    },
+    {
+        "name": "Managua",
+        "region": "NIC",
+        "geohash": "d44thuez",
+        "population": 920000,
+        "timezone": "America/Managua",
+        "description": ""
+    },
+    {
+        "name": "Freetown",
+        "region": "SLE",
+        "geohash": "e9w84y38",
+        "population": 827000,
+        "timezone": "Africa/Freetown",
+        "description": ""
+    },
+    {
+        "name": "Islamabad",
+        "region": "PAK",
+        "geohash": "ttup8zkb",
+        "population": 780000,
+        "timezone": "Asia/Karachi",
+        "description": ""
+    },
+    {
+        "name": "Kathmandu",
+        "region": "NPL",
+        "geohash": "tuuttqh2",
+        "population": 895000,
+        "timezone": "Asia/Kathmandu",
+        "description": ""
+    },
+    {
+        "name": "Bloemfontein",
+        "region": "ZAF",
+        "geohash": "kdfdkfu5",
+        "population": 463064,
+        "timezone": "Africa/Johannesburg",
+        "description": ""
+    },
+    {
+        "name": "Pretoria",
+        "region": "ZAF",
+        "geohash": "kekjf2d9",
+        "population": 1338000,
+        "timezone": "Africa/Johannesburg",
+        "description": ""
+    },
+    {
+        "name": "Port Moresby",
+        "region": "PNG",
+        "geohash": "rq2djmn2",
+        "population": 283733,
+        "timezone": "Pacific/Port_Moresby",
+        "description": ""
+    },
+    {
+        "name": "Honiara",
+        "region": "SLB",
+        "geohash": "rw3dr9zg",
+        "population": 76328,
+        "timezone": "Pacific/Guadalcanal",
+        "description": ""
+    },
+    {
+        "name": "Panama City",
+        "region": "PAN",
+        "geohash": "d1x7n0um",
+        "population": 1281000,
+        "timezone": "America/Panama",
+        "description": ""
+    },
+    {
+        "name": "Rabat",
+        "region": "MAR",
+        "geohash": "ey51s6jg",
+        "population": 1705000,
+        "timezone": "Africa/Casablanca",
+        "description": ""
+    },
+    {
+        "name": "Chisinau",
+        "region": "MDA",
+        "geohash": "u8ke2tj8",
+        "population": 688134,
+        "timezone": "Europe/Chisinau",
+        "description": ""
+    },
+    {
+        "name": "Maputo",
+        "region": "MOZ",
+        "geohash": "kerhme36",
+        "population": 1446000,
+        "timezone": "Africa/Maputo",
+        "description": ""
+    },
+    {
+        "name": "Mogadishu",
+        "region": "SOM",
+        "geohash": "t027b29d",
+        "population": 1100000,
+        "timezone": "Africa/Mogadishu",
+        "description": ""
+    },
+    {
+        "name": "Muscat",
+        "region": "OMN",
+        "geohash": "tk1wm6dm",
+        "population": 734697,
+        "timezone": "Asia/Muscat",
+        "description": ""
+    },
+    {
+        "name": "Colombo",
+        "region": "LKA",
+        "geohash": "tc0z3jyt",
+        "population": 217000,
+        "timezone": "America/Sao_Paulo",
+        "description": ""
+    },
+    {
+        "name": "Ulaanbaatar",
+        "region": "MNG",
+        "geohash": "y2s08gkf",
+        "population": 885000,
+        "timezone": "Asia/Ulaanbaatar",
+        "description": ""
+    },
+    {
+        "name": "Windhoek",
+        "region": "NAM",
+        "geohash": "k7upserb",
+        "population": 268132,
+        "timezone": "Africa/Windhoek",
+        "description": ""
+    },
+    {
+        "name": "Abuja",
+        "region": "NGA",
+        "geohash": "s1t7emuj",
+        "population": 1576000,
+        "timezone": "Africa/Lagos",
+        "description": ""
+    },
+    {
+        "name": "Bissau",
+        "region": "GNB",
+        "geohash": "edhgmpcw",
+        "population": 403339,
+        "timezone": "Africa/Bissau",
+        "description": ""
+    },
+    {
+        "name": "Amman",
+        "region": "JOR",
+        "geohash": "sv9tc8sm",
+        "population": 1060000,
+        "timezone": "Asia/Amman",
+        "description": ""
+    },
+    {
+        "name": "Vilnius",
+        "region": "LTU",
+        "geohash": "u9dp04g1",
+        "population": 542366,
+        "timezone": "Europe/Vilnius",
+        "description": ""
+    },
+    {
+        "name": "Riga",
+        "region": "LVA",
+        "geohash": "ud15urmj",
+        "population": 742572,
+        "timezone": "Europe/Riga",
+        "description": ""
+    },
+    {
+        "name": "Bishkek",
+        "region": "KGZ",
+        "geohash": "txt5cjjv",
+        "population": 837000,
+        "timezone": "Asia/Bishkek",
+        "description": ""
+    },
+    {
+        "name": "Maseru",
+        "region": "LSO",
+        "geohash": "kdg91rh9",
+        "population": 361324,
+        "timezone": "Africa/Maseru",
+        "description": ""
+    },
+    {
+        "name": "Antananarivo",
+        "region": "MDG",
+        "geohash": "mh9u3hxj",
+        "population": 1697000,
+        "timezone": "Indian/Antananarivo",
+        "description": ""
+    },
+    {
+        "name": "Quito",
+        "region": "ECU",
+        "geohash": "6rbnv9hw",
+        "population": 1701000,
+        "timezone": "America/Guayaquil",
+        "description": ""
+    },
+    {
+        "name": "San Jose",
+        "region": "CRI",
+        "geohash": "d1u0w8fq",
+        "population": 1284000,
+        "timezone": "America/Bogota",
+        "description": ""
+    },
+    {
+        "name": "San Salvador",
+        "region": "SLV",
+        "geohash": "d42w404v",
+        "population": 1433000,
+        "timezone": "Asia/Manila",
+        "description": ""
+    },
+    {
+        "name": "Kingston",
+        "region": "JAM",
+        "geohash": "d71qm0es",
+        "population": 937700,
+        "timezone": "America/Jamaica",
+        "description": ""
+    },
+    {
+        "name": "Ndjamena",
+        "region": "TCD",
+        "geohash": "s64symmp",
+        "population": 989000,
+        "timezone": "Africa/Ndjamena",
+        "description": ""
+    },
+    {
+        "name": "Malabo",
+        "region": "GNQ",
+        "geohash": "s0wjrfev",
+        "population": 155963,
+        "timezone": "Africa/Malabo",
+        "description": ""
+    },
+    {
+        "name": "Asmara",
+        "region": "ERI",
+        "geohash": "sfexjzq7",
+        "population": 620802,
+        "timezone": "Africa/Asmara",
+        "description": ""
+    },
+    {
+        "name": "Zagreb",
+        "region": "HRV",
+        "geohash": "u25ks1du",
+        "population": 722526,
+        "timezone": "Europe/Zagreb",
+        "description": ""
+    },
+    {
+        "name": "Tallinn",
+        "region": "EST",
+        "geohash": "ud9d4ew7",
+        "population": 394024,
+        "timezone": "Europe/Tallinn",
+        "description": ""
+    },
+    {
+        "name": "Lilongwe",
+        "region": "MWI",
+        "geohash": "kv802y2j",
+        "population": 646750,
+        "timezone": "Africa/Blantyre",
+        "description": ""
+    },
+    {
+        "name": "Guatemala",
+        "region": "GTM",
+        "geohash": "9fxe5ync",
+        "population": 1024000,
+        "timezone": "America/Guatemala",
+        "description": ""
+    },
+    {
+        "name": "Libreville",
+        "region": "GAB",
+        "geohash": "s0ndpnpj",
+        "population": 578156,
+        "timezone": "Africa/Libreville",
+        "description": ""
+    },
+    {
+        "name": "Suva",
+        "region": "FJI",
+        "geohash": "ruybudcr",
+        "population": 175399,
+        "timezone": "Pacific/Fiji",
+        "description": ""
+    },
+    {
+        "name": "Valparaiso",
+        "region": "CHL",
+        "geohash": "66jh40jy",
+        "population": 854000,
+        "timezone": "America/Sao_Paulo",
+        "description": ""
+    },
+    {
+        "name": "Nouakchott",
+        "region": "MRT",
+        "geohash": "eehwukx1",
+        "population": 742144,
+        "timezone": "Africa/Nouakchott",
+        "description": ""
+    },
+    {
+        "name": "Bamako",
+        "region": "MLI",
+        "geohash": "ef4rczjp",
+        "population": 1494000,
+        "timezone": "Africa/Bamako",
+        "description": ""
+    },
+    {
+        "name": "Beirut",
+        "region": "LBN",
+        "geohash": "sy10xyxc",
+        "population": 1846000,
+        "timezone": "Asia/Beirut",
+        "description": ""
+    },
+    {
+        "name": "Tbilisi",
+        "region": "GEO",
+        "geohash": "szrv7hnj",
+        "population": 1100000,
+        "timezone": "Asia/Tbilisi",
+        "description": ""
+    },
+    {
+        "name": "Astana",
+        "region": "KAZ",
+        "geohash": "v94g1mhp",
+        "population": 345604,
+        "timezone": "Asia/Qyzylorda",
+        "description": ""
+    },
+    {
+        "name": "Vientiane",
+        "region": "LAO",
+        "geohash": "w70ynwxp",
+        "population": 754000,
+        "timezone": "Asia/Vientiane",
+        "description": ""
+    },
+    {
+        "name": "Brazzaville",
+        "region": "COG",
+        "geohash": "kr4zgbbx",
+        "population": 1355000,
+        "timezone": "Africa/Brazzaville",
+        "description": ""
+    },
+    {
+        "name": "Conakry",
+        "region": "GIN",
+        "geohash": "e9wq0xsb",
+        "population": 1494000,
+        "timezone": "Africa/Conakry",
+        "description": ""
+    },
+    {
+        "name": "Yamoussoukro",
+        "region": "CIV",
+        "geohash": "echnzcnr",
+        "population": 206499,
+        "timezone": "Africa/Abidjan",
+        "description": ""
+    },
+    {
+        "name": "Ottawa",
+        "region": "CAN",
+        "geohash": "f244mk5w",
+        "population": 1145000,
+        "timezone": "America/Montreal",
+        "description": ""
+    },
+    {
+        "name": "Belgrade",
+        "region": "SRB",
+        "geohash": "srywcxqf",
+        "population": 1099000,
+        "timezone": "Europe/Belgrade",
+        "description": ""
+    },
+    {
+        "name": "Bandar Seri Begawan",
+        "region": "BRN",
+        "geohash": "w8cez2gz",
+        "population": 296500,
+        "timezone": "Asia/Brunei",
+        "description": ""
+    },
+    {
+        "name": "Sucre",
+        "region": "BOL",
+        "geohash": "6s9edvxq",
+        "population": 224838,
+        "timezone": "America/La_Paz",
+        "description": ""
+    },
+    {
+        "name": "Belmopan",
+        "region": "BLZ",
+        "geohash": "d50fhh9u",
+        "population": 15220,
+        "timezone": "America/Belize",
+        "description": ""
+    },
+    {
+        "name": "Bangui",
+        "region": "CAF",
+        "geohash": "s2v0y6ct",
+        "population": 831925,
+        "timezone": "Africa/Bangui",
+        "description": ""
+    },
+    {
+        "name": "Yaounde",
+        "region": "CMR",
+        "geohash": "s28nn02b",
+        "population": 1611000,
+        "timezone": "Africa/Douala",
+        "description": ""
+    },
+    {
+        "name": "Tirana",
+        "region": "ALB",
+        "geohash": "srq54grw",
+        "population": 895350,
+        "timezone": "Europe/Tirane",
+        "description": ""
+    },
+    {
+        "name": "Yerevan",
+        "region": "ARM",
+        "geohash": "szpssgh7",
+        "population": 1102000,
+        "timezone": "Asia/Yerevan",
+        "description": ""
+    },
+    {
+        "name": "Baku",
+        "region": "AZE",
+        "geohash": "tp5myd54",
+        "population": 2122300,
+        "timezone": "Asia/Baku",
+        "description": ""
+    },
+    {
+        "name": "Phnom Penh",
+        "region": "KHM",
+        "geohash": "w649equx",
+        "population": 1466000,
+        "timezone": "Asia/Phnom_Penh",
+        "description": ""
+    },
+    {
+        "name": "La Paz",
+        "region": "BOL",
+        "geohash": "6mpd1hvr",
+        "population": 1590000,
+        "timezone": "America/La_Paz",
+        "description": ""
+    },
+    {
+        "name": "Cotonou",
+        "region": "BEN",
+        "geohash": "s11u3m3w",
+        "population": 762000,
+        "timezone": "Africa/Porto-Novo",
+        "description": ""
+    },
+    {
+        "name": "Sofia",
+        "region": "BGR",
+        "geohash": "sx8dfd97",
+        "population": 1185000,
+        "timezone": "Europe/Sofia",
+        "description": ""
+    },
+    {
+        "name": "Minsk",
+        "region": "BLR",
+        "geohash": "u9edehxc",
+        "population": 1805000,
+        "timezone": "Europe/Minsk",
+        "description": ""
+    },
+    {
+        "name": "Thimphu",
+        "region": "BTN",
+        "geohash": "tuzsrc31",
+        "population": 98676,
+        "timezone": "Asia/Thimphu",
+        "description": ""
+    },
+    {
+        "name": "Gaborone",
+        "region": "BWA",
+        "geohash": "ked7v9k8",
+        "population": 208411,
+        "timezone": "Africa/Gaborone",
+        "description": ""
+    },
+    {
+        "name": "Canberra",
+        "region": "AUS",
+        "geohash": "r3dp38bm",
+        "population": 327700,
+        "timezone": "Australia/Sydney",
+        "description": ""
+    },
+    {
+        "name": "Ouagadougou",
+        "region": "BFA",
+        "geohash": "efnymk23",
+        "population": 1149000,
+        "timezone": "Africa/Ouagadougou",
+        "description": ""
+    },
+    {
+        "name": "Sarajevo",
+        "region": "BIH",
+        "geohash": "srv16qdh",
+        "population": 696731,
+        "timezone": "Europe/Sarajevo",
+        "description": ""
+    },
+    {
+        "name": "Naypyidaw",
+        "region": "MMR",
+        "geohash": "w5s27nwp",
+        "population": 930000,
+        "timezone": "Asia/Rangoon",
+        "description": ""
+    },
+    {
+        "name": "Nukualofa",
+        "region": "TON",
+        "geohash": "2h5rszb7",
+        "population": 42620,
+        "timezone": "Pacific/Tongatapu",
+        "description": ""
+    },
+    {
+        "name": "Hargeysa",
+        "region": "SOL",
+        "geohash": "scxq6sr7",
+        "population": 477876,
+        "timezone": "Africa/Mogadishu",
+        "description": ""
+    },
+    {
+        "name": "Victoria",
+        "region": "SYC",
+        "geohash": "mppmtz96",
+        "population": 33576,
+        "timezone": "Indian/Mahe",
+        "description": ""
+    },
+    {
+        "name": "Sao Tome",
+        "region": "STP",
+        "geohash": "s0hcchxn",
+        "population": 88219,
+        "timezone": "America/Fortaleza",
+        "description": ""
+    },
+    {
+        "name": "Apia",
+        "region": "WSM",
+        "geohash": "2jtc7bpx",
+        "population": 61916,
+        "timezone": "America/Bogota",
+        "description": ""
+    },
+    {
+        "name": "Valletta",
+        "region": "MLT",
+        "geohash": "sq6k4r37",
+        "population": 368250,
+        "timezone": "Europe/Malta",
+        "description": ""
+    },
+    {
+        "name": "Male",
+        "region": "MDV",
+        "geohash": "t8sr8w90",
+        "population": 112927,
+        "timezone": "Europe/Rome",
+        "description": ""
+    },
+    {
+        "name": "Jerusalem",
+        "region": "ISR",
+        "geohash": "sv9hc1hd",
+        "population": 1029300,
+        "timezone": "Asia/Jerusalem",
+        "description": ""
+    },
+    {
+        "name": "Praia",
+        "region": "CPV",
+        "geohash": "e6xkbge8",
+        "population": 113364,
+        "timezone": "Atlantic/Cape_Verde",
+        "description": ""
+    },
+    {
+        "name": "Nassau",
+        "region": "BHS",
+        "geohash": "dk2yxy73",
+        "population": 227940,
+        "timezone": "America/Nassau",
+        "description": ""
+    },
+    {
+        "name": "Nicosia",
+        "region": "CYP",
+        "geohash": "swr8p3bu",
+        "population": 224300,
+        "timezone": "Asia/Nicosia",
+        "description": ""
+    },
+    {
+        "name": "Wellington",
+        "region": "NZL",
+        "geohash": "rbsm1396",
+        "population": 393400,
+        "timezone": "Pacific/Auckland",
+        "description": ""
+    },
+    {
+        "name": "Hanoi",
+        "region": "VNM",
+        "geohash": "w7er8tk5",
+        "population": 4378000,
+        "timezone": "Asia/Ho_Chi_Minh",
+        "description": ""
+    },
+    {
+        "name": "Ankara",
+        "region": "TUR",
+        "geohash": "sxp75ucs",
+        "population": 3716000,
+        "timezone": "Europe/Istanbul",
+        "description": ""
+    },
+    {
+        "name": "Budapest",
+        "region": "HUN",
+        "geohash": "u2mw4pqw",
+        "population": 1679000,
+        "timezone": "Europe/Budapest",
+        "description": ""
+    },
+    {
+        "name": "Sanaa",
+        "region": "YEM",
+        "geohash": "sfxrmgsg",
+        "population": 2008000,
+        "timezone": "Asia/Aden",
+        "description": ""
+    },
+    {
+        "name": "Bucharest",
+        "region": "ROU",
+        "geohash": "sxfscc5y",
+        "population": 1942000,
+        "timezone": "Europe/Bucharest",
+        "description": ""
+    },
+    {
+        "name": "Damascus",
+        "region": "SYR",
+        "geohash": "svcy9fz7",
+        "population": 2466000,
+        "timezone": "Asia/Damascus",
+        "description": ""
+    },
+    {
+        "name": "Lisbon",
+        "region": "PRT",
+        "geohash": "eyckrce7",
+        "population": 2812000,
+        "timezone": "Europe/Lisbon",
+        "description": ""
+    },
+    {
+        "name": "Khartoum",
+        "region": "SDN",
+        "geohash": "sdz0sq14",
+        "population": 4754000,
+        "timezone": "Africa/Khartoum",
+        "description": ""
+    },
+    {
+        "name": "Oslo",
+        "region": "NOR",
+        "geohash": "u4xsuef7",
+        "population": 835000,
+        "timezone": "Europe/Oslo",
+        "description": ""
+    },
+    {
+        "name": "Warsaw",
+        "region": "POL",
+        "geohash": "u3qcmb4m",
+        "population": 1707000,
+        "timezone": "Europe/Warsaw",
+        "description": ""
+    },
+    {
+        "name": "Pyongyang",
+        "region": "PRK",
+        "geohash": "wycmvxdk",
+        "population": 3300000,
+        "timezone": "Asia/Pyongyang",
+        "description": ""
+    },
+    {
+        "name": "Dar es Salaam",
+        "region": "TZA",
+        "geohash": "kygcmd2y",
+        "population": 2930000,
+        "timezone": "Africa/Dar_es_Salaam",
+        "description": ""
+    },
+    {
+        "name": "Dublin",
+        "region": "IRL",
+        "geohash": "gc7x3v26",
+        "population": 1059000,
+        "timezone": "Europe/Dublin",
+        "description": ""
+    },
+    {
+        "name": "Monrovia",
+        "region": "LBR",
+        "geohash": "ec07fjxc",
+        "population": 1041000,
+        "timezone": "Africa/Monrovia",
+        "description": ""
+    },
+    {
+        "name": "Kuala Lumpur",
+        "region": "MYS",
+        "geohash": "w28640y6",
+        "population": 1448000,
+        "timezone": "Asia/Kuala_Lumpur",
+        "description": ""
+    },
+    {
+        "name": "Havana",
+        "region": "CUB",
+        "geohash": "dhj7tequ",
+        "population": 2174000,
+        "timezone": "America/Havana",
+        "description": ""
+    },
+    {
+        "name": "Prague",
+        "region": "CZE",
+        "geohash": "u2fkcjsr",
+        "population": 1162000,
+        "timezone": "America/Chicago",
+        "description": ""
+    },
+    {
+        "name": "Kuwait City",
+        "region": "KWT",
+        "geohash": "tj4p5dzq",
+        "population": 2063000,
+        "timezone": "Asia/Kuwait",
+        "description": ""
+    },
+    {
+        "name": "Santo Domingo",
+        "region": "DOM",
+        "geohash": "d7q316dz",
+        "population": 2154000,
+        "timezone": "America/Bogota",
+        "description": ""
+    },
+    {
+        "name": "Accra",
+        "region": "GHA",
+        "geohash": "ebzze48y",
+        "population": 2121000,
+        "timezone": "Africa/Accra",
+        "description": ""
+    },
+    {
+        "name": "Tripoli",
+        "region": "LBY",
+        "geohash": "smc75gvk",
+        "population": 2189000,
+        "timezone": "Africa/Tripoli",
+        "description": ""
+    },
+    {
+        "name": "Tel Aviv-Yafo",
+        "region": "ISR",
+        "geohash": "sv8wx0m6",
+        "population": 3112000,
+        "timezone": "Asia/Jerusalem",
+        "description": ""
+    },
+    {
+        "name": "Helsinki",
+        "region": "FIN",
+        "geohash": "ud9wr6gp",
+        "population": 1115000,
+        "timezone": "Europe/Helsinki",
+        "description": ""
+    },
+    {
+        "name": "Kobenhavn",
+        "region": "DNK",
+        "geohash": "u3buvb74",
+        "population": 1085000,
+        "timezone": "Europe/Copenhagen",
+        "description": ""
+    },
+    {
+        "name": "Abidjan",
+        "region": "CIV",
+        "geohash": "ebvnk0bd",
+        "population": 3802000,
+        "timezone": "Africa/Abidjan",
+        "description": ""
+    },
+    {
+        "name": "Brasilia",
+        "region": "BRA",
+        "geohash": "6vjyjx54",
+        "population": 3716996,
+        "timezone": "America/Sao_Paulo",
+        "description": ""
+    },
+    {
+        "name": "Brussels",
+        "region": "BEL",
+        "geohash": "u1514w60",
+        "population": 1743000,
+        "timezone": "Europe/Brussels",
+        "description": ""
+    },
+    {
+        "name": "Dhaka",
+        "region": "BGD",
+        "geohash": "wh0qcr00",
+        "population": 12797394,
+        "timezone": "Asia/Dhaka",
+        "description": ""
+    },
+    {
+        "name": "Luanda",
+        "region": "AGO",
+        "geohash": "kq3mtp7s",
+        "population": 5172900,
+        "timezone": "Africa/Luanda",
+        "description": ""
+    },
+    {
+        "name": "Algiers",
+        "region": "DZA",
+        "geohash": "snd1jkgg",
+        "population": 3354000,
+        "timezone": "Africa/Algiers",
+        "description": ""
+    },
+    {
+        "name": "Rangoon",
+        "region": "MMR",
+        "geohash": "w4urkr9j",
+        "population": 4088000,
+        "timezone": "Asia/Rangoon",
+        "description": ""
+    },
+    {
+        "name": "San Francisco",
+        "region": "USA",
+        "geohash": "9q8yy7dt",
+        "population": 3450000,
+        "timezone": "America/Los_Angeles",
+        "description": ""
+    },
+    {
+        "name": "Denver",
+        "region": "USA",
+        "geohash": "9xj64fxs",
+        "population": 2313000,
+        "timezone": "America/Denver",
+        "description": ""
+    },
+    {
+        "name": "Houston",
+        "region": "USA",
+        "geohash": "9vk1wkyj",
+        "population": 4459000,
+        "timezone": "America/Chicago",
+        "description": ""
+    },
+    {
+        "name": "Miami",
+        "region": "USA",
+        "geohash": "dhwfwqv5",
+        "population": 5585000,
+        "timezone": "America/New_York",
+        "description": ""
+    },
+    {
+        "name": "Atlanta",
+        "region": "USA",
+        "geohash": "dn5brqum",
+        "population": 4506000,
+        "timezone": "America/New_York",
+        "description": ""
+    },
+    {
+        "name": "Chicago",
+        "region": "USA",
+        "geohash": "dp3tgpkb",
+        "population": 8990000,
+        "timezone": "America/Chicago",
+        "description": ""
+    },
+    {
+        "name": "Caracas",
+        "region": "VEN",
+        "geohash": "d9b7v0p0",
+        "population": 2985000,
+        "timezone": "America/Caracas",
+        "description": ""
+    },
+    {
+        "name": "Kiev",
+        "region": "UKR",
+        "geohash": "u8vwymkn",
+        "population": 2709000,
+        "timezone": "Europe/Kiev",
+        "description": ""
+    },
+    {
+        "name": "Dubai",
+        "region": "ARE",
+        "geohash": "thrr9ck4",
+        "population": 1379000,
+        "timezone": "Asia/Dubai",
+        "description": ""
+    },
+    {
+        "name": "Tashkent",
+        "region": "UZB",
+        "geohash": "tx370bct",
+        "population": 2184000,
+        "timezone": "Asia/Tashkent",
+        "description": ""
+    },
+    {
+        "name": "Madrid",
+        "region": "ESP",
+        "geohash": "ezjmu4uq",
+        "population": 5567000,
+        "timezone": "Europe/Madrid",
+        "description": ""
+    },
+    {
+        "name": "Geneva",
+        "region": "CHE",
+        "geohash": "u0hqgsr0",
+        "population": 1240000,
+        "timezone": "Europe/Zurich",
+        "description": ""
+    },
+    {
+        "name": "Stockholm",
+        "region": "SWE",
+        "geohash": "u6sceubd",
+        "population": 1264000,
+        "timezone": "Europe/Stockholm",
+        "description": ""
+    },
+    {
+        "name": "Bangkok",
+        "region": "THA",
+        "geohash": "w4rqpr2w",
+        "population": 6704000,
+        "timezone": "Asia/Bangkok",
+        "description": ""
+    },
+    {
+        "name": "Lima",
+        "region": "PER",
+        "geohash": "6mc5qxh6",
+        "population": 8012000,
+        "timezone": "America/Lima",
+        "description": ""
+    },
+    {
+        "name": "Dakar",
+        "region": "SEN",
+        "geohash": "edeedr71",
+        "population": 2604000,
+        "timezone": "Africa/Dakar",
+        "description": ""
+    },
+    {
+        "name": "Johannesburg",
+        "region": "ZAF",
+        "geohash": "ke7gju1r",
+        "population": 3435000,
+        "timezone": "Africa/Johannesburg",
+        "description": ""
+    },
+    {
+        "name": "Amsterdam",
+        "region": "NLD",
+        "geohash": "u173zf6u",
+        "population": 1031000,
+        "timezone": "Europe/Amsterdam",
+        "description": ""
+    },
+    {
+        "name": "Casablanca",
+        "region": "MAR",
+        "geohash": "evfx4th9",
+        "population": 3181000,
+        "timezone": "Africa/Casablanca",
+        "description": ""
+    },
+    {
+        "name": "Seoul",
+        "region": "KOR",
+        "geohash": "wydm9zhg",
+        "population": 9796000,
+        "timezone": "Asia/Seoul",
+        "description": ""
+    },
+    {
+        "name": "Manila",
+        "region": "PHL",
+        "geohash": "wdw50fzn",
+        "population": 11100000,
+        "timezone": "Asia/Manila",
+        "description": ""
+    },
+    {
+        "name": "Monterrey",
+        "region": "MEX",
+        "geohash": "9u8dhckt",
+        "population": 3712000,
+        "timezone": "America/Monterrey",
+        "description": ""
+    },
+    {
+        "name": "Berlin",
+        "region": "DEU",
+        "geohash": "u33dbctm",
+        "population": 3406000,
+        "timezone": "Europe/Berlin",
+        "description": ""
+    },
+    {
+        "name": "Urumqi",
+        "region": "CHN",
+        "geohash": "tzy30ybf",
+        "population": 3575000,
+        "timezone": "Asia/Urumqi",
+        "description": ""
+    },
+    {
+        "name": "Chengdu",
+        "region": "CHN",
+        "geohash": "wm6n2psj",
+        "population": 4123000,
+        "timezone": "Asia/Chongqing",
+        "description": ""
+    },
+    {
+        "name": "Osaka",
+        "region": "JPN",
+        "geohash": "xn0mdqms",
+        "population": 11294000,
+        "timezone": "Asia/Tokyo",
+        "description": ""
+    },
+    {
+        "name": "Kinshasa",
+        "region": "COD",
+        "geohash": "kr4zkkns",
+        "population": 7843000,
+        "timezone": "Africa/Kinshasa",
+        "description": ""
+    },
+    {
+        "name": "New Delhi",
+        "region": "IND",
+        "geohash": "ttnfswrr",
+        "population": 317797,
+        "timezone": "Asia/Kolkata",
+        "description": ""
+    },
+    {
+        "name": "Bengaluru",
+        "region": "IND",
+        "geohash": "tdr1uckp",
+        "population": 6787000,
+        "timezone": "Asia/Kolkata",
+        "description": ""
+    },
+    {
+        "name": "Athens",
+        "region": "GRC",
+        "geohash": "swbbh508",
+        "population": 3242000,
+        "timezone": "Europe/Athens",
+        "description": ""
+    },
+    {
+        "name": "Baghdad",
+        "region": "IRQ",
+        "geohash": "svztdjmp",
+        "population": 5054000,
+        "timezone": "Asia/Baghdad",
+        "description": ""
+    },
+    {
+        "name": "Addis Ababa",
+        "region": "ETH",
+        "geohash": "scee2sg4",
+        "population": 3100000,
+        "timezone": "Africa/Addis_Ababa",
+        "description": ""
+    },
+    {
+        "name": "Tehran",
+        "region": "IRN",
+        "geohash": "tnkdfnhx",
+        "population": 7873000,
+        "timezone": "Asia/Tehran",
+        "description": ""
+    },
+    {
+        "name": "Vancouver",
+        "region": "CAN",
+        "geohash": "c2b2q621",
+        "population": 2313328,
+        "timezone": "America/Vancouver",
+        "description": ""
+    },
+    {
+        "name": "Toronto",
+        "region": "CAN",
+        "geohash": "dpz88eww",
+        "population": 5213000,
+        "timezone": "America/Toronto",
+        "description": ""
+    },
+    {
+        "name": "Buenos Aires",
+        "region": "ARG",
+        "geohash": "69y7pj4v",
+        "population": 12795000,
+        "timezone": "America/Argentina/Buenos_Aires",
+        "description": ""
+    },
+    {
+        "name": "Kabul",
+        "region": "AFG",
+        "geohash": "tw1hq7bm",
+        "population": 3277000,
+        "timezone": "Asia/Kabul",
+        "description": ""
+    },
+    {
+        "name": "Vienna",
+        "region": "AUT",
+        "geohash": "u2edhquk",
+        "population": 2400000,
+        "timezone": "Europe/Vienna",
+        "description": ""
+    },
+    {
+        "name": "Melbourne",
+        "region": "AUS",
+        "geohash": "r1r0fgqj",
+        "population": 4170000,
+        "timezone": "Australia/Melbourne",
+        "description": ""
+    },
+    {
+        "name": "Taipei",
+        "region": "TWN",
+        "geohash": "wsqqqmek",
+        "population": 6900273,
+        "timezone": "Asia/Taipei",
+        "description": ""
+    },
+    {
+        "name": "Auckland",
+        "region": "NZL",
+        "geohash": "rckq2u48",
+        "population": 1377200,
+        "timezone": "Pacific/Auckland",
+        "description": ""
+    },
+    {
+        "name": "Los Angeles",
+        "region": "USA",
+        "geohash": "9q5cqsn9",
+        "population": 12500000,
+        "timezone": "America/Los_Angeles",
+        "description": ""
+    },
+    {
+        "name": "Washington, D.C.",
+        "region": "USA",
+        "geohash": "dqcjr9f1",
+        "population": 4338000,
+        "timezone": "America/New_York",
+        "description": ""
+    },
+    {
+        "name": "New York",
+        "region": "USA",
+        "geohash": "dr5ru6xv",
+        "population": 19040000,
+        "timezone": "America/New_York",
+        "description": ""
+    },
+    {
+        "name": "London",
+        "region": "GBR",
+        "geohash": "gcpuvr9s",
+        "population": 8567000,
+        "timezone": "Europe/London",
+        "description": ""
+    },
+    {
+        "name": "Istanbul",
+        "region": "TUR",
+        "geohash": "sxk9u571",
+        "population": 10061000,
+        "timezone": "Europe/Istanbul",
+        "description": ""
+    },
+    {
+        "name": "Riyadh",
+        "region": "SAU",
+        "geohash": "th3k0q16",
+        "population": 4465000,
+        "timezone": "Asia/Riyadh",
+        "description": ""
+    },
+    {
+        "name": "Cape Town",
+        "region": "ZAF",
+        "geohash": "k3vp53qs",
+        "population": 3215000,
+        "timezone": "Africa/Johannesburg",
+        "description": ""
+    },
+    {
+        "name": "Moscow",
+        "region": "RUS",
+        "geohash": "ucftpvtr",
+        "population": 10452000,
+        "timezone": "Europe/Moscow",
+        "description": ""
+    },
+    {
+        "name": "Mexico City",
+        "region": "MEX",
+        "geohash": "9g3w85tx",
+        "population": 19028000,
+        "timezone": "America/Mexico_City",
+        "description": ""
+    },
+    {
+        "name": "Lagos",
+        "region": "NGA",
+        "geohash": "s14ktjk4",
+        "population": 9466000,
+        "timezone": "Europe/Athens",
+        "description": ""
+    },
+    {
+        "name": "Rome",
+        "region": "ITA",
+        "geohash": "sr2yk528",
+        "population": 3339000,
+        "timezone": "Europe/Rome",
+        "description": ""
+    },
+    {
+        "name": "Beijing",
+        "region": "CHN",
+        "geohash": "wx4g0mjv",
+        "population": 11106000,
+        "timezone": "Asia/Harbin",
+        "description": ""
+    },
+    {
+        "name": "Nairobi",
+        "region": "KEN",
+        "geohash": "kzf0twxx",
+        "population": 3010000,
+        "timezone": "Africa/Nairobi",
+        "description": ""
+    },
+    {
+        "name": "Jakarta",
+        "region": "IDN",
+        "geohash": "qqguyum6",
+        "population": 9125000,
+        "timezone": "Asia/Jakarta",
+        "description": ""
+    },
+    {
+        "name": "Bogota",
+        "region": "COL",
+        "geohash": "d2g64jhe",
+        "population": 7772000,
+        "timezone": "America/Bogota",
+        "description": ""
+    },
+    {
+        "name": "Cairo",
+        "region": "EGY",
+        "geohash": "stq4znf1",
+        "population": 11893000,
+        "timezone": "Africa/Cairo",
+        "description": ""
+    },
+    {
+        "name": "Shanghai",
+        "region": "CHN",
+        "geohash": "wtw3e71u",
+        "population": 14987000,
+        "timezone": "Asia/Shanghai",
+        "description": ""
+    },
+    {
+        "name": "Tokyo",
+        "region": "JPN",
+        "geohash": "xn77h0d7",
+        "population": 35676000,
+        "timezone": "Asia/Tokyo",
+        "description": ""
+    },
+    {
+        "name": "Mumbai",
+        "region": "IND",
+        "geohash": "te7u1y73",
+        "population": 18978000,
+        "timezone": "Asia/Kolkata",
+        "description": ""
+    },
+    {
+        "name": "Paris",
+        "region": "FRA",
+        "geohash": "u09wj038",
+        "population": 9904000,
+        "timezone": "Europe/Paris",
+        "description": ""
+    },
+    {
+        "name": "Santiago",
+        "region": "CHL",
+        "geohash": "66j9xyuq",
+        "population": 5720000,
+        "timezone": "America/Sao_Paulo",
+        "description": ""
+    },
+    {
+        "name": "Kolkata",
+        "region": "IND",
+        "geohash": "tgyzcz6w",
+        "population": 14787000,
+        "timezone": "Asia/Kolkata",
+        "description": ""
+    },
+    {
+        "name": "Rio de Janeiro",
+        "region": "BRA",
+        "geohash": "75cm86gp",
+        "population": 11748000,
+        "timezone": "America/Sao_Paulo",
+        "description": ""
+    },
+    {
+        "name": "Sao Paulo",
+        "region": "BRA",
+        "geohash": "6gycfzxk",
+        "population": 18845000,
+        "timezone": "America/Sao_Paulo",
+        "description": ""
+    },
+    {
+        "name": "Sydney",
+        "region": "AUS",
+        "geohash": "r3gx032k",
+        "population": 4630000,
+        "timezone": "Australia/Sydney",
+        "description": ""
+    },
+    {
+        "name": "Singapore",
+        "region": "SGP",
+        "geohash": "w21z9vkk",
+        "population": 5183700,
+        "timezone": "Asia/Singapore",
+        "description": ""
+    },
+    {
+        "name": "Hong Kong",
+        "region": "HKG",
+        "geohash": "wecnykce",
+        "population": 7206000,
+        "timezone": "Asia/Hong_Kong",
+        "description": ""
+    }
+]

@@ -106,7 +106,6 @@ function applyEntityDescriptors(
             /{name}/, // replace the first match
             nameEntityLink(entities[it]),
         );
-        console.log(description);
         it += 1;
     }
 
