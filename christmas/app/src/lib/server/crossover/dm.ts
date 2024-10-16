@@ -37,6 +37,7 @@ import {
     instantiateBlueprintsAtTerritories,
     instantiateBlueprintsInDungeons,
 } from "./blueprint";
+import { spawnNPC } from "./npc";
 import { itemRepository, monsterRepository, worldRepository } from "./redis";
 import {
     chainOr,
@@ -619,6 +620,7 @@ async function spawnWorldPOIs(
     pois: WorldPOIs;
     items?: ItemEntity[];
     monsters?: MonsterEntity[];
+    players?: PlayerEntity[];
 }> {
     /*
     POIs (monsters, items, npcs) should be spawned with unique ids (similar to blueprints)
@@ -635,6 +637,7 @@ async function spawnWorldPOIs(
     const pois = await poisInWorld(worldEntity, options);
     const items: ItemEntity[] = [];
     const monsters: MonsterEntity[] = [];
+    const players: PlayerEntity[] = [];
 
     for (const poi of pois) {
         try {
@@ -682,10 +685,29 @@ async function spawnWorldPOIs(
                 );
                 monsters.push(monster);
             }
+            // Spawn npc (unique)
+            else if ("npc" in poi) {
+                const uniqueSuffix = hashObject(
+                    [world, poi.npc, poi.geohash],
+                    "md5",
+                );
+                const player = await spawnNPC(poi.npc, {
+                    demographic: {},
+                    appearance: {},
+                    geohash: poi.geohash,
+                    locationInstance,
+                    locationType: worldEntity.locT,
+                    uniqueSuffix,
+                });
+                console.info(
+                    `Spawned ${player.player} in ${worldEntity.world} at ${locationInstance}`,
+                );
+                players.push(player);
+            }
         } catch (error: any) {
             console.warn(error.message);
         }
     }
 
-    return { pois, monsters, items };
+    return { pois, monsters, items, players };
 }

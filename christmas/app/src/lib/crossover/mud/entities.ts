@@ -96,17 +96,26 @@ function applyEntityDescriptors(
         }
     }
 
-    // Replace placeholders (count, name, names)
-    description = description
-        .replace(/{count}/g, count.toString())
-        .replace(/{name}/g, nameEntityLink(entities[0])); // use the first entity
+    // Replace count
+    description = description.replace(/{count}/g, count.toString());
 
-    // Use the remaining entities for {names}
+    // Replace {name}
+    let it = 0;
+    for (const _ of description.matchAll(/{name}/g)) {
+        description = description.replace(
+            /{name}/, // replace the first match
+            nameEntityLink(entities[it]),
+        );
+        console.log(description);
+        it += 1;
+    }
+
+    // Replace {names} (use the remaining entities)
     if (entities.length > 1) {
         description = description.replace(
             /{names}/g,
             entities
-                .slice(1)
+                .slice(it)
                 .map((e) => nameEntityLink(e))
                 .join(", "),
         );

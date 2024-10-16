@@ -1,5 +1,6 @@
 import type { CacheInterface } from "$lib/caches";
 import type { World } from "$lib/crossover/types";
+import type { NPCs } from "$lib/server/crossover/npc/types";
 import { omit } from "lodash-es";
 import {
     autoCorrectGeohashPrecision,
@@ -236,12 +237,22 @@ interface SpawnMonsterPOI {
     geohash: string;
 }
 
+interface SpawnNPCPOI {
+    npc: NPCs;
+    geohash: string;
+}
+
 interface SpawnPlayerPOI {
     geohash: string;
     spawn: "player";
 }
 
-type WorldPOIs = (SpawnItemPOI | SpawnMonsterPOI | SpawnPlayerPOI)[];
+type WorldPOIs = (
+    | SpawnItemPOI
+    | SpawnMonsterPOI
+    | SpawnPlayerPOI
+    | SpawnNPCPOI
+)[];
 
 /**
  * WorldPOIs in the world are added via an object layer in the tiled map editor
@@ -329,6 +340,14 @@ async function poisInWorld(
                 if (properties.beast) {
                     pois.push({
                         beast: properties.beast,
+                        geohash,
+                    });
+                }
+
+                // NPC poi
+                if (properties.npc) {
+                    pois.push({
+                        npc: properties.npc,
                         geohash,
                     });
                 }
