@@ -1,5 +1,5 @@
 // src/lib/Bone.ts
-import { cloneDeep } from "lodash";
+import { cloneDeep } from "lodash-es";
 import { Assets, Container, Texture } from "pixi.js";
 import { swapMeshTexture } from "../shaders";
 import { IsoMesh } from "../shaders/IsoMesh";

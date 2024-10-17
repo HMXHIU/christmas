@@ -23,7 +23,6 @@
     import { BoneGraphic } from "../BoneGraphic";
     import { dot, normalize, rotatePoint } from "../mathUtils";
     import { avatar } from "../store";
-    // We'll create this file
 
     export let selectedAnimation: Animation | null = null;
     export let selectedPose: Pose | null = null;

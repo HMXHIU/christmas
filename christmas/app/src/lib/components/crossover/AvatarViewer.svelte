@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { GAME_MORPHOLOGY } from "$lib/crossover/defs";
     import { cn } from "$lib/shadcn";
     import { Application, Container, WebGLRenderer } from "pixi.js";
     import { onMount } from "svelte";
@@ -50,7 +51,11 @@
 
         // Create avatar from metadata
         avatar = new Avatar(layers.depthPartition("entity")); // just need to be a negative small number
-        await avatar.loadFromMetadata(avatarMetadata, entityId);
+        await avatar.loadFromMetadata(
+            avatarMetadata,
+            entityId,
+            GAME_MORPHOLOGY,
+        );
 
         // Load humanoid animation and pose
         avatar.animationManager.load(animationMetadata);

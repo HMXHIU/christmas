@@ -1,6 +1,6 @@
 <!-- src/lib/components/Timeline.svelte -->
 <script lang="ts">
-    import { groupBy } from "lodash";
+    import { groupBy } from "lodash-es";
     import { timeIndex } from "../../../../app/src/lib/components/crossover/avatar/AnimationManager";
     import {
         type Animation,

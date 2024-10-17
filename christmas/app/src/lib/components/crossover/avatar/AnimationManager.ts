@@ -1,6 +1,5 @@
-// src/lib/AnimationManager.ts
 import { gsap } from "gsap";
-import { cloneDeep } from "lodash";
+import { cloneDeep } from "lodash-es";
 import type { Bone } from "./Bone";
 import type {
     Animation,

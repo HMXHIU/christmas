@@ -1,6 +1,4 @@
-// src/lib/Avatar.ts
-import { GAME_MORPHOLOGY } from "$lib/crossover/defs";
-import { cloneDeep } from "lodash";
+import { cloneDeep } from "lodash-es";
 import { Assets, Container, Sprite, type DestroyOptions } from "pixi.js";
 import { AnimationManager } from "./AnimationManager";
 import { Bone } from "./Bone";
@@ -76,10 +74,11 @@ export class Avatar extends Container {
     async loadFromMetadata(
         metadata: AvatarMetadata,
         entityId: string,
+        urlPrefix?: string,
     ): Promise<void> {
         // Patch textures with actual url
         for (const k of Object.keys(metadata.textures)) {
-            metadata.textures[k] = `${GAME_MORPHOLOGY}${metadata.textures[k]}`;
+            metadata.textures[k] = `${urlPrefix ?? ""}${metadata.textures[k]}`;
         }
 
         this.metadata = cloneDeep(metadata);

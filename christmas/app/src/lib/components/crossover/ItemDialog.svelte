@@ -8,7 +8,7 @@
     import type { Item } from "$lib/crossover/types";
     import { itemAttibutes } from "$lib/crossover/world/compendium";
     import { compendium } from "$lib/crossover/world/settings/compendium";
-    import { startCase } from "lodash";
+    import { startCase } from "lodash-es";
     import { ChevronDown, Heart, Zap } from "lucide-svelte";
     import * as Collapsible from "../ui/collapsible";
     import CopyToClipboard from "./CopyToClipboard.svelte";

@@ -16,7 +16,7 @@
     import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
     import { parseZodErrors } from "$lib/utils";
     import { Dialog as BitsDialog } from "bits-ui";
-    import { uniqWith } from "lodash";
+    import { uniqWith } from "lodash-es";
     import ngeohash from "ngeohash";
     import { onMount } from "svelte";
     import { stores, userDeviceClient } from "../../../store";

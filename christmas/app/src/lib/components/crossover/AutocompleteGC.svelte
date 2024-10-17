@@ -14,7 +14,7 @@
     } from "$lib/crossover/world/abilities";
     import { abilities } from "$lib/crossover/world/settings/abilities";
     import { cn } from "$lib/shadcn";
-    import { groupBy } from "lodash";
+    import { groupBy } from "lodash-es";
     import {
         ChevronRight,
         CornerDownLeft,

@@ -1,3 +1,4 @@
+import { GAME_MORPHOLOGY } from "$lib/crossover/defs";
 import type {
     Actor,
     Creature,
@@ -71,7 +72,7 @@ async function upsertEntitySigil(
     let maxStats = entityStats(ec.entity as Creature);
     const sigil = new EntitySigil(ec, maxStats, entity, {
         anchor: { x: 0, y: -0.825 },
-        radius: 48,
+        radius: 36,
     });
     sigil.zIndex = layers.layers.length + 1; // UI
     entitySigils[ec.entityId] = sigil;
@@ -173,7 +174,7 @@ async function upsertAvatarContainer(
             entity,
             ...layers.depthPartition("entity"),
         });
-        await ec.avatar.loadFromMetadata(avatar, entityId);
+        await ec.avatar.loadFromMetadata(avatar, entityId, GAME_MORPHOLOGY);
         ec.avatar.animationManager.load(animation);
         entityContainers[entityId] = ec;
 

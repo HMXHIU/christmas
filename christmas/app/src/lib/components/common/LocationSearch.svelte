@@ -3,7 +3,7 @@
     import * as Command from "$lib/components/ui/command";
     import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
     import { Loader } from "@googlemaps/js-api-loader";
-    import { throttle } from "lodash";
+    import { throttle } from "lodash-es";
     import ngeohash from "ngeohash";
     import { onMount, tick } from "svelte";
 

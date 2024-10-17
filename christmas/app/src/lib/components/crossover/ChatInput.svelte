@@ -2,7 +2,7 @@
     // Components
     import { Button } from "$lib/components/ui/button";
     import { cn } from "$lib/shadcn";
-    import { debounce } from "lodash";
+    import { debounce } from "lodash-es";
     import { Send } from "lucide-svelte";
     import Input from "../ui/input/input.svelte";
     import TargetSelect from "./TargetSelect.svelte";
