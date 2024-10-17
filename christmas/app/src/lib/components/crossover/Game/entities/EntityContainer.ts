@@ -11,7 +11,7 @@ import { type Actions } from "$lib/crossover/world/actions";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { gsap } from "gsap";
 import { clone } from "lodash-es";
-import { Container, type DestroyOptions } from "pixi.js";
+import { Container, Graphics, type DestroyOptions } from "pixi.js";
 import { calculatePosition, type Position } from "../utils";
 import { ActionBubble } from "./ActionBubble";
 
@@ -28,6 +28,8 @@ export class EntityContainer extends Container {
 
     public tween: gsap.core.Tween | gsap.core.Timeline | null = null;
     public actionBubble: ActionBubble;
+
+    private targetBox = new Graphics();
 
     constructor({
         entity,
@@ -52,6 +54,7 @@ export class EntityContainer extends Container {
 
         this.actionBubble = new ActionBubble();
         this.addChild(this.actionBubble);
+        this.addChild(this.targetBox);
 
         this.cullable = true;
     }

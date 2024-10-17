@@ -379,12 +379,7 @@
                 if ($player == null || worldStage == null) {
                     return;
                 }
-                drawTargetUI({
-                    target: t,
-                    highlight: 2,
-                    source: $player,
-                    stage: worldStage!,
-                });
+                drawTargetUI(t);
             }),
         ];
 

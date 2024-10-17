@@ -7,8 +7,10 @@ import type { Action } from "$lib/crossover/world/actions";
 import type { Utility } from "$lib/crossover/world/compendium";
 import type { Direction, GeohashLocation } from "$lib/crossover/world/types";
 import { KdTree } from "$lib/utils/kdtree";
-import { Container, Graphics } from "pixi.js";
-import { entityContainers } from "./entities";
+import { Bounds, Container, Graphics } from "pixi.js";
+import { get } from "svelte/store";
+import { target } from "../../../../store";
+import { entityContainers, type EntityContainer } from "./entities";
 import { layers } from "./layers";
 import { CELL_WIDTH } from "./settings";
 import { calculatePosition, type Position } from "./utils";
@@ -26,55 +28,31 @@ export {
 };
 
 // Note: `screenToGeohashKDtree` is exported as a reference do not recreate the entire object
-let screenToGeohashKDtree: Partial<Record<GeohashLocation, KdTree<string>>> = {
-    geohash: new KdTree<string>(2), // [screenX, screenY] => geohash
-    d1: new KdTree<string>(2),
-};
+const screenToGeohashKDtree: Partial<Record<GeohashLocation, KdTree<string>>> =
+    {
+        geohash: new KdTree<string>(2), // [screenX, screenY] => geohash
+        d1: new KdTree<string>(2),
+    };
 
-let movementPath = new Graphics();
-let rangeIndicator = new Graphics();
+const movementPath = new Graphics();
+const rangeIndicator = new Graphics();
+const targetBox = new Graphics();
+let targetBoxTween: gsap.core.Tween | null = null;
 
-function drawTargetUI({
-    target,
-    highlight,
-}: {
-    source: Actor;
-    target: Actor | null;
-    stage: Container;
-    highlight: number;
-}) {
+function drawTargetUI(target: Actor | null) {
     if (!target) {
-        clearAllHighlights(highlight);
+        targetBox.removeFromParent();
+        targetBox.clear();
+        targetBoxTween?.kill();
         return;
     }
 
-    // Highlight target entity and unhighlight others
+    // Draw target box on target
     const [targetId] = getEntityId(target);
-    for (const [entityId, ec] of Object.entries(entityContainers)) {
-        if (targetId === entityId) {
-            ec.highlight(highlight);
-        } else {
-            ec.clearHighlight(highlight);
-        }
+    const targetEC = entityContainers[targetId];
+    if (targetEC) {
+        drawTargetBox(targetEC);
     }
-
-    // // Draw targetting line
-    // const [sourceId] = getEntityId(source);
-    // const sourcePosition = entityMeshes[sourceId].position;
-    // const targetPosition = entityMeshes[targetId].position;
-    // if (sourcePosition == null || targetPosition == null) {
-    //     return;
-    // }
-
-    // const startX = sourcePosition.isoX;
-    // const startY = sourcePosition.isoY - sourcePosition.elevation;
-    // const endX = targetPosition.isoX;
-    // const endY = targetPosition.isoY - targetPosition.elevation;
-
-    // targettingLine.moveTo(startX, startY);
-    // targettingLine.lineTo(endX, endY);
-    // targettingLine.stroke({ width: 4, color: 0xffd900 });
-    // stage.addChild(targettingLine);
 }
 
 function clearAllHighlights(highlight?: number) {
@@ -129,7 +107,13 @@ function drawMovementPath(points: [number, number][], stage: Container) {
 
 function hideMovementPath() {
     movementPath.removeFromParent();
-    rangeIndicator.removeFromParent(); // also need to hide the range indicator
+    // Hide range indicator at end of movement
+    rangeIndicator.removeFromParent();
+    // Retarget at end of movement
+    const t = get(target);
+    if (t) {
+        drawTargetUI(t);
+    }
 }
 
 function hideRangeIndicator() {
@@ -184,7 +168,7 @@ async function displayCommandPreview({
     command,
     player,
     playerPosition,
-    target,
+    target, // this is the store target not the command target
     stage,
 }: {
     command: GameCommand | null;
@@ -196,6 +180,9 @@ async function displayCommandPreview({
     if (command == null) {
         hideRangeIndicator();
         hideMovementPath();
+        if (target) {
+            drawTargetUI(target); // retarget target after done with preview of command target
+        }
         return;
     }
 
@@ -203,12 +190,7 @@ async function displayCommandPreview({
     const [gaId, gaType] = getGameActionId(ga);
 
     // Highlight target (prevent commandTarget from overriding target)
-    drawTargetUI({
-        target,
-        highlight: 2,
-        stage,
-        source: player,
-    });
+    drawTargetUI(target);
 
     if (commandTarget) {
         const [commandTargetId, commandTargetType] = getEntityId(commandTarget);
@@ -216,12 +198,7 @@ async function displayCommandPreview({
         if (!targetEC) return;
 
         // Highlight command target
-        drawTargetUI({
-            target: commandTarget,
-            highlight: 3,
-            stage: stage,
-            source: player,
-        });
+        drawTargetUI(commandTarget);
 
         // Ability
         if (gaType === "ability" && targetEC.isoPosition) {
@@ -270,5 +247,47 @@ async function displayCommandPreview({
                 stage,
             );
         }
+    }
+}
+
+function drawTargetBox(ec: EntityContainer) {
+    targetBox.removeFromParent();
+    targetBox.clear();
+    targetBoxTween?.kill();
+
+    let bounds: Bounds | undefined = undefined;
+    let scaleGfx = 1;
+
+    // AvatarEntityContainer
+    if ("avatar" in ec && ec.avatar.rootBone) {
+        bounds = ec.avatar.getLocalBounds();
+        scaleGfx = ec.scale.x;
+    }
+    // SimpleEntityContainer
+    else if ("mesh" in ec && ec.mesh) {
+        bounds = ec.getLocalBounds();
+        scaleGfx = ec.scale.x;
+    }
+
+    if (bounds) {
+        const { x, y, width, height } = bounds;
+        ec.addChild(
+            targetBox.roundRect(x, y, width, height, 30).stroke({
+                width: Math.round(2 / scaleGfx),
+                color: 0xffd900,
+            }),
+        );
+
+        // // Tween target box
+        // targetBox.scale = 1;
+        // targetBoxTween = gsap.to(targetBox, {
+        //     pixi: {
+        //         scale: 1.1,
+        //     },
+        //     duration: 1.5,
+        //     yoyo: true,
+        //     repeat: -1,
+        //     ease: "elastic.inOut",
+        // });
     }
 }
