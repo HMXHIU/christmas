@@ -47,6 +47,7 @@ import {
     upsertEntitySigil,
 } from "./entities";
 import { AvatarEntityContainer } from "./entities/AvatarEntityContainer";
+import { hideMovementPath } from "./ui";
 import { garbageCollectWorldEntityContainers } from "./world";
 
 export {
@@ -180,7 +181,8 @@ async function updateEntityContainer<T extends Actor>(
 
                     // Attach game events
                     ec.on("positionUpdate", game.handlePlayerPositionUpdate);
-                    ec.on("trackEntity", game.handleTrackPlayer);
+                    ec.on("trackEntity", game.handleTrackPlayer); // this is to call the camera to track the player
+                    ec.on("pathCompleted", () => hideMovementPath());
 
                     // Initial event
                     if (ec.isoPosition != null) {

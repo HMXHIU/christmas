@@ -1,12 +1,11 @@
 import { crossoverCmdMove } from "$lib/crossover/client";
 import { getDirectionsToPosition } from "$lib/crossover/game";
-import { geohashToColRow, getPositionsForPath } from "$lib/crossover/utils";
+import { geohashToColRow } from "$lib/crossover/utils";
 import type { Direction } from "$lib/crossover/world/types";
 import type { Container, FederatedPointerEvent } from "pixi.js";
-import { highlightShaderInstances } from "../shaders";
 import { HALF_ISO_CELL_HEIGHT, HALF_ISO_CELL_WIDTH } from "./settings";
-import { screenToGeohash } from "./ui";
-import { getPathHighlights, getPlayerPosition, snapToGrid } from "./utils";
+import { displayMovementPath, screenToGeohash } from "./ui";
+import { getPlayerPosition, snapToGrid } from "./utils";
 
 export { createHIDHandlers };
 
@@ -60,11 +59,13 @@ function createHIDHandlers(stage: Container) {
         if (!playerPosition || !state.isMouseDown) return;
 
         // Convert screen coordinates to geohash
-        const geohash = screenToGeohash([x, y], playerPosition.locationType);
-
-        if (geohash) {
-            const [colEnd, rowEnd] = geohashToColRow(geohash);
-
+        const targetGeohash = screenToGeohash(
+            [x, y],
+            playerPosition.locationType,
+        );
+        if (targetGeohash) {
+            // Get path directions using A*
+            const [colEnd, rowEnd] = geohashToColRow(targetGeohash);
             state.path = await getDirectionsToPosition(
                 playerPosition,
                 {
@@ -74,24 +75,16 @@ function createHIDHandlers(stage: Container) {
                 playerPosition.locationType,
                 playerPosition.locationInstance,
             );
-            const pathPositions = getPositionsForPath(
-                playerPosition,
-                state.path,
-            );
-            highlightShaderInstances(
-                "biome",
-                getPathHighlights(pathPositions, 1),
-            );
+            await displayMovementPath(playerPosition, state.path, stage);
         }
     }
 
     async function handleMouseUp(e: FederatedPointerEvent) {
         const snapXY = updateMouseState(e);
         if (!snapXY) return;
-
         state.isMouseDown = false;
-        highlightShaderInstances("biome", {});
 
+        // Initiate move command
         if (state.path && state.path.length > 0) {
             await crossoverCmdMove({ path: state.path });
         }

@@ -1,14 +1,7 @@
 <script lang="ts">
     import { crossoverPlayerMetadata } from "$lib/crossover/client";
-    import { getDirectionsToPosition } from "$lib/crossover/game";
-    import { getGameActionId, type GameCommand } from "$lib/crossover/ir";
-    import { getEntityId, getPositionsForPath } from "$lib/crossover/utils";
-    import {
-        getPlayerAbilities,
-        type Ability,
-    } from "$lib/crossover/world/abilities";
-    import { type Action } from "$lib/crossover/world/actions";
-    import { type Utility } from "$lib/crossover/world/compendium";
+    import { type GameCommand } from "$lib/crossover/ir";
+    import { getPlayerAbilities } from "$lib/crossover/world/abilities";
     import { actions } from "$lib/crossover/world/settings/actions";
     import { compendium } from "$lib/crossover/world/settings/compendium";
     import type { GeohashLocation } from "$lib/crossover/world/types";
@@ -50,7 +43,6 @@
     import {
         clearInstancedShaderMeshes,
         destroyShaders,
-        highlightShaderInstances,
         updateShaderUniforms,
     } from "../shaders";
     import { animateAbility } from "./animations";
@@ -62,14 +54,8 @@
     } from "./entities";
     import { createHIDHandlers } from "./hid";
     import { CANVAS_HEIGHT, CANVAS_WIDTH, CELL_WIDTH } from "./settings";
-    import { drawTargetUI } from "./ui";
-    import {
-        getPathHighlights,
-        getPlayerPosition,
-        positionsInRange,
-        registerGSAP,
-        type Position,
-    } from "./utils";
+    import { displayCommandPreview, drawTargetUI } from "./ui";
+    import { getPlayerPosition, registerGSAP, type Position } from "./utils";
     import {
         cullAllWorldEntityContainers,
         drawWorlds,
@@ -97,89 +83,18 @@
     $: handlePreviewCommand(previewCommand);
 
     async function handlePreviewCommand(command: GameCommand | null) {
-        if (
-            !isInitialized ||
-            worldStage == null ||
-            app == null ||
-            $player == null
-        ) {
+        if (!isInitialized || !worldStage || !app || !$player) {
             return;
         }
-        if (command == null) {
-            // Clear highlights
-            highlightShaderInstances("biome", {});
-            return;
-        }
-
-        const [ga, { self, target: commandTarget, item }] = command;
-        const [gaId, gaType] = getGameActionId(ga);
-
-        // Highlight target (prevent commandTarget from overriding target)
-        drawTargetUI({
+        const playerPosition = getPlayerPosition();
+        if (!playerPosition) return;
+        await displayCommandPreview({
+            command,
+            player: $player,
+            playerPosition,
             target: $target,
-            highlight: 2,
             stage: worldStage,
-            source: $player,
         });
-
-        if (commandTarget != null) {
-            const [commandTargetId, commandTargetType] =
-                getEntityId(commandTarget);
-            const targetEC = entityContainers[commandTargetId];
-
-            if (targetEC == null) {
-                return;
-            }
-
-            // Highlight command target
-            drawTargetUI({
-                target: commandTarget,
-                highlight: 3,
-                stage: worldStage,
-                source: $player,
-            });
-
-            const playerPosition = getPlayerPosition();
-            if (playerPosition == null) {
-                return;
-            } else if (gaType === "ability" && targetEC.isoPosition != null) {
-                const ability = ga as Ability;
-
-                // Get movement required to get in range
-                const path = await getDirectionsToPosition(
-                    playerPosition,
-                    targetEC.isoPosition,
-                    targetEC.isoPosition.locationType,
-                    targetEC.isoPosition.locationInstance,
-                    { range: ability.range },
-                );
-                const pathPositions = getPositionsForPath(playerPosition, path);
-                const destination = pathPositions[pathPositions.length - 1];
-
-                // Get path highlights
-                const pathHighlights = getPathHighlights(pathPositions, 1);
-                highlightShaderInstances("biome", pathHighlights);
-
-                // Get cells in range highlights
-                const rangeCellsHighlights = positionsInRange(
-                    ability,
-                    destination,
-                );
-                highlightShaderInstances("biome", {
-                    ...rangeCellsHighlights,
-                    ...pathHighlights,
-                });
-            } else if (gaType === "utility") {
-                const utility = ga as Utility;
-            } else if (gaType === "action") {
-                const action = ga as Action;
-                // Highlight cells in range
-                highlightShaderInstances(
-                    "biome",
-                    positionsInRange(action, playerPosition),
-                );
-            }
-        }
     }
 
     function resize(clientHeight: number, clientWidth: number) {

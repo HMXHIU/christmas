@@ -56,17 +56,6 @@ export class EntityContainer extends Container {
         this.cullable = true;
     }
 
-    protected emitPositionUpdate(
-        oldPosition: Position | null,
-        newPosition: Position,
-    ) {
-        this.emit("positionUpdate", oldPosition, newPosition);
-    }
-
-    protected emitTrackEntity(position: Position, duration?: number) {
-        this.emit("trackEntity", { position, duration });
-    }
-
     public triggerAnimation(action: string) {
         if (this.actionBubble != null && action in actions) {
             this.actionBubble.setAction(action as Actions);
@@ -101,6 +90,9 @@ export class EntityContainer extends Container {
                 onStart: () => {
                     this.triggerAnimation("move");
                 },
+                onComplete: () => {
+                    this.emit("pathCompleted");
+                },
             });
 
             // Animate through each position in the path
@@ -127,7 +119,7 @@ export class EntityContainer extends Container {
                         const oldPosition = clone(this.isoPosition);
                         this.isoPosition = isoPosition;
                         this.updateDepth(isoPosition.isoY);
-                        this.emitPositionUpdate(oldPosition, isoPosition);
+                        this.emit("positionUpdate", oldPosition, isoPosition);
                     },
                     onUpdate: () => {
                         // Safely kill the timeline if 'this' is destroyed
@@ -142,7 +134,10 @@ export class EntityContainer extends Container {
             // Play the timeline
             this.tween = this.tween.play();
             if (finalPosition != null) {
-                this.emitTrackEntity(finalPosition, pthdur / 1000);
+                this.emit("trackEntity", {
+                    position: finalPosition,
+                    duration: pthdur / 1000,
+                });
             }
         }
     }
@@ -172,10 +167,10 @@ export class EntityContainer extends Container {
                     const oldPosition = clone(this.isoPosition);
                     this.isoPosition = isoPosition;
                     this.updateDepth(isoPosition.isoY);
-                    this.emitPositionUpdate(oldPosition, isoPosition);
+                    this.emit("positionUpdate", oldPosition, isoPosition);
                 },
             });
-            this.emitTrackEntity(isoPosition, duration);
+            this.emit("trackEntity", { position: isoPosition, duration });
         }
         // Set position immediately
         else {
@@ -186,8 +181,8 @@ export class EntityContainer extends Container {
                 isoPosition.isoY - isoPosition.elevation,
             );
             this.updateDepth(isoPosition.isoY);
-            this.emitPositionUpdate(oldPosition, isoPosition);
-            this.emitTrackEntity(isoPosition);
+            this.emit("positionUpdate", oldPosition, isoPosition);
+            this.emit("trackEntity", { position: isoPosition });
         }
     }
 

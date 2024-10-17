@@ -6,8 +6,6 @@ import {
 } from "$lib/crossover/caches";
 import { GAME_PREFIX, GAME_WORLDS } from "$lib/crossover/defs";
 import { geohashToColRow, geohashToGridCell } from "$lib/crossover/utils";
-import type { Ability } from "$lib/crossover/world/abilities";
-import type { Action } from "$lib/crossover/world/actions";
 import { avatarMorphologies } from "$lib/crossover/world/bestiary";
 import { elevationAtGeohash } from "$lib/crossover/world/biomes";
 import type {
@@ -61,7 +59,6 @@ export {
     isCellInView,
     isoToCart,
     loadAssetTexture,
-    positionsInRange,
     registerGSAP,
     scaleToFitAndMaintainAspectRatio,
     snapToGrid,
@@ -207,6 +204,8 @@ async function loadAssetTexture(
     const [bundleName, alias] = asset.path.split("/").slice(-2);
     const bundle = await Assets.loadBundle(bundleName);
 
+    // TODO: bundle[alias] is undefined sometimes
+
     // Determine variant
     if (variant == null) {
         if (asset.probability != null) {
@@ -314,23 +313,6 @@ function destroyContainer(thing: Sprite | Mesh<Geometry, Shader> | Container) {
     thing.eventMode = "none";
     thing.removeAllListeners();
     thing.destroy();
-}
-
-function positionsInRange(
-    action: Action | Ability,
-    { row, col }: { row: number; col: number },
-): Record<string, number> {
-    const highlightPositions: Record<string, number> = {};
-    for (let i = row - action.range; i <= row + action.range; i++) {
-        for (let j = col - action.range; j <= col + action.range; j++) {
-            const [x, y] = cartToIso(j * CELL_WIDTH, i * CELL_HEIGHT, {
-                x: HALF_ISO_CELL_WIDTH,
-                y: HALF_ISO_CELL_HEIGHT,
-            });
-            highlightPositions[`${x},${y}`] = 2;
-        }
-    }
-    return highlightPositions;
 }
 
 function getAngle(h: number, k: number, x: number, y: number): number {
