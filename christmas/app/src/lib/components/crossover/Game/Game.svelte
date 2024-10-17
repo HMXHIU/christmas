@@ -54,7 +54,7 @@
     } from "./entities";
     import { createHIDHandlers } from "./hid";
     import { CANVAS_HEIGHT, CANVAS_WIDTH, CELL_WIDTH } from "./settings";
-    import { displayCommandPreview, drawTargetUI } from "./ui";
+    import { displayCommandPreview, displayTargetBox } from "./ui";
     import { getPlayerPosition, registerGSAP, type Position } from "./utils";
     import {
         cullAllWorldEntityContainers,
@@ -379,7 +379,7 @@
                 if ($player == null || worldStage == null) {
                     return;
                 }
-                drawTargetUI(t);
+                displayTargetBox(t);
             }),
         ];
 

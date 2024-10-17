@@ -26,6 +26,7 @@ import { get } from "svelte/store";
 import { player, target } from "../../../../../store";
 import { layers } from "../layers";
 import { ISO_CELL_HEIGHT, ISO_CELL_WIDTH } from "../settings";
+import { displayTargetBox, hideTargetBox } from "../ui";
 import {
     calculatePosition,
     getAvatarMetadata,
@@ -172,6 +173,9 @@ async function upsertAvatarContainer(
         // Set initial pose
         await ec.avatar.pose(ec.avatar.animationManager.getPose("default"));
 
+        // Set event listeners
+        setECEventListeners(ec);
+
         // Set size (must do after pose)
         const { width, height, scale } = scaleToFitAndMaintainAspectRatio(
             ec.width,
@@ -244,12 +248,7 @@ async function upsertSimpleContainer(
         }
 
         // Set event listeners
-        ec.eventMode = "static";
-        ec.interactiveChildren = false; // Prevents mouse events from bubbling to children
-        ec.hitArea = ec.getBounds(true).rectangle;
-        ec.onmouseover = () => onMouseOverEntity(ec.entityId);
-        ec.onmouseleave = () => onMouseLeaveEntity(ec.entityId);
-        ec.onclick = () => onClickEntity(ec.entity);
+        setECEventListeners(ec);
 
         return [true, ec];
     }
@@ -264,6 +263,15 @@ async function upsertSimpleContainer(
         }
         return [false, ec];
     }
+}
+
+function setECEventListeners(ec: EntityContainer) {
+    ec.eventMode = "static";
+    ec.interactiveChildren = false; // Prevents mouse events from bubbling to children
+    ec.hitArea = ec.getLocalBounds().rectangle;
+    ec.onmouseover = () => onMouseOverEntity(ec.entityId);
+    ec.onmouseleave = () => onMouseLeaveEntity(ec.entityId);
+    ec.onclick = () => onClickEntity(ec.entity);
 }
 
 /**
@@ -313,19 +321,19 @@ function cullEntityContainerById(entityId: string) {
 function onMouseOverEntity(entityId: string) {
     const ec = entityContainers[entityId];
     const t = get(target);
-
-    // Highlight if entity is not target (already highlighted)
-    if ((t == null || getEntityId(t)[0] != entityId) && ec != null) {
-        ec.highlight(1);
+    // Draw target box if entity is not target (or no target)
+    if (ec && (!t || getEntityId(t)[0] != entityId)) {
+        displayTargetBox(ec.entity);
     }
 }
 
 function onMouseLeaveEntity(entityId: string) {
-    // Clear highlight if entity is not target
-    const ec = entityContainers[entityId];
+    // Draw target box if there is a target
     const t = get(target);
-    if ((t == null || getEntityId(t)[0] != entityId) && ec != null) {
-        ec.clearHighlight();
+    if (t) {
+        displayTargetBox(t);
+    } else {
+        hideTargetBox();
     }
 }
 

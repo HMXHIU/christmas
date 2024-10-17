@@ -19,10 +19,11 @@ export {
     clearAllHighlights,
     displayCommandPreview,
     displayMovementPath,
+    displayTargetBox,
     drawMovementPath,
-    drawTargetUI,
     hideMovementPath,
     hideRangeIndicator,
+    hideTargetBox,
     screenToGeohash,
     updateScreenHitTesting,
 };
@@ -37,13 +38,10 @@ const screenToGeohashKDtree: Partial<Record<GeohashLocation, KdTree<string>>> =
 const movementPath = new Graphics();
 const rangeIndicator = new Graphics();
 const targetBox = new Graphics();
-let targetBoxTween: gsap.core.Tween | null = null;
 
-function drawTargetUI(target: Actor | null) {
+function displayTargetBox(target: Actor | null) {
     if (!target) {
-        targetBox.removeFromParent();
-        targetBox.clear();
-        targetBoxTween?.kill();
+        hideTargetBox();
         return;
     }
 
@@ -53,6 +51,11 @@ function drawTargetUI(target: Actor | null) {
     if (targetEC) {
         drawTargetBox(targetEC);
     }
+}
+
+function hideTargetBox() {
+    targetBox.removeFromParent();
+    targetBox.clear();
 }
 
 function clearAllHighlights(highlight?: number) {
@@ -112,7 +115,7 @@ function hideMovementPath() {
     // Retarget at end of movement
     const t = get(target);
     if (t) {
-        drawTargetUI(t);
+        displayTargetBox(t);
     }
 }
 
@@ -181,7 +184,7 @@ async function displayCommandPreview({
         hideRangeIndicator();
         hideMovementPath();
         if (target) {
-            drawTargetUI(target); // retarget target after done with preview of command target
+            displayTargetBox(target); // retarget target after done with preview of command target
         }
         return;
     }
@@ -190,7 +193,7 @@ async function displayCommandPreview({
     const [gaId, gaType] = getGameActionId(ga);
 
     // Highlight target (prevent commandTarget from overriding target)
-    drawTargetUI(target);
+    displayTargetBox(target);
 
     if (commandTarget) {
         const [commandTargetId, commandTargetType] = getEntityId(commandTarget);
@@ -198,7 +201,7 @@ async function displayCommandPreview({
         if (!targetEC) return;
 
         // Highlight command target
-        drawTargetUI(commandTarget);
+        displayTargetBox(commandTarget);
 
         // Ability
         if (gaType === "ability" && targetEC.isoPosition) {
@@ -251,9 +254,7 @@ async function displayCommandPreview({
 }
 
 function drawTargetBox(ec: EntityContainer) {
-    targetBox.removeFromParent();
-    targetBox.clear();
-    targetBoxTween?.kill();
+    hideTargetBox();
 
     let bounds: Bounds | undefined = undefined;
     let scaleGfx = 1;
@@ -272,22 +273,10 @@ function drawTargetBox(ec: EntityContainer) {
     if (bounds) {
         const { x, y, width, height } = bounds;
         ec.addChild(
-            targetBox.roundRect(x, y, width, height, 30).stroke({
+            targetBox.roundRect(x, y, width, height, 25).stroke({
                 width: Math.round(2 / scaleGfx),
                 color: 0xffd900,
             }),
         );
-
-        // // Tween target box
-        // targetBox.scale = 1;
-        // targetBoxTween = gsap.to(targetBox, {
-        //     pixi: {
-        //         scale: 1.1,
-        //     },
-        //     duration: 1.5,
-        //     yoyo: true,
-        //     repeat: -1,
-        //     ease: "elastic.inOut",
-        // });
     }
 }
