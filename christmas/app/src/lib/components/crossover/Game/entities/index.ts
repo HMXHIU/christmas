@@ -328,12 +328,16 @@ function onMouseOverEntity(entityId: string) {
 }
 
 function onMouseLeaveEntity(entityId: string) {
-    // Draw target box if there is a target
     const t = get(target);
+
+    // Clear target box
+    if (!t || (t && getEntityId(t)[0] != entityId)) {
+        hideTargetBox();
+    }
+
+    // Draw target box if there is a target
     if (t) {
         displayTargetBox(t);
-    } else {
-        hideTargetBox();
     }
 }
 
