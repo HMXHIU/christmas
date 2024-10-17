@@ -12,8 +12,6 @@ import {
     getEntityId,
     isEntityInMotion,
 } from "$lib/crossover/utils";
-import type { Attributes } from "$lib/crossover/world/entity";
-import { entityStats } from "$lib/crossover/world/entity";
 import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
@@ -58,22 +56,15 @@ let entitySigils: Record<string, EntitySigil> = {};
 async function upsertEntitySigil(
     ec: EntityContainer,
     stage: Container,
-    attributes?: Attributes,
 ): Promise<EntitySigil> {
-    const entity = ec.entity as Creature;
-
     // Check if already exists
     if (entitySigils[ec.entityId]) {
-        entitySigils[ec.entityId].updateStats(entity);
+        entitySigils[ec.entityId].updateUI();
         return entitySigils[ec.entityId];
     }
 
-    // Create
-    let maxStats = entityStats(ec.entity as Creature);
-    const sigil = new EntitySigil(ec, maxStats, entity, {
-        anchor: { x: 0, y: -0.825 },
-        radius: 36,
-    });
+    // Create sigil
+    const sigil = new EntitySigil(ec);
     sigil.zIndex = layers.layers.length + 1; // UI
     entitySigils[ec.entityId] = sigil;
     stage.addChild(sigil);

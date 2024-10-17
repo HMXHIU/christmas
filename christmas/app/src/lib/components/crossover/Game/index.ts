@@ -8,20 +8,13 @@ import { addMessageFeed } from "$lib/components/crossover/GameWindow";
 import { crossoverWorldWorlds } from "$lib/crossover/client";
 import { executeGameCommand } from "$lib/crossover/game";
 import type { GameCommand } from "$lib/crossover/ir";
-import type {
-    Actor,
-    Creature,
-    Item,
-    Monster,
-    Player,
-} from "$lib/crossover/types";
+import type { Actor, Item, Monster, Player } from "$lib/crossover/types";
 import {
     geohashToColRow,
     getEntityId,
     isEntityEquipment,
     isEntityEquipmentOrInventory,
 } from "$lib/crossover/utils";
-import { entityAttributes } from "$lib/crossover/world/entity";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     geohashLocationTypes,
@@ -183,7 +176,6 @@ async function updateEntityContainer<T extends Actor>(
 
                 // Player (self)
                 if (ec.entityId === get(player)?.player) {
-                    const self = ec.entity as Player;
                     const avatar = (ec as AvatarEntityContainer).avatar;
 
                     // Attach game events
@@ -201,12 +193,11 @@ async function updateEntityContainer<T extends Actor>(
                         const sigil = await upsertEntitySigil(
                             ec,
                             game.app.stage,
-                            entityAttributes(self),
                         );
                         const bounds = sigil.getBounds();
                         const padding = 10;
                         sigil.position.set(
-                            padding + bounds.width / 2,
+                            padding,
                             game.app.screen.height -
                                 padding -
                                 bounds.height / 2,
@@ -217,7 +208,7 @@ async function updateEntityContainer<T extends Actor>(
 
             // Update sigils (only upsert if already created as we dont want sigils for every entity)
             if (entitySigils[ec.entityId]) {
-                entitySigils[ec.entityId].updateStats(newEntity as Creature);
+                entitySigils[ec.entityId].updateUI();
             }
         } else {
             // Cull ec if not in environment

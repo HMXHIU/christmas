@@ -1,146 +1,198 @@
-import type { EntityStats } from "$lib/crossover/types";
-import { Container, Graphics } from "pixi.js";
+import type { CurrencyParams, EntityStats } from "$lib/crossover/types";
+import { entityLevel, entityStats } from "$lib/crossover/world/entity";
+import { compendium } from "$lib/crossover/world/settings/compendium";
+import { skillLevelProgression } from "$lib/crossover/world/skills";
+import { pick } from "lodash-es";
+import { Container, Graphics, Text } from "pixi.js";
 import type { EntityContainer } from ".";
 
 export { EntitySigil };
 
-const HALF_PI = Math.PI / 2;
-const MND_ARC_END = HALF_PI * 3;
-const CHA_ARC_END = -HALF_PI;
-
-const BAR_HEIGHT = 4;
+const AVATAR_RADIUS = 36;
+const AVATAR_DIAMETER = 2 * AVATAR_RADIUS;
+const BAR_HEIGHT = AVATAR_RADIUS / 2 / 4;
+const BAR_WIDTH = AVATAR_DIAMETER + AVATAR_RADIUS;
 
 class EntitySigil extends Container {
     public entityContainer: EntityContainer;
     private barsContainer: Container;
-    private maxStats: EntityStats = {
+    private maxResources: EntityStats & CurrencyParams = {
         hp: 0,
         mnd: 0,
         cha: 0,
+        lum: 0,
+        umb: 0,
     };
-    private stats: EntityStats = {
+    private resources: EntityStats & CurrencyParams = {
         hp: 0,
         mnd: 0,
         cha: 0,
+        lum: 0,
+        umb: 0,
     };
 
     private hpBar: Graphics | null = null;
     private mndBar: Graphics | null = null;
     private chaBar: Graphics | null = null;
-
-    // Currency umbra dn lumina has no max (approximated)
     private lumBar: Graphics | null = null;
     private umbBar: Graphics | null = null;
 
-    private radius = 0;
-
-    constructor(
-        entityContainer: EntityContainer,
-        maxStats: EntityStats,
-        stats: EntityStats,
-        opts?: { anchor?: { x: number; y: number }; radius?: number },
-    ) {
+    constructor(entityContainer: EntityContainer) {
         super({});
         this.entityContainer = entityContainer;
         this.barsContainer = new Container();
-        this.stats = stats;
-        this.maxStats = maxStats;
 
-        // TODO: draw name on sigil, get umb, lum, stats etc ... remove passing in max stats, stats
-        const entity = entityContainer.entity;
-        if ("player" in entity) {
-        }
+        // Update resource & create bars
+        this.updateResources();
+        this.createBars();
+        this.updateUI();
+        this.addChild(this.barsContainer); // add resource bars to backdrop
 
-        let spriteContainer = entityContainer.asSpriteContainer();
+        // Entity name
+        const entityNameText = new Text({
+            text: this.entityContainer.entity.name,
+            style: {
+                fill: 0x000000,
+                stroke: 0x000000,
+                fontSize: 18,
+            },
+        });
+        entityNameText.x = AVATAR_DIAMETER;
+        entityNameText.y = -BAR_HEIGHT * 2;
+        this.addChild(entityNameText);
 
-        if (spriteContainer) {
-            const bounds = spriteContainer.getBounds();
-            this.radius = opts?.radius ?? bounds.width / 2;
+        // Get the avatar portrait as a sprite
+        let avatarPortrait = entityContainer.asSpriteContainer();
+        if (avatarPortrait) {
+            const anchor = { x: 0, y: -0.825 };
+            const bounds = avatarPortrait.getBounds();
 
-            // Create mask
             const mask = new Graphics()
-                .circle(0, 0, this.radius + 5)
+                .circle(0, 0, AVATAR_RADIUS + 5)
                 .fill({ color: 0xffffff });
+            mask.x = AVATAR_RADIUS;
 
-            // Create backdrop
-            const backdrop = new Graphics()
-                .circle(0, 0, this.radius)
-                .fill({ color: 0x000000 });
+            avatarPortrait.pivot.x = anchor.x * bounds.width;
+            avatarPortrait.pivot.y = anchor.y * bounds.height;
+            avatarPortrait.mask = mask;
+            avatarPortrait.x = AVATAR_RADIUS;
 
-            // Set spriteContainer pivot
-            spriteContainer.pivot.x = (opts?.anchor?.x ?? 0) * bounds.width;
-            spriteContainer.pivot.y = (opts?.anchor?.y ?? 0) * bounds.height;
+            this.addChild(mask);
+            this.addChild(avatarPortrait);
+        }
+    }
 
-            // this.mask = mask;
-            // this.addChild(mask);
-            this.addChild(backdrop);
-            this.addChild(this.barsContainer);
-            // this.addChild(spriteContainer);
-            this.createBars();
-            this.updateStats(this.stats);
+    updateResources() {
+        const entity = this.entityContainer.entity;
+        // Creature
+        if ("player" in entity || "monster" in entity) {
+            this.resources = pick(entity, ["umb", "lum", "hp", "mnd", "cha"]);
+            const maxCurrency = skillLevelProgression(entityLevel(entity));
+            this.maxResources = {
+                ...entityStats(entity),
+                umb: maxCurrency,
+                lum: maxCurrency,
+            };
+        }
+        // Item
+        else {
+            this.maxResources = {
+                hp: compendium[entity.prop].durability,
+                mnd: 0,
+                cha: 0,
+                lum: 0,
+                umb: 0,
+            };
+            this.resources = {
+                hp: entity.dur,
+                mnd: 0,
+                cha: 0,
+                lum: 0,
+                umb: 0,
+            };
         }
     }
 
     createBars() {
         // Clear existing arcs
         this.barsContainer.removeChildren();
-        const bounds = this.getBounds();
-        console.log(bounds);
 
         // Draw hp bar
         this.hpBar = new Graphics()
-            .rect(0, 0, bounds.width, BAR_HEIGHT)
+            .rect(0, 0, BAR_WIDTH, BAR_HEIGHT)
             .fill({ color: 0xfd5353 });
-        this.hpBar.x = -bounds.width / 2;
-        this.hpBar.y = bounds.height / 2 - BAR_HEIGHT * 4;
+        this.hpBar.x = AVATAR_DIAMETER;
+        this.hpBar.y = AVATAR_RADIUS - BAR_HEIGHT * 5;
         this.hpBar.pivot.x = 0;
 
         // Draw chaos bar
         this.chaBar = new Graphics()
-            .rect(0, 0, bounds.width, BAR_HEIGHT)
+            .rect(0, 0, BAR_WIDTH, BAR_HEIGHT)
             .fill({ color: 0x53fd75 });
-        this.chaBar.x = -bounds.width / 2;
-        this.chaBar.y = bounds.height / 2 - BAR_HEIGHT * 3;
+        this.chaBar.x = AVATAR_DIAMETER;
+        this.chaBar.y = AVATAR_RADIUS - BAR_HEIGHT * 4;
         this.chaBar.pivot.x = 0;
 
         // Draw mind bar
         this.mndBar = new Graphics()
-            .rect(0, 0, bounds.width, BAR_HEIGHT)
+            .rect(0, 0, BAR_WIDTH, BAR_HEIGHT)
             .fill({ color: 0x5394fd });
-        this.mndBar.x = -bounds.width / 2;
-        this.mndBar.y = bounds.height / 2 - BAR_HEIGHT * 2;
+        this.mndBar.x = AVATAR_DIAMETER;
+        this.mndBar.y = AVATAR_RADIUS - BAR_HEIGHT * 3;
         this.mndBar.pivot.x = 0;
 
         // Draw lumina bar
         this.lumBar = new Graphics()
-            .rect(0, 0, bounds.width, BAR_HEIGHT)
-            .fill({ color: 0x5394fd });
-        this.lumBar.x = -bounds.width / 2;
-        this.lumBar.y = bounds.height / 2 - BAR_HEIGHT;
+            .rect(0, 0, BAR_WIDTH, BAR_HEIGHT)
+            .fill({ color: 0xfdf653 });
+        this.lumBar.x = AVATAR_DIAMETER;
+        this.lumBar.y = AVATAR_RADIUS - BAR_HEIGHT * 2;
         this.lumBar.pivot.x = 0;
 
         // Draw umbra bar
         this.umbBar = new Graphics()
-            .rect(0, 0, bounds.width, BAR_HEIGHT)
-            .fill({ color: 0x5394fd });
-        this.umbBar.x = -bounds.width / 2;
-        this.umbBar.y = bounds.height / 2;
+            .rect(0, 0, BAR_WIDTH, BAR_HEIGHT)
+            .fill({ color: 0x7553fd });
+        this.umbBar.x = AVATAR_DIAMETER;
+        this.umbBar.y = AVATAR_RADIUS - BAR_HEIGHT;
         this.umbBar.pivot.x = 0;
 
         // Add to container
-        this.barsContainer.addChild(this.hpBar, this.chaBar, this.mndBar);
+        this.barsContainer.addChild(
+            this.hpBar,
+            this.chaBar,
+            this.mndBar,
+            this.lumBar,
+            this.umbBar,
+        );
     }
 
-    updateStats(stats: EntityStats) {
-        this.stats = stats;
+    updateUI() {
+        this.updateResources();
         if (this.hpBar) {
-            this.hpBar.scale.x = stats.hp / this.maxStats.hp;
+            this.hpBar.scale.x =
+                Math.min(this.maxResources.hp, this.resources.hp) /
+                this.maxResources.hp;
         }
         if (this.chaBar) {
-            this.chaBar.scale.x = stats.cha / this.maxStats.cha;
+            this.chaBar.scale.x =
+                Math.min(this.maxResources.cha, this.resources.cha) /
+                this.maxResources.cha;
         }
         if (this.mndBar) {
-            this.mndBar.scale.x = stats.mnd / this.maxStats.mnd;
+            this.mndBar.scale.x =
+                Math.min(this.maxResources.mnd, this.resources.mnd) /
+                this.maxResources.mnd;
+        }
+        if (this.lumBar) {
+            this.lumBar.scale.x =
+                Math.min(this.maxResources.lum, this.resources.lum) /
+                this.maxResources.lum;
+        }
+        if (this.umbBar) {
+            this.umbBar.scale.x =
+                Math.min(this.maxResources.umb, this.resources.umb) /
+                this.maxResources.umb;
         }
     }
 }
