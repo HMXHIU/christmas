@@ -9,6 +9,7 @@ import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
+    equipmentSlotCapacity,
     geohashLocationTypes,
     type EquipmentSlot,
     type GeohashLocation,
@@ -198,7 +199,6 @@ async function equipItem(
     } else if (!slots.includes(slot)) {
         error = `${item} cannot be equipped in ${slot}`;
     }
-
     if (error != null) {
         await publishFeedEvent(player.player, {
             type: "error",
@@ -207,15 +207,20 @@ async function equipItem(
         return; // do not proceed
     }
 
-    // Unequip existing item in slot
+    // Unequip existing items in slot to free up capacity
     const exitingItemsInSlot = (await inventoryQuerySet(player.player)
         .and("locT")
         .equal(slot)
         .return.all()) as ItemEntity[];
-    for (let itemEntity of exitingItemsInSlot) {
-        itemEntity.loc = [player.player];
-        itemEntity.locT = "inv";
-        (await itemRepository.save(itemEntity.item, itemEntity)) as ItemEntity;
+    const slotCapacity = equipmentSlotCapacity[slot] ?? 1;
+    if (exitingItemsInSlot.length >= slotCapacity) {
+        // Just uneqiup 1 exiting item to free up a slot
+        exitingItemsInSlot[0].loc = [player.player];
+        exitingItemsInSlot[0].locT = "inv";
+        (await itemRepository.save(
+            exitingItemsInSlot[0].item,
+            exitingItemsInSlot[0],
+        )) as ItemEntity;
     }
 
     // Equip item in slot
