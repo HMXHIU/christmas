@@ -62,6 +62,7 @@ export {
     minifiedEntity,
     oddGeohashCharacters,
     REGEX_STRIP_ENTITY_TYPE,
+    sameLocation,
     territoriesIterator,
 };
 
@@ -823,6 +824,10 @@ function geohashDistance(geohash1: string, geohash2: string): number {
     const [col1, row1] = geohashToColRow(geohash1);
     const [col2, row2] = geohashToColRow(geohash2);
     return Math.sqrt(Math.pow(col2 - col1, 2) + Math.pow(row2 - row1, 2));
+}
+
+function sameLocation(a: Actor, b: Actor): boolean {
+    return a.locT === b.locT && a.locI === b.locI;
 }
 
 function inRange({
