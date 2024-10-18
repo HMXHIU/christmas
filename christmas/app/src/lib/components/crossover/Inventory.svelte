@@ -26,18 +26,41 @@
                     <div class="flex flex-col space-y-2 py-2">
                         {#if $playerEquippedItems.length > 0}
                             {#each $playerEquippedItems as item (item.item)}
-                                <Button
-                                    variant="link"
-                                    class="h-full text-xs text-muted-foreground whitespace-normal break-words text-left justify-start p-0"
-                                    on:click={() => openDialog(item)}
-                                    >[{item.locT}] {item.name}</Button
-                                >
+                                {#if item.locT !== "bl"}
+                                    <Button
+                                        variant="link"
+                                        class="h-full text-xs text-muted-foreground whitespace-normal break-words text-left justify-start p-0"
+                                        on:click={() => openDialog(item)}
+                                        >[{item.locT}] {item.name}</Button
+                                    >
+                                {/if}
                             {/each}
                         {:else}
                             <p>Nothing equipped</p>
                         {/if}
                     </div>
                 </div>
+                <!-- Belt Items -->
+                <div>
+                    <Label>Belt</Label>
+                    <div class="flex flex-col space-y-2 py-2">
+                        {#if $playerEquippedItems.length > 0}
+                            {#each $playerEquippedItems as item (item.item)}
+                                {#if item.locT === "bl"}
+                                    <Button
+                                        variant="link"
+                                        class="h-full text-xs text-muted-foreground whitespace-normal break-words text-left justify-start p-0"
+                                        on:click={() => openDialog(item)}
+                                        >{item.name}</Button
+                                    >
+                                {/if}
+                            {/each}
+                        {:else}
+                            <p>Nothing In Belt</p>
+                        {/if}
+                    </div>
+                </div>
+
                 <!-- Inventory Items -->
                 <div>
                     <Label>Inventory</Label>

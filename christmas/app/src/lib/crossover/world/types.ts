@@ -45,21 +45,20 @@ const BarterSchema = z.object({
 
 const EQUIPMENT_SLOTS = {
     // armor
-    ch: "chest",
-    lg: "legs",
-    ft: "feet",
-    sh: "shoulders",
-    gl: "gloves",
+    ch: "Chest",
+    lg: "Legs",
+    ft: "Feet",
+    sh: "Shoulders",
+    gl: "Gloves",
     // weapons
-    rh: "right hand",
-    lh: "left hand",
+    rh: "Right hand",
+    lh: "Left hand",
     // non visible
-    hd: "head",
-    nk: "neck",
-    r1: "ring 1",
-    r2: "ring 2",
+    hd: "Head",
+    nk: "Necklace",
+    rn: "Rings",
     // consumables
-    bl: "belt",
+    bl: "Belt",
 } as const;
 
 type EquipmentSlot = keyof typeof EQUIPMENT_SLOTS;
@@ -78,6 +77,7 @@ const weaponSlots = new Set<EquipmentSlot>(["rh", "lh"]);
 const equipmentSlotCapacity: Partial<Record<EquipmentSlot, number>> = {
     // defaults to 1 if not specified
     bl: 5,
+    rn: 2,
 };
 
 type NoiseType = "simplex" | "random";
