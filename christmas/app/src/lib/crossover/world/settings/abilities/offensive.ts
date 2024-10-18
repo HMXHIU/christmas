@@ -1,43 +1,9 @@
-import { TICKS_PER_TURN } from ".";
-import type { Abilities, Ability } from "../abilities";
+import { TICKS_PER_TURN } from "..";
+import type { Abilities, Ability } from "../../abilities";
 
-export { abilities };
+export { offensiveAbilities };
 
-/**
- * `abilities` is a collection of all the `Ability` available in the game.
- */
-const abilities: Record<Abilities, Ability> = {
-    bandage: {
-        ability: "bandage",
-        type: "healing",
-        description: "Bandages the player's wounds.",
-        procedures: [
-            [
-                "action",
-                {
-                    target: "target",
-                    dieRoll: {
-                        count: 1,
-                        sides: -6, // negative damage = healing
-                        damageType: "healing",
-                        modifiers: ["con"], // used for damage roll
-                    },
-                    modifiers: ["con"], // used for attack roll
-                    ticks: TICKS_PER_TURN,
-                },
-            ],
-        ],
-        cost: {
-            mnd: 1,
-        },
-        range: 1,
-        aoe: 0,
-        predicate: {
-            self: ["player", "monster"],
-            target: ["player", "monster"],
-            targetSelfAllowed: true,
-        },
-    },
+const offensiveAbilities: Partial<Record<Abilities, Ability>> = {
     disintegrate: {
         ability: "disintegrate",
         type: "offensive",
@@ -333,89 +299,6 @@ const abilities: Record<Abilities, Ability> = {
             self: ["player", "monster"],
             target: ["player", "monster"],
             targetSelfAllowed: true,
-        },
-    },
-    teleport: {
-        ability: "teleport",
-        type: "neutral",
-        description: "Teleport to the target location.",
-        procedures: [
-            [
-                "action",
-                {
-                    target: "self",
-                    states: {
-                        loc: {
-                            value: "{{target.loc}}", // {{}} for variable access
-                            op: "change",
-                        },
-                        locT: {
-                            value: "{{target.locT}}",
-                            op: "change",
-                        },
-                        locI: {
-                            value: "{{target.locI}}",
-                            op: "change",
-                        },
-                    },
-                    ticks: TICKS_PER_TURN,
-                },
-            ],
-        ],
-        cost: {
-            mnd: 3,
-        },
-        range: -1,
-        aoe: 0,
-        predicate: {
-            self: ["player", "monster"],
-            target: ["player", "monster", "item"],
-            targetSelfAllowed: false,
-        },
-    },
-    hpSwap: {
-        ability: "hpSwap",
-        type: "offensive",
-        description: "Swap HP with target.",
-        procedures: [
-            [
-                "action",
-                {
-                    target: "self",
-                    states: {
-                        hp: {
-                            value: "{{target.hp}}", // {{}} for variable access
-                            op: "change",
-                        },
-                    },
-                    modifiers: ["fth"],
-                    ticks: 0,
-                },
-            ],
-            [
-                "action",
-                {
-                    target: "target",
-                    states: {
-                        hp: {
-                            value: "{{self.hp}}", // {{}} for variable access
-                            op: "change",
-                        },
-                    },
-                    modifiers: ["fth"],
-                    ticks: TICKS_PER_TURN,
-                },
-            ],
-        ],
-        cost: {
-            umb: 3,
-        },
-        range: 2,
-        aoe: 0,
-        predicate: {
-            self: ["player", "monster"],
-            target: ["player", "monster", "item"],
-            targetSelfAllowed: false,
         },
     },
 };

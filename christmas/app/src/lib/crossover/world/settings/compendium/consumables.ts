@@ -77,7 +77,7 @@ export let consumables: Record<string, Prop> = {
                     start: "default",
                     end: "default",
                 },
-                ability: abilities.bandage.ability,
+                ability: abilities.heal.ability,
             },
         },
         variables: {},

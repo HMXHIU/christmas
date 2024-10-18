@@ -139,7 +139,7 @@ const EntityPathSchema = PathSchema.extend({
 });
 const PerformAbilitySchema = z.object({
     ability: z.enum(AbilitiesEnum),
-    target: z.string(),
+    target: z.string().optional(),
 });
 const EntityPerformAbilitySchema = PerformAbilitySchema.extend({
     entity: z.string(),

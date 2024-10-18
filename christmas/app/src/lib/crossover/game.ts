@@ -128,7 +128,8 @@ async function executeGameCommand(
                 target:
                     (target as Player)?.player ||
                     (target as Monster)?.monster ||
-                    (target as Item)?.item,
+                    (target as Item)?.item ||
+                    undefined,
                 ability: ability.ability,
             },
             headers,

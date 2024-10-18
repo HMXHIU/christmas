@@ -331,7 +331,7 @@ function crossoverCmdMove(
 }
 
 function crossoverCmdPerformAbility(
-    input: { target: string; ability: Abilities },
+    input: { target?: string; ability: Abilities },
     headers: HTTPHeaders = {},
 ) {
     const { target, ability } = input;

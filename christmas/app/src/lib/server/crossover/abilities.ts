@@ -26,21 +26,34 @@ export { performAbility };
 
 async function performAbility({
     self,
-    target,
+    target, // target can be undefined if the ability performs an action on self
     ability,
     ignoreCost,
     now,
 }: {
     self: CreatureEntity;
-    target: string;
+    target?: string;
     ability: Abilities;
     ignoreCost?: boolean;
     now?: number;
 }) {
     const [selfEntityId, selfEntityType] = getEntityId(self);
 
-    // Get target
-    let targetEntity = await fetchEntity(target);
+    const { procedures, range, predicate, cost } = abilities[ability];
+
+    // Check if target is not provided and target self is not allowed
+    if (!target && !predicate.targetSelfAllowed) {
+        if (self.player) {
+            await publishFeedEvent(selfEntityId, {
+                type: "error",
+                message: `${ability} requires a target`,
+            });
+        }
+        return;
+    }
+
+    // Get target (self if not specified)
+    let targetEntity = !target ? self : await fetchEntity(target);
     if (!targetEntity) {
         if (self.player) {
             await publishFeedEvent(selfEntityId, {
@@ -50,8 +63,6 @@ async function performAbility({
         }
         return; // do not proceed
     }
-
-    const { procedures, range, predicate, cost } = abilities[ability];
 
     // Check if self has enough resources to perform ability
     if (!ignoreCost) {

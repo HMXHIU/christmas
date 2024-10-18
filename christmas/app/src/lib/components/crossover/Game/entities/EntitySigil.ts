@@ -52,8 +52,8 @@ class EntitySigil extends Container {
         const entityNameText = new Text({
             text: this.entityContainer.entity.name,
             style: {
-                fill: 0x000000,
-                stroke: 0x000000,
+                fill: 0xffffff,
+                stroke: 0xffffff,
                 fontSize: 18,
             },
         });

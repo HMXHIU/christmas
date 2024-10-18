@@ -145,15 +145,13 @@ async function useItem({
                 | MonsterEntity;
         }
 
-        if (target) {
-            await performAbility({
-                self,
-                target,
-                ability: propAbility,
-                ignoreCost: true, // ignore cost when using items
-                now,
-            });
-        }
+        await performAbility({
+            self,
+            target, // can be undefined for abilities on self (eg. heal)
+            ability: propAbility,
+            ignoreCost: true, // ignore cost when using items
+            now,
+        });
     }
 
     // Set item end state, consume charges and durability

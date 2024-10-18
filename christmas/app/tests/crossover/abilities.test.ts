@@ -34,6 +34,67 @@ describe("Abilities Tests", async () => {
         resetEntityResources(playerOne, playerTwo);
     });
 
+    test("Cant perform ability without target (if required)", async () => {
+        crossoverCmdPerformAbility(
+            { ability: abilities.bruise.ability }, // no target specified
+            { Cookie: playerOneCookies },
+        );
+        var evs = await collectAllEventDataForDuration(playerOneStream);
+
+        expect(evs).toMatchObject({
+            feed: [
+                {
+                    type: "error",
+                    message: "bruise requires a target",
+                    event: "feed",
+                },
+            ],
+        });
+    });
+
+    test("Can perform ability on self without target (if ability allows)", async () => {
+        crossoverCmdPerformAbility(
+            { ability: abilities.heal.ability }, // no target specified
+            { Cookie: playerOneCookies },
+        );
+        var evs = await collectAllEventDataForDuration(playerOneStream);
+        expect(evs).toMatchObject({
+            feed: [
+                {
+                    type: "message",
+                    message: "Gandalf heals himself, healing 3 health!",
+                    event: "feed",
+                },
+            ],
+            entities: [
+                {
+                    event: "entities",
+                    players: [
+                        {
+                            player: playerOne.player,
+                            hp: 11,
+                        },
+                    ],
+                    monsters: [],
+                    items: [],
+                    op: "upsert",
+                },
+                {
+                    event: "entities",
+                    players: [
+                        {
+                            player: playerOne.player,
+                            hp: 14,
+                        },
+                    ],
+                    monsters: [],
+                    items: [],
+                    op: "upsert",
+                },
+            ],
+        });
+    });
+
     test("Ability out of range", async () => {
         // Move `playerTwo` out of range
         playerTwo.loc = [

@@ -68,6 +68,7 @@ type Buff = "haste" | "regeneration" | "shield" | "invisibility" | "berserk";
 
 type Abilities =
     | "bandage"
+    | "heal"
     | "disintegrate"
     | "bruise"
     | "doubleSlash"
@@ -81,6 +82,7 @@ type Abilities =
 
 const AbilitiesEnum = [
     "bandage",
+    "heal",
     "disintegrate",
     "bruise",
     "doubleSlash",
@@ -287,6 +289,11 @@ function resolveAbilityEntities({
             ]);
             addedTargets[targetId] = true;
         }
+    }
+
+    // If no targets, but ability works on self only (eg. heal)
+    if (targetTypes.length === 0) {
+        gameActionEntitiesScores.push([{ self }, 1]);
     }
 
     // Sort by score
