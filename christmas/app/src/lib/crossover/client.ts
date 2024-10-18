@@ -30,6 +30,7 @@ export {
     crossoverCmdAccept,
     crossoverCmdAttack,
     crossoverCmdBrowse,
+    crossoverCmdCapture,
     crossoverCmdConfigureItem,
     crossoverCmdCreateItem,
     crossoverCmdDrop,
@@ -426,6 +427,20 @@ function crossoverCmdEnterItem(
 
 function crossoverCmdRest(headers: HTTPHeaders = {}) {
     return trpc({ headers }).crossover.cmd.rest.query();
+}
+
+function crossoverCmdCapture(
+    input: {
+        offer: BarterSerialized;
+        target: string;
+    },
+    headers: HTTPHeaders = {},
+) {
+    const { offer, target } = input;
+    return trpc({ headers }).crossover.cmd.capture.query({
+        offer,
+        target,
+    });
 }
 
 /*

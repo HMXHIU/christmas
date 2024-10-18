@@ -59,7 +59,7 @@ async function attack(
                 message: error,
             });
         }
-        return;
+        return; // do not proceed
     }
 
     // Get creature equipped weapons or unarmed

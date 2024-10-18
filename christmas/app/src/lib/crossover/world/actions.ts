@@ -40,7 +40,8 @@ type Actions =
     | "accept"
     | "fulfill"
     | "give"
-    | "rest";
+    | "rest"
+    | "capture";
 
 type TokenType = "action" | "target" | "skill" | "offer" | "receive" | "item";
 

@@ -34,12 +34,14 @@ import {
 import { fetchEntity, saveEntity } from "../redis/utils";
 
 export {
+    barterDescription,
     browse,
     BROWSE_PAGE_SIZE,
     createTradeCTA,
     createTradeWrit,
     deserializeBarter,
     executeTradeCTA,
+    playerHasBarterItems,
     trade,
 };
 

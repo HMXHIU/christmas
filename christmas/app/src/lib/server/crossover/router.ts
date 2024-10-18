@@ -81,6 +81,7 @@ import {
     savePlayerState,
 } from "../user";
 import { attack } from "./actions/attack";
+import { capture } from "./actions/capture";
 import {
     dungeonEntrancesQuerySet,
     worldsInGeohashQuerySet,
@@ -122,6 +123,10 @@ const TradeSchema = z.object({
     buyer: z.string(),
     offer: BarterSchema,
     receive: BarterSchema,
+});
+const CaptureSchema = z.object({
+    target: z.string(),
+    offer: BarterSchema,
 });
 const AcceptSchema = z.object({
     token: z.string(), // jwt token
@@ -681,6 +686,17 @@ const crossoverRouter = {
         rest: playerAuthBusyProcedure.query(async ({ ctx }) => {
             await rest(ctx.player, ctx.now);
         }),
+        // cmd.capture
+        capture: playerAuthBusyProcedure
+            .input(CaptureSchema)
+            .query(async ({ ctx, input }) => {
+                const { offer, target } = input;
+                await capture({
+                    self: ctx.player,
+                    target,
+                    offer: await deserializeBarter(offer),
+                });
+            }),
     }),
     // Authentication
     auth: t.router({

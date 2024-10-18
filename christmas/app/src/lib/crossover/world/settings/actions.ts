@@ -477,6 +477,7 @@ Examples:
         },
         range: 0,
     },
+    // Give
     give: {
         action: "give",
         description: `Give an item to a player.
@@ -530,6 +531,41 @@ Examples:
         },
         range: 0,
     },
+    // Capture
+    capture: {
+        action: "capture",
+        description: `Capture a control point.
+
+Commands:
+    capture [item] with [offer]
+
+Examples:
+    **capture** item_control_1 **with** 100lum
+`,
+        predicate: {
+            tokens: {
+                action: {
+                    position: 0,
+                    optional: false,
+                },
+                target: {
+                    position: 1,
+                    entityTypes: ["item"],
+                    optional: false,
+                },
+                offer: {
+                    position: 2,
+                    optional: false,
+                },
+            },
+        },
+        ticks: 4,
+        icon: {
+            path: "actions/actions",
+            icon: "night-sleep",
+        },
+        range: 0,
+    },
 };
 
 // TODO: TO Deprecate, get actions from player skills
@@ -554,4 +590,5 @@ const playerActions = [
     actions.writ,
     actions.browse,
     actions.give,
+    actions.capture,
 ];

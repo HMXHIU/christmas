@@ -285,8 +285,8 @@ async function itemVariableValue(
 ): Promise<string | number | boolean | ActorEntity> {
     const itemVariables = item.vars;
     const propVariables = compendium[item.prop].variables;
-    const { type } = propVariables[key];
-    const variable = itemVariables[key];
+    const { type, value: defaultValue } = propVariables[key];
+    const variable = itemVariables[key] ?? defaultValue;
 
     if (type === "item") {
         return (await itemRepository.fetch(variable as string)) as ItemEntity;
