@@ -77,7 +77,7 @@ const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
             control: {
                 props: [
                     {
-                        prop: "woodendoor", // TODO: change to control point
+                        prop: "control",
                         min: 1,
                         max: 1,
                         pattern: "center",
@@ -195,6 +195,19 @@ const blueprints: Record<BluePrints, BluePrint> = {
         },
         precision: worldSeed.spatial.town.precision,
         clusters: {
+            control: {
+                precision: worldSeed.spatial.village.precision,
+                props: {
+                    control: {
+                        min: 1,
+                        max: 1,
+                        pattern: "center",
+                    },
+                },
+                pattern: "random",
+                min: 1,
+                max: 1,
+            },
             market: {
                 precision: worldSeed.spatial.village.precision,
                 props: {
@@ -220,6 +233,19 @@ const blueprints: Record<BluePrints, BluePrint> = {
         },
         precision: worldSeed.spatial.town.precision,
         clusters: {
+            control: {
+                precision: worldSeed.spatial.village.precision,
+                props: {
+                    control: {
+                        min: 1,
+                        max: 1,
+                        pattern: "center",
+                    },
+                },
+                pattern: "random",
+                min: 1,
+                max: 1,
+            },
             market: {
                 precision: worldSeed.spatial.village.precision,
                 props: {

@@ -15,7 +15,7 @@ describe("Sanctuaries Tests", async () => {
         });
     });
 
-    test("Test every sanctuary has a dungron", async () => {
+    test("Every sanctuary has a dungeon", async () => {
         var dg = await generateDungeonGraphsForTerritory("w2", "d1");
         expect(dg).toMatchObject({
             w282d: {
