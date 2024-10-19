@@ -1,39 +1,42 @@
 import { crossoverCmdCapture } from "$lib/crossover/client";
+import { itemAttibutes } from "$lib/crossover/world/compendium";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { spawnItemAtGeohash } from "$lib/server/crossover/dm";
 import { saveEntity } from "$lib/server/crossover/redis/utils";
 import type { ItemEntity } from "$lib/server/crossover/types";
-import { beforeEach, describe, expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
     collectAllEventDataForDuration,
     createGandalfSarumanSauron,
-    resetEntityResources,
 } from "../utils";
 
 describe("Capture Tests", async () => {
-    let {
-        geohash,
-        playerOne,
-        playerOneCookies,
-        playerOneStream,
-        playerTwo,
-        playerTwoCookies,
-        playerTwoStream,
-    } = await createGandalfSarumanSauron();
+    let { geohash, playerOne, playerOneCookies, playerOneStream, playerTwo } =
+        await createGandalfSarumanSauron();
 
-    let controlPoint = (await spawnItemAtGeohash({
+    let controlMonument = (await spawnItemAtGeohash({
         geohash,
         locationType: "geohash",
         locationInstance: LOCATION_INSTANCE,
         prop: compendium.control.prop,
     })) as ItemEntity;
 
-    beforeEach(async () => {
-        await resetEntityResources(playerOne, playerTwo);
-    });
-
     test("Capture control point", async () => {
+        expect(itemAttibutes(controlMonument)).toMatchObject({
+            name: "Monument of Control",
+            destructible: false,
+            description: `The monument stands as a towering monolith of shimmering, iridescent crystal. 
+Its surface pulses with an otherworldly energy, casting a soft glow on the surrounding area. 
+Ancient runes carved into its base hint at its power to shape the very fabric of the world.
+
+You sense no influence from this monument.
+
+The Monument of Control grants a faction significant influence over the region.
+As control shifts, the surrounding landscape gradually transforms to reflect its nature - lush forests may wither into barren wastelands, or harsh deserts might bloom into verdant oases.`,
+            variant: "default",
+        });
+
         // Check not enough resouces to capture
         crossoverCmdCapture(
             {
@@ -42,7 +45,7 @@ describe("Capture Tests", async () => {
                         lum: 100,
                     },
                 },
-                target: controlPoint.item,
+                target: controlMonument.item,
             },
             { Cookie: playerOneCookies },
         );
@@ -67,7 +70,7 @@ describe("Capture Tests", async () => {
                         lum: 100,
                     },
                 },
-                target: controlPoint.item,
+                target: controlMonument.item,
             },
             { Cookie: playerOneCookies },
         );
@@ -76,7 +79,8 @@ describe("Capture Tests", async () => {
             feed: [
                 {
                     type: "message",
-                    message: "human influence grows in the area (100)",
+                    message:
+                        "The Guild of the Historians influence grows in the area (100)",
                     event: "feed",
                 },
             ],
@@ -93,10 +97,12 @@ describe("Capture Tests", async () => {
                 {
                     items: [
                         {
-                            item: controlPoint.item,
+                            item: controlMonument.item,
                             prop: "control",
                             vars: {
-                                human: 100,
+                                historian: 100,
+                                influence:
+                                    "The Guild of the Historians controls this monument.",
                             },
                         },
                     ],

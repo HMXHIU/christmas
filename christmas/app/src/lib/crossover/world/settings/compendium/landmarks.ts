@@ -15,12 +15,17 @@ export let landmarks: Record<string, Prop> = {
         durability: 100,
         charges: 100,
         weight: -1,
-        collider: true, // untraversable, cannot spawn 2 in same location
+        collider: true,
         states: {
             default: {
                 name: "${name}",
                 destructible: false,
-                description: "${description}",
+                description: `$\{description}
+
+$\{influence}
+
+The Monument of Control grants a faction significant influence over the region.
+As control shifts, the surrounding landscape gradually transforms to reflect its nature - lush forests may wither into barren wastelands, or harsh deserts might bloom into verdant oases.`,
                 variant: "default",
             },
         },
@@ -28,28 +33,24 @@ export let landmarks: Record<string, Prop> = {
             name: {
                 variable: "name",
                 type: "string",
-                value: "Control Point",
+                value: "Monument of Control",
             },
             description: {
                 variable: "description",
                 type: "string",
-                value: "Control an area.",
+                value: `The monument stands as a towering monolith of shimmering, iridescent crystal. 
+Its surface pulses with an otherworldly energy, casting a soft glow on the surrounding area. 
+Ancient runes carved into its base hint at its power to shape the very fabric of the world.`,
+            },
+            influence: {
+                variable: "influence",
+                type: "string",
+                value: "You sense no influence from this monument.",
             },
             receive: {
                 variable: "receive",
                 type: "string",
                 value: "currency:lum, currency:umb", // this is a special format
-            },
-            // Faction control (increase influence by the `capture` action)
-            human: {
-                variable: "human",
-                type: "number",
-                value: 0,
-            },
-            goblin: {
-                variable: "goblin",
-                type: "number",
-                value: 0,
             },
         },
         utilities: {},

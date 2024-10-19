@@ -1,6 +1,10 @@
 import type { Currency } from "$lib/crossover/types";
 import { minifiedEntity } from "$lib/crossover/utils";
 import { actions } from "$lib/crossover/world/settings/actions";
+import {
+    factions,
+    type Faction,
+} from "$lib/crossover/world/settings/affinities";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { type Barter, type GeohashLocation } from "$lib/crossover/world/types";
 import {
@@ -34,15 +38,15 @@ async function capture({
 }) {
     now = now ?? Date.now();
     let error: string | null = null;
-    let targetEntity = (await fetchEntity(target)) as ItemEntity;
+    let controlMonument = (await fetchEntity(target)) as ItemEntity;
 
     // Get target
-    if (!targetEntity) {
+    if (!controlMonument) {
         error = `Target ${target} not found`;
     }
     // Check if can capture target
     else {
-        const [ok, message] = await canCapture(self, targetEntity, offer);
+        const [ok, message] = await canCapture(self, controlMonument, offer);
         if (!ok) {
             error = message;
         }
@@ -63,21 +67,27 @@ async function capture({
         now,
     })) as PlayerEntity;
 
-    const faction = "human"; // TODO: get faction
-
-    let factionInfluence = (await itemVariableValue(
-        targetEntity,
-        faction,
-    )) as number;
-
     // Transfer offer from player to control
+    let factionInfluence = (controlMonument.vars[self.fac] as number) ?? 0;
     for (const [cur, amt] of Object.entries(offer.currency)) {
         self[cur as Currency] -= amt;
         factionInfluence += amt;
     }
+    controlMonument.vars[self.fac] = factionInfluence;
+
+    // Update controlMonument influence description
+    let faction = factionInControl(controlMonument);
+    if (faction) {
+        controlMonument.vars["influence"] =
+            `${factions[faction].name} controls this monument.`;
+    } else {
+        controlMonument.vars["influence"] =
+            `You sense no influence from this monument.`;
+    }
+
+    // Save entities
     self = await saveEntity(self);
-    targetEntity.vars[faction] = factionInfluence;
-    targetEntity = await saveEntity(targetEntity);
+    controlMonument = await saveEntity(controlMonument);
 
     const nearbyPlayerIds = await getNearbyPlayerIds(
         self.loc[0],
@@ -88,7 +98,7 @@ async function capture({
     // Publish message
     await publishFeedEventToPlayers(nearbyPlayerIds, {
         type: "message",
-        message: `${faction} influence grows in the area (${factionInfluence})`,
+        message: `${factions[self.fac].name} influence grows in the area (${factionInfluence})`,
     });
 
     // Publish update to self
@@ -98,11 +108,28 @@ async function capture({
 
     // Publish target to nearby players
     await publishAffectedEntitiesToPlayers(
-        [minifiedEntity(targetEntity, { stats: true })],
+        [minifiedEntity(controlMonument, { stats: true })],
         {
             publishTo: nearbyPlayerIds,
         },
     );
+}
+
+function factionInControl(controlMonument: ItemEntity): Faction | undefined {
+    // Update controlMonument influence description
+    let highestInfluence = 0;
+    let faction: Faction | undefined = undefined;
+    for (const [fac, inf] of Object.entries(controlMonument.vars)) {
+        if (
+            fac in factions &&
+            typeof inf === "number" &&
+            inf > highestInfluence
+        ) {
+            highestInfluence = inf;
+            faction = fac as Faction;
+        }
+    }
+    return faction;
 }
 
 async function canCapture(
