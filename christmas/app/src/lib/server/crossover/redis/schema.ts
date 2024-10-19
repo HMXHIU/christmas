@@ -21,6 +21,7 @@ const PlayerEntitySchema = new Schema("Player", {
     arch: { type: "string" }, // archetype
     gen: { type: "string" }, // gender
     race: { type: "string" }, // race
+    fac: { type: "string" }, // faction
 
     // Location
     loc: { type: "string[]" },

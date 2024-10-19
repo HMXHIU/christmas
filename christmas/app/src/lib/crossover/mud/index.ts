@@ -57,16 +57,16 @@ class MudDescriptionGenerator {
         this.topologyResponseCache = topologyResponseCache;
     }
 
-    async descriptionsMonsters(monsters: Monster[]) {
-        return descibeEntities(monsters, "monster", entityDescriptors);
+    async descriptionsMonsters(player: Player, monsters: Monster[]) {
+        return descibeEntities(player, monsters, "monster", entityDescriptors);
     }
 
-    async describeItems(items: Item[]) {
-        return descibeEntities(items, "item", entityDescriptors);
+    async describeItems(player: Player, items: Item[]) {
+        return descibeEntities(player, items, "item", entityDescriptors);
     }
 
-    async describePlayers(players: Player[]) {
-        return descibeEntities(players, "player", entityDescriptors);
+    async describePlayers(player: Player, players: Player[]) {
+        return descibeEntities(player, players, "player", entityDescriptors);
     }
 
     async describeSurroundings(

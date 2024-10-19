@@ -1,13 +1,14 @@
 import { groupBy, partition } from "lodash-es";
-import type { Actor, EntityType, Item, Monster } from "../types";
+import type { Actor, EntityType, Item, Monster, Player } from "../types";
 import { getEntityId, isEntityAlive } from "../utils";
-import { bestiary } from "../world/settings/bestiary";
+import { isEntityHostile } from "../world/entity";
 import { compendium } from "../world/settings/compendium";
 import type { EntityDescriptionState, EntityDescriptors } from "./settings";
 
 export { descibeEntities };
 
 function descibeEntities(
+    player: Player,
     entities: Actor[],
     entityType: EntityType,
     entityDescriptors: Record<EntityType, EntityDescriptors>,
@@ -33,7 +34,7 @@ function descibeEntities(
                 entityState,
             );
             // Don't add additional info if destroyed
-            description += getAdditionalInfo(group, entityType);
+            description += getAdditionalInfo(player, group, entityType);
             description = description.trim();
             if (description) {
                 descriptions.push(description);
@@ -53,16 +54,19 @@ function descibeEntities(
         .join("\n");
 }
 
-function getAdditionalInfo(entities: Actor[], entityType: EntityType): string {
+function getAdditionalInfo(
+    player: Player,
+    entities: Actor[],
+    entityType: EntityType,
+): string {
     const sample = entities[0];
     if (!sample) {
         return "";
     }
-
     // Monster
     if (entityType === "monster") {
-        const monster = bestiary[(sample as Monster).beast];
-        if (monster.alignment === "evil" && isEntityAlive(sample)) {
+        const [hostile, aggro] = isEntityHostile(player, sample as Monster);
+        if (hostile && isEntityAlive(sample)) {
             return " looking threateningly at you";
         }
     }

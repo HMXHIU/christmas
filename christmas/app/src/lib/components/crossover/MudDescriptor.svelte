@@ -69,22 +69,28 @@
                 }
             }),
             monsterRecord.subscribe(async (mr) => {
+                if (!$player) return;
                 monsterDescriptor =
                     await descriptionGenerator.descriptionsMonsters(
+                        $player,
                         Object.values(mr).filter((p) =>
                             geohashLocationTypes.has(p.locT),
                         ),
                     );
             }),
             itemRecord.subscribe(async (ir) => {
+                if (!$player) return;
                 itemDescriptor = await descriptionGenerator.describeItems(
+                    $player,
                     Object.values(ir).filter((p) =>
                         geohashLocationTypes.has(p.locT),
                     ),
                 );
             }),
             playerRecord.subscribe(async (pr) => {
+                if (!$player) return;
                 playerDescriptor = await descriptionGenerator.describePlayers(
+                    $player,
                     Object.values(pr).filter((p) =>
                         geohashLocationTypes.has(p.locT),
                     ),

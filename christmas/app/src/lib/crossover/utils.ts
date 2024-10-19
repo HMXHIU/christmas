@@ -572,7 +572,7 @@ function minifiedEntity(
 
     // Player specific
     if ("player" in entity) {
-        fields.push("player", "avatar"); // awlways need avatar to render
+        fields.push("player", "avatar"); // always need avatar to render
 
         // Demographics
         if (options?.demographics) {

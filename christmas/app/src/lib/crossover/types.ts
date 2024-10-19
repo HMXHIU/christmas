@@ -10,6 +10,7 @@ import type {
 } from "$lib/crossover/world/types";
 import type { DamageType } from "./world/abilities";
 import type { Attribute } from "./world/entity";
+import type { Faction } from "./world/settings/affinities";
 import type { SkillLines } from "./world/skills";
 
 export type {
@@ -93,9 +94,10 @@ interface EntityState
  */
 
 interface CharacterParams {
-    arch: Archetypes; // archetype
-    gen: Genders; // gender
+    arch: Archetypes;
+    gen: Genders;
     race: Races;
+    fac: Faction;
 }
 
 interface Player extends EntityState, CharacterParams {

@@ -10,10 +10,12 @@ import type {
 import { isNumber, mergeWith, uniq } from "lodash-es";
 import type { Abilities } from "./abilities";
 import type { Actions } from "./actions";
+import { hostility, type Affinity } from "./affinities";
 import {
     attributesFromDemographics,
     skillsFromDemographics,
 } from "./demographic";
+import { factions } from "./settings/affinities";
 import { bestiary } from "./settings/bestiary";
 import { BASE_ATTRIBUTES } from "./settings/entity";
 import {
@@ -27,11 +29,13 @@ export {
     describeResource,
     entityAbilities,
     entityActions,
+    entityAffinity,
     entityAttributes,
     entityCurrencyReward,
     entityLevel,
     entitySkills,
     entityStats,
+    isEntityHostile,
     mergeAdditive,
     mergeNumericAdd,
     resetEntityStats,
@@ -150,18 +154,27 @@ function entityActions(entity: EntitySkillsInput): Actions[] {
 }
 
 function entityCurrencyReward(entity: Creature): Record<Currency, number> {
-    // TODO: player alignment (now assumed to be good)
-    const alignment =
-        "monster" in entity ? bestiary[entity.beast].alignment : "good";
+    const moral = entityAffinity(entity).moral;
     const level = entityLevel(entity);
-    if (alignment === "evil") {
+    if (moral === "evil") {
         return {
             lum: Math.ceil(level) * 10,
             umb: 0,
         };
     }
     return {
-        lum: Math.ceil(level) * 10,
-        umb: 0,
+        lum: 0,
+        umb: Math.ceil(level) * 10,
     };
+}
+
+function entityAffinity(entity: Creature): Affinity {
+    return factions[
+        "player" in entity ? entity.fac : bestiary[entity.beast].faction
+    ].affinity;
+}
+
+function isEntityHostile(a: Creature, b: Creature): [boolean, number] {
+    const aggro = hostility(entityAffinity(a), entityAffinity(b));
+    return [hostility(entityAffinity(a), entityAffinity(b)) >= 2, aggro];
 }

@@ -17,7 +17,7 @@ const bestiary: Record<string, Beast> = {
             monster: 1, // all monsters must have monster skill (which also is their level)
             firstaid: 1,
         },
-        alignment: "evil",
+        faction: "meatshield",
         asset: {
             path: "bestiary/goblin",
             variants: {
@@ -38,7 +38,7 @@ const bestiary: Record<string, Beast> = {
             arachnid: 3,
             monster: 1,
         },
-        alignment: "neutral",
+        faction: "arachnid",
         asset: {
             path: "bestiary/goblin",
         },
@@ -55,7 +55,7 @@ const bestiary: Record<string, Beast> = {
             draconic: 8,
             monster: 1,
         },
-        alignment: "evil",
+        faction: "serpent",
         asset: {
             path: "bestiary/goblin",
             animations: {

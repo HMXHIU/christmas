@@ -1,14 +1,10 @@
 import type { NPCs } from "$lib/server/crossover/npc/types";
 import { GAME_MORPHOLOGY } from "../defs";
 import type { Skills } from "../types";
+import type { Faction } from "./settings/affinities";
 import type { AssetMetadata } from "./types";
 
-export {
-    avatarMorphologies,
-    type Alignment,
-    type AvatarMorphology,
-    type Beast,
-};
+export { avatarMorphologies, type AvatarMorphology, type Beast };
 
 type AvatarMorphology = "humanoid" | "canine";
 const avatarMorphologies: Record<
@@ -25,8 +21,6 @@ const avatarMorphologies: Record<
     },
 };
 
-type Alignment = "good" | "neutral" | "evil";
-
 /**
  * `Beast` is a template used to spawn a `Monster` with derived stats from the template.
  */
@@ -34,7 +28,7 @@ interface Beast {
     beast: string;
     description: string;
     skills: Skills;
-    alignment: Alignment;
+    faction: Faction;
     asset: AssetMetadata;
     trophies: Partial<Record<NPCs, string[]>>;
 }

@@ -111,6 +111,7 @@ async function loadPlayerEntity(
         arch: demographic.archetype,
         gen: demographic.gender,
         race: demographic.race,
+        fac: "historian", // new human players automatically start in the "Guild of the Historians"
         skills: {},
         pthclk: 0,
         pthdur: 0,
