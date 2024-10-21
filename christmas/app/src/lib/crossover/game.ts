@@ -31,6 +31,7 @@ import {
     crossoverCmdAccept,
     crossoverCmdAttack,
     crossoverCmdBrowse,
+    crossoverCmdCapture,
     crossoverCmdConfigureItem,
     crossoverCmdCreateItem,
     crossoverCmdDrop,
@@ -382,6 +383,22 @@ async function performAction(
             throw new Error(`Who are you browsing?`);
         }
         return await crossoverCmdBrowse({ player: (target as Player).player });
+    }
+    // capture
+    else if (action.action === "capture") {
+        if (!target || !(target as Item).item) {
+            throw new Error(`What are you trying to capture?`);
+        }
+        if (!offer) {
+            throw new Error(`An offering is required.`);
+        }
+        return await crossoverCmdCapture(
+            {
+                target: (target as Item).item,
+                offer,
+            },
+            headers,
+        );
     }
 
     throw new Error(`Unknown action ${action}`);

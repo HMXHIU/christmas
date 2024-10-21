@@ -188,14 +188,17 @@ const blueprints: Record<BluePrints, BluePrint> = {
     outpost: {
         template: "outpost",
         locationType: "geohash",
+        // This means every `region` has x number of this blueprint (a `town` will be selected from of the the 32 towns in the `region`)
         frequency: {
             precision: worldSeed.spatial.region.precision,
             min: 0,
             max: 1,
         },
+        // This is the spatial size of one instance of the blueprint
         precision: worldSeed.spatial.town.precision,
         clusters: {
             control: {
+                // This is the spatial size of 1 cluster inside the instance
                 precision: worldSeed.spatial.village.precision,
                 props: {
                     control: {

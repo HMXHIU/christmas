@@ -554,7 +554,7 @@ Examples:
                     optional: false,
                 },
                 offer: {
-                    position: 2,
+                    position: 3,
                     optional: false,
                 },
             },
@@ -564,7 +564,7 @@ Examples:
             path: "actions/actions",
             icon: "night-sleep",
         },
-        range: 0,
+        range: 2,
     },
 };
 

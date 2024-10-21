@@ -241,6 +241,11 @@ async function blueprintsAtDungeon(
     return dungeonBlueprint;
 }
 
+/**
+ * When spawning blueprints, there will be no overlap of plots.
+ * For instance if both `town` and `outpost` have `town` precision,
+ * Then in a `town`, there can only either be a `town` or an `outpost`, but not both.
+ */
 async function blueprintsAtTerritory(
     territory: string,
     locationType: GeohashLocation,
@@ -280,13 +285,13 @@ async function blueprintsAtTerritory(
             continue;
         }
 
-        // Check frequency precision (must be greater than territory)
+        // Check frequency precision (must be more precise than territory)
         const { frequency, precision } = blueprint;
         if (frequency.precision <= territory.length) {
             continue;
         }
 
-        // Get plots in which we should spawn the blueprint
+        // Get plots (precision of the blueprint) in which we should spawn the blueprint
         const plots = childrenGeohashesAtPrecision(
             territory,
             frequency.precision,

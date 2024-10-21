@@ -182,14 +182,13 @@ function resolveActionEntities({
 }): GameActionEntities[] {
     let gameActionEntitiesScores: [GameActionEntities, number][] = [];
 
-    /**
-     * Extract all contexts for predicate
+    /*
+     * Extract all contexts for predicate (we need to extract this first before iterating possible targets)
      */
     let offer: BarterSerialized | undefined = undefined;
     let receive: BarterSerialized | undefined = undefined;
     let skill: SkillLines | undefined = undefined;
     let item: Item | undefined = undefined;
-
     for (const [context, { position, optional, entityTypes }] of Object.entries(
         actions[action.action].predicate.tokens,
     ) as [TokenType, TokenContext][]) {
@@ -218,20 +217,26 @@ function resolveActionEntities({
             // TODO: Add test to check if fuzzy search works
             skill = skills.find((s) => tokenPositions[s]);
             if (!optional && !skill) return [];
-        } else if (context === "item") {
+        }
+        // Missing item
+        else if (context === "item") {
             for (const [entityId, matchedTokenPositions] of Object.entries(
                 tokenPositions,
             )) {
-                if (
-                    matchedTokenPositions[position]?.token ===
-                    queryTokens[position]
-                ) {
+                if (matchedTokenPositions[position]?.token === token) {
                     item = items.find((i) => i.item === entityId);
                     break;
                 }
             }
             if (!optional && !item) return [];
-        } else if (context === "target") {
+        }
+    }
+
+    // Iterate possible targets
+    for (const [context, { position, optional, entityTypes }] of Object.entries(
+        actions[action.action].predicate.tokens,
+    ) as [TokenType, TokenContext][]) {
+        if (context === "target") {
             if (entityTypes) {
                 for (const entityType of entityTypes) {
                     const gameEntities =

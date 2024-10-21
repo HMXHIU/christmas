@@ -181,8 +181,9 @@ describe("Blueprint Tests", async () => {
     });
 
     test("Test `blueprintsAtTerritory`", async () => {
+        const territory = "sk"; // africa, all land
         const territoryBlueprints = await blueprintsAtTerritory(
-            "sk",
+            territory, // there are 32 regions in 1 territory
             "geohash",
             blueprints,
             ["outpost", "town"],
@@ -197,15 +198,9 @@ describe("Blueprint Tests", async () => {
             ([loc, b]) => b.blueprint,
         );
         for (const [b, ps] of Object.entries(propsByBlueprint)) {
-            // Check all unique locations
+            // Check all prop locations are unique
             const propLocations = ps.map(([loc, { prop, blueprint }]) => loc);
             expect(propLocations.length).toBe(uniq(propLocations).length);
-
-            // Test no overlapping plots for each blueprint ??? IS THIS STILL VALID ???
-            // const uniquePlots = uniqBy(propLocations, (l) =>
-            //     l.slice(0, blueprints[b as BluePrints].precision),
-            // );
-            // expect(propLocations.length).toBe(uniquePlots.length);
         }
 
         // If this change means our world will change!

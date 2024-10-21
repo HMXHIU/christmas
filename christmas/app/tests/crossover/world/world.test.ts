@@ -375,6 +375,8 @@ describe("World Tests", async () => {
         expect(potionofhealth != null && potionofhealth.length === 1).toBe(
             true,
         );
+
+        console.log(JSON.stringify(portal, null, 2));
         expect(goblin != null && goblin.length === 1).toBe(true);
         expect(portal != null && portal.length === 1).toBe(true);
 

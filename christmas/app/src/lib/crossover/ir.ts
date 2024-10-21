@@ -591,6 +591,8 @@ function searchPossibleCommands({
             return [action, entities, variables];
         });
 
+    // console.log(JSON.stringify(actionCommands, null, 2));
+
     const utilityCommands: GameCommand[] = itemUtilitiesPossible.flatMap(
         ([item, utility]) => {
             // Check if the utility performs an ability
