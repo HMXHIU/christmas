@@ -203,29 +203,49 @@ const blueprints: Record<BluePrints, BluePrint> = {
         // This is the spatial size of one instance of the blueprint
         precision: worldSeed.spatial.town.precision,
         clusters: {
+            beasts: {
+                precision: worldSeed.spatial.village.precision,
+                beasts: [
+                    {
+                        beast: "goblin",
+                        min: 1,
+                        max: 3,
+                        pattern: "random",
+                        unique: true,
+                        // TODO: ADD FACTION
+                    },
+                ],
+                min: 2,
+                max: 7,
+                pattern: "random",
+            },
             control: {
                 // This is the spatial size of 1 cluster inside the instance
                 precision: worldSeed.spatial.village.precision,
-                props: {
-                    control: {
+                props: [
+                    {
+                        prop: "control",
                         min: 1,
                         max: 1,
                         pattern: "center",
+                        unique: true,
                     },
-                },
+                ],
                 pattern: "random",
                 min: 1,
                 max: 1,
             },
             market: {
                 precision: worldSeed.spatial.village.precision,
-                props: {
-                    tavern: {
+                props: [
+                    {
+                        prop: "tavern",
                         min: 1,
                         max: 1,
                         pattern: "random",
+                        unique: true,
                     },
-                },
+                ],
                 pattern: "random",
                 min: 1,
                 max: 1,
@@ -244,26 +264,30 @@ const blueprints: Record<BluePrints, BluePrint> = {
         clusters: {
             control: {
                 precision: worldSeed.spatial.village.precision,
-                props: {
-                    control: {
+                props: [
+                    {
+                        prop: "control",
                         min: 1,
                         max: 1,
                         pattern: "center",
+                        unique: true,
                     },
-                },
+                ],
                 pattern: "random",
                 min: 1,
                 max: 1,
             },
             market: {
                 precision: worldSeed.spatial.village.precision,
-                props: {
-                    tavern: {
+                props: [
+                    {
+                        prop: "tavern",
                         min: 1,
                         max: 1,
                         pattern: "random",
+                        unique: true,
                     },
-                },
+                ],
                 pattern: "random",
                 min: 1,
                 max: 1,

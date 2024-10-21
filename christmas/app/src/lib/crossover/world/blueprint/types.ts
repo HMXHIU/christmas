@@ -3,15 +3,51 @@ import type { ItemVariables } from "../compendium";
 import type { GeohashLocation } from "../types";
 
 export type {
+    BeastCluster,
     BluePrint,
     BluePrints,
     DungeonBluePrint,
     DungeonBluePrints,
+    EntityCluster,
     LocationBlueprint,
+    NPCCluster,
+    Pattern,
+    PropCluster,
     Stencil,
 };
 
 type BluePrints = "outpost" | "town";
+
+type Pattern = "random" | "center" | "peripheral";
+
+type EntityCluster = BeastCluster | NPCCluster | PropCluster;
+
+interface PropCluster {
+    prop: string;
+    min: number; // number of props in a cluster
+    max: number;
+    pattern: Pattern; // distribution of props in the cluster
+    ref?: string;
+    variables?: ItemVariables; // item variables to be set when spawning the item
+    overwrite?: Record<string, string | boolean | number>;
+    unique?: boolean;
+}
+
+interface BeastCluster {
+    beast: string;
+    min: number; // number of beasts in a cluster
+    max: number;
+    pattern: Pattern; // distribution of beasts in the cluster
+    unique?: boolean;
+}
+
+interface NPCCluster {
+    npc: NPCs;
+    min: number; // number of npcs in a cluster
+    max: number;
+    pattern: Pattern; // distribution of npcs in the cluster
+    unique?: boolean;
+}
 
 interface BluePrint {
     template: BluePrints;
@@ -25,16 +61,12 @@ interface BluePrint {
     clusters: {
         [cluster: string]: {
             precision: number; // size of the cluster
-            props: {
-                [prop: string]: {
-                    min: number; // number of props in a cluster
-                    max: number;
-                    pattern: "random" | "center" | "peripheral"; // distribution of props in the cluster
-                };
-            };
+            props?: PropCluster[];
+            beasts?: BeastCluster[];
+            npcs?: NPCCluster[];
             min: number; // number of clusters
             max: number;
-            pattern: "random" | "center" | "peripheral"; // distribution of clusters in the plot
+            pattern: Pattern; // distribution of clusters in the plot
         };
     };
 }
@@ -51,33 +83,12 @@ interface DungeonBluePrint {
     };
     clusters: {
         [cluster: string]: {
-            props?: {
-                ref?: string;
-                prop: string;
-                min: number; // number of props in a cluster
-                max: number;
-                pattern: "random" | "center" | "peripheral"; // distribution of props in the cluster
-                variables?: ItemVariables; // item variables to be set when spawning the item
-                overwrite?: Record<string, string | boolean | number>;
-                unique?: boolean;
-            }[];
-            npcs?: {
-                npc: NPCs;
-                min: number; // number of npcs in a cluster
-                max: number;
-                pattern: "random" | "center" | "peripheral"; // distribution of npcs in the cluster
-                unique?: boolean;
-            }[];
-            beasts?: {
-                beast: string;
-                min: number; // number of monsters in a cluster
-                max: number;
-                pattern: "random" | "center" | "peripheral"; // distribution of monsters in the cluster
-                unique?: boolean;
-            }[];
+            props?: PropCluster[];
+            beasts?: BeastCluster[];
+            npcs?: NPCCluster[];
             min: number; // number of clusters
             max: number;
-            pattern: "random" | "center" | "peripheral"; // distribution of clusters in the blueprint location
+            pattern: Pattern; // distribution of clusters in the blueprint location
         };
     };
 }

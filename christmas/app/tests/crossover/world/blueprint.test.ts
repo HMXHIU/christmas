@@ -200,19 +200,21 @@ describe("Blueprint Tests", async () => {
             },
         );
 
-        const propsByBlueprint = groupBy(
+        const entitiesByBlueprint = groupBy(
             Object.entries(territoryBlueprints.stencil),
             ([loc, b]) => b.blueprint,
         );
-        for (const [b, ps] of Object.entries(propsByBlueprint)) {
-            // Check all prop locations are unique
-            const propLocations = ps.map(([loc, { prop, blueprint }]) => loc);
-            expect(propLocations.length).toBe(uniq(propLocations).length);
+        for (const [b, ps] of Object.entries(entitiesByBlueprint)) {
+            // Check all entitie locations are unique
+            const entityLocations = ps.map(([loc, _]) => loc);
+            expect(entityLocations.length).toBe(uniq(entityLocations).length);
         }
+
+        console.log(JSON.stringify(territoryBlueprints, null, 2));
 
         // If this change means our world will change!
         expect(hashObject(territoryBlueprints)).toBe(
-            "0bab96846b8c40aab54a9da49fc1c138b9f149027b50040d5b6d9f058c88aa11",
+            "127314841e976279c6cc849210e8977adfb940ed84790e1fae2f7986074f2e7f",
         );
     });
 

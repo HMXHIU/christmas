@@ -113,7 +113,7 @@ async function blueprintsAtDungeon(
                 const pivot = Math.floor(plots.length / 2);
                 let chosenClusters: string[] = [];
 
-                // Note: the plots is sorted by distance to the center of the room/corridor so choosing the front means picking the center
+                // The plots are sorted by distance to the center of the room/corridor so choosing the front means picking the center
                 if (pattern === "random") {
                     chosenClusters = sampleFrom(plots, numClusters, seed);
                 } else if (pattern === "center") {
@@ -130,8 +130,8 @@ async function blueprintsAtDungeon(
                     );
                 }
 
+                const usedEntityLocations = new Set<string>();
                 if (props) {
-                    const usedPropLocations = new Set<string>();
                     for (const {
                         ref,
                         prop,
@@ -156,7 +156,7 @@ async function blueprintsAtDungeon(
                                     pattern,
                                     seededRandomNumberBetween(min, max, seed),
                                     seed,
-                                    (g) => !usedPropLocations.has(g),
+                                    (g) => !usedEntityLocations.has(g),
                                 );
 
                             for (const geohash of propLocations) {
@@ -168,7 +168,7 @@ async function blueprintsAtDungeon(
                                     overwrite,
                                     unique,
                                 };
-                                usedPropLocations.add(geohash);
+                                usedEntityLocations.add(geohash);
                             }
                         }
                     }
@@ -190,6 +190,7 @@ async function blueprintsAtDungeon(
                                     pattern,
                                     seededRandomNumberBetween(min, max, seed),
                                     seed,
+                                    (g) => !usedEntityLocations.has(g),
                                 );
                             for (const geohash of beastLocations) {
                                 dungeonBlueprint.stencil[geohash] = {
@@ -197,6 +198,7 @@ async function blueprintsAtDungeon(
                                     beast,
                                     unique,
                                 };
+                                usedEntityLocations.add(geohash);
                             }
                         }
                     }
@@ -218,6 +220,7 @@ async function blueprintsAtDungeon(
                                     pattern,
                                     seededRandomNumberBetween(min, max, seed),
                                     seed,
+                                    (g) => !usedEntityLocations.has(g),
                                 );
                             for (const geohash of npcLocations) {
                                 dungeonBlueprint.stencil[geohash] = {
@@ -225,6 +228,7 @@ async function blueprintsAtDungeon(
                                     npc,
                                     unique,
                                 };
+                                usedEntityLocations.add(geohash);
                             }
                         }
                     }
@@ -278,6 +282,19 @@ async function blueprintsAtTerritory(
         return territoryBlueprint;
     }
 
+    async function onLandPredicate(
+        location: string,
+        locationType: GeohashLocation,
+    ): Promise<boolean> {
+        return (
+            (await elevationAtGeohash(location, locationType, {
+                responseCache: options?.topologyResponseCache,
+                resultsCache: options?.topologyResultCache,
+                bufferCache: options?.topologyBufferCache,
+            })) > 1
+        );
+    }
+
     const bpLocations = new Set<string>(); // keep track of chosen locations so we don't overlap
     for (const blueprint of blueprintsToSpawn.map((t) => blueprints[t])) {
         // Check locationType
@@ -311,19 +328,6 @@ async function blueprintsAtTerritory(
             let seed = stringToRandomNumber(blueprint.template + plot);
             const { min, max } = frequency;
             const numInstances = seededRandomNumberBetween(min, max, seed++);
-
-            async function onLandPredicate(
-                location: string,
-                locationType: GeohashLocation,
-            ): Promise<boolean> {
-                return (
-                    (await elevationAtGeohash(location, locationType, {
-                        responseCache: options?.topologyResponseCache,
-                        resultsCache: options?.topologyResultCache,
-                        bufferCache: options?.topologyBufferCache,
-                    })) > 1
-                );
-            }
 
             // Generate blueprint locations (on land)
             const blueprintLocations = await Promise.all(

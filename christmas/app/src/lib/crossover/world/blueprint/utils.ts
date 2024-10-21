@@ -6,7 +6,7 @@ import {
 import { childrenGeohashesAtPrecision } from "../../utils";
 import { worldSeed } from "../settings/world";
 import type { GeohashLocation } from "../types";
-import type { BluePrint, Stencil } from "./types";
+import type { BluePrint, Pattern, Stencil } from "./types";
 
 export { sampleChildrenGeohashesAtPrecision, stencilFromBlueprint };
 
@@ -69,10 +69,10 @@ async function stencilFromBlueprint(
         locationType: GeohashLocation,
     ) => Promise<boolean>,
 ): Promise<Stencil> {
-    const propLocations: Stencil = {};
+    const stencil: Stencil = {};
     for (const [
         cluster,
-        { props, pattern, precision, min, max },
+        { props, beasts, npcs, pattern, precision, min, max },
     ] of Object.entries(blueprint.clusters)) {
         let seed = stringToRandomNumber(location + locationType + cluster);
 
@@ -87,27 +87,95 @@ async function stencilFromBlueprint(
 
         for (const clusterLocation of clusterLocations) {
             if (await predicate(clusterLocation, locationType)) {
-                for (const [prop, { min, max, pattern }] of Object.entries(
-                    props,
-                )) {
-                    let propSeed = stringToRandomNumber(clusterLocation + prop);
-                    const propGeohashes = sampleChildrenGeohashesAtPrecision(
+                const usedEntityLocations = new Set<string>();
+
+                function entityLocations(
+                    entity: string,
+                    min: number,
+                    max: number,
+                    pattern: Pattern,
+                ): string[] {
+                    let seed = stringToRandomNumber(clusterLocation + entity);
+                    return sampleChildrenGeohashesAtPrecision(
                         clusterLocation,
                         worldSeed.spatial.unit.precision,
                         pattern,
-                        seededRandomNumberBetween(min, max, propSeed),
-                        propSeed,
+                        seededRandomNumberBetween(min, max, seed),
+                        seed,
+                        (g) => !usedEntityLocations.has(g),
                     );
-                    for (const geohash of propGeohashes) {
-                        propLocations[geohash] = {
+                }
+
+                // Items
+                if (props) {
+                    for (const {
+                        prop,
+                        variables,
+                        ref,
+                        overwrite,
+                        min,
+                        max,
+                        pattern,
+                        unique,
+                    } of props) {
+                        for (const geohash of entityLocations(
                             prop,
-                            blueprint: blueprint.template,
-                        };
+                            min,
+                            max,
+                            pattern,
+                        )) {
+                            stencil[geohash] = {
+                                prop,
+                                blueprint: blueprint.template,
+                                variables,
+                                ref,
+                                overwrite,
+                                unique,
+                            };
+                            usedEntityLocations.add(geohash);
+                        }
+                    }
+                }
+                // Monsters
+                if (beasts) {
+                    for (const { beast, min, max, pattern, unique } of beasts) {
+                        for (const geohash of entityLocations(
+                            beast,
+                            min,
+                            max,
+                            pattern,
+                        )) {
+                            stencil[geohash] = {
+                                beast,
+                                blueprint: blueprint.template,
+                                unique,
+                            };
+                            usedEntityLocations.add(geohash);
+                        }
+                    }
+                }
+
+                // NPCs
+                if (npcs) {
+                    for (const { npc, min, max, pattern, unique } of npcs) {
+                        for (const geohash of entityLocations(
+                            npc,
+                            min,
+                            max,
+                            pattern,
+                        )) {
+                            stencil[geohash] = {
+                                npc,
+                                blueprint: blueprint.template,
+                                unique,
+                            };
+                            usedEntityLocations.add(geohash);
+                        }
                     }
                 }
             }
         }
     }
 
-    return propLocations;
+    return stencil;
 }
