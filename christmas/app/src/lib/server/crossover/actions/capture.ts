@@ -23,7 +23,7 @@ import { fetchEntity, saveEntity } from "../redis/utils";
 import { itemVariableValue } from "../utils";
 import { barterDescription, playerHasBarterItems } from "./trade";
 
-export { capture };
+export { capture, factionInControl };
 
 async function capture({
     self,

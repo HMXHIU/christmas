@@ -30,12 +30,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { loadPlayerEntity } from ".";
 import { ObjectStorage } from "../objectStorage";
-import {
-    authProcedure,
-    dmServiceProcedure,
-    internalServiceProcedure,
-    t,
-} from "../trpc";
+import { authProcedure, dmServiceProcedure, t } from "../trpc";
 import { performAbility } from "./abilities";
 import { fulfill, inventory, look, move, rest, say } from "./actions";
 import { createGiveCTA, executeGiveCTA } from "./actions/give";
@@ -57,12 +52,7 @@ import {
     deserializeBarter,
     executeTradeCTA,
 } from "./actions/trade";
-import {
-    initializeGame,
-    respawnMonsters,
-    spawnMonster,
-    spawnWorld,
-} from "./dm";
+import { respawnMonsters, spawnLocation, spawnMonster, spawnWorld } from "./dm";
 import { publishCTAEvent, publishFeedEvent } from "./events";
 import {
     verifyP2PTransaction,
@@ -257,9 +247,6 @@ const playerAuthBusyProcedure = playerAuthProcedure.use(
 const crossoverRouter = {
     //  Dungeon master (requires dm token)
     dm: t.router({
-        initialize: internalServiceProcedure.mutation(async () => {
-            await initializeGame();
-        }),
         moveMonster: dmServiceProcedure
             .input(EntityPathSchema)
             .mutation(async ({ ctx, input }) => {
@@ -385,6 +372,7 @@ const crossoverRouter = {
             const dungeonEntrances: Item[] = (await dungeonEntrancesQuerySet(
                 territory,
                 player.locT as GeohashLocation,
+                player.locI,
             ).all()) as ItemEntity[];
 
             return {
@@ -720,7 +708,6 @@ const crossoverRouter = {
 
                 return playerMetadata;
             }),
-
         // auth.login
         login: authProcedure
             .input(LoginSchema)
@@ -738,6 +725,13 @@ const crossoverRouter = {
                 player = await saveEntity(player);
                 await savePlayerState(ctx.user.publicKey); // must save after player entity
 
+                // Spawn location (Do not block, spawn in the background)
+                spawnLocation(
+                    player.loc[0],
+                    player.locT as GeohashLocation,
+                    player.locI,
+                );
+
                 // Set player cookie (to know if user has signed up for crossover)
                 ctx.cookies.set("player", ctx.user.publicKey, {
                     path: "/",
@@ -749,7 +743,6 @@ const crossoverRouter = {
 
                 return player as Player;
             }),
-
         // auth.logout
         logout: authProcedure.query(async ({ ctx }) => {
             // Get player
@@ -769,7 +762,6 @@ const crossoverRouter = {
 
             return { status: "success", player: player as Player };
         }),
-
         // auth.player
         player: authProcedure.query(async ({ ctx }) => {
             // Get or load player

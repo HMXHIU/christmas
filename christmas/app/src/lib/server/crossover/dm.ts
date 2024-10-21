@@ -5,6 +5,7 @@ import {
     borderingGeohashes,
     calculateLocation,
     childrenGeohashes,
+    geohashDistance,
     getEntityId,
     getPlotsAtGeohash,
 } from "$lib/crossover/utils";
@@ -12,11 +13,14 @@ import {
     defaultPropAttributes,
     type PropAttributes,
 } from "$lib/crossover/world/compendium";
+import { DUNGEON_PRECISION } from "$lib/crossover/world/dungeons";
 import { entityStats, mergeAdditive } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
+import { factions } from "$lib/crossover/world/settings/affinities";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
+    fetchSanctuaries,
     spatialAtPrecision,
     worldSeed,
 } from "$lib/crossover/world/settings/world";
@@ -24,7 +28,12 @@ import {
     geohashLocationTypes,
     type GeohashLocation,
 } from "$lib/crossover/world/types";
-import { poisInWorld, type WorldPOIs } from "$lib/crossover/world/world";
+import {
+    findClosestSanctuary,
+    poisInWorld,
+    type Sanctuary,
+    type WorldPOIs,
+} from "$lib/crossover/world/world";
 import type {
     CreatureEntity,
     ItemEntity,
@@ -36,31 +45,34 @@ import { substituteVariablesRecursively } from "$lib/utils";
 import { generatePin } from "$lib/utils/random";
 import { groupBy, uniq } from "lodash-es";
 import { hashObject } from "..";
-import {
-    instantiateBlueprintsAtTerritories,
-    instantiateBlueprintsInDungeons,
-} from "./blueprint";
+import { redisClient } from "../redis";
+import { factionInControl } from "./actions/capture";
+import { spawnDungeonBlueprints, spawnGeohashBlueprints } from "./blueprint";
 import { spawnNPC } from "./npc";
 import { itemRepository, monsterRepository, worldRepository } from "./redis";
 import {
     chainOr,
+    controlMonumentsQuerySet,
     itemsInGeohashQuerySet,
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
     worldsContainingGeohashQuerySet,
 } from "./redis/queries";
+import { saveEntity } from "./redis/utils";
 import { isLocationTraversable, parseItemVariables } from "./utils";
 
 export {
-    initializeGame,
     respawnMonsters,
     spawnItemAtGeohash,
     spawnItemInInventory,
+    spawnLocation,
     spawnMonster,
     spawnQuestItem,
     spawnWorld,
     spawnWorldPOIs,
 };
+
+const LOCATION_RESPAWN_TIMER = 60 * 60; // 1 hr
 
 // TODO: Add time cache
 async function checkCanSpawnMonsters(
@@ -602,14 +614,133 @@ async function spawnItemAtGeohash({
 }
 
 /**
- * Initialize the game world (only need to do once)
+ * Spawn the blueprint props at a location (max every LOCATION_RESPAWN_TIMER).
+ * This should be called regularly
  */
-async function initializeGame() {
-    // Instantiate blueprints at ground level
-    await instantiateBlueprintsAtTerritories("geohash", LOCATION_INSTANCE);
+async function spawnLocation(
+    geohash: string,
+    locationType: GeohashLocation,
+    locationInstance: string,
+) {
+    // Check location
+    if (!geohashLocationTypes.has(locationType)) return;
+    const territory = geohash.slice(0, worldSeed.spatial.territory.precision);
 
-    // Instantiate blueprints for dungeons at d1
-    await instantiateBlueprintsInDungeons("d1", LOCATION_INSTANCE);
+    // Skip if has been initialized in the last `LOCATION_RESPAWN_TIMER` seconds
+    const spawnLocationKey = `spawn-${territory}-${locationType}-${locationInstance}`;
+    if (await redisClient.get(spawnLocationKey)) {
+        return;
+    }
+    // Set the spawn spawnLocationKey immediately to prevent race conditions
+    await redisClient.set(spawnLocationKey, new Date().getTime(), {
+        EX: LOCATION_RESPAWN_TIMER,
+    });
+
+    // Spawn control monuments to determine faction control
+    if (locationType === "geohash") {
+        await spawnGeohashBlueprints(
+            territory,
+            locationType,
+            locationInstance,
+            {
+                only: { prop: [compendium.control.prop] },
+            },
+        );
+    } else if (locationType === "d1") {
+        await spawnDungeonBlueprints(
+            territory,
+            locationType,
+            locationInstance,
+            {
+                only: { prop: [compendium.control.prop] },
+            },
+        );
+    }
+
+    // Initialize faction control (initial influence of control monuments)
+    const sanctuaries = await fetchSanctuaries();
+    await initializeFactionControl(
+        territory,
+        locationType,
+        locationInstance,
+        sanctuaries,
+    );
+
+    // Spawn Entities
+    if (locationType === "geohash") {
+        await spawnGeohashBlueprints(
+            territory,
+            locationType,
+            locationInstance,
+            {
+                exclude: { prop: [compendium.control.prop] },
+            },
+        );
+    } else if (locationType === "d1") {
+        await spawnDungeonBlueprints(
+            territory,
+            locationType,
+            locationInstance,
+            {
+                exclude: { prop: [compendium.control.prop] },
+            },
+        );
+    }
+}
+
+async function initializeFactionControl(
+    territory: string,
+    locationType: GeohashLocation,
+    locationInstance: string,
+    sanctuaries: Sanctuary[],
+) {
+    const initialInfluence = 100000;
+    const distanceToInfluenceFactor = 2;
+    const startingHumanFaction = factions.historian.faction;
+    const startingMonsterFaction = factions.meatshield.faction;
+
+    // Get monuments in territory location type
+    const monuments = (await controlMonumentsQuerySet(
+        territory,
+        locationType,
+        locationInstance,
+    ).returnAll()) as ItemEntity[];
+
+    for (const monument of monuments) {
+        // Check if has already been initialized (already has a faction)
+        if (factionInControl(monument)) continue;
+
+        const monumentLocation = monument.loc[0];
+        const dungeon = monumentLocation.slice(0, DUNGEON_PRECISION);
+        const sanctuary = sanctuaries.find((s) =>
+            s.geohash.startsWith(dungeon),
+        );
+        // Monuments in dungeon sanctuaries are controlled by starting human faction
+        if (sanctuary && locationType === "d1") {
+            monument.vars[startingHumanFaction] = initialInfluence;
+            await saveEntity(monument);
+        }
+        // Other monuments are controlled by starting monster faction (influence depends on distance from sanctuaries)
+        else {
+            const closestSanctuary =
+                await findClosestSanctuary(monumentLocation);
+            const distanceToClosestSanctuary = geohashDistance(
+                monumentLocation,
+                autoCorrectGeohashPrecision(
+                    closestSanctuary.geohash,
+                    monumentLocation.length,
+                ),
+            );
+            monument.vars[startingMonsterFaction] = Math.floor(
+                initialInfluence +
+                    distanceToClosestSanctuary * distanceToInfluenceFactor,
+            );
+            console.log(
+                `Set ${monument.item} influence ${startingMonsterFaction}:${monument.vars[startingMonsterFaction]}`,
+            );
+            await saveEntity(monument);
+        }
+    }
 }
 
 async function spawnWorldPOIs(

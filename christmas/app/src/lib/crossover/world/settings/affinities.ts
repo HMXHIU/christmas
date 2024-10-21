@@ -16,10 +16,11 @@ The faction affinity is used for determining hostility between monsters/npcs and
 
 const factions: Record<
     Faction,
-    { affinity: Affinity; description: string; name: string }
+    { affinity: Affinity; description: string; name: string; faction: Faction }
 > = {
     // Human factions
     historian: {
+        faction: "historian",
         name: "The Guild of the Historians",
         description: `Dedicated to the preservation of knowledge,
 history, and ancient artifacts, safeguards the legacy of past ages and ensures the wisdom of the past is never forgotten.`,
@@ -32,6 +33,7 @@ history, and ancient artifacts, safeguards the legacy of past ages and ensures t
     },
     // Monster factions
     meatshield: {
+        faction: "meatshield",
         name: "The Meatshield Society",
         description: `Orcs, goblins, and ogres who proudly stand in the way of danger (because they haven’t learned to dodge).`,
         affinity: {
@@ -42,6 +44,7 @@ history, and ancient artifacts, safeguards the legacy of past ages and ensures t
         },
     },
     arachnid: {
+        faction: "arachnid",
         name: "Arachnid",
         description: "",
         affinity: {
@@ -52,6 +55,7 @@ history, and ancient artifacts, safeguards the legacy of past ages and ensures t
         },
     },
     fae: {
+        faction: "fae",
         name: "Fae",
         description: "",
         affinity: {
@@ -62,6 +66,7 @@ history, and ancient artifacts, safeguards the legacy of past ages and ensures t
         },
     },
     serpent: {
+        faction: "serpent",
         name: "Serpent",
         description: "",
         affinity: {

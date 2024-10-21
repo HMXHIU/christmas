@@ -19,6 +19,7 @@ import {
 import { cloneDeep } from "lodash-es";
 import { setEntityBusy } from "..";
 import type { FeedEventVariables } from "../../../../routes/api/crossover/stream/+server";
+import { spawnLocation } from "../dm";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../events";
 import {
     verifyP2PTransaction,
@@ -193,6 +194,13 @@ async function move(entity: CreatureEntity, path: Direction[], now?: number) {
                 ...items.map((e) => minifiedEntity(e)),
             ],
             { publishTo: [entityId] },
+        );
+
+        // Spawn location (Do not block, spawn in the background)
+        spawnLocation(
+            entity.loc[0],
+            entity.locT as GeohashLocation,
+            entity.locI,
         );
     }
 }

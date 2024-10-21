@@ -24,7 +24,8 @@ import {
     dungeonBlueprintsToSpawn,
 } from "$lib/crossover/world/settings/blueprint";
 import { hashObject } from "$lib/server";
-import { instantiateBlueprintsInDungeons } from "$lib/server/crossover/blueprint";
+import { factionInControl } from "$lib/server/crossover/actions/capture";
+import { spawnDungeonBlueprints } from "$lib/server/crossover/blueprint";
 import type { ItemEntity } from "$lib/server/crossover/types";
 import { itemVariableValue } from "$lib/server/crossover/utils";
 import { groupBy, uniq } from "lodash-es";
@@ -32,19 +33,25 @@ import { describe, expect, test } from "vitest";
 
 describe("Blueprint Tests", async () => {
     test("Test Instantiate Dungeon Blueprints", async () => {
-        const spawnedEntities = await instantiateBlueprintsInDungeons(
+        const spawnedEntities = await spawnDungeonBlueprints(
+            "w2",
             "d1",
             LOCATION_INSTANCE,
-            ["w2"],
         );
 
         // If this changes the game changes procedurally
         expect(hashObject(spawnedEntities)).toBe(
-            "6c516a71af259b4e95b806f4b6fcca078fc13f99aaafeb0e1dafb30f0d067551",
+            "ccc40807f39e40afed8b15ad4e56687ae3df693169efd01585cc666c459e9694",
         );
 
-        // Check dungeon has control point
-        expect(spawnedEntities.find((e) => e.prop === "control")).toBeTruthy();
+        // Check dungeon has monument of control
+        const monument = spawnedEntities.find(
+            (e) => e.prop === "control",
+        ) as ItemEntity;
+        expect(monument).toBeTruthy();
+
+        // Check monument of control has no faction (initial faction is set using `spawnLocation`)
+        expect(factionInControl(monument)).toBeFalsy();
 
         // Check entrances configured correctly
         const entrance = spawnedEntities[0];

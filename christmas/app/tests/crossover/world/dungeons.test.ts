@@ -7,14 +7,17 @@ import {
 } from "$lib/crossover/caches";
 import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
 import { biomeAtGeohash, biomes } from "$lib/crossover/world/biomes";
-import {
-    generateDungeonGraphsForTerritory,
-    getAllDungeons,
-} from "$lib/crossover/world/dungeons";
+import { generateDungeonGraphsForTerritory } from "$lib/crossover/world/dungeons";
 import { generateRoomsBSP } from "$lib/crossover/world/dungeons/bsp";
+import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { prefabDungeons } from "$lib/crossover/world/settings/dungeons";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import { dungeonEntrancesQuerySet } from "$lib/server/crossover/redis/queries";
+import { factionInControl } from "$lib/server/crossover/actions/capture";
+import { spawnLocation } from "$lib/server/crossover/dm";
+import {
+    controlMonumentsQuerySet,
+    dungeonEntrancesQuerySet,
+} from "$lib/server/crossover/redis/queries";
 import type { ItemEntity } from "$lib/server/crossover/types";
 import { describe, expect, test } from "vitest";
 
@@ -34,17 +37,21 @@ describe("Dungeons Tests", async () => {
         }
     });
 
-    test("Test `getAllDungeons`", async () => {
-        // This will take a while
-        const dungeons = await getAllDungeons("d1", {
-            dungeonGraphCache,
-            dungeonsAtTerritoryCache,
-            topologyBufferCache,
-            topologyResponseCache,
-            topologyResultCache,
-        });
-        // Only spawns on land
-        expect(Object.keys(dungeons).length).toBe(314);
+    test("Check dungeons", async () => {
+        for (const territory of ["s7", "9x", "6v", "y7", "w2", "qg"]) {
+            let graphs = await generateDungeonGraphsForTerritory(
+                territory,
+                "d1",
+                {
+                    dungeonGraphCache,
+                    dungeonsAtTerritoryCache,
+                    topologyBufferCache,
+                    topologyResponseCache,
+                    topologyResultCache,
+                },
+            );
+            expect(Object.keys(graphs).length).toBeGreaterThan(0);
+        }
     });
 
     test("Test prefab dungeons", async () => {
@@ -108,19 +115,50 @@ describe("Dungeons Tests", async () => {
         }
     });
 
-    test("Test `dungeonEntrancesQuerySet` (require initialize world)", async () => {
+    test("Test dungeon entrances", async () => {
         const dungeon = Object.keys(prefabDungeons)[0];
         const territory = dungeon.slice(
             0,
             worldSeed.spatial.territory.precision,
         );
-        const locationType = "geohash";
 
-        // Run initialize world to create the dungeon entrances
-        const entrances = (await dungeonEntrancesQuerySet(
+        // Spawn dungeon at location (this will also spawn the entrance above ground)
+        await spawnLocation(dungeon, "d1", LOCATION_INSTANCE);
+
+        // Check dungeon entrances
+        const entrancesAboveGround = (await dungeonEntrancesQuerySet(
             territory,
-            locationType,
+            "geohash",
+            LOCATION_INSTANCE,
         ).all()) as ItemEntity[];
-        expect(entrances.length).greaterThan(1);
+        expect(entrancesAboveGround.length).greaterThan(0);
+        const entrancesUndeground = (await dungeonEntrancesQuerySet(
+            territory,
+            "d1",
+            LOCATION_INSTANCE,
+        ).all()) as ItemEntity[];
+        expect(entrancesUndeground.length).greaterThan(0);
+    });
+
+    test("Test dungeon monument of control", async () => {
+        const dungeon = Object.keys(prefabDungeons)[0];
+        const territory = dungeon.slice(
+            0,
+            worldSeed.spatial.territory.precision,
+        );
+
+        // Spawn dungeon
+        await spawnLocation(dungeon, "d1", LOCATION_INSTANCE);
+
+        // Check monuments have faction
+        const monuments = (await controlMonumentsQuerySet(
+            territory,
+            "d1",
+            LOCATION_INSTANCE,
+        ).all()) as ItemEntity[];
+        expect(monuments.length).greaterThan(0);
+        for (const m of monuments) {
+            expect(factionInControl(m)).toBeTruthy();
+        }
     });
 });

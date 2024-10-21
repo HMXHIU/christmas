@@ -2,7 +2,7 @@ import { GAME_SANCTUARIES, GAME_TOPOLOGY } from "$lib/crossover/defs";
 import type { Sanctuary, Spatial, WorldSeed } from "../world";
 
 export {
-    sanctuaries,
+    fetchSanctuaries,
     spatialAtPrecision,
     topologicalAnalysis,
     worldSeed,
@@ -21,7 +21,7 @@ interface TopologicalAnalysis {
 
 const _topologicalAnalysis: Record<string, TopologicalAnalysis> | undefined =
     undefined;
-const _sanctuaries: Sanctuary[] | undefined = undefined;
+const sanctuaries: Sanctuary[] | undefined = undefined;
 
 async function topologicalAnalysis(): Promise<
     Record<string, TopologicalAnalysis>
@@ -34,9 +34,9 @@ async function topologicalAnalysis(): Promise<
     ).json();
 }
 
-async function sanctuaries(): Promise<Sanctuary[]> {
-    if (_sanctuaries) {
-        return _sanctuaries;
+async function fetchSanctuaries(): Promise<Sanctuary[]> {
+    if (sanctuaries) {
+        return sanctuaries;
     }
     return await (await fetch(`${GAME_SANCTUARIES}/sanctuaries.json`)).json();
 }

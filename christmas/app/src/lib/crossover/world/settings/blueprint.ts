@@ -21,6 +21,9 @@ const dungeonBlueprintsToSpawn: DungeonBluePrints[] = [
     "corridorBeasts",
 ];
 
+/*
+ * Dungeon Blueprints
+ */
 const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
     entrance: {
         template: "entrance",
@@ -184,6 +187,9 @@ const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
     },
 };
 
+/*
+ * Geohash Blueprints
+ */
 const blueprints: Record<BluePrints, BluePrint> = {
     outpost: {
         template: "outpost",

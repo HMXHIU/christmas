@@ -34,6 +34,7 @@ import type { QuestEntity } from "../quests/types";
 // Exports
 export {
     chainOr,
+    controlMonumentsQuerySet,
     dungeonEntrancesQuerySet,
     equipmentQuerySet,
     equippedWeapons,
@@ -403,6 +404,7 @@ function equipmentQuerySet(
 function dungeonEntrancesQuerySet(
     territory: string,
     locationType: GeohashLocation,
+    locationInstance: string,
 ): Search {
     return itemRepository
         .search()
@@ -410,6 +412,25 @@ function dungeonEntrancesQuerySet(
         .equal(compendium.dungeonentrance.prop)
         .and("locT")
         .equal(locationType)
+        .and("locI")
+        .equal(locationInstance)
+        .and("loc")
+        .containOneOf(`${territory}*`);
+}
+
+function controlMonumentsQuerySet(
+    territory: string,
+    locationType: GeohashLocation,
+    locationInstance: string,
+): Search {
+    return itemRepository
+        .search()
+        .where("prop")
+        .equal(compendium.control.prop)
+        .and("locT")
+        .equal(locationType)
+        .and("locI")
+        .equal(locationInstance)
         .and("loc")
         .containOneOf(`${territory}*`);
 }

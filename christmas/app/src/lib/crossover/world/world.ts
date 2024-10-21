@@ -10,7 +10,7 @@ import {
 } from "../utils";
 import type { BiomeParameters } from "./biomes";
 import { TILE_HEIGHT, TILE_WIDTH } from "./settings";
-import { sanctuaries, worldSeed } from "./settings/world";
+import { fetchSanctuaries, worldSeed } from "./settings/world";
 import type { ObjectLayer, TileLayer, WorldAssetMetadata } from "./types";
 
 export {
@@ -98,11 +98,8 @@ interface Tileset {
     version: string;
 }
 
-async function findClosestSanctuary(
-    region: string,
-    geohash: string,
-): Promise<Sanctuary | undefined> {
-    const ss = await sanctuaries();
+async function findClosestSanctuary(geohash: string): Promise<Sanctuary> {
+    const ss = await fetchSanctuaries();
     let closest: Sanctuary = ss[0];
     let distance = Infinity;
     for (const s of ss) {

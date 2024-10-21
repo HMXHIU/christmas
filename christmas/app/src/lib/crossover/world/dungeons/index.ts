@@ -2,24 +2,26 @@ import type { CacheInterface } from "$lib/caches";
 import { seededRandom, stringToRandomNumber } from "$lib/utils/random";
 import {
     autoCorrectGeohashPrecision,
-    evenGeohashCharacters,
     geohashDistance,
     geohashToColRow,
     gridCellToGeohash,
-    oddGeohashCharacters,
 } from "../../utils";
 import { elevationAtGeohash, type BiomeType } from "../biomes";
 import { prefabDungeons } from "../settings/dungeons";
-import { sanctuaries, topologicalAnalysis, worldSeed } from "../settings/world";
+import {
+    fetchSanctuaries,
+    topologicalAnalysis,
+    worldSeed,
+} from "../settings/world";
 import { geohashLocationTypes, type GeohashLocation } from "../types";
 import { generateRoomsBSP } from "./bsp";
 import type { DungeonGraph, Room } from "./types";
 
 export {
+    DUNGEON_PRECISION,
     dungeonBiomeAtGeohash,
     generateDungeonGraph,
     generateDungeonGraphsForTerritory,
-    getAllDungeons,
 };
 
 const MIN_ROOMS = 12;
@@ -79,6 +81,11 @@ async function dungeonBiomeAtGeohash(
     return ["underground", 1];
 }
 
+/**
+ * Every sanctuary has 1 dungeon
+ * Every territory (on land) has 1 dungeon
+ * Additionally prefab dungeons are also spawned if specified
+ */
 async function generateDungeonGraphsForTerritory(
     territory: string,
     locationType: GeohashLocation,
@@ -98,7 +105,7 @@ async function generateDungeonGraphsForTerritory(
     graphs = {};
 
     // Generate dungeons at every sanctuary
-    for (const s of await sanctuaries()) {
+    for (const s of await fetchSanctuaries()) {
         if (s.geohash.startsWith(territory)) {
             let dungeon = s.geohash.slice(0, DUNGEON_PRECISION);
             graphs[dungeon] = await generateDungeonGraph(
@@ -141,7 +148,7 @@ async function generateDungeonGraphsForTerritory(
             rv,
         );
 
-        // Exclude dungeons not on land (Note: dungeons are underground but accessible from above ground)
+        // Exclude dungeons underwater (Note: dungeons are underground but accessible from above ground)
         const elevation = await elevationAtGeohash(dungeon, "geohash", {
             responseCache: options?.topologyResponseCache,
             resultsCache: options?.topologyResultCache,
@@ -310,35 +317,4 @@ function generateCorridor(
     }
 
     return points;
-}
-
-async function getAllDungeons(
-    locationType: GeohashLocation,
-    options?: {
-        dungeonGraphCache?: CacheInterface;
-        dungeonsAtTerritoryCache?: CacheInterface;
-        topologyResponseCache?: CacheInterface;
-        topologyResultCache?: CacheInterface;
-        topologyBufferCache?: CacheInterface;
-    },
-): Promise<Record<string, DungeonGraph>> {
-    const dungeonGraphs: Record<string, DungeonGraph> = {};
-    for (const a of oddGeohashCharacters) {
-        for (const b of evenGeohashCharacters) {
-            const territory = a + b;
-            const graphs = await generateDungeonGraphsForTerritory(
-                territory,
-                locationType,
-                {
-                    dungeonGraphCache: options?.dungeonGraphCache,
-                    dungeonsAtTerritoryCache: options?.dungeonsAtTerritoryCache,
-                    topologyResponseCache: options?.topologyResponseCache,
-                    topologyResultCache: options?.topologyResultCache,
-                    topologyBufferCache: options?.topologyBufferCache,
-                },
-            );
-            Object.assign(dungeonGraphs, graphs);
-        }
-    }
-    return dungeonGraphs;
 }

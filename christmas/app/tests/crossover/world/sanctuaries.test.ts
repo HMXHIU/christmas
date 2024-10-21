@@ -4,8 +4,7 @@ import { describe, expect, test } from "vitest";
 
 describe("Sanctuaries Tests", async () => {
     test("Test `findClosestSanctuary`", async () => {
-        var s = await findClosestSanctuary("SGP", "w21z9k6m");
-        expect(s).toMatchObject({
+        expect(await findClosestSanctuary("w21z9k6m")).toMatchObject({
             name: "Singapore",
             region: "SGP",
             geohash: "w21z9vkk",

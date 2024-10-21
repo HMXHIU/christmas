@@ -239,7 +239,7 @@ function entityDied(before: ActorEntity, after: ActorEntity): boolean {
 
 async function respawnPlayer(player: PlayerEntity) {
     // Respawn player at sanctuary
-    const sanctuary = await findClosestSanctuary(player.rgn, player.loc[0]);
+    const sanctuary = await findClosestSanctuary(player.loc[0]);
     if (!sanctuary) {
         throw new Error(`${player.player} has no sanctuary`);
     }
