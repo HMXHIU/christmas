@@ -210,8 +210,6 @@ describe("Blueprint Tests", async () => {
             expect(entityLocations.length).toBe(uniq(entityLocations).length);
         }
 
-        console.log(JSON.stringify(territoryBlueprints, null, 2));
-
         // If this change means our world will change!
         expect(hashObject(territoryBlueprints)).toBe(
             "127314841e976279c6cc849210e8977adfb940ed84790e1fae2f7986074f2e7f",

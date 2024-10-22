@@ -61,8 +61,17 @@ import {
     type P2PTradeTransaction,
 } from "./player";
 
+import { ELEVATION_TO_CELL_HEIGHT } from "$lib/components/crossover/Game/settings";
 import type { Quest } from "$lib/crossover/types";
+import {
+    childrenGeohashesAtPrecision,
+    geohashToColRow,
+} from "$lib/crossover/utils";
 import { AbilitiesEnum } from "$lib/crossover/world/abilities";
+import {
+    biomeAtGeohash,
+    elevationAtGeohash,
+} from "$lib/crossover/world/biomes";
 import { entityAbilities } from "$lib/crossover/world/entity";
 import {
     getOrCreatePlayer,
@@ -72,6 +81,15 @@ import {
 } from "../user";
 import { attack } from "./actions/attack";
 import { capture } from "./actions/capture";
+import {
+    biomeAtGeohashCache,
+    biomeParametersAtCityCache,
+    dungeonGraphCache,
+    dungeonsAtTerritoryCache,
+    topologyBufferCache,
+    topologyResponseCache,
+    topologyResultCache,
+} from "./caches";
 import {
     dungeonEntrancesQuerySet,
     worldsInGeohashQuerySet,
@@ -362,6 +380,63 @@ const crossoverRouter = {
     }),
     // World
     world: t.router({
+        biomes: dmServiceProcedure
+            .input(
+                z.object({
+                    village: z
+                        .string()
+                        .length(worldSeed.spatial.village.precision),
+                    locationType: GeohashLocationSchema,
+                }),
+            )
+            .mutation(async ({ ctx, input }) => {
+                const { village, locationType } = input;
+                const biomes: Record<
+                    string,
+                    {
+                        biome: string;
+                        elevation: number;
+                        col: number;
+                        row: number;
+                    }
+                > = {};
+
+                for (const g of childrenGeohashesAtPrecision(
+                    village,
+                    worldSeed.spatial.unit.precision,
+                )) {
+                    const [biome, strength] = await biomeAtGeohash(
+                        g,
+                        locationType,
+                        {
+                            topologyResponseCache,
+                            topologyResultCache,
+                            topologyBufferCache,
+                            biomeAtGeohashCache,
+                            biomeParametersAtCityCache,
+                            dungeonGraphCache,
+                            dungeonsAtTerritoryCache,
+                        },
+                    );
+                    const elevation =
+                        (await elevationAtGeohash(g, locationType, {
+                            responseCache: topologyResponseCache,
+                            resultsCache: topologyResultCache,
+                            bufferCache: topologyBufferCache,
+                        })) * ELEVATION_TO_CELL_HEIGHT;
+
+                    const [col, row] = geohashToColRow(g);
+
+                    biomes[g] = {
+                        biome,
+                        elevation,
+                        col,
+                        row,
+                    };
+                }
+
+                return biomes;
+            }),
         poi: playerAuthProcedure.query(async ({ ctx }) => {
             const { player } = ctx;
             const territory = player.loc[0].slice(
