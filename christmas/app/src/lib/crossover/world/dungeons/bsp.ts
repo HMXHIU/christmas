@@ -116,7 +116,7 @@ function generateRoomsBSP({
     unitPrecision: number;
     numRooms: number;
 }): Room[] {
-    // Use a numberic grid first, only at the final step after choosing the rooms, use gridCellToGeohash to convert it to geohash
+    // Use a numeric grid first, only at the final step after choosing the rooms, use gridCellToGeohash to convert it to geohash
     const geohashIsEven = geohash.length % 2 === 0;
     let rows = geohashIsEven ? 4 : 8;
     let cols = geohashIsEven ? 8 : 4;
@@ -125,15 +125,14 @@ function generateRoomsBSP({
         if ((geohash.length + i) % 2 === 0) {
             rows *= 8;
             cols *= 4;
-            origin += "p";
+            origin += "b";
         } else {
             rows *= 4;
             cols *= 8;
-            origin += "b";
+            origin += "p";
         }
     }
     const [x, y] = geohashToColRow(origin);
-
     const rootNode: BSPNode = {
         rows,
         cols,

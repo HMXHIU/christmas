@@ -4,6 +4,8 @@ import {
     geohashesNearby,
     getEntityId,
 } from "$lib/crossover/utils";
+import { DUNGEON_PRECISION } from "$lib/crossover/world/dungeons";
+import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import type {
@@ -11,6 +13,10 @@ import type {
     GeohashLocation,
 } from "$lib/crossover/world/types";
 import { equipmentSlots, weaponSlots } from "$lib/crossover/world/types";
+import {
+    findClosestSanctuary,
+    type Sanctuary,
+} from "$lib/crossover/world/world";
 import {
     type ActorEntity,
     type CreatureEntity,
@@ -28,12 +34,14 @@ import {
     worldRepository,
 } from ".";
 import { LOOK_PAGE_SIZE } from "..";
+import { factionInControl } from "../actions/capture";
 import type { NPCs } from "../npc/types";
 import type { QuestEntity } from "../quests/types";
 
 // Exports
 export {
     chainOr,
+    closestSanctuaryMonument,
     controlMonumentsQuerySet,
     dungeonEntrancesQuerySet,
     equipmentQuerySet,
@@ -419,7 +427,7 @@ function dungeonEntrancesQuerySet(
 }
 
 function controlMonumentsQuerySet(
-    territory: string,
+    geohash: string,
     locationType: GeohashLocation,
     locationInstance: string,
 ): Search {
@@ -432,7 +440,22 @@ function controlMonumentsQuerySet(
         .and("locI")
         .equal(locationInstance)
         .and("loc")
-        .containOneOf(`${territory}*`);
+        .containOneOf(`${geohash}*`);
+}
+
+async function closestSanctuaryMonument(
+    creature: CreatureEntity,
+): Promise<[Sanctuary, ItemEntity | undefined]> {
+    const sanctuary = await findClosestSanctuary(creature.loc[0]);
+    const monuments = (await controlMonumentsQuerySet(
+        sanctuary.geohash.slice(0, DUNGEON_PRECISION),
+        "d1", // sancturaries are in the `d1`
+        LOCATION_INSTANCE,
+    ).returnAll()) as ItemEntity[];
+    return [
+        sanctuary,
+        monuments.find((m) => factionInControl(m) === creature.fac),
+    ];
 }
 
 async function equippedWeapons(entity: CreatureEntity): Promise<ItemEntity[]> {

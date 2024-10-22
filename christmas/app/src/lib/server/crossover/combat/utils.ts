@@ -18,7 +18,6 @@ import {
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import { BASE_ATTRIBUTES } from "$lib/crossover/world/settings/entity";
 import type { EquipmentSlot } from "$lib/crossover/world/types";
-import { findClosestSanctuary } from "$lib/crossover/world/world";
 import type {
     ActorEntity,
     CreatureEntity,
@@ -26,6 +25,7 @@ import type {
     PlayerEntity,
 } from "$lib/server/crossover/types";
 import { uniq } from "lodash-es";
+import { closestSanctuaryMonument } from "../redis/queries";
 import { random } from "../utils";
 
 export {
@@ -238,14 +238,20 @@ function entityDied(before: ActorEntity, after: ActorEntity): boolean {
 }
 
 async function respawnPlayer(player: PlayerEntity) {
-    // Respawn player at sanctuary
-    const sanctuary = await findClosestSanctuary(player.loc[0]);
-    if (!sanctuary) {
-        throw new Error(`${player.player} has no sanctuary`);
+    // Find the closest monument of control controlled by the player's faction
+    const [sanctuary, monument] = await closestSanctuaryMonument(player);
+
+    if (monument) {
+        player.loc = [monument.loc[0]];
+        player.locI = LOCATION_INSTANCE;
+        player.locT = monument.locT;
     }
-    player.loc = [sanctuary.geohash];
-    player.locI = LOCATION_INSTANCE;
-    player.locT = "geohash"; // TODO: check sanctuary locT
+    // Fallback if there is no faction monument
+    else {
+        player.loc = [sanctuary.geohash];
+        player.locI = LOCATION_INSTANCE;
+        player.locT = "geohash";
+    }
 
     // Lose currencies
     player.lum = Math.floor(player.lum / 2);

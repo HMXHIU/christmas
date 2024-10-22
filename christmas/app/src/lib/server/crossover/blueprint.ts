@@ -199,9 +199,6 @@ async function spawnStencil(
     ] of Object.entries(stencil)) {
         // Check stencil faction is the faction in control of the blueprint
         if (faction && factionInControlOfBlueprint[blueprint] !== faction) {
-            console.log(
-                `${faction} is not in control of ${blueprint} at ${loc}`,
-            );
             continue;
         }
 
