@@ -6,13 +6,26 @@ import type { AssetMetadata } from "./types";
 
 export { avatarMorphologies, type AvatarMorphology, type Beast };
 
-type AvatarMorphology = "humanoid" | "canine";
+/*
+ * Upload the morphology json files to the GAME_MORPHOLOGY bucket
+ * Use the format based on the demographics ${race}_${gender} for the keys
+ */
+type AvatarMorphology = "humanoid" | "canine" | "human_male" | "human_female";
 const avatarMorphologies: Record<
     AvatarMorphology,
     { avatar: string; animation: string }
 > = {
+    // The format is based
+    human_male: {
+        avatar: `${GAME_MORPHOLOGY}/humanoid.json`,
+        animation: `${GAME_MORPHOLOGY}/humanoid_animation.json`,
+    },
+    human_female: {
+        avatar: `${GAME_MORPHOLOGY}/humanoid.json`,
+        animation: `${GAME_MORPHOLOGY}/humanoid_animation.json`,
+    },
     humanoid: {
-        avatar: `${GAME_MORPHOLOGY}/humanoid.json`, // make sure to upload to the game/avatar/morphology bucket
+        avatar: `${GAME_MORPHOLOGY}/humanoid.json`,
         animation: `${GAME_MORPHOLOGY}/humanoid_animation.json`,
     },
     canine: {
@@ -21,7 +34,7 @@ const avatarMorphologies: Record<
     },
 };
 
-/**
+/*
  * `Beast` is a template used to spawn a `Monster` with derived stats from the template.
  */
 interface Beast {

@@ -159,9 +159,11 @@ async function upsertAvatarContainer(
         if (!entity.avatar) {
             throw new Error(`${entity.player} is missing avatar url`);
         }
-
-        const { avatar, animation } = await getAvatarMetadata(entity.avatar);
-
+        const { avatar, animation } = await getAvatarMetadata(entity.avatar, {
+            gender: entity.gen,
+            race: entity.race,
+            archetype: entity.arch,
+        });
         ec = new AvatarEntityContainer({
             entity,
             ...layers.depthPartition("entity"),

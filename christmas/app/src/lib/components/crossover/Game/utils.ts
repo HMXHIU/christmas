@@ -6,8 +6,12 @@ import {
 } from "$lib/crossover/caches";
 import { GAME_PREFIX, GAME_WORLDS } from "$lib/crossover/defs";
 import { geohashToColRow, geohashToGridCell } from "$lib/crossover/utils";
-import { avatarMorphologies } from "$lib/crossover/world/bestiary";
+import {
+    avatarMorphologies,
+    type AvatarMorphology,
+} from "$lib/crossover/world/bestiary";
 import { elevationAtGeohash } from "$lib/crossover/world/biomes";
+import type { PlayerDemographic } from "$lib/crossover/world/player";
 import type {
     AssetMetadata,
     GeohashLocation,
@@ -371,36 +375,37 @@ function getPlayerPosition(): Position | null {
     return p?.player ? entityContainers[p.player]?.isoPosition : null;
 }
 
-// TODO: support monster
 async function getAvatarMetadata(
     url: string,
+    demographics?: PlayerDemographic,
 ): Promise<{ avatar: AvatarMetadata; animation: AnimationMetadata }> {
-    // this casues issues with asset bundle not initialized
-    // const avatar = await Assets.load(avatarMorphologies.humanoid.avatar);
-    // const animation = await Assets.load(avatarMorphologies.humanoid.animation);
-
-    const avatar = await (
-        await fetch(avatarMorphologies.humanoid.avatar)
-    ).json();
-    const animation = await (
-        await fetch(avatarMorphologies.humanoid.animation)
-    ).json();
-
+    let morphology: AvatarMorphology = "humanoid";
+    if (demographics) {
+        if (demographics.race === "human") {
+            morphology = `${demographics.race}_${demographics.gender}`;
+            console.log(morphology);
+        }
+        // TODO: elf, etc ....
+    }
+    const avatar = await Assets.load(avatarMorphologies[morphology].avatar);
+    const animation = await Assets.load(
+        avatarMorphologies[morphology].animation,
+    );
     try {
-        const response = await fetch(url);
+        // Patch the default textures with the entity's textures
+        const textures = await (await fetch(url)).json();
         return {
             animation,
             avatar: {
                 ...avatar,
                 textures: {
                     ...avatar.textures,
-                    // override with avatar textures
-                    ...(await response.json()),
+                    ...textures,
                 },
             },
         };
     } catch (error) {
-        console.error(`Failed to get avatar metadata for ${url}`);
+        console.error(`Failed to fetch avatar textures: ${url}`);
         return {
             avatar,
             animation,

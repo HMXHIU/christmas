@@ -217,7 +217,11 @@
         if (meta) {
             const m: AvatarSelection = {};
             for (const url of await crossoverAvailableAvatars(meta)) {
-                m[url] = await getAvatarMetadata(url);
+                m[url] = await getAvatarMetadata(url, {
+                    gender: selectedGender.value,
+                    race: selectedRace.value,
+                    archetype: selectedArchetype.value,
+                });
             }
             avatarSelection = m;
         }
