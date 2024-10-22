@@ -21,6 +21,7 @@
         playerAbilities,
         playerEquippedItems,
         playerRecord,
+        target,
     } from "../../../../store";
     import AutocompleteGC from "../AutocompleteGC.svelte";
     import ChatInput from "../ChatInput.svelte";
@@ -105,6 +106,7 @@
                 items: Object.values($itemRecord),
                 skills: [...SkillLinesEnum],
                 player: $player!,
+                target: $target ?? undefined,
             }).commands;
         } else {
             commands = [];

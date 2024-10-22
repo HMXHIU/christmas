@@ -383,7 +383,6 @@ async function getAvatarMetadata(
     if (demographics) {
         if (demographics.race === "human") {
             morphology = `${demographics.race}_${demographics.gender}`;
-            console.log(morphology);
         }
         // TODO: elf, etc ....
     }

@@ -1,4 +1,5 @@
 import type {
+    Actor,
     Creature,
     EntityType,
     Item,
@@ -170,6 +171,7 @@ function resolveActionEntities({
     players,
     items,
     skills,
+    target,
 }: {
     queryTokens: string[];
     tokenPositions: TokenPositions;
@@ -179,6 +181,7 @@ function resolveActionEntities({
     players: Player[];
     items: Item[];
     skills: SkillLines[];
+    target?: Actor;
 }): GameActionEntities[] {
     let gameActionEntitiesScores: [GameActionEntities, number][] = [];
 
@@ -239,7 +242,7 @@ function resolveActionEntities({
         if (context === "target") {
             if (entityTypes) {
                 for (const entityType of entityTypes) {
-                    const gameEntities =
+                    const gameEntities: Actor[] =
                         entityType === "monster"
                             ? filterTargetCreaturesByAction(
                                   action.action,
@@ -258,10 +261,14 @@ function resolveActionEntities({
                                     items,
                                 );
 
-                    // Find all possible targets in gameEntities
-                    for (const target of gameEntities ?? []) {
+                    // Find all possible targets in gameEntities from query
+                    for (const target of gameEntities) {
                         const entityId = getEntityId(target)[0];
-                        if (position in tokenPositions[entityId]) {
+                        // `tokenPositions` might not have `entityId` as target might be provided via target UI instead of query
+                        if (
+                            tokenPositions[entityId] != null &&
+                            position in tokenPositions[entityId]
+                        ) {
                             gameActionEntitiesScores.push([
                                 {
                                     self,
@@ -272,6 +279,24 @@ function resolveActionEntities({
                                     item,
                                 },
                                 tokenPositions[entityId][position].score,
+                            ]);
+                        }
+                    }
+
+                    // Try target from target UI if no target from query
+                    if (gameActionEntitiesScores.length === 0 && target) {
+                        const [_, targetType] = getEntityId(target);
+                        if (targetType === entityType) {
+                            gameActionEntitiesScores.push([
+                                {
+                                    self,
+                                    target,
+                                    skill,
+                                    offer,
+                                    receive,
+                                    item,
+                                },
+                                1,
                             ]);
                         }
                     }

@@ -5,7 +5,7 @@ import type {
     Monster,
     Player,
 } from "$lib/crossover/types";
-import { uniqBy } from "lodash-es";
+import { uniq, uniqBy } from "lodash-es";
 import { filterSortEntitiesInRange, gameActionId, getEntityId } from "./utils";
 import { resolveAbilityEntities, type Ability } from "./world/abilities";
 import { resolveActionEntities, type Action } from "./world/actions";
@@ -452,6 +452,7 @@ function searchPossibleCommands({
     actions,
     // Skills
     skills,
+    target, // optional target provided (via the quick target UI)
 }: {
     query: string;
     player: Player;
@@ -462,6 +463,7 @@ function searchPossibleCommands({
     items: Item[];
     actions: Action[];
     skills: SkillLines[];
+    target?: Actor;
 }): {
     commands: GameCommand[];
     queryTokens: string[];
@@ -550,6 +552,20 @@ function searchPossibleCommands({
         ...gameActionsTokenPositions,
     };
 
+    // Add target to retrieved entities if provided
+    if (target) {
+        if ("player" in target) {
+            playersRetrieved.push(target);
+            playersRetrieved = uniq(playersRetrieved);
+        } else if ("item" in target) {
+            itemsRetrieved.push(target);
+            itemsRetrieved = uniq(itemsRetrieved);
+        } else if ("monster" in target) {
+            monstersRetrieved.push(target);
+            monstersRetrieved = uniq(monstersRetrieved);
+        }
+    }
+
     const abilityCommands: GameCommand[] = abilitiesPosssible.flatMap(
         (ability) => {
             return resolveAbilityEntities({
@@ -577,6 +593,7 @@ function searchPossibleCommands({
                 players: playersRetrieved,
                 items: itemsRetrieved,
                 skills: skillsRetrieved,
+                target,
             }).map((entities) => {
                 return { action, entities };
             });
@@ -590,8 +607,6 @@ function searchPossibleCommands({
             });
             return [action, entities, variables];
         });
-
-    // console.log(JSON.stringify(actionCommands, null, 2));
 
     const utilityCommands: GameCommand[] = itemUtilitiesPossible.flatMap(
         ([item, utility]) => {
