@@ -19,6 +19,7 @@ const dungeonBlueprintsToSpawn: DungeonBluePrints[] = [
     "control",
     "market",
     "corridorBeasts",
+    "beasts",
 ];
 
 /*
@@ -93,6 +94,32 @@ const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
             },
         },
     },
+    beasts: {
+        template: "beasts",
+        locationType: "d1",
+        frequency: {
+            max: 7,
+            min: 5,
+            type: "room",
+        },
+        clusters: {
+            goblins: {
+                beasts: [
+                    {
+                        beast: "goblin",
+                        min: 1,
+                        max: 3,
+                        pattern: "random",
+                        unique: true,
+                        faction: "meatshield",
+                    },
+                ],
+                min: 2,
+                max: 5,
+                pattern: "random",
+            },
+        },
+    },
     corridorBeasts: {
         template: "corridorBeasts",
         locationType: "d1",
@@ -135,6 +162,7 @@ const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
                         max: 1,
                         pattern: "random",
                         unique: true,
+                        faction: "historian",
                     },
                 ],
                 min: 1,
@@ -149,6 +177,7 @@ const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
                         max: 1,
                         pattern: "random",
                         unique: true,
+                        faction: "historian",
                     },
                 ],
                 min: 1,
@@ -163,6 +192,7 @@ const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
                         max: 1,
                         pattern: "random",
                         unique: true,
+                        faction: "historian",
                     },
                 ],
                 min: 1,
@@ -177,6 +207,7 @@ const dungeonBlueprints: Record<DungeonBluePrints, DungeonBluePrint> = {
                         max: 1,
                         pattern: "random",
                         unique: true,
+                        faction: "historian",
                     },
                 ],
                 min: 1,
@@ -212,7 +243,7 @@ const blueprints: Record<BluePrints, BluePrint> = {
                         max: 3,
                         pattern: "random",
                         unique: true,
-                        // TODO: ADD FACTION
+                        faction: "meatshield", // this requires there me a control monument in this blueprint
                     },
                 ],
                 min: 2,
@@ -262,6 +293,22 @@ const blueprints: Record<BluePrints, BluePrint> = {
         },
         precision: worldSeed.spatial.town.precision,
         clusters: {
+            beasts: {
+                precision: worldSeed.spatial.village.precision,
+                beasts: [
+                    {
+                        beast: "goblin",
+                        min: 1,
+                        max: 3,
+                        pattern: "random",
+                        unique: true,
+                        faction: "meatshield",
+                    },
+                ],
+                min: 2,
+                max: 7,
+                pattern: "random",
+            },
             control: {
                 precision: worldSeed.spatial.village.precision,
                 props: [

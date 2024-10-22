@@ -141,6 +141,7 @@ async function blueprintsAtDungeon(
                         max,
                         variables,
                         overwrite,
+                        faction,
                     } of props) {
                         // Generate stencil (prop locations)
                         for (const clusterLocation of chosenClusters) {
@@ -167,6 +168,7 @@ async function blueprintsAtDungeon(
                                     variables,
                                     overwrite,
                                     unique,
+                                    faction,
                                 };
                                 usedEntityLocations.add(geohash);
                             }
@@ -175,7 +177,14 @@ async function blueprintsAtDungeon(
                 }
 
                 if (beasts) {
-                    for (const { beast, min, max, pattern, unique } of beasts) {
+                    for (const {
+                        beast,
+                        min,
+                        max,
+                        pattern,
+                        unique,
+                        faction,
+                    } of beasts) {
                         // Generate stencil (beast locations)
                         for (const clusterLocation of chosenClusters) {
                             let seed = stringToRandomNumber(
@@ -197,6 +206,7 @@ async function blueprintsAtDungeon(
                                     blueprint: blueprint.template,
                                     beast,
                                     unique,
+                                    faction,
                                 };
                                 usedEntityLocations.add(geohash);
                             }
@@ -205,7 +215,14 @@ async function blueprintsAtDungeon(
                 }
 
                 if (npcs) {
-                    for (const { npc, min, max, pattern, unique } of npcs) {
+                    for (const {
+                        npc,
+                        min,
+                        max,
+                        pattern,
+                        unique,
+                        faction,
+                    } of npcs) {
                         // Generate stencil (npc locations)
                         for (const clusterLocation of chosenClusters) {
                             let seed = stringToRandomNumber(
@@ -227,6 +244,7 @@ async function blueprintsAtDungeon(
                                     blueprint: blueprint.template,
                                     npc,
                                     unique,
+                                    faction,
                                 };
                                 usedEntityLocations.add(geohash);
                             }

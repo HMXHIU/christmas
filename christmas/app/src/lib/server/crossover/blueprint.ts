@@ -6,15 +6,18 @@ import type { Stencil } from "$lib/crossover/world/blueprint/types";
 import type { ItemVariables } from "$lib/crossover/world/compendium";
 import { generateDungeonGraphsForTerritory } from "$lib/crossover/world/dungeons";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
+import type { Faction } from "$lib/crossover/world/settings/affinities";
 import {
     blueprints,
     blueprintsToSpawn,
     dungeonBlueprints,
     dungeonBlueprintsToSpawn,
 } from "$lib/crossover/world/settings/blueprint";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { GeohashLocation } from "$lib/crossover/world/types";
 import { substituteVariablesRecursively } from "$lib/utils";
 import { hashObject } from "..";
+import { factionInControl } from "./actions/capture";
 import {
     blueprintsAtLocationCache,
     dungeonGraphCache,
@@ -25,6 +28,7 @@ import {
 } from "./caches";
 import { spawnItemAtGeohash, spawnMonster } from "./dm";
 import { spawnNPC } from "./npc";
+import { controlMonumentsQuerySet } from "./redis/queries";
 import { saveEntity } from "./redis/utils";
 import type { ActorEntity, ItemEntity } from "./types";
 import { parseItemVariables } from "./utils";
@@ -159,11 +163,48 @@ async function spawnStencil(
         overwrite?: Record<string, string | boolean | number>;
     }[] = [];
 
+    // Get the faction in control of each monument spawned by each blueprint
+    const factionInControlOfBlueprint: Record<string, Faction> = {};
+    for (const [geohash, { prop, blueprint }] of Object.entries(stencil)) {
+        if (prop === compendium.control.prop) {
+            const monument = (await controlMonumentsQuerySet(
+                geohash,
+                locationType,
+                locationInstance,
+            ).first()) as ItemEntity;
+            if (monument) {
+                const faction = factionInControl(monument);
+                if (faction) {
+                    factionInControlOfBlueprint[blueprint] = faction;
+                }
+            }
+            break;
+        }
+    }
+
     // Spawn entities
     for (const [
         loc,
-        { prop, beast, npc, ref, variables, overwrite, unique, blueprint },
+        {
+            prop,
+            beast,
+            npc,
+            ref,
+            variables,
+            overwrite,
+            unique,
+            blueprint,
+            faction,
+        },
     ] of Object.entries(stencil)) {
+        // Check stencil faction is the faction in control of the blueprint
+        if (faction && factionInControlOfBlueprint[blueprint] !== faction) {
+            console.log(
+                `${faction} is not in control of ${blueprint} at ${loc}`,
+            );
+            continue;
+        }
+
         try {
             // Spawn items
             if (prop) {

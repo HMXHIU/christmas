@@ -117,6 +117,7 @@ async function stencilFromBlueprint(
                         max,
                         pattern,
                         unique,
+                        faction,
                     } of props) {
                         for (const geohash of entityLocations(
                             prop,
@@ -131,6 +132,7 @@ async function stencilFromBlueprint(
                                 ref,
                                 overwrite,
                                 unique,
+                                faction,
                             };
                             usedEntityLocations.add(geohash);
                         }
@@ -138,7 +140,14 @@ async function stencilFromBlueprint(
                 }
                 // Monsters
                 if (beasts) {
-                    for (const { beast, min, max, pattern, unique } of beasts) {
+                    for (const {
+                        beast,
+                        min,
+                        max,
+                        pattern,
+                        unique,
+                        faction,
+                    } of beasts) {
                         for (const geohash of entityLocations(
                             beast,
                             min,
@@ -149,6 +158,7 @@ async function stencilFromBlueprint(
                                 beast,
                                 blueprint: blueprint.template,
                                 unique,
+                                faction,
                             };
                             usedEntityLocations.add(geohash);
                         }
@@ -157,7 +167,14 @@ async function stencilFromBlueprint(
 
                 // NPCs
                 if (npcs) {
-                    for (const { npc, min, max, pattern, unique } of npcs) {
+                    for (const {
+                        npc,
+                        min,
+                        max,
+                        pattern,
+                        unique,
+                        faction,
+                    } of npcs) {
                         for (const geohash of entityLocations(
                             npc,
                             min,
@@ -168,6 +185,7 @@ async function stencilFromBlueprint(
                                 npc,
                                 blueprint: blueprint.template,
                                 unique,
+                                faction,
                             };
                             usedEntityLocations.add(geohash);
                         }

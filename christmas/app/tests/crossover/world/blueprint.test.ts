@@ -102,7 +102,7 @@ describe("Blueprint Tests", async () => {
 
         // If this changes the game changes procedurally
         expect(hashObject(dungeonBlueprint)).toBe(
-            "106a6fcf1517a2726e1f9c9d83bb88b3a1d3b55a83a727b4ac78ce7cff82539e",
+            "7312cbdafeb025e59d5f98bc97c6b4b6849c1a275b29017c8108b812fe656649",
         );
     });
 
@@ -205,14 +205,14 @@ describe("Blueprint Tests", async () => {
             ([loc, b]) => b.blueprint,
         );
         for (const [b, ps] of Object.entries(entitiesByBlueprint)) {
-            // Check all entitie locations are unique
+            // Check all entities locations are unique
             const entityLocations = ps.map(([loc, _]) => loc);
             expect(entityLocations.length).toBe(uniq(entityLocations).length);
         }
 
         // If this change means our world will change!
         expect(hashObject(territoryBlueprints)).toBe(
-            "127314841e976279c6cc849210e8977adfb940ed84790e1fae2f7986074f2e7f",
+            "aabf988ab4baf2be14de3dbc7ac0b6903fec3b0a49a56cfea168ba525f66a06b",
         );
     });
 

@@ -1,5 +1,6 @@
 import type { NPCs } from "$lib/server/crossover/npc/types";
 import type { ItemVariables } from "../compendium";
+import type { Faction } from "../settings/affinities";
 import type { GeohashLocation } from "../types";
 
 export type {
@@ -31,6 +32,7 @@ interface PropCluster {
     variables?: ItemVariables; // item variables to be set when spawning the item
     overwrite?: Record<string, string | boolean | number>;
     unique?: boolean;
+    faction?: Faction;
 }
 
 interface BeastCluster {
@@ -39,6 +41,7 @@ interface BeastCluster {
     max: number;
     pattern: Pattern; // distribution of beasts in the cluster
     unique?: boolean;
+    faction?: Faction;
 }
 
 interface NPCCluster {
@@ -47,6 +50,7 @@ interface NPCCluster {
     max: number;
     pattern: Pattern; // distribution of npcs in the cluster
     unique?: boolean;
+    faction?: Faction;
 }
 
 interface BluePrint {
@@ -71,7 +75,12 @@ interface BluePrint {
     };
 }
 
-type DungeonBluePrints = "entrance" | "control" | "market" | "corridorBeasts";
+type DungeonBluePrints =
+    | "entrance"
+    | "control"
+    | "market"
+    | "corridorBeasts"
+    | "beasts";
 
 interface DungeonBluePrint {
     template: DungeonBluePrints;
@@ -103,6 +112,7 @@ interface Stencil {
         variables?: ItemVariables;
         overwrite?: Record<string, string | boolean | number>;
         unique?: boolean;
+        faction?: Faction;
     };
 }
 
