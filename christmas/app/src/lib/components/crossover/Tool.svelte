@@ -1,9 +1,10 @@
 <script lang="ts">
     import * as Tabs from "$lib/components/ui/tabs";
-    import { Box, Hammer, Scroll, Sword } from "lucide-svelte";
+    import { Box, Hammer, Scroll, Sword, UserRound } from "lucide-svelte";
     import ScrollArea from "../ui/scroll-area/scroll-area.svelte";
     import Abilities from "./Abilities.svelte";
     import Actions from "./Actions.svelte";
+    import CharacterSheet from "./CharacterSheet.svelte";
     import Inventory from "./Inventory.svelte";
     import Quests from "./Quests.svelte";
 
@@ -15,6 +16,9 @@
     <Tabs.List class="p-0">
         <Tabs.Trigger value="quests" class="h-full rounded-none"
             ><Scroll class="h-4 w-4" /></Tabs.Trigger
+        >
+        <Tabs.Trigger value="character" class="h-full rounded-none"
+            ><UserRound class="h-4 w-4" /></Tabs.Trigger
         >
         <Tabs.Trigger value="inventory" class="h-full rounded-none"
             ><Box class="h-4 w-4" /></Tabs.Trigger
@@ -31,6 +35,11 @@
             <Quests></Quests>
         </ScrollArea></Tabs.Content
     >
+    <Tabs.Content value="character" class="p-2">
+        <ScrollArea class="h-full">
+            <CharacterSheet></CharacterSheet>
+        </ScrollArea>
+    </Tabs.Content>
     <Tabs.Content value="inventory" class="p-2">
         <ScrollArea class="h-full">
             <Inventory></Inventory>
