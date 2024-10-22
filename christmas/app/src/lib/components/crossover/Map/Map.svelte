@@ -17,13 +17,14 @@
         blueprints,
         blueprintsToSpawn,
     } from "$lib/crossover/world/settings/blueprint";
+    import { compendium } from "$lib/crossover/world/settings/compendium";
     import { worldSeed } from "$lib/crossover/world/settings/world";
     import {
         geohashLocationTypes,
         type GeohashLocation,
     } from "$lib/crossover/world/types";
+    import type { Sanctuary } from "$lib/crossover/world/world";
     import { cn } from "$lib/shadcn";
-    import { groupBy, uniqBy } from "lodash-es";
     import {
         Application,
         Assets,
@@ -59,7 +60,7 @@
     let playerMapPosition: PlayerMapPosition | null = null;
 
     // Caches
-    const dungeonEntrancesCache = new LRUMemoryCache({ max: 10 });
+    const poisCache = new LRUMemoryCache({ max: 10 });
 
     $: resize(clientHeight, clientWidth);
 
@@ -147,7 +148,7 @@
 
         const { texelX, texelY } = mapMeshes[playerMapPosition.mapId];
 
-        // Player sprite
+        // Player
         const p = new Graphics()
             .circle(
                 playerMapPosition.col * texelX,
@@ -157,8 +158,8 @@
             .fill({ color: 0xff0000 });
         app.stage.addChild(p);
 
-        // Dungeon entrance sprites
-        const dungeonEntrances = await dungeonEntrancesNearby(
+        // Dungeon entrances (require fetch from server)
+        const { dungeonEntrances, sancturaries } = await poisInTerritory(
             playerMapPosition.mapId,
             playerMapPosition.locationType,
         );
@@ -172,7 +173,6 @@
             }
         }
 
-        // Blueprint sprites
         const bps = await blueprintsAtTerritory(
             playerMapPosition.mapId,
             playerMapPosition.locationType,
@@ -186,49 +186,72 @@
             },
         );
 
-        const stencilFromBlueprint = groupBy(
-            Object.entries(bps.stencil),
-            ([loc, p]) => p.blueprint,
-        );
-        for (const [blueprint, entries] of Object.entries(
-            stencilFromBlueprint,
+        const towns = new Set<string>();
+        const outposts = new Set<string>();
+        for (const [geohash, { prop, blueprint }] of Object.entries(
+            bps.stencil,
         )) {
-            const plotPrecision = blueprints[blueprint as BluePrints].precision;
-            const propLocations = entries.map((xs) => xs[0]);
-            const blueprintLocations = uniqBy(propLocations, (l) =>
-                l.slice(0, plotPrecision),
-            );
-            for (const loc of blueprintLocations) {
-                const [col, row] = geohashToColRow(loc);
-                if ((blueprint as BluePrints) === "outpost") {
-                    const d = new Graphics()
-                        .circle(col * texelX, row * texelY, 5)
-                        .fill({ color: 0xff00ff });
-                    app.stage.addChild(d);
-                }
+            // Monument of control
+            if (prop === compendium.control.prop) {
+                const [col, row] = geohashToColRow(geohash);
+                const d = new Graphics()
+                    .circle(col * texelX, row * texelY, 5)
+                    .fill({ color: 0xffff00 });
+                app.stage.addChild(d);
             }
+            // Towns, Outposts
+            const precision = blueprints[blueprint as BluePrints].precision;
+            if (blueprint === "town") {
+                towns.add(geohash.slice(0, precision));
+            } else if (blueprint === "outpost") {
+                outposts.add(geohash.slice(0, precision));
+            }
+        }
+        for (const geohash of outposts) {
+            const [col, row] = geohashToColRow(geohash);
+            const d = new Graphics()
+                .circle(col * texelX, row * texelY, 5)
+                .fill({ color: 0xff00ff });
+            app.stage.addChild(d);
+        }
+        for (const geohash of towns) {
+            const [col, row] = geohashToColRow(geohash);
+            const d = new Graphics()
+                .circle(col * texelX, row * texelY, 5)
+                .fill({ color: 0xff00ff });
+            app.stage.addChild(d);
+        }
+
+        // Sanctuaries
+        for (const { geohash } of sancturaries) {
+            const [col, row] = geohashToColRow(geohash);
+            const d = new Graphics()
+                .circle(col * texelX, row * texelY, 5)
+                .fill({ color: 0xfff0ff });
+            app.stage.addChild(d);
         }
     }
 
-    async function dungeonEntrancesNearby(
+    async function poisInTerritory(
         territory: string,
         locationType: GeohashLocation,
-    ): Promise<Item[]> {
+    ): Promise<{
+        sancturaries: Sanctuary[];
+        dungeonEntrances: Item[];
+        territory: string;
+    }> {
         // Check if in cache
         const cacheKey = `${territory}-${locationType}`;
-        const entrances = await dungeonEntrancesCache.get(cacheKey);
+        const entrances = await poisCache.get(cacheKey);
         if (entrances) return entrances;
 
         // Get POIs nearby
-        const { dungeonEntrances, territory: t } = await crossoverWorldPOI();
-        if (t !== territory) {
-            throw new Error(`Cannot retrive POIs (not in territory)`);
-        }
+        const pois = await crossoverWorldPOI();
 
         // Set cache
-        await dungeonEntrancesCache.set(cacheKey, dungeonEntrances);
+        await poisCache.set(cacheKey, pois);
 
-        return dungeonEntrances;
+        return pois;
     }
 
     async function init() {
@@ -281,10 +304,6 @@
 </script>
 
 <div class="h-full w-full" bind:clientHeight bind:clientWidth>
-    <!-- TODO: Add copy button to copy geohash -->
-    <!-- <p class="pt-2 text-muted-foreground text-xs text-center">
-        {playerMapPosition?.geohash ?? ""}
-    </p> -->
     <div
         class={cn("overflow-hidden aspect-square", $$restProps.class)}
         bind:this={containerElement}

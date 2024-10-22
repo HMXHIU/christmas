@@ -5,7 +5,10 @@ import {
 import type { Item, Monster, Player, World } from "$lib/crossover/types";
 import { PlayerMetadataSchema } from "$lib/crossover/world/player";
 import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
-import { worldSeed } from "$lib/crossover/world/settings/world";
+import {
+    fetchSanctuaries,
+    worldSeed,
+} from "$lib/crossover/world/settings/world";
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import {
     BarterSchema,
@@ -450,8 +453,13 @@ const crossoverRouter = {
                 player.locI,
             ).all()) as ItemEntity[];
 
+            const sancturaries = (await fetchSanctuaries()).filter((s) =>
+                s.geohash.startsWith(territory),
+            );
+
             return {
                 territory,
+                sancturaries,
                 dungeonEntrances,
             };
         }),
