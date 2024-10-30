@@ -28,7 +28,7 @@ async function animateAbility(
     const { procedures, type } = abilities[ability];
     for (let procedure of procedures) {
         const [ptype, effect] = procedure;
-        const { ticks, dieRoll, buffs, debuffs } = effect;
+        const { ticks, dieRoll } = effect;
         await addVisualEffects(gsap.timeline(), stage, {
             source,
             target,
@@ -53,7 +53,7 @@ async function addVisualEffects(
     },
 ) {
     const [ptype, effect] = procedure;
-    const { ticks, dieRoll, buffs, debuffs } = effect;
+    const { ticks, dieRoll } = effect;
     if (ptype === "action" && source.isoPosition != null) {
         // Animate offensive damage abilities
         if (dieRoll != null && target != null) {
@@ -81,7 +81,7 @@ async function addVisualEffects(
 async function addSoundEffects(tl: Timeline, procedure: Procedure) {
     const soundEffects = await Assets.loadBundle("sound-effects");
     const [ptype, effect] = procedure;
-    const { ticks, dieRoll, buffs, debuffs } = effect;
+    const { ticks, dieRoll } = effect;
     if (ptype === "action") {
         // Offensive damage abilities
         if (dieRoll != null) {

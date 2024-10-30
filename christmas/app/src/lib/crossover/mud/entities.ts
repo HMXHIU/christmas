@@ -1,7 +1,7 @@
 import { groupBy, partition } from "lodash-es";
 import type { Actor, EntityType, Item, Monster, Player } from "../types";
 import { getEntityId, isEntityAlive } from "../utils";
-import { isEntityHostile } from "../world/entity";
+import { isHostile } from "../world/entity";
 import { compendium } from "../world/settings/compendium";
 import type { EntityDescriptionState, EntityDescriptors } from "./settings";
 
@@ -65,7 +65,7 @@ function getAdditionalInfo(
     }
     // Monster
     if (entityType === "monster") {
-        const [hostile, aggro] = isEntityHostile(player, sample as Monster);
+        const [hostile, aggro] = isHostile(player, sample as Monster);
         if (hostile && isEntityAlive(sample)) {
             return " looking threateningly at you";
         }

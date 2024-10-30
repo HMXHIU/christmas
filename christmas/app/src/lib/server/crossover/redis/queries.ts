@@ -25,7 +25,7 @@ import {
     type PlayerEntity,
 } from "$lib/server/crossover/types";
 import { uniq } from "lodash-es";
-import type { Search } from "redis-om";
+import type { RawSearch, Search } from "redis-om";
 import {
     itemRepository,
     monsterRepository,
@@ -332,20 +332,16 @@ function questWritsQuerySet(player: string): Search {
         .equal(compendium.questwrit.prop);
 }
 
-function relevantQuestsQuerySet(quests: string[], entities: string[]): Search {
+function relevantQuestsQuerySet(
+    quests: string[],
+    entities: string[],
+): Search | RawSearch {
     if (quests.length < 1) {
         throw new Error("Must have at least 1 quest to search");
     }
-    let qs = questRepository
-        .search()
-        .where("fulfilled")
-        .equal(false)
-        .and("quest")
-        .equal(quests[0]);
-    for (let i = 1; i < quests.length; i++) {
-        qs = qs.or("quest").equalTo(quests[i]);
-    }
-    return qs.and("entityIds").containOneOf(...entities);
+    return questRepository.searchRaw(
+        `@fulfilled:{false} @quest:{${quests.join("|")}} @entityIds:{${entities.join("|")}}`,
+    );
 }
 
 function chainOr(
@@ -353,6 +349,7 @@ function chainOr(
     field: string,
     contains: string[],
 ): Search<Record<string, any>> {
+    // Note: This can't be grouped (eg. A & (B|C|D)), it is better to use raw search
     qs = qs.where(field).equal(contains[0]);
     for (let i = 1; i < contains.length; i++) {
         qs = qs.or(field).equalTo(contains[i]);
@@ -399,14 +396,11 @@ async function playerQuestsInvolvingEntities(
 function equipmentQuerySet(
     player: string,
     equipment?: EquipmentSlot[],
-): Search {
+): Search | RawSearch {
     equipment = equipment ?? Array.from(equipmentSlots);
-    let qs = itemRepository.search().where("loc").contains(player);
-    qs = qs.and("locT").equal(equipment[0]);
-    for (let i = 1; i < equipment.length; i++) {
-        qs = qs.or("locT").equalTo(equipment[i]);
-    }
-    return qs;
+    return itemRepository.searchRaw(
+        `@loc:{${player}} @locT:{${equipment.join("|")}}`,
+    );
 }
 
 function dungeonEntrancesQuerySet(
@@ -463,6 +457,5 @@ async function equippedWeapons(entity: CreatureEntity): Promise<ItemEntity[]> {
         getEntityId(entity)[0],
         Array.from(weaponSlots),
     ).returnAll()) as ItemEntity[];
-    weapons = weapons.filter((i) => compendium[i.prop].dieRoll); // remove shields etc ..
-    return weapons;
+    return weapons.filter((i) => compendium[i.prop].dieRoll); // remove shields etc ...
 }

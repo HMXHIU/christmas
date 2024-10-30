@@ -51,8 +51,7 @@ const EQUIPMENT_SLOTS = {
     sh: "Shoulders",
     gl: "Gloves",
     // weapons
-    rh: "Right hand",
-    lh: "Left hand",
+    hn: "Right & left hand",
     // non visible
     hd: "Head",
     nk: "Necklace",
@@ -72,12 +71,13 @@ const equipmentSlots = new Set<EquipmentSlot>(
     Object.keys(EQUIPMENT_SLOTS) as EquipmentSlot[],
 );
 
-const weaponSlots = new Set<EquipmentSlot>(["rh", "lh"]);
+const weaponSlots = new Set<EquipmentSlot>(["hn"]);
 
 const equipmentSlotCapacity: Partial<Record<EquipmentSlot, number>> = {
     // defaults to 1 if not specified
-    bl: 5,
-    rn: 2,
+    bl: 5, // 5 belt
+    rn: 2, // 2 rings
+    hn: 2, // 2 hands (left/right)
 };
 
 type NoiseType = "simplex" | "random";

@@ -12,7 +12,6 @@ import {
 import { SkillLinesEnum } from "$lib/crossover/world/skills";
 import {
     BarterSchema,
-    EquipmentSlotsEnum,
     GeohashLocationSchema,
     type GeohashLocation,
 } from "$lib/crossover/world/types";
@@ -218,7 +217,6 @@ const SpawnWorldSchema = z.object({
 // Schemas - player
 const EquipItemSchema = z.object({
     item: z.string(),
-    slot: z.enum(EquipmentSlotsEnum),
 });
 
 const playerAuthProcedure = authProcedure.use(async ({ ctx, next }) => {
@@ -527,8 +525,7 @@ const crossoverRouter = {
         equip: playerAuthBusyProcedure
             .input(EquipItemSchema)
             .query(async ({ ctx, input }) => {
-                const { item, slot } = input;
-                await equipItem(ctx.player, item, slot, ctx.now);
+                await equipItem(ctx.player, input.item, ctx.now);
             }),
         // cmd.unequip
         unequip: playerAuthBusyProcedure

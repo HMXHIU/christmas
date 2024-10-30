@@ -26,6 +26,7 @@ import {
 
 export {
     calculateModifier,
+    carryingCapacity,
     describeResource,
     entityAbilities,
     entityActions,
@@ -35,7 +36,7 @@ export {
     entityLevel,
     entitySkills,
     entityStats,
-    isEntityHostile,
+    isHostile,
     mergeAdditive,
     mergeNumericAdd,
     resetEntityStats,
@@ -45,6 +46,10 @@ export {
 
 type Attribute = "dex" | "str" | "con" | "fth" | "mnd" | "cha";
 type Attributes = Record<Attribute, number>;
+
+type EntitySkillsInput =
+    | Pick<Player, "player" | "skills" | "race" | "gen" | "arch">
+    | Pick<Monster, "skills">;
 
 const describeResource: Record<Stat | Attribute | Currency, string> = {
     mnd: "mind",
@@ -101,10 +106,6 @@ function mergeNumericAdd(s: any, d: any) {
     }
     return s ?? d ?? 0;
 }
-
-type EntitySkillsInput =
-    | Pick<Player, "player" | "skills" | "race" | "gen" | "arch">
-    | Pick<Monster, "skills">;
 
 function entitySkills(entity: EntitySkillsInput): Skills {
     // Add abilities from demographics (monster does not have skills from demographics)
@@ -174,7 +175,11 @@ function entityAffinity(entity: Creature): Affinity {
     ].affinity;
 }
 
-function isEntityHostile(a: Creature, b: Creature): [boolean, number] {
+function isHostile(a: Creature, b: Creature): [boolean, number] {
     const aggro = hostility(entityAffinity(a), entityAffinity(b));
-    return [hostility(entityAffinity(a), entityAffinity(b)) >= 2, aggro];
+    return [aggro >= 2, aggro];
+}
+
+function carryingCapacity(entity: Creature): number {
+    return 20 + 10 * (entityAttributes(entity).str - 10);
 }

@@ -105,7 +105,7 @@ async function checkCanSpawnMonsters(
     return false;
 }
 
-/**
+/** TODO: DEPRECATE THIS
  * Respawns monsters in locationInstance (defaults to actual game world @) considering the provided players locations
  *
  * @param players - An array of PlayerEntity objects representing the players' locations.

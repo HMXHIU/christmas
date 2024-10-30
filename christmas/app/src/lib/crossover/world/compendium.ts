@@ -48,7 +48,8 @@ interface Prop {
     weight: number; // -1 means it cannot be taken
     collider: boolean; // cannot have more than 1 collidable item in the same location, cannot walk through collidable items
     dieRoll?: DieRoll; // weapon damage + modifier used for both attack rolls & saving throws (use the max of)
-    equipmentSlot?: EquipmentSlot[]; // can be used to tell if item is an equipment
+    equipmentSlot?: EquipmentSlot; // can be used to tell if item is an equipment
+    equipmentSlotSize?: number; // how many slots the equipment takes (eg. greatsword takes 2 hands, defaults to 1 if not specified)
     equipmentAssets?: Record<string, EquipmentAsset>; // maps bone to EquipmentAsset
     // Spawn a world (lazily) related to this instance (eg. tavern, interior)
     world?: PropWorld;

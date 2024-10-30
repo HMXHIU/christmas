@@ -109,6 +109,7 @@ interface Player extends EntityState, CharacterParams {
     name: string;
     rgn: string;
     lgn: boolean;
+    wgt: number; // weight of current equipment
     npc?: string; // npc instance id (if player is an NPC)
 }
 

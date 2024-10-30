@@ -601,7 +601,7 @@ function minifiedEntity(
         }
         // Stats
         if (options?.stats) {
-            fields.push("hp", "cha", "mnd", "lum", "umb", "cond");
+            fields.push("hp", "cha", "mnd", "lum", "umb", "cond", "wgt");
         }
         // Timers
         if (options?.timers) {

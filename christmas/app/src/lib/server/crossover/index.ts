@@ -18,6 +18,7 @@ import {
 import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
 import { z } from "zod";
 import { getPlayerState, getUser } from "../user";
+import { resolveEquipment } from "./combat/equipment";
 import { respawnPlayer } from "./combat/utils";
 import { fetchEntity, saveEntity } from "./redis/utils";
 
@@ -99,6 +100,7 @@ async function loadPlayerEntity(
         loc: [options.geohash],
         locT: locationType,
         locI: locationInstance,
+        wgt: 0,
         hp: 0,
         mnd: 0,
         cha: 0,
@@ -145,6 +147,9 @@ async function loadPlayerEntity(
         ];
         player.locT = locationType;
     }
+
+    // Apply equipment enhancements (incl. weight, conditions, set bonuses etc ...)
+    player = await resolveEquipment(player);
 
     return player;
 }

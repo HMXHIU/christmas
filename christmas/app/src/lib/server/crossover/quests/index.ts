@@ -44,7 +44,7 @@ async function createQuest(
     options?: { beasts?: string[]; npcs?: NPCs[]; reward?: Reward },
 ): Promise<QuestEntity> {
     const entities: Record<string, { id?: string; name: string }> = {};
-    const questId = `quest_${template.template}-${await questRepository.search().count()}`;
+    const questId = `quest_${template.template}_${await questRepository.search().count()}`; // use '_' instead of '-' (negatiion)
 
     // Randomly determine beasts, NPCs selection
     const reward = options?.reward ?? {};
@@ -165,7 +165,6 @@ async function resolvePlayerQuests(
     triggerPredicate: (trigger: Trigger) => boolean,
 ) {
     const quests = await playerQuestsInvolvingEntities(player.player, entities);
-
     for (const [quest, writ] of quests) {
         // Find any trigger matches
         for (const objective of quest.objectives) {
@@ -176,8 +175,7 @@ async function resolvePlayerQuests(
                 if (objective.fulfilled || !triggerPredicate(trigger)) {
                     return;
                 }
-
-                // Handle drop effect
+                // Drop effect
                 if (effect.type === "drop") {
                     await resolveDropEffect(
                         player,
@@ -190,7 +188,9 @@ async function resolvePlayerQuests(
                             });
                         },
                     );
-                } else if (effect.type === "dialogue") {
+                }
+                // Dialogue effect
+                else if (effect.type === "dialogue") {
                     // Publish dialogue
                     await publishFeedEvent(player.player, {
                         type: "message",

@@ -8,10 +8,12 @@ import {
 } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import { createItem } from "$lib/server/crossover/actions/item";
+import { equipItem, unequipItem } from "$lib/server/crossover/actions/item";
 import { respawnPlayer } from "$lib/server/crossover/combat/utils";
-import { spawnLocation } from "$lib/server/crossover/dm";
-import { saveEntity } from "$lib/server/crossover/redis/utils";
+import { spawnItemInInventory, spawnLocation } from "$lib/server/crossover/dm";
+import { equipmentQuerySet } from "$lib/server/crossover/redis/queries";
+import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
+import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
 import { describe, expect, test } from "vitest";
 import { createGandalfSarumanSauron } from "../utils";
 
@@ -96,13 +98,34 @@ describe("Test Player Entity", async () => {
     });
 
     test("Test Player Equipment", async () => {
-        let steelPlate = await createItem(
-            playerTwo,
-            compendium.steelplate.prop,
-        );
-        const steelPauldron = await createItem(
-            playerTwo,
-            compendium.steelpauldron.prop,
-        );
+        // Check equipment before equipped
+        var equipment = (await equipmentQuerySet(
+            playerOne.player,
+        ).returnAll()) as ItemEntity[];
+        expect(equipment.length).toBe(0);
+
+        // Check weight is 0
+        expect(playerOne.wgt).toBe(0);
+
+        // Equip steel plate
+        let steelPlate = await spawnItemInInventory({
+            entity: playerOne,
+            prop: compendium.steelplate.prop,
+        });
+        await equipItem(playerOne, steelPlate.item);
+
+        // Check weight after equip
+        playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
+        expect(playerOne.wgt).toBe(compendium[steelPlate.prop].weight);
+
+        // Check equipment after equipped
+        equipment = (await equipmentQuerySet(
+            playerOne.player,
+        ).returnAll()) as ItemEntity[];
+
+        // Check weight after unequip
+        await unequipItem(playerOne, steelPlate.item);
+        playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
+        expect(playerOne.wgt).toBe(0);
     });
 });

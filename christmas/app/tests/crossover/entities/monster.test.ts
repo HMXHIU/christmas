@@ -7,7 +7,7 @@ import {
     entityLevel,
     entitySkills,
     entityStats,
-    isEntityHostile,
+    isHostile,
 } from "$lib/crossover/world/entity";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { compendium } from "$lib/crossover/world/settings/compendium";
@@ -33,14 +33,14 @@ describe("Test Monster Entity", async () => {
     });
 
     test("Test Hostility", async () => {
-        expect(isEntityHostile(goblin, goblinTwo)[0]).toBeFalsy();
-        expect(isEntityHostile(goblin, giantSpider)[0]).toBeFalsy();
+        expect(isHostile(goblin, goblinTwo)[0]).toBeFalsy();
+        expect(isHostile(goblin, giantSpider)[0]).toBeFalsy();
 
-        expect(isEntityHostile(goblin, dragon)[0]).toBeTruthy(); // goblin hostile against dragon
+        expect(isHostile(goblin, dragon)[0]).toBeTruthy(); // goblin hostile against dragon
 
-        expect(isEntityHostile(playerOne, goblin)[0]).toBeTruthy(); // player hostile against goblin
-        expect(isEntityHostile(playerOne, giantSpider)[0]).toBeTruthy(); // player hostile against giantSpider
-        expect(isEntityHostile(playerOne, dragon)[0]).toBeTruthy(); // player hostile against dragon
+        expect(isHostile(playerOne, goblin)[0]).toBeTruthy(); // player hostile against goblin
+        expect(isHostile(playerOne, giantSpider)[0]).toBeTruthy(); // player hostile against giantSpider
+        expect(isHostile(playerOne, dragon)[0]).toBeTruthy(); // player hostile against dragon
     });
 
     test("Test Spawn", async () => {

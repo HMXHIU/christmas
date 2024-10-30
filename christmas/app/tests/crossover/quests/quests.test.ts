@@ -60,7 +60,11 @@ beforeEach(async () => {
 
 test("Test Quest in NPC Greet Dialogue", async () => {
     // Create quest
-    const quest = await createQuest(killAndDeliverQuest, { beasts, reward });
+    const quest = await createQuest(killAndDeliverQuest, {
+        beasts,
+        reward,
+        npcs: ["grocer"],
+    });
 
     // Create npc involved in quest
     expect(quest.entityIds.includes("grocer")).toBe(true);
@@ -87,6 +91,19 @@ test("Test Quest in NPC Greet Dialogue", async () => {
     var evs = await collectAllEventDataForDuration(playerTwoStream);
     expect(evs).toMatchObject({
         feed: [
+            {
+                type: "message",
+                message: "${message}",
+                variables: {
+                    cmd: "say",
+                    player: npcEntity.player,
+                    name: "Grocer",
+                    message:
+                        "Grocer greets you, 'Well met Saruman, why don't you *browse* my wares?'.",
+                    target: playerTwo.player,
+                },
+                event: "feed",
+            },
             {
                 type: "message",
                 message: "${message}",
@@ -187,7 +204,11 @@ You can *tell Grocer accept ${quest.quest}* to accept this quest`,
 });
 
 test("Test Kill And Deliver", async () => {
-    const quest = await createQuest(killAndDeliverQuest, { beasts, reward });
+    const quest = await createQuest(killAndDeliverQuest, {
+        beasts,
+        reward,
+        npcs: ["grocer"],
+    });
 
     // Check quest entities
     expect(quest.entityIds.length).toBe(3);

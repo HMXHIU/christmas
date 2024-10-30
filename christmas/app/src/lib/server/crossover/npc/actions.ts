@@ -113,6 +113,8 @@ async function npcRespondToGreet(npc: string, player: string) {
     const tags = [`npc=${npcTemplate}`];
     let dialogue = await npcGreetResponse(tags);
 
+    console.log(JSON.stringify({ tags, dialogue }, null, 2));
+
     // Check if NPC has any quests
     let questMessage = "";
     const questWrits = (await questWritsQuerySet(
@@ -180,7 +182,7 @@ async function npcRespondToAbility({
     ability: Abilities;
 }) {
     if (target.npc) {
-        const npc = target.npc.split("_")[0] as NPCs;
+        const npc = target.npc.split("/")[0] as NPCs;
         const entityIsHuman = isEntityHuman(entity);
 
         // Dialogues spoken directly to an actual player

@@ -11,7 +11,6 @@ import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     equipmentSlotCapacity,
     geohashLocationTypes,
-    type EquipmentSlot,
     type GeohashLocation,
 } from "$lib/crossover/world/types";
 import type { WorldPOIs } from "$lib/crossover/world/world";
@@ -26,6 +25,7 @@ import { substituteVariablesRecursively } from "$lib/utils";
 import { setEntityBusy } from "..";
 import { performAbility } from "../abilities";
 import { worldAssetMetadataCache, worldPOIsCache } from "../caches";
+import { resolveEquipment } from "../combat/equipment";
 import { spawnItemInInventory, spawnWorld, spawnWorldPOIs } from "../dm";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../events";
 import { itemRepository } from "../redis";
@@ -173,12 +173,23 @@ async function useItem({
     );
 }
 
-async function equipItem(
+function canEquipItem(
     player: PlayerEntity,
-    item: string,
-    slot: EquipmentSlot,
-    now?: number,
-) {
+    item: ItemEntity,
+): [boolean, string] {
+    const { equipmentSlot, equipmentSlotSize } = compendium[item.prop];
+    let error: string | null = null;
+    if (!item) {
+        return [false, `Item ${item} not found`];
+    } else if (item.loc[0] !== player.player) {
+        return [false, `${item} is not in inventory`];
+    } else if (!equipmentSlot) {
+        return [false, `${item} is not equippable`];
+    }
+    return [true, ""];
+}
+
+async function equipItem(player: PlayerEntity, item: string, now?: number) {
     // Set busy
     player = (await setEntityBusy({
         entity: player,
@@ -186,50 +197,53 @@ async function equipItem(
         now: now,
     })) as PlayerEntity;
 
+    // Check can equip
     let itemToEquip = (await fetchEntity(item)) as ItemEntity;
-    const slots = compendium[itemToEquip.prop].equipmentSlot;
-    let error: string | null = null;
-
-    if (itemToEquip == null) {
-        error = `Item ${item} not found`;
-    } else if (itemToEquip.loc[0] !== player.player) {
-        error = `${item} is not in inventory`;
-    } else if (slots == null) {
-        error = `${item} is not equippable`;
-    } else if (!slots.includes(slot)) {
-        error = `${item} cannot be equipped in ${slot}`;
-    }
-    if (error != null) {
+    const [ok, error] = canEquipItem(player, itemToEquip);
+    if (!ok) {
         await publishFeedEvent(player.player, {
             type: "error",
             message: error,
         });
         return; // do not proceed
     }
+    const { equipmentSlot, equipmentSlotSize } = compendium[itemToEquip.prop];
+    const slotSize = equipmentSlotSize ?? 1;
+    const slotCapacity = equipmentSlotCapacity[equipmentSlot!] ?? 1;
 
     // Unequip existing items in slot to free up capacity
     const exitingItemsInSlot = (await inventoryQuerySet(player.player)
         .and("locT")
-        .equal(slot)
+        .equal(equipmentSlot!)
         .return.all()) as ItemEntity[];
-    const slotCapacity = equipmentSlotCapacity[slot] ?? 1;
-    if (exitingItemsInSlot.length >= slotCapacity) {
-        // Just uneqiup 1 exiting item to free up a slot
-        exitingItemsInSlot[0].loc = [player.player];
-        exitingItemsInSlot[0].locT = "inv";
-        (await itemRepository.save(
-            exitingItemsInSlot[0].item,
-            exitingItemsInSlot[0],
-        )) as ItemEntity;
+    const occupiedSlots = exitingItemsInSlot.reduce(
+        (acc, i) => acc + (compendium[i.prop].equipmentSlotSize ?? 1),
+        0,
+    );
+    const emptySlots = slotCapacity - occupiedSlots;
+    let slotsToFree = slotSize - emptySlots;
+    if (slotsToFree > 0) {
+        for (const eq of exitingItemsInSlot) {
+            eq.loc = [player.player];
+            eq.locT = "inv";
+            (await itemRepository.save(eq.item, eq)) as ItemEntity;
+            slotsToFree -= compendium[eq.prop].equipmentSlotSize ?? 1;
+            if (slotsToFree <= 0) {
+                break;
+            }
+        }
     }
 
     // Equip item in slot
     itemToEquip.loc = [player.player];
-    itemToEquip.locT = slot;
+    itemToEquip.locT = equipmentSlot!;
     itemToEquip = (await itemRepository.save(
         itemToEquip.item,
         itemToEquip,
     )) as ItemEntity;
+
+    // Resolve equipment
+    player = await resolveEquipment(player);
 
     // Inform all players nearby of equipment change
     const nearbyPlayerIds = await getNearbyPlayerIds(
@@ -238,7 +252,11 @@ async function equipItem(
         player.locI,
     );
     await publishAffectedEntitiesToPlayers(
-        [itemToEquip, ...exitingItemsInSlot].map((e) => minifiedEntity(e)),
+        [
+            itemToEquip,
+            ...exitingItemsInSlot,
+            minifiedEntity(player, { stats: true }),
+        ].map((e) => minifiedEntity(e)),
         {
             publishTo: nearbyPlayerIds,
         },
@@ -280,15 +298,21 @@ async function unequipItem(player: PlayerEntity, item: string, now?: number) {
         itemEntity,
     )) as ItemEntity;
 
+    // Resolve equipment
+    player = await resolveEquipment(player);
+
     // Inform all players nearby of equipment change
     const nearbyPlayerIds = await getNearbyPlayerIds(
         player.loc[0],
         player.locT as GeohashLocation,
         player.locI,
     );
-    await publishAffectedEntitiesToPlayers([minifiedEntity(itemEntity)], {
-        publishTo: nearbyPlayerIds,
-    });
+    await publishAffectedEntitiesToPlayers(
+        [minifiedEntity(itemEntity), minifiedEntity(player, { stats: true })],
+        {
+            publishTo: nearbyPlayerIds,
+        },
+    );
 }
 
 async function takeItem(player: PlayerEntity, item: string, now?: number) {

@@ -20,7 +20,6 @@ import type { SkillLines } from "./world/skills";
 import {
     type BarterSerialized,
     type Direction,
-    type EquipmentSlot,
     type GeohashLocation,
 } from "./world/types";
 
@@ -374,12 +373,9 @@ function crossoverCmdDrop(input: { item: string }, headers: HTTPHeaders = {}) {
     return trpc({ headers }).crossover.cmd.drop.query({ item });
 }
 
-function crossoverCmdEquip(
-    input: { item: string; slot: EquipmentSlot },
-    headers: HTTPHeaders = {},
-) {
-    const { item, slot } = input;
-    return trpc({ headers }).crossover.cmd.equip.query({ item, slot });
+function crossoverCmdEquip(input: { item: string }, headers: HTTPHeaders = {}) {
+    const { item } = input;
+    return trpc({ headers }).crossover.cmd.equip.query({ item });
 }
 
 function crossoverCmdUnequip(

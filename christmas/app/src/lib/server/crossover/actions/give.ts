@@ -123,7 +123,7 @@ async function give(
     // Resolve any give quest triggers
     if (receiver.npc) {
         const give = [item.item, item.prop];
-        const to = [receiver.player, receiver.npc.split("_")[0]];
+        const to = [receiver.player, receiver.npc.split("/")[0]];
         await resolvePlayerQuests(player, [...give, ...to], (trigger) => {
             if (
                 trigger.type === "give" &&

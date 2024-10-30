@@ -23,7 +23,7 @@ export let equipment: Record<string, Prop> = {
         charges: 0,
         weight: 20,
         collider: false,
-        equipmentSlot: ["ch"],
+        equipmentSlot: "ch",
         states: {
             default: {
                 name: "Steel plate armor",
@@ -64,7 +64,7 @@ export let equipment: Record<string, Prop> = {
         charges: 0,
         weight: 20,
         collider: false,
-        equipmentSlot: ["lg"],
+        equipmentSlot: "lg",
         states: {
             default: {
                 name: "Steel leg armor",
@@ -101,7 +101,7 @@ export let equipment: Record<string, Prop> = {
         charges: 0,
         weight: 20,
         collider: false,
-        equipmentSlot: ["ft"],
+        equipmentSlot: "ft",
         states: {
             default: {
                 name: "Steel boots",
@@ -142,7 +142,7 @@ export let equipment: Record<string, Prop> = {
         charges: 0,
         weight: 20,
         collider: false,
-        equipmentSlot: ["sh"],
+        equipmentSlot: "sh",
         states: {
             default: {
                 name: "Steel Pauldrons",
@@ -177,7 +177,7 @@ export let equipment: Record<string, Prop> = {
         charges: 0,
         weight: 20,
         collider: false,
-        equipmentSlot: ["gl"],
+        equipmentSlot: "gl",
         states: {
             default: {
                 name: "Steel Gauntlets",

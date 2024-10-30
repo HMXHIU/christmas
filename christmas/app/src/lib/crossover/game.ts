@@ -68,10 +68,8 @@ import { worldSeed } from "./world/settings/world";
 import { type SkillLines } from "./world/skills";
 import {
     Directions,
-    equipmentSlots,
     type BarterSerialized,
     type Direction,
-    type EquipmentSlot,
     type GeohashLocation,
 } from "./world/types";
 import { isGeohashTraversable } from "./world/utils";
@@ -322,22 +320,13 @@ async function performAction(
     }
     // equip
     else if (action.action === "equip" && variables != null) {
-        // Get equipment slot from query else from prop
         const item = target as Item;
-        const slotFromQuery = variables.queryIrrelevant as EquipmentSlot;
-        const slot = equipmentSlots.has(slotFromQuery)
-            ? slotFromQuery
-            : compendium[item.prop].equipmentSlot?.[0];
-        if (slot) {
-            return await crossoverCmdEquip(
-                {
-                    item: getEntityId(item)[0],
-                    slot,
-                },
-                headers,
-            );
-        }
-        throw new Error(`Invalid slot ${slot}`);
+        return await crossoverCmdEquip(
+            {
+                item: item.item,
+            },
+            headers,
+        );
     }
     // unequip
     else if (action.action === "unequip") {
