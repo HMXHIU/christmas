@@ -275,8 +275,7 @@ async function spawnMonster({
         umb: 0,
         skills,
         buclk: 0,
-        buf: [],
-        dbuf: [],
+        cond: [],
         pthclk: 0,
         pthdur: 0,
         pth: [],
@@ -445,8 +444,7 @@ async function spawnQuestItem({
         chg: charges,
         state: "default",
         vars: parseItemVariables(variables || {}, prop),
-        dbuf: [],
-        buf: [],
+        cond: [],
     };
 
     return (await itemRepository.save(itemId, item)) as ItemEntity;
@@ -497,8 +495,7 @@ async function spawnItemInInventory({
         chg: charges,
         state: variables?.state ?? "default",
         vars: parseItemVariables(variables || {}, prop),
-        dbuf: [],
-        buf: [],
+        cond: [],
     })) as ItemEntity;
 }
 
@@ -613,8 +610,7 @@ async function spawnItemAtGeohash({
         chg: charges,
         state: variables?.state ?? "default",
         vars: parseItemVariables(variables || {}, prop),
-        dbuf: [],
-        buf: [],
+        cond: [],
     };
 
     return (await itemRepository.save(itemId, entity)) as ItemEntity;

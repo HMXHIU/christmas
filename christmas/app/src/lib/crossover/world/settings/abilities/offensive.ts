@@ -121,8 +121,8 @@ const offensiveAbilities: Partial<Record<Abilities, Ability>> = {
                 "action",
                 {
                     target: "target",
-                    debuffs: {
-                        debuff: "blinded",
+                    conditions: {
+                        condition: "blinded",
                         op: "push",
                     },
                     modifiers: ["dex"],
@@ -133,7 +133,7 @@ const offensiveAbilities: Partial<Record<Abilities, Ability>> = {
                 "check",
                 {
                     target: "target",
-                    debuffs: { debuff: "blinded", op: "contains" },
+                    conditions: { condition: "blinded", op: "contains" },
                     ticks: 0,
                 },
             ],
@@ -218,8 +218,8 @@ const offensiveAbilities: Partial<Record<Abilities, Ability>> = {
                 "check",
                 {
                     target: "target",
-                    debuffs: {
-                        debuff: "wet",
+                    conditions: {
+                        condition: "wet",
                         op: "doesNotContain",
                     },
                     ticks: 0,
@@ -229,8 +229,8 @@ const offensiveAbilities: Partial<Record<Abilities, Ability>> = {
                 "action",
                 {
                     target: "target",
-                    debuffs: {
-                        debuff: "burning",
+                    conditions: {
+                        condition: "burning",
                         op: "push",
                     },
                     modifiers: ["dex"],
@@ -258,7 +258,10 @@ const offensiveAbilities: Partial<Record<Abilities, Ability>> = {
                 "action",
                 {
                     target: "target",
-                    debuffs: { debuff: "paralyzed", op: "push" },
+                    conditions: {
+                        condition: "paralyzed",
+                        op: "push",
+                    },
                     modifiers: ["mnd"],
                     ticks: TICKS_PER_TURN / 2,
                 },
@@ -284,7 +287,7 @@ const offensiveAbilities: Partial<Record<Abilities, Ability>> = {
                 "action",
                 {
                     target: "target",
-                    debuffs: { debuff: "blinded", op: "push" },
+                    conditions: { condition: "blinded", op: "push" },
                     modifiers: ["con"],
                     ticks: TICKS_PER_TURN / 2,
                 },

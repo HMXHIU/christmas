@@ -562,7 +562,7 @@ function minifiedEntity(
     entity: Actor,
     options?: {
         path?: boolean; // pth, pthst, pthclk, pthdur
-        stats?: boolean; // hp, cha, mnd, lum, umb etc ...
+        stats?: boolean; // hp, cha, mnd, lum, umb, cond etc ...
         demographics?: boolean; // archetype, gender, race
         timers?: boolean; // buclk
     },
@@ -601,11 +601,11 @@ function minifiedEntity(
         }
         // Stats
         if (options?.stats) {
-            fields.push("hp", "cha", "mnd", "lum", "umb");
+            fields.push("hp", "cha", "mnd", "lum", "umb", "cond");
         }
         // Timers
         if (options?.timers) {
-            fields.push("buclk"); // need to include ap
+            fields.push("buclk");
         }
     }
 

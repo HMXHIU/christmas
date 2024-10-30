@@ -30,6 +30,9 @@ const PlayerEntitySchema = new Schema("Player", {
 
     // NPC
     npc: { type: "string" }, // npc instance id
+
+    // Conditions
+    cond: { type: "string[]" },
 });
 
 // Only need to include searchable fields for redis schema
@@ -43,6 +46,9 @@ const MonsterEntitySchema = new Schema("Monster", {
     loc: { type: "string[]" },
     locT: { type: "string" },
     locI: { type: "string" },
+
+    // Conditions
+    cond: { type: "string[]" },
 });
 
 // Only need to include searchable fields for redis schema
@@ -59,6 +65,9 @@ const ItemEntitySchema = new Schema("Item", {
     loc: { type: "string[]" },
     locT: { type: "string" },
     locI: { type: "string" },
+
+    // Conditions
+    cond: { type: "string[]" },
 });
 
 const WorldEntitySchema = new Schema("World", {

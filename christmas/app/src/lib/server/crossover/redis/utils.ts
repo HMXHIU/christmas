@@ -4,6 +4,7 @@ import {
     type MonsterEntity,
     type PlayerEntity,
 } from "$lib/server/crossover/types";
+import { uniq } from "lodash-es";
 import type { Repository } from "redis-om";
 import {
     itemRepository,
@@ -65,7 +66,7 @@ async function saveEntity<T extends ActorEntity | QuestEntity>(
 }
 
 async function saveEntities(...entities: (ActorEntity | QuestEntity)[]) {
-    for (const e of entities) {
+    for (const e of uniq(entities)) {
         await saveEntity(e);
     }
 }

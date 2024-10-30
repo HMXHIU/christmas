@@ -108,7 +108,7 @@ function actionsFromDemographics({
     );
 }
 
-/**
+/*
  * Gender
  */
 type Genders = "male" | "female";
@@ -142,7 +142,7 @@ const genders: Record<Genders, Gender> = {
     },
 };
 
-/**
+/*
  * Race
  */
 
@@ -191,7 +191,7 @@ const races: Record<Races, Race> = {
     },
 };
 
-/**
+/*
  * Archetype
  */
 

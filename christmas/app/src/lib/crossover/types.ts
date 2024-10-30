@@ -8,7 +8,7 @@ import type {
     GeohashLocation,
     LocationType,
 } from "$lib/crossover/world/types";
-import type { DamageType } from "./world/abilities";
+import type { DamageType } from "./world/combat";
 import type { Attribute } from "./world/entity";
 import type { Faction } from "./world/settings/affinities";
 import type { SkillLines } from "./world/skills";
@@ -78,18 +78,21 @@ interface LocationParams {
     locI: string; // location instance ("" for actual world)
 }
 
+interface ConditionParams {
+    cond: string[];
+}
+
 interface EntityState
     extends EntityStats,
         PathParams,
         LocationParams,
-        CurrencyParams {
+        CurrencyParams,
+        ConditionParams {
     buclk: number; // busy clock (time the entity is busy till)
-    dbuf: string[]; // debuffs
-    buf: string[]; // buffs
     skills: Skills; // skill levels
 }
 
-/**
+/*
  * Player
  */
 
@@ -109,7 +112,7 @@ interface Player extends EntityState, CharacterParams {
     npc?: string; // npc instance id (if player is an NPC)
 }
 
-/**
+/*
  * Monster
  *
  * Spawned from `beast` in the bestiary.
@@ -122,13 +125,13 @@ interface Monster extends EntityState {
     beast: string;
 }
 
-/**
+/*
  * Item
  *
  * Created from a `prop` in the compendium.
  */
 
-interface Item extends LocationParams {
+interface Item extends LocationParams, ConditionParams {
     item: string; // `[prop]_[instance]`
     name: string;
     prop: string;
@@ -139,11 +142,9 @@ interface Item extends LocationParams {
     dur: number; // duration
     chg: number; // charges
     state: string;
-    dbuf: string[];
-    buf: string[];
 }
 
-/**
+/*
  * World
  *
  * Created from a tiled map (JSON format)
@@ -155,7 +156,7 @@ interface World {
     locT: GeohashLocation;
 }
 
-/**
+/*
  * Dialogue
  */
 type Dialogues = "grt" | "ign" | "agro";
@@ -170,7 +171,7 @@ interface Dialogue {
     exc?: string[]; // must not contain these tags
 }
 
-/**
+/*
  * Quests
  */
 
@@ -186,7 +187,7 @@ interface Quest {
     reward?: Reward;
 }
 
-/**
+/*
  * Objective
  */
 
@@ -198,7 +199,7 @@ interface Objective {
     reward?: Reward;
 }
 
-/**
+/*
  * Reward
  */
 
@@ -209,7 +210,7 @@ interface Reward {
     props?: string[];
 }
 
-/**
+/*
  * Trigger
  */
 
@@ -237,7 +238,7 @@ interface DialogueTrigger extends BaseTrigger {
     dialogue: string;
 }
 
-/**
+/*
  * Effect
  */
 

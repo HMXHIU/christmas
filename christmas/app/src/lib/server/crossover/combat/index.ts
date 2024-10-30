@@ -7,10 +7,10 @@ import {
 } from "$lib/crossover/utils";
 import type {
     Abilities,
-    DamageType,
     ProcedureEffect,
 } from "$lib/crossover/world/abilities";
 import type { Actions } from "$lib/crossover/world/actions";
+import { type DamageType } from "$lib/crossover/world/combat";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import type {
     ActorEntity,
@@ -34,6 +34,11 @@ import {
 } from "../redis/queries";
 import { saveEntities } from "../redis/utils";
 import {
+    popCondition,
+    pushCondition,
+    resolveConditionsFromDamage,
+} from "./condition";
+import {
     entityPronoun,
     generateHitMessage,
     generateMissMessage,
@@ -45,11 +50,16 @@ import {
     determineBodyPartHit,
     determineEquipmentSlotHit,
     entityDied,
-    resolveDamageEffects,
+    resolveDamage,
     respawnPlayer,
 } from "./utils";
 
-export { resolveAttack, resolveCombat, resolveProcedureEffect };
+export {
+    resolveAttack,
+    resolveCombat,
+    resolveCombatConsequences,
+    resolveProcedureEffect,
+};
 
 const deadMessage = `As your vision fades, a cold darkness envelops your senses.
 You feel weightless, adrift in a void between life and death.
@@ -57,7 +67,7 @@ Time seems meaningless here, yet you sense that you are bound—unable to move, 
 But something tells you that this is not the end.`;
 
 async function resolveCombat(
-    attacker: CreatureEntity,
+    attacker: ActorEntity,
     defender: ActorEntity,
     options: {
         attack?: {
@@ -70,16 +80,16 @@ async function resolveCombat(
         };
     },
 ): Promise<{
-    attacker: CreatureEntity;
+    attacker: ActorEntity;
     defender: ActorEntity;
-    entities: ActorEntity[];
+    affectedEntities: ActorEntity[];
     success: boolean;
 }> {
     const attackerBefore = clone(attacker);
     const defenderBefore = clone(defender);
 
     let success = false;
-    let entities: ActorEntity[] = [];
+    let affectedEntities: ActorEntity[] = [];
     let bodyPartHit: BodyPart | undefined = undefined;
     let damage: number | undefined = undefined;
     let damageType: DamageType | undefined = undefined;
@@ -94,18 +104,13 @@ async function resolveCombat(
     if (options.attack) {
         ({
             success,
-            entities,
+            affectedEntities,
             damage,
             bodyPartHit,
             damageType,
             attacker,
             defender,
-        } = await resolveAttack(
-            attacker,
-            defender,
-            "attack",
-            options.attack.weapon,
-        ));
+        } = await resolveAttack(attacker, defender, options.attack.weapon));
 
         // Publish action feed
         await publishActionEvent(nearbyPlayerIds, {
@@ -118,7 +123,7 @@ async function resolveCombat(
     else if (options.ability?.procedureEffect) {
         ({
             success,
-            entities,
+            affectedEntities,
             damage,
             bodyPartHit,
             damageType,
@@ -138,14 +143,22 @@ async function resolveCombat(
         });
     }
 
-    // Save entities
-    await saveEntities(attacker, defender, ...entities);
-
     // Hit
     if (success) {
+        // Resolve conditions from hit
+        if (damage && damageType) {
+            defender = resolveConditionsFromDamage({
+                defender,
+                attacker,
+                bodyPartHit,
+                damage,
+                damageType,
+            });
+        }
+
         // Publish entities
         await publishAffectedEntitiesToPlayers(
-            entities.map((e) =>
+            affectedEntities.map((e) =>
                 minifiedEntity(e, {
                     stats: true,
                     timers: true,
@@ -183,6 +196,9 @@ async function resolveCombat(
         });
     }
 
+    // Save entities
+    await saveEntities(...affectedEntities);
+
     // Resolve combat consequences
     ({ attacker, defender } = await resolveCombatConsequences({
         attackerBefore,
@@ -191,70 +207,65 @@ async function resolveCombat(
         defender,
     }));
 
-    return { success, attacker, defender, entities };
+    return { success, attacker, defender, affectedEntities };
 }
 
 async function resolveAttack(
-    attacker: CreatureEntity,
+    attacker: ActorEntity,
     defender: ActorEntity,
-    action: Actions,
     weapon?: ItemEntity,
 ): Promise<{
     success: boolean;
     bodyPartHit?: BodyPart;
     damage?: number;
     damageType: DamageType;
-    entities: ActorEntity[];
-    attacker: CreatureEntity;
+    affectedEntities: ActorEntity[];
+    attacker: ActorEntity;
     defender: ActorEntity;
 }> {
-    const entities: ActorEntity[] = []; // affected entities
+    const affectedEntities: ActorEntity[] = []; // affected entities
     let success = false;
     let bodyPartHit: BodyPart | undefined = undefined;
     let damage: number | undefined = undefined;
     let damageType: DamageType = "normal";
 
-    // Attack action
-    if (action === "attack") {
-        // Attack roll
-        success = attackRollForWeapon(attacker, defender, weapon).success;
-        if (success) {
-            // Body part roll
-            bodyPartHit = determineBodyPartHit();
-            const equipmentSlot = determineEquipmentSlotHit(bodyPartHit);
+    // Attack roll
+    success = attackRollForWeapon(attacker, defender, weapon).success;
+    if (success) {
+        // Body part roll
+        bodyPartHit = determineBodyPartHit();
+        const equipmentSlot = determineEquipmentSlotHit(bodyPartHit);
 
-            // Damage & Debuffs
-            const dieRoll: DieRoll = weapon
-                ? (compendium[weapon.prop].dieRoll ?? d4)
-                : d4;
-            ({ damage, attacker, defender } = resolveDamageEffects(
-                attacker,
-                defender,
-                bodyPartHit,
-                dieRoll,
-            ));
-            entities.push(defender);
+        // Damage
+        const dieRoll: DieRoll = weapon
+            ? (compendium[weapon.prop].dieRoll ?? d4)
+            : d4;
+        ({ damage, attacker, defender } = resolveDamage({
+            attacker,
+            defender,
+            bodyPartHit,
+            dieRoll,
+        }));
+        affectedEntities.push(defender);
 
-            // Reduce attacker item durability
-            if (weapon) {
-                weapon.dur -= 1;
-                entities.push(weapon);
-            }
+        // Reduce attacker item durability
+        if (weapon) {
+            weapon.dur -= 1;
+            affectedEntities.push(weapon);
+        }
 
-            // Reduce defender equipment durability
-            const equipment = await equipmentQuerySet(
-                getEntityId(defender)[0],
-                [equipmentSlot],
-            ).first();
-            if (equipment) {
-                (equipment as ItemEntity).dur -= 1;
-                entities.push(equipment as ItemEntity);
-            }
+        // Reduce defender equipment durability
+        const equipment = await equipmentQuerySet(getEntityId(defender)[0], [
+            equipmentSlot,
+        ]).first();
+        if (equipment) {
+            (equipment as ItemEntity).dur -= 1;
+            affectedEntities.push(equipment as ItemEntity);
         }
     }
     return {
         success,
-        entities,
+        affectedEntities,
         bodyPartHit,
         damage,
         damageType,
@@ -264,19 +275,20 @@ async function resolveAttack(
 }
 
 async function resolveProcedureEffect(
-    attacker: CreatureEntity,
+    attacker: ActorEntity,
     defender: ActorEntity,
     procedureEffect: ProcedureEffect,
+    now?: number,
 ): Promise<{
     success: boolean;
     bodyPartHit?: BodyPart;
     damage?: number;
     damageType?: DamageType;
-    entities: ActorEntity[];
-    attacker: CreatureEntity;
+    affectedEntities: ActorEntity[];
+    attacker: ActorEntity;
     defender: ActorEntity;
 }> {
-    const entities: ActorEntity[] = []; // affected entities
+    const affectedEntities: ActorEntity[] = [];
     let success = false;
     let damage: number | undefined = undefined;
     let bodyPartHit: BodyPart | undefined = undefined;
@@ -301,13 +313,13 @@ async function resolveProcedureEffect(
             const equipmentSlot = determineEquipmentSlotHit(bodyPartHit);
 
             // Abilities ignore debuffs from body part hits
-            ({ damage, attacker, defender, damageType } = resolveDamageEffects(
+            ({ damage, attacker, defender, damageType } = resolveDamage({
                 attacker,
                 defender,
                 bodyPartHit,
-                procedureEffect.dieRoll,
-            ));
-            entities.push(defender);
+                dieRoll: procedureEffect.dieRoll,
+            }));
+            affectedEntities.push(defender);
 
             // Reduce defender equipment durability
             const equipment = await equipmentQuerySet(
@@ -316,32 +328,24 @@ async function resolveProcedureEffect(
             ).first();
             if (equipment) {
                 (equipment as ItemEntity).dur -= 1;
-                entities.push(equipment as ItemEntity);
+                affectedEntities.push(equipment as ItemEntity);
             }
         }
 
-        // Debuff ability
-        if (procedureEffect.debuffs) {
-            const { debuff, op } = procedureEffect.debuffs;
+        // Condition (buff/debuff) ability
+        if (procedureEffect.conditions) {
+            const { condition, op } = procedureEffect.conditions;
             if (op === "push") {
-                if (!defender.dbuf.includes(debuff)) {
-                    defender.dbuf.push(debuff);
-                }
+                defender.cond = pushCondition(
+                    defender.cond,
+                    condition,
+                    attacker,
+                    now,
+                );
             } else if (op === "pop") {
-                defender.dbuf = defender.dbuf.filter((d) => d !== debuff);
+                defender.cond = popCondition(defender.cond, condition);
             }
-            entities.push(defender);
-        }
-
-        // Buff ability
-        if (procedureEffect.buffs) {
-            const { buff, op } = procedureEffect.buffs;
-            if (op === "push" && !defender.buf.includes(buff)) {
-                defender.buf.push(buff);
-            } else if (op === "pop") {
-                defender.buf = defender.buf.filter((d) => d !== buff);
-            }
-            entities.push(defender);
+            affectedEntities.push(defender);
         }
 
         // State change ability
@@ -368,7 +372,7 @@ async function resolveProcedureEffect(
                             );
                         }
                     }
-                    entities.push(defender);
+                    affectedEntities.push(defender);
                 }
             }
         }
@@ -376,7 +380,7 @@ async function resolveProcedureEffect(
 
     return {
         success,
-        entities: uniq(entities),
+        affectedEntities: uniq(affectedEntities),
         damage,
         bodyPartHit,
         damageType,
@@ -391,12 +395,12 @@ async function resolveCombatConsequences({
     attacker,
     defender,
 }: {
-    attackerBefore: CreatureEntity;
+    attackerBefore: ActorEntity;
     defenderBefore: ActorEntity;
-    attacker: CreatureEntity;
+    attacker: ActorEntity;
     defender: ActorEntity;
 }): Promise<{
-    attacker: CreatureEntity;
+    attacker: ActorEntity;
     defender: ActorEntity;
 }> {
     // Defender killed attacker
@@ -406,7 +410,7 @@ async function resolveCombatConsequences({
             defender as CreatureEntity,
             true,
         ));
-        if (defender.player) {
+        if (defender.player && !("item" in attacker)) {
             await handleQuestTrigger(attacker, defender as PlayerEntity);
         }
     }
@@ -418,7 +422,7 @@ async function resolveCombatConsequences({
             attacker,
             false,
         ));
-        if (attacker.player) {
+        if (attacker.player && !("item" in defender)) {
             await handleQuestTrigger(defender, attacker as PlayerEntity);
         }
     }
@@ -456,15 +460,15 @@ async function handleQuestTrigger(
 }
 
 async function handleEntityDeath(
-    deadEntity: CreatureEntity,
-    killerEntity: CreatureEntity,
+    deadEntity: ActorEntity,
+    killerEntity: ActorEntity,
     isAttacker: boolean, // dead entity is attacker
 ) {
     // Award currency to killer
-    if (killerEntity.player || killerEntity.monster) {
+    if (!("item" in killerEntity) && !("item" in deadEntity)) {
         killerEntity = await awardKillCurrency(
-            killerEntity as PlayerEntity,
-            deadEntity,
+            killerEntity as CreatureEntity,
+            deadEntity as CreatureEntity,
         );
         await publishAffectedEntitiesToPlayers(
             [
@@ -497,11 +501,15 @@ async function handleEntityDeath(
         );
     }
 
-    // Publish 'You killed' message to killer player
+    // Publish 'You killed' message to killer player (TODO: custom death message for each beast)
     if (killerEntity.player) {
+        const message = !("item" in deadEntity)
+            ? `You killed ${deadEntity.name}, ${entityPronoun(deadEntity, "object")} collapses at your feet.`
+            : `You destroyed ${deadEntity.name}`;
+
         await publishFeedEvent((killerEntity as PlayerEntity).player, {
             type: "message",
-            message: `You killed ${deadEntity.name}, ${entityPronoun(deadEntity, "object")} collapses at your feet.`,
+            message,
         });
     }
 

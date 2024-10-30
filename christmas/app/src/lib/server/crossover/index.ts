@@ -46,8 +46,7 @@ const PlayerStateSchema = z.object({
     cha: z.number().optional(),
     lum: z.number().optional(),
     umb: z.number().optional(),
-    buf: z.array(z.string()).optional(),
-    dbuf: z.array(z.string()).optional(),
+    cond: z.array(z.string()).optional(), // ['${a|p}:${Condition}:${validTill}'] eg. ['a:burning:123456']
 });
 
 interface ConnectedUser {
@@ -106,8 +105,7 @@ async function loadPlayerEntity(
         lum: 0,
         umb: 0,
         buclk: 0,
-        dbuf: [],
-        buf: [],
+        cond: [],
         arch: demographic.archetype,
         gen: demographic.gender,
         race: demographic.race,

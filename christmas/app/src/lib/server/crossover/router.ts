@@ -208,8 +208,6 @@ const BuffCreatureSchema = z.object({
     mnd: z.number().optional(),
     lum: z.number().optional(),
     umb: z.number().optional(),
-    buffs: z.array(z.string()).optional(),
-    debuffs: z.array(z.string()).optional(),
 });
 const SpawnWorldSchema = z.object({
     geohash: z.string(),
@@ -356,8 +354,7 @@ const crossoverRouter = {
         buffCreature: dmServiceProcedure
             .input(BuffCreatureSchema)
             .mutation(async ({ input }) => {
-                const { entity, hp, cha, lum, umb, mnd, buffs, debuffs } =
-                    input;
+                const { entity, hp, cha, lum, umb, mnd } = input;
 
                 // Get `player` or `monster` enity
                 let fetchedEntity = await tryFetchEntity(entity);
@@ -374,8 +371,6 @@ const crossoverRouter = {
                 fetchedEntity.cha = cha ?? fetchedEntity.cha;
                 fetchedEntity.lum = lum ?? fetchedEntity.lum;
                 fetchedEntity.umb = umb ?? fetchedEntity.umb;
-                fetchedEntity.buf = buffs ?? fetchedEntity.buf;
-                fetchedEntity.dbuf = debuffs ?? fetchedEntity.dbuf;
 
                 // Save entity
                 return await saveEntity(fetchedEntity);

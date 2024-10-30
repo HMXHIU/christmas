@@ -10,7 +10,7 @@
 - Fear of losing `LUs` should cause the player to prepare and strategize before entering a dungeon.
 - Certain magic which should be powerful but rare can also costs `LUs`.
 
-## Levels
+## Levels (Deprecated - replaced with skill line levels)
 
 - There are 3 kinds of levels
 
@@ -46,7 +46,7 @@
 
 - Difficulty: 1% of players should be able to reach this level
 
-## Leveling Quests/Dungeons
+## Leveling Quests/Dungeons (Deprecated - replaced with skill line levels)
 
 - Leveling quests are solo quests require a `dungeon key` (purchased with `LUs`) to enter.
 - Player levels are obtained when a player purchases a `dungeon key`
@@ -56,7 +56,7 @@
 - Skills, items, preparation, tactics and teamwork should be more important than levels.
 - Current cap for level is set at 5
 
-#### Tasks
+#### Tasks (Deprecated - replaced with skill line levels)
 
 - [ ] Create a `dungeon key` item which transports the player into a solo dungeon
   - [ ] Player can `enter` the `dungeon key`

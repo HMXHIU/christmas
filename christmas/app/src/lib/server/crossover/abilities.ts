@@ -19,6 +19,7 @@ import type {
 import { sleep } from "$lib/utils";
 import { consumeResources, setEntityBusy } from ".";
 import { resolveCombat } from "./combat";
+import { hasCondition } from "./combat/condition";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "./events";
 import { fetchEntity } from "./redis/utils";
 
@@ -145,7 +146,7 @@ async function performAbility({
         }
         // Check
         else if (type === "check") {
-            if (!performEffectCheck({ entity, effect })) break;
+            if (!performEffectCheck({ entity, effect, now })) break;
         }
     }
 }
@@ -153,29 +154,19 @@ async function performAbility({
 function performEffectCheck({
     entity,
     effect,
+    now,
 }: {
     entity: ActorEntity;
     effect: ProcedureEffect;
+    now?: number;
 }): boolean {
-    const { debuffs, buffs } = effect;
-
-    if (debuffs) {
-        const { debuff, op } = debuffs;
+    if (effect.conditions) {
+        const { condition, op } = effect.conditions;
         if (op === "contains") {
-            return entity.dbuf.includes(debuff);
+            return hasCondition(entity.cond, condition, now);
         } else if (op === "doesNotContain") {
-            return !entity.dbuf.includes(debuff);
+            return !hasCondition(entity.cond, condition, now);
         }
     }
-
-    if (buffs) {
-        const { buff, op } = buffs;
-        if (op === "contains") {
-            return entity.buf.includes(buff);
-        } else if (op === "doesNotContain") {
-            return !entity.buf.includes(buff);
-        }
-    }
-
     return false;
 }

@@ -14,6 +14,7 @@ import type {
 import { substituteVariables } from "$lib/utils";
 import { cloneDeep } from "lodash-es";
 import type { GameActionEntities, TokenPositions } from "../ir";
+import type { Condition } from "./combat";
 import { describeResource, type Attribute } from "./entity";
 import { abilities } from "./settings/abilities";
 
@@ -26,45 +27,12 @@ export {
     type Abilities,
     type Ability,
     type AbilityType,
-    type Buff,
-    type DamageType,
-    type Debuff,
     type Procedure,
     type ProcedureEffect,
     type ProcedureStateEffects,
 };
 
 type AbilityType = "offensive" | "defensive" | "healing" | "neutral"; // to allow AI to choose abilities based on the situation
-type DamageType =
-    | "normal"
-    | "slashing"
-    | "blunt"
-    | "piercing"
-    | "fire"
-    | "ice"
-    | "lightning"
-    | "poison"
-    | "necrotic"
-    | "radiant"
-    | "healing";
-type Debuff =
-    | "weakness"
-    | "crippled"
-    | "paralyzed"
-    | "blinded"
-    | "wet"
-    | "burning"
-    | "poisoned"
-    | "frozen"
-    | "bleeding"
-    | "stunned"
-    | "confused"
-    | "charmed"
-    | "frightened"
-    | "exhausted"
-    | "silenced"
-    | "diseased";
-type Buff = "haste" | "regeneration" | "shield" | "invisibility" | "berserk";
 
 type Abilities =
     | "bandage"
@@ -120,12 +88,8 @@ interface ProcedureEffect {
     ticks: number;
     dieRoll?: DieRoll; // damage rolls, damage type, modifier used for damage roll
     modifiers?: Attribute[]; // modifier used for attack rolls & saving throws
-    debuffs?: {
-        debuff: Debuff;
-        op: "push" | "pop" | "contains" | "doesNotContain";
-    };
-    buffs?: {
-        buff: Buff;
+    conditions?: {
+        condition: Condition;
         op: "push" | "pop" | "contains" | "doesNotContain";
     };
     states?: {

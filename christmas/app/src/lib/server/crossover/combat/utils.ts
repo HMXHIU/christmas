@@ -1,9 +1,6 @@
 import type { BodyPart, DieRoll, Item } from "$lib/crossover/types";
-import type {
-    DamageType,
-    Debuff,
-    ProcedureEffect,
-} from "$lib/crossover/world/abilities";
+import type { ProcedureEffect } from "$lib/crossover/world/abilities";
+import type { DamageType } from "$lib/crossover/world/combat";
 import {
     calculateModifier,
     entityAttributes,
@@ -20,11 +17,9 @@ import { BASE_ATTRIBUTES } from "$lib/crossover/world/settings/entity";
 import type { EquipmentSlot } from "$lib/crossover/world/types";
 import type {
     ActorEntity,
-    CreatureEntity,
     ItemEntity,
     PlayerEntity,
 } from "$lib/server/crossover/types";
-import { uniq } from "lodash-es";
 import { closestSanctuaryMonument } from "../redis/queries";
 import { random } from "../utils";
 
@@ -36,7 +31,7 @@ export {
     determineBodyPartHit,
     determineEquipmentSlotHit,
     entityDied,
-    resolveDamageEffects,
+    resolveDamage,
     respawnPlayer,
     rollDice,
 };
@@ -78,8 +73,7 @@ function determineBodyPartHit(): BodyPart {
 
 function determineEquipmentSlotHit(bodyPartHit: BodyPart): EquipmentSlot {
     const equipment = bodyPartToEquipment[bodyPartHit];
-    const idx = Math.floor(random() * equipment.length);
-    return equipment[idx] ?? equipment[0];
+    return equipment[Math.floor(random() * equipment.length)] ?? equipment[0];
 }
 
 function rollDice(dieRoll: DieRoll): number {
@@ -91,28 +85,34 @@ function rollDice(dieRoll: DieRoll): number {
     return dieRoll.sides > 0 ? total : -total;
 }
 
-function resolveDamageEffects(
-    attacker: CreatureEntity,
-    defender: ActorEntity,
-    bodyPartHit: BodyPart,
-    dieRoll: DieRoll,
-): {
+function resolveDamage({
+    attacker,
+    defender,
+    bodyPartHit,
+    dieRoll,
+}: {
+    attacker: ActorEntity;
+    defender: ActorEntity;
+    bodyPartHit?: BodyPart;
+    dieRoll: DieRoll;
+}): {
     damage: number;
-    debuffs: Debuff[];
     damageType: DamageType;
-    attacker: CreatureEntity;
+    attacker: ActorEntity;
     defender: ActorEntity;
 } {
-    // TODO: MINIS defender.dr TO DEFENDER AND ADD DR TO DEFENDER ROLL
+    // TODO: MINUS defender.dr TO DEFENDER AND ADD DR TO DEFENDER ROLL
 
     let damage = rollDice(dieRoll);
-    let debuffs: Debuff[] = [];
     let damageType = dieRoll.damageType ?? "normal";
 
     // Add attacker modifier
     if (dieRoll.modifiers) {
-        const attackerModifier = entityAttributes(attacker);
-        damage += calculateModifier(dieRoll.modifiers, attackerModifier);
+        const mod = calculateModifier(
+            dieRoll.modifiers,
+            "item" in attacker ? BASE_ATTRIBUTES : entityAttributes(attacker),
+        );
+        damage = damage > 0 ? damage + mod : damage - mod;
     }
 
     // Modify damage based on body part hit
@@ -120,27 +120,19 @@ function resolveDamageEffects(
         damage *= 2;
     } else if (bodyPartHit === "arms") {
         damage *= 0.8;
-        debuffs.push("weakness");
     } else if (bodyPartHit === "legs") {
         damage *= 0.8;
-        debuffs.push("crippled");
     }
 
-    // Damage & debuff defender
+    // Damage defender
     if ("item" in defender) {
         (defender as ItemEntity).dur -= damage;
     } else {
         defender.hp -= damage;
     }
-    defender.dbuf = uniq([...defender.dbuf, ...debuffs]); // TODO: add redis debug entry
-
-    // TODO: Modify damage based on damage type
-    // TODO: elemental damage can put out certain debuffs like ice puts out fire
-    // TODO: elemental damage can add debuffs like freeze
 
     return {
         damage: Math.floor(damage),
-        debuffs,
         damageType,
         attacker,
         defender,
@@ -148,7 +140,7 @@ function resolveDamageEffects(
 }
 
 function attackRollForWeapon(
-    attacker: CreatureEntity,
+    attacker: ActorEntity,
     defender: ActorEntity,
     weapon?: Item,
 ): {
@@ -162,7 +154,8 @@ function attackRollForWeapon(
 
     const attackerRoll = rollDice(d20);
     const defenderRoll = rollDice(d20);
-    const attackerAttributes = entityAttributes(attacker);
+    const attackerAttributes =
+        "item" in attacker ? BASE_ATTRIBUTES : entityAttributes(attacker);
     const defenderAttributes =
         "item" in defender ? BASE_ATTRIBUTES : entityAttributes(defender);
     const modifiers: Attribute[] = weapon
@@ -182,7 +175,7 @@ function attackRollForWeapon(
 }
 
 function attackRollForProcedureEffect(
-    attacker: CreatureEntity,
+    attacker: ActorEntity,
     defender: ActorEntity,
     procedureEffect: ProcedureEffect,
 ): {
@@ -197,7 +190,8 @@ function attackRollForProcedureEffect(
     const modifiers = procedureEffect.modifiers; // do not use the one in the die roll
 
     if (modifiers) {
-        const attackerAttributes = entityAttributes(attacker);
+        const attackerAttributes =
+            "item" in attacker ? BASE_ATTRIBUTES : entityAttributes(attacker);
         const defenderAttributes =
             "item" in defender ? BASE_ATTRIBUTES : entityAttributes(defender);
         const attackerModifier = calculateModifier(
@@ -260,6 +254,11 @@ async function respawnPlayer(player: PlayerEntity) {
 
     // Set player busy for (10 turns)
     player.buclk = MS_PER_TICK * TICKS_PER_TURN * 10;
+
+    // Remove conditions
+    player.cond = [];
+
+    // TODO: apply equipment enhancements
 
     return player;
 }

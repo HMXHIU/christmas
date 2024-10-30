@@ -1,21 +1,15 @@
 import { type BodyPart } from "$lib/crossover/types";
-import type { Abilities, DamageType } from "$lib/crossover/world/abilities";
+import type { Abilities } from "$lib/crossover/world/abilities";
+import type { DamageType } from "$lib/crossover/world/combat";
 import type { Genders } from "$lib/crossover/world/demographic";
 import {
     type ActorEntity,
-    type CreatureEntity,
     type ItemEntity,
     type PlayerEntity,
 } from "$lib/server/crossover/types";
 import { random } from "../utils";
 
 export { entityPronoun, generateHitMessage, generateMissMessage };
-
-/**
- * This functions generate server messages for hit and miss for actions and abilites.
- * For messages due to buffs and debuffs - these are generated and displayed on the client side.
- *
- */
 
 const damageTypeToHitVerb: Record<DamageType, string> = {
     blunt: "bashes",
@@ -29,6 +23,7 @@ const damageTypeToHitVerb: Record<DamageType, string> = {
     poison: "poisons",
     radiant: "sears",
     necrotic: "drains",
+    water: "soaks",
 };
 
 const genderPronouns: Record<
@@ -114,7 +109,7 @@ function generateHitMessage({
     damageType,
     ability,
 }: {
-    attacker: CreatureEntity;
+    attacker: ActorEntity;
     target: ActorEntity;
     bodyPartHit: BodyPart;
     damageType?: DamageType;
@@ -143,7 +138,7 @@ function generateHitMessage({
 }
 
 function generateMissMessage(
-    attacker: CreatureEntity,
+    attacker: ActorEntity,
     target: ActorEntity,
     weapon?: ItemEntity,
 ): string {
@@ -160,33 +155,3 @@ function generateMissMessage(
         return `${attacker.name} attacks ${target.name} but ${missReason}.`;
     }
 }
-
-// // TODO: Move this to game instead
-// function generateDebuffMessage(
-//     target: CreatureEntity,
-//     debuffs: Debuff[],
-// ): string {
-//     if (debuffs.length > 0) {
-//         return `${target.name} is ${debuffs.map((d) => debuffEffects[d]).join(", ")}!`;
-//     }
-//     return "";
-// }
-
-// const debuffEffects: Record<Debuff, string> = {
-//     weakness: "weakened",
-//     crippled: "crippled",
-//     paralyzed: "paralyzed",
-//     blinded: "blinded",
-//     wet: "drenched",
-//     burning: "set ablaze",
-//     poisoned: "poisoned",
-//     frozen: "frozen",
-//     bleeding: "bleeding",
-//     stunned: "stunned",
-//     confused: "confused",
-//     charmed: "charmed",
-//     frightened: "frightened",
-//     exhausted: "exhausted",
-//     silenced: "silenced",
-//     diseased: "diseased",
-// };

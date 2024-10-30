@@ -3,7 +3,7 @@
 1. Worlds are hand designed levels created using the `tiled` editor _(see tilemap.md)_
 2. World instances are create at a location from a tilemap template (tiled json format)
 3. Worlds are overlaid over existing biomes
-4. The url fo the world acts as the template id, similar to props for items and beast for monsters
+4. The url of the world acts as the template id, similar to props for items and beast for monsters
 5. Pathfinding involves checking the `biome` at location, then checking for overrides to `traversableSpeed` in the layer props for that cell
 6. The unit location of a world is a plot (32 grid of cells or full geohashes less than unit precision)
 
