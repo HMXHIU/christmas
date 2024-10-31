@@ -1,4 +1,4 @@
-import type { BodyPart } from "$lib/crossover/types";
+import type { BodyPart, DieRoll } from "$lib/crossover/types";
 import { getEntityId, minifiedEntity } from "$lib/crossover/utils";
 import {
     conditions,
@@ -20,7 +20,7 @@ import type {
     MonsterEntity,
     PlayerEntity,
 } from "../types";
-import { resolveDamage } from "./utils";
+import { resolveDamage, rollDiceWithModifier } from "./utils";
 
 export {
     activeConditions,
@@ -106,6 +106,9 @@ async function processActiveConditions() {
     }
 }
 
+/**
+ * At this point player is already hit (failed to evade), this roll is to resist conditions
+ */
 function resolveConditionsFromDamage({
     defender,
     attacker,
@@ -123,10 +126,21 @@ function resolveConditionsFromDamage({
 }): ActorEntity {
     now = now ?? Date.now();
 
-    // TODO: Roll die and apply modifiers to resist effects
-
     // Physical damage (con modifier)
     if (physicalDamageTypes.has(damageType)) {
+        // Roll for resistance
+        const dieRoll: DieRoll = {
+            count: 1,
+            sides: 20,
+            modifiers: ["con"],
+        };
+        if (
+            rollDiceWithModifier(dieRoll, attacker) <
+            rollDiceWithModifier(dieRoll, defender)
+        ) {
+            return defender;
+        }
+
         if (bodyPartHit === "arms") {
             defender.cond = pushCondition(
                 defender.cond,
@@ -150,21 +164,51 @@ function resolveConditionsFromDamage({
             );
         }
     }
-
     // Elemental damage (cha modifier)
-    else if (damageType === "fire") {
-        defender.cond = pushCondition(defender.cond, "burning", attacker, now);
-    } else if (damageType === "water") {
-        defender.cond = pushCondition(defender.cond, "wet", attacker, now);
-    } else if (damageType === "lightning") {
-        defender.cond = pushCondition(
-            defender.cond,
-            "paralyzed",
-            attacker,
-            now,
-        );
-    } else if (damageType === "ice") {
-        defender.cond = pushCondition(defender.cond, "frozen", attacker, now);
+    else {
+        // Roll for resistance
+        const dieRoll: DieRoll = {
+            count: 1,
+            sides: 20,
+            modifiers: ["cha"],
+        };
+        if (
+            rollDiceWithModifier(dieRoll, attacker) <
+            rollDiceWithModifier(dieRoll, defender)
+        ) {
+            return defender;
+        }
+        // Fire - burning
+        if (damageType === "fire") {
+            defender.cond = pushCondition(
+                defender.cond,
+                "burning",
+                attacker,
+                now,
+            );
+        }
+        // Water - wet
+        else if (damageType === "water") {
+            defender.cond = pushCondition(defender.cond, "wet", attacker, now);
+        }
+        // Lightning - paralyed
+        else if (damageType === "lightning") {
+            defender.cond = pushCondition(
+                defender.cond,
+                "paralyzed",
+                attacker,
+                now,
+            );
+        }
+        // Ice - frozen
+        else if (damageType === "ice") {
+            defender.cond = pushCondition(
+                defender.cond,
+                "frozen",
+                attacker,
+                now,
+            );
+        }
     }
 
     return defender;
