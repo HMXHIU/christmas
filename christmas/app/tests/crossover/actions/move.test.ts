@@ -145,7 +145,7 @@ describe("Movement Tests", async () => {
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
             type: "error",
-            message: "Path is not traversable",
+            message: "Path is not traversable.",
         });
         await sleep(MS_PER_TICK * 2);
 
@@ -168,7 +168,7 @@ describe("Movement Tests", async () => {
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
             type: "error",
-            message: "Path is not traversable",
+            message: "Path is not traversable.",
         });
         await sleep(MS_PER_TICK * 2);
 
@@ -187,7 +187,7 @@ describe("Movement Tests", async () => {
             waitForEventData(playerOneStream, "feed"),
         ).resolves.toMatchObject({
             type: "error",
-            message: "Path is not traversable",
+            message: "Path is not traversable.",
         });
     });
 

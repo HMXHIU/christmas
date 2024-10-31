@@ -28,7 +28,6 @@ import { worldAssetMetadataCache, worldPOIsCache } from "../caches";
 import { resolveEquipment } from "../combat/equipment";
 import { spawnItemInInventory, spawnWorld, spawnWorldPOIs } from "../dm";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../events";
-import { itemRepository } from "../redis";
 import { getNearbyPlayerIds, inventoryQuerySet } from "../redis/queries";
 import { fetchEntity, saveEntity } from "../redis/utils";
 import {
@@ -113,10 +112,7 @@ async function useItem({
     if (itemEntity.state !== propUtility.state.start) {
         // Set item start state
         itemEntity.state = propUtility.state.start;
-        itemEntity = (await itemRepository.save(
-            itemEntity.item,
-            itemEntity,
-        )) as ItemEntity;
+        itemEntity = await saveEntity(itemEntity);
 
         // Publish item state to nearby players
         if (self.player != null) {
@@ -159,10 +155,7 @@ async function useItem({
     itemEntity.state = propUtility.state.end;
     itemEntity.chg -= propUtility.cost.charges;
     itemEntity.dur -= propUtility.cost.durability;
-    itemEntity = (await itemRepository.save(
-        itemEntity.item,
-        itemEntity,
-    )) as ItemEntity;
+    itemEntity = await saveEntity(itemEntity);
 
     // Publish item state to nearby players
     await publishAffectedEntitiesToPlayers(
@@ -224,7 +217,7 @@ async function equipItem(player: PlayerEntity, item: string, now?: number) {
         for (const eq of exitingItemsInSlot) {
             eq.loc = [player.player];
             eq.locT = "inv";
-            (await itemRepository.save(eq.item, eq)) as ItemEntity;
+            await saveEntity(eq); // save item (location changed)
             slotsToFree -= compendium[eq.prop].equipment?.slotSize ?? 1;
             if (slotsToFree <= 0) {
                 break;
@@ -288,10 +281,7 @@ async function unequipItem(player: PlayerEntity, item: string, now?: number) {
     // Unequip item
     itemEntity.loc = [player.player];
     itemEntity.locT = "inv";
-    itemEntity = (await itemRepository.save(
-        itemEntity.item,
-        itemEntity,
-    )) as ItemEntity;
+    itemEntity = await saveEntity(itemEntity);
 
     // Resolve equipment
     player = await resolveEquipment(player);
@@ -350,10 +340,7 @@ async function takeItem(player: PlayerEntity, item: string, now?: number) {
     // Take item
     itemEntity.loc = [player.player];
     itemEntity.locT = "inv";
-    itemEntity = (await itemRepository.save(
-        itemEntity.item,
-        itemEntity,
-    )) as ItemEntity;
+    itemEntity = await saveEntity(itemEntity);
 
     // Inform all players nearby of item creation
     const nearbyPlayerIds = await getNearbyPlayerIds(
@@ -415,10 +402,7 @@ async function dropItem(player: PlayerEntity, item: string, now?: number) {
     itemEntity.loc = player.loc;
     itemEntity.locT = player.locT;
     itemEntity.locI = player.locI;
-    itemEntity = (await itemRepository.save(
-        itemEntity.item,
-        itemEntity,
-    )) as ItemEntity;
+    itemEntity = await saveEntity(itemEntity);
 
     // Inform all players nearby of item creation
     const nearbyPlayerIds = await getNearbyPlayerIds(
@@ -513,10 +497,7 @@ async function configureItem(
         ...itemEntity.vars,
         ...parseItemVariables(variables, itemEntity.prop),
     };
-    itemEntity = (await itemRepository.save(
-        itemEntity.item,
-        itemEntity,
-    )) as ItemEntity;
+    itemEntity = await saveEntity(itemEntity);
 
     // Publish update event
     await publishAffectedEntitiesToPlayers([minifiedEntity(itemEntity)], {
