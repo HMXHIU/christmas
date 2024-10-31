@@ -242,6 +242,7 @@ async function equipItem(player: PlayerEntity, item: string, now?: number) {
 
     // Resolve equipment
     player = await resolveEquipment(player);
+    player = await saveEntity(player);
 
     // Inform all players nearby of equipment change
     const nearbyPlayerIds = await getNearbyPlayerIds(
@@ -298,6 +299,7 @@ async function unequipItem(player: PlayerEntity, item: string, now?: number) {
 
     // Resolve equipment
     player = await resolveEquipment(player);
+    player = await saveEntity(player);
 
     // Inform all players nearby of equipment change
     const nearbyPlayerIds = await getNearbyPlayerIds(

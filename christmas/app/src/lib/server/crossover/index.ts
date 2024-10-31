@@ -17,7 +17,7 @@ import {
 } from "$lib/server/crossover/types";
 import { COUNTRY_DETAILS } from "$lib/userDeviceClient/defs";
 import { z } from "zod";
-import { getPlayerState, getUser } from "../user";
+import { getPlayerState, getUser, savePlayerState } from "../user";
 import { resolveEquipment } from "./combat/equipment";
 import { respawnPlayer } from "./combat/utils";
 import { fetchEntity, saveEntity } from "./redis/utils";
@@ -150,6 +150,10 @@ async function loadPlayerEntity(
 
     // Apply equipment enhancements (incl. weight, conditions, set bonuses etc ...)
     player = await resolveEquipment(player);
+
+    // Save entity (redis) & state (minio)
+    player = await saveEntity(player);
+    await savePlayerState(player.player);
 
     return player;
 }

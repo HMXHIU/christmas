@@ -22,6 +22,7 @@ import type {
 } from "$lib/server/crossover/types";
 import { closestSanctuaryMonument } from "../redis/queries";
 import { random } from "../utils";
+import { resolveEquipment } from "./equipment";
 
 export {
     attackRollForProcedureEffect,
@@ -34,6 +35,7 @@ export {
     resolveDamage,
     respawnPlayer,
     rollDice,
+    rollDiceWithModifier,
 };
 
 const d20: DieRoll = {
@@ -85,6 +87,18 @@ function rollDice(dieRoll: DieRoll): number {
     return dieRoll.sides > 0 ? total : -total;
 }
 
+function rollDiceWithModifier(dieRoll: DieRoll, entity: ActorEntity): number {
+    let amt = rollDice(dieRoll);
+    if (dieRoll.modifiers) {
+        const mod = calculateModifier(
+            dieRoll.modifiers,
+            "item" in entity ? BASE_ATTRIBUTES : entityAttributes(entity),
+        );
+        amt = amt > 0 ? amt + mod : amt - mod;
+    }
+    return amt;
+}
+
 function resolveDamage({
     attacker,
     defender,
@@ -103,17 +117,8 @@ function resolveDamage({
     attacker: ActorEntity;
     defender: ActorEntity;
 } {
-    let damage = rollDice(dieRoll);
+    let damage = rollDiceWithModifier(dieRoll, attacker);
     let damageType = dieRoll.damageType ?? "normal";
-
-    // Add attacker modifier
-    if (dieRoll.modifiers) {
-        const mod = calculateModifier(
-            dieRoll.modifiers,
-            "item" in attacker ? BASE_ATTRIBUTES : entityAttributes(attacker),
-        );
-        damage = damage > 0 ? damage + mod : damage - mod;
-    }
 
     // Modify damage based on body part hit
     if (bodyPartHit === "head") {
@@ -155,31 +160,24 @@ function attackRollForWeapon(
 ): {
     success: boolean;
     attackerRoll: number;
-    attackerModifier: number;
-    defenderModifier: number;
     defenderRoll: number;
 } {
-    // TODO: ADD AC TO DEFENDER AND ADD AC TO DEFENDER ROLL
-
-    const attackerRoll = rollDice(d20);
-    const defenderRoll = rollDice(d20);
-    const attackerAttributes =
-        "item" in attacker ? BASE_ATTRIBUTES : entityAttributes(attacker);
-    const defenderAttributes =
-        "item" in defender ? BASE_ATTRIBUTES : entityAttributes(defender);
     const modifiers: Attribute[] = weapon
         ? (compendium[weapon.prop].dieRoll?.modifiers ?? ["str"])
         : ["str", "dex"];
-    const attackerModifier = calculateModifier(modifiers, attackerAttributes);
-    const defenderModifier = calculateModifier(modifiers, defenderAttributes);
-
+    const attackerRoll = rollDiceWithModifier(
+        { count: 1, sides: 20, modifiers },
+        attacker,
+    );
+    // Dexterity is used for evasion modifier
+    const defenderRoll = rollDiceWithModifier(
+        { count: 1, sides: 20, modifiers: ["dex"] },
+        defender,
+    );
     return {
-        success:
-            attackerRoll + attackerModifier >= defenderRoll + defenderModifier,
+        success: attackerRoll >= defenderRoll,
         attackerRoll,
         defenderRoll,
-        defenderModifier,
-        attackerModifier,
     };
 }
 
@@ -190,47 +188,22 @@ function attackRollForProcedureEffect(
 ): {
     success: boolean;
     attackerRoll: number;
-    attackerModifier: number;
-    defenderModifier: number;
     defenderRoll: number;
 } {
-    const attackerRoll = rollDice(d20);
-    const defenderRoll = rollDice(d20);
     const modifiers = procedureEffect.modifiers; // do not use the one in the die roll
-
-    if (modifiers) {
-        const attackerAttributes =
-            "item" in attacker ? BASE_ATTRIBUTES : entityAttributes(attacker);
-        const defenderAttributes =
-            "item" in defender ? BASE_ATTRIBUTES : entityAttributes(defender);
-        const attackerModifier = calculateModifier(
-            modifiers,
-            attackerAttributes,
-        );
-        const defenderModifier = calculateModifier(
-            modifiers,
-            defenderAttributes,
-        );
-        return {
-            success:
-                attackerRoll + attackerModifier >=
-                defenderRoll + defenderModifier,
-            attackerRoll,
-            defenderRoll,
-            defenderModifier,
-            attackerModifier,
-        };
-    }
-    // Some procedures do not have a (no modifiers), just use the attack roll
-    else {
-        return {
-            success: attackerRoll > defenderRoll,
-            attackerRoll,
-            defenderRoll,
-            defenderModifier: 0,
-            attackerModifier: 0,
-        };
-    }
+    const attackerRoll = rollDiceWithModifier(
+        { count: 1, sides: 20, modifiers },
+        attacker,
+    );
+    const defenderRoll = rollDiceWithModifier(
+        { count: 1, sides: 20, modifiers },
+        defender,
+    );
+    return {
+        success: attackerRoll >= defenderRoll,
+        attackerRoll,
+        defenderRoll,
+    };
 }
 
 function entityDied(before: ActorEntity, after: ActorEntity): boolean {
@@ -240,10 +213,9 @@ function entityDied(before: ActorEntity, after: ActorEntity): boolean {
     return (before as PlayerEntity).hp > 0 && (after as PlayerEntity).hp <= 0;
 }
 
-async function respawnPlayer(player: PlayerEntity) {
+async function respawnPlayer(player: PlayerEntity): Promise<PlayerEntity> {
     // Find the closest monument of control controlled by the player's faction
     const [sanctuary, monument] = await closestSanctuaryMonument(player);
-
     if (monument) {
         player.loc = [monument.loc[0]];
         player.locI = LOCATION_INSTANCE;
@@ -267,7 +239,6 @@ async function respawnPlayer(player: PlayerEntity) {
     // Remove conditions
     player.cond = [];
 
-    // TODO: apply equipment enhancements
-
-    return player;
+    // Resolve equipment
+    return resolveEquipment(player);
 }

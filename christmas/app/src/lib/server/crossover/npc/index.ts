@@ -47,7 +47,7 @@ import type {
     FeedEvent,
 } from "../../../../routes/api/crossover/stream/+server";
 import { ObjectStorage } from "../../objectStorage";
-import { getOrCreatePlayer, savePlayerState } from "../../user";
+import { getOrCreatePlayer } from "../../user";
 import { getAvatars } from "../avatar";
 import {
     verifyP2PTransaction,
@@ -55,7 +55,6 @@ import {
     type P2PLearnTransaction,
     type P2PTradeTransaction,
 } from "../player";
-import { saveEntity } from "../redis/utils";
 import { npcs } from "../settings/npc";
 import {
     npcRespondToGive,
@@ -182,20 +181,14 @@ async function spawnNPC(
         });
     }
 
-    // Get or load player entity
-    let player = await loadPlayerEntity(npcId, {
+    // Load player entity
+    return await loadPlayerEntity(npcId, {
         geohash,
         region: "@@@", // special region reserved for NPCs,
         loggedIn: true,
         locationInstance,
         locationType,
     });
-
-    // Save player state & entity
-    player = await saveEntity(player);
-    await savePlayerState(npcId); // must save after player entity
-
-    return player;
 }
 
 async function createNPCMetadata({

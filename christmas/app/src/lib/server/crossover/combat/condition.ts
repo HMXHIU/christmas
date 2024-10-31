@@ -125,7 +125,7 @@ function resolveConditionsFromDamage({
 
     // TODO: Roll die and apply modifiers to resist effects
 
-    // Physical damage
+    // Physical damage (con modifier)
     if (physicalDamageTypes.has(damageType)) {
         if (bodyPartHit === "arms") {
             defender.cond = pushCondition(
@@ -151,7 +151,7 @@ function resolveConditionsFromDamage({
         }
     }
 
-    // Elemental damage
+    // Elemental damage (cha modifier)
     else if (damageType === "fire") {
         defender.cond = pushCondition(defender.cond, "burning", attacker, now);
     } else if (damageType === "water") {

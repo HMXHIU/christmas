@@ -796,10 +796,6 @@ const crossoverRouter = {
                     loggedIn: true,
                 });
 
-                // Save player state & entity
-                player = await saveEntity(player);
-                await savePlayerState(ctx.user.publicKey); // must save after player entity
-
                 // Spawn location (Do not block, spawn in the background)
                 spawnLocation(
                     player.loc[0],
