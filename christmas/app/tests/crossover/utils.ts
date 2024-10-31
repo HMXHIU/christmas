@@ -781,8 +781,6 @@ export async function dmBuffEntity({
     mnd,
     lum,
     umb,
-    buffs,
-    debuffs,
 }: z.infer<typeof BuffCreatureSchema>): Promise<Creature> {
     const { result } = await (
         await fetch("http://localhost:5173/trpc/crossover.dm.buffCreature", {
@@ -798,8 +796,6 @@ export async function dmBuffEntity({
                 mnd,
                 lum,
                 umb,
-                buffs,
-                debuffs,
             }),
         })
     ).json();

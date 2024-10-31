@@ -113,8 +113,6 @@ async function npcRespondToGreet(npc: string, player: string) {
     const tags = [`npc=${npcTemplate}`];
     let dialogue = await npcGreetResponse(tags);
 
-    console.log(JSON.stringify({ tags, dialogue }, null, 2));
-
     // Check if NPC has any quests
     let questMessage = "";
     const questWrits = (await questWritsQuerySet(

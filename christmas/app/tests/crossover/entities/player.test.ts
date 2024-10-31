@@ -83,7 +83,7 @@ describe("Test Player Entity", async () => {
         playerOne = await saveEntity(playerOne);
 
         // Spawn location (control monument of sanctuary)
-        await spawnLocation(playerOne.loc[0], "d1", LOCATION_INSTANCE);
+        await spawnLocation(playerOne.loc[0], "d1", LOCATION_INSTANCE, true);
 
         // Check respawn player brings him to control monument at d1 sanctuary
         playerOne = await respawnPlayer(playerOne);

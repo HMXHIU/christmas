@@ -148,7 +148,7 @@ describe("Dungeons Tests", async () => {
         );
 
         // Spawn dungeon
-        await spawnLocation(dungeon, "d1", LOCATION_INSTANCE);
+        await spawnLocation(dungeon, "d1", LOCATION_INSTANCE, true);
 
         // Check monuments have faction
         const monuments = (await controlMonumentsQuerySet(

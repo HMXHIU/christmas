@@ -630,6 +630,7 @@ async function spawnLocation(
     geohash: string,
     locationType: GeohashLocation,
     locationInstance: string,
+    force: boolean = false,
 ) {
     // Check location
     if (!geohashLocationTypes.has(locationType)) return;
@@ -637,7 +638,7 @@ async function spawnLocation(
 
     // Skip if has been initialized in the last `LOCATION_RESPAWN_TIMER` seconds
     const spawnLocationKey = `spawn-${territory}-${locationType}-${locationInstance}`;
-    if (await redisClient.get(spawnLocationKey)) {
+    if (!force && (await redisClient.get(spawnLocationKey))) {
         return;
     }
     // Set the spawn spawnLocationKey immediately to prevent race conditions
@@ -771,15 +772,11 @@ async function spawnWorldPOIs(
     so that they do not spawn multiple copies everytime this function is called
     */
 
-    console.log("world", world);
-
     // Fetch world
     const worldEntity = (await worldRepository.fetch(world)) as WorldEntity;
     if (!worldEntity) {
         throw new Error(`${world} does not exist`);
     }
-
-    console.log("worldEntity", JSON.stringify(worldEntity, null, 2));
 
     // Get pois in world (for spawning items, monsters, players)
     const pois = await poisInWorld(worldEntity, options);
