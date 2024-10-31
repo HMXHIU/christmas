@@ -71,11 +71,11 @@ class AvatarEntityContainer extends EntityContainer {
             if (isItemEquipped(item, this.entity)) {
                 // Get all bone assets from equipmentAssets
                 const prop = compendium[item.prop];
-                if (prop.equipmentAssets != null) {
+                if (prop.equipment?.assets) {
                     for (const [
                         boneName,
                         { asset, tint, replace },
-                    ] of Object.entries(prop.equipmentAssets)) {
+                    ] of Object.entries(prop.equipment.assets)) {
                         const bone = this.avatar.getBone(boneName);
                         if (bone == null) continue;
                         // Set bone texture

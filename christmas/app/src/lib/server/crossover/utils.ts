@@ -226,7 +226,7 @@ function canUseItem(
     // Check if utility requires item to be equipped and is equipped in the correct slot
     if (
         prop.utilities[utility].requireEquipped &&
-        !compendium[item.prop].equipmentSlot!.includes(
+        !compendium[item.prop].equipment?.slot?.includes(
             item.locT as EquipmentSlot,
         )
     ) {

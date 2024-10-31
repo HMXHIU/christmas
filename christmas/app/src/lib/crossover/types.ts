@@ -9,7 +9,7 @@ import type {
     LocationType,
 } from "$lib/crossover/world/types";
 import type { DamageType } from "./world/combat";
-import type { Attribute } from "./world/entity";
+import type { Attribute, Attributes } from "./world/entity";
 import type { Faction } from "./world/settings/affinities";
 import type { SkillLines } from "./world/skills";
 
@@ -111,6 +111,7 @@ interface Player extends EntityState, CharacterParams {
     lgn: boolean;
     wgt: number; // weight of current equipment
     npc?: string; // npc instance id (if player is an NPC)
+    eqattr?: Partial<Attributes>; // added attributes from equipment (calculated during `resolveEquipment`)
 }
 
 /*

@@ -231,8 +231,8 @@ async function upsertSimpleContainer(
             const variant = prop.states[item.state].variant;
             await ec.loadAsset(asset, { variant });
 
-            // Set size pf dropped equipment
-            if (prop.equipmentSlot != null) {
+            // Set size of dropped equipment
+            if (prop.equipment) {
                 const { scale } = scaleToFitAndMaintainAspectRatio(
                     ec.width,
                     ec.height,

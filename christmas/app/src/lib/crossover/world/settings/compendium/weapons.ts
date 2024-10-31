@@ -14,7 +14,7 @@ export let weapons: Record<string, Prop> = {
         charges: 5, // reduces when using utilities
         weight: 3,
         collider: false,
-        equipmentSlot: "hn",
+        equipment: { slot: "hn" },
         dieRoll: {
             count: 1,
             sides: 6,

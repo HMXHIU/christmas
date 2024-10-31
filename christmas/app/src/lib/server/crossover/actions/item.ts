@@ -177,14 +177,12 @@ function canEquipItem(
     player: PlayerEntity,
     item: ItemEntity,
 ): [boolean, string] {
-    const { equipmentSlot, equipmentSlotSize } = compendium[item.prop];
-    let error: string | null = null;
     if (!item) {
         return [false, `Item ${item} not found`];
+    } else if (!compendium[item.prop].equipment) {
+        return [false, `${item} is not equippable`];
     } else if (item.loc[0] !== player.player) {
         return [false, `${item} is not in inventory`];
-    } else if (!equipmentSlot) {
-        return [false, `${item} is not equippable`];
     }
     return [true, ""];
 }
@@ -207,17 +205,17 @@ async function equipItem(player: PlayerEntity, item: string, now?: number) {
         });
         return; // do not proceed
     }
-    const { equipmentSlot, equipmentSlotSize } = compendium[itemToEquip.prop];
-    const slotSize = equipmentSlotSize ?? 1;
-    const slotCapacity = equipmentSlotCapacity[equipmentSlot!] ?? 1;
+    const equipment = compendium[itemToEquip.prop].equipment!;
+    const slotSize = equipment.slotSize ?? 1;
+    const slotCapacity = equipmentSlotCapacity[equipment.slot] ?? 1;
 
     // Unequip existing items in slot to free up capacity
     const exitingItemsInSlot = (await inventoryQuerySet(player.player)
         .and("locT")
-        .equal(equipmentSlot!)
+        .equal(equipment.slot)
         .return.all()) as ItemEntity[];
     const occupiedSlots = exitingItemsInSlot.reduce(
-        (acc, i) => acc + (compendium[i.prop].equipmentSlotSize ?? 1),
+        (acc, i) => acc + (compendium[i.prop].equipment?.slotSize ?? 1),
         0,
     );
     const emptySlots = slotCapacity - occupiedSlots;
@@ -227,7 +225,7 @@ async function equipItem(player: PlayerEntity, item: string, now?: number) {
             eq.loc = [player.player];
             eq.locT = "inv";
             (await itemRepository.save(eq.item, eq)) as ItemEntity;
-            slotsToFree -= compendium[eq.prop].equipmentSlotSize ?? 1;
+            slotsToFree -= compendium[eq.prop].equipment?.slotSize ?? 1;
             if (slotsToFree <= 0) {
                 break;
             }
@@ -236,7 +234,7 @@ async function equipItem(player: PlayerEntity, item: string, now?: number) {
 
     // Equip item in slot
     itemToEquip.loc = [player.player];
-    itemToEquip.locT = equipmentSlot!;
+    itemToEquip.locT = equipment.slot;
     itemToEquip = (await itemRepository.save(
         itemToEquip.item,
         itemToEquip,

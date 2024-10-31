@@ -4,6 +4,8 @@ import { mapValues } from "lodash-es";
 import { getEntityId, isEntityEquipment, isEntityWeapon } from "../utils";
 import type { Abilities } from "./abilities";
 import type { Actions } from "./actions";
+import type { Condition } from "./combat";
+import type { Attributes } from "./entity";
 import { compendium } from "./settings/compendium";
 import {
     type AssetMetadata,
@@ -48,9 +50,7 @@ interface Prop {
     weight: number; // -1 means it cannot be taken
     collider: boolean; // cannot have more than 1 collidable item in the same location, cannot walk through collidable items
     dieRoll?: DieRoll; // weapon damage + modifier used for both attack rolls & saving throws (use the max of)
-    equipmentSlot?: EquipmentSlot; // can be used to tell if item is an equipment
-    equipmentSlotSize?: number; // how many slots the equipment takes (eg. greatsword takes 2 hands, defaults to 1 if not specified)
-    equipmentAssets?: Record<string, EquipmentAsset>; // maps bone to EquipmentAsset
+    equipment?: Equipment;
     // Spawn a world (lazily) related to this instance (eg. tavern, interior)
     world?: PropWorld;
 }
@@ -64,6 +64,15 @@ interface PropAttributes {
     description: string;
     destructible: boolean;
     variant: string;
+}
+
+interface Equipment {
+    slot: EquipmentSlot; // can be used to tell if item is an equipment
+    slotSize?: number; // how many slots the equipment takes (eg. greatsword takes 2 hands, defaults to 1 if not specified)
+    damageReduction?: { fixed?: number; percent?: number };
+    conditions?: Condition[]; // equipment conditions should have turns = -1 (infinitely)
+    attributes?: Partial<Attributes>;
+    assets?: Record<string, EquipmentAsset>; // maps bone to EquipmentAsset
 }
 
 interface EquipmentAsset {

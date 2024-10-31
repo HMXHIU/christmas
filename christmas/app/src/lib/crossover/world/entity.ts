@@ -48,7 +48,7 @@ type Attribute = "dex" | "str" | "con" | "fth" | "mnd" | "cha";
 type Attributes = Record<Attribute, number>;
 
 type EntitySkillsInput =
-    | Pick<Player, "player" | "skills" | "race" | "gen" | "arch">
+    | Pick<Player, "player" | "skills" | "race" | "gen" | "arch" | "eqattr">
     | Pick<Monster, "skills">;
 
 const describeResource: Record<Stat | Attribute | Currency, string> = {
@@ -125,14 +125,14 @@ function entitySkills(entity: EntitySkillsInput): Skills {
 }
 
 function entityAttributes(entity: EntitySkillsInput): Attributes {
-    // Add attributes from skills
+    // Add from skills
     let attributes: Attributes = mergeAdditive(
         BASE_ATTRIBUTES,
         attributesFromSkills(entitySkills(entity)),
     );
 
-    // Add attributes from demographics
     if ("player" in entity) {
+        // Add from demographics
         attributes = mergeAdditive(
             attributes,
             attributesFromDemographics({
@@ -141,6 +141,11 @@ function entityAttributes(entity: EntitySkillsInput): Attributes {
                 archetype: entity.arch,
             }),
         );
+
+        // Add from equipment
+        if (entity.eqattr) {
+            attributes = mergeAdditive(attributes, entity.eqattr) as Attributes;
+        }
     }
 
     return attributes;

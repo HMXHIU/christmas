@@ -11,19 +11,26 @@ export let equipment: Record<string, Prop> = {
         asset: {
             path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/torso.png`,
         },
-        equipmentAssets: {
-            torsoBone: {
-                asset: {
-                    path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/torso.png`,
+        equipment: {
+            slot: "ch",
+            attributes: {
+                dex: -2,
+            },
+            damageReduction: { fixed: 4, percent: 0.4 },
+            assets: {
+                torsoBone: {
+                    // TODO: to change assets to exclude demographics which should be replaced by each player (eg. steel_plate only)
+                    asset: {
+                        path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/torso.png`,
+                    },
+                    tint: tints.black,
                 },
-                tint: tints.black,
             },
         },
         durability: 100,
         charges: 0,
         weight: 20,
         collider: false,
-        equipmentSlot: "ch",
         states: {
             default: {
                 name: "Steel plate armor",
@@ -40,31 +47,34 @@ export let equipment: Record<string, Prop> = {
         asset: {
             path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/front_upper_leg.png`,
         },
-        equipmentAssets: {
-            frontUpperLegBone: {
-                asset: {
-                    path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/front_upper_leg.png`,
+        equipment: {
+            slot: "lg",
+            damageReduction: { fixed: 4, percent: 0.4 },
+            assets: {
+                frontUpperLegBone: {
+                    asset: {
+                        path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/front_upper_leg.png`,
+                    },
+                    tint: tints.black,
                 },
-                tint: tints.black,
-            },
-            backUpperLegBone: {
-                asset: {
-                    path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/back_upper_leg.png`,
+                backUpperLegBone: {
+                    asset: {
+                        path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/back_upper_leg.png`,
+                    },
+                    tint: tints.black,
                 },
-                tint: tints.black,
-            },
-            frontLowerLegBone: {
-                tint: tints.black,
-            },
-            backLowerLegBone: {
-                tint: tints.black,
+                frontLowerLegBone: {
+                    tint: tints.black,
+                },
+                backLowerLegBone: {
+                    tint: tints.black,
+                },
             },
         },
         durability: 100,
         charges: 0,
         weight: 20,
         collider: false,
-        equipmentSlot: "lg",
         states: {
             default: {
                 name: "Steel leg armor",
@@ -81,27 +91,30 @@ export let equipment: Record<string, Prop> = {
         asset: {
             path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/front_lower_leg.png`,
         },
-        equipmentAssets: {
-            frontLowerLegBone: {
-                asset: {
-                    path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/front_lower_leg.png`,
+        equipment: {
+            slot: "ft",
+            damageReduction: { fixed: 4, percent: 0.4 },
+            assets: {
+                frontLowerLegBone: {
+                    asset: {
+                        path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/front_lower_leg.png`,
+                    },
+                    replace: true,
+                    tint: tints.none, // replace and remove tints added from other armor
                 },
-                replace: true,
-                tint: tints.none, // replace and remove tints added from other armor
-            },
-            backLowerLegBone: {
-                asset: {
-                    path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/back_lower_leg.png`,
+                backLowerLegBone: {
+                    asset: {
+                        path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/back_lower_leg.png`,
+                    },
+                    replace: true,
+                    tint: tints.none,
                 },
-                replace: true,
-                tint: tints.none,
             },
         },
         durability: 100,
         charges: 0,
         weight: 20,
         collider: false,
-        equipmentSlot: "ft",
         states: {
             default: {
                 name: "Steel boots",
@@ -118,31 +131,34 @@ export let equipment: Record<string, Prop> = {
         asset: {
             path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/front_upper_arm.png`,
         },
-        equipmentAssets: {
-            frontLowerArmBone: {
-                tint: tints.black,
-            },
-            backLowerArmBone: {
-                tint: tints.black,
-            },
-            frontUpperArmBone: {
-                asset: {
-                    path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/front_upper_arm.png`,
+        equipment: {
+            slot: "sh",
+            damageReduction: { fixed: 4, percent: 0.4 },
+            assets: {
+                frontLowerArmBone: {
+                    tint: tints.black,
                 },
-                tint: tints.black,
-            },
-            backUpperArmBone: {
-                asset: {
-                    path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/back_upper_arm.png`,
+                backLowerArmBone: {
+                    tint: tints.black,
                 },
-                tint: tints.black,
+                frontUpperArmBone: {
+                    asset: {
+                        path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/front_upper_arm.png`,
+                    },
+                    tint: tints.black,
+                },
+                backUpperArmBone: {
+                    asset: {
+                        path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/back_upper_arm.png`,
+                    },
+                    tint: tints.black,
+                },
             },
         },
         durability: 100,
         charges: 0,
         weight: 20,
         collider: false,
-        equipmentSlot: "sh",
         states: {
             default: {
                 name: "Steel Pauldrons",
@@ -159,25 +175,28 @@ export let equipment: Record<string, Prop> = {
         asset: {
             path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/front_lower_arm.png`,
         },
-        equipmentAssets: {
-            frontLowerArmBone: {
-                asset: {
-                    path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/front_lower_arm.png`,
+        equipment: {
+            slot: "gl",
+            damageReduction: { fixed: 4, percent: 0.4 },
+            assets: {
+                frontLowerArmBone: {
+                    asset: {
+                        path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/front_lower_arm.png`,
+                    },
+                    tint: tints.black,
                 },
-                tint: tints.black,
-            },
-            backLowerArmBone: {
-                asset: {
-                    path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/back_lower_arm.png`,
+                backLowerArmBone: {
+                    asset: {
+                        path: `${GAME_MORPHOLOGY_IMAGES}/female_steel_plate/back_lower_arm.png`,
+                    },
+                    tint: tints.black,
                 },
-                tint: tints.black,
             },
         },
         durability: 100,
         charges: 0,
         weight: 20,
         collider: false,
-        equipmentSlot: "gl",
         states: {
             default: {
                 name: "Steel Gauntlets",

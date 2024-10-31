@@ -104,6 +104,9 @@ describe("Test Player Entity", async () => {
         ).returnAll()) as ItemEntity[];
         expect(equipment.length).toBe(0);
 
+        // Check attributes before equipped
+        expect(entityAttributes(playerOne).dex).toBe(13);
+
         // Check weight is 0
         expect(playerOne.wgt).toBe(0);
 
@@ -118,6 +121,9 @@ describe("Test Player Entity", async () => {
         playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
         expect(playerOne.wgt).toBe(compendium[steelPlate.prop].weight);
 
+        // Check attributes after equipped
+        expect(entityAttributes(playerOne).dex).toBe(11);
+
         // Check equipment after equipped
         equipment = (await equipmentQuerySet(
             playerOne.player,
@@ -127,5 +133,8 @@ describe("Test Player Entity", async () => {
         await unequipItem(playerOne, steelPlate.item);
         playerOne = (await fetchEntity(playerOne.player)) as PlayerEntity;
         expect(playerOne.wgt).toBe(0);
+
+        // Check attributes after unequip
+        expect(entityAttributes(playerOne).dex).toBe(13);
     });
 });

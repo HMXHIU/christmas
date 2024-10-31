@@ -565,6 +565,7 @@ function minifiedEntity(
         stats?: boolean; // hp, cha, mnd, lum, umb, cond etc ...
         demographics?: boolean; // archetype, gender, race
         timers?: boolean; // buclk
+        equipment?: boolean; // wgt, eqattr
     },
 ): Actor {
     // Common
@@ -601,7 +602,16 @@ function minifiedEntity(
         }
         // Stats
         if (options?.stats) {
-            fields.push("hp", "cha", "mnd", "lum", "umb", "cond", "wgt");
+            fields.push(
+                "hp",
+                "cha",
+                "mnd",
+                "lum",
+                "umb",
+                "cond",
+                "wgt",
+                "eqattr",
+            );
         }
         // Timers
         if (options?.timers) {
