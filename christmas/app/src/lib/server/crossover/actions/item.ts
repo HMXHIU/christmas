@@ -178,11 +178,11 @@ function canEquipItem(
     item: ItemEntity,
 ): [boolean, string] {
     if (!item) {
-        return [false, `Item ${item} not found`];
+        return [false, `Item not found`];
     } else if (!compendium[item.prop].equipment) {
-        return [false, `${item} is not equippable`];
+        return [false, `${item.item} is not equippable`];
     } else if (item.loc[0] !== player.player) {
-        return [false, `${item} is not in inventory`];
+        return [false, `${item.item} is not in inventory`];
     }
     return [true, ""];
 }

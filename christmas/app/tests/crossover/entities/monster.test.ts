@@ -89,8 +89,7 @@ describe("Test Monster Entity", async () => {
             ...entityStats(goblin),
             skills: entitySkills(goblin), // monsters do not have skills from demographics
             buclk: 0,
-            buf: [],
-            dbuf: [],
+            cond: [],
             pthclk: 0,
             pthdur: 0,
             pth: [],
