@@ -181,7 +181,7 @@ describe("Combat Integration Tests", async () => {
 
         // Equip weapon
         await crossoverCmdEquip(
-            { item: weapon.item, slot: "rh" },
+            { item: weapon.item },
             { Cookie: playerOneCookies },
         );
         await sleep(MS_PER_TICK * 4);

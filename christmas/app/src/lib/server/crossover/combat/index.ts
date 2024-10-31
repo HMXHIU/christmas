@@ -234,7 +234,12 @@ async function resolveAttack(
     if (success) {
         // Body part roll
         bodyPartHit = determineBodyPartHit();
+
+        // Get corresponding equipment from bodyPartHit
         const equipmentSlot = determineEquipmentSlotHit(bodyPartHit);
+        const equipment = (await equipmentQuerySet(getEntityId(defender)[0], [
+            equipmentSlot,
+        ]).first()) as ItemEntity;
 
         // Damage
         const dieRoll: DieRoll = weapon
@@ -245,6 +250,7 @@ async function resolveAttack(
             defender,
             bodyPartHit,
             dieRoll,
+            equipment,
         }));
         affectedEntities.push(defender);
 
@@ -255,9 +261,6 @@ async function resolveAttack(
         }
 
         // Reduce defender equipment durability
-        const equipment = await equipmentQuerySet(getEntityId(defender)[0], [
-            equipmentSlot,
-        ]).first();
         if (equipment) {
             (equipment as ItemEntity).dur -= 1;
             affectedEntities.push(equipment as ItemEntity);
@@ -311,21 +314,22 @@ async function resolveProcedureEffect(
             // Body part roll
             bodyPartHit = determineBodyPartHit();
             const equipmentSlot = determineEquipmentSlotHit(bodyPartHit);
+            const equipment = (await equipmentQuerySet(
+                getEntityId(defender)[0],
+                [equipmentSlot],
+            ).first()) as ItemEntity;
 
             // Abilities ignore debuffs from body part hits
             ({ damage, attacker, defender, damageType } = resolveDamage({
                 attacker,
                 defender,
                 bodyPartHit,
+                equipment,
                 dieRoll: procedureEffect.dieRoll,
             }));
             affectedEntities.push(defender);
 
             // Reduce defender equipment durability
-            const equipment = await equipmentQuerySet(
-                getEntityId(defender)[0],
-                [equipmentSlot],
-            ).first();
             if (equipment) {
                 (equipment as ItemEntity).dur -= 1;
                 affectedEntities.push(equipment as ItemEntity);

@@ -88,21 +88,21 @@ function rollDice(dieRoll: DieRoll): number {
 function resolveDamage({
     attacker,
     defender,
-    bodyPartHit,
     dieRoll,
+    bodyPartHit,
+    equipment,
 }: {
     attacker: ActorEntity;
     defender: ActorEntity;
-    bodyPartHit?: BodyPart;
     dieRoll: DieRoll;
+    bodyPartHit?: BodyPart;
+    equipment?: ItemEntity;
 }): {
     damage: number;
     damageType: DamageType;
     attacker: ActorEntity;
     defender: ActorEntity;
 } {
-    // TODO: MINUS defender.dr TO DEFENDER AND ADD DR TO DEFENDER ROLL
-
     let damage = rollDice(dieRoll);
     let damageType = dieRoll.damageType ?? "normal";
 
@@ -124,6 +124,15 @@ function resolveDamage({
         damage *= 0.8;
     }
 
+    // Factor equipment damage reduction
+    if (equipment) {
+        const fixed =
+            compendium[equipment.prop].equipment?.damageReduction?.fixed ?? 0;
+        const percent =
+            compendium[equipment.prop].equipment?.damageReduction?.percent ?? 0;
+        damage = Math.floor(Math.max(damage - fixed, 0) * (1 - percent));
+    }
+
     // Damage defender
     if ("item" in defender) {
         (defender as ItemEntity).dur -= damage;
@@ -132,7 +141,7 @@ function resolveDamage({
     }
 
     return {
-        damage: Math.floor(damage),
+        damage,
         damageType,
         attacker,
         defender,

@@ -1,11 +1,12 @@
 import { conditions } from "$lib/crossover/world/combat";
-import { entityStats } from "$lib/crossover/world/entity";
+import { entityStats, resetEntityStats } from "$lib/crossover/world/entity";
 import {
     LOCATION_INSTANCE,
     MS_PER_TICK,
     MS_PER_TURN,
     TICKS_PER_TURN,
 } from "$lib/crossover/world/settings";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     activeConditions,
     hasCondition,
@@ -13,7 +14,13 @@ import {
     pushCondition,
     resolveConditionsFromDamage,
 } from "$lib/server/crossover/combat/condition";
-import { entityDied, respawnPlayer } from "$lib/server/crossover/combat/utils";
+import {
+    entityDied,
+    resolveDamage,
+    respawnPlayer,
+} from "$lib/server/crossover/combat/utils";
+import { spawnItemInInventory } from "$lib/server/crossover/dm";
+import type { MonsterEntity } from "$lib/server/crossover/types";
 import { clone } from "lodash-es";
 import { beforeEach, describe, expect, test } from "vitest";
 import {
@@ -32,12 +39,52 @@ describe("Combat Tests", async () => {
         playerTwo,
     } = await createGandalfSarumanSauron();
 
-    let { goblin } = await createGoblinSpiderDragon(geohash);
+    let { goblin, goblinTwo } = await createGoblinSpiderDragon(geohash);
 
     beforeEach(async () => {
         playerOne.loc = [geohash];
         playerTwo.loc = [geohash];
         await resetEntityResources(playerOne, playerTwo);
+    });
+
+    test("Test `resolveDamage`", async () => {
+        goblinTwo = resetEntityStats(goblinTwo) as MonsterEntity;
+        expect(
+            resolveDamage({
+                attacker: playerTwo,
+                defender: goblinTwo,
+                bodyPartHit: "torso",
+                dieRoll: { count: 1, sides: 6 },
+            }),
+        ).toMatchObject({
+            damage: 4,
+            defender: {
+                monster: goblinTwo.monster,
+                hp: 6,
+            },
+        });
+
+        // Check with equipment damage reduction
+        goblinTwo = resetEntityStats(goblinTwo) as MonsterEntity;
+        const steelPlate = await spawnItemInInventory({
+            entity: playerTwo,
+            prop: compendium.steelplate.prop,
+        });
+        expect(
+            resolveDamage({
+                attacker: playerTwo,
+                defender: goblinTwo,
+                bodyPartHit: "torso",
+                dieRoll: { count: 1, sides: 6 },
+                equipment: steelPlate,
+            }),
+        ).toMatchObject({
+            damage: 0,
+            defender: {
+                monster: goblinTwo.monster,
+                hp: 10,
+            },
+        });
     });
 
     test("Test conditions", async () => {
