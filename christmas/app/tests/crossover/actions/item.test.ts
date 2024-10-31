@@ -64,12 +64,12 @@ describe("Test Items", async () => {
         let portalTwoAttributes = itemAttibutes(portalTwo);
         expect(portalOneAttributes).toMatchObject({
             destructible: false,
-            description: "Portal One. It is tuned to teleport to .",
+            description: "Portal One",
             variant: "default",
         });
         expect(portalTwoAttributes).toMatchObject({
             destructible: false,
-            description: "Portal Two. It is tuned to teleport to .",
+            description: "Portal Two",
             variant: "default",
         });
 
@@ -136,8 +136,7 @@ describe("Test Items", async () => {
             dur: compendium.woodendoor.durability,
             chg: compendium.woodendoor.charges,
             state: "default",
-            dbuf: [],
-            buf: [],
+            cond: [],
         });
         expect(woodenDoor.vars).toMatchObject({
             [compendium.woodendoor.variables!.doorsign.variable]:
@@ -155,12 +154,12 @@ describe("Test Items", async () => {
         // Configure portalOne to point to portalTwo
         expect(itemAttibutes(portalOne)).toMatchObject({
             destructible: false,
-            description: `Portal One. It is tuned to teleport to ${portalTwo.item}.`,
+            description: `Portal One`,
             variant: "default",
         });
         expect(itemAttibutes(portalTwo)).toMatchObject({
             destructible: false,
-            description: `Portal Two. It is tuned to teleport to ${portalOne.item}.`,
+            description: `Portal Two`,
             variant: "default",
         });
 
@@ -275,7 +274,7 @@ describe("Test Items", async () => {
         });
 
         // playerOne equip woodenClub
-        await equipItem(playerOne, woodenClub.item, "rh");
+        await equipItem(playerOne, woodenClub.item);
         await sleep(MS_PER_TICK * 4);
         woodenClub = (await fetchEntity(woodenClub.item)) as ItemEntity;
 

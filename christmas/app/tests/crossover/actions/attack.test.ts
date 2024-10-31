@@ -195,7 +195,7 @@ describe("Test Attack", async () => {
         await sleep(MS_PER_TICK * 2);
 
         await crossoverCmdEquip(
-            { item: woodenClub.item, slot: "rh" },
+            { item: woodenClub.item },
             { Cookie: playerOneCookies },
         );
         await sleep(MS_PER_TICK * 8);
@@ -204,7 +204,7 @@ describe("Test Attack", async () => {
         woodenClub = (await fetchEntity(woodenClub.item)) as ItemEntity;
         expect(woodenClub).toMatchObject({
             loc: [playerOne.player],
-            locT: "rh",
+            locT: "hn",
             locI: "@",
         });
 
@@ -251,7 +251,7 @@ describe("Test Attack", async () => {
                             vars: {},
                             dur: woodenClub.dur - 1, // each attack reduces 1 dur
                             loc: [playerOne.player],
-                            locT: "rh",
+                            locT: "hn",
                             locI: "@",
                         },
                     ],
@@ -296,7 +296,7 @@ describe("Test Attack", async () => {
                             vars: {},
                             dur: woodenClub.dur - 1, // each attack reduces 1 dur
                             loc: [playerOne.player],
-                            locT: "rh",
+                            locT: "hn",
                             locI: "@",
                         },
                     ],
