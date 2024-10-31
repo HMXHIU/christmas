@@ -37,6 +37,7 @@ export {
     entitySkills,
     entityStats,
     isHostile,
+    isOverweight,
     mergeAdditive,
     mergeNumericAdd,
     resetEntityStats,
@@ -186,5 +187,10 @@ function isHostile(a: Creature, b: Creature): [boolean, number] {
 }
 
 function carryingCapacity(entity: Creature): number {
-    return 20 + 10 * (entityAttributes(entity).str - 10);
+    return 20 + 5 * (entityAttributes(entity).str - 10);
+}
+
+function isOverweight(entity: Creature): boolean {
+    // Only player can be overweight
+    return "player" in entity ? entity.wgt > carryingCapacity(entity) : false;
 }

@@ -108,6 +108,8 @@ async function processActiveConditions() {
 
 /**
  * At this point player is already hit (failed to evade), this roll is to resist conditions
+ *
+ * TODO: use damage to factor in the resistance roll difficulty
  */
 function resolveConditionsFromDamage({
     defender,

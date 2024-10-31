@@ -235,21 +235,13 @@ async function equipItem(player: PlayerEntity, item: string, now?: number) {
     // Equip item in slot
     itemToEquip.loc = [player.player];
     itemToEquip.locT = equipment.slot;
-    itemToEquip = (await itemRepository.save(
-        itemToEquip.item,
-        itemToEquip,
-    )) as ItemEntity;
+    itemToEquip = await saveEntity(itemToEquip);
 
     // Resolve equipment
     player = await resolveEquipment(player);
     player = await saveEntity(player);
 
     // Inform all players nearby of equipment change
-    const nearbyPlayerIds = await getNearbyPlayerIds(
-        player.loc[0],
-        player.locT as GeohashLocation,
-        player.locI,
-    );
     await publishAffectedEntitiesToPlayers(
         [
             itemToEquip,
@@ -257,7 +249,11 @@ async function equipItem(player: PlayerEntity, item: string, now?: number) {
             minifiedEntity(player, { stats: true }),
         ].map((e) => minifiedEntity(e)),
         {
-            publishTo: nearbyPlayerIds,
+            publishTo: await getNearbyPlayerIds(
+                player.loc[0],
+                player.locT as GeohashLocation,
+                player.locI,
+            ),
         },
     );
 }

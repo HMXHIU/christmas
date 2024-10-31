@@ -689,8 +689,7 @@ const crossoverRouter = {
         move: playerAuthBusyProcedure
             .input(PathSchema)
             .query(async ({ ctx, input }) => {
-                const { path } = input;
-                await move(ctx.player, path, ctx.now);
+                await move(ctx.player, input.path, ctx.now);
             }),
         // cmd.attack
         attack: playerAuthBusyProcedure

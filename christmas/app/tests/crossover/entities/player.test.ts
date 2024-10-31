@@ -1,24 +1,29 @@
 import {
+    carryingCapacity,
     entityAbilities,
     entityActions,
     entityAttributes,
     entityLevel,
     entitySkills,
     entityStats,
+    isOverweight,
 } from "$lib/crossover/world/entity";
-import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
+import { LOCATION_INSTANCE, MS_PER_TICK } from "$lib/crossover/world/settings";
+import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
+import { move } from "$lib/server/crossover/actions";
 import { equipItem, unequipItem } from "$lib/server/crossover/actions/item";
 import { respawnPlayer } from "$lib/server/crossover/combat/utils";
 import { spawnItemInInventory, spawnLocation } from "$lib/server/crossover/dm";
 import { equipmentQuerySet } from "$lib/server/crossover/redis/queries";
 import { fetchEntity, saveEntity } from "$lib/server/crossover/redis/utils";
 import type { ItemEntity, PlayerEntity } from "$lib/server/crossover/types";
+import { sleep } from "$lib/utils";
 import { describe, expect, test } from "vitest";
-import { createGandalfSarumanSauron } from "../utils";
+import { createGandalfSarumanSauron, waitForEventData } from "../utils";
 
 describe("Test Player Entity", async () => {
-    let { region, geohash, playerOne, playerTwo } =
+    let { region, geohash, playerOne, playerTwo, playerTwoStream } =
         await createGandalfSarumanSauron();
 
     test("Test Player Faction, Archetype, Demograpics", async () => {
@@ -94,6 +99,53 @@ describe("Test Player Entity", async () => {
             locT: "d1",
             locI: "@",
             fac: "historian",
+        });
+    });
+
+    test("Test Overweight and Carrying Capacity", async () => {
+        expect(carryingCapacity(playerTwo)).toBe(40);
+        expect(playerTwo.wgt).toBe(0);
+        expect(isOverweight(playerTwo)).toBeFalsy();
+
+        // Equip steel plate
+        let steelPlate = await spawnItemInInventory({
+            entity: playerTwo,
+            prop: compendium.steelplate.prop,
+        });
+        await equipItem(playerTwo, steelPlate.item);
+        await sleep(MS_PER_TICK * actions.equip.ticks);
+
+        // Equip steel leg
+        let steelLeg = await spawnItemInInventory({
+            entity: playerTwo,
+            prop: compendium.steelleg.prop,
+        });
+        await equipItem(playerTwo, steelLeg.item);
+        await sleep(MS_PER_TICK * actions.equip.ticks);
+
+        // Equip steel boot
+        let steelBoot = await spawnItemInInventory({
+            entity: playerTwo,
+            prop: compendium.steelboot.prop,
+        });
+        await equipItem(playerTwo, steelBoot.item);
+        await sleep(MS_PER_TICK * actions.equip.ticks);
+
+        // Check overweight
+        playerTwo = (await fetchEntity(playerTwo.player)) as PlayerEntity;
+        expect(playerTwo.wgt).toBe(
+            compendium.steelplate.weight +
+                compendium.steelleg.weight +
+                compendium.steelboot.weight,
+        );
+        expect(isOverweight(playerTwo)).toBeTruthy();
+
+        // Check can't move when overweight
+        move(playerTwo, ["n"]);
+        expect(await waitForEventData(playerTwoStream, "feed")).toMatchObject({
+            type: "error",
+            message: "You are overweight.",
+            event: "feed",
         });
     });
 

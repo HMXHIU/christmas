@@ -5,7 +5,7 @@ import {
     getEntityId,
     minifiedEntity,
 } from "$lib/crossover/utils";
-import { entityStats } from "$lib/crossover/world/entity";
+import { carryingCapacity, entityStats } from "$lib/crossover/world/entity";
 import { actions } from "$lib/crossover/world/settings/actions";
 import {
     type Direction,
@@ -130,6 +130,18 @@ async function move(entity: CreatureEntity, path: Direction[], now?: number) {
         now,
     });
 
+    // Check overweight (only PlayerEntity)
+    if (
+        entityType === "player" &&
+        (entity as PlayerEntity).wgt > carryingCapacity(entity)
+    ) {
+        await publishFeedEvent(entityId, {
+            type: "error",
+            message: `You are overweight.`,
+        });
+        return; // do not proceed if overweight
+    }
+
     // Check if the full path is traversable
     let loc = cloneDeep(entity.loc);
     for (const direction of path) {
@@ -140,21 +152,17 @@ async function move(entity: CreatureEntity, path: Direction[], now?: number) {
             direction,
         );
         if (!isTraversable) {
-            const error = `Path is not traversable`;
             if (entityType === "player") {
                 await publishFeedEvent(entityId, {
                     type: "error",
-                    message: error,
+                    message: `Path is not traversable.`,
                 });
             }
-            return; // do not proceed
+            return; // do not proceed if path is obstructed
         } else {
-            loc = location;
+            loc = location; // final location of the path
         }
     }
-
-    // Check if entity moves to a new p6
-    const p6Changed = entity.loc[0].slice(0, -2) !== loc[0].slice(0, -2);
 
     // Update location and path
     entity.pth = path;
@@ -176,6 +184,9 @@ async function move(entity: CreatureEntity, path: Direction[], now?: number) {
             publishTo: nearbyPlayerIds,
         },
     );
+
+    // Check if entity moves to a new p6
+    const p6Changed = entity.loc[0].slice(0, -2) !== loc[0].slice(0, -2);
 
     // Request nearby entities if p6Changed
     if (p6Changed && entityType === "player") {

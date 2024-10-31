@@ -17,6 +17,7 @@ import { BASE_ATTRIBUTES } from "$lib/crossover/world/settings/entity";
 import type { EquipmentSlot } from "$lib/crossover/world/types";
 import type {
     ActorEntity,
+    CreatureEntity,
     ItemEntity,
     PlayerEntity,
 } from "$lib/server/crossover/types";
@@ -210,7 +211,9 @@ function entityDied(before: ActorEntity, after: ActorEntity): boolean {
     if ("item" in before) {
         return (before as ItemEntity).dur > 0 && (after as ItemEntity).dur <= 0;
     }
-    return (before as PlayerEntity).hp > 0 && (after as PlayerEntity).hp <= 0;
+    return (
+        (before as CreatureEntity).hp > 0 && (after as CreatureEntity).hp <= 0
+    );
 }
 
 async function respawnPlayer(player: PlayerEntity): Promise<PlayerEntity> {
