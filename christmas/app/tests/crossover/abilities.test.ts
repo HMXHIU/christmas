@@ -62,7 +62,7 @@ describe("Abilities Tests", async () => {
             feed: [
                 {
                     type: "message",
-                    message: "Gandalf heals himself, healing 3 health!",
+                    message: "Gandalf heals himself, healing 5 health!",
                     event: "feed",
                 },
             ],
@@ -84,7 +84,7 @@ describe("Abilities Tests", async () => {
                     players: [
                         {
                             player: playerOne.player,
-                            hp: 14,
+                            hp: 16,
                         },
                     ],
                     monsters: [],

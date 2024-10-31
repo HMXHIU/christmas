@@ -10,7 +10,6 @@ import {
     dmMonsterAbilities,
     dmPerformMonsterAbility,
     dmPerformMonsterAttack,
-    dmRespawnMonsters,
     dmSpawnMonster,
 } from "./utils";
 
@@ -105,16 +104,6 @@ describe("DungeonMaster Tests", async () => {
         });
     });
 
-    test("dm.respawnMonsters", async () => {
-        const spawned = await dmRespawnMonsters({
-            players: [playerOne.player],
-            locationInstance: playerOne.locI,
-        });
-        expect(spawned).toMatchObject({
-            goblin: 16,
-        });
-    });
-
     test("dm.spawnMonster", async () => {
         // Test unauthorized
         const res = await fetch(
@@ -162,8 +151,7 @@ describe("DungeonMaster Tests", async () => {
                 firstaid: 1,
             },
             buclk: 0,
-            buf: [],
-            dbuf: [],
+            cond: [],
             pthclk: 0,
             pthdur: 0,
             pth: [],
@@ -179,8 +167,6 @@ describe("DungeonMaster Tests", async () => {
             cha: 100,
             lum: 100,
             umb: 100,
-            buffs: ["haste"],
-            debuffs: ["poisoned"],
         })) as PlayerEntity;
 
         expect(playerOne).toMatchObject({
@@ -190,8 +176,6 @@ describe("DungeonMaster Tests", async () => {
             cha: 100,
             lum: 100,
             umb: 100,
-            dbuf: ["poisoned"],
-            buf: ["haste"],
         });
     });
 });

@@ -25,7 +25,6 @@ import {
 } from "$lib/server/crossover/redis";
 import { worldsInGeohashQuerySet } from "$lib/server/crossover/redis/queries";
 import type { ItemEntity, WorldEntity } from "$lib/server/crossover/types";
-import { sleep } from "$lib/utils";
 import { beforeAll, describe, expect, test } from "vitest";
 import { worldRecord } from "../../../src/store";
 import {
@@ -71,7 +70,6 @@ describe("World Tests", async () => {
         worldRepository.remove(
             existingWorlds.map((w) => (w as WorldEntity).world),
         );
-        await sleep(1000);
 
         // Spawn worlds
         worldGeohash = "w21z8ucp"; // top left plot
@@ -154,7 +152,7 @@ describe("World Tests", async () => {
         });
     });
 
-    test("Test traversableSpeedInWorld", async () => {
+    test("Test `traversableSpeedInWorld`", async () => {
         // No cells with traversableSpeed
         for (const geohash of ["w21z8ucp", "w21z8ucb"]) {
             await expect(
@@ -375,8 +373,6 @@ describe("World Tests", async () => {
         expect(potionofhealth != null && potionofhealth.length === 1).toBe(
             true,
         );
-
-        console.log(JSON.stringify(portal, null, 2));
         expect(goblin != null && goblin.length === 1).toBe(true);
         expect(portal != null && portal.length === 1).toBe(true);
 
@@ -385,7 +381,7 @@ describe("World Tests", async () => {
     });
 
     test("Test `spawnWorld` (negative)", async () => {
-        // Test cant spawn world on existing world
+        // Test cant spawn world over existing world (overlap)
         await expect(
             spawnWorld({
                 assetUrl,

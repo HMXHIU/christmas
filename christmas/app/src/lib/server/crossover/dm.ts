@@ -314,7 +314,7 @@ async function spawnWorld({
     tileHeight: number;
     tileWidth: number;
 }): Promise<WorldEntity> {
-    // If world is specified, check if world already exists
+    // If world is specified, check if world already exists and return it
     if (world) {
         const worldEntity = await worldRepository
             .search()
@@ -372,7 +372,6 @@ async function spawnWorld({
     When locT=in, there may be adjacent buildings whose geohash overlap (which is valid)
     However when locT=in, locI=item, so they are in different worlds (skip check)
     */
-
     if (locationType != "in") {
         const existingWorlds = await worldsContainingGeohashQuerySet(
             plotGeohashes,
@@ -385,9 +384,16 @@ async function spawnWorld({
         }
     }
 
-    // Get world count
-    const count = await worldRepository.search().count();
-    world = world ?? `world_${count}`; // use world if specified
+    // Generate a world id (unique + reproducable)
+    world = world ?? hashObject([assetUrl, geohash, locationType], "md5");
+
+    // Check if world exists, return existing world
+    const worldEntity = await worldRepository
+        .search()
+        .where("world")
+        .equal(world)
+        .first();
+    if (worldEntity) return worldEntity as WorldEntity;
 
     // Create world asset
     const entity: WorldEntity = {
@@ -765,11 +771,15 @@ async function spawnWorldPOIs(
     so that they do not spawn multiple copies everytime this function is called
     */
 
+    console.log("world", world);
+
     // Fetch world
     const worldEntity = (await worldRepository.fetch(world)) as WorldEntity;
     if (!worldEntity) {
         throw new Error(`${world} does not exist`);
     }
+
+    console.log("worldEntity", JSON.stringify(worldEntity, null, 2));
 
     // Get pois in world (for spawning items, monsters, players)
     const pois = await poisInWorld(worldEntity, options);

@@ -52,7 +52,7 @@ describe("Move Integration Tests", async () => {
         const north = ngeohash.neighbor(playerOne.loc[0], [1, 0]);
 
         // playerOne move north
-        await crossoverCmdMove({ path: ["n"] }, { Cookie: playerOneCookies });
+        crossoverCmdMove({ path: ["n"] }, { Cookie: playerOneCookies });
 
         // playerOne & playerThree should be informed of playerOne new location
         await expect(

@@ -76,33 +76,33 @@ async function publishAffectedEntitiesToPlayers(
 ) {
     const op = options?.op || "upsert";
 
-    const effectedPlayers = uniqBy(
+    const affectedPlayers = uniqBy(
         entities.filter((entity) => (entity as Player).player),
         "player",
     );
-    const effectedMonsters = uniqBy(
+    const affectedMonsters = uniqBy(
         entities.filter((entity) => (entity as Monster).monster),
         "monster",
     );
-    const effectedItems = uniqBy(
+    const affectedItems = uniqBy(
         entities.filter((entity) => (entity as Item).item),
         "item",
     );
 
-    // No effected entities
+    // No affected entities
     if (
-        effectedPlayers.length < 0 &&
-        effectedMonsters.length < 0 &&
-        effectedItems.length < 0
+        affectedPlayers.length <= 0 &&
+        affectedMonsters.length <= 0 &&
+        affectedItems.length <= 0
     ) {
         return;
     }
 
     const event = JSON.stringify({
         event: "entities",
-        players: effectedPlayers,
-        monsters: effectedMonsters,
-        items: effectedItems,
+        players: affectedPlayers,
+        monsters: affectedMonsters,
+        items: affectedItems,
         op,
     } as UpdateEntitiesEvent);
 
@@ -116,7 +116,7 @@ async function publishAffectedEntitiesToPlayers(
     }
     // Publish effects to all players in entities
     else {
-        for (const p of effectedPlayers) {
+        for (const p of affectedPlayers) {
             await redisClient.publish((p as Player).player, event);
         }
     }

@@ -875,6 +875,7 @@ export async function dmSpawnMonster({
     return result.data as Monster;
 }
 
+// TODO: DEPRECATE THIS
 export async function dmRespawnMonsters({
     locationInstance,
     players,

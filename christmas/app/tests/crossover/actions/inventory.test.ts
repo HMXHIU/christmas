@@ -51,14 +51,7 @@ describe("Inventory & Equipment Tests", async () => {
         crossoverPlayerInventory({ Cookie: playerOneCookies });
         await expect(
             waitForEventData(playerOneStream, "entities"),
-        ).resolves.toMatchObject({
-            event: "entities",
-            players: [],
-            monsters: [],
-            items: [],
-            op: "upsert",
-        });
-        await sleep(MS_PER_TICK * actions.inventory.ticks);
+        ).rejects.toThrowError("Timeout occurred while waiting for event"); // no entities will not publish
 
         // Take item
         crossoverCmdTake(

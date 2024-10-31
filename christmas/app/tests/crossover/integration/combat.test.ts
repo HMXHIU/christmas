@@ -229,7 +229,7 @@ describe("Combat Integration Tests", async () => {
                             vars: {},
                             dur: weapon.dur - 1, // each attack reduces 1 dur
                             loc: [playerOne.player],
-                            locT: "rh",
+                            locT: "hn",
                             locI: "@",
                         },
                     ],
@@ -274,7 +274,7 @@ describe("Combat Integration Tests", async () => {
                             vars: {},
                             dur: weapon.dur - 1, // each attack reduces 1 dur
                             loc: [playerOne.player],
-                            locT: "rh",
+                            locT: "hn",
                             locI: "@",
                         },
                     ],

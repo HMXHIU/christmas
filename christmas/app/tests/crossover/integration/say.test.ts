@@ -50,7 +50,7 @@ describe("Say Integration Tests", async () => {
 
     test("Test Appropriate Players Should Hear Say Message", async () => {
         // playerOne say
-        await crossoverCmdSay(
+        crossoverCmdSay(
             { message: "Hello, world!" },
             { Cookie: playerOneCookies },
         );

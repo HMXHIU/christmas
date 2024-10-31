@@ -39,9 +39,15 @@ describe("Blueprint Tests", async () => {
             LOCATION_INSTANCE,
         );
 
+        expect(uniq(spawnedEntities.map((e) => e.name))).toMatchObject([
+            "Dungeon Entrance",
+            "Monument of Control",
+            "goblin",
+        ]);
+
         // If this changes the game changes procedurally
         expect(hashObject(spawnedEntities)).toBe(
-            "ccc40807f39e40afed8b15ad4e56687ae3df693169efd01585cc666c459e9694",
+            "11e12352fa9416119c5af9d7bebef149b93a40de244becc7c75f125e2e450fd9",
         );
 
         // Check dungeon has monument of control
@@ -99,10 +105,25 @@ describe("Blueprint Tests", async () => {
                 dungeonGraphCache: dungeonGraphCache,
             },
         );
+        expect(
+            uniq(
+                Object.values(dungeonBlueprint.stencil).map(
+                    (e) => e.beast ?? e.prop ?? e.npc,
+                ),
+            ),
+        ).toMatchObject([
+            "dungeonentrance",
+            "control",
+            "innkeeper",
+            "blacksmith",
+            "grocer",
+            "alchemist",
+            "goblin",
+        ]);
 
         // If this changes the game changes procedurally
         expect(hashObject(dungeonBlueprint)).toBe(
-            "7312cbdafeb025e59d5f98bc97c6b4b6849c1a275b29017c8108b812fe656649",
+            "b87c9f3e6842bb3662ef93b31f408217dcbd14fbd6fe62c055e1fc6751a74409",
         );
     });
 

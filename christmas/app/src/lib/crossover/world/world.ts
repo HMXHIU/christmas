@@ -300,6 +300,8 @@ async function poisInWorld(
 
     const pois: WorldPOIs = [];
 
+    console.log(JSON.stringify(world, null, 2));
+
     const asset = await fetchWorldMetadata(
         world,
         options?.worldAssetMetadataCache,

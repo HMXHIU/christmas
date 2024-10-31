@@ -22,7 +22,7 @@ describe("Equipment & Inventory Tests", async () => {
         woodenClubTwo.loc = [playerOne.player];
 
         // woodenClub equipped (can't drop)
-        woodenClub.locT = "rh";
+        woodenClub.locT = "hn";
         woodenClub.loc = [playerOne.player];
 
         const commands = searchPossibleCommands({

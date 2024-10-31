@@ -218,7 +218,7 @@ describe("Item Tests", async () => {
 
         // Equip wooden club
         crossoverCmdEquip(
-            { item: woodenClub.item, slot: "rh" },
+            { item: woodenClub.item },
             { Cookie: playerOneCookies },
         );
         await waitForEventData(playerOneStream, "entities"); // Wait for inventory update
@@ -322,7 +322,7 @@ describe("Item Tests", async () => {
                                 compendium.woodenclub.utilities.swing.cost
                                     .durability,
                             loc: [playerOne.player],
-                            locT: "rh",
+                            locT: "hn",
                             locI: "@",
                         },
                     ],
