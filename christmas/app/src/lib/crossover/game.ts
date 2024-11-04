@@ -115,11 +115,13 @@ async function executeGameCommand(
     else if (actionType === "ability") {
         const ability = gameAction as Ability;
 
-        // Move in range of target
-        await moveInRangeOfTarget({
-            range: ability.range,
-            target: target as Actor,
-        });
+        if (target) {
+            // Move in range of target
+            await moveInRangeOfTarget({
+                range: ability.range,
+                target: target as Actor,
+            });
+        }
 
         // Perform ability
         return await crossoverCmdPerformAbility(

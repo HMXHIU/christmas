@@ -37,6 +37,7 @@ type AbilityType = "offensive" | "defensive" | "healing" | "neutral"; // to allo
 type Abilities =
     | "bandage"
     | "heal"
+    | "regenerate"
     | "disintegrate"
     | "bruise"
     | "doubleSlash"
@@ -48,10 +49,12 @@ type Abilities =
     | "teleport"
     | "hpSwap";
 
+// TODO: Remove duplication (from Abilities)
 const AbilitiesEnum = [
     "bandage",
     "heal",
     "disintegrate",
+    "regenerate",
     "bruise",
     "doubleSlash",
     "eyePoke",

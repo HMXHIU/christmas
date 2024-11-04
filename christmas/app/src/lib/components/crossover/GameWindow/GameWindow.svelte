@@ -8,7 +8,6 @@
     import { SkillLinesEnum } from "$lib/crossover/world/skills";
     import { cn } from "$lib/shadcn";
     import { substituteVariables } from "$lib/utils";
-    import { gsap } from "gsap";
     import { onDestroy, onMount } from "svelte";
     import { addMessageFeed, clearStaleMessageFeed } from ".";
     import {
@@ -34,19 +33,8 @@
     import Tool from "../Tool.svelte";
     import type { EntityLink } from "../types";
 
-    const LARGE_SCREEN = 1000;
-    const MEDIUM_SCREEN = 800;
-    const MAP_SIZE = 150;
-
-    let innerWidth: number; // bound to window.innerWidth
-    let innerHeight: number; // bound to window.innerHeight
-    let gameTop = 0;
-    let gameBottom = 0;
-    let mapSizeExpanded = 0;
     let commands: GameCommand[] = [];
     let command: GameCommand | null = null;
-    let gameContainer: HTMLDivElement;
-    let isMapExpanded = false;
 
     let entityId: string;
     let entityType: EntityType;
@@ -55,32 +43,6 @@
     function onClickEntityLink(event: CustomEvent) {
         ({ entityId, entityType } = event.detail as EntityLink);
         openDialog = true;
-    }
-
-    function toggleMapSize(event: MouseEvent) {
-        const mapElement = event.currentTarget as HTMLElement;
-
-        if (isMapExpanded) {
-            gsap.to(mapElement, {
-                duration: 0.5,
-                width: MAP_SIZE,
-                height: MAP_SIZE,
-                right: 0,
-                top: gameTop,
-                ease: "power2.out",
-            });
-        } else {
-            gsap.to(mapElement, {
-                duration: 0.5,
-                width: mapSizeExpanded,
-                height: mapSizeExpanded,
-                right: Math.round((innerWidth - mapSizeExpanded) / 2),
-                top: Math.round((innerHeight - mapSizeExpanded) / 3),
-                ease: "power2.out",
-            });
-        }
-
-        isMapExpanded = !isMapExpanded;
     }
 
     async function onEnterKeyPress(message: string) {
@@ -121,17 +83,8 @@
         // Go into game mode
         inGame.set(true);
 
+        // Initialize assets
         initAssetManager();
-
-        // Compute game container top/bottom
-        const rect = gameContainer.getBoundingClientRect();
-        gameTop = rect.top;
-        gameBottom = window.innerHeight - rect.bottom;
-
-        // Computer map size expanded
-        mapSizeExpanded = Math.round(
-            Math.min(window.innerWidth, window.innerHeight) * 0.9,
-        );
 
         // Store subscriptions
         const subscriptions = [
@@ -200,58 +153,66 @@
     });
 </script>
 
-<svelte:window bind:innerWidth bind:innerHeight />
-
 <div
     class={cn(
         "h-[calc(100dvh)] w-full flex flex-col justify-between",
         $$restProps.class,
     )}
 >
-    <!-- Top panel -->
-    <div class="flex h-[calc(80%)]">
-        <!-- Game Window -->
-        <div class="flex-grow overflow-hidden" bind:this={gameContainer}>
-            <Game previewCommand={command}></Game>
-        </div>
-        <!-- Right panel -->
-        <div class="flex flex-col w-60 shrink-0 p-2 space-y-2 overflow-y-auto">
-            <!-- Map/Players -->
-            <div class="aspect-square shrink-0">
-                <Map></Map>
+    <div class="flex flex-row h-full w-full">
+        <!-- Left Panel -->
+        <div class="flex flex-col flex-grow">
+            <!-- Game Window -->
+            <Game class="flex-grow" previewCommand={command}></Game>
+
+            <!-- Autocomplete Game Commands -->
+            <div class="relative">
+                <AutocompleteGC
+                    class="pb-2 px-2 bottom-0 absolute"
+                    {commands}
+                    {onGameCommand}
+                    bind:command
+                ></AutocompleteGC>
             </div>
-            <!-- Quest Log -->
-            <Tool tool="quests"></Tool>
+
+            <!-- Chat Input -->
+            <ChatInput class="mb-1 mt-0 py-0" {onEnterKeyPress} {onPartial}
+            ></ChatInput>
+
+            <!-- Bottom Panel -->
+            <div class="h-80 flex flex-col overflow-auto">
+                <!-- Combat Messages -->
+                <ChatWindow
+                    class="h-16"
+                    messageFilter={["combat"]}
+                    on:entityLink={onClickEntityLink}
+                ></ChatWindow>
+                <div class="flex flex-row">
+                    <!-- NPC Dialogues/Player/System Messages -->
+                    <ChatWindow
+                        class="w-full min-w-60"
+                        messageFilter={["system", "error", "message"]}
+                        on:entityLink={onClickEntityLink}
+                    ></ChatWindow>
+                    <!-- Environment  -->
+                    <MudDescriptor class="p-2" on:entityLink={onClickEntityLink}
+                    ></MudDescriptor>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right panel -->
+        <div
+            class="flex flex-col min-w-60 p-2 space-y-2 overflow-y-auto justify-between"
+        >
             <!-- Inventory -->
             <Tool tool="inventory"></Tool>
             <!-- Abilities -->
             <Tool tool="abilities"></Tool>
-        </div>
-    </div>
-
-    <!-- Autocomplete Game Commands -->
-    <div class="relative">
-        <AutocompleteGC
-            class="pb-2 px-2 bottom-0 absolute"
-            {commands}
-            {onGameCommand}
-            bind:command
-        ></AutocompleteGC>
-    </div>
-
-    <!-- Bottom Panel -->
-    <div class="h-60 flex flex-row grow">
-        <div class="flex flex-col w-full min-w-60">
-            <!-- Chat Input -->
-            <ChatInput class="mb-1 mt-0 py-0" {onEnterKeyPress} {onPartial}
-            ></ChatInput>
-            <!-- Chat Window -->
-            <ChatWindow class="overflow-auto" on:entityLink={onClickEntityLink}
-            ></ChatWindow>
-        </div>
-        <!-- Environment  -->
-        <div class="p-2 overflow-auto">
-            <MudDescriptor on:entityLink={onClickEntityLink}></MudDescriptor>
+            <!-- Quest Log -->
+            <Tool tool="quests"></Tool>
+            <!-- Map/Look -->
+            <Map></Map>
         </div>
     </div>
 </div>

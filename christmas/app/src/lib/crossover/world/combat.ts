@@ -40,12 +40,38 @@ type DamageType =
 
 interface ConditionMetadata {
     description: string;
+    dialogue?: {
+        added: string;
+        removed: string;
+    };
     active: boolean;
     turns: number;
     dot?: DieRoll; // damage or heal over time
 }
 
-const conditions: Record<string, ConditionMetadata> = {
+type Condition =
+    | "haste"
+    | "shield"
+    | "berserk"
+    | "regeneration"
+    | "weakness"
+    | "crippled"
+    | "paralyzed"
+    | "blinded"
+    | "wet"
+    | "stunned"
+    | "confused"
+    | "charmed"
+    | "frightened"
+    | "exhausted"
+    | "silenced"
+    | "diseased"
+    | "poisoned"
+    | "bleeding"
+    | "burning"
+    | "frozen";
+
+const conditions: Record<Condition, ConditionMetadata> = {
     // Buffs (passive)
     haste: { description: "haste", active: false, turns: 2 },
     shield: { description: "shield", active: false, turns: 2 },
@@ -60,6 +86,11 @@ const conditions: Record<string, ConditionMetadata> = {
             sides: -6,
             damageType: "healing",
             modifiers: ["fth"],
+        },
+        dialogue: {
+            added: "Healing energy surges through ${subject} as ${pronoun.possessive} wounds begin to close",
+            removed:
+                "The regenerative energy fades from ${subject}, leaving ${pronoun.subject} restored",
         },
     },
     // Debuffs (passive)
@@ -85,6 +116,10 @@ const conditions: Record<string, ConditionMetadata> = {
             damageType: "necrotic",
             modifiers: ["con"],
         },
+        dialogue: {
+            added: "A sickly pallor spreads across ${subject} as disease takes hold",
+            removed: "The disease finally releases its grip on ${subject}",
+        },
     },
     poisoned: {
         description: "poisoned",
@@ -96,6 +131,10 @@ const conditions: Record<string, ConditionMetadata> = {
             damageType: "poison",
             modifiers: ["con"],
         },
+        dialogue: {
+            added: "Venom courses through ${pronoun.possessive} veins as ${subject} ${verb.be} poisoned",
+            removed: "The poison subsides, leaving ${subject} pale and shaken",
+        },
     },
     bleeding: {
         description: "bleeding",
@@ -104,8 +143,13 @@ const conditions: Record<string, ConditionMetadata> = {
         dot: {
             count: 2,
             sides: 4,
-            damageType: "healing",
+            damageType: "normal",
             modifiers: ["con"],
+        },
+        dialogue: {
+            added: "Blood streams from ${subject} wounds as ${pronoun.object} begins bleeding profusely",
+            removed:
+                "The bleeding finally stops, leaving ${subject} covered in dried blood",
         },
     },
     burning: {
@@ -118,6 +162,11 @@ const conditions: Record<string, ConditionMetadata> = {
             damageType: "fire",
             modifiers: ["cha"],
         },
+        dialogue: {
+            added: "${subject} ${verb.be} engulfed in searing flames",
+            removed:
+                "${subject} ${verb.be} no longer burning, though smoke still wisps from ${pronoun.possessive} charred skin",
+        },
     },
     frozen: {
         description: "frozen",
@@ -126,12 +175,15 @@ const conditions: Record<string, ConditionMetadata> = {
         dot: {
             count: 1,
             sides: 4,
-            damageType: "healing",
+            damageType: "ice",
             modifiers: ["mnd"],
+        },
+        dialogue: {
+            added: "A layer of crackling ice encases ${subject}, freezing ${pronoun.subject} in place",
+            removed:
+                "The ice encasing ${subject} shatters, leaving ${pronoun.subject} shivering",
         },
     },
 } as const;
-
-type Condition = keyof typeof conditions;
 
 const ConditionsEnum = Object.keys(conditions) as [Condition, ...Condition[]]; // for use with zod

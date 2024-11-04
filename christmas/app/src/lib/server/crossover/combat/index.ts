@@ -1,3 +1,4 @@
+import { entityPronouns } from "$lib/crossover/mud/entities";
 import type { BodyPart, DieRoll } from "$lib/crossover/types";
 import {
     calculateLocation,
@@ -38,11 +39,7 @@ import {
     pushCondition,
     resolveConditionsFromDamage,
 } from "./condition";
-import {
-    entityPronoun,
-    generateHitMessage,
-    generateMissMessage,
-} from "./dialogues";
+import { generateHitMessage, generateMissMessage } from "./dialogues";
 import {
     attackRollForProcedureEffect,
     attackRollForWeapon,
@@ -508,7 +505,7 @@ async function handleEntityDeath(
     // Publish 'You killed' message to killer player (TODO: custom death message for each beast)
     if (killerEntity.player) {
         const message = !("item" in deadEntity)
-            ? `You killed ${deadEntity.name}, ${entityPronoun(deadEntity, "object")} collapses at your feet.`
+            ? `You killed ${deadEntity.name}, ${entityPronouns(deadEntity).object} collapses at your feet.`
             : `You destroyed ${deadEntity.name}`;
 
         await publishFeedEvent((killerEntity as PlayerEntity).player, {

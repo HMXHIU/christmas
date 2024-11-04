@@ -8,6 +8,7 @@ import { addMessageFeed } from "$lib/components/crossover/GameWindow";
 import { crossoverWorldWorlds } from "$lib/crossover/client";
 import { executeGameCommand } from "$lib/crossover/game";
 import type { GameCommand } from "$lib/crossover/ir";
+import { entityLinguistics } from "$lib/crossover/mud/entities";
 import type { Actor, Item, Monster, Player } from "$lib/crossover/types";
 import {
     geohashToColRow,
@@ -15,12 +16,13 @@ import {
     isEntityEquipment,
     isEntityEquipmentOrInventory,
 } from "$lib/crossover/utils";
+import { conditions, type Condition } from "$lib/crossover/world/combat";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     geohashLocationTypes,
     type GeohashLocation,
 } from "$lib/crossover/world/types";
-import { AsyncLock } from "$lib/utils";
+import { AsyncLock, substituteVariables } from "$lib/utils";
 import type { HTTPHeaders } from "@trpc/client";
 import { groupBy, isEqual } from "lodash-es";
 import { Container, type Application } from "pixi.js";
@@ -34,6 +36,7 @@ import {
     playerEquippedItems,
     playerInventoryItems,
     playerRecord,
+    target,
     worldOffset,
     worldRecord,
 } from "../../../../store";
@@ -118,27 +121,72 @@ function displayEntityEffects<T extends Actor>(
     // If just created don't display effects
     if (oldEntity == null) return;
 
+    // Generate combat messages if entity is self or target
+    const [entityId, _] = getEntityId(newEntity);
+    const t = get(target);
+    const p = get(player);
+    if ((p && p.player === entityId) || (t && getEntityId(t)[0] === entityId)) {
+        const newConditions = new Set(
+            newEntity.cond.map((s) => s.split(":")[1]),
+        );
+        const oldConditions = new Set(
+            oldEntity.cond.map((s) => s.split(":")[1]),
+        );
+
+        // Added conditions
+        for (const cond of newConditions.difference(oldConditions)) {
+            const dialogue = conditions[cond as Condition].dialogue;
+            if (dialogue) {
+                addMessageFeed({
+                    message: substituteVariables(
+                        dialogue.added,
+                        entityLinguistics(newEntity, p?.player),
+                    ),
+                    name: "",
+                    messageFeedType: "combat",
+                });
+            }
+        }
+
+        // Removed conditions
+        for (const cond of oldConditions.difference(newConditions)) {
+            const dialogue = conditions[cond as Condition].dialogue;
+            if (dialogue) {
+                addMessageFeed({
+                    message: substituteVariables(
+                        dialogue.removed,
+                        entityLinguistics(newEntity, p?.player),
+                    ),
+                    name: "",
+                    messageFeedType: "combat",
+                });
+            }
+        }
+    }
+
+    // TODO: Display UI effects
+
     // Monster
     if ("monster" in oldEntity) {
-        const deltaHp = oldEntity.hp - (newEntity as Monster).hp;
-        if (deltaHp > 0) {
-            addMessageFeed({
-                message: `${oldEntity.monster} lost ${deltaHp} HP`,
-                name: "",
-                messageFeedType: "message",
-            });
-        }
+        // const deltaHp = oldEntity.hp - (newEntity as Monster).hp;
+        // if (deltaHp > 0) {
+        //     addMessageFeed({
+        //         message: `${oldEntity.monster} lost ${deltaHp} HP`,
+        //         name: "",
+        //         messageFeedType: "combat",
+        //     });
+        // }
     }
     // Player
     else if ("player" in oldEntity) {
-        const deltaHp = oldEntity.hp - (newEntity as Player).hp;
-        if (deltaHp > 0) {
-            addMessageFeed({
-                message: `${oldEntity.player} lost ${deltaHp} HP`,
-                name: "",
-                messageFeedType: "message",
-            });
-        }
+        // const deltaHp = oldEntity.hp - (newEntity as Player).hp;
+        // if (deltaHp > 0) {
+        //     addMessageFeed({
+        //         message: `${oldEntity.player} lost ${deltaHp} HP`,
+        //         name: "",
+        //         messageFeedType: "combat",
+        //     });
+        // }
     }
     // Item
     else if ("item" in oldEntity) {

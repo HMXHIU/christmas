@@ -1,5 +1,57 @@
 # Multi User Dungeon
 
+This RFC describes the behaviour of text for the MUD like feature for the game, text are presented to the user for the following:
+
+1. Location descriptions
+2. Combat
+3. Chat
+4. Errors
+
+**Message Format**
+
+The message format should be an array of strings or a string separated by full stops. It should now overwhelm the user with large text. So the text should be split up and each sentence presented every `tick`. The client should be responsible to break up and present the messages while the server may send the entire chunk
+
+**Message Placement**
+
+Different types of messages should have their own panels for readability:
+
+- Location/Entity descriptions
+  - Performing `look`
+  - Procedurally generated content
+- Player/NPC dialogues & chat messages
+- Combat
+  - Generated from `Action Event`
+  - Calculating difference in entity state
+  - Should only include events where `self` is source or `target`
+
+## Server Generated messages
+
+Server generated messages include:
+
+- NPC Dialogues
+- Errors
+- Entity specific descriptions (non-pg) when `look` at entity is performed
+
+## Client Generated messages
+
+Client messages reduce server and network load as well as making messages more configurable
+
+It includes:
+
+1. Combat Logs
+
+- Use difference in entity (`conditions`, `weight`) to generate logs
+- Use `ActionEvent` (include more info in `ActionEvent`: die rolls, damage, damage type, miss, ability, action)
+- The `ActionEvent` can also be used for animation
+- Create a JSON file to store all combat descriptions (or store in `compendium`, `beasts`)
+- Add multiple options and random selection using reproducable hash seed
+- Variable substitutable entity names, weapons, nouns, verbs, adjactives
+- Tree structure with fallback at the node which meets requirements
+- `ActionEvent` should be sent only when the rolls are rolled
+- Can't describe everything else it will be flooded - need to be selective what to describe. Animations can fill in.
+
+2. Location Descriptions
+
 Problem:
 
 - When a user enters an location (geohash). A immersive description of the area needs to be generated which is derived from different sources and factors

@@ -59,7 +59,8 @@ async function processActiveConditions() {
     for (let defender of [...players, ...monsters, ...items]) {
         for (const s of activeConditions(defender.cond, now)) {
             const [active, cond, end, attackerId] = s.split(":");
-            if (conditions[cond].dot) {
+            const dot = conditions[cond as Condition].dot;
+            if (dot) {
                 const attacker = await fetchEntity(attackerId);
                 if (attacker) {
                     const attackerBefore = clone(attacker);
@@ -68,7 +69,7 @@ async function processActiveConditions() {
                     let { defender: affectedDefender } = await resolveDamage({
                         attacker,
                         defender,
-                        dieRoll: conditions[cond].dot,
+                        dieRoll: dot,
                     });
 
                     // Inform all players nearby

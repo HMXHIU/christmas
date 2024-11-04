@@ -79,7 +79,7 @@ interface LocationParams {
 }
 
 interface ConditionParams {
-    cond: string[];
+    cond: string[]; // "a|p:condition:end:attackerId"
 }
 
 interface EntityState

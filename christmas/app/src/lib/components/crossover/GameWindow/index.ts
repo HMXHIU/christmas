@@ -10,7 +10,7 @@ export {
     type MessageFeedType,
 };
 
-type MessageFeedType = "error" | "message" | "system";
+type MessageFeedType = "error" | "message" | "system" | "combat";
 const MAX_MESSAGES = 30;
 
 interface MessageFeed {

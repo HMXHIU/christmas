@@ -303,9 +303,10 @@
     });
 </script>
 
-<div class="h-full w-full" bind:clientHeight bind:clientWidth>
-    <div
-        class={cn("overflow-hidden aspect-square", $$restProps.class)}
-        bind:this={containerElement}
-    ></div>
+<div
+    class={cn("overflow-hidden aspect-square", $$restProps.class)}
+    bind:clientHeight
+    bind:clientWidth
+>
+    <div bind:this={containerElement}></div>
 </div>

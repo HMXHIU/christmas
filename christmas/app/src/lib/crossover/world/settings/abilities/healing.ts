@@ -66,4 +66,33 @@ const healingAbilities: Partial<Record<Abilities, Ability>> = {
             targetSelfAllowed: true,
         },
     },
+    regenerate: {
+        ability: "regenerate",
+        type: "healing",
+        description: "Heal youself periodically.",
+        procedures: [
+            [
+                "action",
+                {
+                    target: "target",
+                    conditions: {
+                        condition: "regeneration",
+                        op: "push",
+                    },
+                    modifiers: ["con"],
+                    ticks: TICKS_PER_TURN,
+                },
+            ],
+        ],
+        cost: {
+            lum: 10,
+        },
+        range: 1,
+        aoe: 0,
+        predicate: {
+            self: ["player", "monster"],
+            target: [],
+            targetSelfAllowed: true,
+        },
+    },
 };

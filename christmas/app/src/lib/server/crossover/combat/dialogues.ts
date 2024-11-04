@@ -1,15 +1,11 @@
+import { entityPronouns } from "$lib/crossover/mud/entities";
 import { type BodyPart } from "$lib/crossover/types";
 import type { Abilities } from "$lib/crossover/world/abilities";
 import type { DamageType } from "$lib/crossover/world/combat";
-import type { Genders } from "$lib/crossover/world/demographic";
-import {
-    type ActorEntity,
-    type ItemEntity,
-    type PlayerEntity,
-} from "$lib/server/crossover/types";
+import { type ActorEntity, type ItemEntity } from "$lib/server/crossover/types";
 import { random } from "../utils";
 
-export { entityPronoun, generateHitMessage, generateMissMessage };
+export { generateHitMessage, generateMissMessage };
 
 const damageTypeToHitVerb: Record<DamageType, string> = {
     blunt: "bashes",
@@ -25,43 +21,6 @@ const damageTypeToHitVerb: Record<DamageType, string> = {
     necrotic: "drains",
     water: "soaks",
 };
-
-const genderPronouns: Record<
-    "possessive" | "reflexive" | "object" | "subject",
-    Record<Genders | "it", string>
-> = {
-    possessive: {
-        male: "his",
-        female: "her",
-        it: "its",
-    },
-    reflexive: {
-        male: "himself",
-        female: "herself",
-        it: "itself",
-    },
-    object: {
-        male: "he",
-        female: "she",
-        it: "it",
-    },
-    subject: {
-        male: "him",
-        female: "her",
-        it: "it",
-    },
-};
-
-function entityPronoun(
-    entity: ActorEntity,
-    type: "possessive" | "reflexive" | "object" | "subject" = "possessive",
-): string {
-    if ("player" in entity) {
-        return genderPronouns[type][(entity as PlayerEntity).gen];
-    } else {
-        return genderPronouns[type].it;
-    }
-}
 
 function entityHitNoun(entity: ActorEntity, bodyPartHit?: BodyPart): string {
     if ("item" in entity) {
@@ -121,12 +80,12 @@ function generateHitMessage({
 
     if (attacker === target) {
         if (weapon) {
-            message = `${attacker.name} ${hitVerb({ damageType, ability })} ${entityPronoun(attacker, "reflexive")} with ${entityPronoun(attacker)} ${weapon.name}`;
+            message = `${attacker.name} ${hitVerb({ damageType, ability })} ${entityPronouns(attacker).reflexive} with ${entityPronouns(attacker).possessive} ${weapon.name}`;
         }
-        message = `${attacker.name} ${hitVerb({ damageType, ability })} ${entityPronoun(attacker, "reflexive")}`;
+        message = `${attacker.name} ${hitVerb({ damageType, ability })} ${entityPronouns(attacker).reflexive}`;
     } else {
         if (weapon) {
-            message = `${attacker.name} ${hitVerb({ damageType, ability })} ${entityHitNoun(target, bodyPartHit)} with ${entityPronoun(attacker)} ${weapon.name}`;
+            message = `${attacker.name} ${hitVerb({ damageType, ability })} ${entityHitNoun(target, bodyPartHit)} with ${entityPronouns(attacker).possessive} ${weapon.name}`;
         }
         message = `${attacker.name} ${hitVerb({ damageType, ability })} ${entityHitNoun(target, bodyPartHit)}`;
     }
@@ -150,7 +109,7 @@ function generateMissMessage(
     ];
     const missReason = missReasons[Math.floor(random() * missReasons.length)];
     if (weapon) {
-        return `${attacker.name} attacks ${target.name} with ${entityPronoun(attacker)} ${weapon.name} but ${missReason}.`;
+        return `${attacker.name} attacks ${target.name} with ${entityPronouns(attacker).possessive} ${weapon.name} but ${missReason}.`;
     } else {
         return `${attacker.name} attacks ${target.name} but ${missReason}.`;
     }
