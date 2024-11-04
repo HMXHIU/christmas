@@ -9,6 +9,7 @@
         type LocationDescription,
     } from "$lib/crossover/mud";
     import type { Player } from "$lib/crossover/types";
+    import { sameLocation } from "$lib/crossover/utils";
     import { biomes } from "$lib/crossover/world/biomes";
     import { worldSeed } from "$lib/crossover/world/settings/world";
     import {
@@ -73,8 +74,10 @@
                 monsterDescriptor =
                     await descriptionGenerator.descriptionsMonsters(
                         $player,
-                        Object.values(mr).filter((p) =>
-                            geohashLocationTypes.has(p.locT),
+                        Object.values(mr).filter(
+                            (m) =>
+                                geohashLocationTypes.has(m.locT) &&
+                                sameLocation(m, $player),
                         ),
                     );
             }),
@@ -82,8 +85,10 @@
                 if (!$player) return;
                 itemDescriptor = await descriptionGenerator.describeItems(
                     $player,
-                    Object.values(ir).filter((p) =>
-                        geohashLocationTypes.has(p.locT),
+                    Object.values(ir).filter(
+                        (i) =>
+                            geohashLocationTypes.has(i.locT) &&
+                            sameLocation(i, $player),
                     ),
                 );
             }),
@@ -91,8 +96,10 @@
                 if (!$player) return;
                 playerDescriptor = await descriptionGenerator.describePlayers(
                     $player,
-                    Object.values(pr).filter((p) =>
-                        geohashLocationTypes.has(p.locT),
+                    Object.values(pr).filter(
+                        (p) =>
+                            geohashLocationTypes.has(p.locT) &&
+                            sameLocation(p, $player),
                     ),
                 );
             }),

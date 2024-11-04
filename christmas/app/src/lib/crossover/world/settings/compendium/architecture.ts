@@ -177,13 +177,13 @@ export let architecture: Record<string, Prop> = {
         utilities: {
             teleport: {
                 utility: "teleport",
-                description: "Step through the portal.", // TODO: make this variable substitutable?
+                description: "Step through the portal.",
                 cost: {
                     charges: 1,
                     durability: 0,
                 },
                 state: {
-                    start: "default", // TODO: make this variable substitutable?
+                    start: "default",
                     end: "default",
                 },
                 ability: abilities.teleport.ability,
@@ -193,10 +193,10 @@ export let architecture: Record<string, Prop> = {
     // An invisible portal used for exiting a world
     exit: {
         prop: "exit",
-        durability: 0,
+        durability: 100,
         charges: 0,
         weight: -1,
-        collider: false, // ??? WHY CANT WALK TRHOUGH IT EVEN THOUGH COLLIDER IS FALSE
+        collider: false,
         states: {
             default: {
                 name: "${name}",
