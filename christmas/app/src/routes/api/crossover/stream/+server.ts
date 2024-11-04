@@ -1,6 +1,7 @@
-import type { Item, Monster, Player } from "$lib/crossover/types";
+import type { BodyPart, Item, Monster, Player } from "$lib/crossover/types";
 import type { Abilities } from "$lib/crossover/world/abilities";
 import type { Actions } from "$lib/crossover/world/actions";
+import type { DamageType } from "$lib/crossover/world/combat";
 import { requireLogin } from "$lib/server";
 import { connectedUsers } from "$lib/server/crossover";
 import type { CTA } from "$lib/server/crossover/player";
@@ -30,16 +31,19 @@ export interface UpdateEntitiesEvent {
     items?: Item[];
 }
 
-type SpecialActions = "miss";
-
 export interface ActionEvent {
     event: "action";
     source: string;
     target?: string;
-    action?: Actions | SpecialActions;
+    action?: Actions;
     ability?: Abilities;
     utility?: string;
     prop?: string;
+    miss?: boolean; // eg. attack miss
+    weapon?: string; // prop of the weapon
+    damage?: number;
+    damageType?: DamageType;
+    bodyPart?: BodyPart;
 }
 
 export interface CTAEvent {

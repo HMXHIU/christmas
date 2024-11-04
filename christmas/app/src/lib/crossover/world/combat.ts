@@ -4,6 +4,7 @@ export {
     conditions,
     ConditionsEnum,
     elementalDamageTypes,
+    expireConditions,
     physicalDamageTypes,
     type Condition,
     type DamageType,
@@ -88,7 +89,7 @@ const conditions: Record<Condition, ConditionMetadata> = {
             modifiers: ["fth"],
         },
         dialogue: {
-            added: "Healing energy surges through ${subject} as ${pronoun.possessive} wounds begin to close",
+            added: "Healing energy surges through ${subject} as ${pronoun.possessive} wounds begin to close.",
             removed:
                 "The regenerative energy fades from ${subject}, leaving ${pronoun.subject} restored",
         },
@@ -117,8 +118,8 @@ const conditions: Record<Condition, ConditionMetadata> = {
             modifiers: ["con"],
         },
         dialogue: {
-            added: "A sickly pallor spreads across ${subject} as disease takes hold",
-            removed: "The disease finally releases its grip on ${subject}",
+            added: "A sickly pallor spreads across ${subject} as disease takes hold.",
+            removed: "The disease finally releases its grip on ${subject}.",
         },
     },
     poisoned: {
@@ -132,8 +133,8 @@ const conditions: Record<Condition, ConditionMetadata> = {
             modifiers: ["con"],
         },
         dialogue: {
-            added: "Venom courses through ${pronoun.possessive} veins as ${subject} ${verb.be} poisoned",
-            removed: "The poison subsides, leaving ${subject} pale and shaken",
+            added: "Venom courses through ${pronoun.possessive} veins as ${subject} ${verb.be} poisoned.",
+            removed: "The poison subsides, leaving ${subject} pale and shaken.",
         },
     },
     bleeding: {
@@ -147,9 +148,9 @@ const conditions: Record<Condition, ConditionMetadata> = {
             modifiers: ["con"],
         },
         dialogue: {
-            added: "Blood streams from ${subject} wounds as ${pronoun.object} begins bleeding profusely",
+            added: "Blood streams from ${subject} wounds as ${pronoun.object} begins bleeding profusely.",
             removed:
-                "The bleeding finally stops, leaving ${subject} covered in dried blood",
+                "The bleeding finally stops, leaving ${subject} covered in dried blood.",
         },
     },
     burning: {
@@ -163,9 +164,9 @@ const conditions: Record<Condition, ConditionMetadata> = {
             modifiers: ["cha"],
         },
         dialogue: {
-            added: "${subject} ${verb.be} engulfed in searing flames",
+            added: "${subject} ${verb.be} engulfed in searing flames.",
             removed:
-                "${subject} ${verb.be} no longer burning, though smoke still wisps from ${pronoun.possessive} charred skin",
+                "${subject} ${verb.be} no longer burning, though smoke still wisps from ${pronoun.possessive} charred skin.",
         },
     },
     frozen: {
@@ -179,11 +180,19 @@ const conditions: Record<Condition, ConditionMetadata> = {
             modifiers: ["mnd"],
         },
         dialogue: {
-            added: "A layer of crackling ice encases ${subject}, freezing ${pronoun.subject} in place",
+            added: "A layer of crackling ice encases ${subject}, freezing ${pronoun.subject} in place.",
             removed:
-                "The ice encasing ${subject} shatters, leaving ${pronoun.subject} shivering",
+                "The ice encasing ${subject} shatters, leaving ${pronoun.subject} shivering.",
         },
     },
 } as const;
 
 const ConditionsEnum = Object.keys(conditions) as [Condition, ...Condition[]]; // for use with zod
+
+function expireConditions(conds: string[], now?: number): string[] {
+    now = now ?? Date.now();
+    return conds.filter((s) => {
+        const [active, cond, end] = s.split(":");
+        return Number(end) > now;
+    });
+}

@@ -65,7 +65,7 @@
     $: resize(clientHeight, clientWidth);
 
     function resize(height: number, width: number) {
-        if (app == null || playerMapPosition == null) {
+        if (app?.renderer == null || playerMapPosition == null) {
             return;
         }
         app.renderer.resize(width, height);

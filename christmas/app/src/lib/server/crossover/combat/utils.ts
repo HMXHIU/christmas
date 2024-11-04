@@ -48,7 +48,7 @@ const d4: DieRoll = {
     sides: 4,
 };
 
-const bodyPartHitProbability: Record<BodyPart, number> = {
+const bodyPartProbability: Record<BodyPart, number> = {
     torso: 0.75,
     arms: 0.1,
     legs: 0.1,
@@ -65,7 +65,7 @@ const bodyPartToEquipment: Record<BodyPart, EquipmentSlot[]> = {
 function determineBodyPartHit(): BodyPart {
     const roll = random();
     let cumulativeProbability = 0;
-    for (const [part, probability] of Object.entries(bodyPartHitProbability)) {
+    for (const [part, probability] of Object.entries(bodyPartProbability)) {
         cumulativeProbability += probability;
         if (roll < cumulativeProbability) {
             return part as BodyPart;
@@ -74,8 +74,8 @@ function determineBodyPartHit(): BodyPart {
     return "torso";
 }
 
-function determineEquipmentSlotHit(bodyPartHit: BodyPart): EquipmentSlot {
-    const equipment = bodyPartToEquipment[bodyPartHit];
+function determineEquipmentSlotHit(bodyPart: BodyPart): EquipmentSlot {
+    const equipment = bodyPartToEquipment[bodyPart];
     return equipment[Math.floor(random() * equipment.length)] ?? equipment[0];
 }
 
@@ -104,13 +104,13 @@ function resolveDamage({
     attacker,
     defender,
     dieRoll,
-    bodyPartHit,
+    bodyPart,
     equipment,
 }: {
     attacker: ActorEntity;
     defender: ActorEntity;
     dieRoll: DieRoll;
-    bodyPartHit?: BodyPart;
+    bodyPart?: BodyPart;
     equipment?: ItemEntity;
 }): {
     damage: number;
@@ -122,11 +122,11 @@ function resolveDamage({
     let damageType = dieRoll.damageType ?? "normal";
 
     // Modify damage based on body part hit
-    if (bodyPartHit === "head") {
+    if (bodyPart === "head") {
         damage *= 2;
-    } else if (bodyPartHit === "arms") {
+    } else if (bodyPart === "arms") {
         damage *= 0.8;
-    } else if (bodyPartHit === "legs") {
+    } else if (bodyPart === "legs") {
         damage *= 0.8;
     }
 

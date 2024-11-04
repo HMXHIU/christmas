@@ -26,7 +26,6 @@ import {
     publishActionEvent,
     publishAffectedEntitiesToPlayers,
     publishFeedEvent,
-    publishFeedEventToPlayers,
 } from "../events";
 import { resolvePlayerQuests } from "../quests";
 import {
@@ -39,7 +38,6 @@ import {
     pushCondition,
     resolveConditionsFromDamage,
 } from "./condition";
-import { generateHitMessage, generateMissMessage } from "./dialogues";
 import {
     attackRollForProcedureEffect,
     attackRollForWeapon,
@@ -87,7 +85,7 @@ async function resolveCombat(
 
     let success = false;
     let affectedEntities: ActorEntity[] = [];
-    let bodyPartHit: BodyPart | undefined = undefined;
+    let bodyPart: BodyPart | undefined = undefined;
     let damage: number | undefined = undefined;
     let damageType: DamageType | undefined = undefined;
 
@@ -103,7 +101,7 @@ async function resolveCombat(
             success,
             affectedEntities,
             damage,
-            bodyPartHit,
+            bodyPart,
             damageType,
             attacker,
             defender,
@@ -111,9 +109,14 @@ async function resolveCombat(
 
         // Publish action feed
         await publishActionEvent(nearbyPlayerIds, {
-            action: success ? "attack" : "miss",
+            action: "attack",
             source: getEntityId(attacker)[0],
             target: getEntityId(defender)[0],
+            damage,
+            damageType,
+            bodyPart: bodyPart ?? "torso",
+            weapon: options.attack.weapon?.item,
+            miss: !success,
         });
     }
     // Ability's procedure effect
@@ -122,7 +125,7 @@ async function resolveCombat(
             success,
             affectedEntities,
             damage,
-            bodyPartHit,
+            bodyPart,
             damageType,
             attacker,
             defender,
@@ -134,20 +137,23 @@ async function resolveCombat(
 
         // Publish action feed
         await publishActionEvent(nearbyPlayerIds, {
-            ability: options?.ability.ability,
+            ability: options.ability.ability,
             source: getEntityId(attacker)[0],
             target: getEntityId(defender)[0],
+            damage,
+            damageType,
+            bodyPart: bodyPart ?? "torso",
+            miss: !success,
         });
     }
 
-    // Hit
     if (success) {
         // Resolve conditions from hit
         if (damage && damageType) {
             defender = resolveConditionsFromDamage({
                 defender,
                 attacker,
-                bodyPartHit,
+                bodyPart,
                 damage,
                 damageType,
             });
@@ -166,31 +172,6 @@ async function resolveCombat(
                 op: "upsert",
             },
         );
-        // Publish hit feed
-        await publishFeedEventToPlayers(nearbyPlayerIds, {
-            type: "message",
-            message: generateHitMessage({
-                attacker,
-                target: defender,
-                weapon: options.attack?.weapon,
-                ability: options.ability?.ability,
-                bodyPartHit: bodyPartHit ?? "torso",
-                damage,
-                damageType,
-            }),
-        });
-    }
-    // Miss
-    else {
-        // Publish miss feed
-        await publishFeedEventToPlayers(nearbyPlayerIds, {
-            type: "message",
-            message: generateMissMessage(
-                attacker,
-                defender,
-                options.attack?.weapon,
-            ),
-        });
     }
 
     // Save entities
@@ -213,7 +194,7 @@ async function resolveAttack(
     weapon?: ItemEntity,
 ): Promise<{
     success: boolean;
-    bodyPartHit?: BodyPart;
+    bodyPart?: BodyPart;
     damage?: number;
     damageType: DamageType;
     affectedEntities: ActorEntity[];
@@ -222,7 +203,7 @@ async function resolveAttack(
 }> {
     const affectedEntities: ActorEntity[] = []; // affected entities
     let success = false;
-    let bodyPartHit: BodyPart | undefined = undefined;
+    let bodyPart: BodyPart | undefined = undefined;
     let damage: number | undefined = undefined;
     let damageType: DamageType = "normal";
 
@@ -230,10 +211,10 @@ async function resolveAttack(
     success = attackRollForWeapon(attacker, defender, weapon).success;
     if (success) {
         // Body part roll
-        bodyPartHit = determineBodyPartHit();
+        bodyPart = determineBodyPartHit();
 
-        // Get corresponding equipment from bodyPartHit
-        const equipmentSlot = determineEquipmentSlotHit(bodyPartHit);
+        // Get corresponding equipment from bodyPart
+        const equipmentSlot = determineEquipmentSlotHit(bodyPart);
         const equipment = (await equipmentQuerySet(getEntityId(defender)[0], [
             equipmentSlot,
         ]).first()) as ItemEntity;
@@ -245,7 +226,7 @@ async function resolveAttack(
         ({ damage, attacker, defender } = resolveDamage({
             attacker,
             defender,
-            bodyPartHit,
+            bodyPart,
             dieRoll,
             equipment,
         }));
@@ -266,7 +247,7 @@ async function resolveAttack(
     return {
         success,
         affectedEntities,
-        bodyPartHit,
+        bodyPart,
         damage,
         damageType,
         attacker,
@@ -281,7 +262,7 @@ async function resolveProcedureEffect(
     now?: number,
 ): Promise<{
     success: boolean;
-    bodyPartHit?: BodyPart;
+    bodyPart?: BodyPart;
     damage?: number;
     damageType?: DamageType;
     affectedEntities: ActorEntity[];
@@ -291,7 +272,7 @@ async function resolveProcedureEffect(
     const affectedEntities: ActorEntity[] = [];
     let success = false;
     let damage: number | undefined = undefined;
-    let bodyPartHit: BodyPart | undefined = undefined;
+    let bodyPart: BodyPart | undefined = undefined;
     let damageType: DamageType | undefined = undefined;
 
     // Attack roll
@@ -309,8 +290,8 @@ async function resolveProcedureEffect(
         // Damaging ability
         if (procedureEffect.dieRoll) {
             // Body part roll
-            bodyPartHit = determineBodyPartHit();
-            const equipmentSlot = determineEquipmentSlotHit(bodyPartHit);
+            bodyPart = determineBodyPartHit();
+            const equipmentSlot = determineEquipmentSlotHit(bodyPart);
             const equipment = (await equipmentQuerySet(
                 getEntityId(defender)[0],
                 [equipmentSlot],
@@ -320,7 +301,7 @@ async function resolveProcedureEffect(
             ({ damage, attacker, defender, damageType } = resolveDamage({
                 attacker,
                 defender,
-                bodyPartHit,
+                bodyPart,
                 equipment,
                 dieRoll: procedureEffect.dieRoll,
             }));
@@ -383,7 +364,7 @@ async function resolveProcedureEffect(
         success,
         affectedEntities: uniq(affectedEntities),
         damage,
-        bodyPartHit,
+        bodyPart,
         damageType,
         attacker,
         defender,

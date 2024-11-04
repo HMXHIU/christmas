@@ -16,7 +16,11 @@ import {
     isEntityEquipment,
     isEntityEquipmentOrInventory,
 } from "$lib/crossover/utils";
-import { conditions, type Condition } from "$lib/crossover/world/combat";
+import {
+    conditions,
+    expireConditions,
+    type Condition,
+} from "$lib/crossover/world/combat";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     geohashLocationTypes,
@@ -127,10 +131,10 @@ function displayEntityEffects<T extends Actor>(
     const p = get(player);
     if ((p && p.player === entityId) || (t && getEntityId(t)[0] === entityId)) {
         const newConditions = new Set(
-            newEntity.cond.map((s) => s.split(":")[1]),
+            expireConditions(newEntity.cond).map((s) => s.split(":")[1]),
         );
         const oldConditions = new Set(
-            oldEntity.cond.map((s) => s.split(":")[1]),
+            expireConditions(oldEntity.cond).map((s) => s.split(":")[1]),
         );
 
         // Added conditions

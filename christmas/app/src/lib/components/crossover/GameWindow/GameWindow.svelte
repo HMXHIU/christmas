@@ -3,14 +3,17 @@
         searchPossibleCommands,
         type GameCommand,
     } from "$lib/crossover/ir";
-    import type { EntityType } from "$lib/crossover/types";
+    import { generateAttackMessage } from "$lib/crossover/mud/combat";
+    import type { Actor, EntityType } from "$lib/crossover/types";
     import { playerActions } from "$lib/crossover/world/settings/actions";
     import { SkillLinesEnum } from "$lib/crossover/world/skills";
     import { cn } from "$lib/shadcn";
     import { substituteVariables } from "$lib/utils";
     import { onDestroy, onMount } from "svelte";
+    import { get } from "svelte/store";
     import { addMessageFeed, clearStaleMessageFeed } from ".";
     import {
+        actionEvent,
         ctaEvent,
         feedEvent,
         inGame,
@@ -86,7 +89,7 @@
         // Initialize assets
         initAssetManager();
 
-        // Store subscriptions
+        // Generate messages from events
         const subscriptions = [
             feedEvent.subscribe(async (e) => {
                 if (!e) return;
@@ -99,7 +102,6 @@
                         messageFeedType: type,
                     });
                 }
-
                 // System feed
                 else if (type === "system") {
                     addMessageFeed({
@@ -108,7 +110,6 @@
                         messageFeedType: type,
                     });
                 }
-
                 // Message feed
                 else if (type === "message") {
                     addMessageFeed({
@@ -129,6 +130,51 @@
                     message: e.cta.message,
                     name: "",
                     messageFeedType: "message",
+                });
+            }),
+            actionEvent.subscribe(async (e) => {
+                if (!e) return;
+
+                const {
+                    source,
+                    target,
+                    ability,
+                    action,
+                    weapon,
+                    damage,
+                    damageType,
+                    bodyPart,
+                } = e;
+
+                if ((action !== "attack" && !ability) || !target) return;
+
+                const sourceActor: Actor =
+                    get(playerRecord)[source] ||
+                    get(monsterRecord)[source] ||
+                    get(itemRecord)[source];
+                const targetActor: Actor =
+                    get(playerRecord)[target] ||
+                    get(monsterRecord)[target] ||
+                    get(itemRecord)[target];
+                const weaponItem = weapon ? get(itemRecord)[weapon] : undefined;
+
+                if (!sourceActor || !targetActor) return;
+
+                const attackMessage = generateAttackMessage({
+                    source: sourceActor,
+                    target: targetActor,
+                    ability,
+                    weapon: weaponItem,
+                    bodyPart,
+                    damage,
+                    damageType,
+                    selfId: get(player)?.player,
+                });
+
+                addMessageFeed({
+                    message: attackMessage,
+                    name: "",
+                    messageFeedType: "combat",
                 });
             }),
         ];
@@ -181,19 +227,21 @@
 
             <!-- Bottom Panel -->
             <div class="h-80 flex flex-col overflow-auto">
-                <!-- Combat Messages -->
-                <ChatWindow
-                    class="h-16"
-                    messageFilter={["combat"]}
-                    on:entityLink={onClickEntityLink}
-                ></ChatWindow>
-                <div class="flex flex-row">
-                    <!-- NPC Dialogues/Player/System Messages -->
-                    <ChatWindow
-                        class="w-full min-w-60"
-                        messageFilter={["system", "error", "message"]}
-                        on:entityLink={onClickEntityLink}
-                    ></ChatWindow>
+                <div class="flex flex-row h-full">
+                    <div class="flex flex-col w-full min-w-60">
+                        <!-- Combat Messages -->
+                        <ChatWindow
+                            class="h-40"
+                            messageFilter={["combat"]}
+                            on:entityLink={onClickEntityLink}
+                        ></ChatWindow>
+                        <!-- NPC Dialogues/Player/System Messages -->
+                        <ChatWindow
+                            class="h-40"
+                            messageFilter={["system", "error", "message"]}
+                            on:entityLink={onClickEntityLink}
+                        ></ChatWindow>
+                    </div>
                     <!-- Environment  -->
                     <MudDescriptor class="p-2" on:entityLink={onClickEntityLink}
                     ></MudDescriptor>
@@ -212,7 +260,7 @@
             <!-- Quest Log -->
             <Tool tool="quests"></Tool>
             <!-- Map/Look -->
-            <Map></Map>
+            <Map class="h-60"></Map>
         </div>
     </div>
 </div>

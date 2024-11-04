@@ -2,6 +2,7 @@ import type { BodyPart, DieRoll } from "$lib/crossover/types";
 import { getEntityId, minifiedEntity } from "$lib/crossover/utils";
 import {
     conditions,
+    expireConditions,
     physicalDamageTypes,
     type Condition,
     type DamageType,
@@ -24,7 +25,6 @@ import { resolveDamage, rollDiceWithModifier } from "./utils";
 
 export {
     activeConditions,
-    expireConditions,
     hasCondition,
     popCondition,
     processActiveConditions,
@@ -115,7 +115,7 @@ async function processActiveConditions() {
 function resolveConditionsFromDamage({
     defender,
     attacker,
-    bodyPartHit,
+    bodyPart,
     damage,
     damageType,
     now,
@@ -124,7 +124,7 @@ function resolveConditionsFromDamage({
     attacker: ActorEntity;
     damage: number;
     damageType: DamageType;
-    bodyPartHit?: BodyPart;
+    bodyPart?: BodyPart;
     now?: number;
 }): ActorEntity {
     now = now ?? Date.now();
@@ -144,21 +144,21 @@ function resolveConditionsFromDamage({
             return defender;
         }
 
-        if (bodyPartHit === "arms") {
+        if (bodyPart === "arms") {
             defender.cond = pushCondition(
                 defender.cond,
                 "weakness",
                 attacker,
                 now,
             );
-        } else if (bodyPartHit === "legs") {
+        } else if (bodyPart === "legs") {
             defender.cond = pushCondition(
                 defender.cond,
                 "crippled",
                 attacker,
                 now,
             );
-        } else if (bodyPartHit === "head") {
+        } else if (bodyPart === "head") {
             defender.cond = pushCondition(
                 defender.cond,
                 "stunned",
@@ -260,13 +260,5 @@ function activeConditions(conds: string[], now?: number): string[] {
     return conds.filter((s) => {
         const [active, cond, end] = s.split(":");
         return Number(end) > now && active === "a";
-    });
-}
-
-function expireConditions(conds: string[], now?: number): string[] {
-    now = now ?? Date.now();
-    return conds.filter((s) => {
-        const [active, cond, end] = s.split(":");
-        return Number(end) > now;
     });
 }
