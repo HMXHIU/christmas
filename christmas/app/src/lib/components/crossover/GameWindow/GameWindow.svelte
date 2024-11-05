@@ -239,18 +239,12 @@
     <!-- Chat Windows -->
     <div class="h-64 p-0 m-0 grid grid-cols-11 gap-1">
         {#if innerWidth < LARGE_SCREEN}
-            <div class="grid grid-rows-2 col-span-6 gap-1 p-2 h-64">
-                <!-- Combat Messages -->
-                <ChatWindow
-                    messageFilter={["combat"]}
-                    on:entityLink={onClickEntityLink}
-                ></ChatWindow>
-                <!-- NPC Dialogues/Player/System Messages -->
-                <ChatWindow
-                    messageFilter={["system", "error", "message"]}
-                    on:entityLink={onClickEntityLink}
-                ></ChatWindow>
-            </div>
+            <!-- Combat Messages + NPC Dialogues/Player/System Messages -->
+            <ChatWindow
+                class="col-span-6 p-2 pr-0 h-64"
+                messageFilter={["system", "error", "message", "combat"]}
+                on:entityLink={onClickEntityLink}
+            ></ChatWindow>
             <!-- Environment/Map/Look  -->
             <div class="flex flex-col col-span-5 h-64">
                 <ScrollArea>
