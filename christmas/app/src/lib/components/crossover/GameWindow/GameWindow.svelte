@@ -202,13 +202,11 @@
 >
     <!-- Top Panel -->
     <div class="flex flex-row h-full w-full overflow-y-auto">
-        <!-- Game Window -->
-        <Game previewCommand={command}></Game>
+        <!-- Game Window (need fixed width to resize properly 16rem = w-64) -->
+        <Game class="w-[calc(100%-16rem)]" previewCommand={command}></Game>
 
         <!-- Tools panel -->
-        <ScrollArea
-            class="flex flex-col min-w-64 p-2 space-y-2 justify-between"
-        >
+        <ScrollArea class="flex flex-col w-64 p-2 space-y-2 justify-between">
             <!-- Inventory -->
             <Tool tool="inventory"></Tool>
             <!-- Abilities -->
