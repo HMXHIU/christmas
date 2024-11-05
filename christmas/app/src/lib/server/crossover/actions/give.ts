@@ -1,10 +1,11 @@
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
+import { actions } from "$lib/crossover/world/settings/actions";
 import {
     type ItemEntity,
     type PlayerEntity,
 } from "$lib/server/crossover/types";
 import { generatePin } from "$lib/utils/random";
-import { say } from ".";
+import { say, setEntityBusy } from ".";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../events";
 import {
     createP2PTransaction,
@@ -30,6 +31,7 @@ async function executeGiveCTA(
             type: "error",
             message: `You try to execute the agreement, but it rejects you with a slight jolt.`,
         });
+        return; // do not proceed
     }
 
     await give(
@@ -86,6 +88,12 @@ async function give(
         });
         return;
     }
+
+    // Set busy
+    player = (await setEntityBusy({
+        entity: player,
+        action: actions.give.action,
+    })) as PlayerEntity;
 
     // Transfer items
     item.loc = [receiver.player];

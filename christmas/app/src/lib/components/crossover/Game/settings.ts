@@ -3,14 +3,19 @@ export {
     CANVAS_WIDTH,
     CELL_HEIGHT,
     CELL_WIDTH,
+    CHA_COLOR,
     ELEVATION_TO_CELL_HEIGHT,
     GRID_COLS,
     GRID_MID_COL,
     GRID_MID_ROW,
     HALF_ISO_CELL_HEIGHT,
     HALF_ISO_CELL_WIDTH,
+    HP_COLOR,
     ISO_CELL_HEIGHT,
     ISO_CELL_WIDTH,
+    LUM_COLOR,
+    MND_COLOR,
+    UMB_COLOR,
     WORLD_HEIGHT,
     WORLD_WIDTH,
 };
@@ -36,3 +41,10 @@ const GRID_MID_COL = Math.floor(GRID_COLS / 2);
 
 // In WebGL, the gl_Position.z value should be in the range [-1 (closer), 1]
 const ELEVATION_TO_CELL_HEIGHT = CELL_HEIGHT / 2 / 8; // 1 meter = 1/8 a cell elevation (on isometric coordinates)
+
+// PIXI colors
+const HP_COLOR = "rgb(248 113 113)";
+const CHA_COLOR = "rgb(74 222 128)";
+const MND_COLOR = "rgb(96 165 250)";
+const LUM_COLOR = "rgb(250 204 21)";
+const UMB_COLOR = "rgb(88 28 135)";

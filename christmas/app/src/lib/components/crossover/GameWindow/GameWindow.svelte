@@ -217,7 +217,7 @@
     </div>
 
     <!-- Autocomplete Game Commands -->
-    <div class="w-full relative">
+    <div class="w-[calc(100%-16rem)] relative">
         <div class="w-96 bottom-2 m-auto left-0 right-0 absolute">
             <AutocompleteGC
                 class="pb-2 px-2"

@@ -181,8 +181,7 @@ async function setEntityBusy<T extends CreatureEntity>({
     }
     // Action
     else if (action != null && actions[action].ticks > 0) {
-        const ms = actions[action].ticks * MS_PER_TICK;
-        entity.buclk = now + ms;
+        entity.buclk = now + actions[action].ticks * MS_PER_TICK;
         return await saveEntity(entity);
     }
     // Ability
@@ -192,8 +191,7 @@ async function setEntityBusy<T extends CreatureEntity>({
             0,
         );
         if (ticks > 0) {
-            const ms = ticks * MS_PER_TICK;
-            entity.buclk = now + ms;
+            entity.buclk = now + ticks * MS_PER_TICK;
             return await saveEntity(entity);
         }
     }

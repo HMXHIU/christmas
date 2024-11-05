@@ -50,6 +50,7 @@
     import {
         cullAllEntityContainers,
         entityContainers,
+        entitySigils,
         garbageCollectEntityContainers,
     } from "./entities";
     import { createHIDHandlers } from "./hid";
@@ -151,6 +152,11 @@
         // Update shader uniforms
         const seconds = ticker.elapsedMS / 1000;
         updateShaderUniforms({ deltaTime: seconds });
+
+        // Animate sigils
+        for (const sigil of Object.values(entitySigils)) {
+            sigil.render();
+        }
     }
 
     export async function handlePlayerPositionUpdate(
@@ -224,7 +230,6 @@
     /*
      * Initialization
      */
-
     async function init() {
         if (isInitialized) {
             console.warn("Game already initialized");

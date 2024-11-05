@@ -192,6 +192,7 @@ async function upsertAvatarContainer(
     }
     // Update
     else {
+        ec.entity = entity; // entity reference is not the same
         return [false, ec];
     }
 }
@@ -263,6 +264,7 @@ async function upsertSimpleContainer(
             const variant = prop.states[item.state].variant;
             ec.swapVariant(variant);
         }
+        ec.entity = entity; // entity reference is not the same
         return [false, ec];
     }
 }

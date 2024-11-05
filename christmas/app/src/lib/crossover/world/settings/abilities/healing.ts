@@ -80,7 +80,7 @@ const healingAbilities: Partial<Record<Abilities, Ability>> = {
                         op: "push",
                     },
                     modifiers: ["con"],
-                    ticks: TICKS_PER_TURN,
+                    ticks: TICKS_PER_TURN * 2,
                 },
             ],
         ],

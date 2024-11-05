@@ -217,7 +217,6 @@ async function updateEntityContainer<T extends Actor>(
                 newEntity,
                 game.stage,
             );
-
             if (created) {
                 // Load initial inventory
                 if (ec instanceof AvatarEntityContainer) {
@@ -249,12 +248,12 @@ async function updateEntityContainer<T extends Actor>(
                             game.app.stage,
                         );
                         const bounds = sigil.getBounds();
-                        const padding = 10;
+                        const padding = 15;
                         sigil.position.set(
                             padding,
                             game.app.screen.height -
-                                padding -
-                                bounds.height / 2,
+                                bounds.height -
+                                bounds.height,
                         );
                     }
                 }

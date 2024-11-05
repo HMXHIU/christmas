@@ -13,7 +13,7 @@ import {
 } from "$lib/server/crossover/types";
 import { sleep, substituteVariables } from "$lib/utils";
 import { generatePin } from "$lib/utils/random";
-import { say } from ".";
+import { say, setEntityBusy } from ".";
 import { savePlayerState } from "../../user";
 import {
     publishActionEvent,
@@ -45,6 +45,7 @@ async function executeLearnCTA(
             type: "error",
             message: `You try to execute the agreement, but it rejects you with a slight jolt.`,
         });
+        return; // do not proceed
     }
 
     await learn(
@@ -97,6 +98,12 @@ async function learn(
         });
         return player;
     }
+
+    // Set busy
+    player = (await setEntityBusy({
+        entity: player,
+        action: actions.learn.action,
+    })) as PlayerEntity;
 
     // Get nearby players
     const nearbyPlayerIds = await getNearbyPlayerIds(

@@ -41,26 +41,25 @@ async function attack(
         now?: number;
     },
 ) {
-    // Set busy
-    creature = (await setEntityBusy({
-        entity: creature,
-        action: actions.attack.action,
-        now: options?.now,
-    })) as PlayerEntity;
-
-    const targetEntity = (await fetchEntity(target)) as ActorEntity;
-
     // Check if can attack
+    const targetEntity = (await fetchEntity(target)) as ActorEntity;
     const [ok, error] = canAttackTarget(creature, targetEntity);
     if (!ok) {
         if (creature.player) {
-            await publishFeedEvent(creature.player, {
+            await publishFeedEvent((creature as PlayerEntity).player, {
                 type: "error",
                 message: error,
             });
         }
         return; // do not proceed
     }
+
+    // Set busy
+    creature = (await setEntityBusy({
+        entity: creature,
+        action: actions.attack.action,
+        now: options?.now,
+    })) as PlayerEntity;
 
     // Get creature equipped weapons or unarmed
     let weapons = await equippedWeapons(creature);
