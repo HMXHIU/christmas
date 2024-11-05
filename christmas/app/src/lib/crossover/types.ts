@@ -156,6 +156,7 @@ interface World {
     uri: string; // url or urn to world tilemap (if urn, `GAME_TILEMAPS` is prefixed automatically)
     loc: string[];
     locT: GeohashLocation;
+    locI: string;
 }
 
 /*

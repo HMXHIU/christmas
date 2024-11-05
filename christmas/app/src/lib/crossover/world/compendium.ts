@@ -116,9 +116,10 @@ type ItemVariables = Record<string, string | number | boolean>;
  * @returns The attributes of the item after variable substitution.
  */
 function itemAttibutes(item: Item): PropAttributes {
+    const propVars = mapValues(compendium[item.prop].variables, (v) => v.value);
     return substituteVariablesRecursively(
         compendium[item.prop].states[item.state],
-        itemVariables(item),
+        { ...propVars, ...item.vars },
     );
 }
 
@@ -127,16 +128,6 @@ function defaultPropAttributes(prop: string): PropAttributes {
         compendium[prop].states["default"],
         mapValues(compendium[prop].variables, (v) => v.value),
     );
-}
-
-function itemVariables(item: Item): ItemVariables {
-    const vars: ItemVariables = {};
-    for (const { variable, value } of Object.values(
-        compendium[item.prop].variables,
-    )) {
-        vars[variable] = item.vars[variable] ?? value;
-    }
-    return vars;
 }
 
 function isItemEquipped(item: Item, entity: Actor): boolean {

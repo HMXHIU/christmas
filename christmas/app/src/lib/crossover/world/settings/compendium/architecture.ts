@@ -105,7 +105,7 @@ export let architecture: Record<string, Prop> = {
             uri: {
                 variable: "uri",
                 type: "string",
-                value: "",
+                value: "tavern.json", // TESTING DEFAULT
             },
         },
     },

@@ -569,13 +569,14 @@ async function enterItem(
         world, // specify the worldId manually, if the world already exists it will fetch it without spawning
         geohash,
         locationType: locationType as GeohashLocation,
+        locationInstance,
         assetUrl: url,
         tileHeight: TILE_HEIGHT, // do not change this
         tileWidth: TILE_WIDTH,
     });
 
     // Spawn world POIs
-    const { pois } = await spawnWorldPOIs(world, locationInstance, {
+    const { pois } = await spawnWorldPOIs(world, {
         worldAssetMetadataCache: worldAssetMetadataCache,
         worldPOIsCache: worldPOIsCache,
         source: itemEntity,

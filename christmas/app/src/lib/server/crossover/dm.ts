@@ -43,7 +43,7 @@ import type {
 } from "$lib/server/crossover/types";
 import { substituteVariablesRecursively } from "$lib/utils";
 import { generatePin } from "$lib/utils/random";
-import { groupBy, uniq } from "lodash-es";
+import { groupBy, mapValues, uniq } from "lodash-es";
 import { hashObject } from "..";
 import { redisClient } from "../redis";
 import { factionInControl } from "./actions/capture";
@@ -302,6 +302,7 @@ async function spawnMonster({
 async function spawnWorld({
     geohash,
     locationType,
+    locationInstance,
     assetUrl,
     tileHeight,
     tileWidth,
@@ -310,6 +311,7 @@ async function spawnWorld({
     world?: string; // use this as the worldId if specified
     geohash: string;
     locationType: GeohashLocation;
+    locationInstance: string;
     assetUrl: string;
     tileHeight: number;
     tileWidth: number;
@@ -385,7 +387,9 @@ async function spawnWorld({
     }
 
     // Generate a world id (unique + reproducable)
-    world = world ?? hashObject([assetUrl, geohash, locationType], "md5");
+    world =
+        world ??
+        hashObject([assetUrl, geohash, locationType, locationInstance], "md5");
 
     // Check if world exists, return existing world
     const worldEntity = await worldRepository
@@ -401,6 +405,7 @@ async function spawnWorld({
         uri: assetUrl || "",
         loc: plotGeohashes, // TODO: this can be optimized not just at unit precision -1
         locT: locationType,
+        locI: locationInstance,
     };
 
     return (await worldRepository.save(world, entity)) as WorldEntity;
@@ -476,9 +481,15 @@ async function spawnItemInInventory({
     // Get prop
     const { states, durability, charges, collider } = compendium[prop];
 
+    // Set default variables if missing
+    variables = {
+        ...mapValues(compendium[prop].variables, (v) => v.value),
+        ...(variables ?? {}),
+    };
+
     // Get default attributes (substitute provided variables first, then default)
     const attributes: PropAttributes = substituteVariablesRecursively(
-        substituteVariablesRecursively(states.default, variables ?? {}),
+        substituteVariablesRecursively(states.default, variables),
         defaultPropAttributes(prop),
     );
 
@@ -499,8 +510,8 @@ async function spawnItemInInventory({
         cld: collider,
         dur: durability,
         chg: charges,
-        state: variables?.state ?? "default",
-        vars: parseItemVariables(variables || {}, prop),
+        state: variables.state ?? "default", // reserved state variable (determines the initial state, defaults to `default`)
+        vars: parseItemVariables(variables, prop),
         cond: [],
     })) as ItemEntity;
 }
@@ -550,9 +561,15 @@ async function spawnItemAtGeohash({
     // Get prop
     const { states, durability, charges, collider } = compendium[prop];
 
+    // Set default variables if missing
+    variables = {
+        ...mapValues(compendium[prop].variables, (v) => v.value),
+        ...(variables ?? {}),
+    };
+
     // Get default attributes (substitute provided variables first, then default)
     const attributes: PropAttributes = substituteVariablesRecursively(
-        substituteVariablesRecursively(states.default, variables ?? {}),
+        substituteVariablesRecursively(states.default, variables),
         defaultPropAttributes(prop),
     );
 
@@ -601,7 +618,6 @@ async function spawnItemAtGeohash({
         await itemRepository.remove(itemId);
     }
 
-    // Check reserved state variable (determines the initial state, defaults to `default`)
     const entity: ItemEntity = {
         item: itemId,
         name: attributes.name,
@@ -614,8 +630,8 @@ async function spawnItemAtGeohash({
         cld: collider,
         dur: durability,
         chg: charges,
-        state: variables?.state ?? "default",
-        vars: parseItemVariables(variables || {}, prop),
+        state: variables.state ?? "default", // reserved state variable (determines the initial state, defaults to `default`)
+        vars: parseItemVariables(variables, prop),
         cond: [],
     };
 
@@ -755,7 +771,6 @@ async function initializeFactionControl(
 
 async function spawnWorldPOIs(
     world: string,
-    locationInstance: string,
     options?: {
         source?: ItemEntity | PlayerEntity; // who spawned the world (used in variable substitution)
         worldAssetMetadataCache?: CacheInterface;
@@ -803,12 +818,12 @@ async function spawnWorldPOIs(
                     geohash: poi.geohash,
                     prop: poi.prop,
                     locationType: worldEntity.locT,
-                    locationInstance,
+                    locationInstance: worldEntity.locI,
                     variables,
                     uniqueSuffix,
                 });
                 console.info(
-                    `Spawned ${item.item} in ${worldEntity.world} at ${locationInstance}`,
+                    `Spawned ${item.item} in ${worldEntity.world} at ${worldEntity.locI}`,
                 );
                 items.push(item);
             }
@@ -821,12 +836,12 @@ async function spawnWorldPOIs(
                 const monster = await spawnMonster({
                     geohash: poi.geohash,
                     locationType: worldEntity.locT,
-                    locationInstance,
+                    locationInstance: worldEntity.locI,
                     beast: poi.beast,
                     uniqueSuffix,
                 });
                 console.info(
-                    `Spawned ${monster.monster} in ${worldEntity.world} at ${locationInstance}`,
+                    `Spawned ${monster.monster} in ${worldEntity.world} at ${worldEntity.locI}`,
                 );
                 monsters.push(monster);
             }
@@ -840,12 +855,12 @@ async function spawnWorldPOIs(
                     demographic: {},
                     appearance: {},
                     geohash: poi.geohash,
-                    locationInstance,
+                    locationInstance: worldEntity.locI,
                     locationType: worldEntity.locT,
                     uniqueSuffix,
                 });
                 console.info(
-                    `Spawned ${player.player} in ${worldEntity.world} at ${locationInstance}`,
+                    `Spawned ${player.player} in ${worldEntity.world} at ${worldEntity.locI}`,
                 );
                 players.push(player);
             }

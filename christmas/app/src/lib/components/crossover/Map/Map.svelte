@@ -52,7 +52,7 @@
         locationType: GeohashLocation;
     };
 
-    let containerElement: HTMLDivElement;
+    let container: HTMLDivElement;
     let app: Application | null = null;
     let mapMeshes: Record<string, MapMesh> = {};
     let clientHeight: number;
@@ -260,7 +260,9 @@
             antialias: false,
             preference: "webgl",
         });
-        containerElement.appendChild(app.canvas);
+        if (container) {
+            container.appendChild(app.canvas);
+        }
     }
 
     onMount(() => {
@@ -308,5 +310,5 @@
     bind:clientHeight
     bind:clientWidth
 >
-    <div bind:this={containerElement}></div>
+    <div bind:this={container}></div>
 </div>

@@ -73,8 +73,11 @@ const ItemEntitySchema = new Schema("Item", {
 const WorldEntitySchema = new Schema("World", {
     world: { type: "string" },
     url: { type: "string" },
+
+    // Location
     locT: { type: "string" },
     loc: { type: "string[]" }, // geohashes of plots (whole grids less than unit precision)
+    locI: { type: "string" },
 });
 
 const DialogueSchema = new Schema("Dialogue", {

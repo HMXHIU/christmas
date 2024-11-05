@@ -56,7 +56,7 @@ async function drawWorlds(
             );
 
             await loadWorld({
-                world: world,
+                world,
                 position: await calculatePosition(
                     origin,
                     world.locT as GeohashLocation,

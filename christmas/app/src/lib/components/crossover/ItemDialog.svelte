@@ -23,6 +23,7 @@
         variables: Record<string, string | number | boolean>,
     ) {
         await crossoverCmdConfigureItem({ item: item.item, variables });
+        open = false;
     }
 </script>
 

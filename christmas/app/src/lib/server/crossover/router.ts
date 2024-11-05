@@ -211,6 +211,7 @@ const BuffCreatureSchema = z.object({
 const SpawnWorldSchema = z.object({
     geohash: z.string(),
     locationType: GeohashLocationSchema,
+    locationInstance: z.string().optional(), // defaults to @
     tilemap: z.string(), // in minio bucket `game/worlds/tilemaps/${tilemap}`
 });
 
@@ -329,7 +330,8 @@ const crossoverRouter = {
         spawnWorld: dmServiceProcedure
             .input(SpawnWorldSchema)
             .mutation(async ({ input }) => {
-                const { geohash, tilemap, locationType } = input;
+                const { geohash, tilemap, locationType, locationInstance } =
+                    input;
                 const assetUrl = ObjectStorage.objectUrl({
                     owner: null,
                     bucket: PUBLIC_GAME_BUCKET,
@@ -338,6 +340,7 @@ const crossoverRouter = {
                 const world = await spawnWorld({
                     geohash,
                     locationType,
+                    locationInstance: locationInstance ?? "@",
                     assetUrl,
                     tileHeight: TILE_HEIGHT,
                     tileWidth: TILE_WIDTH,
