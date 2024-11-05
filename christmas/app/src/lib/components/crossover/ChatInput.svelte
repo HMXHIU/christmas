@@ -7,6 +7,8 @@
     import Input from "../ui/input/input.svelte";
     import TargetSelect from "./TargetSelect.svelte";
 
+    const showSendButton = false;
+
     export let onEnterKeyPress: (message: string) => void;
     export let onPartial: (message: string) => void;
 
@@ -42,22 +44,26 @@
     )}
 >
     <!-- Target Select -->
-    <TargetSelect class="h-full border-0 text-muted-foreground"></TargetSelect>
+    <TargetSelect
+        class="h-10 border-0 text-muted-foreground my-auto rounded-r-none"
+    ></TargetSelect>
     <!-- Chat Input -->
     <Input
         type="text"
         id="prompt"
-        class="bg-transparent ring-0 border-0 border-l border-r rounded-none min-h-[45px]"
+        class="h-10 bg-transparent ring-0 border-0 border-l rounded-none "
         bind:value={message}
         on:keydown={onKeyDown}
         autocomplete="off"
     />
-    <!-- Send Button -->
-    <Button
-        variant="ghost"
-        on:click={onSubmit}
-        class="h-full my-autoborder-0 text-muted-foreground"
-    >
-        <Send />
-    </Button>
+    {#if showSendButton}
+        <!-- Send Button -->
+        <Button
+            variant="ghost"
+            on:click={onSubmit}
+            class="h-full my-autoborder-0 text-muted-foreground"
+        >
+            <Send />
+        </Button>
+    {/if}
 </section>

@@ -44,8 +44,8 @@
             {/if}
         </Button>
     </Popover.Trigger>
-    <Popover.Content class="w-[325px] p-0">
-        <Command.Root class="max-w-[325px] rounded-lg border shadow-md">
+    <Popover.Content class="w-96 p-0" align="start">
+        <Command.Root class="max-w-96 rounded-lg border shadow-md">
             <Command.Input placeholder="Search Targets..." />
             <Command.List>
                 <!-- Players -->

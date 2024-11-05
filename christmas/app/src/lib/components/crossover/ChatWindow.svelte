@@ -1,8 +1,9 @@
 <script lang="ts">
     import { cn } from "$lib/shadcn";
     import { getCurrentTimestamp } from "$lib/utils";
+    import gsap from "gsap";
     import { messageFeed } from "../../../store";
-    import type { MessageFeedType } from "./GameWindow";
+    import { type MessageFeed, type MessageFeedType } from "./GameWindow";
     import InteractiveText from "./InteractiveText.svelte";
 
     let chatWindow: HTMLElement;
@@ -13,6 +14,21 @@
         "system",
         "combat",
     ];
+
+    $: messages = $messageFeed.filter((m) =>
+        messageFilter.includes(m.messageFeedType),
+    );
+    $: scrollToBottom(messages);
+
+    const scrollToBottom = (ms: MessageFeed[]) => {
+        if (chatWindow) {
+            gsap.to(chatWindow, {
+                duration: 0.7,
+                scrollTop: chatWindow.scrollHeight,
+                ease: "power2.out",
+            });
+        }
+    };
 </script>
 
 <div
@@ -20,22 +36,20 @@
 >
     <section
         bind:this={chatWindow}
-        class="px-4 py-0 overflow-y-auto space-y-2 scroll-container"
+        class="p-0 space-y-2 h-full scroll-container"
     >
-        {#each $messageFeed.filter( (m) => messageFilter.includes(m.messageFeedType), ) as message}
+        {#each messages as message}
             <div class="flex flex-row text-left">
                 {#if message.messageFeedType === "message" || message.messageFeedType === "combat"}
                     <!-- Normal Messages -->
-                    <p class="text-xs font-extralight px-2 text-left">
+                    <p class="text-xs font-extralight text-left">
                         <!-- Bubble up `entityLink` events -->
                         <InteractiveText text={message.message} on:entityLink
                         ></InteractiveText>
                     </p>
                 {:else if message.messageFeedType === "error"}
                     <!-- Error Messages -->
-                    <p
-                        class="text-xs font-extralight px-2 text-left text-destructive"
-                    >
+                    <p class="text-xs font-extralight text-left text-rose-400">
                         {message.message}
                     </p>
                 {:else if message.messageFeedType === "system"}
@@ -47,7 +61,7 @@
                         >
                         <p class="opacity-50 text-xs">{message.name}</p>
                     </div>
-                    <p class="text-xs font-extralight px-2 text-left">
+                    <p class="text-xs font-extralight text-left">
                         {message.message}
                     </p>
                 {/if}
@@ -61,10 +75,12 @@
     /* Hide Scrollbar */
     .scroll-container {
         overflow-x: auto;
+        overflow-y: auto;
         scrollbar-width: none; /* Firefox */
         -ms-overflow-style: none; /* Internet Explorer 10+ */
     }
     .scroll-container::-webkit-scrollbar {
+        overflow-y: auto;
         display: none; /* WebKit */
     }
 </style>

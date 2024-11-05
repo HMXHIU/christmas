@@ -1,4 +1,5 @@
 <script lang="ts">
+    import ScrollArea from "$lib/components/ui/scroll-area/scroll-area.svelte";
     import {
         searchPossibleCommands,
         type GameCommand,
@@ -11,7 +12,7 @@
     import { substituteVariables } from "$lib/utils";
     import { onDestroy, onMount } from "svelte";
     import { get } from "svelte/store";
-    import { addMessageFeed, clearStaleMessageFeed } from ".";
+    import { addMessageFeed } from ".";
     import {
         actionEvent,
         ctaEvent,
@@ -35,6 +36,11 @@
     import MudDescriptor from "../MudDescriptor.svelte";
     import Tool from "../Tool.svelte";
     import type { EntityLink } from "../types";
+
+    const LARGE_SCREEN = 1000;
+
+    let innerWidth: number; // bound to window.innerWidth
+    let innerHeight: number; // bound to window.innerHeight
 
     let commands: GameCommand[] = [];
     let command: GameCommand | null = null;
@@ -178,19 +184,6 @@
                 });
             }),
         ];
-
-        // Set interval to clear stale messages
-        const clearStaleMessageFeedInterval = setInterval(
-            clearStaleMessageFeed,
-            1000,
-        );
-
-        return () => {
-            for (const unsubscribe of subscriptions) {
-                unsubscribe();
-            }
-            clearInterval(clearStaleMessageFeedInterval);
-        };
     });
 
     onDestroy(() => {
@@ -199,59 +192,22 @@
     });
 </script>
 
+<svelte:window bind:innerWidth bind:innerHeight />
+
 <div
     class={cn(
         "h-[calc(100dvh)] w-full flex flex-col justify-between",
         $$restProps.class,
     )}
 >
-    <div class="flex flex-row h-full w-full">
-        <!-- Left Panel -->
-        <div class="flex flex-col flex-grow">
-            <!-- Game Window -->
-            <Game class="flex-grow" previewCommand={command}></Game>
+    <!-- Top Panel -->
+    <div class="flex flex-row h-full w-full overflow-y-auto">
+        <!-- Game Window -->
+        <Game previewCommand={command}></Game>
 
-            <!-- Autocomplete Game Commands -->
-            <div class="relative">
-                <AutocompleteGC
-                    class="pb-2 px-2 bottom-0 absolute"
-                    {commands}
-                    {onGameCommand}
-                    bind:command
-                ></AutocompleteGC>
-            </div>
-
-            <!-- Chat Input -->
-            <ChatInput class="mb-1 mt-0 py-0" {onEnterKeyPress} {onPartial}
-            ></ChatInput>
-
-            <!-- Bottom Panel -->
-            <div class="h-80 flex flex-col overflow-auto">
-                <div class="flex flex-row h-full">
-                    <div class="flex flex-col w-full min-w-60">
-                        <!-- Combat Messages -->
-                        <ChatWindow
-                            class="h-40"
-                            messageFilter={["combat"]}
-                            on:entityLink={onClickEntityLink}
-                        ></ChatWindow>
-                        <!-- NPC Dialogues/Player/System Messages -->
-                        <ChatWindow
-                            class="h-40"
-                            messageFilter={["system", "error", "message"]}
-                            on:entityLink={onClickEntityLink}
-                        ></ChatWindow>
-                    </div>
-                    <!-- Environment  -->
-                    <MudDescriptor class="p-2" on:entityLink={onClickEntityLink}
-                    ></MudDescriptor>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right panel -->
-        <div
-            class="flex flex-col min-w-60 p-2 space-y-2 overflow-y-auto justify-between"
+        <!-- Tools panel -->
+        <ScrollArea
+            class="flex flex-col min-w-64 p-2 space-y-2 justify-between"
         >
             <!-- Inventory -->
             <Tool tool="inventory"></Tool>
@@ -259,9 +215,70 @@
             <Tool tool="abilities"></Tool>
             <!-- Quest Log -->
             <Tool tool="quests"></Tool>
-            <!-- Map/Look -->
-            <Map class="h-60"></Map>
+        </ScrollArea>
+    </div>
+
+    <!-- Autocomplete Game Commands -->
+    <div class="w-full relative">
+        <div class="w-96 bottom-2 m-auto left-0 right-0 absolute">
+            <AutocompleteGC
+                class="pb-2 px-2"
+                {commands}
+                {onGameCommand}
+                bind:command
+            ></AutocompleteGC>
+            <!-- Chat Input -->
+            <ChatInput
+                class="m-0 p-0  bg-background"
+                {onEnterKeyPress}
+                {onPartial}
+            ></ChatInput>
         </div>
+    </div>
+
+    <!-- Chat Windows -->
+    <div class="h-64 p-0 m-0 grid grid-cols-11 gap-1">
+        {#if innerWidth < LARGE_SCREEN}
+            <div class="grid grid-rows-2 col-span-6 gap-1 p-2 h-64">
+                <!-- Combat Messages -->
+                <ChatWindow
+                    messageFilter={["combat"]}
+                    on:entityLink={onClickEntityLink}
+                ></ChatWindow>
+                <!-- NPC Dialogues/Player/System Messages -->
+                <ChatWindow
+                    messageFilter={["system", "error", "message"]}
+                    on:entityLink={onClickEntityLink}
+                ></ChatWindow>
+            </div>
+            <!-- Environment/Map/Look  -->
+            <div class="flex flex-col col-span-5 h-64">
+                <ScrollArea>
+                    <MudDescriptor class="p-2" on:entityLink={onClickEntityLink}
+                    ></MudDescriptor>
+                    <Map class="p-2 w-80 min-w-64 mx-auto"></Map>
+                </ScrollArea>
+            </div>
+        {:else}
+            <!-- NPC Dialogues/Player/System Messages -->
+            <ChatWindow
+                class="col-span-3 p-2 pr-0 h-64"
+                messageFilter={["system", "error", "message"]}
+                on:entityLink={onClickEntityLink}
+            ></ChatWindow>
+            <!-- Combat Messages -->
+            <ChatWindow
+                class="col-span-3 p-2 pr-2 h-64"
+                messageFilter={["combat"]}
+                on:entityLink={onClickEntityLink}
+            ></ChatWindow>
+            <!-- Environment/Map/Look  -->
+            <div class="flex flex-row col-span-5 h-64">
+                <MudDescriptor class="p-2" on:entityLink={onClickEntityLink}
+                ></MudDescriptor>
+                <Map class="w-64 min-w-64"></Map>
+            </div>
+        {/if}
     </div>
 </div>
 

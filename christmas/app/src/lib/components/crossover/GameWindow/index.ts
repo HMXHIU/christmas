@@ -3,15 +3,11 @@ import Root from "./GameWindow.svelte";
 
 export default Root;
 
-export {
-    addMessageFeed,
-    clearStaleMessageFeed,
-    type MessageFeed,
-    type MessageFeedType,
-};
+export { addMessageFeed, type MessageFeed, type MessageFeedType };
 
 type MessageFeedType = "error" | "message" | "system" | "combat";
 const MAX_MESSAGES = 30;
+const TWO_MINUTE = 2 * 60 * 1000; // 2 minutes
 
 interface MessageFeed {
     id: number;
@@ -31,28 +27,20 @@ function addMessageFeed({
     messageFeedType: MessageFeedType;
 }) {
     messageFeed.update((ms) => {
-        return [
-            // Latest message at the top
-            {
-                id: ms.length,
-                timestamp: new Date(),
-                message,
-                name,
-                messageFeedType,
-            },
-            ...ms.slice(0, MAX_MESSAGES),
-        ];
-    });
-}
-
-function clearStaleMessageFeed() {
-    const ONE_MINUTE = 60 * 1000; // 1 minute in milliseconds
-    const currentTime = new Date().getTime();
-
-    messageFeed.update((ms) => {
-        return ms.filter((message) => {
-            const messageTime = message.timestamp.getTime();
-            return currentTime - messageTime <= ONE_MINUTE;
+        // Remove stale messages
+        const currentTime = new Date().getTime();
+        ms = ms.filter((m) => {
+            return currentTime - m.timestamp.getTime() <= TWO_MINUTE;
         });
+        // Add new message
+        ms.push({
+            id: ms.length,
+            timestamp: new Date(),
+            message,
+            name,
+            messageFeedType,
+        });
+        // Limit max number of messages
+        return ms.slice(-MAX_MESSAGES);
     });
 }

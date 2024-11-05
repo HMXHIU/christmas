@@ -36,7 +36,9 @@
                                 {/if}
                             {/each}
                         {:else}
-                            <p>Nothing equipped</p>
+                            <p class="text-xs text-muted-foreground">
+                                Nothing equipped
+                            </p>
                         {/if}
                     </div>
                 </div>
@@ -56,7 +58,9 @@
                                 {/if}
                             {/each}
                         {:else}
-                            <p>Nothing In Belt</p>
+                            <p class="text-xs text-muted-foreground">
+                                Nothing In Belt
+                            </p>
                         {/if}
                     </div>
                 </div>

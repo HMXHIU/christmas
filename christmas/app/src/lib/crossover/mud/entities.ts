@@ -3,7 +3,6 @@ import type { Actor, EntityType, Item, Monster, Player } from "../types";
 import { getEntityId, isEntityAlive } from "../utils";
 import type { Genders } from "../world/demographic";
 import { isHostile } from "../world/entity";
-import { compendium } from "../world/settings/compendium";
 import type { EntityDescriptionState, EntityDescriptors } from "./settings";
 
 export {
@@ -166,13 +165,6 @@ function getAdditionalInfo(
         const [hostile, aggro] = isHostile(player, sample as Monster);
         if (hostile && isEntityAlive(sample)) {
             return " looking threateningly at you";
-        }
-    }
-    // Item
-    else if (entityType === "item") {
-        const prop = (sample as Item).prop;
-        if (compendium[prop].weight < 0 && isEntityAlive(sample)) {
-            return " firmly fixed in place";
         }
     }
     return "";
