@@ -6,10 +6,18 @@
     } from "$lib/crossover/ir";
     import { generateAttackMessage } from "$lib/crossover/mud/combat";
     import type { Actor, EntityType } from "$lib/crossover/types";
-    import { playerActions } from "$lib/crossover/world/settings/actions";
-    import { SkillLinesEnum } from "$lib/crossover/world/skills";
+    import { MS_PER_TICK } from "$lib/crossover/world/settings";
+    import {
+        actions,
+        playerActions,
+    } from "$lib/crossover/world/settings/actions";
+    import { skillLines } from "$lib/crossover/world/settings/skills";
+    import {
+        learningDialoguesForSkill,
+        SkillLinesEnum,
+    } from "$lib/crossover/world/skills";
     import { cn } from "$lib/shadcn";
-    import { substituteVariables } from "$lib/utils";
+    import { sleep, substituteVariables } from "$lib/utils";
     import { onDestroy, onMount } from "svelte";
     import { get } from "svelte/store";
     import { addMessageFeed } from ".";
@@ -150,38 +158,74 @@
                     damage,
                     damageType,
                     bodyPart,
+                    skill,
                 } = e;
 
-                if ((action !== "attack" && !ability) || !target) return;
+                // Attack
+                if (action === "attack" || ability) {
+                    if (!target) return;
+                    const sourceActor: Actor =
+                        get(playerRecord)[source] ||
+                        get(monsterRecord)[source] ||
+                        get(itemRecord)[source];
+                    const targetActor: Actor =
+                        get(playerRecord)[target] ||
+                        get(monsterRecord)[target] ||
+                        get(itemRecord)[target];
+                    const weaponItem = weapon
+                        ? get(itemRecord)[weapon]
+                        : undefined;
 
-                const sourceActor: Actor =
-                    get(playerRecord)[source] ||
-                    get(monsterRecord)[source] ||
-                    get(itemRecord)[source];
-                const targetActor: Actor =
-                    get(playerRecord)[target] ||
-                    get(monsterRecord)[target] ||
-                    get(itemRecord)[target];
-                const weaponItem = weapon ? get(itemRecord)[weapon] : undefined;
+                    if (!sourceActor || !targetActor) return;
 
-                if (!sourceActor || !targetActor) return;
+                    const attackMessage = generateAttackMessage({
+                        source: sourceActor,
+                        target: targetActor,
+                        ability,
+                        weapon: weaponItem,
+                        bodyPart,
+                        damage,
+                        damageType,
+                        selfId: get(player)?.player,
+                    });
 
-                const attackMessage = generateAttackMessage({
-                    source: sourceActor,
-                    target: targetActor,
-                    ability,
-                    weapon: weaponItem,
-                    bodyPart,
-                    damage,
-                    damageType,
-                    selfId: get(player)?.player,
-                });
+                    addMessageFeed({
+                        message: attackMessage,
+                        name: "",
+                        messageFeedType: "combat",
+                    });
+                }
+                // Learn
+                else if (action === "learn" && skill && source && target) {
+                    const student = get(player);
+                    const teacher = get(playerRecord)[source];
+                    if (student && student.player === target) {
+                        // Get skill learning dialogues
+                        const learningDialogues = learningDialoguesForSkill(
+                            skill,
+                            student.skills[skill] ?? 1,
+                        );
+                        // Start lesson dialogues
+                        for (const msg of learningDialogues) {
+                            const message = substituteVariables(msg, {
+                                player: student,
+                                teacher,
+                                skill: skillLines[skill],
+                            });
 
-                addMessageFeed({
-                    message: attackMessage,
-                    name: "",
-                    messageFeedType: "combat",
-                });
+                            addMessageFeed({
+                                message,
+                                name: "",
+                                messageFeedType: "message",
+                            });
+
+                            await sleep(
+                                (actions.learn.ticks * MS_PER_TICK) /
+                                    learningDialogues.length,
+                            );
+                        }
+                    }
+                }
             }),
         ];
     });

@@ -1,8 +1,6 @@
-import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { skillLines } from "$lib/crossover/world/settings/skills";
 import {
-    learningDialoguesForSkill,
     skillLevelProgression,
     type SkillLines,
 } from "$lib/crossover/world/skills";
@@ -11,7 +9,6 @@ import {
     type ItemEntity,
     type PlayerEntity,
 } from "$lib/server/crossover/types";
-import { sleep, substituteVariables } from "$lib/utils";
 import { generatePin } from "$lib/utils/random";
 import { say, setEntityBusy } from ".";
 import { savePlayerState } from "../../user";
@@ -117,6 +114,7 @@ async function learn(
         action: "learn",
         source: teacher,
         target: player.player,
+        skill,
     });
 
     // Consume learning resources and increment player skill
@@ -147,30 +145,6 @@ async function learn(
         publishTo: nearbyPlayerIds,
         op: "upsert",
     });
-
-    // Send learning dialogues
-    if (playerIsHuman) {
-        // Get skill learning dialogues
-        const learningDialogues = learningDialoguesForSkill(
-            skill,
-            player.skills[skill] ?? 1,
-        );
-        // Start the lesson
-        for (const msg of learningDialogues) {
-            const message = substituteVariables(msg, {
-                player,
-                teacher: teacherEntity,
-                skill: skillLines[skill],
-            });
-            await say(teacherEntity, message, {
-                target: player.player,
-                overwrite: true,
-            });
-            await sleep(
-                (actions.learn.ticks * MS_PER_TICK) / learningDialogues.length,
-            );
-        }
-    }
 
     return player;
 }

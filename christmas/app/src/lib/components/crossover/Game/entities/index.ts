@@ -121,9 +121,6 @@ async function upsertEntityContainer(
         // Set initial position
         if (created) {
             ec.setIsoPosition(position);
-
-            // Debug bounds
-            // stage.addChild(debugBounds(ec));
         }
 
         // Update position

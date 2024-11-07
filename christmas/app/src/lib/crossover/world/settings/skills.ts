@@ -1,6 +1,6 @@
 import type { SkillLine, SkillLines } from "../skills";
 
-export { skillLines };
+export { generalLearningDialogues, skillLines };
 
 const skillLines: Record<SkillLines, SkillLine> = {
     // General skills
@@ -196,4 +196,42 @@ const skillLines: Record<SkillLines, SkillLine> = {
             9: { str: 3, con: 3, dex: 3, fth: 3, mnd: 3, cha: 3 },
         },
     },
+};
+
+const generalLearningDialogues: Record<number, string[]> = {
+    2: [
+        "${teacher.name} begins your training in ${skill.description}...",
+        "You listen intently as ${teacher.name} explains the fundamentals.",
+        "Practicing the basics, you feel your understanding grow.",
+        "A spark of excitement ignites as you grasp the core concepts.",
+        "${teacher.name} nods approvingly, 'You've taken your first steps, ${player.name}.'",
+    ],
+    4: [
+        "${teacher.name} introduces more advanced aspects of ${skill.description}.",
+        "The challenges increase, but so does your determination.",
+        "You push through difficulties, feeling your skills sharpen.",
+        "A sense of accomplishment washes over you as you master new techniques.",
+        "'You're making excellent progress, ${player.name},' ${teacher.name} commends.",
+    ],
+    6: [
+        "${teacher.name} presents you with complex scenarios to test your ${skill.description} skills.",
+        "You apply your knowledge creatively, finding novel solutions.",
+        "The boundaries of your abilities expand, revealing new possibilities.",
+        "Confidence grows as you handle situations that once seemed impossible.",
+        "${teacher.name} smiles proudly, 'You're becoming a true adept, ${player.name}.'",
+    ],
+    8: [
+        "'It's time to push your limits,' ${teacher.name} announces, eyes gleaming.",
+        "You face grueling challenges that test every aspect of your ${skill.description} ability.",
+        "Sweat beads on your brow as you pour every ounce of skill into the task.",
+        "Exhausted but triumphant, you realize how far you've come.",
+        "'You're among the elite now, ${player.name},' ${teacher.name} says with respect.",
+    ],
+    10: [
+        "${teacher.name} leads you to a sacred place to impart the final secrets of ${skill.description}.",
+        "Ancient knowledge combines with your experience, elevating your understanding.",
+        "You feel a profound shift as you grasp the deepest mysteries of your craft.",
+        "Power flows through you as you demonstrate mastery beyond anything you've known.",
+        "${teacher.name} bows slightly, 'You've surpassed me, ${player.name}. The path forward is yours to define.'",
+    ],
 };

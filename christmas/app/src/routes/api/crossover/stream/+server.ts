@@ -2,6 +2,7 @@ import type { BodyPart, Item, Monster, Player } from "$lib/crossover/types";
 import type { Abilities } from "$lib/crossover/world/abilities";
 import type { Actions } from "$lib/crossover/world/actions";
 import type { DamageType } from "$lib/crossover/world/combat";
+import type { SkillLines } from "$lib/crossover/world/skills";
 import { requireLogin } from "$lib/server";
 import { connectedUsers } from "$lib/server/crossover";
 import type { CTA } from "$lib/server/crossover/player";
@@ -36,9 +37,12 @@ export interface ActionEvent {
     source: string;
     target?: string;
     action?: Actions;
-    ability?: Abilities;
     utility?: string;
     prop?: string;
+    // Learn (source is teacher, target is student)
+    skill?: SkillLines;
+    // Combat
+    ability?: Abilities;
     miss?: boolean; // eg. attack miss
     weapon?: string; // prop of the weapon
     damage?: number;

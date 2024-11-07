@@ -18,7 +18,7 @@ class SimpleEntityContainer extends EntityContainer {
         asset: AssetMetadata,
         options?: { variant?: string; anchor?: { x: number; y: number } },
     ) {
-        if (this.mesh == null) {
+        if (this.mesh == null && !this.destroyed) {
             this.asset = asset;
             this.variant = options?.variant ?? null;
 
