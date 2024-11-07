@@ -19,7 +19,7 @@ import {
     publishFeedEventToPlayers,
 } from "../events";
 import { getNearbyPlayerIds } from "../redis/queries";
-import { fetchEntity, saveEntity } from "../redis/utils";
+import { saveEntity } from "../redis/utils";
 import { itemVariableValue } from "../utils";
 import { barterDescription, playerHasBarterItems } from "./trade";
 
@@ -32,27 +32,15 @@ async function capture({
     now,
 }: {
     self: PlayerEntity;
-    target: string;
+    target: ItemEntity;
     offer: Barter;
     now?: number;
 }) {
     now = now ?? Date.now();
-    let error: string | null = null;
-    let controlMonument = (await fetchEntity(target)) as ItemEntity;
 
-    // Get target
-    if (!controlMonument) {
-        error = `Target ${target} not found`;
-    }
-    // Check if can capture target
-    else {
-        const [ok, message] = await canCapture(self, controlMonument, offer);
-        if (!ok) {
-            error = message;
-        }
-    }
-
-    if (error) {
+    // Check can capture
+    const [ok, error] = await canCapture(self, target, offer);
+    if (!ok) {
         await publishFeedEvent(self.player, {
             type: "error",
             message: error,
@@ -68,26 +56,25 @@ async function capture({
     })) as PlayerEntity;
 
     // Transfer offer from player to control
-    let factionInfluence = (controlMonument.vars[self.fac] as number) ?? 0;
+    let factionInfluence = (target.vars[self.fac] as number) ?? 0;
     for (const [cur, amt] of Object.entries(offer.currency)) {
         self[cur as Currency] -= amt;
         factionInfluence += amt;
     }
-    controlMonument.vars[self.fac] = factionInfluence;
+    target.vars[self.fac] = factionInfluence;
 
-    // Update controlMonument influence description
-    let faction = factionInControl(controlMonument);
+    // Update target influence description
+    let faction = factionInControl(target);
     if (faction) {
-        controlMonument.vars["influence"] =
+        target.vars["influence"] =
             `${factions[faction].name} controls this monument.`;
     } else {
-        controlMonument.vars["influence"] =
-            `You sense no influence from this monument.`;
+        target.vars["influence"] = `You sense no influence from this monument.`;
     }
 
     // Save entities
     self = await saveEntity(self);
-    controlMonument = await saveEntity(controlMonument);
+    target = await saveEntity(target);
 
     const nearbyPlayerIds = await getNearbyPlayerIds(
         self.loc[0],
@@ -108,7 +95,7 @@ async function capture({
 
     // Publish target to nearby players
     await publishAffectedEntitiesToPlayers(
-        [minifiedEntity(controlMonument, { stats: true })],
+        [minifiedEntity(target, { stats: true })],
         {
             publishTo: nearbyPlayerIds,
         },

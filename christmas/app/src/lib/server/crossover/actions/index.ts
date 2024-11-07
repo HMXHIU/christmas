@@ -1,25 +1,14 @@
 import { type Actor } from "$lib/crossover/types";
-import {
-    calculatePathDuration,
-    geohashesNearby,
-    getEntityId,
-    minifiedEntity,
-} from "$lib/crossover/utils";
-import { carryingCapacity, entityStats } from "$lib/crossover/world/entity";
+import { geohashesNearby, minifiedEntity } from "$lib/crossover/utils";
+import { entityStats } from "$lib/crossover/world/entity";
 import { actions } from "$lib/crossover/world/settings/actions";
+import { type GeohashLocation } from "$lib/crossover/world/types";
 import {
-    type Direction,
-    type GeohashLocation,
-} from "$lib/crossover/world/types";
-import {
-    type CreatureEntity,
     type ItemEntity,
     type PlayerEntity,
 } from "$lib/server/crossover/types";
-import { cloneDeep } from "lodash-es";
 import { setEntityBusy } from "..";
 import type { FeedEventVariables } from "../../../../routes/api/crossover/stream/+server";
-import { spawnLocation } from "../dm";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../events";
 import {
     verifyP2PTransaction,
@@ -28,25 +17,14 @@ import {
 } from "../player";
 import {
     getNearbyEntities,
-    getNearbyPlayerIds,
     inventoryQuerySet,
     playersInGeohashQuerySet,
 } from "../redis/queries";
 import { fetchEntity, saveEntity } from "../redis/utils";
-import { isDirectionTraversable } from "../utils";
 import { executeLearnCTA } from "./learn";
 import { executeTradeCTA } from "./trade";
 
-export {
-    fulfill,
-    inventory,
-    look,
-    LOOK_PAGE_SIZE,
-    move,
-    rest,
-    say,
-    setEntityBusy,
-};
+export { fulfill, inventory, look, LOOK_PAGE_SIZE, rest, say, setEntityBusy };
 
 const LOOK_PAGE_SIZE = 20;
 
@@ -113,106 +91,6 @@ async function say(
                 : "${name} says ${message}",
             variables,
         });
-    }
-}
-
-async function move(entity: CreatureEntity, path: Direction[], now?: number) {
-    // Get path duration
-    now = now ?? Date.now();
-    const duration = calculatePathDuration(path);
-    const [entityId, entityType] = getEntityId(entity);
-
-    // Set busy
-    entity = await setEntityBusy({
-        entity: entity,
-        action: actions.move.action,
-        duration, // use the duration of the full path
-        now,
-    });
-
-    // Check overweight (only PlayerEntity)
-    if (
-        entityType === "player" &&
-        (entity as PlayerEntity).wgt > carryingCapacity(entity)
-    ) {
-        await publishFeedEvent(entityId, {
-            type: "error",
-            message: `You are overweight.`,
-        });
-        return; // do not proceed if overweight
-    }
-
-    // Check if the full path is traversable
-    let loc = cloneDeep(entity.loc);
-    for (const direction of path) {
-        const [isTraversable, location] = await isDirectionTraversable(
-            loc,
-            entity.locT as GeohashLocation,
-            entity.locI,
-            direction,
-        );
-        if (!isTraversable) {
-            if (entityType === "player") {
-                await publishFeedEvent(entityId, {
-                    type: "error",
-                    message: `Path is not traversable.`,
-                });
-            }
-            return; // do not proceed if path is obstructed
-        } else {
-            loc = location; // final location of the path
-        }
-    }
-
-    // Update location and path
-    entity.pth = path;
-    entity.pthst = entity.loc[0]; // origin is always the first loc
-    entity.pthdur = duration;
-    entity.pthclk = now;
-    entity.loc = loc; // update loc immediately to final location (client and server to use `pthclk` to determine exact location)
-    entity = await saveEntity(entity);
-
-    // Inform all players nearby of location change
-    const nearbyPlayerIds = await getNearbyPlayerIds(
-        entity.loc[0],
-        entity.locT as GeohashLocation,
-        entity.locI,
-    );
-    await publishAffectedEntitiesToPlayers(
-        [minifiedEntity(entity, { demographics: true })],
-        {
-            publishTo: nearbyPlayerIds,
-        },
-    );
-
-    // Check if entity moves to a new p6
-    const p6Changed = entity.loc[0].slice(0, -2) !== loc[0].slice(0, -2);
-
-    // Request nearby entities if p6Changed
-    if (p6Changed && entityType === "player") {
-        const { players, monsters, items } = await getNearbyEntities(
-            entity.loc[0],
-            entity.locT as GeohashLocation,
-            entity.locI,
-            LOOK_PAGE_SIZE,
-        );
-        await publishAffectedEntitiesToPlayers(
-            [
-                ...monsters.map((e) => minifiedEntity(e)),
-                ...players
-                    .filter((p) => p.player !== entityId)
-                    .map((e) => minifiedEntity(e, { demographics: true })), // exclude self (already received above)
-                ...items.map((e) => minifiedEntity(e)),
-            ],
-            { publishTo: [entityId] },
-        );
-
-        // Spawn location (Do not block, spawn in the background)
-        spawnLocation(
-            entity.loc[0],
-            entity.locT as GeohashLocation,
-            entity.locI,
-        );
     }
 }
 

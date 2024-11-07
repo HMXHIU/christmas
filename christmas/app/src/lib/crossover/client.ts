@@ -40,12 +40,12 @@ export {
     crossoverCmdLearn,
     crossoverCmdLook,
     crossoverCmdMove,
-    crossoverCmdPerformAbility,
     crossoverCmdRest,
     crossoverCmdSay,
     crossoverCmdTake,
     crossoverCmdTrade,
     crossoverCmdUnequip,
+    crossoverCmdUseAbility,
     crossoverCmdUseItem,
     crossoverCmdWrit,
     crossoverGenerateAvatar,
@@ -330,12 +330,12 @@ function crossoverCmdMove(
     return trpc({ headers }).crossover.cmd.move.query({ path });
 }
 
-function crossoverCmdPerformAbility(
+function crossoverCmdUseAbility(
     input: { target?: string; ability: Abilities },
     headers: HTTPHeaders = {},
 ) {
     const { target, ability } = input;
-    return trpc({ headers }).crossover.cmd.performAbility.query({
+    return trpc({ headers }).crossover.cmd.useAbility.query({
         target,
         ability,
     });

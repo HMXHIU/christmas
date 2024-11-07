@@ -235,6 +235,7 @@ export let architecture: Record<string, Prop> = {
                     end: "default",
                 },
                 ability: abilities.teleport.ability,
+                range: 1,
             },
         },
     },

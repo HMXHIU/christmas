@@ -807,9 +807,9 @@ function entityInRange(
             return [true, 0];
         } else {
             /* 
-        Not allowed to target items on other entities.
-        For items like tradewrits which can be targeted on another entity, perform the logic in the calling code
-        */
+            Not allowed to target items on other entities.
+            For items like tradewrits which can be targeted on another entity, perform the logic in the calling code
+            */
             return [false, 0];
         }
     }

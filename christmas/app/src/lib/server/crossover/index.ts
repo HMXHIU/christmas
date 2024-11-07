@@ -177,12 +177,12 @@ async function setEntityBusy<T extends CreatureEntity>({
     // Duration provided
     if (duration != null) {
         entity.buclk = now + duration;
-        return await saveEntity(entity);
+        await saveEntity(entity);
     }
     // Action
     else if (action != null && actions[action].ticks > 0) {
         entity.buclk = now + actions[action].ticks * MS_PER_TICK;
-        return await saveEntity(entity);
+        await saveEntity(entity);
     }
     // Ability
     else if (ability != null) {
@@ -192,9 +192,10 @@ async function setEntityBusy<T extends CreatureEntity>({
         );
         if (ticks > 0) {
             entity.buclk = now + ticks * MS_PER_TICK;
-            return await saveEntity(entity);
+            await saveEntity(entity);
         }
     }
+    // make sure to return the same object reference
     return entity;
 }
 

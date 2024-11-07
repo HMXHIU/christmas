@@ -25,6 +25,7 @@
         actionEvent,
         ctaEvent,
         feedEvent,
+        gameCommands,
         inGame,
         itemRecord,
         monsterRecord,
@@ -37,6 +38,7 @@
     import AutocompleteGC from "../AutocompleteGC.svelte";
     import ChatInput from "../ChatInput.svelte";
     import ChatWindow from "../ChatWindow.svelte";
+    import CommandQueue from "../CommandQueue.svelte";
     import EntityDialog from "../EntityDialog.svelte";
     import Game, { tryExecuteGameCommand } from "../Game";
     import { initAssetManager } from "../Game/utils";
@@ -93,7 +95,14 @@
     }
 
     async function onGameCommand(command: GameCommand) {
-        await tryExecuteGameCommand(command);
+        // Add to command queue if busy
+        if ($player!.buclk > Date.now()) {
+            $gameCommands = [...$gameCommands, command];
+        }
+        // Execute command
+        else {
+            await tryExecuteGameCommand(command);
+        }
     }
 
     onMount(() => {
@@ -228,6 +237,12 @@
                 }
             }),
         ];
+
+        return () => {
+            for (const unsubscribe of subscriptions) {
+                unsubscribe();
+            }
+        };
     });
 
     onDestroy(() => {
@@ -276,6 +291,11 @@
                 {onPartial}
             ></ChatInput>
         </div>
+    </div>
+
+    <!-- Command Queue -->
+    <div class="w-[calc(100%-16rem)] relative">
+        <CommandQueue class="w-16 bottom-2 right-2 absolute"></CommandQueue>
     </div>
 
     <!-- Chat Windows -->

@@ -6,16 +6,10 @@ import type {
     Player,
     World,
 } from "$lib/crossover/types";
-import {
-    entityInRange,
-    geohashToColRow,
-    getEntityId,
-    gridCellToGeohash,
-} from "$lib/crossover/utils";
-import { sleep } from "$lib/utils";
+import { getEntityId, gridCellToGeohash } from "$lib/crossover/utils";
 import type { HTTPHeaders } from "@trpc/client";
 import { get } from "svelte/store";
-import { ctaRecord, itemRecord, player, worldRecord } from "../../store";
+import { ctaRecord, itemRecord, worldRecord } from "../../store";
 import {
     biomeAtGeohashCache,
     biomeParametersAtCityCache,
@@ -42,12 +36,12 @@ import {
     crossoverCmdLearn,
     crossoverCmdLook,
     crossoverCmdMove,
-    crossoverCmdPerformAbility,
     crossoverCmdRest,
     crossoverCmdSay,
     crossoverCmdTake,
     crossoverCmdTrade,
     crossoverCmdUnequip,
+    crossoverCmdUseAbility,
     crossoverCmdUseItem,
     crossoverCmdWrit,
     crossoverPlayerInventory,
@@ -62,8 +56,6 @@ import { aStarPathfinding } from "./pathfinding";
 import type { Ability } from "./world/abilities";
 import { type Action } from "./world/actions";
 import type { Utility } from "./world/compendium";
-import { MS_PER_TICK, SERVER_LATENCY } from "./world/settings";
-import { actions } from "./world/settings/actions";
 import { compendium } from "./world/settings/compendium";
 import { worldSeed } from "./world/settings/world";
 import { type SkillLines } from "./world/skills";
@@ -81,7 +73,6 @@ export {
     getDirectionsToPosition,
     getWorldsAtLocation,
     isGeohashTraversableClient,
-    moveInRangeOfTarget,
     performAction,
 };
 
@@ -118,16 +109,8 @@ async function executeGameCommand(
     else if (actionType === "ability") {
         const ability = gameAction as Ability;
 
-        if (target) {
-            // Move in range of target
-            await moveInRangeOfTarget({
-                range: ability.range,
-                target: target as Actor,
-            });
-        }
-
         // Perform ability
-        return await crossoverCmdPerformAbility(
+        return await crossoverCmdUseAbility(
             {
                 target:
                     (target as Player)?.player ||
@@ -398,7 +381,7 @@ async function performAction(
     throw new Error(`Unknown action ${action}`);
 }
 
-async function getTraversalCost(
+async function getTraversalCostClient(
     row: number,
     col: number,
     locationType: GeohashLocation,
@@ -548,7 +531,7 @@ async function getDirectionsToPosition(
         rowEnd: target.row,
         range: options?.range,
         getTraversalCost: (row, col) =>
-            getTraversalCost(
+            getTraversalCostClient(
                 row,
                 col,
                 locationType,
@@ -556,64 +539,4 @@ async function getDirectionsToPosition(
                 options?.precision,
             ),
     });
-}
-
-async function moveInRangeOfTarget({
-    range,
-    target,
-    retries,
-}: {
-    range: number;
-    target: Actor;
-    retries?: number;
-}) {
-    retries ??= 1;
-
-    let playerEntity = get(player);
-    if (playerEntity == null) {
-        throw new Error("Player is not defined");
-    }
-
-    if (playerEntity.locT !== target.locT) {
-        throw new Error("Player and target are not in the same location type");
-    }
-
-    if (entityInRange(playerEntity, target, range)[0]) {
-        return;
-    }
-
-    // Move in range of target
-    const targetGeohash = target.loc[0]; // TODO: consider entities with loc more than 1 cell
-    const sourceGeohash = playerEntity.loc[0];
-    const [targetCol, targetRow] = geohashToColRow(targetGeohash);
-    const [sourceCol, sourceRow] = geohashToColRow(sourceGeohash);
-    const path = await getDirectionsToPosition(
-        {
-            row: sourceRow,
-            col: sourceCol,
-        },
-        {
-            row: targetRow,
-            col: targetCol,
-        },
-        target.locT as GeohashLocation,
-        target.locI,
-        { range },
-    );
-    await crossoverCmdMove({ path });
-
-    // Wait for player to move the path
-    await sleep(
-        SERVER_LATENCY + path.length * actions.move.ticks * MS_PER_TICK,
-    );
-
-    // Retry if is still not in range (target might have moved)
-    playerEntity = get(player);
-    if (
-        retries > 0 &&
-        playerEntity != null &&
-        !entityInRange(playerEntity, target, range)[0]
-    ) {
-        await moveInRangeOfTarget({ range, target, retries: retries - 1 });
-    }
 }

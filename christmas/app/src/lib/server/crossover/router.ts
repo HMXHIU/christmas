@@ -33,14 +33,13 @@ import { z } from "zod";
 import { loadPlayerEntity } from ".";
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, dmServiceProcedure, t } from "../trpc";
-import { performAbility } from "./abilities";
-import { fulfill, inventory, look, move, rest, say } from "./actions";
+import { useAbility } from "./abilities";
+import { fulfill, inventory, look, rest, say } from "./actions";
 import { createGiveCTA, executeGiveCTA } from "./actions/give";
 import {
     configureItem,
     createItem,
     dropItem,
-    enterItem,
     equipItem,
     takeItem,
     unequipItem,
@@ -75,6 +74,9 @@ import {
     elevationAtGeohash,
 } from "$lib/crossover/world/biomes";
 import { entityAbilities } from "$lib/crossover/world/entity";
+import { abilities } from "$lib/crossover/world/settings/abilities";
+import { actions } from "$lib/crossover/world/settings/actions";
+import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     getOrCreatePlayer,
     getPlayerState,
@@ -83,6 +85,8 @@ import {
 } from "../user";
 import { attack } from "./actions/attack";
 import { capture } from "./actions/capture";
+import { enterItem } from "./actions/enter";
+import { move, moveInRangeOfTarget } from "./actions/move";
 import {
     biomeAtGeohashCache,
     biomeParametersAtCityCache,
@@ -101,8 +105,8 @@ import { entityIsBusy } from "./utils";
 export {
     BuffCreatureSchema,
     crossoverRouter,
-    EntityPerformAbilitySchema,
     EntityTargetEntitySchema,
+    EntityUseAbilitySchema,
     RespawnMonstersSchema,
     SaySchema,
     SkillsSchema,
@@ -152,11 +156,11 @@ const PathSchema = z.object({
 const EntityPathSchema = PathSchema.extend({
     entity: z.string(),
 });
-const PerformAbilitySchema = z.object({
+const UseAbilitySchema = z.object({
     ability: z.enum(AbilitiesEnum),
     target: z.string().optional(),
 });
-const EntityPerformAbilitySchema = PerformAbilitySchema.extend({
+const EntityUseAbilitySchema = UseAbilitySchema.extend({
     entity: z.string(),
 });
 const UseItemSchema = z.object({
@@ -282,24 +286,56 @@ const crossoverRouter = {
                 const { path, entity } = input;
                 await move((await fetchEntity(entity)) as CreatureEntity, path);
             }),
+        // TODO: change to `useMonsterAbility`
         performMonsterAbility: dmServiceProcedure
-            .input(EntityPerformAbilitySchema)
+            .input(EntityUseAbilitySchema)
             .mutation(async ({ ctx, input }) => {
                 const { ability, target, entity } = input;
-                await performAbility({
-                    self: (await fetchEntity(entity)) as CreatureEntity,
+                const [entities, error] = await tryFetchEntities({
                     target,
-                    ability,
+                    entity,
                 });
+                if (entities != null) {
+                    if (entities.target) {
+                        await moveInRangeOfTarget(
+                            entities.entity as CreatureEntity,
+                            entities.target,
+                            abilities[ability].range,
+                        );
+                    }
+                    await useAbility({
+                        self: entities.entity as CreatureEntity,
+                        target: entities.target,
+                        ability,
+                    });
+                } else {
+                    throw new Error(error);
+                }
             }),
+        // TODO: change to `monsterAttack`
         performMonsterAttack: dmServiceProcedure
             .input(EntityTargetEntitySchema)
             .mutation(async ({ ctx, input }) => {
                 const { target, entity } = input;
-                const monsterEntity = (await fetchEntity(
+                const [entities, error] = await tryFetchEntities({
+                    target,
                     entity,
-                )) as MonsterEntity;
-                await attack(monsterEntity, target);
+                });
+                if (entities != null) {
+                    if (entities.target) {
+                        await moveInRangeOfTarget(
+                            entities.entity as CreatureEntity,
+                            entities.target,
+                            actions.attack.range,
+                        );
+                    }
+                    await attack(
+                        entities.entity as MonsterEntity,
+                        entities.target,
+                    );
+                } else {
+                    throw new Error(error);
+                }
             }),
         respawnMonsters: dmServiceProcedure
             .input(RespawnMonstersSchema)
@@ -427,9 +463,7 @@ const crossoverRouter = {
                             resultsCache: topologyResultCache,
                             bufferCache: topologyBufferCache,
                         })) * ELEVATION_TO_CELL_HEIGHT;
-
                     const [col, row] = geohashToColRow(g);
-
                     biomes[g] = {
                         biome,
                         elevation,
@@ -696,32 +730,84 @@ const crossoverRouter = {
             .input(TargetEntitySchema)
             .query(async ({ ctx, input }) => {
                 const { target } = input;
-                await attack(ctx.player, target, { now: ctx.now });
+                const [entities, error] = await tryFetchEntities({
+                    target,
+                });
+                if (entities != null) {
+                    await moveInRangeOfTarget(
+                        ctx.player,
+                        entities.target,
+                        actions.attack.range,
+                    );
+                    await attack(ctx.player, entities.target, { now: ctx.now });
+                } else {
+                    await publishFeedEvent(ctx.player.player, {
+                        type: "error",
+                        message: error,
+                    });
+                }
             }),
-        // cmd.performAbility
-        performAbility: playerAuthBusyProcedure
-            .input(PerformAbilitySchema)
+        // cmd.useAbility
+        useAbility: playerAuthBusyProcedure
+            .input(UseAbilitySchema)
             .query(async ({ ctx, input }) => {
                 const { ability, target } = input;
-                await performAbility({
-                    self: ctx.player,
+                const [entities, error] = await tryFetchEntities({
                     target,
-                    ability,
-                    now: ctx.now,
                 });
+                if (entities != null) {
+                    if (entities.target) {
+                        await moveInRangeOfTarget(
+                            ctx.player,
+                            entities.target,
+                            abilities[ability].range,
+                        );
+                    }
+                    await useAbility({
+                        self: ctx.player,
+                        target: entities.target,
+                        ability,
+                        now: ctx.now,
+                    });
+                } else {
+                    await publishFeedEvent(ctx.player.player, {
+                        type: "error",
+                        message: error,
+                    });
+                }
             }),
         // cmd.useItem
         useItem: playerAuthBusyProcedure
             .input(UseItemSchema)
             .query(async ({ ctx, input }) => {
                 const { item, utility, target } = input;
-                await useItem({
-                    self: ctx.player,
+                const [entities, error] = await tryFetchEntities({
                     item,
                     target,
-                    utility,
-                    now: ctx.now,
                 });
+                if (entities != null) {
+                    const prop = compendium[(entities.item as ItemEntity).prop];
+                    const propUtility = prop.utilities[utility];
+                    if (propUtility.range) {
+                        await moveInRangeOfTarget(
+                            ctx.player,
+                            entities.target,
+                            propUtility.range,
+                        );
+                    }
+                    await useItem({
+                        self: ctx.player,
+                        item: entities.item as ItemEntity,
+                        target: entities.target,
+                        utility,
+                        now: ctx.now,
+                    });
+                } else {
+                    await publishFeedEvent(ctx.player.player, {
+                        type: "error",
+                        message: error,
+                    });
+                }
             }),
         // cmd.createItem
         createItem: playerAuthBusyProcedure
@@ -742,7 +828,26 @@ const crossoverRouter = {
             .input(TargetItemSchema)
             .query(async ({ ctx, input }) => {
                 const { item } = input;
-                await enterItem(ctx.player, item, ctx.now);
+                const [entities, error] = await tryFetchEntities({
+                    item,
+                });
+                if (entities != null) {
+                    await moveInRangeOfTarget(
+                        ctx.player,
+                        entities.item,
+                        actions.enter.range,
+                    );
+                    await enterItem(
+                        ctx.player,
+                        entities.item as ItemEntity,
+                        ctx.now,
+                    );
+                } else {
+                    await publishFeedEvent(ctx.player.player, {
+                        type: "error",
+                        message: error,
+                    });
+                }
             }),
         // cmd.rest
         rest: playerAuthBusyProcedure.query(async ({ ctx }) => {
@@ -753,11 +858,26 @@ const crossoverRouter = {
             .input(CaptureSchema)
             .query(async ({ ctx, input }) => {
                 const { offer, target } = input;
-                await capture({
-                    self: ctx.player,
+                const [entities, error] = await tryFetchEntities({
                     target,
-                    offer: await deserializeBarter(offer),
                 });
+                if (entities != null) {
+                    await moveInRangeOfTarget(
+                        ctx.player,
+                        entities.target,
+                        actions.capture.range,
+                    );
+                    await capture({
+                        self: ctx.player,
+                        target: entities.target as ItemEntity,
+                        offer: await deserializeBarter(offer),
+                    });
+                } else {
+                    await publishFeedEvent(ctx.player.player, {
+                        type: "error",
+                        message: error,
+                    });
+                }
             }),
     }),
     // Authentication
@@ -869,4 +989,20 @@ async function tryFetchEntity(entity: string): Promise<ActorEntity> {
         });
     }
     return fetchedEntity;
+}
+
+async function tryFetchEntities(
+    entities: Record<string, string | undefined>,
+): Promise<[Record<string, ActorEntity> | null, string]> {
+    const fetchedEntities: Record<string, ActorEntity> = {};
+    for (const [kw, entityId] of Object.entries(entities)) {
+        if (entityId) {
+            const entity = (await fetchEntity(entityId)) as ActorEntity;
+            if (!entity) {
+                return [null, `${entityId} does not exist`];
+            }
+            fetchedEntities[kw] = entity;
+        }
+    }
+    return [fetchedEntities, ""];
 }

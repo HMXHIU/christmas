@@ -42,27 +42,18 @@ async function saveEntity<T extends ActorEntity | QuestEntity>(
     entity: T,
 ): Promise<T> {
     if (entity.player) {
-        return (await playerRepository.save(
-            (entity as PlayerEntity).player,
-            entity,
-        )) as T;
+        await playerRepository.save((entity as PlayerEntity).player, entity);
     } else if (entity.monster) {
-        return (await monsterRepository.save(
-            (entity as MonsterEntity).monster,
-            entity,
-        )) as T;
+        await monsterRepository.save((entity as MonsterEntity).monster, entity);
     } else if (entity.item) {
-        return (await itemRepository.save(
-            (entity as ItemEntity).item,
-            entity,
-        )) as T;
+        await itemRepository.save((entity as ItemEntity).item, entity);
     } else if (entity.quest) {
-        return (await questRepository.save(
-            (entity as QuestEntity).quest,
-            entity,
-        )) as T;
+        await questRepository.save((entity as QuestEntity).quest, entity);
+    } else {
+        throw new Error("Invalid entity");
     }
-    throw new Error("Invalid entity");
+    // Make sure to return the same reference object
+    return entity;
 }
 
 async function saveEntities(...entities: (ActorEntity | QuestEntity)[]) {

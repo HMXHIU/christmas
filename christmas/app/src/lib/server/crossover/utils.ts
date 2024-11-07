@@ -1,13 +1,9 @@
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 import type { Creature } from "$lib/crossover/types";
-import { entityInRange, geohashNeighbour } from "$lib/crossover/utils";
+import { geohashNeighbour } from "$lib/crossover/utils";
 import { type ItemVariables } from "$lib/crossover/world/compendium";
 import { compendium } from "$lib/crossover/world/settings/compendium";
-import type {
-    Direction,
-    EquipmentSlot,
-    GeohashLocation,
-} from "$lib/crossover/world/types";
+import type { Direction, GeohashLocation } from "$lib/crossover/world/types";
 import { isGeohashTraversable } from "$lib/crossover/world/utils";
 import {
     biomeAtGeohashCache,
@@ -35,8 +31,6 @@ import {
 } from "./redis/queries";
 
 export {
-    canConfigureItem,
-    canUseItem,
     entityIsBusy,
     hasItemConfigOwnerPermissions,
     hasItemOwnerPermissions,
@@ -156,106 +150,6 @@ function hasItemConfigOwnerPermissions(item: ItemEntity, self: CreatureEntity) {
     return (
         item.cfg === "" || item.cfg === self.player || item.cfg === self.monster
     );
-}
-
-function canConfigureItem(
-    self: CreatureEntity,
-    item: ItemEntity,
-): { canConfigure: boolean; message: string } {
-    // Check valid prop
-    if (!compendium.hasOwnProperty(item.prop)) {
-        return {
-            canConfigure: false,
-            message: `${item.prop} not found in compendium`,
-        };
-    }
-
-    // Check if have permissions to configure item
-    if (!hasItemConfigOwnerPermissions(item, self)) {
-        return {
-            canConfigure: false,
-            message: `${self.player || self.monster} does not own ${item.item}`,
-        };
-    }
-
-    return {
-        canConfigure: true,
-        message: "",
-    };
-}
-
-function canUseItem(
-    self: CreatureEntity,
-    item: ItemEntity,
-    utility: string,
-): { canUse: boolean; message: string } {
-    // Check valid prop
-    if (!compendium.hasOwnProperty(item.prop)) {
-        return {
-            canUse: false,
-            message: `${item.prop} not found in compendium`,
-        };
-    }
-    const prop = compendium[item.prop];
-
-    // Check valid utility
-    if (!(prop.utilities && prop.utilities[utility])) {
-        return {
-            canUse: false,
-            message: `Invalid utility ${utility} for item ${item.item}`,
-        };
-    }
-    const propUtility = prop.utilities[utility];
-
-    // Check item in range
-    if (propUtility.range != null) {
-        if (!entityInRange(self, item, propUtility.range)[0]) {
-            return {
-                canUse: false,
-                message: `${item.name} is out of range`,
-            };
-        }
-    }
-
-    // Check if have permissions to use item
-    if (!hasItemOwnerPermissions(item, self)) {
-        return {
-            canUse: false,
-            message: `${self.player || self.monster} does not own ${item.item}`,
-        };
-    }
-
-    // Check if utility requires item to be equipped and is equipped in the correct slot
-    if (
-        prop.utilities[utility].requireEquipped &&
-        !compendium[item.prop].equipment?.slot?.includes(
-            item.locT as EquipmentSlot,
-        )
-    ) {
-        return {
-            canUse: false,
-            message: `${item.item} is not equipped in the required slot`,
-        };
-    }
-
-    // Check has enough charges or durability
-    if (item.chg < propUtility.cost.charges) {
-        return {
-            canUse: false,
-            message: `${item.item} has not enough charges to perform ${utility}`,
-        };
-    }
-    if (item.dur < propUtility.cost.durability) {
-        return {
-            canUse: false,
-            message: `${item.item} has not enough durability to perform ${utility}`,
-        };
-    }
-
-    return {
-        canUse: true,
-        message: "",
-    };
 }
 
 function parseItemVariables(

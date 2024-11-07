@@ -21,11 +21,10 @@ import { consumeResources, setEntityBusy } from ".";
 import { resolveCombat } from "./combat";
 import { hasCondition } from "./combat/condition";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "./events";
-import { fetchEntity } from "./redis/utils";
 
-export { performAbility };
+export { useAbility };
 
-async function performAbility({
+async function useAbility({
     self,
     target, // target can be undefined if the ability performs an action on self
     ability,
@@ -33,70 +32,29 @@ async function performAbility({
     now,
 }: {
     self: CreatureEntity;
-    target?: string;
+    target?: ActorEntity;
     ability: Abilities;
     ignoreCost?: boolean;
     now?: number;
 }) {
-    const [selfEntityId, selfEntityType] = getEntityId(self);
+    // Set target to self if not provided
+    target = target ?? self;
 
-    const { procedures, range, predicate, cost } = abilities[ability];
-
-    // Check if target is not provided and target self is not allowed
-    if (!target && !predicate.targetSelfAllowed) {
+    // Check can use ability
+    const [ok, error] = canUseAbility({
+        self,
+        target,
+        ignoreCost,
+        ability,
+    });
+    if (!ok) {
         if (self.player) {
-            await publishFeedEvent(selfEntityId, {
+            await publishFeedEvent((self as PlayerEntity).player, {
                 type: "error",
-                message: `${ability} requires a target`,
-            });
-        }
-        return;
-    }
-
-    // Get target (self if not specified)
-    let targetEntity = !target ? self : await fetchEntity(target);
-    if (!targetEntity) {
-        if (self.player) {
-            await publishFeedEvent(selfEntityId, {
-                type: "error",
-                message: `Target ${target} not found`,
+                message: error,
             });
         }
         return; // do not proceed
-    }
-
-    // Check if self has enough resources to perform ability
-    if (!ignoreCost) {
-        const { hasResources, message } = hasResourcesForAbility(self, ability);
-        if (!hasResources && self.player) {
-            await publishFeedEvent(selfEntityId, {
-                type: "error",
-                message,
-            });
-            return;
-        }
-    }
-
-    // Check predicate
-    if (
-        !predicate.targetSelfAllowed &&
-        selfEntityId === target &&
-        self.player
-    ) {
-        await publishFeedEvent(selfEntityId, {
-            type: "error",
-            message: `You can't ${ability} yourself`,
-        });
-        return;
-    }
-
-    // Check if target is in range
-    if (!entityInRange(self, targetEntity, range)[0] && self.player) {
-        await publishFeedEvent(selfEntityId, {
-            type: "error",
-            message: `${targetEntity.name} is out of range`,
-        });
-        return;
     }
 
     // Set player busy
@@ -106,11 +64,13 @@ async function performAbility({
         now,
     });
 
+    const { procedures, cost } = abilities[ability];
+
     // Expend ability costs (also caps stats to player level)
     if (!ignoreCost) {
         self = await consumeResources(self, cost);
     }
-    targetEntity = targetEntity.player === self.player ? self : targetEntity; // target might be self, in which case update it after save
+    target = target.player === self.player ? self : target; // target might be self, in which case update it after save
 
     // Publish ability costs changes to player
     if (self.player && !ignoreCost) {
@@ -122,7 +82,7 @@ async function performAbility({
     // Perform procedures
     for (const [type, effect] of procedures) {
         // Get affected entity (self or target)
-        let entity = effect.target === "self" ? self : targetEntity;
+        let entity = effect.target === "self" ? self : target;
 
         // Action
         if (type === "action") {
@@ -130,7 +90,7 @@ async function performAbility({
             const procedureEffect = patchEffectWithVariables({
                 effect,
                 self,
-                target: targetEntity,
+                target: target,
             });
 
             // Sleep for the duration of the effect
@@ -149,6 +109,47 @@ async function performAbility({
             if (!performEffectCheck({ entity, effect, now })) break;
         }
     }
+}
+
+function canUseAbility({
+    self,
+    ability,
+    target,
+    ignoreCost,
+}: {
+    self: CreatureEntity;
+    ability: Abilities;
+    target?: ActorEntity;
+    ignoreCost?: boolean;
+}): [boolean, string] {
+    const { range, predicate } = abilities[ability];
+
+    if (!target) {
+        return [false, `Target not found`];
+    }
+
+    // Check if self has enough resources to perform ability
+    if (!ignoreCost) {
+        const { hasResources, message } = hasResourcesForAbility(self, ability);
+        if (!hasResources) {
+            return [false, message];
+        }
+    }
+
+    // Check predicate
+    if (
+        !predicate.targetSelfAllowed &&
+        getEntityId(self)[0] === getEntityId(target)[0] &&
+        self.player
+    ) {
+        return [false, `You can't ${ability} yourself`];
+    }
+
+    // Check if target is in range
+    if (!entityInRange(self, target, range)[0] && self.player) {
+        return [false, `${target.name} is out of range`];
+    }
+    return [true, ""];
 }
 
 function performEffectCheck({

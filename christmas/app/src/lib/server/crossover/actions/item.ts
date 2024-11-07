@@ -1,19 +1,13 @@
-import { GAME_TILEMAPS } from "$lib/crossover/defs";
-import {
-    entityInRange,
-    getEntityId,
-    minifiedEntity,
-} from "$lib/crossover/utils";
+import { entityInRange, minifiedEntity } from "$lib/crossover/utils";
 import { isItemEquipped } from "$lib/crossover/world/compendium";
-import { TILE_HEIGHT, TILE_WIDTH } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import {
     equipmentSlotCapacity,
     geohashLocationTypes,
+    type EquipmentSlot,
     type GeohashLocation,
 } from "$lib/crossover/world/types";
-import type { WorldPOIs } from "$lib/crossover/world/world";
 import {
     type ActorEntity,
     type CreatureEntity,
@@ -21,18 +15,16 @@ import {
     type MonsterEntity,
     type PlayerEntity,
 } from "$lib/server/crossover/types";
-import { substituteVariablesRecursively } from "$lib/utils";
 import { setEntityBusy } from "..";
-import { performAbility } from "../abilities";
-import { worldAssetMetadataCache, worldPOIsCache } from "../caches";
+import { useAbility } from "../abilities";
 import { resolveEquipment } from "../combat/equipment";
-import { spawnItemInInventory, spawnWorld, spawnWorldPOIs } from "../dm";
+import { spawnItemInInventory } from "../dm";
 import { publishAffectedEntitiesToPlayers, publishFeedEvent } from "../events";
 import { getNearbyPlayerIds, inventoryQuerySet } from "../redis/queries";
 import { fetchEntity, saveEntity } from "../redis/utils";
 import {
-    canConfigureItem,
-    canUseItem,
+    hasItemConfigOwnerPermissions,
+    hasItemOwnerPermissions,
     itemVariableValue,
     parseItemVariables,
 } from "../utils";
@@ -41,7 +33,6 @@ export {
     configureItem,
     createItem,
     dropItem,
-    enterItem,
     equipItem,
     takeItem,
     unequipItem,
@@ -64,33 +55,17 @@ async function useItem({
     target,
     now,
 }: {
-    item: string;
+    item: ItemEntity;
     utility: string;
     self: CreatureEntity;
-    target?: string; // target can be an `item`
+    target?: ActorEntity; // target can be an `item`
     now?: number;
 }) {
     now = now ?? Date.now();
-    let error: string | null = null;
-    let targetEntity = target ? await fetchEntity(target) : undefined;
-    let itemEntity = (await fetchEntity(item)) as ItemEntity;
-    // Get target
-    if (target && !targetEntity) {
-        error = `Target ${target} not found`;
-    }
-    // Get item
-    else if (itemEntity == null) {
-        error = `Item ${item} not found`;
-    }
-    // Check if can use item
-    else {
-        const { canUse, message } = canUseItem(self, itemEntity, utility);
-        if (!canUse) {
-            error = message;
-        }
-    }
 
-    if (error) {
+    // Check if can use item
+    const [ok, error] = canUseItem(self, item, utility);
+    if (!ok) {
         if (self.player) {
             await publishFeedEvent((self as PlayerEntity).player, {
                 type: "error",
@@ -100,7 +75,7 @@ async function useItem({
         return; // do not proceed
     }
 
-    const prop = compendium[itemEntity.prop];
+    const prop = compendium[item.prop];
     const propUtility = prop.utilities[utility];
     const propAbility = propUtility.ability;
     const nearbyPlayerIds = await getNearbyPlayerIds(
@@ -109,40 +84,33 @@ async function useItem({
         self.locI,
     );
 
-    if (itemEntity.state !== propUtility.state.start) {
+    if (item.state !== propUtility.state.start) {
         // Set item start state
-        itemEntity.state = propUtility.state.start;
-        itemEntity = await saveEntity(itemEntity);
+        item.state = propUtility.state.start;
+        await saveEntity(item);
 
         // Publish item state to nearby players
         if (self.player != null) {
-            await publishAffectedEntitiesToPlayers(
-                [minifiedEntity(itemEntity)],
-                {
-                    publishTo: nearbyPlayerIds,
-                },
-            );
+            await publishAffectedEntitiesToPlayers([minifiedEntity(item)], {
+                publishTo: nearbyPlayerIds,
+            });
         }
     }
     // Perform ability (ignore cost when using items)
     if (propAbility) {
         // Overwrite target if specified in item variables
         if (prop.variables.target) {
-            targetEntity = (await itemVariableValue(
-                itemEntity,
-                "target",
-            )) as ActorEntity;
-            target = getEntityId(targetEntity)[0];
+            target = (await itemVariableValue(item, "target")) as ActorEntity;
         }
 
         // Overwrite self if specified in item variables (can only be `player` or `monster`)
         if (prop.variables.self) {
-            self = (await itemVariableValue(itemEntity, "self")) as
+            self = (await itemVariableValue(item, "self")) as
                 | PlayerEntity
                 | MonsterEntity;
         }
-
-        await performAbility({
+        //  Use ability
+        await useAbility({
             self,
             target, // can be undefined for abilities on self (eg. heal)
             ability: propAbility,
@@ -152,14 +120,14 @@ async function useItem({
     }
 
     // Set item end state, consume charges and durability
-    itemEntity.state = propUtility.state.end;
-    itemEntity.chg -= propUtility.cost.charges;
-    itemEntity.dur -= propUtility.cost.durability;
-    itemEntity = await saveEntity(itemEntity);
+    item.state = propUtility.state.end;
+    item.chg -= propUtility.cost.charges;
+    item.dur -= propUtility.cost.durability;
+    await saveEntity(item);
 
     // Publish item state to nearby players
     await publishAffectedEntitiesToPlayers(
-        [minifiedEntity(itemEntity, { stats: true })],
+        [minifiedEntity(item, { stats: true })],
         {
             publishTo: nearbyPlayerIds,
         },
@@ -483,11 +451,11 @@ async function configureItem(
     }
 
     // Check if can configure item
-    const { canConfigure, message } = canConfigureItem(player, itemEntity);
-    if (!canConfigure) {
+    const [ok, error] = canConfigureItem(player, itemEntity);
+    if (!ok) {
         await publishFeedEvent(player.player, {
             type: "error",
-            message,
+            message: error,
         });
         return; // do not proceed
     }
@@ -505,111 +473,81 @@ async function configureItem(
     });
 }
 
-async function enterItem(
-    player: PlayerEntity,
-    item: string,
-    now?: number,
-): Promise<{ player: PlayerEntity; pois: WorldPOIs }> {
-    // Set busy
-    player = (await setEntityBusy({
-        entity: player,
-        action: actions.enter.action,
-        now: now,
-    })) as PlayerEntity;
+function canUseItem(
+    self: CreatureEntity,
+    item: ItemEntity,
+    utility: string,
+): [boolean, string] {
+    // Check valid prop
+    if (!compendium.hasOwnProperty(item.prop)) {
+        return [false, `${item.prop} not found in compendium`];
+    }
+    const prop = compendium[item.prop];
 
-    // Get item
-    let itemEntity = (await fetchEntity(item)) as ItemEntity;
-    if (itemEntity == null) {
-        await publishFeedEvent(player.player, {
-            type: "error",
-            message: `Item ${item} not found`,
-        });
-        throw new Error(`Item ${item} not found`);
+    // Check valid utility
+    if (!(prop.utilities && prop.utilities[utility])) {
+        return [false, `Invalid utility ${utility} for item ${item.item}`];
+    }
+    const propUtility = prop.utilities[utility];
+
+    // Check item in range
+    if (propUtility.range != null) {
+        if (!entityInRange(self, item, propUtility.range)[0]) {
+            return [false, `${item.name} is out of range`];
+        }
     }
 
-    // Check in range
-    if (!entityInRange(player, itemEntity, actions.enter.range)[0]) {
-        await publishFeedEvent(player.player, {
-            type: "error",
-            message: `${item} is not in range`,
-        });
-        throw new Error(`${item} is not in range`);
+    // Check if have permissions to use item
+    if (!hasItemOwnerPermissions(item, self)) {
+        return [
+            false,
+            `${self.player || self.monster} does not own ${item.item}`,
+        ];
     }
 
-    // Check if can item can be entered
-    const prop = compendium[itemEntity.prop];
-    if (!prop.world) {
-        const message = `${itemEntity.name} is not something you can enter`;
-        await publishFeedEvent(player.player, {
-            type: "error",
-            message,
-        });
-        throw new Error(message);
-    }
-    if (!geohashLocationTypes.has(itemEntity.locT)) {
-        const message = `${itemEntity.item} is not in this world`;
-        await publishFeedEvent(player.player, {
-            type: "error",
-            message,
-        });
-        throw new Error(message);
+    // Check if utility requires item to be equipped and is equipped in the correct slot
+    if (
+        prop.utilities[utility].requireEquipped &&
+        !compendium[item.prop].equipment?.slot?.includes(
+            item.locT as EquipmentSlot,
+        )
+    ) {
+        return [false, `${item.item} is not equipped in the required slot`];
     }
 
-    // Substitute world variables
-    const { locationInstance, geohash, world, uri, locationType } =
-        substituteVariablesRecursively(prop.world as any, {
-            ...itemEntity.vars,
-            self: itemEntity,
-        });
+    // Check has enough charges or durability
+    if (item.chg < propUtility.cost.charges) {
+        return [
+            false,
+            `${item.item} has not enough charges to perform ${utility}`,
+        ];
+    }
+    if (item.dur < propUtility.cost.durability) {
+        return [
+            false,
+            `${item.item} has not enough durability to perform ${utility}`,
+        ];
+    }
 
-    const url = uri.startsWith("http") ? uri : `${GAME_TILEMAPS}/${uri}`;
+    return [true, ""];
+}
 
-    // Spawn world (only if not exists)
-    await spawnWorld({
-        world, // specify the worldId manually, if the world already exists it will fetch it without spawning
-        geohash,
-        locationType: locationType as GeohashLocation,
-        locationInstance,
-        assetUrl: url,
-        tileHeight: TILE_HEIGHT, // do not change this
-        tileWidth: TILE_WIDTH,
-    });
+function canConfigureItem(
+    self: CreatureEntity,
+    item: ItemEntity,
+): [boolean, string] {
+    // Check valid prop
+    if (!compendium.hasOwnProperty(item.prop)) {
+        return [false, `${item.prop} not found in compendium`];
+    }
 
-    // Spawn world POIs
-    const { pois } = await spawnWorldPOIs(world, {
-        worldAssetMetadataCache: worldAssetMetadataCache,
-        worldPOIsCache: worldPOIsCache,
-        source: itemEntity,
-    });
+    // Check if have permissions to configure item
+    if (!hasItemConfigOwnerPermissions(item, self)) {
+        return [
+            false,
+            `${self.player || self.monster} does not own ${item.item}`,
+        ];
+    }
 
-    // Check for player spawn point (use world geohash as fall back)
-    const playerSpawnPOI = pois.find(
-        (p) => "spawn" in p && p.spawn === "player",
-    );
-
-    const playerLocation = playerSpawnPOI
-        ? [playerSpawnPOI.geohash]
-        : [geohash];
-
-    const nearbyPlayerIds = await getNearbyPlayerIds(
-        player.loc[0],
-        player.locT as GeohashLocation,
-        player.locI,
-    );
-
-    // Change player location to world
-    player.loc = playerLocation;
-    player.locT = locationType as GeohashLocation;
-    player.locI = locationInstance;
-
-    // Save player
-    player = (await saveEntity(player)) as PlayerEntity;
-
-    // Inform all players of self location change
-    await publishAffectedEntitiesToPlayers(
-        [minifiedEntity(player, { stats: true })],
-        { publishTo: nearbyPlayerIds },
-    );
-
-    return { player, pois };
+    return [true, ""];
 }
