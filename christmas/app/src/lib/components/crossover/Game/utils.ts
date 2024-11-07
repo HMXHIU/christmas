@@ -5,6 +5,7 @@ import {
     topologyResultCache,
 } from "$lib/crossover/caches";
 import { GAME_PREFIX, GAME_WORLDS } from "$lib/crossover/defs";
+import type { Player } from "$lib/crossover/types";
 import { geohashToColRow, geohashToGridCell } from "$lib/crossover/utils";
 import {
     avatarMorphologies,
@@ -57,6 +58,7 @@ export {
     getAvatarMetadata,
     getImageForTile,
     getPathHighlights,
+    getPlayerLocation,
     getPlayerPosition,
     getTilesetForTile,
     initAssetManager,
@@ -69,6 +71,7 @@ export {
     WORLD_COL_MAX,
     WORLD_ISOY_MAX,
     WORLD_ROW_MAX,
+    type Location,
     type Position,
 };
 
@@ -79,16 +82,27 @@ const WORLD_ISOY_MAX = cartToIso(
     WORLD_ROW_MAX * CELL_WIDTH,
 )[1]; // 33093136
 
-interface Position {
+interface Location {
+    geohash: string;
+    locationType: GeohashLocation;
+    locationInstance: string;
+}
+
+interface Position extends Location {
     row: number;
     col: number;
     isoX: number;
     isoY: number;
-    geohash: string;
-    locationType: GeohashLocation;
-    locationInstance: string;
     precision: number;
     elevation: number;
+}
+
+function getPlayerLocation(p: Player): Location {
+    return {
+        geohash: p.loc[0],
+        locationInstance: p.locI,
+        locationType: p.locT as GeohashLocation,
+    };
 }
 
 async function calculatePosition(

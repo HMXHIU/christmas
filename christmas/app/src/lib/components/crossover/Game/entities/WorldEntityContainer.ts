@@ -1,3 +1,4 @@
+import type { World } from "$lib/crossover/types";
 import { Container, Texture } from "pixi.js";
 import { IsoMesh } from "../../shaders/IsoMesh";
 import { layers } from "../layers";
@@ -9,6 +10,7 @@ export { WorldEntityContainer };
 class WorldEntityContainer extends Container {
     public mesh: IsoMesh | null = null;
     public texture: Texture | null = null;
+    public world: World | null = null;
 
     public textureOffset: { x: number; y: number } = { x: 0, y: 0 };
     public layerOffset: { x: number; y: number } = { x: 0, y: 0 };
@@ -30,6 +32,7 @@ class WorldEntityContainer extends Container {
         layerOffset,
         tileOffset,
         tileId,
+        world,
     }: {
         texture: Texture;
         layer: string;
@@ -41,10 +44,12 @@ class WorldEntityContainer extends Container {
         layerOffset: { x: number; y: number };
         tileOffset: { x: number; y: number };
         tileId: string;
+        world: World;
         cellHeight?: number;
     }) {
         super();
 
+        this.world = world;
         this.textureOffset = textureOffset;
         this.layerOffset = layerOffset;
         this.tileOffset = tileOffset;

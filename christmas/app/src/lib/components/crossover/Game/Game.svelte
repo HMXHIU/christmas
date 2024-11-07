@@ -4,9 +4,7 @@
     import { getPlayerAbilities } from "$lib/crossover/world/abilities";
     import { actions } from "$lib/crossover/world/settings/actions";
     import { compendium } from "$lib/crossover/world/settings/compendium";
-    import type { GeohashLocation } from "$lib/crossover/world/types";
     import { cn } from "$lib/shadcn";
-    import { sleep } from "$lib/utils";
     import gsap from "gsap";
     import {
         Application,
@@ -20,7 +18,6 @@
         calibrateWorldOffset,
         tryExecuteGameCommand,
         updateEntities,
-        updateWorlds,
     } from ".";
     import type { ActionEvent } from "../../../../routes/api/crossover/stream/+server";
     import {
@@ -28,7 +25,6 @@
         ctaEvent,
         ctaRecord,
         entitiesEvent,
-        equipmentRecord,
         itemRecord,
         loginEvent,
         monsterRecord,
@@ -38,7 +34,6 @@
         target,
         userMetadata,
         worldOffset,
-        worldRecord,
     } from "../../../../store";
     import {
         clearInstancedShaderMeshes,
@@ -51,17 +46,12 @@
         cullAllEntityContainers,
         entityContainers,
         entitySigils,
-        garbageCollectEntityContainers,
     } from "./entities";
     import { createHIDHandlers } from "./hid";
     import { CANVAS_HEIGHT, CANVAS_WIDTH, CELL_WIDTH } from "./settings";
     import { displayCommandPreview, displayTargetBox } from "./ui";
     import { getPlayerPosition, registerGSAP, type Position } from "./utils";
-    import {
-        cullAllWorldEntityContainers,
-        drawWorlds,
-        garbageCollectWorldEntityContainers,
-    } from "./world";
+    import { drawWorldsAtLocation } from "./world";
 
     // Register GSAP & PixiPlugin
     registerGSAP();
@@ -101,9 +91,10 @@
     function resize(clientHeight: number, clientWidth: number) {
         if (app && isInitialized && clientHeight && clientWidth && $player) {
             app.renderer.resize(clientWidth, clientHeight);
+            // Camera track the player
             const position = getPlayerPosition();
             if (position != null) {
-                handleTrackPlayer({ position, duration: 1 });
+                cameraTrackPosition(position, 1);
             }
         }
     }
@@ -159,59 +150,10 @@
         }
     }
 
-    export async function handlePlayerPositionUpdate(
-        oldPosition: Position | null,
-        newPosition: Position,
-    ) {
-        if (worldStage == null) {
-            return;
-        }
+    function cameraTrackPosition(position: Position, duration?: number) {
+        if (!worldStage) return;
 
-        // Cull entity meshes outside view
-        garbageCollectEntityContainers(newPosition);
-
-        // Cull world meshes outside town
-        garbageCollectWorldEntityContainers(newPosition);
-
-        // Reload the game (if strayed to far off the `worldOfffset`)
-        const cols = Math.abs($worldOffset.col - newPosition.col);
-        const rows = Math.abs($worldOffset.row - newPosition.row);
-        const maxDistance = 15000;
-        if (cols > maxDistance || rows > maxDistance) {
-            // Recalibrate worldOffset (this affects cartToIso & isoToCart)
-            calibrateWorldOffset(newPosition.geohash);
-            await reloadGame(newPosition);
-        }
-        // Reload game if enter a new locationType
-        else if (
-            oldPosition &&
-            (oldPosition.locationType !== newPosition.locationType ||
-                oldPosition.locationInstance !== newPosition.locationInstance)
-        ) {
-            await reloadGame(newPosition);
-        }
-
-        // Debug World
-        // await debugWorld(
-        //     worldStage,
-        //     newPosition.locationInstance,
-        //     newPosition.locationType,
-        // );
-    }
-
-    export async function handleTrackPlayer({
-        position,
-        duration,
-    }: {
-        position: Position;
-        duration?: number;
-    }) {
-        if (worldStage == null) {
-            return;
-        }
-        // Update biomes
-        await drawBiomeShaders(position, worldStage);
-
+        // Camera track the player
         const cameraX = position.isoX + CELL_WIDTH / 2 - clientWidth / 2;
         const cameraY = position.isoY - position.elevation - clientHeight / 2;
         if (duration != null) {
@@ -225,6 +167,62 @@
         } else {
             worldStage.pivot = { x: cameraX, y: cameraY };
         }
+    }
+
+    /**
+     * This is called for each geohash position change (unused)
+     */
+    export async function handlePlayerPositionUpdate(
+        oldPosition: Position | null,
+        newPosition: Position,
+    ) {}
+
+    /**
+     * This is called once entity reaches destination
+     */
+    export async function handleTrackPlayer({
+        startPosition,
+        position,
+        duration,
+    }: {
+        startPosition: Position | null;
+        position: Position;
+        duration?: number;
+    }) {
+        if (!worldStage) return;
+
+        // Update biomes
+        await drawBiomeShaders(position, worldStage);
+
+        // Camera track the player
+        cameraTrackPosition(position, duration);
+
+        // Reload the game (if strayed to far off the `worldOfffset`)
+        const maxDistance = 15000;
+        if (
+            Math.abs($worldOffset.col - position.col) > maxDistance ||
+            Math.abs($worldOffset.row - position.row) > maxDistance
+        ) {
+            // Recalibrate worldOffset (this affects cartToIso & isoToCart)
+            calibrateWorldOffset(position.geohash);
+            // Relook surrounding entities
+            if ($player) {
+                await tryExecuteGameCommand([actions.look, { self: $player }]);
+            }
+        }
+        // Relook surrounding entities if enter a new location
+        else if (
+            !startPosition ||
+            startPosition.locationType !== position.locationType ||
+            startPosition.locationInstance !== position.locationInstance
+        ) {
+            if ($player) {
+                await tryExecuteGameCommand([actions.look, { self: $player }]);
+            }
+        }
+
+        // Update worlds
+        await drawWorldsAtLocation(position, worldStage);
     }
 
     /*
@@ -300,35 +298,6 @@
                     handleTrackPlayer,
                 },
             );
-
-            await drawWorlds($worldRecord, worldStage);
-        }
-    }
-
-    export async function reloadGame(position: Position) {
-        console.log("Reloading world ...");
-
-        // Stop tweens
-        stopTweens();
-
-        playerRecord.set({});
-        itemRecord.set({});
-        monsterRecord.set({});
-        equipmentRecord.set({});
-        worldRecord.set({});
-
-        // Clear all entity containers (items, monsters, players, worlds)
-        cullAllEntityContainers();
-        cullAllWorldEntityContainers();
-
-        // Wait for busy
-        await sleep(1000);
-
-        // Look at surroundings & update inventory
-        await updateWorlds(position.geohash, position.locationType);
-        if ($player) {
-            await tryExecuteGameCommand([actions.look, { self: $player }]);
-            await tryExecuteGameCommand([actions.inventory, { self: $player }]);
         }
     }
 
@@ -351,7 +320,6 @@
                 playerAbilities.set(getPlayerAbilities(p));
 
                 // Look at surroundings & update inventory
-                await updateWorlds(p.loc[0], p.locT as GeohashLocation);
                 await tryExecuteGameCommand([actions.look, { self: p }]);
                 await tryExecuteGameCommand([actions.inventory, { self: p }]);
             }),
@@ -367,18 +335,13 @@
                 await drawActionEvent(e);
             }),
             entitiesEvent.subscribe(async (e) => {
-                if (!e || !worldStage || !app) return;
+                if (!e || !worldStage || !app || !$player) return;
                 await updateEntities(e, {
                     app: app,
                     stage: worldStage,
                     handlePlayerPositionUpdate,
                     handleTrackPlayer,
                 });
-            }),
-            worldRecord.subscribe((wr) => {
-                if (worldStage != null) {
-                    drawWorlds(wr, worldStage);
-                }
             }),
             target.subscribe((t) => {
                 if ($player == null || worldStage == null) {

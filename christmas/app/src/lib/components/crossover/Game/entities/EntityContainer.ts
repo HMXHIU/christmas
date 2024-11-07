@@ -10,7 +10,7 @@ import {
 import { type Actions } from "$lib/crossover/world/actions";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { gsap } from "gsap";
-import { clone } from "lodash-es";
+import { clone, cloneDeep } from "lodash-es";
 import { Container, Graphics, type DestroyOptions } from "pixi.js";
 import { calculatePosition, type Position } from "../utils";
 import { ActionBubble } from "./ActionBubble";
@@ -79,6 +79,8 @@ export class EntityContainer extends Container {
 
         // Avatar is moving
         if (pthclk + pthdur > now) {
+            const startPosition = cloneDeep(this.isoPosition);
+
             const pathPositions = getPositionsForPath(
                 // includes start
                 geohashToGridCell(pthst),
@@ -138,6 +140,7 @@ export class EntityContainer extends Container {
             this.tween = this.tween.play();
             if (finalPosition != null) {
                 this.emit("trackEntity", {
+                    startPosition,
                     position: finalPosition,
                     duration: pthdur / 1000,
                 });
@@ -156,6 +159,8 @@ export class EntityContainer extends Container {
             return;
         }
 
+        const startPosition = cloneDeep(this.isoPosition);
+
         // Tween position to isoPosition
         if (duration != null) {
             if (this.tween != null) {
@@ -173,7 +178,11 @@ export class EntityContainer extends Container {
                     this.emit("positionUpdate", oldPosition, isoPosition);
                 },
             });
-            this.emit("trackEntity", { position: isoPosition, duration });
+            this.emit("trackEntity", {
+                startPosition,
+                position: isoPosition,
+                duration,
+            });
         }
         // Set position immediately
         else {
@@ -185,7 +194,7 @@ export class EntityContainer extends Container {
             );
             this.updateDepth(isoPosition.isoY);
             this.emit("positionUpdate", oldPosition, isoPosition);
-            this.emit("trackEntity", { position: isoPosition });
+            this.emit("trackEntity", { startPosition, position: isoPosition });
         }
     }
 

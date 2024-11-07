@@ -51,6 +51,7 @@ import {
     crossoverCmdUseItem,
     crossoverCmdWrit,
     crossoverPlayerInventory,
+    crossoverWorldWorlds,
 } from "./client";
 import {
     getGameActionId,
@@ -71,12 +72,14 @@ import {
     type BarterSerialized,
     type Direction,
     type GeohashLocation,
+    type LocationType,
 } from "./world/types";
 import { isGeohashTraversable } from "./world/utils";
 
 export {
     executeGameCommand,
     getDirectionsToPosition,
+    getWorldsAtLocation,
     isGeohashTraversableClient,
     moveInRangeOfTarget,
     performAction,
@@ -434,17 +437,69 @@ async function hasColliders(
     return false;
 }
 
-async function getWorldForGeohash(
+function groupLocationKey(
+    geohash: string,
+    locationType: LocationType,
+    locationInstance: string,
+): string {
+    return `${geohash}-${locationType}-${locationInstance}`;
+}
+
+async function getWorldsAtLocation({
+    geohash,
+    locationInstance,
+    locationType,
+}: {
+    geohash: string;
+    locationInstance: string;
+    locationType: GeohashLocation;
+}): Promise<Record<string, World>> {
+    // All worlds at locT=geohash are at town precision (5p)
+    let town = geohash.slice(0, worldSeed.spatial.town.precision);
+
+    // Check have world at location (Note: check null, as {} means no worlds at location)
+    const locationKey = groupLocationKey(town, locationType, locationInstance);
+    const ws = get(worldRecord)[locationKey];
+    if (ws != null) {
+        return ws;
+    }
+
+    // Fetch worlds at location
+    const { worlds } = await crossoverWorldWorlds(
+        town,
+        locationType,
+        locationInstance,
+    );
+
+    worldRecord.update((wr) => {
+        wr[locationKey] = wr[locationKey] ?? {};
+        for (const w of worlds) {
+            wr[locationKey][w.world] = w;
+        }
+        return wr;
+    });
+
+    return get(worldRecord)[locationKey] ?? {};
+}
+
+async function getWorldAtLocation(
     geohash: string,
     locationType: GeohashLocation,
+    locationInstance: string,
 ): Promise<World | undefined> {
-    for (const [town, worlds] of Object.entries(get(worldRecord))) {
-        if (!geohash.startsWith(town)) continue;
-        for (const world of Object.values(worlds)) {
-            for (const loc of world.loc) {
-                if (geohash.startsWith(loc) && world.locT === locationType) {
-                    return world;
-                }
+    const worlds = await getWorldsAtLocation({
+        geohash,
+        locationInstance,
+        locationType,
+    });
+    for (const world of Object.values(worlds)) {
+        for (const loc of world.loc) {
+            if (
+                geohash.startsWith(loc) &&
+                world.locT === locationType &&
+                world.locI == locationInstance
+            ) {
+                return world;
             }
         }
     }
@@ -456,12 +511,12 @@ async function isGeohashTraversableClient(
     locationType: GeohashLocation,
     locationInstance: string,
 ): Promise<boolean> {
-    return isGeohashTraversable(
+    return await isGeohashTraversable(
         geohash,
         locationType,
         locationInstance,
         hasColliders,
-        getWorldForGeohash,
+        getWorldAtLocation,
         {
             topologyResponseCache,
             topologyResultCache,

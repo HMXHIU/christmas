@@ -1,11 +1,11 @@
 import Root from "./Game.svelte";
 
 import {
-    getPlayerPosition,
+    getPlayerLocation,
+    type Location,
     type Position,
 } from "$lib/components/crossover/Game/utils";
 import { addMessageFeed } from "$lib/components/crossover/GameWindow";
-import { crossoverWorldWorlds } from "$lib/crossover/client";
 import { executeGameCommand } from "$lib/crossover/game";
 import type { GameCommand } from "$lib/crossover/ir";
 import { entityLinguistics } from "$lib/crossover/mud/entities";
@@ -21,11 +21,7 @@ import {
     expireConditions,
     type Condition,
 } from "$lib/crossover/world/combat";
-import { worldSeed } from "$lib/crossover/world/settings/world";
-import {
-    geohashLocationTypes,
-    type GeohashLocation,
-} from "$lib/crossover/world/types";
+import { geohashLocationTypes } from "$lib/crossover/world/types";
 import { AsyncLock, substituteVariables } from "$lib/utils";
 import type { HTTPHeaders } from "@trpc/client";
 import { groupBy, isEqual } from "lodash-es";
@@ -42,26 +38,24 @@ import {
     playerRecord,
     target,
     worldOffset,
-    worldRecord,
 } from "../../../../store";
 import { calculateLandGrading } from "./biomes";
 import {
     cullEntityContainerById,
     entityContainers,
     entitySigils,
-    garbageCollectEntityContainers,
+    garbageCollectECs,
     upsertEntityContainer,
     upsertEntitySigil,
 } from "./entities";
 import { AvatarEntityContainer } from "./entities/AvatarEntityContainer";
 import { hideMovementPath } from "./ui";
-import { garbageCollectWorldEntityContainers } from "./world";
+import { garbageCollectWorldECs } from "./world";
 
 export {
     calibrateWorldOffset,
     tryExecuteGameCommand,
     updateEntities,
-    updateWorlds,
     type GameLogic,
 };
 
@@ -75,6 +69,7 @@ interface GameLogic {
         newPosition: Position,
     ) => Promise<void>;
     handleTrackPlayer: (params: {
+        startPosition: Position | null;
         position: Position;
         duration?: number;
     }) => Promise<void>;
@@ -85,30 +80,92 @@ function calibrateWorldOffset(geohash: string) {
     worldOffset.set({ col: col, row: row });
 }
 
-/**
- * Call this to update wordRecord when player moves to a new town
- *
- * @param geohash - geohash of the player
- * @returns
- */
-async function updateWorlds(geohash: string, locationType: GeohashLocation) {
-    const t = geohash.slice(0, worldSeed.spatial.town.precision);
-    // Already have world at town (Note: no world in town ({} is valid))
-    if (get(worldRecord)[t] != null) {
-        return;
+function updateEntities(
+    {
+        players,
+        items,
+        monsters,
+        op,
+    }: {
+        players?: Player[];
+        items?: Item[];
+        monsters?: Monster[];
+        op?: "upsert" | "replace";
+    },
+    game: GameLogic,
+) {
+    op = op ?? "upsert";
+
+    // The most updated player location is required
+    const selfPlayer = get(player);
+    if (!selfPlayer) return;
+    const location = players
+        ? getPlayerLocation(
+              players.find((p) => p.player === selfPlayer.player) ?? selfPlayer,
+          )
+        : getPlayerLocation(selfPlayer);
+
+    // Update itemRecord
+    if (items?.length) {
+        updateRecord<Item>(itemRecord, items, "item", op, game, location, {
+            handleChanged: [
+                updateEquipment,
+                updateEntityContainer,
+                displayEntityEffects,
+            ],
+            onComplete: async (record) => {
+                // Load player inventory
+                loadInventory(record);
+
+                // Update the land grading
+                const updatedLandGrading = await calculateLandGrading(
+                    Object.values(record),
+                );
+
+                // If the land grading has changed,
+                if (!isEqual(updatedLandGrading, landGrading)) {
+                    landGrading.set(updatedLandGrading);
+                }
+            },
+        });
     }
 
-    // Get world at town
-    const { town, worlds } = await crossoverWorldWorlds(geohash, locationType);
-    worldRecord.update((wr) => {
-        if (wr[town] == null) {
-            wr[town] = {};
-        }
-        for (const w of worlds) {
-            wr[town][w.world] = w;
-        }
-        return wr;
-    });
+    // Update monsterRecord
+    if (monsters?.length) {
+        updateRecord<Monster>(
+            monsterRecord,
+            monsters,
+            "monster",
+            op,
+            game,
+            location,
+            {
+                handleChanged: [updateEntityContainer, displayEntityEffects],
+            },
+        );
+    }
+
+    // Update playerRecord
+    if (players?.length) {
+        updateRecord<Player>(
+            playerRecord,
+            players,
+            "player",
+            op,
+            game,
+            location,
+            {
+                handleChanged: [
+                    updatePlayer,
+                    updateEntityContainer,
+                    displayEntityEffects,
+                ],
+            },
+        );
+    }
+
+    // Garbage collect
+    garbageCollect(location);
 }
 
 /**
@@ -121,6 +178,7 @@ function displayEntityEffects<T extends Actor>(
     oldEntity: T | null,
     newEntity: T,
     game: GameLogic,
+    location: Location,
 ) {
     // If just created don't display effects
     if (oldEntity == null) return;
@@ -197,75 +255,72 @@ function displayEntityEffects<T extends Actor>(
     }
 }
 
-/**
- * Upsert entity containers for entities with lotT=geohash
- *
- * @param oldEntity
- * @param newEntity
- * @param game
- */
 const updateEntityContainerLock = new AsyncLock();
 async function updateEntityContainer<T extends Actor>(
     oldEntity: T | null,
     newEntity: T,
     game: GameLogic,
+    location: Location,
 ) {
     updateEntityContainerLock.withLock(async () => {
-        if (geohashLocationTypes.has(newEntity.locT)) {
-            // Update entity container
-            const [created, ec] = await upsertEntityContainer(
-                newEntity,
-                game.stage,
-            );
-            if (created) {
-                // Load initial inventory
-                if (ec instanceof AvatarEntityContainer) {
-                    const entityEquipment = get(equipmentRecord)[ec.entityId];
-                    if (entityEquipment) {
-                        ec.loadInventory(Object.values(entityEquipment));
-                    }
-                }
-
-                // Player (self)
-                if (ec.entityId === get(player)?.player) {
-                    const avatar = (ec as AvatarEntityContainer).avatar;
-
-                    // Attach game events
-                    ec.on("positionUpdate", game.handlePlayerPositionUpdate);
-                    ec.on("trackEntity", game.handleTrackPlayer); // this is to call the camera to track the player
-                    ec.on("pathCompleted", () => hideMovementPath());
-
-                    // Initial event
-                    if (ec.isoPosition != null) {
-                        game.handlePlayerPositionUpdate(null, ec.isoPosition);
-                        game.handleTrackPlayer({ position: ec.isoPosition });
-                    }
-
-                    // Create sigil (at bottom left)
-                    if (avatar) {
-                        const sigil = await upsertEntitySigil(
-                            ec,
-                            game.app.stage,
-                        );
-                        const bounds = sigil.getBounds();
-                        const padding = 15;
-                        sigil.position.set(
-                            padding,
-                            game.app.screen.height -
-                                bounds.height -
-                                bounds.height,
-                        );
-                    }
-                }
-            }
-
-            // Update sigils (only upsert if already created as we dont want sigils for every entity)
-            if (entitySigils[ec.entityId]) {
-                entitySigils[ec.entityId].updateUI();
-            }
-        } else {
-            // Cull ec if not in environment
+        // Check entity in same location as player
+        if (
+            location.locationInstance !== newEntity.locI ||
+            location.locationType !== newEntity.locT
+        ) {
             cullEntityContainerById(getEntityId(newEntity)[0]);
+            return;
+        }
+
+        // Update entity container
+        const [created, ec] = await upsertEntityContainer(
+            newEntity,
+            game.stage,
+        );
+
+        // Initialize entity if newly created (ec could have been GCed)
+        if (created) {
+            // Load player equipment
+            if (ec instanceof AvatarEntityContainer) {
+                const entityEquipment = get(equipmentRecord)[ec.entityId];
+                if (entityEquipment) {
+                    ec.loadInventory(Object.values(entityEquipment));
+                }
+            }
+
+            // Player (self)
+            if (ec.entityId === get(player)?.player) {
+                // Attach game events
+                ec.on("positionUpdate", game.handlePlayerPositionUpdate);
+                ec.on("trackEntity", game.handleTrackPlayer); // this is to call the camera to track the player
+                ec.on("pathCompleted", hideMovementPath);
+
+                // Initial event
+                if (ec.isoPosition != null) {
+                    game.handlePlayerPositionUpdate(null, ec.isoPosition);
+                    game.handleTrackPlayer({
+                        startPosition: null,
+                        position: ec.isoPosition,
+                    });
+                }
+
+                // Create sigil (at bottom left)
+                const avatar = (ec as AvatarEntityContainer).avatar;
+                if (avatar) {
+                    const sigil = await upsertEntitySigil(ec, game.app.stage);
+                    const bounds = sigil.getBounds();
+                    const padding = 15;
+                    sigil.position.set(
+                        padding,
+                        game.app.screen.height - bounds.height - bounds.height,
+                    );
+                }
+            }
+        }
+
+        // Update sigils (only upsert if already created as we dont want sigils for every entity)
+        if (entitySigils[ec.entityId]) {
+            entitySigils[ec.entityId].updateUI();
         }
     });
 }
@@ -280,23 +335,11 @@ async function updatePlayer(
     oldEntity: Player | null,
     newEntity: Player,
     game: GameLogic,
+    location: Location,
 ) {
+    // Update player (self)
     if (newEntity.player === get(player)?.player) {
-        // Set player (self)
         player.set(newEntity);
-
-        // Update worlds if location changed
-        if (
-            oldEntity == null ||
-            oldEntity.loc[0] !== newEntity.loc[0] ||
-            oldEntity.locT !== newEntity.locT ||
-            oldEntity.locI !== newEntity.locI
-        ) {
-            await updateWorlds(
-                newEntity.loc[0],
-                newEntity.locT as GeohashLocation,
-            );
-        }
     }
 }
 
@@ -310,6 +353,7 @@ async function updateEquipment(
     oldItem: Item | null,
     newItem: Item,
     game: GameLogic,
+    location: Location,
 ) {
     if (!geohashLocationTypes.has(newItem.locT)) {
         equipmentRecord.update((er) => {
@@ -350,84 +394,19 @@ function loadInventory(record: Record<string, Item>) {
     }
 }
 
-function updateEntities(
-    {
-        players,
-        items,
-        monsters,
-        op,
-    }: {
-        players?: Player[];
-        items?: Item[];
-        monsters?: Monster[];
-        op?: "upsert" | "replace";
-    },
-    game: GameLogic,
-) {
-    op = op ?? "upsert";
-
-    // Update itemRecord
-    if (items?.length) {
-        updateRecord<Item>(itemRecord, items, "item", op, game, {
-            handleChanged: [
-                updateEquipment,
-                updateEntityContainer,
-                displayEntityEffects,
-            ],
-            onComplete: async (record) => {
-                // Load player inventory
-                loadInventory(record);
-
-                // Update the land grading
-                const updatedLandGrading = await calculateLandGrading(
-                    Object.values(record),
-                );
-
-                // If the land grading has changed,
-                if (!isEqual(updatedLandGrading, landGrading)) {
-                    landGrading.set(updatedLandGrading);
-                }
-            },
-        });
-    }
-
-    // Update monsterRecord
-    if (monsters?.length) {
-        updateRecord<Monster>(monsterRecord, monsters, "monster", op, game, {
-            handleChanged: [updateEntityContainer, displayEntityEffects],
-        });
-    }
-
-    // Update playerRecord
-    if (players?.length) {
-        updateRecord<Player>(playerRecord, players, "player", op, game, {
-            handleChanged: [
-                updatePlayer, // update player (self)
-                updateEntityContainer,
-                displayEntityEffects,
-            ],
-        });
-    }
-
-    // Garbage collect irrelevant ecs, the player might have moved to a different `locT`
-    const position = getPlayerPosition();
-    if (position) {
-        garbageCollectEntityContainers(position);
-        garbageCollectWorldEntityContainers(position);
-    }
-}
-
 function updateRecord<T extends { [key: string]: any }>(
     record: Writable<Record<string, T>>,
     entities: T[],
     idKey: keyof T & string,
     op: "upsert" | "replace",
     game: GameLogic,
+    location: Location,
     callbacks?: {
         handleChanged?: ((
             oldEntity: T | null,
             newEntity: T,
             game: GameLogic,
+            location: Location,
         ) => void)[];
         onComplete?: (record: Record<string, T>) => void;
     },
@@ -441,8 +420,13 @@ function updateRecord<T extends { [key: string]: any }>(
             if (newRecord[entityId]) {
                 const updatedEnity = { ...newRecord[entityId], ...entity };
                 if (callbacks?.handleChanged) {
-                    for (const f of callbacks?.handleChanged) {
-                        f(newRecord[entityId], updatedEnity, game);
+                    for (const handleChanged of callbacks?.handleChanged) {
+                        handleChanged(
+                            newRecord[entityId],
+                            updatedEnity,
+                            game,
+                            location,
+                        );
                     }
                 }
                 newRecord[entityId] = updatedEnity;
@@ -450,8 +434,8 @@ function updateRecord<T extends { [key: string]: any }>(
             // Create entity
             else {
                 if (callbacks?.handleChanged) {
-                    for (const f of callbacks?.handleChanged) {
-                        f(null, entity, game);
+                    for (const handleChanged of callbacks?.handleChanged) {
+                        handleChanged(null, entity, game, location);
                     }
                 }
                 newRecord[entityId] = entity;
@@ -477,4 +461,9 @@ async function tryExecuteGameCommand(
             messageFeedType: "error",
         });
     }
+}
+
+function garbageCollect(location: Location) {
+    garbageCollectECs(location);
+    garbageCollectWorldECs(location);
 }

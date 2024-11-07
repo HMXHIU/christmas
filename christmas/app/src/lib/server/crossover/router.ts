@@ -191,15 +191,7 @@ const RespawnMonstersSchema = z.object({
     players: z.array(z.string()).optional(),
 });
 
-// Schemas - world
-const SkillsSchema = z.record(z.enum(SkillLinesEnum), z.number());
-const SpawnMonsterSchema = z.object({
-    geohash: z.string(),
-    locationType: GeohashLocationSchema,
-    locationInstance: z.string(),
-    beast: z.string(),
-    additionalSkills: SkillsSchema.optional(),
-});
+// Schemas - dm
 const BuffCreatureSchema = z.object({
     entity: z.string(),
     hp: z.number().optional(),
@@ -208,11 +200,30 @@ const BuffCreatureSchema = z.object({
     lum: z.number().optional(),
     umb: z.number().optional(),
 });
+const SkillsSchema = z.record(z.enum(SkillLinesEnum), z.number());
+const SpawnMonsterSchema = z.object({
+    geohash: z.string(),
+    locationType: GeohashLocationSchema,
+    locationInstance: z.string(),
+    beast: z.string(),
+    additionalSkills: SkillsSchema.optional(),
+});
 const SpawnWorldSchema = z.object({
     geohash: z.string(),
     locationType: GeohashLocationSchema,
     locationInstance: z.string().optional(), // defaults to @
     tilemap: z.string(), // in minio bucket `game/worlds/tilemaps/${tilemap}`
+});
+
+// Schemas - world
+const WorldSchema = z.object({
+    geohash: z.string(),
+    locationType: GeohashLocationSchema,
+    locationInstance: z.string(),
+});
+const BiomesSchema = z.object({
+    village: z.string().length(worldSeed.spatial.village.precision),
+    locationType: GeohashLocationSchema,
 });
 
 // Schemas - player
@@ -380,14 +391,7 @@ const crossoverRouter = {
     // World
     world: t.router({
         biomes: dmServiceProcedure
-            .input(
-                z.object({
-                    village: z
-                        .string()
-                        .length(worldSeed.spatial.village.precision),
-                    locationType: GeohashLocationSchema,
-                }),
-            )
+            .input(BiomesSchema)
             .mutation(async ({ ctx, input }) => {
                 const { village, locationType } = input;
                 const biomes: Record<
@@ -459,27 +463,20 @@ const crossoverRouter = {
                 dungeonEntrances,
             };
         }),
-        worlds: authProcedure
-            .input(
-                z.object({
-                    geohash: z.string(),
-                    locationType: GeohashLocationSchema,
-                }),
-            )
-            .query(async ({ input }) => {
-                let { geohash, locationType } = input;
-                const town = geohash.slice(0, worldSeed.spatial.town.precision);
-                const worlds = (await worldsInGeohashQuerySet(
-                    [town],
-                    locationType,
-                ).return.all()) as WorldEntity[];
+        worlds: authProcedure.input(WorldSchema).query(async ({ input }) => {
+            let { geohash, locationType, locationInstance } = input;
+            const worlds = (await worldsInGeohashQuerySet(
+                [geohash],
+                locationType,
+                locationInstance,
+            ).return.all()) as WorldEntity[];
 
-                // TODO: hash worlds and have API to check world hashes if need for invalidation
-                return {
-                    town,
-                    worlds: worlds as World[],
-                };
-            }),
+            // TODO: include hash of the worlds to check if worlds have changed (need API to check?)
+            return {
+                geohash,
+                worlds: worlds as World[],
+            };
+        }),
     }),
     // Player
     player: t.router({

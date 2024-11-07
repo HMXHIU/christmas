@@ -294,7 +294,7 @@ async function poisInWorld(
     },
 ): Promise<WorldPOIs> {
     // Get from cache
-    const cacheKey = world.uri;
+    const cacheKey = world.world; // world key unique hash
     const cached = await options?.worldPOIsCache?.get(cacheKey);
     if (cached) return cached;
 

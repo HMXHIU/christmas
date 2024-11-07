@@ -63,6 +63,7 @@ function createHIDHandlers(stage: Container) {
             [x, y],
             playerPosition.locationType,
         );
+
         if (targetGeohash) {
             // Get path directions using A*
             const [colEnd, rowEnd] = geohashToColRow(targetGeohash);

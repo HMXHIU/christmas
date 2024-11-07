@@ -30,7 +30,7 @@ import type {
 } from "$lib/server/crossover/types";
 import { itemRepository, monsterRepository, playerRepository } from "./redis";
 import {
-    hasCollidersInGeohash,
+    hasCollidersAtLocation,
     worldsContainingGeohashQuerySet,
 } from "./redis/queries";
 
@@ -56,13 +56,15 @@ function entityIsBusy(entity: Creature): [boolean, number] {
     return [false, now];
 }
 
-async function getWorldAtGeohash(
+async function getWorldAtLocation(
     geohash: string,
     locationType: GeohashLocation,
+    locationInstance: string,
 ): Promise<WorldEntity | undefined> {
     return (await worldsContainingGeohashQuerySet(
         [geohash],
         locationType,
+        locationInstance,
     ).first()) as WorldEntity | undefined;
 }
 
@@ -75,8 +77,8 @@ async function isGeohashTraversableServer(
         geohash,
         locationType,
         locationInstance,
-        hasCollidersInGeohash,
-        getWorldAtGeohash,
+        hasCollidersAtLocation,
+        getWorldAtLocation,
         {
             topologyResultCache,
             topologyBufferCache,

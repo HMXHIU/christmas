@@ -388,6 +388,11 @@ async function calculateTextureBuffers(
                 geohash,
             );
 
+            // Don't draw biomes when inside buildings (still need to calculate hit testing)
+            if (locationType === "in") {
+                continue;
+            }
+
             // Use the entire sprite sheet as the texture (Note: must all be in the same sheet)
             const textureUid = texture.source.label;
             const { x0, y0, x1, y1, x2, y2, x3, y3 } = texture.uvs;

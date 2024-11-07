@@ -16,6 +16,7 @@ import { MS_PER_TICK } from "$lib/crossover/world/settings";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { bestiary } from "$lib/crossover/world/settings/bestiary";
 import { compendium } from "$lib/crossover/world/settings/compendium";
+import { worldSeed } from "$lib/crossover/world/settings/world";
 import {
     geohashLocationTypes,
     type GeohashLocation,
@@ -32,7 +33,7 @@ import {
     getAvatarMetadata,
     isCellInView,
     scaleToFitAndMaintainAspectRatio,
-    type Position,
+    type Location,
 } from "../utils";
 import { AvatarEntityContainer } from "./AvatarEntityContainer";
 import { EntitySigil } from "./EntitySigil";
@@ -43,7 +44,7 @@ export {
     cullEntityContainerById,
     entityContainers,
     entitySigils,
-    garbageCollectEntityContainers,
+    garbageCollectECs,
     upsertEntityContainer,
     upsertEntitySigil,
     type EntityContainer,
@@ -278,50 +279,6 @@ function setECEventListeners(ec: EntityContainer) {
     ec.onclick = () => onClickEntity(ec.entity);
 }
 
-/**
- * Destroy unused ecs (very far away, not in environment)
- *
- * @param playerPosition - The player's position, if undefined, cull all entities
- */
-function garbageCollectEntityContainers(playerPosition: Position) {
-    const p5s = geohashesNearby(playerPosition.geohash.slice(0, -2));
-    for (const [id, ec] of Object.entries(entityContainers)) {
-        const geohash = ec.isoPosition?.geohash;
-        const locationType = ec.isoPosition?.locationType;
-        if (geohash && locationType) {
-            // Both are geohash locations but are not equal (ie. underground vs above ground)
-            if (
-                geohashLocationTypes.has(locationType) &&
-                geohashLocationTypes.has(playerPosition.locationType) &&
-                playerPosition.locationType !== locationType
-            ) {
-                cullEntityContainerById(id);
-            }
-            // Not nearby
-            else if (!p5s.some((gh) => geohash.startsWith(gh))) {
-                cullEntityContainerById(id);
-            }
-        }
-        // Not in environment
-        else {
-            cullEntityContainerById(id);
-        }
-    }
-}
-
-function cullAllEntityContainers() {
-    for (const [id, ec] of Object.entries(entityContainers)) {
-        cullEntityContainerById(id);
-    }
-}
-
-function cullEntityContainerById(entityId: string) {
-    if (entityContainers[entityId]) {
-        entityContainers[entityId].destroy();
-        delete entityContainers[entityId];
-    }
-}
-
 function onMouseOverEntity(entityId: string) {
     const ec = entityContainers[entityId];
     const t = get(target);
@@ -346,4 +303,44 @@ function onMouseLeaveEntity(entityId: string) {
 function onClickEntity(entity: Actor) {
     // Set target
     target.set(entity);
+}
+
+function cullAllEntityContainers() {
+    for (const [id, ec] of Object.entries(entityContainers)) {
+        cullEntityContainerById(id);
+    }
+}
+
+function cullEntityContainerById(entityId: string) {
+    if (entityContainers[entityId]) {
+        entityContainers[entityId].destroy();
+        delete entityContainers[entityId];
+    }
+}
+
+function garbageCollectECs({
+    geohash,
+    locationInstance,
+    locationType,
+}: Location) {
+    const villages = geohashesNearby(
+        geohash.slice(0, worldSeed.spatial.village.precision),
+    );
+
+    for (const [id, ec] of Object.entries(entityContainers)) {
+        if (ec.isoPosition) {
+            // Not in same location or nearby
+            if (
+                ec.isoPosition.locationInstance !== locationInstance ||
+                ec.isoPosition.locationType !== locationType ||
+                !villages.some((gh) => geohash.startsWith(gh))
+            ) {
+                cullEntityContainerById(id);
+            }
+        }
+        // Not in environment
+        else {
+            cullEntityContainerById(id);
+        }
+    }
 }

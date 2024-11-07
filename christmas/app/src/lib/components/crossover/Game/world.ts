@@ -1,35 +1,25 @@
-import { isGeohashTraversableClient } from "$lib/crossover/game";
+import { getWorldsAtLocation } from "$lib/crossover/game";
 import type { World } from "$lib/crossover/types";
-import {
-    autoCorrectGeohashPrecision,
-    getAllUnitGeohashes,
-} from "$lib/crossover/utils";
+import { autoCorrectGeohashPrecision } from "$lib/crossover/utils";
 import { LOCATION_INSTANCE } from "$lib/crossover/world/settings";
 import { worldSeed } from "$lib/crossover/world/settings/world";
-import {
-    geohashLocationTypes,
-    type GeohashLocation,
-} from "$lib/crossover/world/types";
-import { poisInWorld } from "$lib/crossover/world/world";
+import { type GeohashLocation } from "$lib/crossover/world/types";
 import { seededRandom, stringToRandomNumber } from "$lib/utils/random";
-import { Assets, Container, Graphics } from "pixi.js";
+import { Assets, Container } from "pixi.js";
 import { createNoise2D } from "simplex-noise";
-import { get } from "svelte/store";
-import { itemRecord, worldRecord } from "../../../../store";
 import { WorldEntityContainer } from "./entities/WorldEntityContainer";
 import {
     calculatePosition,
     getImageForTile,
     getTilesetForTile,
+    type Location,
     type Position,
 } from "./utils";
 
 export {
-    cullAllWorldEntityContainers,
-    debugWorld,
-    drawWorlds,
-    garbageCollectWorldEntityContainers,
-    loadWorld,
+    drawWorldsAtLocation,
+    garbageCollectWorldECs,
+    loadWorldECs,
     noise2D,
     worldEntityContainers,
 };
@@ -40,54 +30,57 @@ const noise2D = createNoise2D(() => {
 });
 
 let worldEntityContainers: Record<string, WorldEntityContainer> = {};
-let colliders: Graphics[] = [];
 
-async function drawWorlds(
-    worldRecord: Record<string, Record<string, World>>,
+async function drawWorldsAtLocation(
+    {
+        geohash,
+        locationInstance,
+        locationType,
+    }: {
+        geohash: string;
+        locationInstance: string;
+        locationType: GeohashLocation;
+    },
     stage: Container,
 ) {
-    // Load worlds
-    for (const [town, worlds] of Object.entries(worldRecord)) {
-        for (const [worldId, world] of Object.entries(worlds)) {
-            // Origin is at top left
-            const origin = autoCorrectGeohashPrecision(
-                world.loc[0],
-                worldSeed.spatial.unit.precision,
-            );
+    const worlds = await getWorldsAtLocation({
+        geohash,
+        locationInstance,
+        locationType,
+    });
 
-            await loadWorld({
-                world,
-                position: await calculatePosition(
-                    origin,
-                    world.locT as GeohashLocation,
-                    LOCATION_INSTANCE, // worlds are the same in all instances
-                ),
-                town,
-                stage,
-            });
-        }
+    // Load worlds
+    for (const [worldId, world] of Object.entries(worlds)) {
+        // Origin is at top left
+        const origin = autoCorrectGeohashPrecision(
+            world.loc[0],
+            worldSeed.spatial.unit.precision,
+        );
+        await loadWorldECs({
+            world,
+            origin: await calculatePosition(
+                origin,
+                world.locT as GeohashLocation,
+                LOCATION_INSTANCE, // worlds are the same in all instances
+            ),
+            stage,
+        });
     }
 }
 
-async function loadWorld({
+async function loadWorldECs({
     world,
-    position,
-    town,
+    origin,
     stage,
 }: {
     world: World;
-    town: string;
-    position: Position;
+    origin: Position;
     stage: Container;
 }) {
-    // Skip if alerady loaded
-    if (worldEntityContainers[world.world]) {
-        return;
-    }
     const tilemap = await Assets.load(world.uri);
     const { layers: tileMapLayers, tilesets, tileheight, tilewidth } = tilemap;
 
-    // Note: we need to align the tiled editor's tile (anchor at bottom-left) to the game's tile center (center)
+    // Note: We need to align the tiled editor's tile (anchor at bottom-left) to the game's tile center (center)
     const tileOffsetX = -tilewidth / 2; // move left
     const tileOffsetY = tileheight / 2; // move down
 
@@ -132,10 +125,10 @@ async function loadWorld({
                 if (tileId === 0) {
                     continue;
                 }
-                const worldId = `${town}-${world.world}-${tileId}-${i}-${j}`;
+                const tileEntityId = `${world.world}-${tileId}-${i}-${j}`;
 
                 // Skip if already created
-                if (worldId in worldEntityContainers) {
+                if (tileEntityId in worldEntityContainers) {
                     continue;
                 }
 
@@ -153,6 +146,7 @@ async function loadWorld({
                     await getImageForTile(tileset.tiles, tileId - firstgid);
 
                 const ec = new WorldEntityContainer({
+                    world,
                     texture,
                     layer: renderLayer,
                     cellHeight: 1,
@@ -163,198 +157,39 @@ async function loadWorld({
                     tileOffset: { x: tileOffsetX, y: tileOffsetY },
                     layerOffset: { x: layerOffsetX, y: layerOffsetY },
                     textureOffset: { x: tileSetOffsetX, y: tileSetOffsetY },
-                    tileId: worldId,
+                    tileId: tileEntityId,
                 });
 
-                worldEntityContainers[worldId] = ec;
+                worldEntityContainers[tileEntityId] = ec;
 
                 ec.setIsoPosition({
-                    row: position.row + i,
-                    col: position.col + j,
-                    elevation: position.elevation,
+                    row: origin.row + i,
+                    col: origin.col + j,
+                    elevation: origin.elevation,
                 });
 
-                // // Debug bounds
-                // if (ec.mesh && renderLayer === "entity") {
-                //     stage.addChild(debugBounds(ec, 0xffff00));
-                // }
-
                 // Add to stage
-                if (!stage.children.includes(ec)) {
-                    stage.addChild(ec);
-                }
+                stage.addChild(ec);
             }
         }
     }
 }
 
-// TODO: make this debug game (accessible via hotkey in dev mode)
-async function debugWorld(
-    stage: Container,
-    locationInstance: string,
-    locationType: GeohashLocation,
-) {
-    // Clear colliders
-    for (const c of colliders) {
-        c.destroy();
-    }
-
-    // Draw item colliders (in the same locationInstance and locationType)
-    for (const item of Object.values(get(itemRecord))) {
-        if (
-            !geohashLocationTypes.has(item.locT) ||
-            item.locT !== locationType ||
-            item.locI !== locationInstance
-        ) {
-            continue;
-        }
-        for (const loc of item.loc) {
-            if (
-                !(await isGeohashTraversableClient(
-                    loc,
-                    item.locT as GeohashLocation,
-                    item.locI,
-                ))
-            ) {
-                const itemPosition = await calculatePosition(
-                    loc,
-                    item.locT as GeohashLocation,
-                    locationInstance,
-                );
-                colliders.push(
-                    stage.addChild(
-                        new Graphics()
-                            .circle(
-                                itemPosition.isoX,
-                                itemPosition.isoY - itemPosition.elevation,
-                                5,
-                            )
-                            .stroke({ color: 0xff0000 }),
-                    ),
-                );
-            }
-        }
-    }
-
-    // Debug world (in the same locationType)
-    for (const [town, worlds] of Object.entries(get(worldRecord))) {
-        for (const world of Object.values(worlds)) {
-            if (
-                !geohashLocationTypes.has(world.locT) ||
-                world.locT !== locationType
-            ) {
-                continue;
-            }
-
-            // Draw world origin (purple hollow circle)
-            const origin = autoCorrectGeohashPrecision(
-                world.loc[0],
-                worldSeed.spatial.unit.precision,
-            );
-            const originPosition = await calculatePosition(
-                origin,
-                world.locT as GeohashLocation,
-                locationInstance,
-            );
-            colliders.push(
-                stage.addChild(
-                    new Graphics()
-                        .circle(
-                            originPosition.isoX,
-                            originPosition.isoY - originPosition.elevation,
-                            8,
-                        )
-                        .stroke({ color: 0xff00ff }),
-                ),
-            );
-
-            // Draw world colliders (red hollow circle)
-            for (const plot of world.loc) {
-                for (const loc of getAllUnitGeohashes(plot)) {
-                    if (
-                        !(await isGeohashTraversableClient(
-                            loc,
-                            world.locT as GeohashLocation,
-                            locationInstance,
-                        ))
-                    ) {
-                        const pos = await calculatePosition(
-                            loc,
-                            world.locT as GeohashLocation,
-                            locationInstance,
-                        );
-                        colliders.push(
-                            stage.addChild(
-                                new Graphics()
-                                    .circle(
-                                        pos.isoX,
-                                        pos.isoY - pos.elevation,
-                                        5,
-                                    )
-                                    .stroke({ color: 0xff0000 }),
-                            ),
-                        );
-                    }
-                }
-            }
-
-            // Draw world pois
-            const pois = await poisInWorld(world);
-            for (const poi of pois) {
-                // Item POI (green circle)
-                if ("prop" in poi) {
-                    const { geohash, prop } = poi;
-                    const pos = await calculatePosition(
-                        geohash,
-                        world.locT as GeohashLocation,
-                        locationInstance,
-                    );
-                    colliders.push(
-                        stage.addChild(
-                            new Graphics()
-                                .circle(pos.isoX, pos.isoY - pos.elevation, 5)
-                                .stroke({ color: 0x00ff00 }),
-                        ),
-                    );
-                }
-                // Monster POI (teal circle)
-                else if ("beast" in poi) {
-                    const { geohash, beast } = poi;
-                    const pos = await calculatePosition(
-                        geohash,
-                        world.locT as GeohashLocation,
-                        locationInstance,
-                    );
-                    colliders.push(
-                        stage.addChild(
-                            new Graphics()
-                                .circle(pos.isoX, pos.isoY - pos.elevation, 5)
-                                .stroke({ color: 0x00ffff }),
-                        ),
-                    );
-                }
-            }
-        }
-    }
-}
-
-function garbageCollectWorldEntityContainers(playerPosition: Position) {
-    // Cull world meshes outside town
-    const town = playerPosition.geohash.slice(
-        0,
-        worldSeed.spatial.town.precision,
-    );
+function garbageCollectWorldECs({
+    geohash,
+    locationInstance,
+    locationType,
+}: Location) {
+    const town = geohash.slice(0, worldSeed.spatial.town.precision);
     for (const [id, ec] of Object.entries(worldEntityContainers)) {
-        if (!id.startsWith(town)) {
+        if (
+            !ec.world ||
+            ec.world.locI !== locationInstance ||
+            ec.world.locT !== locationType ||
+            !ec.world.loc[0].startsWith(town)
+        ) {
             ec.destroy();
             delete worldEntityContainers[id];
         }
-    }
-}
-
-function cullAllWorldEntityContainers() {
-    for (const [id, ec] of Object.entries(worldEntityContainers)) {
-        ec.destroy();
-        delete worldEntityContainers[id];
     }
 }

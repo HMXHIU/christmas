@@ -49,9 +49,8 @@ export {
     getNearbyEntities,
     getNearbyPlayerIds,
     getPlayerIdsNearbyEntities,
-    hasCollidersInGeohash,
+    hasCollidersAtLocation,
     inventoryQuerySet,
-    isGeohashInWorld,
     itemsInGeohashQuerySet,
     loggedInPlayersQuerySet,
     monstersInGeohashQuerySet,
@@ -118,7 +117,10 @@ async function getNearbyEntities(
             : [],
     };
 
-    // When locT=in, locI=itemId -> also need to return the item that the entity is inside
+    /* 
+    When locationType=in we need to return the item that the entity is "in" (for the MUD description)
+    But do not draw it on the client as the locationInstance is not the same
+    */
     if (options.items && locationType === "in") {
         const inItem = (await itemRepository.fetch(
             locationInstance,
@@ -168,7 +170,7 @@ async function getPlayerIdsNearbyEntities(
     );
 }
 
-async function hasCollidersInGeohash(
+async function hasCollidersAtLocation(
     geohash: string,
     locationType: GeohashLocation,
     locationInstance: string,
@@ -181,24 +183,13 @@ async function hasCollidersInGeohash(
     );
 }
 
-async function isGeohashInWorld(
-    geohash: string,
-    locationType: GeohashLocation,
-): Promise<boolean> {
-    return (
-        (await worldsContainingGeohashQuerySet(
-            [geohash],
-            locationType,
-        ).count()) > 0
-    );
-}
-
 /*
  * QuerySets
  */
 
 /**
  * Returns a search query set for logged in players.
+ *
  * @returns A search query set for logged in players.
  */
 function loggedInPlayersQuerySet(): Search {
@@ -207,6 +198,7 @@ function loggedInPlayersQuerySet(): Search {
 
 /**
  * Returns a search query set for players in a specific geohash.
+ *
  * @param geohashes The geohashes to filter players by.
  * @returns A search query set for players in the specified geohash.
  */
@@ -235,6 +227,7 @@ function npcsNotInLimboQuerySet(npc: NPCs): Search {
 
 /**
  * Returns a search query set for monsters in a specific geohash.
+ *
  * @param geohashes The geohashes to filter monsters by.
  * @returns A search query set for monsters in the specified geohash.
  */
@@ -255,6 +248,7 @@ function monstersInGeohashQuerySet(
 
 /**
  * Retrieves items in a geohash query set.
+ *
  * @param geohashes - The geohashes to search for items in.
  * @returns A Search object representing the query.
  */
@@ -276,6 +270,7 @@ function itemsInGeohashQuerySet(
 /**
  * Retrieves worlds if the geohash is inside the world
  * Note: This is not the same as `worldsInGeohashQuerySet` in which the world is inside the geohash
+ *
  * @param geohashes - The geohashes to search for worlds in.
  * @param precision - The precision level of the geohashes (defaults to town).
  * @returns A Search object representing the query.
@@ -283,6 +278,7 @@ function itemsInGeohashQuerySet(
 function worldsContainingGeohashQuerySet(
     geohashes: string[],
     locationType: GeohashLocation,
+    locationInstance: string,
     precision?: number,
 ): Search {
     precision ??= worldSeed.spatial.town.precision;
@@ -290,29 +286,36 @@ function worldsContainingGeohashQuerySet(
         .search()
         .where("locT")
         .equal(locationType)
+        .and("locI")
+        .equal(locationInstance)
         .and("loc")
         .containOneOf(...expandGeohashes(geohashes, precision));
 }
 
 /**
  * Retrieves worlds in a geohash query set.
+ *
  * @param geohashes - The geohashes to search for worlds in.
  * @returns A Search object representing the query.
  */
 function worldsInGeohashQuerySet(
     geohashes: string[],
     locationType: GeohashLocation,
+    locationInstance: string,
 ): Search {
     return worldRepository
         .search()
         .where("locT")
         .equal(locationType)
+        .and("locI")
+        .equal(locationInstance)
         .and("loc")
         .containOneOf(...geohashes.map((x) => `${x}*`));
 }
 
 /**
  * Retrieves the inventory items for a specific player.
+ *
  * @param player - The name of the player.
  * @returns A Search object representing the query for player inventory items.
  */

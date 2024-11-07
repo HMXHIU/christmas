@@ -540,7 +540,7 @@ async function elevationAtGeohash(
         return cached;
     }
 
-    // Underground (d1, d2, d3, ...)
+    // Underground (d1, d2, d3, in ...)
     if (locationType !== "geohash") {
         return 0;
     }

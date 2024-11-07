@@ -462,11 +462,13 @@ function crossoverPlayerQuest(writ: string, headers: HTTPHeaders = {}) {
 function crossoverWorldWorlds(
     geohash: string,
     locationType: GeohashLocation,
+    locationInstance: string,
     headers: HTTPHeaders = {},
 ) {
     return trpc({ headers }).crossover.world.worlds.query({
         geohash,
         locationType,
+        locationInstance,
     });
 }
 

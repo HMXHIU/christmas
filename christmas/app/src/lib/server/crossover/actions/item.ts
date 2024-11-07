@@ -586,6 +586,7 @@ async function enterItem(
     const playerSpawnPOI = pois.find(
         (p) => "spawn" in p && p.spawn === "player",
     );
+
     const playerLocation = playerSpawnPOI
         ? [playerSpawnPOI.geohash]
         : [geohash];

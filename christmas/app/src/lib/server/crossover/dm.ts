@@ -370,20 +370,16 @@ async function spawnWorld({
         width * widthMultiplier,
     );
 
-    /* 
-    When locT=in, there may be adjacent buildings whose geohash overlap (which is valid)
-    However when locT=in, locI=item, so they are in different worlds (skip check)
-    */
-    if (locationType != "in") {
-        const existingWorlds = await worldsContainingGeohashQuerySet(
-            plotGeohashes,
-            locationType,
-        ).all();
-        if (existingWorlds.length > 0) {
-            throw new Error(
-                `Cannot spawn world on existing worlds ${existingWorlds.map((w) => (w as WorldEntity).world)}`,
-            );
-        }
+    // Check exiting world exists
+    const existingWorlds = await worldsContainingGeohashQuerySet(
+        plotGeohashes,
+        locationType,
+        locationInstance,
+    ).all();
+    if (existingWorlds.length > 0) {
+        throw new Error(
+            `Cannot spawn world on existing worlds ${existingWorlds.map((w) => (w as WorldEntity).world)}`,
+        );
     }
 
     // Generate a world id (unique + reproducable)
