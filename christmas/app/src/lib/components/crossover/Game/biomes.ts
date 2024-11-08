@@ -43,7 +43,7 @@ import { layers } from "./layers";
 import {
     CELL_HEIGHT,
     CELL_WIDTH,
-    ELEVATION_TO_CELL_HEIGHT,
+    ELEVATION_TO_ISO,
     HALF_ISO_CELL_HEIGHT,
     HALF_ISO_CELL_WIDTH,
 } from "./settings";
@@ -84,15 +84,17 @@ async function calculateLandGrading(items: Item[]): Promise<LandGrading> {
             prop.weight < 0 &&
             item.loc.length > 1
         ) {
-            const elevation = await elevationAtGeohash(
-                item.loc[0],
-                item.locT as GeohashLocation,
-                {
-                    responseCache: topologyResponseCache,
-                    resultsCache: topologyResultCache,
-                    bufferCache: topologyBufferCache,
-                },
-            );
+            const elevation =
+                ELEVATION_TO_ISO *
+                (await elevationAtGeohash(
+                    item.loc[0],
+                    item.locT as GeohashLocation,
+                    {
+                        responseCache: topologyResponseCache,
+                        resultsCache: topologyResultCache,
+                        bufferCache: topologyBufferCache,
+                    },
+                ));
 
             // Init
             item.locT = item.locT as GeohashLocation;
@@ -162,7 +164,7 @@ async function calculateBiomeForRowCol(
     });
 
     const elevation =
-        ELEVATION_TO_CELL_HEIGHT *
+        ELEVATION_TO_ISO *
         (await elevationAtGeohash(geohash, locationType, {
             responseCache: topologyResponseCache,
             resultsCache: topologyResultCache,

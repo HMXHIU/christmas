@@ -38,6 +38,7 @@ function describeBiome(
             Math.floor(rv * biomeDescriptors[biome].length)
         ];
 
+    // TODO: Fix this for new scale 0-255
     let description =
         elevationDescriptors[
             Math.min(

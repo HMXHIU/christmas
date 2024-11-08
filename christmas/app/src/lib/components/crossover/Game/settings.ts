@@ -4,7 +4,7 @@ export {
     CELL_HEIGHT,
     CELL_WIDTH,
     CHA_COLOR,
-    ELEVATION_TO_CELL_HEIGHT,
+    ELEVATION_TO_ISO,
     GRID_COLS,
     GRID_MID_COL,
     GRID_MID_ROW,
@@ -39,8 +39,19 @@ const GRID_COLS = CANVAS_COLS * OVERDRAW_MULTIPLE;
 const GRID_MID_ROW = Math.floor(GRID_ROWS / 2);
 const GRID_MID_COL = Math.floor(GRID_COLS / 2);
 
-// In WebGL, the gl_Position.z value should be in the range [-1 (closer), 1]
-const ELEVATION_TO_CELL_HEIGHT = CELL_HEIGHT / 2 / 8; // 1 meter = 1/8 a cell elevation (on isometric coordinates)
+/*
+This affects how high each elevation level appears on the display only.
+The elevation levels are from 0-255. Each step should be half a tile height,
+this is so that increasing elevation towards the screen does not cover fully the tile in front
+Though there may be adjacent tiles with more than 1 level in which they will cover
+
+To create the ambience of mountains and the effect of height
+    - Decorations such as rocks, boulders
+    - Perlin noise to create elevation noise, plateaus
+    - Context image for the MUD descriptor
+    - Shadows from a fixed direction, always away pointing up (to show the tiles being blocked)
+*/
+const ELEVATION_TO_ISO = HALF_ISO_CELL_HEIGHT;
 
 // PIXI colors
 const HP_COLOR = "rgb(248 113 113)";

@@ -19,7 +19,6 @@ export {
     biomes,
     biomeTypes,
     elevationAtGeohash,
-    INTENSITY_TO_HEIGHT,
     topologyAtGeohash,
     topologyTile,
     type Biome,
@@ -27,8 +26,6 @@ export {
     type BiomeType,
     type LandGrading,
 };
-
-const INTENSITY_TO_HEIGHT = 8850 / 255;
 
 const biomeTypes: BiomeType[] = [
     "grassland",
@@ -512,7 +509,8 @@ async function topologyAtGeohash(
 }
 
 /**
- * Determines the height in meters at the given geohash based on the topology.
+ * Returns the elevation at the given geohash based on the topology.
+ * The levels are from 0 - 255 (directly from the pixel value), not in meters
  *
  * @param geohash - The geohash coordinate string.
  * @returns The height at the given geohash.
@@ -551,7 +549,7 @@ async function elevationAtGeohash(
                 responseCache: options?.responseCache,
                 bufferCache: options?.bufferCache,
             })
-        ).intensity * INTENSITY_TO_HEIGHT,
+        ).intensity,
     );
 
     if (options?.resultsCache) {
@@ -617,14 +615,14 @@ async function biomeAtGeohash(
         result = [biomes.tundra.biome, 0]; // strength=0 no decorations
     } else {
         // Get elevation
-        const height = await elevationAtGeohash(geohash, locationType, {
+        const elevation = await elevationAtGeohash(geohash, locationType, {
             responseCache: options?.topologyResponseCache,
             resultsCache: options?.topologyResultCache,
             bufferCache: options?.topologyBufferCache,
         });
 
         // Below sea level
-        if (height < 1) {
+        if (elevation < 1) {
             result = [biomes.aquatic.biome, 1];
         }
         // Biome parameters are determined at the `city` level similar to descriptions

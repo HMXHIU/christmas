@@ -62,7 +62,6 @@ import {
     type P2PTradeTransaction,
 } from "./player";
 
-import { ELEVATION_TO_CELL_HEIGHT } from "$lib/components/crossover/Game/settings";
 import type { Quest } from "$lib/crossover/types";
 import {
     childrenGeohashesAtPrecision,
@@ -457,12 +456,15 @@ const crossoverRouter = {
                             dungeonsAtTerritoryCache,
                         },
                     );
-                    const elevation =
-                        (await elevationAtGeohash(g, locationType, {
+                    const elevation = await elevationAtGeohash(
+                        g,
+                        locationType,
+                        {
                             responseCache: topologyResponseCache,
                             resultsCache: topologyResultCache,
                             bufferCache: topologyBufferCache,
-                        })) * ELEVATION_TO_CELL_HEIGHT;
+                        },
+                    );
                     const [col, row] = geohashToColRow(g);
                     biomes[g] = {
                         biome,

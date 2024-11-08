@@ -26,7 +26,6 @@ export {
 
 const MIN_ROOMS = 12;
 const MAX_ROOMS = 18;
-
 const ROOM_UNIT_PRECISION = worldSeed.spatial.house.precision;
 const DUNGEON_PRECISION = worldSeed.spatial.town.precision;
 
@@ -155,7 +154,7 @@ async function generateDungeonGraphsForTerritory(
             bufferCache: options?.topologyBufferCache,
         });
 
-        if (elevation >= 1) {
+        if (elevation > 0) {
             // Check no overlap between prefab & sanctuary dungeons
             const hasOverlap = Object.keys(graphs).find((d) =>
                 dungeon.startsWith(d),

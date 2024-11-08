@@ -309,7 +309,7 @@ async function blueprintsAtTerritory(
                 responseCache: options?.topologyResponseCache,
                 resultsCache: options?.topologyResultCache,
                 bufferCache: options?.topologyBufferCache,
-            })) > 1
+            })) > 0
         );
     }
 
@@ -338,9 +338,7 @@ async function blueprintsAtTerritory(
                 resultsCache: options?.topologyResultCache,
                 bufferCache: options?.topologyBufferCache,
             });
-            if (elevation < 2) {
-                continue;
-            }
+            if (elevation < 1) continue;
 
             // Generate the number of instances of the blueprint in the plot
             let seed = stringToRandomNumber(blueprint.template + plot);

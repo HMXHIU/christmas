@@ -85,6 +85,8 @@ class KdTree<T> {
 
         searchNearest(this.root, 0);
 
+        // PROBLEM: IT SHOULD FIND the 2 closest and pick the one closest to the player
+
         return { point: bestNode.point, data: bestNode.data };
     }
 

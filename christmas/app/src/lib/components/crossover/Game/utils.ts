@@ -40,7 +40,7 @@ import { entityContainers } from "./entities";
 import {
     CELL_HEIGHT,
     CELL_WIDTH,
-    ELEVATION_TO_CELL_HEIGHT,
+    ELEVATION_TO_ISO,
     GRID_MID_COL,
     GRID_MID_ROW,
     HALF_ISO_CELL_HEIGHT,
@@ -120,7 +120,7 @@ async function calculatePosition(
     const [isoX, isoY] = cartToIso(col * width, row * height);
 
     const elevation =
-        ELEVATION_TO_CELL_HEIGHT *
+        ELEVATION_TO_ISO *
         (await elevationAtGeohash(geohash, locationType, {
             responseCache: topologyResponseCache,
             resultsCache: topologyResultCache,
