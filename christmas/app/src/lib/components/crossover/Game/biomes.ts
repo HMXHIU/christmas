@@ -36,6 +36,7 @@ import { get } from "svelte/store";
 import { landGrading } from "../../../../store";
 import {
     drawShaderTextures,
+    HIGHLIGHTS,
     MAX_SHADER_GEOMETRIES,
     type ShaderTexture,
 } from "../shaders";
@@ -189,8 +190,7 @@ async function calculateBiomeForRowCol(
     const width = CELL_WIDTH;
     const height = (texture.height * width) / texture.width;
 
-    // Convert cartesian to isometric position
-    // Note: snap to grid for biomes, so that we can do O(1) lookups for highlights
+    // Convert cartesian to isometric position (provide snap, so that the instance positions are indexable for highlighting)
     const [isoX, isoY] = cartToIso(col * CELL_WIDTH, row * CELL_HEIGHT, {
         x: HALF_ISO_CELL_WIDTH,
         y: HALF_ISO_CELL_HEIGHT,
@@ -383,7 +383,7 @@ async function calculateTextureBuffers(
                 height,
             } = await calculateBiomeForRowCol(row, col, locationType);
 
-            // Update screenToGeohashKDtree (for hittesting screen coordiates to the geohash)
+            // Update screenToGeohashKDtree (for hit testing screen coordiates to the geohash)
             updateScreenHitTesting(
                 [isoX, isoY - elevation],
                 locationType,
@@ -419,6 +419,38 @@ async function calculateTextureBuffers(
             tbuf.positions![stp] = isoX;
             tbuf.positions![stp + 1] = isoY;
             tbuf.positions![stp + 2] = elevation;
+
+            /* 
+            Set highlights (shadows) 
+                - Sun is on the east
+                - Every cell should cast a shadow of 3 cells from east to west
+                - Each shadow cast should be from strong (closer to the object) to light
+                - If shadows overlap (choose the stronger one)
+                - Check if cell to the east is higher, cell should be in shadow
+                - To avoid making the shadows flat, use 2 levels, if overlap, use a stronger shadow
+            */
+            const { elevation: eastElevation } = await calculateBiomeForRowCol(
+                row,
+                col + 1, // east (shadow)
+                locationType,
+            );
+            const { elevation: east2Elevation } = await calculateBiomeForRowCol(
+                row,
+                col + 2, // east * 2 (light shadow)
+                locationType,
+            );
+            const { elevation: east3Elevation } = await calculateBiomeForRowCol(
+                row,
+                col + 3, // east * 3 (mild shadow)
+                locationType,
+            );
+            if (eastElevation > elevation) {
+                tbuf.highlights![tbuf.instances] = HIGHLIGHTS.shadowStrong;
+            } else if (east2Elevation > elevation) {
+                tbuf.highlights![tbuf.instances] = HIGHLIGHTS.shadow;
+            } else if (east3Elevation > elevation) {
+                tbuf.highlights![tbuf.instances] = HIGHLIGHTS.shadowLight;
+            }
 
             // Set instance uvs
             const stuv = tbuf.instances * 4;
@@ -533,6 +565,7 @@ function initShaderTextureRecord(
         record[textureUid] = {
             texture,
             positions: new Float32Array(MAX_SHADER_GEOMETRIES * 3).fill(-1), // x, y, elevation
+            highlights: new Float32Array(MAX_SHADER_GEOMETRIES).fill(-1), // highlight
             uvsX: new Float32Array(MAX_SHADER_GEOMETRIES * 4), // x0, x1, x2, x3
             uvsY: new Float32Array(MAX_SHADER_GEOMETRIES * 4), // y0, y1, y2, y3
             sizes: new Float32Array(MAX_SHADER_GEOMETRIES * 2), // w, h
@@ -557,6 +590,7 @@ function insertTextureBuffer(
             width,
             height,
             positions,
+            highlights,
             uvsX,
             uvsY,
             anchors,
@@ -574,6 +608,10 @@ function insertTextureBuffer(
         tbuf.positions.set(
             positions.subarray(0, instances * 3),
             tbuf.instances * 3, // offset
+        );
+        tbuf.highlights!.set(
+            highlights!.subarray(0, instances),
+            tbuf.instances,
         );
         tbuf.sizes!.set(sizes!.subarray(0, instances * 2), tbuf.instances * 2);
         tbuf.anchors!.set(
@@ -612,7 +650,6 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
             h,
             playerPosition.locationType,
         );
-
         if (biomeBuffers) {
             insertTextureBuffer(biomeBuffers, biomeTexturePositions);
         }
@@ -633,7 +670,6 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
     // Draw decoration shader
     const { depthScale, depthStart, depthLayer, depthSize } =
         layers.depthPartition("entity"); // grass is at the same depth as entities
-
     await drawShaderTextures({
         shaderName: "grass",
         shaderTextures: decorationsTexturePositions,

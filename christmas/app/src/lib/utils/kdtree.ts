@@ -35,18 +35,18 @@ class KdTree<T> {
         if (node === null) {
             return new KdTreeNode(point, data);
         }
-
         const axis = depth % this.dimensions;
         if (point[axis] < node.point[axis]) {
             node.left = this.insertNode(node.left, point, data, depth + 1);
         } else {
             node.right = this.insertNode(node.right, point, data, depth + 1);
         }
-
         return node;
     }
 
-    findNearest(targetPoint: Point): { point: Point; data: T } | null {
+    findNearest(
+        targetPoint: Point,
+    ): { point: Point; data: T; second: T } | null {
         if (targetPoint.length !== this.dimensions) {
             throw new Error(
                 `Target point must have ${this.dimensions} dimensions`,
@@ -58,6 +58,8 @@ class KdTree<T> {
         let bestNode = this.root;
         let bestDistance = this.distance(targetPoint, this.root.point);
 
+        let secondBestNode = bestNode;
+
         const searchNearest = (
             node: KdTreeNode<T> | null,
             depth: number,
@@ -66,6 +68,7 @@ class KdTree<T> {
 
             const distance = this.distance(targetPoint, node.point);
             if (distance < bestDistance) {
+                secondBestNode = bestNode;
                 bestNode = node;
                 bestDistance = distance;
             }
@@ -85,9 +88,11 @@ class KdTree<T> {
 
         searchNearest(this.root, 0);
 
-        // PROBLEM: IT SHOULD FIND the 2 closest and pick the one closest to the player
-
-        return { point: bestNode.point, data: bestNode.data };
+        return {
+            point: bestNode.point,
+            data: bestNode.data,
+            second: secondBestNode.data,
+        };
     }
 
     private distance(point1: Point, point2: Point): number {

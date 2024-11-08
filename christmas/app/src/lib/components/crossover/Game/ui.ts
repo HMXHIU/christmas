@@ -81,28 +81,43 @@ function screenToGeohash(
     p: number[],
     locationType: GeohashLocation,
 ): string | null {
-    return screenToGeohashKDtree[locationType]?.findNearest(p)?.data ?? null;
+    const node = screenToGeohashKDtree[locationType]?.findNearest(p);
+    if (node) {
+        const { data, second } = node;
+        return data;
+    } else {
+        return null;
+    }
 }
 
-function drawMovementPath(points: [number, number][], stage: Container) {
+function drawMovementPath(
+    points: [number, number][],
+    stage: Container,
+    smooth?: false,
+) {
     movementPath.clear();
 
     if (points.length < 2) return;
 
+    // TODO: fix smooth path (issue with arcs drawing esp on elevation)
     movementPath.moveTo(points[0][0], points[0][1]);
     for (let i = 1; i < points.length; i++) {
-        movementPath.arcTo(
-            points[i - 1][0],
-            points[i - 1][1],
-            points[i][0],
-            points[i][1],
-            HALF_ISO_CELL_WIDTH,
-        );
+        if (smooth) {
+            movementPath.arcTo(
+                points[i - 1][0],
+                points[i - 1][1],
+                points[i][0],
+                points[i][1],
+                HALF_ISO_CELL_WIDTH,
+            );
+        } else {
+            movementPath.lineTo(points[i - 1][0], points[i - 1][1]);
+        }
     }
-
     // Draw the last segment from the last arc tangent to the end
     const end = points.slice(-1)[0];
     movementPath.lineTo(...end);
+
     movementPath.stroke({ width: 2, color: 0xffd900 });
 
     // UI layer on top of everything else

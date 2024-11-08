@@ -31,6 +31,7 @@ export {
     destroyShaderGeometry,
     destroyShaders,
     drawShaderTextures,
+    HIGHLIGHTS,
     highlightShaderInstances,
     loadedShaderGeometries,
     loadShaderGeometry,
@@ -45,6 +46,15 @@ export {
 };
 
 const MAX_SHADER_GEOMETRIES = 2000;
+
+const HIGHLIGHTS = {
+    red: 1,
+    green: 2,
+    shadow: 3,
+    shadowMild: 4,
+    shadowLight: 5,
+    shadowStrong: 6,
+};
 
 interface ShaderGeometry {
     shaderGeometryUid: string;
@@ -61,6 +71,7 @@ interface ShaderTexture {
     uvsY?: Float32Array;
     sizes?: Float32Array;
     anchors?: Float32Array;
+    highlights?: Float32Array;
     width: number;
     height: number;
     instances: number;
@@ -206,7 +217,8 @@ function loadShaderGeometry(
             loadedGeometries[geometryUid] = geometry;
         }
 
-        /* Get or create shader
+        /* 
+        Get or create shader
         Must use shaderGeometryUid as each entity must have its own shader,
         this is because texture is tied to the shader,
         thus it cannot be shared among different entities
@@ -478,6 +490,7 @@ async function drawShaderTextures({
         {
             texture,
             positions,
+            highlights,
             width,
             height,
             instances,
@@ -542,6 +555,17 @@ async function drawShaderTextures({
                 instanceYUVs.update();
             }
 
+            // Update instance highlights
+            const instanceHighlights = geometry.getBuffer("aInstanceHighlight");
+            if (instanceHighlights != null && highlights != null) {
+                for (let i = 0; i < sortedIndices.length; i++) {
+                    const t = sortedIndices[i];
+                    instanceHighlights.data[i] = highlights[t];
+                    instanceHighlights.data[i + 1] = highlights[t + 1];
+                }
+                instanceHighlights.update();
+            }
+
             // Update instance sizes
             const instanceSizes = geometry.getBuffer("aInstanceSize");
             if (instanceSizes != null && sizes != null) {
@@ -551,7 +575,6 @@ async function drawShaderTextures({
                     instanceSizes.data[s] = sizes[t];
                     instanceSizes.data[s + 1] = sizes[t + 1];
                 }
-                // instanceSizes.data.set(sizes);
                 instanceSizes.update();
             }
 
