@@ -1,7 +1,7 @@
 import { type CacheInterface } from "$lib/caches";
 import { geohashToColRow } from "$lib/crossover/utils";
 import { seededRandom, stringToRandomNumber } from "$lib/utils/random";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, memoize } from "lodash-es";
 import { PNG, type PNGWithMetadata } from "pngjs";
 import { GAME_TOPOLOGY_IMAGES } from "../defs";
 import { dungeonBiomeAtGeohash } from "./dungeons";
@@ -442,24 +442,51 @@ async function topologyAtGeohash(
         const sIdx = yp * width + x;
         const seIdx = yp * width + xp;
 
+        /*
+        If we just take the pixel value at the 4 corners there will be high levels of symmetry
+        resulting in straight edges because the values of the corners are either integers.
+        For each of the corners, take the average value of its 9 neighbours.
+        */
+        const avgNeighbours = memoize((idx: number): number => {
+            let total = 0;
+            let cnt = 0;
+            for (const i of [
+                idx - width, //n
+                idx + width, // s
+                idx - 1, // w
+                idx + 1, // e
+                idx - width + 1, // ne
+                idx - width - 1, // nw
+                idx + width + 1, // se
+                idx + width - 1, // sw
+            ]) {
+                const intensity = data[i * 4]; // RGBA, need to skip 4 values
+                if (intensity != null) {
+                    total += intensity;
+                    cnt += 1;
+                }
+            }
+            return total / cnt;
+        });
+
         if (xPixel < 0.5) {
             if (yPixel < 0.5) {
                 // nw, n, w, current
                 intensity = bilinearInterpolation({
-                    tl: { x: -0.5, y: -0.5, intensity: data[nwIdx * 4] }, // nw
-                    tr: { x: 0.5, y: -0.5, intensity: data[nIdx * 4] }, // n
-                    bl: { x: -0.5, y: 0.5, intensity: data[wIdx * 4] }, // w
-                    br: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
+                    tl: { x: -0.5, y: -0.5, intensity: avgNeighbours(nwIdx) }, // nw
+                    tr: { x: 0.5, y: -0.5, intensity: avgNeighbours(nIdx) }, // n
+                    bl: { x: -0.5, y: 0.5, intensity: avgNeighbours(wIdx) }, // w
+                    br: { x: 0.5, y: 0.5, intensity: avgNeighbours(index) }, // current
                     x: xPixel,
                     y: yPixel,
                 });
             } else {
                 // w, current, sw, s
                 intensity = bilinearInterpolation({
-                    tl: { x: -0.5, y: 0.5, intensity: data[wIdx * 4] }, // w
-                    tr: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
-                    bl: { x: -0.5, y: 1.5, intensity: data[swIdx * 4] }, // sw
-                    br: { x: 0.5, y: 1.5, intensity: data[sIdx * 4] }, // s
+                    tl: { x: -0.5, y: 0.5, intensity: avgNeighbours(wIdx) }, // w
+                    tr: { x: 0.5, y: 0.5, intensity: avgNeighbours(index) }, // current
+                    bl: { x: -0.5, y: 1.5, intensity: avgNeighbours(swIdx) }, // sw
+                    br: { x: 0.5, y: 1.5, intensity: avgNeighbours(sIdx) }, // s
                     x: xPixel,
                     y: yPixel,
                 });
@@ -468,26 +495,28 @@ async function topologyAtGeohash(
             if (yPixel < 0.5) {
                 // n, ne, current, e
                 intensity = bilinearInterpolation({
-                    tl: { x: 0.5, y: -0.5, intensity: data[nIdx * 4] }, // n
-                    tr: { x: 1.5, y: -0.5, intensity: data[neIdx * 4] }, // ne
-                    bl: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
-                    br: { x: 1.5, y: 0.5, intensity: data[eIdx * 4] }, // e
+                    tl: { x: 0.5, y: -0.5, intensity: avgNeighbours(nIdx) }, // n
+                    tr: { x: 1.5, y: -0.5, intensity: avgNeighbours(neIdx) }, // ne
+                    bl: { x: 0.5, y: 0.5, intensity: avgNeighbours(index) }, // current
+                    br: { x: 1.5, y: 0.5, intensity: avgNeighbours(eIdx) }, // e
                     x: xPixel,
                     y: yPixel,
                 });
             } else {
                 // current, e, s, se
                 intensity = bilinearInterpolation({
-                    tl: { x: 0.5, y: 0.5, intensity: data[index * 4] }, // current
-                    tr: { x: 1.5, y: 0.5, intensity: data[eIdx * 4] }, // e
-                    bl: { x: 0.5, y: 1.5, intensity: data[sIdx * 4] }, // s
-                    br: { x: 1.5, y: 1.5, intensity: data[seIdx * 4] }, // se
+                    tl: { x: 0.5, y: 0.5, intensity: avgNeighbours(index) }, // current
+                    tr: { x: 1.5, y: 0.5, intensity: avgNeighbours(eIdx) }, // e
+                    bl: { x: 0.5, y: 1.5, intensity: avgNeighbours(sIdx) }, // s
+                    br: { x: 1.5, y: 1.5, intensity: avgNeighbours(seIdx) }, // se
                     x: xPixel,
                     y: yPixel,
                 });
             }
         }
     }
+
+    // TODO: Add perlion noise layers (use topological analysis)
 
     return {
         width,
