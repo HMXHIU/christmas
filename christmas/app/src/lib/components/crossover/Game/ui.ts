@@ -12,7 +12,7 @@ import { get } from "svelte/store";
 import { target } from "../../../../store";
 import { entityContainers, type EntityContainer } from "./entities";
 import { layers } from "./layers";
-import { CELL_WIDTH } from "./settings";
+import { CELL_WIDTH, HALF_ISO_CELL_WIDTH } from "./settings";
 import { calculatePosition, type Position } from "./utils";
 
 export {
@@ -86,7 +86,8 @@ function screenToGeohash(
 
 function drawMovementPath(points: [number, number][], stage: Container) {
     movementPath.clear();
-    if (points.length < 3) return;
+
+    if (points.length < 2) return;
 
     movementPath.moveTo(points[0][0], points[0][1]);
     for (let i = 1; i < points.length; i++) {
@@ -95,7 +96,7 @@ function drawMovementPath(points: [number, number][], stage: Container) {
             points[i - 1][1],
             points[i][0],
             points[i][1],
-            50,
+            HALF_ISO_CELL_WIDTH,
         );
     }
 
@@ -103,8 +104,9 @@ function drawMovementPath(points: [number, number][], stage: Container) {
     const end = points.slice(-1)[0];
     movementPath.lineTo(...end);
     movementPath.stroke({ width: 2, color: 0xffd900 });
-    movementPath.zIndex = layers.layers.length + 1; // ui layer on top of everything else
 
+    // UI layer on top of everything else
+    movementPath.zIndex = layers.layers.length + 1;
     stage.addChild(movementPath); // adding multiple times will move it to the last in the display list
 }
 
@@ -136,6 +138,7 @@ async function displayMovementPath(
             startPosition.isoY - startPosition.elevation - floatAboveGround,
         ],
     ];
+
     let prevGeohash = startPosition.geohash;
     for (const direction of path) {
         const curGeohash = geohashNeighbour(prevGeohash, direction);
