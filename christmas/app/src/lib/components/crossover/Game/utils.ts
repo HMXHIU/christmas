@@ -304,7 +304,7 @@ async function initAssetManager() {
         "props",
         "actions",
         "sound-effects",
-        "animation-effects",
+        "effects",
     ]);
 }
 

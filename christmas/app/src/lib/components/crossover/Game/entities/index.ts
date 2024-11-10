@@ -173,6 +173,9 @@ async function upsertAvatarContainer(
         // Set initial pose
         await ec.avatar.pose(ec.avatar.animationManager.getPose("default"));
 
+        // Add shadows
+        await ec.turnOnShadow();
+
         // Set event listeners
         setECEventListeners(ec);
 

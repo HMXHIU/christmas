@@ -6,8 +6,10 @@ import type { AssetMetadata } from "$lib/crossover/world/types";
 import type { Container, DestroyOptions } from "pixi.js";
 import { Avatar } from "../../avatar/Avatar";
 import type { Bone } from "../../avatar/Bone";
+import type { IsoMesh } from "../../shaders/IsoMesh";
 import { layers } from "../layers";
 import { EntityContainer } from "./EntityContainer";
+import { createBlobShadow } from "./shadows";
 
 export { AvatarEntityContainer };
 
@@ -131,6 +133,10 @@ class AvatarEntityContainer extends EntityContainer {
 
     asSpriteContainer(): Container | null {
         return this.avatar.asSpriteContainer();
+    }
+
+    async getShadow(): Promise<IsoMesh> {
+        return createBlobShadow();
     }
 
     updateDepth(depth: number): void {

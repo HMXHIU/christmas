@@ -58,7 +58,7 @@ async function addVisualEffects(
         // Animate offensive damage abilities
         if (dieRoll != null && target != null) {
             if (
-                dieRoll.damageType === "slashing" &&
+                // dieRoll.damageType === "slashing" &&
                 target.isoPosition != null
             ) {
                 tl.add(
@@ -113,7 +113,8 @@ async function animateSlash(
         endY,
     }: { startX: number; startY: number; endX: number; endY: number },
 ) {
-    const trailTexture = (await Assets.loadBundle("animation-effects")).trail;
+    const slashTrailTexture = (await Assets.loadBundle("effects")).effects
+        .textures["trail"];
     const ropeSize = 20;
     let arc: PointData[] = [];
     const arcRadius = Math.PI / 4;
@@ -136,7 +137,7 @@ async function animateSlash(
         );
     }
 
-    const rope = new MeshRope({ texture: trailTexture, points: arc });
+    const rope = new MeshRope({ texture: slashTrailTexture, points: arc });
     rope.autoUpdate = true;
 
     rope.zIndex = layers.layers.length; // render effects last

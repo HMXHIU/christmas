@@ -11,7 +11,8 @@ import { type Actions } from "$lib/crossover/world/actions";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { gsap } from "gsap";
 import { clone, cloneDeep } from "lodash-es";
-import { Container, Graphics, type DestroyOptions } from "pixi.js";
+import { Container, type DestroyOptions } from "pixi.js";
+import type { IsoMesh } from "../../shaders/IsoMesh";
 import { calculatePosition, type Position } from "../utils";
 import { ActionBubble } from "./ActionBubble";
 
@@ -28,8 +29,7 @@ export class EntityContainer extends Container {
 
     public tween: gsap.core.Tween | gsap.core.Timeline | null = null;
     public actionBubble: ActionBubble;
-
-    private targetBox = new Graphics();
+    public shadow: IsoMesh | null = null;
 
     constructor({
         entity,
@@ -54,7 +54,6 @@ export class EntityContainer extends Container {
 
         this.actionBubble = new ActionBubble();
         this.addChild(this.actionBubble);
-        this.addChild(this.targetBox);
 
         this.cullable = true;
     }
@@ -65,6 +64,15 @@ export class EntityContainer extends Container {
             if (this.isoPosition) {
                 this.actionBubble.updateDepth(this.isoPosition.isoY);
             }
+        }
+    }
+
+    async turnOnShadow() {
+        this.shadow = await this.getShadow();
+        if (this.shadow) {
+            this.addChild(this.shadow);
+        } else {
+            console.warn(`${this.entityId} container does not support shadows`);
         }
     }
 
@@ -201,6 +209,9 @@ export class EntityContainer extends Container {
     public updateDepth(depth: number): void {
         this.zIndex = this.depthLayer + depth * this.depthScale;
         this.actionBubble.updateDepth(depth);
+        if (this.shadow) {
+            this.shadow.updateDepth(depth);
+        }
     }
 
     public highlight(highlight: number) {}
@@ -210,6 +221,10 @@ export class EntityContainer extends Container {
     public swapVariant(variant: string) {}
 
     public asSpriteContainer(): Container | null {
+        return null;
+    }
+
+    async getShadow(): Promise<IsoMesh | null> {
         return null;
     }
 

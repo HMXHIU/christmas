@@ -451,6 +451,7 @@ async function topologyAtGeohash(
             let total = 0;
             let cnt = 0;
             for (const i of [
+                idx,
                 idx - width, //n
                 idx + width, // s
                 idx - 1, // w

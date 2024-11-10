@@ -37,9 +37,9 @@ class Layers {
         }
 
         /*  
-            Note: 
-            - `isoY` can be negative after `worldOffset`
-            - `isoY` ranges from [-worldHeight/2, +worldHeight/2]
+        Note: 
+        - `isoY` can be negative after `worldOffset`
+        - `isoY` ranges from [-worldHeight/2, +worldHeight/2]
         */
         const depthStart =
             1 -
@@ -56,5 +56,5 @@ class Layers {
 }
 
 const layers = new Layers({
-    layers: ["biome", "floor", "entity"],
+    layers: ["biome", "floor", "shadow", "entity"],
 });
