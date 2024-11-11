@@ -6,6 +6,7 @@ import { layers } from "../layers";
 import { CELL_WIDTH } from "../settings";
 import { loadAssetTexture, scaleToFitAndMaintainAspectRatio } from "../utils";
 import { EntityContainer } from "./EntityContainer";
+import { createProjectedShadow } from "./shadows";
 
 export { SimpleEntityContainer };
 
@@ -79,6 +80,13 @@ class SimpleEntityContainer extends EntityContainer {
             return c;
         }
 
+        return null;
+    }
+
+    async getShadow(): Promise<IsoMesh | null> {
+        if (this.mesh) {
+            return await createProjectedShadow(this.mesh);
+        }
         return null;
     }
 

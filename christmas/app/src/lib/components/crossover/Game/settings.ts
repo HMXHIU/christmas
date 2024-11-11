@@ -3,21 +3,17 @@ export {
     CANVAS_WIDTH,
     CELL_HEIGHT,
     CELL_WIDTH,
-    CHA_COLOR,
     ELEVATION_TO_ISO,
     GRID_COLS,
     GRID_MID_COL,
     GRID_MID_ROW,
     HALF_ISO_CELL_HEIGHT,
     HALF_ISO_CELL_WIDTH,
-    HP_COLOR,
     ISO_CELL_HEIGHT,
     ISO_CELL_WIDTH,
-    LUM_COLOR,
-    MND_COLOR,
-    UMB_COLOR,
     WORLD_HEIGHT,
     WORLD_WIDTH,
+    uiColors,
 };
 
 // Note: this are cartesian coordinates (CELL_HEIGHT = CELL_WIDTH;)
@@ -53,9 +49,11 @@ To create the ambience of mountains and the effect of height
 */
 const ELEVATION_TO_ISO = HALF_ISO_CELL_HEIGHT;
 
-// PIXI colors
-const HP_COLOR = "rgb(248 113 113)";
-const CHA_COLOR = "rgb(74 222 128)";
-const MND_COLOR = "rgb(96 165 250)";
-const LUM_COLOR = "rgb(250 204 21)";
-const UMB_COLOR = "rgb(88 28 135)";
+// UI colors
+const uiColors = {
+    health: "rgb(248 113 113)",
+    chaos: "rgb(74 222 128)",
+    mind: "rgb(96 165 250)",
+    lumina: "rgb(250 204 21)",
+    umbra: "rgb(88 28 135)",
+};

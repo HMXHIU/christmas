@@ -1,6 +1,6 @@
+import { tints } from "$lib/components/crossover/shaders/materials";
 import type { Item } from "$lib/crossover/types";
 import { isItemEquipped } from "$lib/crossover/world/compendium";
-import { tints } from "$lib/crossover/world/materials";
 import { compendium } from "$lib/crossover/world/settings/compendium";
 import type { AssetMetadata } from "$lib/crossover/world/types";
 import type { Container, DestroyOptions } from "pixi.js";

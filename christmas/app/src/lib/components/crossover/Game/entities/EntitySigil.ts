@@ -6,13 +6,7 @@ import gsap from "gsap";
 import { pick } from "lodash-es";
 import { Container, Graphics, Text, type DestroyOptions } from "pixi.js";
 import type { EntityContainer } from ".";
-import {
-    CHA_COLOR,
-    HP_COLOR,
-    LUM_COLOR,
-    MND_COLOR,
-    UMB_COLOR,
-} from "../settings";
+import { uiColors } from "../settings";
 
 export { EntitySigil };
 
@@ -103,7 +97,7 @@ class EntitySigil extends Container {
                     this.busyArcParams.end,
                     true,
                 )
-                .stroke({ color: HP_COLOR, width: BUSY_ARC_WIDTH });
+                .stroke({ color: uiColors.health, width: BUSY_ARC_WIDTH });
             this.busyArc.x = avatarPortrait.x;
             this.busyArc.y = avatarPortrait.y;
 
@@ -124,7 +118,7 @@ class EntitySigil extends Container {
                     this.busyArcParams.end,
                     true,
                 )
-                .stroke({ color: HP_COLOR, width: BUSY_ARC_WIDTH });
+                .stroke({ color: uiColors.health, width: BUSY_ARC_WIDTH });
         }
     }
 
@@ -187,7 +181,7 @@ class EntitySigil extends Container {
         // Draw hp bar
         this.hpBar = new Graphics()
             .rect(0, 0, BAR_WIDTH, BAR_HEIGHT)
-            .fill({ color: HP_COLOR });
+            .fill({ color: uiColors.health });
         this.hpBar.x = AVATAR_DIAMETER;
         this.hpBar.y = AVATAR_RADIUS - BAR_HEIGHT * 5;
         this.hpBar.pivot.x = 0;
@@ -195,7 +189,7 @@ class EntitySigil extends Container {
         // Draw chaos bar
         this.chaBar = new Graphics()
             .rect(0, 0, BAR_WIDTH, BAR_HEIGHT)
-            .fill({ color: CHA_COLOR });
+            .fill({ color: uiColors.chaos });
         this.chaBar.x = AVATAR_DIAMETER;
         this.chaBar.y = AVATAR_RADIUS - BAR_HEIGHT * 4;
         this.chaBar.pivot.x = 0;
@@ -203,7 +197,7 @@ class EntitySigil extends Container {
         // Draw mind bar
         this.mndBar = new Graphics()
             .rect(0, 0, BAR_WIDTH, BAR_HEIGHT)
-            .fill({ color: MND_COLOR });
+            .fill({ color: uiColors.mind });
         this.mndBar.x = AVATAR_DIAMETER;
         this.mndBar.y = AVATAR_RADIUS - BAR_HEIGHT * 3;
         this.mndBar.pivot.x = 0;
@@ -211,7 +205,7 @@ class EntitySigil extends Container {
         // Draw lumina bar
         this.lumBar = new Graphics()
             .rect(0, 0, BAR_WIDTH, BAR_HEIGHT)
-            .fill({ color: LUM_COLOR });
+            .fill({ color: uiColors.lumina });
         this.lumBar.x = AVATAR_DIAMETER;
         this.lumBar.y = AVATAR_RADIUS - BAR_HEIGHT * 2;
         this.lumBar.pivot.x = 0;
@@ -219,7 +213,7 @@ class EntitySigil extends Container {
         // Draw umbra bar
         this.umbBar = new Graphics()
             .rect(0, 0, BAR_WIDTH, BAR_HEIGHT)
-            .fill({ color: UMB_COLOR });
+            .fill({ color: uiColors.umbra });
         this.umbBar.x = AVATAR_DIAMETER;
         this.umbBar.y = AVATAR_RADIUS - BAR_HEIGHT;
         this.umbBar.pivot.x = 0;

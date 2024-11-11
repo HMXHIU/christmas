@@ -1,6 +1,6 @@
 import { GAME_MORPHOLOGY_IMAGES } from "$lib/crossover/defs";
+import { tints } from "../../../../components/crossover/shaders/materials";
 import type { Prop } from "../../compendium";
-import { tints } from "../../materials";
 
 export let equipment: Record<string, Prop> = {
     /**

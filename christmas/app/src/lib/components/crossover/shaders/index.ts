@@ -7,6 +7,7 @@ import {
     Shader,
     Texture,
 } from "pixi.js";
+import common from "./common/highlights.glsl?raw";
 import biomeFrag from "./instanced/biome.frag?raw";
 import biomeVertex from "./instanced/biome.vert?raw";
 import grassFrag from "./instanced/grass.frag?raw";
@@ -101,11 +102,17 @@ const shaders: Record<string, { vertex: string; fragment: string }> = {
     },
     biome: {
         vertex: biomeVertex,
-        fragment: biomeFrag,
+        fragment: `
+        ${common}
+        ${biomeFrag}
+        `,
     },
     entity: {
         vertex: entityVertex,
-        fragment: entityFrag,
+        fragment: `
+        ${common}
+        ${entityFrag}
+        `,
     },
     icon: {
         vertex: iconVertex,
@@ -284,6 +291,14 @@ function createShader(
             uTint: {
                 value: new Float32Array([0, 0, 0, 0]),
                 type: "vec4<f32>",
+            },
+            uMask: {
+                value: 0, // 1 - use the tint as mask (replace)
+                type: "f32",
+            },
+            uAlpha: {
+                value: 1, // multiplicative
+                type: "f32",
             },
             uTextureHeight: {
                 value: height,

@@ -118,9 +118,12 @@ async function upsertEntityContainer(
             stage.addChild(ec);
         }
 
-        // Set initial position
         if (created) {
+            // Set initial position
             ec.setIsoPosition(position);
+
+            // Turn on shadows
+            await ec.turnOnShadow();
         }
 
         // Update position
@@ -172,9 +175,6 @@ async function upsertAvatarContainer(
 
         // Set initial pose
         await ec.avatar.pose(ec.avatar.animationManager.getPose("default"));
-
-        // Add shadows
-        await ec.turnOnShadow();
 
         // Set event listeners
         setECEventListeners(ec);

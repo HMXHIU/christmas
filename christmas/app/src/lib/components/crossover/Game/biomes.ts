@@ -667,9 +667,9 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
         ...layers.depthPartition("biome"),
     });
 
-    // Draw decoration shader
+    // Draw decoration shader (grass is at the same depth as entities)
     const { depthScale, depthStart, depthLayer, depthSize } =
-        layers.depthPartition("entity"); // grass is at the same depth as entities
+        layers.depthPartition("entity");
     await drawShaderTextures({
         shaderName: "grass",
         shaderTextures: decorationsTexturePositions,
@@ -677,6 +677,6 @@ async function drawBiomeShaders(playerPosition: Position, stage: Container) {
         stage,
         depthScale,
         depthStart,
-        depthLayer: depthLayer - depthSize, // bump the zIndex for grass down 1 layer for alpha blending
+        depthLayer: depthLayer + depthSize, // bump the zIndex for grass down 1 layer for alpha blending
     });
 }

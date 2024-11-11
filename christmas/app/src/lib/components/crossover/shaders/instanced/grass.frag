@@ -10,11 +10,6 @@ void main() {
 
     vec4 color = texture2D(uTexture, vUV);
 
-    // Discard the fragment if alpha is 0
-    if (color.a < 0.1) {
-        discard;
-    }
-
     // Apply alpha mask (fade out from top to bottom)
     float alpha = mix(1.0, 0.0, vPosition.y / vInstanceSize.y);
 
