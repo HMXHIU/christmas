@@ -12,11 +12,30 @@ import { poisInWorld } from "$lib/crossover/world/world";
 import { Container, Graphics } from "pixi.js";
 import { get } from "svelte/store";
 import { itemRecord, worldRecord } from "../../../../store";
+import type { EntityContainer } from "./entities";
+import { SimpleEntityContainer } from "./entities/SimpleEntityContainer";
+import { uiColors } from "./settings";
 import { calculatePosition } from "./utils";
 
-export { debugGame };
+export { debugEC, debugGame };
 
 let colliders: Graphics[] = [];
+
+async function debugEC(ec: EntityContainer) {
+    const bounds = ec.getLocalBounds();
+    ec.addChild(
+        new Graphics()
+            .rect(bounds.x, bounds.y, bounds.width, bounds.height)
+            .stroke({ color: uiColors.lumina, width: 2 / ec.scale.x }),
+    );
+
+    if (ec instanceof SimpleEntityContainer && ec.mesh) {
+        const origin = new Graphics()
+            .circle(ec.pivot.x, ec.pivot.y, 2)
+            .stroke({ color: uiColors.health, width: 2 / ec.scale.x });
+        ec.addChild(origin);
+    }
+}
 
 async function debugGame(
     stage: Container,

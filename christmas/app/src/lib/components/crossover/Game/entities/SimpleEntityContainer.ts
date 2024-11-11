@@ -52,7 +52,7 @@ class SimpleEntityContainer extends EntityContainer {
             this.mesh.width = width;
             this.mesh.height = height;
 
-            // Set pivot/anchor
+            // Set pivot/anchor (Note: pivot of the EC, not the mesh)
             const anchor = texture.defaultAnchor ??
                 options?.anchor ?? { x: 0.5, y: 0.5 };
             this.pivot.set(anchor.x * width, anchor.y * height);
