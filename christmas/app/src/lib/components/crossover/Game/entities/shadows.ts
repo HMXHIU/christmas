@@ -14,7 +14,7 @@ async function createBlobShadow(): Promise<IsoMesh> {
     const isoMesh = new IsoMesh({
         shaderName: "entity",
         texture,
-        geometryUid: "blob-shadow", // doesn't matter for action bubble to share the same geometry (1D on shadow layer)
+        geometryUid: "blob-shadow", // all blob shadows can be shared (same texture)
         ...layers.depthPartition("shadow"),
     });
 
@@ -36,15 +36,24 @@ async function createBlobShadow(): Promise<IsoMesh> {
     return isoMesh;
 }
 
-async function createProjectedShadow(isoMesh: IsoMesh): Promise<IsoMesh> {
+const FULL_SKEW = Math.PI / 3.5;
+
+async function createProjectedShadow(
+    isoMesh: IsoMesh,
+): Promise<IsoMesh | null> {
     const shadowMesh = new IsoMesh({
         shaderName: "entity",
         texture: isoMesh.texture,
         cellHeight: isoMesh.cellHeight,
-        geometryUid: "proj-shadow", // doesn't matter for action bubble to share the same geometry (1D on floor layer)
+        geometryUid: `${isoMesh.texture.uid}-shadow`,
         ...layers.depthPartition("shadow"),
     });
     const anchor = isoMesh.texture.defaultAnchor ?? { x: 0.5, y: 0.5 };
+
+    // Skip projected shadows if the anchor is very close to the center (flat, very close to ground)
+    if (anchor.y > 0.4 && anchor.y < 0.6) {
+        return null;
+    }
 
     // Mask the texture
     if (shadowMesh.shader) {
@@ -56,6 +65,7 @@ async function createProjectedShadow(isoMesh: IsoMesh): Promise<IsoMesh> {
     When skewing, we need to skew about the pivot, however the pivot is set on the EC, not the mesh,
     Thus we have to set the pivot, skew, translate to acheive the same effect
     Use a shadow skew between 60 and 45 degrees (60 aligns too nearly to the isometric axis and looks artificial)
+    For textures where the anchor.y is closer to 0.5 than 1 (indicates flat on the ground) we should not skew too much
     */
     shadowMesh.scale = isoMesh.scale;
     shadowMesh.position = isoMesh.position;
@@ -64,7 +74,8 @@ async function createProjectedShadow(isoMesh: IsoMesh): Promise<IsoMesh> {
         y: anchor.y * isoMesh.texture.height,
     };
     shadowMesh.scale.y *= 0.7; // shorter shadows
-    shadowMesh.skew.x = Math.PI / 3.5;
+    const skewAmount = Math.max(anchor.y - 0.5, 0) * 2; // full skew when anchor.y = 1
+    shadowMesh.skew.x = skewAmount * FULL_SKEW;
     shadowMesh.position.x += shadowMesh.pivot.x;
     shadowMesh.position.y += shadowMesh.pivot.y;
 
