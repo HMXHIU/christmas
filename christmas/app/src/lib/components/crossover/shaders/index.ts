@@ -18,6 +18,8 @@ import mod289 from "./lygia/math/mod289.glsl?raw";
 import permute from "./lygia/math/permute.glsl?raw";
 import remap from "./lygia/math/remap.glsl?raw";
 import taylorInvSqrt from "./lygia/math/taylorInvSqrt.glsl?raw";
+import ambientFrag from "./singular/ambient.frag?raw";
+import ambientVertex from "./singular/ambient.vert?raw";
 import entityFrag from "./singular/entity.frag?raw";
 import entityVertex from "./singular/entity.vert?raw";
 import iconFrag from "./singular/icon.frag?raw";
@@ -125,6 +127,10 @@ const shaders: Record<string, { vertex: string; fragment: string }> = {
     map: {
         vertex: mapVertex,
         fragment: mapFrag,
+    },
+    ambient: {
+        vertex: ambientVertex,
+        fragment: ambientFrag,
     },
 };
 

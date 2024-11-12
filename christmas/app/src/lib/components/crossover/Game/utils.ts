@@ -36,7 +36,7 @@ import {
 import { get } from "svelte/store";
 import { landGrading, player, worldOffset } from "../../../../store";
 import type { AnimationMetadata, AvatarMetadata } from "../avatar/types";
-import { entityContainers } from "./entities";
+import { entityContainers, type EntityContainer } from "./entities";
 import {
     CELL_HEIGHT,
     CELL_WIDTH,
@@ -58,6 +58,7 @@ export {
     getAvatarMetadata,
     getImageForTile,
     getPathHighlights,
+    getPlayerEC,
     getPlayerLocation,
     getPlayerPosition,
     getTilesetForTile,
@@ -69,6 +70,8 @@ export {
     scaleToFitAndMaintainAspectRatio,
     snapToGrid,
     WORLD_COL_MAX,
+    WORLD_ISOX_MAX,
+    WORLD_ISOX_MIN,
     WORLD_ISOY_MAX,
     WORLD_ROW_MAX,
     type Location,
@@ -76,11 +79,12 @@ export {
 };
 
 const [WORLD_COL_MAX, WORLD_ROW_MAX] = geohashToColRow("pbzupuzv");
-
 const WORLD_ISOY_MAX = cartToIso(
     WORLD_COL_MAX * CELL_WIDTH,
     WORLD_ROW_MAX * CELL_WIDTH,
 )[1]; // 33093136
+const WORLD_ISOX_MIN = cartToIso(0, WORLD_ROW_MAX * CELL_WIDTH)[0];
+const WORLD_ISOX_MAX = cartToIso(WORLD_COL_MAX * CELL_WIDTH, 0)[0];
 
 interface Location {
     geohash: string;
@@ -95,14 +99,6 @@ interface Position extends Location {
     isoY: number;
     precision: number;
     elevation: number;
-}
-
-function getPlayerLocation(p: Player): Location {
-    return {
-        geohash: p.loc[0],
-        locationInstance: p.locI,
-        locationType: p.locT as GeohashLocation,
-    };
 }
 
 async function calculatePosition(
@@ -384,9 +380,21 @@ function getPathHighlights(
     return highlights;
 }
 
-function getPlayerPosition(): Position | null {
+function getPlayerEC(): EntityContainer | null {
     const p = get(player);
-    return p?.player ? entityContainers[p.player]?.isoPosition : null;
+    return p?.player ? entityContainers[p.player] : null;
+}
+
+function getPlayerPosition(): Position | null {
+    return getPlayerEC()?.isoPosition ?? null;
+}
+
+function getPlayerLocation(p: Player): Location {
+    return {
+        geohash: p.loc[0],
+        locationInstance: p.locI,
+        locationType: p.locT as GeohashLocation,
+    };
 }
 
 async function getAvatarMetadata(

@@ -55,6 +55,7 @@ class Layers {
     }
 }
 
+// TODO: combine floor and shadow
 const layers = new Layers({
-    layers: ["biome", "floor", "shadow", "entity"],
+    layers: ["biome", "floor", "shadow", "entity", "ambient"],
 });

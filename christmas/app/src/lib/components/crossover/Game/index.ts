@@ -40,7 +40,6 @@ import {
     worldOffset,
 } from "../../../../store";
 import { calculateLandGrading } from "./biomes";
-import { debugEC } from "./debug";
 import {
     cullEntityContainerById,
     entityContainers,
@@ -318,8 +317,8 @@ async function updateEntityContainer<T extends Actor>(
                 }
             }
 
-            // Debug EC
-            debugEC(ec);
+            // // Debug EC
+            // debugEC(ec);
         }
 
         // Update sigils (only upsert if already created as we dont want sigils for every entity)

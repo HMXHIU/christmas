@@ -40,6 +40,7 @@
         destroyShaders,
         updateShaderUniforms,
     } from "../shaders";
+    import { AmbientOverlay } from "../shaders/ambient";
     import { animateAbility } from "./animations";
     import { drawBiomeShaders } from "./biomes";
     import {
@@ -48,9 +49,20 @@
         entitySigils,
     } from "./entities";
     import { createHIDHandlers } from "./hid";
-    import { CANVAS_HEIGHT, CANVAS_WIDTH, CELL_WIDTH } from "./settings";
+    import {
+        CANVAS_HEIGHT,
+        CANVAS_WIDTH,
+        CELL_WIDTH,
+        OVERDRAW_HEIGHT,
+        OVERDRAW_WIDTH,
+    } from "./settings";
     import { displayCommandPreview, displayTargetBox } from "./ui";
-    import { getPlayerPosition, registerGSAP, type Position } from "./utils";
+    import {
+        getPlayerEC,
+        getPlayerPosition,
+        registerGSAP,
+        type Position,
+    } from "./utils";
     import { drawWorldsAtLocation } from "./world";
 
     // Register GSAP & PixiPlugin
@@ -65,6 +77,8 @@
     let app: Application | null = null;
     let worldStage: Container | null = null;
     let cameraTween: gsap.core.Tween | null = null;
+
+    let ambientOverlay: AmbientOverlay | null = null;
 
     let mouseMove: (e: FederatedPointerEvent) => void;
     let mouseDown: (e: FederatedPointerEvent) => void;
@@ -148,6 +162,18 @@
         for (const sigil of Object.values(entitySigils)) {
             sigil.render();
         }
+
+        // Draw lights
+        if (ambientOverlay) {
+            const ec = getPlayerEC();
+            if (ec) {
+                ambientOverlay.position.x = ec.x - OVERDRAW_WIDTH / 2;
+                ambientOverlay.position.y = ec.y - OVERDRAW_HEIGHT / 2;
+                ambientOverlay.updateLights([
+                    { x: ec.x, y: ec.y, intensity: 0.5 },
+                ]);
+            }
+        }
     }
 
     function cameraTrackPosition(position: Position, duration?: number) {
@@ -175,7 +201,13 @@
     export async function handlePlayerPositionUpdate(
         oldPosition: Position | null,
         newPosition: Position,
-    ) {}
+    ) {
+        // if (ambientOverlay) {
+        //     ambientOverlay.position.y =
+        //         newPosition.isoY - newPosition.elevation;
+        //     ambientOverlay.position.x = newPosition.isoX;
+        // }
+    }
 
     /**
      * This is called once entity reaches destination
@@ -299,6 +331,13 @@
                 },
             );
         }
+
+        // Set the ambient overlay (darkness, clouds, snow, rain, etc...)
+        ambientOverlay = new AmbientOverlay({
+            width: OVERDRAW_WIDTH,
+            height: OVERDRAW_HEIGHT,
+        });
+        worldStage.addChild(ambientOverlay);
     }
 
     onMount(() => {
