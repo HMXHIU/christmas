@@ -1,6 +1,7 @@
 import type { CacheInterface } from "$lib/caches";
 import type { World } from "$lib/crossover/types";
 import type { NPCs } from "$lib/server/crossover/npc/types";
+import { seededRandom, stringToRandomNumber } from "$lib/utils/random";
 import { omit } from "lodash-es";
 import {
     autoCorrectGeohashPrecision,
@@ -15,12 +16,18 @@ import type { ObjectLayer, TileLayer, WorldAssetMetadata } from "./types";
 
 export {
     findClosestSanctuary,
+    getGameTime,
+    getSeason,
+    getTimeOfDay,
+    getWeather,
     poisInWorld,
     traversableCellsInWorld,
     traversableSpeedInWorld,
     type Sanctuary,
+    type Season,
     type Spatial,
     type Tileset,
+    type TimeOfDay,
     type WorldPOIs,
     type WorldSeed,
 };
@@ -63,9 +70,9 @@ interface WorldSeed {
         };
     };
     time: {
-        dayLengthHours: number;
-        yearLengthDays: number;
-        seasonLengthDays: number;
+        hoursInADay: number;
+        daysInAYear: number;
+        daysInASeason: number;
     };
 }
 
@@ -96,6 +103,118 @@ interface Tileset {
     tilewidth: number;
     type: string;
     version: string;
+}
+
+interface SpawnItemPOI {
+    prop: string;
+    geohash: string;
+    variables: Record<string, string | number | boolean>;
+}
+
+interface SpawnMonsterPOI {
+    beast: string;
+    geohash: string;
+}
+
+interface SpawnNPCPOI {
+    npc: NPCs;
+    geohash: string;
+}
+
+interface SpawnPlayerPOI {
+    geohash: string;
+    spawn: "player";
+}
+
+type WorldPOIs = (
+    | SpawnItemPOI
+    | SpawnMonsterPOI
+    | SpawnPlayerPOI
+    | SpawnNPCPOI
+)[];
+
+type TimeOfDay = "night" | "morning" | "afternoon" | "evening";
+type Season = "summer" | "winter" | "spring" | "autumn";
+
+function getGameTime(worldSeed: WorldSeed): {
+    hour: number;
+    day: number;
+    season: number;
+} {
+    const { hoursInADay, daysInAYear, daysInASeason } = worldSeed.time;
+    const now = Date.now() * 8;
+    const hour = (now / (1000 * 60 * 60)) % hoursInADay;
+    const day = Math.floor(now / (1000 * 60 * 60 * 24)) % daysInAYear;
+    const season = Math.floor(day / daysInASeason) % 4;
+    return { hour, day, season };
+}
+
+function getTimeOfDay(hour: number): TimeOfDay {
+    if (hour < 6) return "night";
+    else if (hour < 12) return "morning";
+    else if (hour < 18) return "afternoon";
+    else return "evening";
+}
+
+function getSeason(season: number): Season {
+    const seasons: Season[] = ["spring", "summer", "autumn", "winter"];
+    return seasons[season];
+}
+
+function getWeather(worldSeed: WorldSeed, geohash: string) {
+    const { hour, day, season: seasonID } = getGameTime(worldSeed);
+    const timeOfDay = getTimeOfDay(hour);
+    const season = getSeason(seasonID);
+
+    // Get continent, city
+    const continent = geohash.charAt(0);
+    const city = geohash.slice(0, worldSeed.spatial.city.precision);
+
+    // Get location weather parameters
+    let {
+        baseTemperature,
+        temperatureVariation,
+        rainProbability,
+        stormProbability,
+    } = worldSeed.seeds.continent[continent].weather;
+
+    // Use `city` and `timeOfDay` seed the random number generation (else it will change every cell)
+    const rv = seededRandom(
+        stringToRandomNumber(city + timeOfDay + season + day),
+    );
+
+    // Add randomness to temperature
+    let temperature = baseTemperature + (rv * temperatureVariation) / 4;
+
+    // Modify temperature based on season and time of day
+    if (season === "summer") {
+        temperature += temperatureVariation / 2;
+    } else if (season === "winter") {
+        temperature -= temperatureVariation / 2;
+    }
+    if (timeOfDay === "night") {
+        temperature -= temperatureVariation / 4;
+    } else if (timeOfDay === "afternoon") {
+        temperature += temperatureVariation / 4;
+    }
+
+    // Determine rain/storm/snow
+    if (season === "spring") {
+        rainProbability += 0.1;
+    } else if (season === "autumn") {
+        rainProbability += 0.05;
+        stormProbability += 0.05;
+    }
+    let rain = rv < rainProbability;
+    let storm = rv < stormProbability;
+    let snow = temperature < 0 && (rain || storm);
+
+    return {
+        temperature,
+        rain,
+        storm,
+        snow,
+    };
 }
 
 async function findClosestSanctuary(geohash: string): Promise<Sanctuary> {
@@ -241,34 +360,6 @@ async function traversableCellsInWorld({
 
     return traversableCells;
 }
-
-interface SpawnItemPOI {
-    prop: string;
-    geohash: string;
-    variables: Record<string, string | number | boolean>;
-}
-
-interface SpawnMonsterPOI {
-    beast: string;
-    geohash: string;
-}
-
-interface SpawnNPCPOI {
-    npc: NPCs;
-    geohash: string;
-}
-
-interface SpawnPlayerPOI {
-    geohash: string;
-    spawn: "player";
-}
-
-type WorldPOIs = (
-    | SpawnItemPOI
-    | SpawnMonsterPOI
-    | SpawnPlayerPOI
-    | SpawnNPCPOI
-)[];
 
 /**
  * WorldPOIs in the world are added via an object layer in the tiled map editor

@@ -1,3 +1,4 @@
+import { chebyshevDistance } from "$lib/crossover/utils";
 import { Container, Geometry, Mesh, Shader, Texture } from "pixi.js";
 import { shaders } from ".";
 import { layers } from "../Game/layers";
@@ -16,13 +17,11 @@ interface Light {
  * Ambient overlay (darkness, clouds, snow, rain, etc...)
  *
  * Position (x, y):
- *  - Corresponds to the top left
- *  - Should be updated regularly (eg. when the player moves to a new house)
+ *  - Should be updated at every ticker to (perceiver.x - OVERDRAW_WIDTH / 2, perceiver.y - OVERDRAW_HEIGHT / 2)
  *
  * Dimensions (width, height):
  *  - Should not change (set at initialization)
  *  - Correspond to real world isometric coordinates
- *  - Should use the same 9 neighbours as the biomes shader (see `drawBiomeShaders`)
  *
  * `updateLights` should be called at every app ticker
  */
@@ -55,8 +54,12 @@ class AmbientOverlay extends Container {
                         type: "f32",
                     },
                     uAmbientLight: {
-                        value: 0.3,
+                        value: 0.3, // set based on time of day
                         type: "f32",
+                    },
+                    uDarkness: {
+                        value: new Float32Array([0, 0, 0]), // sets the color of darkness (mood)
+                        type: "vec4<f32>",
                     },
                     uLight0: {
                         value: new Float32Array([0, 0, 0, 0]), // x, y, intensity, highlight
@@ -114,8 +117,28 @@ class AmbientOverlay extends Container {
         this.addChild(this.mesh);
     }
 
-    updateLights(lights: Light[]) {
+    updateLights(
+        lights: Light[],
+        ambient: number,
+        perceiver?: { x: number; y: number },
+    ) {
+        if (perceiver) {
+            // TODO: Combine any lights if needed
+
+            // Sort the lights w.r.t the perciever and choose MAX_NUM_LIGHTS
+            lights
+                .sort((l) =>
+                    chebyshevDistance(l.x, l.y, perceiver.x, perceiver.y),
+                )
+                .slice(0, MAX_NUM_LIGHTS);
+        }
+
         if (this.mesh && this.mesh.shader) {
+            // Set ambient light
+            this.mesh.shader.resources.uniforms.uniforms.uAmbientLight =
+                ambient;
+
+            // Set individual lights
             for (let i = 0; i < MAX_NUM_LIGHTS; i++) {
                 const light = lights[i];
                 if (light) {
@@ -128,12 +151,6 @@ class AmbientOverlay extends Container {
                         localY > 0 &&
                         localY < this.height
                     ) {
-                        // console.log([
-                        //     localX,
-                        //     localY,
-                        //     light.intensity,
-                        //     1, // highlight
-                        // ]);
                         this.mesh.shader.resources.uniforms.uniforms[
                             `uLight${i}`
                         ] = new Float32Array([

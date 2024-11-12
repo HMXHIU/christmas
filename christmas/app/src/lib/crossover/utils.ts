@@ -29,6 +29,7 @@ export {
     borderingGeohashes,
     calculateLocation,
     calculatePathDuration,
+    chebyshevDistance,
     childrenGeohashes,
     childrenGeohashesAtPrecision,
     directionDuration,
@@ -868,6 +869,17 @@ function inRange({
         const squaredRange = range * range;
         return [range < 0 || squaredDistance <= squaredRange, squaredDistance];
     }
+}
+
+function chebyshevDistance(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+): number {
+    const deltaX = Math.abs(x1 - x2);
+    const deltaY = Math.abs(y1 - y2);
+    return Math.max(deltaX, deltaY);
 }
 
 function filterSortEntitiesInRange(

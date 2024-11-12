@@ -93,10 +93,14 @@ const worldSeed: WorldSeed = {
             house: 2,
         },
     },
+    /**
+     * Game time proceeds faster than actual time (so player's can experience day/night cycles)
+     *  - 8x faster than real world (in a 3 hr playtime, player will experience 1 day/night cycle)
+     */
     time: {
-        dayLengthHours: 24,
-        yearLengthDays: 365,
-        seasonLengthDays: 91,
+        hoursInADay: 3,
+        daysInAYear: 365,
+        daysInASeason: 91,
     },
     seeds: {
         continent: {

@@ -4,6 +4,8 @@
     import { getPlayerAbilities } from "$lib/crossover/world/abilities";
     import { actions } from "$lib/crossover/world/settings/actions";
     import { compendium } from "$lib/crossover/world/settings/compendium";
+    import { worldSeed } from "$lib/crossover/world/settings/world";
+    import { getGameTime } from "$lib/crossover/world/world";
     import { cn } from "$lib/shadcn";
     import gsap from "gsap";
     import {
@@ -167,13 +169,43 @@
         if (ambientOverlay) {
             const ec = getPlayerEC();
             if (ec) {
-                ambientOverlay.position.x = ec.x - OVERDRAW_WIDTH / 2;
-                ambientOverlay.position.y = ec.y - OVERDRAW_HEIGHT / 2;
-                ambientOverlay.updateLights([
-                    { x: ec.x, y: ec.y, intensity: 0.5 },
-                ]);
+                ambientOverlay.position.set(
+                    ec.x - OVERDRAW_WIDTH / 2,
+                    ec.y - OVERDRAW_HEIGHT / 2,
+                );
+                ambientOverlay.updateLights(
+                    [{ x: ec.x, y: ec.y, intensity: 0.5 }],
+                    getAmbientLightValue(),
+                    { x: ec.x, y: ec.y }, // player is perceiver
+                );
             }
         }
+    }
+
+    function getAmbientLightValue(): number {
+        const { hour } = getGameTime(worldSeed);
+        // Night (0:00 - 5:59): Darkest
+        if (hour >= 0 && hour < 6) {
+            return 0.1;
+        }
+
+        // Dawn (6:00 - 7:59): Light gradually increasing
+        if (hour >= 6 && hour < 8) {
+            return 0.3 + (hour - 6) * 0.3; // Gradually increases from 0.3 to 0.9
+        }
+
+        // Full daylight (8:00 - 16:59)
+        if (hour >= 8 && hour < 17) {
+            return 1.0;
+        }
+
+        // Dusk (17:00 - 18:59): Light gradually decreasing
+        if (hour >= 17 && hour < 19) {
+            return 0.9 - (hour - 17) * 0.3; // Gradually decreases from 0.9 to 0.3
+        }
+
+        // Evening/Night (19:00 - 23:59): Darkest
+        return 0.15;
     }
 
     function cameraTrackPosition(position: Position, duration?: number) {
@@ -201,13 +233,7 @@
     export async function handlePlayerPositionUpdate(
         oldPosition: Position | null,
         newPosition: Position,
-    ) {
-        // if (ambientOverlay) {
-        //     ambientOverlay.position.y =
-        //         newPosition.isoY - newPosition.elevation;
-        //     ambientOverlay.position.x = newPosition.isoX;
-        // }
-    }
+    ) {}
 
     /**
      * This is called once entity reaches destination
