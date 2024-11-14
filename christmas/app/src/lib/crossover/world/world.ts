@@ -136,13 +136,16 @@ type WorldPOIs = (
 type TimeOfDay = "night" | "morning" | "afternoon" | "evening";
 type Season = "summer" | "winter" | "spring" | "autumn";
 
-function getGameTime(worldSeed: WorldSeed): {
+function getGameTime(
+    worldSeed: WorldSeed,
+    now?: number,
+): {
     hour: number;
     day: number;
     season: number;
 } {
     const { hoursInADay, daysInAYear, daysInASeason } = worldSeed.time;
-    const now = Date.now() * 8;
+    now = now ?? Date.now() * 8;
     const hour = (now / (1000 * 60 * 60)) % hoursInADay;
     const day = Math.floor(now / (1000 * 60 * 60 * 24)) % daysInAYear;
     const season = Math.floor(day / daysInASeason) % 4;

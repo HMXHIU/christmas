@@ -80,7 +80,7 @@ function calibrateWorldOffset(geohash: string) {
     worldOffset.set({ col: col, row: row });
 }
 
-function updateEntities(
+async function updateEntities(
     {
         players,
         items,
@@ -107,33 +107,41 @@ function updateEntities(
 
     // Update itemRecord
     if (items?.length) {
-        updateRecord<Item>(itemRecord, items, "item", op, game, location, {
-            handleChanged: [
-                updateEquipment,
-                updateEntityContainer,
-                displayEntityEffects,
-            ],
-            handleDelete: [deleteEntityContainers],
-            onComplete: async (record) => {
-                // Load player inventory
-                loadInventory(record);
+        await updateRecord<Item>(
+            itemRecord,
+            items,
+            "item",
+            op,
+            game,
+            location,
+            {
+                handleChanged: [
+                    updateEquipment,
+                    updateEntityContainer,
+                    displayEntityEffects,
+                ],
+                handleDelete: [deleteEntityContainers],
+                onComplete: async (record) => {
+                    // Load player inventory
+                    loadInventory(record);
 
-                // Update the land grading
-                const updatedLandGrading = await calculateLandGrading(
-                    Object.values(record),
-                );
+                    // Update the land grading
+                    const updatedLandGrading = await calculateLandGrading(
+                        Object.values(record),
+                    );
 
-                // If the land grading has changed,
-                if (!isEqual(updatedLandGrading, landGrading)) {
-                    landGrading.set(updatedLandGrading);
-                }
+                    // If the land grading has changed,
+                    if (!isEqual(updatedLandGrading, landGrading)) {
+                        landGrading.set(updatedLandGrading);
+                    }
+                },
             },
-        });
+        );
     }
 
     // Update monsterRecord
     if (monsters?.length) {
-        updateRecord<Monster>(
+        await updateRecord<Monster>(
             monsterRecord,
             monsters,
             "monster",
@@ -149,7 +157,7 @@ function updateEntities(
 
     // Update playerRecord
     if (players?.length) {
-        updateRecord<Player>(
+        await updateRecord<Player>(
             playerRecord,
             players,
             "player",
@@ -171,7 +179,7 @@ function updateEntities(
     garbageCollect(location);
 }
 
-function deleteEntityContainers(entity: Actor, game: GameLogic) {
+async function deleteEntityContainers(entity: Actor, game: GameLogic) {
     const [entityId, entityType] = getEntityId(entity);
     const ec = entityContainers[entityId];
     if (ec) {
@@ -185,7 +193,7 @@ function deleteEntityContainers(entity: Actor, game: GameLogic) {
  * @param oldEntity - Old entity before change
  * @param newEntity - New entity after change
  */
-function displayEntityEffects<T extends Actor>(
+async function displayEntityEffects<T extends Actor>(
     oldEntity: T | null,
     newEntity: T,
     game: GameLogic,
@@ -273,7 +281,7 @@ async function updateEntityContainer<T extends Actor>(
     game: GameLogic,
     location: Location,
 ) {
-    updateEntityContainerLock.withLock(async () => {
+    return updateEntityContainerLock.withLock(async () => {
         // Check entity in same location as player
         if (
             location.locationInstance !== newEntity.locI ||
@@ -408,7 +416,7 @@ function loadInventory(record: Record<string, Item>) {
     }
 }
 
-function updateRecord<T extends { [key: string]: any }>(
+async function updateRecord<T extends { [key: string]: any }>(
     record: Writable<Record<string, T>>,
     entities: T[],
     idKey: keyof T & string,
@@ -421,56 +429,56 @@ function updateRecord<T extends { [key: string]: any }>(
             newEntity: T,
             game: GameLogic,
             location: Location,
-        ) => void)[];
-        handleDelete?: ((oldEntity: T, game: GameLogic) => void)[];
-        onComplete?: (record: Record<string, T>) => void;
+        ) => Promise<void>)[];
+        handleDelete?: ((oldEntity: T, game: GameLogic) => Promise<void>)[];
+        onComplete?: (record: Record<string, T>) => Promise<void>;
     },
 ) {
-    record.update((r) => {
-        // Replace entire record
-        const record = op === "replace" ? {} : r;
-        for (const entity of entities) {
-            const entityId = entity[idKey];
-            if (record[entityId]) {
-                // Delete entity (when delete is set on the entity)
-                if (entity.delete) {
-                    if (callbacks?.handleDelete) {
-                        for (const handleDelete of callbacks?.handleDelete) {
-                            handleDelete(record[entityId], game);
-                        }
+    const rr = op === "replace" ? {} : get(record); // create a new record if 'replace'
+    for (const entity of entities) {
+        const entityId = entity[idKey];
+        if (rr[entityId]) {
+            // Delete entity (when delete is set on the entity)
+            if (entity.delete) {
+                if (callbacks?.handleDelete) {
+                    for (const handleDelete of callbacks?.handleDelete) {
+                        await handleDelete(rr[entityId], game);
                     }
-                    delete record[entityId];
                 }
-                // Update entity
-                else {
-                    const updatedEnity = { ...record[entityId], ...entity };
-                    if (callbacks?.handleChanged) {
-                        for (const handleChanged of callbacks?.handleChanged) {
-                            handleChanged(
-                                record[entityId],
-                                updatedEnity,
-                                game,
-                                location,
-                            );
-                        }
-                    }
-                    record[entityId] = updatedEnity;
-                }
+                delete rr[entityId];
             }
-            // Create entity
+            // Update entity
             else {
+                const updatedEnity = { ...rr[entityId], ...entity };
                 if (callbacks?.handleChanged) {
                     for (const handleChanged of callbacks?.handleChanged) {
-                        handleChanged(null, entity, game, location);
+                        await handleChanged(
+                            rr[entityId],
+                            updatedEnity,
+                            game,
+                            location,
+                        );
                     }
                 }
-                record[entityId] = entity;
+                rr[entityId] = updatedEnity;
             }
         }
-        return record;
-    });
+        // Create entity
+        else {
+            if (callbacks?.handleChanged) {
+                for (const handleChanged of callbacks?.handleChanged) {
+                    await handleChanged(null, entity, game, location);
+                }
+            }
+            rr[entityId] = entity;
+        }
+    }
+
+    // Set the record
+    record.set(rr);
+
     if (callbacks?.onComplete) {
-        callbacks.onComplete(get(record));
+        await callbacks.onComplete(get(record));
     }
 }
 

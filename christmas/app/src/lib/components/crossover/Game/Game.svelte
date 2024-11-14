@@ -343,7 +343,7 @@
 
         // Initial HMR update (stores are already initialized)
         if ($player) {
-            updateEntities(
+            await updateEntities(
                 {
                     players: Object.values($playerRecord),
                     items: Object.values($itemRecord),

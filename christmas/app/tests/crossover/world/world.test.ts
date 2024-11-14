@@ -9,6 +9,7 @@ import { compendium } from "$lib/crossover/world/settings/compendium";
 import { worldSeed } from "$lib/crossover/world/settings/world";
 import type { WorldAssetMetadata } from "$lib/crossover/world/types";
 import {
+    getGameTime,
     poisInWorld,
     traversableCellsInWorld,
     traversableSpeedInWorld,
@@ -66,6 +67,7 @@ describe("World Tests", async () => {
         const existingWorlds = await worldsInGeohashQuerySet(
             ["w21z", "gbsu", "y78j"],
             "geohash",
+            "@",
         ).all();
         worldRepository.remove(
             existingWorlds.map((w) => (w as WorldEntity).world),
@@ -77,6 +79,7 @@ describe("World Tests", async () => {
             assetUrl,
             geohash: worldGeohash,
             locationType: "geohash",
+            locationInstance: "@",
             tileHeight: asset.tileheight,
             tileWidth: asset.tilewidth,
         });
@@ -85,6 +88,7 @@ describe("World Tests", async () => {
             assetUrl,
             geohash: worldTwoGeohash,
             locationType: "geohash",
+            locationInstance: "@",
             tileHeight: asset.tileheight / 2, // 128 / 2 = 64
             tileWidth: asset.tilewidth / 2, // 256 / 2 = 128
         });
@@ -93,6 +97,7 @@ describe("World Tests", async () => {
             assetUrl,
             geohash: worldThreeGeohash,
             locationType: "geohash",
+            locationInstance: "@",
             tileHeight: TILE_HEIGHT,
             tileWidth: TILE_WIDTH,
         });
@@ -108,6 +113,19 @@ describe("World Tests", async () => {
             [worldThreeGeohash.slice(-2)]: {
                 [worldThree.world]: worldThree,
             },
+        });
+    });
+
+    test("Game time, seasons, weather", () => {
+        expect(getGameTime(worldSeed, Date.UTC(2025, 1, 1, 12))).toMatchObject({
+            hour: 12,
+            day: 45,
+            season: 0,
+        });
+        expect(getGameTime(worldSeed, Date.UTC(2025, 3, 1, 4))).toMatchObject({
+            hour: 4,
+            day: 104,
+            season: 1,
         });
     });
 
@@ -267,14 +285,15 @@ describe("World Tests", async () => {
         ]);
 
         // Test retrieve worlds
-        const { town, worlds } = await crossoverWorldWorlds(
-            worldTwoGeohash,
+        const { geohash, worlds } = await crossoverWorldWorlds(
+            worldTwoGeohash.slice(0, worldSeed.spatial.town.precision),
             "geohash",
+            "@",
             {
                 Cookie: playerOneCookies,
             },
         );
-        expect(town.length).to.equal(worldSeed.spatial.town.precision);
+        expect(geohash.length).to.equal(worldSeed.spatial.town.precision);
         expect(worlds).toMatchObject([{ world: worldTwo.world }]);
 
         // Test location origins
@@ -316,7 +335,7 @@ describe("World Tests", async () => {
         ]);
 
         // Test `items` and `monsters` spawned in world
-        await spawnWorldPOIs(worldTwo.world, LOCATION_INSTANCE, {
+        await spawnWorldPOIs(worldTwo.world, {
             source: woodenDoor, // use woodenDoor as the source for variable substitution
         });
 
@@ -387,6 +406,7 @@ describe("World Tests", async () => {
                 assetUrl,
                 geohash: worldGeohash, // spawn on existing world
                 locationType: "geohash",
+                locationInstance: "@",
                 tileHeight: asset.tileheight,
                 tileWidth: asset.tilewidth,
             }),
