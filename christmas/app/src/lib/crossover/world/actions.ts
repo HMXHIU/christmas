@@ -8,7 +8,7 @@ import type {
 } from "$lib/crossover/types";
 import type { GameActionEntities, TokenPositions } from "../ir";
 import { getEntityId, isEntityAlive } from "../utils";
-import { isItemEquipped, isItemInInventory } from "./compendium";
+import { isItemEquipped, isItemFood, isItemInInventory } from "./compendium";
 import { actions } from "./settings/actions";
 import { compendium } from "./settings/compendium";
 import type { SkillLines } from "./skills";
@@ -157,6 +157,12 @@ function filterTargetItemsByAction(
     // Can only attack non destroyed objects
     else if (action === actions.attack.action) {
         return items.filter(isEntityAlive);
+    }
+    // Can only rest with food items
+    else if (action === actions.rest.action) {
+        return items.filter(
+            (item) => isItemInInventory(item, self) && isItemFood(item),
+        );
     }
 
     return items;

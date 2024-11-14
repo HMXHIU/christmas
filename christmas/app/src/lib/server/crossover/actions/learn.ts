@@ -132,7 +132,7 @@ async function learn(
     }
 
     // Save player
-    player = (await saveEntity(player)) as PlayerEntity;
+    await saveEntity(player);
     await savePlayerState(player.player);
 
     // Destroy writ if provided

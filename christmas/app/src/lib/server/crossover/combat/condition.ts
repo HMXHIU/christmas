@@ -220,13 +220,13 @@ function resolveConditionsFromDamage({
 function pushCondition(
     conds: string[],
     condition: Condition,
-    attacker: ActorEntity,
+    sourceEntity: ActorEntity,
     now?: number,
 ): string[] {
     now = now ?? Date.now();
     const { active, turns } = conditions[condition];
     return [
-        `${active ? "a" : "p"}:${condition}:${now + MS_PER_TURN * turns}:${getEntityId(attacker)[0]}`,
+        `${active ? "a" : "p"}:${condition}:${now + MS_PER_TURN * turns}:${getEntityId(sourceEntity)[0]}`,
         ...popCondition(conds, condition, now), // also removes expired conditions
     ];
 }

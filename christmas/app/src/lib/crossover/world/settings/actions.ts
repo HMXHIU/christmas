@@ -515,16 +515,28 @@ Examples:
     },
     rest: {
         action: "rest",
-        description: "Rest and recover.",
+        description: `Take a break and replenish your energy with a satisfying meal. Resting in a tavern will restore your health to its fullest.
+
+Commands:
+    rest with [item]
+
+Examples:
+    **rest** with **item_food**
+`,
         predicate: {
             tokens: {
                 action: {
                     position: 0,
                     optional: false,
                 },
+                item: {
+                    position: 2,
+                    entityTypes: ["item"],
+                    optional: false,
+                },
             },
         },
-        ticks: 4,
+        ticks: TICKS_PER_TURN * 4,
         icon: {
             path: "actions/actions",
             icon: "night-sleep",

@@ -113,6 +113,7 @@ function updateEntities(
                 updateEntityContainer,
                 displayEntityEffects,
             ],
+            handleDelete: [deleteEntityContainers],
             onComplete: async (record) => {
                 // Load player inventory
                 loadInventory(record);
@@ -140,6 +141,7 @@ function updateEntities(
             game,
             location,
             {
+                handleDelete: [deleteEntityContainers],
                 handleChanged: [updateEntityContainer, displayEntityEffects],
             },
         );
@@ -155,6 +157,7 @@ function updateEntities(
             game,
             location,
             {
+                handleDelete: [deleteEntityContainers],
                 handleChanged: [
                     updatePlayer,
                     updateEntityContainer,
@@ -166,6 +169,14 @@ function updateEntities(
 
     // Garbage collect
     garbageCollect(location);
+}
+
+function deleteEntityContainers(entity: Actor, game: GameLogic) {
+    const [entityId, entityType] = getEntityId(entity);
+    const ec = entityContainers[entityId];
+    if (ec) {
+        ec.destroy();
+    }
 }
 
 /**
@@ -336,12 +347,12 @@ async function updateEntityContainer<T extends Actor>(
  */
 async function updatePlayer(
     oldEntity: Player | null,
-    newEntity: Player,
+    newEntity: Player | null,
     game: GameLogic,
     location: Location,
 ) {
     // Update player (self)
-    if (newEntity.player === get(player)?.player) {
+    if (newEntity && newEntity.player === get(player)?.player) {
         player.set(newEntity);
     }
 }
@@ -411,28 +422,40 @@ function updateRecord<T extends { [key: string]: any }>(
             game: GameLogic,
             location: Location,
         ) => void)[];
+        handleDelete?: ((oldEntity: T, game: GameLogic) => void)[];
         onComplete?: (record: Record<string, T>) => void;
     },
 ) {
     record.update((r) => {
         // Replace entire record
-        const newRecord = op === "replace" ? {} : r;
+        const record = op === "replace" ? {} : r;
         for (const entity of entities) {
             const entityId = entity[idKey];
-            // Update entity
-            if (newRecord[entityId]) {
-                const updatedEnity = { ...newRecord[entityId], ...entity };
-                if (callbacks?.handleChanged) {
-                    for (const handleChanged of callbacks?.handleChanged) {
-                        handleChanged(
-                            newRecord[entityId],
-                            updatedEnity,
-                            game,
-                            location,
-                        );
+            if (record[entityId]) {
+                // Delete entity (when delete is set on the entity)
+                if (entity.delete) {
+                    if (callbacks?.handleDelete) {
+                        for (const handleDelete of callbacks?.handleDelete) {
+                            handleDelete(record[entityId], game);
+                        }
                     }
+                    delete record[entityId];
                 }
-                newRecord[entityId] = updatedEnity;
+                // Update entity
+                else {
+                    const updatedEnity = { ...record[entityId], ...entity };
+                    if (callbacks?.handleChanged) {
+                        for (const handleChanged of callbacks?.handleChanged) {
+                            handleChanged(
+                                record[entityId],
+                                updatedEnity,
+                                game,
+                                location,
+                            );
+                        }
+                    }
+                    record[entityId] = updatedEnity;
+                }
             }
             // Create entity
             else {
@@ -441,10 +464,10 @@ function updateRecord<T extends { [key: string]: any }>(
                         handleChanged(null, entity, game, location);
                     }
                 }
-                newRecord[entityId] = entity;
+                record[entityId] = entity;
             }
         }
-        return newRecord;
+        return record;
     });
     if (callbacks?.onComplete) {
         callbacks.onComplete(get(record));

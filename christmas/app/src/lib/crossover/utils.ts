@@ -567,8 +567,13 @@ function minifiedEntity(
         demographics?: boolean; // archetype, gender, race
         timers?: boolean; // buclk
         equipment?: boolean; // wgt, eqattr
+        delete?: boolean;
     },
 ): Actor {
+    if (options?.delete) {
+        return pick(entity, ["delete", getEntityId(entity)[1]]) as Actor;
+    }
+
     // Common
     let fields: string[] = ["name", "loc", "locT", "locI"];
 

@@ -42,11 +42,35 @@ export let consumables: Record<string, Prop> = {
             },
         },
     },
+    bread: {
+        prop: "bread",
+        asset: {
+            path: "props/food", // TODO: Add asset
+            variants: {
+                default: "bread",
+            },
+        },
+        durability: 1,
+        charges: 1,
+        weight: 1,
+        collider: false,
+        food: true,
+        states: {
+            default: {
+                name: "Unremarkable bread.",
+                destructible: true,
+                description:
+                    "This bread is so plain it might be the universal standard for 'edible.' With a crust that’s neither soft nor crunchy and a flavor profile hovering somewhere between 'meh' and 'mildly disappointing,' it somehow remains essential. Best enjoyed with an optimistic attitude.",
+                variant: "default",
+            },
+        },
+        utilities: {},
+        variables: {},
+    },
     potionofhealth: {
         prop: "potionofhealth",
-        // TODO: Add potion asset
         asset: {
-            path: "props/potions",
+            path: "props/potions", // TODO: Add asset
             variants: {
                 default: "red-potion",
             },
@@ -82,6 +106,7 @@ export let consumables: Record<string, Prop> = {
         },
         variables: {},
     },
+    // TODO: Spawn a player unique instance of a dungeon
     dungeonkey: {
         prop: "dungeonkey",
         asset: {

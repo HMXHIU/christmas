@@ -6,6 +6,7 @@
     } from "$lib/crossover/ir";
     import { generateAttackMessage } from "$lib/crossover/mud/combat";
     import type { Actor, EntityType } from "$lib/crossover/types";
+    import { itemAttibutes } from "$lib/crossover/world/compendium";
     import { MS_PER_TICK } from "$lib/crossover/world/settings";
     import {
         actions,
@@ -232,6 +233,31 @@
                                 (actions.learn.ticks * MS_PER_TICK) /
                                     learningDialogues.length,
                             );
+                        }
+                    }
+                }
+                // Rest
+                else if (action === "rest" && source && target) {
+                    const self = get(player);
+                    const food = get(itemRecord)[target];
+                    if (self && self.player === source && food) {
+                        const { name, description } = itemAttibutes(food);
+                        const restingDialogues: string[] = [
+                            "Weary from your travels, you take a moment to catch your breath.",
+                            `You take out ${name} from your bag preparing to eat.`,
+                            description,
+                            "Your rest has restored your vigor. You feel ready for what lies ahead.",
+                        ];
+                        const interval =
+                            (actions.rest.ticks * MS_PER_TICK) /
+                            restingDialogues.length;
+                        for (const message of restingDialogues) {
+                            addMessageFeed({
+                                message,
+                                name: "",
+                                messageFeedType: "message",
+                            });
+                            await sleep(interval);
                         }
                     }
                 }

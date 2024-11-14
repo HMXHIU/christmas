@@ -415,14 +415,13 @@ function crossoverCmdEnterItem(
     input: { item: string },
     headers: HTTPHeaders = {},
 ) {
-    const { item } = input;
     return trpc({ headers }).crossover.cmd.enterItem.query({
-        item,
+        item: input.item,
     });
 }
 
-function crossoverCmdRest(headers: HTTPHeaders = {}) {
-    return trpc({ headers }).crossover.cmd.rest.query();
+function crossoverCmdRest(input: { item: string }, headers: HTTPHeaders = {}) {
+    return trpc({ headers }).crossover.cmd.rest.query({ item: input.item });
 }
 
 function crossoverCmdCapture(

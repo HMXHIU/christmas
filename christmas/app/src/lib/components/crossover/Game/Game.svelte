@@ -173,10 +173,11 @@
                     ec.x - OVERDRAW_WIDTH / 2,
                     ec.y - OVERDRAW_HEIGHT / 2,
                 );
+                const perceiver = { x: ec.x, y: ec.y, intensity: 0.6 };
                 ambientOverlay.updateLights(
-                    [{ x: ec.x, y: ec.y, intensity: 0.5 }],
+                    [perceiver],
                     getAmbientLightValue(),
-                    { x: ec.x, y: ec.y }, // player is perceiver
+                    perceiver,
                 );
             }
         }

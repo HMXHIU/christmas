@@ -55,7 +55,7 @@ import {
 import { aStarPathfinding } from "./pathfinding";
 import type { Ability } from "./world/abilities";
 import { type Action } from "./world/actions";
-import type { Utility } from "./world/compendium";
+import { type Utility } from "./world/compendium";
 import { compendium } from "./world/settings/compendium";
 import { worldSeed } from "./world/settings/world";
 import { type SkillLines } from "./world/skills";
@@ -352,7 +352,10 @@ async function performAction(
     }
     // rest
     else if (action.action === "rest") {
-        return await crossoverCmdRest(headers);
+        if (!item) {
+            throw new Error(`You can't eat that!`);
+        }
+        return await crossoverCmdRest({ item: item.item }, headers);
     }
     // browse
     else if (action.action === "browse") {

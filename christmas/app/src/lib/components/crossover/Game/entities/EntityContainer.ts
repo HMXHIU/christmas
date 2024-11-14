@@ -71,8 +71,6 @@ export class EntityContainer extends Container {
         this.shadow = await this.getShadow();
         if (this.shadow) {
             this.addChild(this.shadow);
-        } else {
-            console.warn(`${this.entityId} container does not support shadows`);
         }
     }
 

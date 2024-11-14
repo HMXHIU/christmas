@@ -34,7 +34,7 @@ import { loadPlayerEntity } from ".";
 import { ObjectStorage } from "../objectStorage";
 import { authProcedure, dmServiceProcedure, t } from "../trpc";
 import { useAbility } from "./abilities";
-import { fulfill, inventory, look, rest, say } from "./actions";
+import { fulfill, inventory, look, say } from "./actions";
 import { createGiveCTA, executeGiveCTA } from "./actions/give";
 import {
     configureItem,
@@ -86,6 +86,7 @@ import { attack } from "./actions/attack";
 import { capture } from "./actions/capture";
 import { enterItem } from "./actions/enter";
 import { move, moveInRangeOfTarget } from "./actions/move";
+import { rest } from "./actions/rest";
 import {
     biomeAtGeohashCache,
     biomeParametersAtCityCache,
@@ -852,9 +853,24 @@ const crossoverRouter = {
                 }
             }),
         // cmd.rest
-        rest: playerAuthBusyProcedure.query(async ({ ctx }) => {
-            await rest(ctx.player, ctx.now);
-        }),
+        rest: playerAuthBusyProcedure
+            .input(TargetItemSchema)
+            .query(async ({ ctx, input }) => {
+                const { item } = input;
+                const [entities, error] = await tryFetchEntities({ item });
+                if (entities?.item) {
+                    await rest(
+                        ctx.player,
+                        entities.item as ItemEntity,
+                        ctx.now,
+                    );
+                } else {
+                    await publishFeedEvent(ctx.player.player, {
+                        type: "error",
+                        message: error,
+                    });
+                }
+            }),
         // cmd.capture
         capture: playerAuthBusyProcedure
             .input(CaptureSchema)

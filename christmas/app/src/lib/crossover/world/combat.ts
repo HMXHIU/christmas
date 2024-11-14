@@ -58,6 +58,7 @@ type Condition =
     | "weakness"
     | "crippled"
     | "paralyzed"
+    | "sleep"
     | "blinded"
     | "wet"
     | "stunned"
@@ -98,6 +99,7 @@ const conditions: Record<Condition, ConditionMetadata> = {
     weakness: { description: "weakness", active: false, turns: 2 },
     crippled: { description: "crippled", active: false, turns: 2 },
     paralyzed: { description: "paralyzed", active: false, turns: 2 },
+    sleep: { description: "sleep", active: false, turns: 4 },
     blinded: { description: "blinded", active: false, turns: 2 },
     wet: { description: "wet", active: false, turns: 2 },
     stunned: { description: "stunned", active: false, turns: 2 },

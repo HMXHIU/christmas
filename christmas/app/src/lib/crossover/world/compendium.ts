@@ -16,6 +16,7 @@ import {
 export {
     defaultPropAttributes,
     isItemEquipped,
+    isItemFood,
     isItemInInventory,
     isWeaponEquipped,
     itemAttibutes,
@@ -51,6 +52,7 @@ interface Prop {
     collider: boolean; // cannot have more than 1 collidable item in the same location, cannot walk through collidable items
     dieRoll?: DieRoll; // weapon damage + modifier used for both attack rolls & saving throws (use the max of)
     equipment?: Equipment;
+    food?: boolean; // whether the item is a food item (can be used for resting)
     // Spawn a world (lazily) related to this instance (eg. tavern, interior)
     world?: PropWorld;
 }
@@ -140,4 +142,11 @@ function isItemInInventory(item: Item, entity: Actor): boolean {
 
 function isWeaponEquipped(item: Item, entity: Actor): boolean {
     return isEntityWeapon(item) && item.loc[0] === getEntityId(entity)[0];
+}
+
+function isItemFood(item: Item): boolean {
+    if ("prop" in item) {
+        return compendium[item.prop].food != null;
+    }
+    return false;
 }

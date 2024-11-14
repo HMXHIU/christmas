@@ -90,6 +90,7 @@ interface EntityState
         ConditionParams {
     buclk: number; // busy clock (time the entity is busy till)
     skills: Skills; // skill levels
+    delete?: boolean; // used in `publishAffectedEntitiesToPlayers` to inform the client the entity was deleted
 }
 
 /*
@@ -144,6 +145,7 @@ interface Item extends LocationParams, ConditionParams {
     dur: number; // duration
     chg: number; // charges
     state: string;
+    delete?: boolean;
 }
 
 /*

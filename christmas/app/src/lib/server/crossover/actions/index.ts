@@ -1,6 +1,5 @@
 import { type Actor } from "$lib/crossover/types";
 import { geohashesNearby, minifiedEntity } from "$lib/crossover/utils";
-import { entityStats } from "$lib/crossover/world/entity";
 import { actions } from "$lib/crossover/world/settings/actions";
 import { type GeohashLocation } from "$lib/crossover/world/types";
 import {
@@ -20,11 +19,11 @@ import {
     inventoryQuerySet,
     playersInGeohashQuerySet,
 } from "../redis/queries";
-import { fetchEntity, saveEntity } from "../redis/utils";
+import { fetchEntity } from "../redis/utils";
 import { executeLearnCTA } from "./learn";
 import { executeTradeCTA } from "./trade";
 
-export { fulfill, inventory, look, LOOK_PAGE_SIZE, rest, say, setEntityBusy };
+export { fulfill, inventory, look, LOOK_PAGE_SIZE, say, setEntityBusy };
 
 const LOOK_PAGE_SIZE = 20;
 
@@ -138,29 +137,6 @@ async function inventory(player: PlayerEntity) {
     ).return.all()) as ItemEntity[];
 
     await publishAffectedEntitiesToPlayers(inventoryItems, {
-        publishTo: [player.player],
-    });
-}
-
-async function rest(player: PlayerEntity, now?: number) {
-    // Set busy
-    player = (await setEntityBusy({
-        entity: player,
-        action: actions.rest.action,
-        now: now,
-    })) as PlayerEntity;
-
-    // Rest player
-    const { hp, cha, mnd } = entityStats(player);
-    player.hp = hp;
-    player.cha = cha;
-    player.mnd = mnd;
-
-    // Save player
-    player = await saveEntity(player);
-
-    // Publish update event
-    await publishAffectedEntitiesToPlayers([player], {
         publishTo: [player.player],
     });
 }
