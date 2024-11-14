@@ -206,19 +206,18 @@ function calculateRowColFromIso(isoX: number, isoY: number): [number, number] {
 async function loadAssetTexture(
     asset: AssetMetadata,
     { variant, seed }: { variant?: string; seed?: number } = {},
-): Promise<Texture | null> {
+): Promise<{ texture: Texture; normal?: Texture } | null> {
     seed ??= 0;
 
-    // Asset path is a url to a texture
+    // Asset path is a url to a texture (normals unsupported for now)
     if (asset.path.startsWith("http")) {
-        return await Assets.load(asset.path);
+        return { texture: await Assets.load(asset.path) };
     }
 
     // Asset path is a pixijs bundle (spritesheet or image)
     const [bundleName, alias] = asset.path.split("/").slice(-2);
     const bundle = await Assets.loadBundle(bundleName);
-
-    // TODO: bundle[alias] is undefined sometimes
+    const aliasNormal = `${alias}_normal`;
 
     // Determine variant
     if (variant == null) {
@@ -239,10 +238,24 @@ async function loadAssetTexture(
     }
     variant ??= "default";
 
-    const frame =
-        bundle[alias]?.textures?.[asset.variants?.[variant] || "default"] ||
-        bundle[alias];
-    return frame || null;
+    // Get frame if texture is in sprite sheet, else is stand alone texture
+    const frame = asset.variants?.[variant] || "default";
+    const frameTexture: Texture =
+        bundle[alias]?.textures?.[frame] || bundle[alias];
+    let frameNormalTexture: Texture | undefined = undefined;
+
+    if (frameTexture) {
+        if (asset.normal) {
+            frameNormalTexture =
+                bundle[aliasNormal]?.textures?.[frame] || bundle[aliasNormal];
+        }
+        return {
+            texture: frameTexture,
+            normal: frameNormalTexture,
+        };
+    }
+
+    return null;
 }
 
 function decodeTiledSource(path: string): string {
@@ -301,6 +314,7 @@ async function initAssetManager() {
         "actions",
         "sound-effects",
         "effects",
+        "debug,",
     ]);
 }
 

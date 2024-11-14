@@ -45,10 +45,8 @@ export let consumables: Record<string, Prop> = {
     bread: {
         prop: "bread",
         asset: {
-            path: "props/food", // TODO: Add asset
-            variants: {
-                default: "bread",
-            },
+            path: "props/debug/circle", // TODO: Add asset
+            normal: true,
         },
         durability: 1,
         charges: 1,

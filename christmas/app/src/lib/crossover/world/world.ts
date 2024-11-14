@@ -70,6 +70,7 @@ interface WorldSeed {
         };
     };
     time: {
+        timeMultiplier: number;
         hoursInADay: number;
         daysInAYear: number;
         daysInASeason: number;
@@ -144,8 +145,9 @@ function getGameTime(
     day: number;
     season: number;
 } {
-    const { hoursInADay, daysInAYear, daysInASeason } = worldSeed.time;
-    now = now ?? Date.now() * 8;
+    const { hoursInADay, daysInAYear, daysInASeason, timeMultiplier } =
+        worldSeed.time;
+    now = now ?? Date.now() * timeMultiplier;
     const hour = (now / (1000 * 60 * 60)) % hoursInADay;
     const day = Math.floor(now / (1000 * 60 * 60 * 24)) % daysInAYear;
     const season = Math.floor(day / daysInASeason) % 4;

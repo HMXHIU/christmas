@@ -189,6 +189,7 @@ function loadShaderGeometry(
     {
         shaderName,
         texture,
+        normal,
         width,
         height,
         depthScale,
@@ -197,6 +198,7 @@ function loadShaderGeometry(
     }: {
         shaderName: string;
         texture: Texture;
+        normal?: Texture;
         width: number;
         height: number;
         depthStart: number;
@@ -242,6 +244,7 @@ function loadShaderGeometry(
                 {
                     shaderName,
                     texture,
+                    normal,
                     depthScale: depthScale,
                     depthStart: depthStart,
                 },
@@ -272,11 +275,13 @@ function createShader(
         depthScale,
         depthStart,
         texture,
+        normal,
     }: {
         shaderName: string;
         depthStart: number;
         depthScale: number;
         texture: Texture;
+        normal?: Texture;
     },
     options?: {
         height?: number;
@@ -289,6 +294,8 @@ function createShader(
     const resources: any = {
         uTexture: texture.source,
         uOverlayTexture: Texture.WHITE.source,
+        uNormalTexture: normal?.source ?? Texture.EMPTY.source,
+        uOverlayNormalTexture: Texture.EMPTY.source,
         uniforms: {
             uTime: {
                 value: 0,
@@ -301,6 +308,10 @@ function createShader(
             uMask: {
                 value: 0, // 1 - use the tint as mask (replace)
                 type: "f32",
+            },
+            uLight: {
+                value: [-1, -1, -1], // light for normal maps (x, y, intensity)
+                type: "vec3<f32>",
             },
             uAlpha: {
                 value: 1, // multiplicative
@@ -323,6 +334,14 @@ function createShader(
                 type: "f32",
             },
             uOverlayTextureEnabled: {
+                value: 0,
+                type: "f32",
+            },
+            uNormalTextureEnabled: {
+                value: normal?.source ? 1 : 0,
+                type: "f32",
+            },
+            uOverlayNormalTextureEnabled: {
                 value: 0,
                 type: "f32",
             },

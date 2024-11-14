@@ -12,6 +12,7 @@ import { actions } from "$lib/crossover/world/settings/actions";
 import { gsap } from "gsap";
 import { clone, cloneDeep } from "lodash-es";
 import { Container, type DestroyOptions } from "pixi.js";
+import type { Light } from "../../shaders/ambient";
 import type { IsoMesh } from "../../shaders/IsoMesh";
 import { calculatePosition, type Position } from "../utils";
 import { ActionBubble } from "./ActionBubble";
@@ -72,6 +73,18 @@ export class EntityContainer extends Container {
         if (this.shadow) {
             this.addChild(this.shadow);
         }
+    }
+
+    public updateNormalMaps(lights: Light[]) {
+        // Combine all the lights to a single direction and intensity
+        const light = lights[0];
+
+        // Convert the light to local coordinates
+        this.updateLight({
+            x: light.x - this.x,
+            y: light.y - this.y,
+            intensity: light.intensity * 1.3, // usually we want it greater than the ambient (top down) intensity as the light is hitting face on
+        });
     }
 
     async followPath(pathParams: PathParams) {
@@ -225,6 +238,8 @@ export class EntityContainer extends Container {
     async getShadow(): Promise<IsoMesh | null> {
         return null;
     }
+
+    public updateLight(light: Light) {}
 
     public destroy(options?: DestroyOptions): void {
         if (this.tween != null) {

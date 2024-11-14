@@ -84,6 +84,7 @@ type NoiseType = "simplex" | "random";
 
 interface AssetMetadata {
     path: string; // eg. bundle/name or url (must start with http)
+    normal?: boolean; // normal maps (checks if there is a resource ending with _normal)
     animations?: Record<string, string>; // create an animation pointing to an in the sprite.json
     variants?: Record<string, string>; // create a variant pointing to a frame in the sprite.json
     probability?: Record<string, number>; // probability of each variant

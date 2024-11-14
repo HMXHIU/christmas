@@ -165,20 +165,28 @@
             sigil.render();
         }
 
-        // Draw lights
+        // Update lights
         if (ambientOverlay) {
             const ec = getPlayerEC();
             if (ec) {
+                const perceiver = { x: ec.x, y: ec.y, intensity: 0.6 };
+                const lights = [perceiver];
+
+                // Update ambient (darkness, rain, snow etc ...)
                 ambientOverlay.position.set(
                     ec.x - OVERDRAW_WIDTH / 2,
                     ec.y - OVERDRAW_HEIGHT / 2,
                 );
-                const perceiver = { x: ec.x, y: ec.y, intensity: 0.6 };
                 ambientOverlay.updateLights(
-                    [perceiver],
+                    lights,
                     getAmbientLightValue(),
                     perceiver,
                 );
+
+                // Update normal maps
+                for (const ec of Object.values(entityContainers)) {
+                    ec.updateNormalMaps(lights);
+                }
             }
         }
     }

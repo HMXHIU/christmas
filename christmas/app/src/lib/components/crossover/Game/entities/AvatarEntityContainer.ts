@@ -6,6 +6,7 @@ import type { AssetMetadata } from "$lib/crossover/world/types";
 import type { Container, DestroyOptions } from "pixi.js";
 import { Avatar } from "../../avatar/Avatar";
 import type { Bone } from "../../avatar/Bone";
+import type { Light } from "../../shaders/ambient";
 import type { IsoMesh } from "../../shaders/IsoMesh";
 import { layers } from "../layers";
 import { EntityContainer } from "./EntityContainer";
@@ -137,6 +138,14 @@ class AvatarEntityContainer extends EntityContainer {
 
     async getShadow(): Promise<IsoMesh> {
         return createBlobShadow();
+    }
+
+    public updateLight(light: Light) {
+        for (const bone of this.avatar.getAllBones()) {
+            if (bone.mesh) {
+                bone.mesh.updateLight(light);
+            }
+        }
     }
 
     updateDepth(depth: number): void {

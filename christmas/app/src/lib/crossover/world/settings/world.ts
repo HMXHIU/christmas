@@ -95,9 +95,10 @@ const worldSeed: WorldSeed = {
     },
     /**
      * Game time proceeds faster than actual time (so player's can experience day/night cycles)
-     *  - 8x faster than real world (in a 3 hr playtime, player will experience 1 day/night cycle)
+     * 8x faster than real world (in a 3 hr playtime, player will experience 1 day/night cycle)
      */
     time: {
+        timeMultiplier: 8,
         hoursInADay: 24,
         daysInAYear: 365,
         daysInASeason: 91,

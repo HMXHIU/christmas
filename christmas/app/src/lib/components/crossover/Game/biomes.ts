@@ -179,12 +179,13 @@ async function calculateBiomeForRowCol(
     }
 
     // Load texture (probability of variant is defined in the asset metadata)
-    const texture = await loadAssetTexture(asset, {
+    const textures = await loadAssetTexture(asset, {
         seed: (row << 8) + col, // bit shift by 8 else gridRow + gridCol is the same at diagonals
     });
-    if (!texture) {
+    if (!textures) {
         throw new Error(`Missing texture for ${biome}`);
     }
+    const { texture, normal } = textures;
 
     // Scale the width and height of the texture to the cell while maintaining aspect ratio
     const width = CELL_WIDTH;
@@ -284,13 +285,14 @@ async function calculateBiomeDecorationsForRowCol({
             const instanceRv = seededRandom(instanceSeed);
 
             // Load texture
-            const texture = await loadAssetTexture(asset, {
+            const textures = await loadAssetTexture(asset, {
                 seed: instanceSeed,
             });
-            if (!texture) {
+            if (!textures) {
                 console.error(`Missing texture for ${name}`);
                 continue;
             }
+            const { texture, normal } = textures;
 
             // Initialize decorations
             if (texturePositions[texture.uid] == null) {

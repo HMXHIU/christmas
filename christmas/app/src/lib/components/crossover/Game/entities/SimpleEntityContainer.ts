@@ -1,6 +1,7 @@
 import type { AssetMetadata } from "$lib/crossover/world/types";
 import { Container, Sprite } from "pixi.js";
 import { swapMeshTexture } from "../../shaders";
+import type { Light } from "../../shaders/ambient";
 import { IsoMesh } from "../../shaders/IsoMesh";
 import { layers } from "../layers";
 import { CELL_WIDTH } from "../settings";
@@ -23,17 +24,20 @@ class SimpleEntityContainer extends EntityContainer {
             this.asset = asset;
             this.variant = options?.variant ?? null;
 
-            const texture = await loadAssetTexture(asset, {
+            // Load textures
+            const textures = await loadAssetTexture(asset, {
                 variant: options?.variant,
             });
-            if (texture == null) {
+            if (textures == null) {
                 console.warn(`Missing texture for ${this.entityId}`);
                 return;
             }
+            const { texture, normal } = textures;
 
             this.mesh = new IsoMesh({
                 shaderName: "entity",
                 texture,
+                normal,
                 cellHeight: asset.height,
                 geometryUid: this.entityId,
                 ...layers.depthPartition("entity"),
@@ -90,19 +94,26 @@ class SimpleEntityContainer extends EntityContainer {
         return null;
     }
 
+    public updateLight(light: Light) {
+        if (this.mesh) {
+            this.mesh.updateLight(light);
+        }
+    }
+
     async swapVariant(variant: string) {
         if (this.mesh == null || this.asset == null) {
             return;
         }
 
-        const texture = await loadAssetTexture(this.asset, {
+        // Load textures
+        const textures = await loadAssetTexture(this.asset, {
             variant,
         });
-
-        if (!texture) {
+        if (!textures) {
             console.error(`Missing texture for ${this.entityId}:${variant}`);
             return;
         }
+        const { texture, normal } = textures;
 
         this.variant = variant;
         swapMeshTexture(this.mesh, texture);
