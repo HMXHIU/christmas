@@ -170,6 +170,20 @@
 
         return keyframesWithInterpolated;
     }
+
+    function onKeyDown(e) {
+        switch(e.keyCode) {
+            // Right arrow
+            case 37:
+                updateTime(currentTime - 0.1)
+                break;
+                
+            // Left arrow
+            case 39:
+                updateTime(currentTime + 0.1)
+                break;
+        }
+    }
 </script>
 
 {#if animation}
@@ -235,3 +249,5 @@
         </div>
     </div>
 {/if}
+
+<svelte:window on:keydown|preventDefault={onKeyDown} />
